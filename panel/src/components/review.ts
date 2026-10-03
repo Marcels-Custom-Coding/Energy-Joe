@@ -341,13 +341,14 @@ export class JoeReview extends LitElement {
       tip: "pick_battery",
       filter: "soc",
       selected: [],
+      exclude: config.batteries.map((b) => b.soc_entity),
     });
     const soc = picked?.selected[0];
     if (!soc) {
       return;
     }
     const device = hass.entities?.[soc]?.device_id;
-    const id = device ?? soc;
+    const id = device && !config.batteries.some((b) => b.id === device) ? device : soc;
     saveConfig(this, {
       batteries: {
         [id]: {

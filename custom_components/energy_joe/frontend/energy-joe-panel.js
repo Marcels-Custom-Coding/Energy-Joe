@@ -4487,10 +4487,11 @@ var qt = /* @__PURE__ */ new Set([
 			heading: e("pick.battery.title"),
 			tip: "pick_battery",
 			filter: "soc",
-			selected: []
+			selected: [],
+			exclude: n.batteries.map((e) => e.soc_entity)
 		}))?.selected[0];
 		if (!r) return;
-		let i = t.entities?.[r]?.device_id, a = i ?? r;
+		let i = t.entities?.[r]?.device_id, a = i && !n.batteries.some((e) => e.id === i) ? i : r;
 		H(this, { batteries: { [a]: {
 			name: i && (t.devices?.[i]?.name_by_user || t.devices?.[i]?.name) || N(t, r),
 			adapter: "none",
