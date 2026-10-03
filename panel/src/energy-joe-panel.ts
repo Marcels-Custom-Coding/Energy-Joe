@@ -15,7 +15,8 @@ import "./editors/consumers";
 import "./editors/household";
 import "./editors/tariff-editor";
 import { ensureFonts } from "./fonts";
-import { translator, type Translate, type TranslationKey } from "./i18n";
+import { translator, type Translate } from "./i18n";
+import "./pages/devices";
 import "./pages/history";
 import "./pages/learn";
 import "./pages/onboarding";
@@ -39,19 +40,15 @@ import {
   type PanelRoute,
 } from "./types";
 
-const MODES: JoeMode[] = ["simulation", "live", "off"];
+const MODES: JoeMode[] = ["simulation", "advisory", "live", "off"];
 const MODE_ICONS: Record<JoeMode, string> = {
   simulation: "mdi:pause",
+  advisory: "mdi:comment-question-outline",
   live: "mdi:play",
   off: "mdi:power",
 };
-// "live" becomes selectable once Joe can control devices.
-const AVAILABLE: JoeMode[] = ["simulation", "off"];
+const AVAILABLE: JoeMode[] = MODES;
 
-// Pages that show Joe's empty state until their feature arrives.
-const COMING: Partial<Record<Page, { pose: string; title: TranslationKey; text: TranslationKey }>> = {
-  devices: { pose: "switch", title: "devices.title", text: "devices.text" },
-};
 
 export class EnergyJoePanel extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
@@ -133,7 +130,10 @@ export class EnergyJoePanel extends LitElement {
     const inScan = !joe.onboarding.completed && joe.onboarding.step === "scan";
     if (inScan && !this.adopted) {
       this.scan();
-    } else if (!this.discovery && (joe.onboarding.completed ? this.page === "settings" : joe.onboarding.step !== "welcome")) {
+    } else if (
+      !this.discovery &&
+      (joe.onboarding.completed ? ["settings", "devices"].includes(this.page) : joe.onboarding.step !== "welcome")
+    ) {
       this.look();
     }
   }
@@ -321,6 +321,15 @@ export class EnergyJoePanel extends LitElement {
     if (page === "learn") {
       return html`<joe-learn-page .t=${t} .hass=${this.hass} .state=${this.joe}></joe-learn-page>`;
     }
+    if (page === "devices") {
+      return html`<joe-devices-page
+        .t=${t}
+        .hass=${this.hass}
+        .state=${this.joe}
+        .discovery=${this.discovery}
+        .info=${this.info}
+      ></joe-devices-page>`;
+    }
     if (page === "settings") {
       return html`<joe-settings
         .t=${t}
@@ -331,15 +340,7 @@ export class EnergyJoePanel extends LitElement {
         .checks=${this.checks}
       ></joe-settings>`;
     }
-    const coming = COMING[page];
-    return coming
-      ? html`<joe-empty-state
-          pose=${coming.pose}
-          heading=${t(coming.title)}
-          text=${t(coming.text)}
-          note=${t("soon")}
-        ></joe-empty-state>`
-      : html``;
+    return html``;
   }
 
   private renderModeDialog(t: Translate): TemplateResult {
@@ -357,6 +358,7 @@ export class EnergyJoePanel extends LitElement {
         <div data-tipped>
           <div id="mode-title">${displayTitle(t("mode.dialog.title"), "h2", tip(t, "mode"))}</div>
           ${swoosh}
+          ${this.renderReadiness(t)}
           <div class="modes" role="group" aria-labelledby="mode-title">
             ${MODES.map((mode) => {
               const available = AVAILABLE.includes(mode);
@@ -390,6 +392,25 @@ export class EnergyJoePanel extends LitElement {
     </div>`;
   }
 
+  /** Which batteries Joe could really steer in "suggest" and "live". */
+  private renderReadiness(t: Translate): TemplateResult | typeof nothing {
+    const joe = this.joe;
+    const ready = joe?.control?.ready ?? {};
+    const steerable = (joe?.config.batteries ?? []).filter((b) => ready[b.id] && ready[b.id] !== "not_controllable");
+    if (!steerable.length) {
+      return nothing;
+    }
+    const untested = steerable.filter((b) => ready[b.id] !== "ready");
+    if (!untested.length) {
+      return nothing;
+    }
+    const text =
+      untested.length === steerable.length
+        ? t("mode.none_tested")
+        : t("mode.untested", { names: untested.map((b) => b.name).join(", ") });
+    return html`<div class="note warn readiness"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${text}</span></div>`;
+  }
+
   private renderEditor(t: Translate): TemplateResult {
     const editor = this.editor;
     const config = this.joe?.config;
@@ -407,6 +428,7 @@ export class EnergyJoePanel extends LitElement {
           .t=${t}
           .config=${config}
           .discovery=${this.discovery}
+          .info=${this.info}
           batteryId=${editor.id ?? ""}
         ></joe-battery-editor>`;
         break;
@@ -748,6 +770,9 @@ export class EnergyJoePanel extends LitElement {
         cursor: not-allowed;
         opacity: 0.6;
       }
+      .readiness {
+        margin-top: 14px;
+      }
       .mode .knob {
         width: 44px;
         height: 44px;
@@ -766,6 +791,11 @@ export class EnergyJoePanel extends LitElement {
       .mode.live .knob {
         background: var(--joe-good);
         color: #ffffff;
+      }
+      .mode.advisory .knob {
+        background: var(--joe-amber);
+        color: #071118;
+        box-shadow: inset 0 0 0 2px #071118;
       }
       .mode.off .knob {
         background: var(--joe-ink-2);

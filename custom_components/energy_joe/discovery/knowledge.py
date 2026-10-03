@@ -42,42 +42,6 @@ INTEGRATION_ROLES: dict[str, dict[str, KeyRole]] = {
     },
 }
 
-# Where a battery's power, capacity and controls live relative to its SoC entity.
-# "device": on the same device; "entry": anywhere in the same config entry
-# (Fronius puts storage, power flow and inverter controls on different devices).
-BATTERY_SCOPE: dict[str, str] = {
-    "fronius": "entry",
-    "omnibattery": "device",
-}
-
-# Control entities Joe uses to steer a battery, per adapter.
-ADAPTER_CONTROLS: dict[str, dict[str, str]] = {
-    "fronius": {
-        "minimum_reserve": "battery_minimum_reserve",
-        "grid_charging": "battery_grid_charging",
-        "charge_limit": "battery_charge_power_limit",
-        "charge_limit_enabled": "battery_charge_power_limit_enabled",
-        "discharge_limit": "battery_discharge_power_limit",
-        "discharge_limit_enabled": "battery_discharge_power_limit_enabled",
-    },
-    "omnibattery": {
-        "force_mode": "force_mode",
-        "charge_power": "set_charge_power",
-        "discharge_power": "set_discharge_power",
-        "charge_cutoff": "charging_cutoff_capacity",
-        "discharge_cutoff": "discharging_cutoff_capacity",
-        "work_mode": "user_work_mode",
-        "max_charge_power": "max_charge_power",
-        "max_discharge_power": "max_discharge_power",
-    },
-}
-
-# Controls an adapter cannot do without.
-REQUIRED_CONTROLS: dict[str, tuple[str, ...]] = {
-    "fronius": ("minimum_reserve", "grid_charging"),
-    "omnibattery": ("force_mode", "charge_power", "discharge_cutoff"),
-}
-
 # Solar forecast integrations and the keys of their daily sums.
 FORECAST_KEYS: dict[str, dict[str, str]] = {
     "forecast_solar": {

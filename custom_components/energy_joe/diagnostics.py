@@ -47,4 +47,10 @@ async def async_get_config_entry_diagnostics(
         "config": async_redact_data(config, TO_REDACT),
         "history": {**runtime.history.overview(), "months": runtime.history.months},
         "observe": observe,
+        # What Joe changed and still has to put back (entity ids and values).
+        "control": {
+            "saved": runtime.executor.data["saved"],
+            "active": runtime.executor.data["active"],
+            "failures": runtime.executor.data["failures"],
+        },
     }

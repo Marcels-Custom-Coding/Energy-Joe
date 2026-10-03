@@ -20,10 +20,11 @@ import voluptuous as vol
 
 from homeassistant.helpers import config_validation as cv
 
-CONFIG_VERSION = 1
+from .control.profiles import ADAPTERS, MODE_OPTIONS, ROLES
+
+CONFIG_VERSION = 2
 
 SOURCES = ("read", "learned", "default", "user")
-ADAPTERS = ("fronius", "omnibattery", "generic", "none")
 TARIFF_KINDS = ("fixed_window", "dynamic", "flat", "unknown")
 CONSUMER_KINDS = (
     "climate",
@@ -42,7 +43,18 @@ PRIORITY_ITEMS = ("ev", "hot_water", "battery")
 # Lists whose items have an "id"; a patch may address single items by id.
 KEYED_LISTS = ("batteries", "persons", "consumers")
 # Values that are replaced as a whole instead of merged key by key.
-REPLACED = frozenset({"grid_power", "home_power", "power", "controls", "window"})
+REPLACED = frozenset(
+    {
+        "grid_power",
+        "home_power",
+        "power",
+        "controls",
+        "mode_options",
+        "window",
+        "steps",
+        "prepare",
+    }
+)
 # Origins that Joe's own reading never overwrites.
 PROTECTED_SOURCES = ("user", "learned")
 # Answer keys that list things the user told Joe to leave out or accepted as they are.
@@ -76,6 +88,26 @@ MEASUREMENT = vol.Schema(
     }
 )
 
+# One step of a battery Joe steers through entities the user assigned: an entity
+# and its value; "{floor}", "{target}" and "{power}" stand for the values of the moment.
+# A step is an entity with a value, or a service call with data.
+_STEP_ENTITY = vol.Schema(
+    {
+        vol.Required("entity_id"): cv.entity_id,
+        vol.Optional("value", default=None): vol.Any(None, str, int, float, bool),
+    }
+)
+_STEP_SERVICE = vol.Schema(
+    {
+        vol.Required("service"): vol.Match(r"^[a-z0-9_]+\.[a-z0-9_]+$"),
+        vol.Optional("data", default=dict): dict,
+    }
+)
+STEP = vol.Any(_STEP_ENTITY, _STEP_SERVICE)
+STEPS = vol.Schema(
+    {vol.Optional(name): [STEP] for name in ("charge", "hold", "release")}
+)
+
 BATTERY = vol.Schema(
     {
         vol.Required("id"): str,
@@ -88,7 +120,12 @@ BATTERY = vol.Schema(
         vol.Optional("max_charge_w", default=None): _POSITIVE,
         vol.Optional("max_discharge_w", default=None): _POSITIVE,
         vol.Optional("device_id", default=None): vol.Any(None, str),
-        vol.Optional("controls", default=dict): {str: cv.entity_id},
+        # Levers by role (see control/profiles.py) and the mode select's options.
+        vol.Optional("controls", default=dict): {vol.In(ROLES): cv.entity_id},
+        vol.Optional("mode_options", default=dict): {vol.In(MODE_OPTIONS): str},
+        # Entities set before steering through the mode (e.g. "Remote Control").
+        vol.Optional("prepare", default=list): [_STEP_ENTITY],
+        vol.Optional("steps", default=dict): STEPS,
         vol.Optional("priority", default=1): vol.All(int, vol.Range(min=1, max=9)),
     }
 )
@@ -162,6 +199,20 @@ RULES = vol.Schema(
         vol.Optional("buffer_factor", default=0.35): vol.All(
             vol.Coerce(float), vol.Range(min=0, max=3)
         ),
+        # When Joe asks in the "suggest" mode whether he may steer tonight.
+        vol.Optional("ask_time", default="21:00"): _time,
+    }
+)
+
+# Who hears from Joe: a notify service (e.g. a phone) and what he tells.
+NOTIFY = vol.Schema(
+    {
+        vol.Optional("service", default=None): vol.Any(
+            None, vol.Match(r"^notify\.[a-z0-9_]+$")
+        ),
+        vol.Optional("ask", default=True): bool,
+        vol.Optional("problems", default=True): bool,
+        vol.Optional("morning", default=False): bool,
     }
 )
 
@@ -225,6 +276,7 @@ CONFIG = vol.Schema(
         vol.Optional("consumers", default=list): [CONSUMER],
         vol.Optional("actions", default=list): [dict],
         vol.Optional("rules", default=dict): RULES,
+        vol.Optional("notify", default=dict): NOTIFY,
         vol.Optional("answers", default=dict): ANSWERS,
         vol.Optional("learned", default=dict): LEARNED,
         vol.Optional("provenance", default=dict): {str: PROVENANCE},
@@ -410,10 +462,39 @@ def is_protected(config: dict[str, Any], path: str) -> bool:
     )
 
 
+# Version 1 named a battery's controls after its integration; version 2 uses roles.
+_V1_CONTROLS = {
+    "fronius": {
+        "minimum_reserve": "min_soc",
+        "grid_charging": "grid_charge",
+        "charge_limit": "charge_limit",
+        "charge_limit_enabled": "charge_limit_enabled",
+        "discharge_limit": "discharge_limit",
+        "discharge_limit_enabled": "discharge_limit_enabled",
+    },
+    "omnibattery": {
+        "force_mode": "mode",
+        "charge_power": "charge_power",
+        "discharge_power": "discharge_power",
+        "charge_cutoff": "charge_target",
+        "discharge_cutoff": "min_soc",
+    },
+}
+
+
 def migrate(data: dict[str, Any]) -> dict[str, Any]:
     """Bring stored configuration up to the current version."""
-    # Version 1 is the first stored format; later versions add steps here.
     data = deepcopy(data)
+    if data.get("version", 1) < 2:
+        for battery in data.get("batteries") or []:
+            names = _V1_CONTROLS.get(battery.get("adapter") or "", {})
+            battery["controls"] = {
+                names[name]: entity_id
+                for name, entity_id in (battery.get("controls") or {}).items()
+                if name in names
+            }
+            if battery.get("adapter") == "generic":
+                battery["adapter"] = "none"
     data["version"] = CONFIG_VERSION
     return validate(data)
 

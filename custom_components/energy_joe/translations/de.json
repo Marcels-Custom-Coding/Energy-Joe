@@ -9,5 +9,122 @@
     "abort": {
       "single_instance_allowed": "Energy Joe ist schon da. Du findest ihn in der Seitenleiste."
     }
+  },
+  "entity": {
+    "select": {
+      "mode": {
+        "name": "Betriebsart",
+        "state": {
+          "simulation": "Simulation",
+          "advisory": "Vorschlagen",
+          "live": "Live",
+          "off": "Aus"
+        }
+      }
+    },
+    "switch": {
+      "skip_tonight": {
+        "name": "Heute Nacht aussetzen"
+      }
+    },
+    "button": {
+      "release": {
+        "name": "Sofort freigeben"
+      },
+      "replan": {
+        "name": "Neu planen"
+      }
+    },
+    "sensor": {
+      "status": {
+        "name": "Status",
+        "state": {
+          "simulation": "Simulation",
+          "off": "Aus",
+          "no_plan": "Kein Plan",
+          "waiting": "Wartet auf die Nacht",
+          "unanswered": "Wartet auf deine Antwort",
+          "declined": "Heute nicht (deine Antwort)",
+          "skipped": "Heute Nacht ausgesetzt",
+          "nothing": "Nichts zu tun",
+          "steering": "Steuert",
+          "done": "Nacht vorbei"
+        }
+      },
+      "target": {
+        "name": "Ziel heute Nacht"
+      },
+      "saving": {
+        "name": "Hätte gespart (Summe)"
+      },
+      "last_night": {
+        "name": "Hätte gespart (letzte Nacht)"
+      }
+    }
+  },
+  "services": {
+    "release": {
+      "name": "Sofort freigeben",
+      "description": "Stellt alle Werte zurück, die Joe gesetzt hat, und steuert heute Nacht nicht mehr."
+    },
+    "replan": {
+      "name": "Neu planen",
+      "description": "Rechnet den Plan für heute Nacht sofort neu."
+    },
+    "skip_tonight": {
+      "name": "Heute Nacht aussetzen",
+      "description": "Joe steuert die kommende Nacht nicht.",
+      "fields": {
+        "skip": {
+          "name": "Aussetzen",
+          "description": "Aus: doch steuern."
+        }
+      }
+    },
+    "set_mode": {
+      "name": "Betriebsart setzen",
+      "description": "Simulation, Vorschlagen, Live oder Aus.",
+      "fields": {
+        "mode": {
+          "name": "Betriebsart",
+          "description": "Die neue Betriebsart."
+        }
+      }
+    },
+    "answer": {
+      "name": "Antwort für heute Nacht",
+      "description": "Im Modus Vorschlagen: Darf Joe heute Nacht steuern?",
+      "fields": {
+        "yes": {
+          "name": "Ja",
+          "description": "An: ja, steuern."
+        }
+      }
+    }
+  },
+  "selector": {
+    "mode": {
+      "options": {
+        "simulation": "Simulation",
+        "advisory": "Vorschlagen",
+        "live": "Live",
+        "off": "Aus"
+      }
+    }
+  },
+  "issues": {
+    "release_failed": {
+      "title": "Joe konnte nicht alles zurückstellen",
+      "description": "Diese Werte stehen noch nicht wieder auf ihrem Ausgangswert: {entities}. Joe versucht es alle fünf Minuten weiter. Prüf die Geräte oder stell die Werte von Hand zurück."
+    },
+    "control_failed": {
+      "title": "Steuern hat nicht geklappt",
+      "description": "Beim Steuern von {battery} ging etwas schief ({code}). Joe lässt den Speicher für heute Nacht in Ruhe."
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "Energy Joe ist nicht eingerichtet."
+    }
   }
 }

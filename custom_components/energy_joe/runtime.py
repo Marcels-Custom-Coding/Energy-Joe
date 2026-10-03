@@ -16,6 +16,8 @@ from homeassistant.util.hass_dict import HassKey
 
 from . import model
 from .const import DOMAIN
+from .control.executor import JoeExecutor
+from .control.notify import JoeNotifier
 from .learn.learner import JoeLearner
 from .observe.observer import BACKFILL_DAYS, JoeObserver
 from .observe.store import HistoryStore
@@ -28,9 +30,9 @@ STATE_KEY = f"{DOMAIN}.state"
 CONFIG_KEY = f"{DOMAIN}.config"
 SAVE_DELAY = 2
 
-MODES = ("simulation", "live", "off")
-# "live" becomes available once Joe can control devices.
-AVAILABLE_MODES = ("simulation", "off")
+# "advisory": Joe asks every evening whether he may steer the night.
+MODES = ("simulation", "advisory", "live", "off")
+AVAILABLE_MODES = MODES
 ONBOARDING_STEPS = ("welcome", "scan", "questions", "done")
 
 DEFAULT_STATE: dict[str, Any] = {
@@ -76,6 +78,17 @@ class JoeRuntime:
             self.async_update_config,
             self._changed,
         )
+        self.executor = JoeExecutor(
+            hass,
+            lambda: self._config,
+            lambda: self.planner.plan,
+            lambda: self._state["mode"],
+            self._changed,
+        )
+        self.notifier = JoeNotifier(
+            hass, lambda: self._config, self.executor.async_answer_tonight
+        )
+        self.executor.notifier = self.notifier
         self._started = False
         self._planned: dict[str, Any] | None = None
         self._observed: dict[str, Any] | None = None
@@ -95,10 +108,13 @@ class JoeRuntime:
                 )
                 await self._backup_store.async_save(stored)
         await self.history.async_load()
+        await self.executor.async_load()
 
     async def async_unload(self) -> None:
         """Stop watching and write pending changes immediately."""
         self._started = False
+        self.notifier.stop()
+        await self.executor.async_stop()
         async with self._observe_lock:
             await self.learner.async_stop()
             await self.planner.async_stop()
@@ -113,11 +129,14 @@ class JoeRuntime:
         await self._config_store.async_remove()
         await self._backup_store.async_remove()
         await self.history.async_remove()
+        await self.executor.async_forget()
 
     @callback
     def async_start(self) -> None:
-        """Home Assistant is running: Joe may start watching."""
+        """Home Assistant is running: Joe may start watching (and steering)."""
         self._started = True
+        self.notifier.start()
+        self._hass.async_create_task(self.executor.async_start(), eager_start=False)
         self._update_observer()
 
     async def async_refresh_plan(self) -> dict[str, Any] | None:
@@ -151,6 +170,7 @@ class JoeRuntime:
                 "observe": self.observer.status,
                 "plan": self.planner.plan,
                 "results": self.learner.results,
+                "control": self.executor.view,
             }
         )
 
@@ -168,6 +188,7 @@ class JoeRuntime:
             self._state["mode"] = mode
             self._changed(state=True)
             self._update_observer()
+            self._check_control()
 
     @callback
     def async_set_onboarding(
@@ -193,6 +214,7 @@ class JoeRuntime:
         self._config = model.prefer_learned(config)
         self._changed(config=True)
         self._update_observer()
+        self._check_control()
 
     @callback
     def async_adopt(self, proposal: dict[str, Any]) -> None:
@@ -202,6 +224,18 @@ class JoeRuntime:
             self._config = adopted
             self._changed(config=True)
             self._update_observer()
+
+    @callback
+    def async_notify_changed(self) -> None:
+        """Send the state again (e.g. after a test run ended early)."""
+        self._changed()
+
+    @callback
+    def _check_control(self) -> None:
+        """Mode or configuration changed: the executor looks again right away."""
+        if self._started and self.executor.active:
+            self.executor.schedule_ask()
+            self._hass.async_create_task(self.executor.async_check(), eager_start=False)
 
     @callback
     def async_subscribe(self, listener: StateListener) -> CALLBACK_TYPE:

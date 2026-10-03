@@ -9,5 +9,122 @@
     "abort": {
       "single_instance_allowed": "Energy Joe is already here. You will find him in the sidebar."
     }
+  },
+  "entity": {
+    "select": {
+      "mode": {
+        "name": "Operating mode",
+        "state": {
+          "simulation": "Simulation",
+          "advisory": "Suggest",
+          "live": "Live",
+          "off": "Off"
+        }
+      }
+    },
+    "switch": {
+      "skip_tonight": {
+        "name": "Skip tonight"
+      }
+    },
+    "button": {
+      "release": {
+        "name": "Release now"
+      },
+      "replan": {
+        "name": "Plan again"
+      }
+    },
+    "sensor": {
+      "status": {
+        "name": "Status",
+        "state": {
+          "simulation": "Simulation",
+          "off": "Off",
+          "no_plan": "No plan",
+          "waiting": "Waiting for the night",
+          "unanswered": "Waiting for your answer",
+          "declined": "Not tonight (your answer)",
+          "skipped": "Skipped tonight",
+          "nothing": "Nothing to do",
+          "steering": "Steering",
+          "done": "Night over"
+        }
+      },
+      "target": {
+        "name": "Target tonight"
+      },
+      "saving": {
+        "name": "Would have saved (total)"
+      },
+      "last_night": {
+        "name": "Would have saved (last night)"
+      }
+    }
+  },
+  "services": {
+    "release": {
+      "name": "Release now",
+      "description": "Puts back every value Joe set and stops steering for tonight."
+    },
+    "replan": {
+      "name": "Plan again",
+      "description": "Plans tonight again right away."
+    },
+    "skip_tonight": {
+      "name": "Skip tonight",
+      "description": "Joe does not steer the coming night.",
+      "fields": {
+        "skip": {
+          "name": "Skip",
+          "description": "Off: steer after all."
+        }
+      }
+    },
+    "set_mode": {
+      "name": "Set operating mode",
+      "description": "Simulation, suggest, live or off.",
+      "fields": {
+        "mode": {
+          "name": "Mode",
+          "description": "The new mode."
+        }
+      }
+    },
+    "answer": {
+      "name": "Answer for tonight",
+      "description": "In the suggest mode: may Joe steer tonight?",
+      "fields": {
+        "yes": {
+          "name": "Yes",
+          "description": "On: yes, steer."
+        }
+      }
+    }
+  },
+  "selector": {
+    "mode": {
+      "options": {
+        "simulation": "Simulation",
+        "advisory": "Suggest",
+        "live": "Live",
+        "off": "Off"
+      }
+    }
+  },
+  "issues": {
+    "release_failed": {
+      "title": "Joe could not put everything back",
+      "description": "These values are not back to where they were: {entities}. Joe keeps trying every five minutes. Check the devices or set the values back by hand."
+    },
+    "control_failed": {
+      "title": "Steering failed",
+      "description": "Something went wrong steering {battery} ({code}). Joe leaves this battery alone tonight."
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "Energy Joe is not set up."
+    }
   }
 }

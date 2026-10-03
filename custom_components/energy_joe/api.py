@@ -16,6 +16,7 @@ from homeassistant.util import dt as dt_util
 
 from . import model
 from .const import DOMAIN
+from .control.profiles import PROFILES
 from .discovery import async_check, async_collect, async_discover, discover
 from .discovery.checks import run_config_checks
 from .learn.learning import (
@@ -53,6 +54,10 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_plan_refresh)
     websocket_api.async_register_command(hass, ws_learning)
     websocket_api.async_register_command(hass, ws_learning_reset)
+    websocket_api.async_register_command(hass, ws_control_test)
+    websocket_api.async_register_command(hass, ws_control_release)
+    websocket_api.async_register_command(hass, ws_control_skip)
+    websocket_api.async_register_command(hass, ws_control_answer)
 
 
 def _runtime(
@@ -81,6 +86,7 @@ async def ws_info(
             "ha_version": HA_VERSION,
             "energy": await _async_energy_summary(hass),
             "defaults": {"rules": model.default_config()["rules"]},
+            "profiles": {key: profile.name for key, profile in PROFILES.items()},
         },
     )
 
@@ -120,9 +126,7 @@ def ws_set_mode(
     if (runtime := _runtime(hass, connection, msg)) is None:
         return
     if msg["mode"] not in AVAILABLE_MODES:
-        connection.send_error(
-            msg["id"], "not_available", "Joe cannot control devices yet."
-        )
+        connection.send_error(msg["id"], "not_available", "Mode not available.")
         return
     runtime.async_set_mode(msg["mode"])
     connection.send_result(msg["id"])
@@ -402,6 +406,96 @@ async def ws_learning_reset(
     if not await runtime.async_reset_learning():
         connection.send_error(msg["id"], "not_learning", "Joe is not learning.")
         return
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/control/test", vol.Required("battery_id"): str}
+)
+@websocket_api.require_admin
+@callback
+def ws_control_test(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Start a test run for one battery; progress and result come with the state."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    executor = runtime.executor
+    battery = next(
+        (b for b in runtime.config["batteries"] if b["id"] == msg["battery_id"]), None
+    )
+    if battery is None:
+        connection.send_error(msg["id"], "unknown_battery", "No such battery.")
+        return
+    if executor.testing is not None:
+        connection.send_error(msg["id"], "busy", "A test run is going on.")
+        return
+    if executor.status.get("steering"):
+        connection.send_error(msg["id"], "steering", "Joe is steering right now.")
+        return
+
+    async def run() -> None:
+        try:
+            await executor.async_test(msg["battery_id"])
+        except ValueError:
+            runtime.async_notify_changed()
+
+    hass.async_create_task(run(), eager_start=False)
+    connection.send_result(msg["id"], {"started": True})
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/control/release"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_control_release(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """The emergency button: every value back, no steering tonight."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    await runtime.executor.async_release_now()
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/control/skip", vol.Required("skip"): bool}
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_control_skip(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Skip tonight, or steer after all."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    await runtime.executor.async_skip(msg["skip"])
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/control/answer",
+        vol.Required("night"): str,
+        vol.Required("yes"): bool,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_control_answer(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """The answer in the "suggest" mode for one night."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    await runtime.executor.async_answer(msg["night"], msg["yes"])
     connection.send_result(msg["id"])
 
 

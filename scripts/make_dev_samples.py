@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from custom_components.energy_joe import model
+from custom_components.energy_joe.control.profiles import PROFILES
 from custom_components.energy_joe.discovery import discover
 from custom_components.energy_joe.discovery.checks import run_config_checks
 from custom_components.energy_joe.discovery.snapshot import Snapshot
@@ -421,6 +422,7 @@ def write(name: str, snap: Snapshot) -> None:
         "checks": run_config_checks(snap, adopted),
         "hass": hass_data(snap),
         "history": history_sample(adopted),
+        "profiles": {key: profile.name for key, profile in PROFILES.items()},
     }
     path = OUT / f"sample-{name}.json"
     path.write_text(

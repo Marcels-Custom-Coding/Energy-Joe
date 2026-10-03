@@ -35,6 +35,9 @@ def build_proposal(result: dict[str, Any]) -> dict[str, Any]:
                 "max_discharge_w": b["max_discharge_w"],
                 "device_id": b["device_id"],
                 "controls": b["controls"],
+                "mode_options": b.get("mode_options") or {},
+                "prepare": b.get("prepare") or [],
+                "steps": b.get("steps") or {},
                 "priority": min(index + 1, 9),
             }
             for index, b in enumerate(batteries)

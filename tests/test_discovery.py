@@ -26,13 +26,24 @@ def test_fronius_household_batteries() -> None:
     }
     assert fronius["controllable"]
     assert fronius["adapter"] == "fronius"
-    assert fronius["controls"]["minimum_reserve"] == "number.inverter_minimum_reserve"
-    assert fronius["controls"]["grid_charging"] == "switch.inverter_grid_charging"
+    assert fronius["controls"]["min_soc"] == "number.inverter_minimum_reserve"
+    assert fronius["controls"]["grid_charge"] == "switch.inverter_grid_charging"
+    assert fronius["suggested"] is None
     assert {"code": "energy_dashboard", "part": "battery"} in fronius["reasons"]
 
     venus = batteries["omnibattery"]
     assert venus["capacity_kwh"] == 5.12
     assert venus["controllable"]
+    assert venus["controls"] == {
+        "mode": "select.venus_force_mode",
+        "charge_power": "number.venus_charge_power",
+        "min_soc": "number.venus_discharge_cutoff",
+    }
+    assert venus["mode_options"] == {
+        "normal": "None",
+        "force_charge": "Charge",
+        "force_discharge": "Discharge",
+    }
     assert venus["max_charge_w"] == 2500
     assert venus["power"]["entity_id"] == "sensor.venus_ac_power"
 
@@ -185,3 +196,25 @@ def test_empty_home_assistant() -> None:
     assert result["tariff"]["kind"] == "unknown"
     assert {c["code"] for c in result["checks"]} >= {"missing", "tariff_unknown"}
     model.validate({"version": model.CONFIG_VERSION, **result["proposal"]})
+
+
+def test_levers_are_suggested_for_unknown_batteries() -> None:
+    """A battery without a profile: Joe suggests levers by names, units and options."""
+    result = discover(generic_household())
+    battery = next(
+        b for b in result["batteries"] if b["soc_entity"] == "sensor.solarflow_level"
+    )
+    assert battery["adapter"] == "none"
+    assert battery["suggested"] == {
+        "controls": {
+            "min_soc": "number.solarflow_min_level",
+            "mode": "select.solarflow_mode",
+            "charge_power": "number.solarflow_charge_power",
+        },
+        "mode_options": {
+            "force_charge": "Laden",
+            "force_discharge": "Entladen",
+            "normal": "Automatik",
+        },
+        "complete": True,
+    }

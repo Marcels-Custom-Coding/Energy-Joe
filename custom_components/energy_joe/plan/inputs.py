@@ -11,6 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.sun import get_astral_event_date
 from homeassistant.util import dt as dt_util
 
+from ..control.adapters import make_adapter
 from ..observe.readings import energy_kwh, number, sum_kwh
 from ..observe.records import hour_starts, local_hour
 from ..observe.store import HistoryStore
@@ -216,6 +217,7 @@ async def async_build_input(
             notes.append("soc_unknown")
             continue
         default_power = min(5.0, capacity * 0.5)
+        adapter = make_adapter(battery)
         batteries.append(
             Battery(
                 id=battery["id"],
@@ -226,6 +228,8 @@ async def async_build_input(
                 discharge_kw=(battery["max_discharge_w"] or default_power * 1000)
                 / 1000,
                 controllable=battery["adapter"] != "none",
+                # Watched batteries are planned as if Joe could steer them.
+                grid=adapter.can_charge if adapter else True,
             )
         )
         if battery["adapter"] == "none":

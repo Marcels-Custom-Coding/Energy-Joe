@@ -22,7 +22,7 @@ import type {
 } from "../types";
 import "./questions";
 
-const SELECTABLE: JoeMode[] = ["simulation", "off", "live"];
+const SELECTABLE: JoeMode[] = ["simulation", "advisory", "live", "off"];
 
 interface NumberRule {
   key:
@@ -167,42 +167,13 @@ export class JoeSettings extends LitElement {
         font-variant-numeric: tabular-nums;
         color: var(--joe-ink-2);
       }
-      .seg {
-        display: inline-flex;
-        background: var(--joe-surface-2);
-        border-radius: 999px;
-        padding: 3px;
-        gap: 2px;
-      }
-      .seg button {
-        border: 0;
-        background: transparent;
-        padding: 6px 14px;
-        min-height: 36px;
-        border-radius: 999px;
-        font-weight: 600;
-        font-size: 14px;
-        color: var(--joe-ink-2);
-        cursor: pointer;
-        transition: background 0.12s, color 0.12s;
-      }
-      .seg button:hover:not([disabled]) {
-        background: var(--joe-surface);
-        color: var(--joe-ink);
-      }
-      .seg button:active:not([disabled]) {
-        transform: scale(0.97);
-      }
-      .seg button[aria-pressed="true"] {
-        background: var(--joe-ink);
-        color: var(--joe-bg);
-      }
-      .seg button[disabled] {
-        cursor: not-allowed;
-        opacity: 0.45;
-      }
       .unit-input {
         width: 150px;
+      }
+      select.input,
+      .input.time {
+        width: auto;
+        min-width: 160px;
       }
       .order {
         display: flex;
@@ -300,7 +271,7 @@ export class JoeSettings extends LitElement {
           <div class="row" data-tipped>
             <div>
               <div class="name"><b>${t("settings.mode")}</b>${tip(t, "mode")}</div>
-              <small>${t("settings.mode.hint")} ${t("settings.live.unavailable")}</small>
+              <small>${t("settings.mode.hint")}</small>
             </div>
             <div class="seg" role="group" aria-label=${t("settings.mode")}>
               ${SELECTABLE.map(
@@ -308,7 +279,6 @@ export class JoeSettings extends LitElement {
                   html`<button
                     type="button"
                     aria-pressed=${String(joe.mode === mode)}
-                    ?disabled=${mode === "live"}
                     @click=${() => this.emit("joe-set-mode", { mode })}
                   >
                     ${t(`mode.${mode}`)}
@@ -330,6 +300,8 @@ export class JoeSettings extends LitElement {
             </button>
           </div>
         </section>
+
+        ${this.renderNotify(t)}
 
         <section class="group plain">
           <h2>${t("settings.uses")}</h2>
@@ -388,6 +360,72 @@ export class JoeSettings extends LitElement {
         </section>
       </div>
       ${this.question ? this.renderQuestionSheet(t) : nothing}`;
+  }
+
+  private renderNotify(t: Translate): TemplateResult {
+    const config = this.state!.config;
+    const notify = config.notify;
+    const services = Object.keys(this.hass?.services?.notify ?? {})
+      .filter((name) => !["persistent_notification", "send_message", "notify"].includes(name))
+      .sort();
+    const toggle = (key: "ask" | "problems" | "morning", tipName: "notify_ask" | "notify_problems" | "notify_morning") =>
+      html`<div class="row" data-tipped>
+        <div>
+          <div class="name"><b id="notify-${key}">${t(`settings.notify.${key}`)}</b>${tip(t, tipName)}</div>
+          <small>${t(`settings.notify.${key}.hint`)}</small>
+        </div>
+        <button
+          type="button"
+          class="switch"
+          role="switch"
+          aria-checked=${String(notify[key])}
+          aria-labelledby="notify-${key}"
+          ?disabled=${!notify.service}
+          @click=${() => saveConfig(this, { notify: { [key]: !notify[key] } })}
+        ></button>
+      </div>`;
+    return html`<section class="group">
+      <h2>${t("settings.notify")}</h2>
+      <p class="intro">${t("settings.notify.intro")}</p>
+      <div class="row" data-tipped>
+        <div>
+          <div class="name"><label for="notify-service"><b>${t("settings.notify.service")}</b></label>${tip(t, "notify_service")}</div>
+          <small>${t("settings.notify.service.hint")}</small>
+        </div>
+        <select
+          id="notify-service"
+          class="input"
+          @change=${(ev: Event) => {
+            const value = (ev.target as HTMLSelectElement).value;
+            saveConfig(this, { notify: { service: value ? `notify.${value}` : null } });
+          }}
+        >
+          <option value="" ?selected=${!notify.service}>${t("settings.notify.none")}</option>
+          ${services.map(
+            (name) => html`<option value=${name} ?selected=${notify.service === `notify.${name}`}>${name.replace(/_/g, " ")}</option>`,
+          )}
+        </select>
+      </div>
+      ${toggle("ask", "notify_ask")} ${toggle("problems", "notify_problems")} ${toggle("morning", "notify_morning")}
+      <div class="row" data-tipped>
+        <div>
+          <div class="name"><label for="ask-time"><b>${t("settings.ask_time")}</b></label>${tip(t, "ask_time")}</div>
+          <small>${t("settings.ask_time.hint")}</small>
+        </div>
+        <input
+          id="ask-time"
+          class="input time"
+          type="time"
+          .value=${config.rules.ask_time}
+          @change=${(ev: Event) => {
+            const value = (ev.target as HTMLInputElement).value;
+            if (/^\d{2}:\d{2}$/.test(value)) {
+              saveConfig(this, { rules: { ask_time: value } });
+            }
+          }}
+        />
+      </div>
+    </section>`;
   }
 
   private renderObserve(t: Translate): TemplateResult {

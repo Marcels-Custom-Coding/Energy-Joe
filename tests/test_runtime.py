@@ -7,6 +7,7 @@ from typing import Any
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.typing import WebSocketGenerator
 
+from custom_components.energy_joe import model
 from custom_components.energy_joe.const import DOMAIN
 from homeassistant.core import HomeAssistant
 
@@ -30,33 +31,44 @@ async def test_subscribe_sends_state_and_changes(
     first: dict[str, Any] = (await client.receive_json())["event"]
     assert first["mode"] == "simulation"
     assert first["onboarding"] == {"step": "welcome", "completed": False}
-    assert first["config"]["version"] == 1
+    assert first["config"]["version"] == model.CONFIG_VERSION
 
     await client.send_json_auto_id({"type": f"{DOMAIN}/set_mode", "mode": "off"})
-    event = await client.receive_json()
-    result = await client.receive_json()
-    assert event["event"]["mode"] == "off"
+    events, result = await _until_result(client)
+    assert events[0]["mode"] == "off"
     assert result["success"]
 
     await client.send_json_auto_id(
         {"type": f"{DOMAIN}/onboarding", "step": "scan", "completed": False}
     )
-    event = await client.receive_json()
-    assert event["event"]["onboarding"] == {"step": "scan", "completed": False}
-    assert (await client.receive_json())["success"]
+    events, result = await _until_result(client)
+    assert events[-1]["onboarding"] == {"step": "scan", "completed": False}
+    assert result["success"]
 
 
-async def test_live_is_not_available_yet(
+async def _until_result(client: Any) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """State events up to the answer of the last command."""
+    events = []
+    while True:
+        msg = await client.receive_json()
+        if msg["type"] == "event":
+            events.append(msg["event"])
+        else:
+            return events, msg
+
+
+async def test_all_modes_are_available(
     ready_hass: HomeAssistant, hass_ws_client: WebSocketGenerator
 ) -> None:
-    """Joe refuses to go live until he can control devices."""
+    """Simulation, suggest, live and off can be chosen."""
     await _setup(ready_hass)
     client = await hass_ws_client(ready_hass)
 
-    await client.send_json_auto_id({"type": f"{DOMAIN}/set_mode", "mode": "live"})
-    msg = await client.receive_json()
-    assert not msg["success"]
-    assert msg["error"]["code"] == "not_available"
+    for mode in ("advisory", "live", "simulation"):
+        await client.send_json_auto_id({"type": f"{DOMAIN}/set_mode", "mode": mode})
+        msg = await client.receive_json()
+        assert msg["success"]
+        assert ready_hass.data[DOMAIN].state["mode"] == mode
 
 
 async def test_state_survives_reload(ready_hass: HomeAssistant) -> None:

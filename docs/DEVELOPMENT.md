@@ -11,10 +11,16 @@ cd panel && npm install
 - Tests: `.venv/bin/pytest`
 - Linter: `.venv/bin/ruff check .`
 - Panel bauen: `npm --prefix panel run build` (der Build liegt eingecheckt in `custom_components/energy_joe/frontend/`)
-- Panel ohne Home Assistant ansehen: im Repo-Wurzelverzeichnis `python3 -m http.server 8767` starten und `http://localhost:8767/panel/dev/` öffnen. Parameter: `?dark=1`, `?lang=en`, `?step=scan|questions|done`, `?done=1` (Einrichtung abgeschlossen), `?page=settings`, `?mode=off`, `?sample=generic`, `?audit=1`
+- Panel ohne Home Assistant ansehen: im Repo-Wurzelverzeichnis `python3 -m http.server 8767` starten und `http://localhost:8767/panel/dev/` öffnen. Parameter: `?dark=1`, `?lang=en`, `?step=scan|questions|done`, `?done=1` (Einrichtung abgeschlossen), `?page=settings`, `?mode=off|advisory|live`, `?sample=generic`, `?audit=1`
 - Daten der Testseite neu erzeugen (nach Änderungen an Erkennung, Modell, Historie, Planen oder Lernen): `.venv/bin/python scripts/make_dev_samples.py` – schreibt `panel/dev/sample-*.json` aus den erfundenen Haushalten in `tests/snapshots.py`, dazu zwei Wochen erfundenen Verlauf mit festen Plänen, nachgespielten Nächten (die letzte vorläufig) und dem, was Joe daraus lernt. Mit `?done=1` hat Joe schon zwei Wochen gelernt; „Lernen zurücksetzen“ und „Wieder selbst lernen“ funktionieren auf der Testseite
 - Joes Historie liegt in `.storage/energy_joe.history` (Index) und `.storage/energy_joe.history.JJJJ-MM` (eine Datei pro Monat). Ein Tag enthält seine Stunden, die Prognose, den festen Plan der Nacht, die an ihm beginnt, und dessen Auswertung (`evaluation`, mit `final: false` solange der Tag des Plans läuft)
 - Was Joe gelernt hat, steht in der Konfiguration unter `learned` (Herkunft „gelernt“); einen selbst eingestellten Puffer überschreibt er nie
+
+## Speicher steuern
+
+- Grundgriffe (Rollen) und das Wissen über Integrationen stehen in `custom_components/energy_joe/control/profiles.py`: je Integration die Schlüssel der Entitäten (Ende der unique_id oder translation_key), die Bedeutung der Optionen einer Betriebsart, Vorher-Schalter (`prepare`), umgekehrte Werte (`inverted`) und – für Integrationen, die über Dienste gesteuert werden – Schritte. Eine neue Integration ist ein neuer Eintrag dort plus ein Test in `tests/test_profiles.py`.
+- Nur Fronius und Marstek (OmniBattery) sind an echter Hardware geprüft (`proven`); alle anderen Profile stammen aus dem Quellcode der Integrationen. Deshalb steuert Joe einen Speicher erst nach einem bestandenen Testlauf.
+- Was Joe verändert hat, merkt er sich in `.storage/energy_joe.control` und stellt es zurück, bis alles wieder stimmt.
 
 ## Tooltips
 

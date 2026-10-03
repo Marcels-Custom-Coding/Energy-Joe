@@ -6,6 +6,7 @@ import type { JoeMode } from "../types";
 
 const ICONS: Record<JoeMode, string> = {
   simulation: "mdi:pause",
+  advisory: "mdi:comment-question-outline",
   live: "mdi:play",
   off: "mdi:power",
 };
@@ -51,6 +52,11 @@ export class JoeSimSwitch extends LitElement {
       background: var(--joe-good);
       color: #ffffff;
       box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.15);
+    }
+    button.advisory {
+      background: var(--joe-amber);
+      color: var(--joe-amber-ink);
+      box-shadow: inset 0 0 0 2px #071118;
     }
     button.off {
       background: var(--joe-surface-2);

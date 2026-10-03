@@ -52,6 +52,7 @@ export interface HomeAssistant {
   devices?: Record<string, HassDevice>;
   areas?: Record<string, HassArea>;
   config?: { currency?: string; time_zone?: string };
+  services?: Record<string, Record<string, unknown>>;
   formatEntityState?: (stateObj: HassEntity, state?: string) => string;
 }
 
@@ -62,7 +63,7 @@ export interface PanelRoute {
 
 // --- Joe's state and configuration (see custom_components/energy_joe/model.py) ---
 
-export type JoeMode = "simulation" | "live" | "off";
+export type JoeMode = "simulation" | "advisory" | "live" | "off";
 export type OnboardingStep = "welcome" | "scan" | "questions" | "done";
 export const ONBOARDING_STEPS: OnboardingStep[] = ["welcome", "scan", "questions", "done"];
 
@@ -81,7 +82,42 @@ export interface Measurement {
   minus_entity_id: string | null;
 }
 
-export type Adapter = "fronius" | "omnibattery" | "generic" | "none";
+/** A profile of a known integration (e.g. "fronius"), "generic" (assigned levers), "steps" or "none". */
+export type Adapter = string;
+
+/** The common levers Joe steers batteries with (see control/profiles.py). */
+export type ControlRole =
+  | "min_soc"
+  | "charge_target"
+  | "grid_charge"
+  | "mode"
+  | "charge_power"
+  | "discharge_power"
+  | "discharge_limit"
+  | "discharge_limit_enabled"
+  | "charge_limit"
+  | "charge_limit_enabled";
+export const CONTROL_ROLES: ControlRole[] = [
+  "min_soc",
+  "grid_charge",
+  "charge_target",
+  "mode",
+  "charge_power",
+  "discharge_power",
+  "discharge_limit",
+  "discharge_limit_enabled",
+];
+export type ModeMeaning = "normal" | "force_charge" | "hold" | "force_discharge";
+export const MODE_MEANINGS: ModeMeaning[] = ["normal", "force_charge", "hold", "force_discharge"];
+
+export interface ControlStep {
+  entity_id?: string;
+  value?: string | number | boolean | null;
+  /** A service call instead of an entity value. */
+  service?: string;
+  data?: Record<string, unknown>;
+}
+export type StepName = "charge" | "hold" | "release";
 
 export interface BatteryConfig {
   id: string;
@@ -94,7 +130,11 @@ export interface BatteryConfig {
   max_charge_w: number | null;
   max_discharge_w: number | null;
   device_id: string | null;
-  controls: Record<string, string>;
+  controls: Partial<Record<ControlRole, string>>;
+  mode_options: Partial<Record<ModeMeaning, string>>;
+  /** Entities set before steering through the mode (e.g. "Remote Control"). */
+  prepare: ControlStep[];
+  steps: Partial<Record<StepName, ControlStep[]>>;
   priority: number;
 }
 
@@ -172,6 +212,14 @@ export interface Rules {
   plan_offset_min: number;
   reset_lead_min: number;
   buffer_factor: number;
+  ask_time: string;
+}
+
+export interface NotifyConfig {
+  service: string | null;
+  ask: boolean;
+  problems: boolean;
+  morning: boolean;
 }
 
 export interface Answers {
@@ -210,6 +258,7 @@ export interface JoeConfig {
   consumers: ConsumerConfig[];
   actions: unknown[];
   rules: Rules;
+  notify: NotifyConfig;
   answers: Answers;
   learned: Learned;
   provenance: Record<string, Provenance>;
@@ -290,6 +339,72 @@ export interface JoeState {
   observe?: ObserveStatus;
   plan?: Plan | null;
   results?: Results | null;
+  control?: ControlView;
+}
+
+// --- Steering (see custom_components/energy_joe/control) ---
+
+export type ControlReason =
+  | "simulation"
+  | "off"
+  | "no_plan"
+  | "waiting"
+  | "unanswered"
+  | "declined"
+  | "skipped"
+  | "nothing"
+  | "steering"
+  | "done";
+
+export interface ControlBattery {
+  action: "charge" | "hold" | "block" | "free" | "watch" | null;
+  floor: number | null;
+  target: number;
+  soc: number | null;
+  problem: string | null;
+}
+
+export interface TestStep {
+  step: "hold" | "charge" | "release";
+  ok: boolean;
+  errors: { entity_id: string; code: string }[];
+  wrong: string[];
+  power: number | null;
+  writes: { entity_id: string; value: unknown }[];
+}
+
+export interface TestResult {
+  at: string;
+  signature: string;
+  ok: boolean;
+  steps: TestStep[];
+  soc?: number;
+  problem?: string;
+  missing?: string[];
+}
+
+export interface ControlLogEntry {
+  at: string;
+  kind: string;
+  battery?: string;
+  entity?: string;
+  value?: unknown;
+  [key: string]: unknown;
+}
+
+export interface ControlView {
+  steering: boolean;
+  reason: ControlReason;
+  night: string | null;
+  batteries: Record<string, ControlBattery>;
+  pending: boolean;
+  testing: { battery: string; step: string; steps: TestStep[]; started: string } | null;
+  tests: Record<string, TestResult>;
+  log: ControlLogEntry[];
+  skip: string | null;
+  answer: { night: string; yes: boolean; at: string } | null;
+  /** Per battery: ready to steer, or why not. */
+  ready: Record<string, "ready" | "not_tested" | "outdated" | "not_controllable" | "controls_missing">;
 }
 
 // --- Looking back (see custom_components/energy_joe/learn) ---
@@ -452,6 +567,8 @@ export interface JoeInfo {
   ha_version: string;
   energy: EnergySummary;
   defaults?: { rules: Rules };
+  /** Names of the integrations Joe can steer batteries of. */
+  profiles?: Record<string, string>;
 }
 
 export type Page = "overview" | "plan" | "history" | "learn" | "devices" | "settings";
@@ -504,8 +621,17 @@ export interface BatteryFinding {
   max_discharge_w: number | null;
   device_id: string | null;
   controllable: boolean;
-  controls: Record<string, string>;
+  controls: Partial<Record<ControlRole, string>>;
+  mode_options?: Partial<Record<ModeMeaning, string>>;
+  prepare?: ControlStep[];
+  steps?: Partial<Record<StepName, ControlStep[]>>;
   adapter: Adapter;
+  /** Levers Joe guesses for batteries without a profile (to confirm in the panel). */
+  suggested?: {
+    controls: Partial<Record<ControlRole, string>>;
+    mode_options: Partial<Record<ModeMeaning, string>>;
+    complete: boolean;
+  } | null;
   confidence: number;
   reasons: Reason[];
 }

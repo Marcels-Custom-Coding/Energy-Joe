@@ -10,6 +10,11 @@ export type FilterName =
   | "calendar"
   | "person"
   | "energy"
+  | "level"
+  | "setpoint"
+  | "toggle"
+  | "option"
+  | "writable"
   | "any";
 
 const POWER_UNITS = ["W", "kW", "MW"];
@@ -26,6 +31,14 @@ const FILTERS: Record<FilterName, (entity: HassEntity) => boolean> = {
   workday: (e) => domain(e) === "binary_sensor",
   calendar: (e) => domain(e) === "calendar",
   person: (e) => domain(e) === "person",
+  level: (e) => ["number", "input_number"].includes(domain(e)) && unit(e) === "%",
+  setpoint: (e) => ["number", "input_number"].includes(domain(e)),
+  toggle: (e) => ["switch", "input_boolean"].includes(domain(e)),
+  option: (e) => ["select", "input_select"].includes(domain(e)),
+  writable: (e) =>
+    ["number", "input_number", "switch", "input_boolean", "select", "input_select", "script", "button", "input_button"].includes(
+      domain(e),
+    ),
   any: () => true,
 };
 

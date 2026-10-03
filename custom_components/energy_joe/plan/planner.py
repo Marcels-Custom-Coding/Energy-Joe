@@ -46,6 +46,8 @@ class Battery:
     charge_kw: float
     discharge_kw: float
     controllable: bool = True
+    # Whether Joe can charge it from the grid (some batteries can only be held).
+    grid: bool = True
 
 
 @dataclass(slots=True)
@@ -106,12 +108,13 @@ def simulate(inp: PlanInput, target: float | None) -> Run:
     lowest = capacity * inp.reserve / 100
     eta = math.sqrt(inp.efficiency)
     charge_kw = sum(b.charge_kw for b in inp.batteries)
+    grid_kw = sum(b.charge_kw for b in inp.batteries if b.grid)
     discharge_kw = sum(b.discharge_kw for b in inp.batteries)
 
     # How much can still be charged from the grid in each window hour.
     limits = []
     for hour in inp.hours:
-        power = charge_kw
+        power = grid_kw
         if inp.grid_limit_kw is not None:
             power = min(
                 power,
@@ -308,7 +311,7 @@ def make_plan(inp: PlanInput) -> dict[str, Any]:
 
     first_charge = next((i for i, c in enumerate(run.charge) if c > EPSILON), None)
     charge_from = None
-    charge_kw = sum(b.charge_kw for b in inp.batteries)
+    charge_kw = sum(b.charge_kw for b in inp.batteries if b.grid)
     if first_charge is not None:
         # Charging ends with the hour, so it starts as long before as it takes.
         hour = inp.hours[first_charge]
@@ -324,7 +327,7 @@ def make_plan(inp: PlanInput) -> dict[str, Any]:
             else battery.soc
         )
         energy = max(0.0, target - start_soc) / 100 * battery.capacity
-        share = battery.charge_kw / charge_kw if charge_kw else 0.0
+        share = battery.charge_kw / charge_kw if charge_kw and battery.grid else 0.0
         batteries.append(
             {
                 "id": battery.id,
@@ -333,9 +336,10 @@ def make_plan(inp: PlanInput) -> dict[str, Any]:
                 "soc": round(battery.soc, 1),
                 "soc_start": round(start_soc, 1),
                 "target": target,
-                "charge_kwh": round(energy, 2) if charging else 0.0,
+                "charge_kwh": round(energy, 2) if charging and battery.grid else 0.0,
                 "power_kw": round(charge_kw * share, 2) if charging else 0.0,
                 "controllable": battery.controllable,
+                "grid": battery.grid,
             }
         )
 

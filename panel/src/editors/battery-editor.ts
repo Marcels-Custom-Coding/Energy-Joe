@@ -7,11 +7,24 @@ import { define } from "../define";
 import { energyKwh, entityName, formatNumber, formatState, measurementKw } from "../entities";
 import type { TipName, Translate } from "../i18n";
 import { shared } from "../styles/shared";
-import type { BatteryConfig, Discovery, HomeAssistant, JoeConfig, Measurement } from "../types";
+import type { BatteryConfig, Discovery, HomeAssistant, JoeConfig, JoeInfo, Measurement } from "../types";
+import "./battery-control";
+import type { ControlValue } from "./battery-control";
 
 type Draft = Pick<
   BatteryConfig,
-  "name" | "capacity_kwh" | "soc_entity" | "power" | "max_charge_w" | "max_discharge_w" | "priority" | "adapter"
+  | "name"
+  | "capacity_kwh"
+  | "soc_entity"
+  | "power"
+  | "max_charge_w"
+  | "max_discharge_w"
+  | "priority"
+  | "adapter"
+  | "controls"
+  | "mode_options"
+  | "prepare"
+  | "steps"
 >;
 
 const FIELDS: (keyof Draft)[] = [
@@ -23,6 +36,10 @@ const FIELDS: (keyof Draft)[] = [
   "max_discharge_w",
   "priority",
   "adapter",
+  "controls",
+  "mode_options",
+  "prepare",
+  "steps",
 ];
 
 /** One battery in a sheet: name, size, sensors, limits, order and control. */
@@ -31,6 +48,7 @@ export class JoeBatteryEditor extends LitElement {
   @property({ attribute: false }) t?: Translate;
   @property({ attribute: false }) config?: JoeConfig;
   @property({ attribute: false }) discovery?: Discovery;
+  @property({ attribute: false }) info?: JoeInfo;
   @property() batteryId = "";
 
   @state() private draft?: Draft;
@@ -115,7 +133,6 @@ export class JoeBatteryEditor extends LitElement {
       return nothing;
     }
     const found = this.discovery?.batteries.find((b) => b.id === battery.id);
-    const canControl = Boolean(Object.keys(battery.controls).length) && (found?.controllable ?? battery.adapter !== "none");
     const readCapacity = energyKwh(hass, battery.capacity_entity);
     return html`<div class="sheet-title">${displayTitle(t("edit.battery.title", { name: battery.name }))}</div>
       ${this.field(
@@ -210,28 +227,23 @@ export class JoeBatteryEditor extends LitElement {
             </span>`,
           )
         : nothing}
-      ${this.field(
-        t("f.battery.control"),
-        "f_battery_control",
-        canControl
-          ? html`<div class="toggle">
-              <button
-                type="button"
-                id="control"
-                class="switch"
-                role="switch"
-                aria-checked=${String(draft.adapter !== "none")}
-                aria-labelledby="control-label"
-                @click=${() =>
-                  this.set({
-                    adapter: draft.adapter !== "none" ? "none" : (found?.adapter ?? battery.adapter ?? "none"),
-                  })}
-              ></button>
-              <label id="control-label" for="control">${t("f.battery.control.allow")}</label>
-            </div>
-            <p class="field-hint">${t("f.battery.control.found", { count: Object.keys(battery.controls).length })}</p>`
-          : html`<p class="field-hint">${t("f.battery.control.none")}</p>`,
-      )}
+      <div class="field" data-tipped>
+        <div class="field-label">${t("f.battery.control")} ${tip(t, "control_choice")}</div>
+        <joe-battery-control
+          .hass=${hass}
+          .t=${t}
+          .battery=${battery}
+          .found=${found}
+          .profiles=${this.info?.profiles}
+          .value=${{
+            adapter: draft.adapter,
+            controls: draft.controls,
+            mode_options: draft.mode_options,
+            steps: draft.steps,
+          } as ControlValue}
+          @joe-control-change=${(ev: CustomEvent<ControlValue>) => this.set(this.withPrepare(ev.detail, found))}
+        ></joe-battery-control>
+      </div>
       <div class="actions" data-notip>
         <button type="button" class="btn btn-primary" ?disabled=${this.saving} @click=${this.save}>${t("common.save")}</button>
         <button type="button" class="btn btn-ghost" @click=${this.close}>${t("common.cancel")}</button>
@@ -319,6 +331,14 @@ export class JoeBatteryEditor extends LitElement {
     if (picked?.selected[0]) {
       this.set({ power: { entity_id: picked.selected[0], invert: picked.invert, minus_entity_id: null } });
     }
+  }
+
+  /** A known profile brings the switches it needs first ("prepare"); other ways none. */
+  private withPrepare(value: ControlValue, found: Discovery["batteries"][number] | undefined): Partial<Draft> {
+    const profile = !["none", "generic", "steps"].includes(value.adapter);
+    const prepare = profile ? (this.battery?.adapter === value.adapter ? this.battery.prepare : (found?.prepare ?? [])) : [];
+    const steps = profile && !Object.keys(value.steps).length ? (found?.steps ?? value.steps) : value.steps;
+    return { ...value, steps, prepare: prepare ?? [] };
   }
 
   private set(change: Partial<Draft>): void {

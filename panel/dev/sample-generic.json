@@ -119,7 +119,23 @@
     "max_discharge_w": null,
     "adapter": "none",
     "controls": {},
+    "mode_options": {},
+    "prepare": [],
+    "steps": {},
     "controllable": false,
+    "suggested": {
+     "controls": {
+      "min_soc": "number.solarflow_min_level",
+      "mode": "select.solarflow_mode",
+      "charge_power": "number.solarflow_charge_power"
+     },
+     "mode_options": {
+      "force_charge": "Laden",
+      "force_discharge": "Entladen",
+      "normal": "Automatik"
+     },
+     "complete": true
+    },
     "confidence": 0.55,
     "reasons": [
      {
@@ -250,6 +266,9 @@
      "max_discharge_w": null,
      "device_id": "flow800",
      "controls": {},
+     "mode_options": {},
+     "prepare": [],
+     "steps": {},
      "priority": 1
     }
    ],
@@ -284,7 +303,7 @@
   }
  },
  "default_config": {
-  "version": 1,
+  "version": 2,
   "measurements": {
    "grid_power": null,
    "home_power": null,
@@ -328,7 +347,14 @@
    "discharge_in_window": "until_target",
    "plan_offset_min": 15,
    "reset_lead_min": 3,
-   "buffer_factor": 0.35
+   "buffer_factor": 0.35,
+   "ask_time": "21:00"
+  },
+  "notify": {
+   "service": null,
+   "ask": true,
+   "problems": true,
+   "morning": false
   },
   "answers": {
    "ignored": [],
@@ -347,7 +373,7 @@
   "provenance": {}
  },
  "adopted_config": {
-  "version": 1,
+  "version": 2,
   "measurements": {
    "grid_power": {
     "entity_id": "sensor.acme_grid_power",
@@ -384,6 +410,9 @@
     "max_discharge_w": null,
     "device_id": "flow800",
     "controls": {},
+    "mode_options": {},
+    "prepare": [],
+    "steps": {},
     "priority": 1
    }
   ],
@@ -430,7 +459,14 @@
    "discharge_in_window": "until_target",
    "plan_offset_min": 15,
    "reset_lead_min": 3,
-   "buffer_factor": 0.35
+   "buffer_factor": 0.35,
+   "ask_time": "21:00"
+  },
+  "notify": {
+   "service": null,
+   "ask": true,
+   "problems": true,
+   "morning": false
   },
   "answers": {
    "ignored": [],
@@ -449,99 +485,111 @@
   "provenance": {
    "measurements.grid_power": {
     "source": "read",
-    "updated": "2026-10-03T18:37:48+00:00"
+    "updated": "2026-10-03T21:04:21+00:00"
    },
    "measurements.home_power": {
     "source": "read",
-    "updated": "2026-10-03T18:37:48+00:00"
+    "updated": "2026-10-03T21:04:21+00:00"
    },
    "measurements.solar_power": {
     "source": "read",
-    "updated": "2026-10-03T18:37:48+00:00"
+    "updated": "2026-10-03T21:04:21+00:00"
    },
    "tariff.kind": {
     "source": "read",
-    "updated": "2026-10-03T18:37:48+00:00"
+    "updated": "2026-10-03T21:04:21+00:00"
    },
    "tariff.price_entity": {
     "source": "read",
-    "updated": "2026-10-03T18:37:48+00:00"
+    "updated": "2026-10-03T21:04:21+00:00"
    },
    "tariff.window": {
     "source": "read",
-    "updated": "2026-10-03T18:37:48+00:00"
+    "updated": "2026-10-03T21:04:21+00:00"
    },
    "tariff.night_price": {
     "source": "read",
-    "updated": "2026-10-03T18:37:48+00:00"
+    "updated": "2026-10-03T21:04:21+00:00"
    },
    "tariff.day_price": {
     "source": "read",
-    "updated": "2026-10-03T18:37:48+00:00"
+    "updated": "2026-10-03T21:04:21+00:00"
    },
    "forecast.provider": {
     "source": "read",
-    "updated": "2026-10-03T18:37:48+00:00"
+    "updated": "2026-10-03T21:04:21+00:00"
    },
    "forecast.config_entries": {
     "source": "read",
-    "updated": "2026-10-03T18:37:48+00:00"
+    "updated": "2026-10-03T21:04:21+00:00"
    },
    "forecast.today": {
     "source": "read",
-    "updated": "2026-10-03T18:37:48+00:00"
+    "updated": "2026-10-03T21:04:21+00:00"
    },
    "forecast.tomorrow": {
     "source": "read",
-    "updated": "2026-10-03T18:37:48+00:00"
+    "updated": "2026-10-03T21:04:21+00:00"
    },
    "forecast.remaining_today": {
     "source": "read",
-    "updated": "2026-10-03T18:37:48+00:00"
+    "updated": "2026-10-03T21:04:21+00:00"
    },
    "batteries[flow800].name": {
     "source": "read",
-    "updated": "2026-10-03T18:37:48+00:00"
+    "updated": "2026-10-03T21:04:21+00:00"
    },
    "batteries[flow800].adapter": {
     "source": "read",
-    "updated": "2026-10-03T18:37:48+00:00"
+    "updated": "2026-10-03T21:04:21+00:00"
    },
    "batteries[flow800].soc_entity": {
     "source": "read",
-    "updated": "2026-10-03T18:37:48+00:00"
+    "updated": "2026-10-03T21:04:21+00:00"
    },
    "batteries[flow800].power": {
     "source": "read",
-    "updated": "2026-10-03T18:37:48+00:00"
+    "updated": "2026-10-03T21:04:21+00:00"
    },
    "batteries[flow800].capacity_kwh": {
     "source": "read",
-    "updated": "2026-10-03T18:37:48+00:00"
+    "updated": "2026-10-03T21:04:21+00:00"
    },
    "batteries[flow800].capacity_entity": {
     "source": "read",
-    "updated": "2026-10-03T18:37:48+00:00"
+    "updated": "2026-10-03T21:04:21+00:00"
    },
    "batteries[flow800].max_charge_w": {
     "source": "read",
-    "updated": "2026-10-03T18:37:48+00:00"
+    "updated": "2026-10-03T21:04:21+00:00"
    },
    "batteries[flow800].max_discharge_w": {
     "source": "read",
-    "updated": "2026-10-03T18:37:48+00:00"
+    "updated": "2026-10-03T21:04:21+00:00"
    },
    "batteries[flow800].device_id": {
     "source": "read",
-    "updated": "2026-10-03T18:37:48+00:00"
+    "updated": "2026-10-03T21:04:21+00:00"
    },
    "batteries[flow800].controls": {
     "source": "read",
-    "updated": "2026-10-03T18:37:48+00:00"
+    "updated": "2026-10-03T21:04:21+00:00"
+   },
+   "batteries[flow800].mode_options": {
+    "source": "read",
+    "updated": "2026-10-03T21:04:21+00:00"
+   },
+   "batteries[flow800].prepare": {
+    "source": "read",
+    "updated": "2026-10-03T21:04:21+00:00"
+   },
+   "batteries[flow800].steps": {
+    "source": "read",
+    "updated": "2026-10-03T21:04:21+00:00"
    },
    "batteries[flow800].priority": {
     "source": "read",
-    "updated": "2026-10-03T18:37:48+00:00"
+    "updated": "2026-10-03T21:04:21+00:00"
    }
   }
  },
@@ -620,6 +668,40 @@
      "friendly_name": "SolarFlow Leistung",
      "unit_of_measurement": "W",
      "device_class": "power"
+    }
+   },
+   "number.solarflow_min_level": {
+    "entity_id": "number.solarflow_min_level",
+    "state": "10",
+    "attributes": {
+     "friendly_name": "SolarFlow Minimaler Ladestand",
+     "unit_of_measurement": "%",
+     "min": 5,
+     "max": 50,
+     "step": 1
+    }
+   },
+   "number.solarflow_charge_power": {
+    "entity_id": "number.solarflow_charge_power",
+    "state": "0",
+    "attributes": {
+     "friendly_name": "SolarFlow Ladeleistung",
+     "unit_of_measurement": "W",
+     "min": 0,
+     "max": 1200,
+     "step": 10
+    }
+   },
+   "select.solarflow_mode": {
+    "entity_id": "select.solarflow_mode",
+    "state": "Automatik",
+    "attributes": {
+     "friendly_name": "SolarFlow Betriebsmodus",
+     "options": [
+      "Automatik",
+      "Laden",
+      "Entladen"
+     ]
     }
    },
    "sensor.nordpool_price": {
@@ -805,6 +887,24 @@
    },
    "sensor.solarflow_power": {
     "entity_id": "sensor.solarflow_power",
+    "device_id": "flow800",
+    "area_id": null,
+    "platform": "zendure_ha"
+   },
+   "number.solarflow_min_level": {
+    "entity_id": "number.solarflow_min_level",
+    "device_id": "flow800",
+    "area_id": null,
+    "platform": "zendure_ha"
+   },
+   "number.solarflow_charge_power": {
+    "entity_id": "number.solarflow_charge_power",
+    "device_id": "flow800",
+    "area_id": null,
+    "platform": "zendure_ha"
+   },
+   "select.solarflow_mode": {
+    "entity_id": "select.solarflow_mode",
     "device_id": "flow800",
     "area_id": null,
     "platform": "zendure_ha"
@@ -10704,5 +10804,32 @@
    "last": null,
    "daily": []
   }
+ },
+ "profiles": {
+  "fronius": "Fronius",
+  "omnibattery": "Marstek",
+  "enphase_envoy": "Enphase",
+  "goodwe": "GoodWe",
+  "kostal_plenticore": "Kostal",
+  "teslemetry": "Tesla Powerwall",
+  "tessie": "Tesla Powerwall",
+  "growatt_server": "Growatt",
+  "growatt_modbus": "Growatt",
+  "foxess_modbus": "Fox ESS",
+  "solaredge_modbus_multi": "SolarEdge",
+  "solax_modbus": "SolaX",
+  "sigen": "Sigenergy",
+  "sungrow": "Sungrow",
+  "sonnenbatterie": "sonnen",
+  "zendure_ha": "Zendure",
+  "victron_gx": "Victron",
+  "victron": "Victron",
+  "homewizard": "HomeWizard",
+  "zinvolt": "Zinvolt",
+  "tuya": "Tuya",
+  "huawei_solar": "Huawei",
+  "e3dc_rscp": "E3/DC",
+  "indevolt": "Indevolt",
+  "tesla_fleet": "Tesla Powerwall"
  }
 }

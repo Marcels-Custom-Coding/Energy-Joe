@@ -145,6 +145,12 @@ export class JoePlanPage extends LitElement {
       .note {
         margin-top: 10px;
       }
+      .steer .actions {
+        margin-top: 12px;
+      }
+      .steer .chart-head {
+        font-size: 16px;
+      }
       .empty {
         display: grid;
         grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
@@ -194,7 +200,9 @@ export class JoePlanPage extends LitElement {
       <div class="eyebrow"><ha-icon icon="mdi:weather-night"></ha-icon>${t("overview.night")} · ${windowText(t, plan)}</div>
       ${displayTitle(t("plan.page.title"))} ${swoosh}
       <div class="top" data-tipped>
-        <span class="pill-sim">${t("mode.simulation")}</span>
+        ${this.state?.mode === "simulation"
+          ? html`<span class="pill-sim">${t("mode.simulation")}</span>`
+          : html`<span class="chip ${this.state?.mode === "live" ? "ok" : "learned"}">${t(`mode.${this.state?.mode ?? "off"}`)}</span>`}
         <span class="chip ${plan.fixed ? "ok" : ""}">
           ${plan.fixed ? t("plan.fixed_at", { time: plan.created.slice(11, 16) }) : t("plan.preview_at", { time: plan.created.slice(11, 16) })}
         </span>
@@ -214,8 +222,65 @@ export class JoePlanPage extends LitElement {
         ${lines.length ? html`<div class="lines">${lines.map((line) => html`<div>${line}</div>`)}</div>` : nothing}
         ${cost ? html`<p class="cost">${cost}</p>` : nothing}
       </section>
-      ${this.renderEnergy(t, plan, plan.hours)} ${this.renderSoc(t, plan, plan.hours)} ${this.renderMath(t, plan)}
+      ${this.renderSteer(t, plan)} ${this.renderEnergy(t, plan, plan.hours)} ${this.renderSoc(t, plan, plan.hours)}
+      ${this.renderMath(t, plan)}
     </div>`;
+  }
+
+  /** Whether Joe steers tonight: the question in "suggest", skipping in "live". */
+  private renderSteer(t: Translate, plan: Plan): TemplateResult | typeof nothing {
+    const joe = this.state;
+    const control = joe?.control;
+    if (!joe || !control || !["advisory", "live"].includes(joe.mode) || !plan.window || plan.kind === "none") {
+      return nothing;
+    }
+    const night = plan.window.start;
+    const skipped = control.skip === night;
+    const answer = control.answer?.night === night ? control.answer.yes : null;
+    const untested = joe.config.batteries.filter(
+      (b) => b.adapter !== "none" && control.ready[b.id] && control.ready[b.id] !== "ready",
+    );
+    let text: string;
+    let buttons: TemplateResult;
+    if (joe.mode === "advisory" && !skipped) {
+      text = answer === true ? t("plan.steer.answered_yes") : answer === false ? t("plan.steer.answered_no") : t("plan.steer.advisory");
+      buttons = html`${answer !== true
+        ? html`<button type="button" class="btn btn-primary" @click=${() => this.answer(night, true)}>${t("plan.steer.yes")}</button>`
+        : nothing}
+      ${answer !== false
+        ? html`<button type="button" class="btn btn-secondary" @click=${() => this.answer(night, false)}>${t("plan.steer.no")}</button>`
+        : nothing}`;
+    } else {
+      text = skipped ? t("plan.steer.skipped") : t("plan.steer.live");
+      buttons = html`<button type="button" class="btn btn-secondary" @click=${() => this.skip(!skipped)}>
+        ${t(skipped ? "plan.steer.unskip" : "plan.steer.skip")}
+      </button>`;
+    }
+    return html`<section class="chart-card steer" data-tipped>
+      <div class="chart-head">${text} ${tip(t, "plan_steer")}</div>
+      ${untested.length
+        ? html`<div class="note warn">
+            <ha-icon icon="mdi:alert-outline"></ha-icon><span>${t("plan.steer.untested", { names: untested.map((b) => b.name).join(", ") })}</span>
+          </div>`
+        : nothing}
+      <div class="actions">${buttons}</div>
+    </section>`;
+  }
+
+  private async answer(night: string, yes: boolean): Promise<void> {
+    try {
+      await this.hass?.callWS({ type: "energy_joe/control/answer", night, yes });
+    } catch {
+      // The state stays as it was; the next try works.
+    }
+  }
+
+  private async skip(skip: boolean): Promise<void> {
+    try {
+      await this.hass?.callWS({ type: "energy_joe/control/skip", skip });
+    } catch {
+      // As above.
+    }
   }
 
   private renderEmpty(t: Translate, plan: Plan | null | undefined): TemplateResult {

@@ -1,0 +1,26 @@
+release:
+replan:
+skip_tonight:
+  fields:
+    skip:
+      default: true
+      selector:
+        boolean:
+set_mode:
+  fields:
+    mode:
+      required: true
+      selector:
+        select:
+          translation_key: mode
+          options:
+            - simulation
+            - advisory
+            - live
+            - "off"
+answer:
+  fields:
+    yes:
+      required: true
+      selector:
+        boolean:

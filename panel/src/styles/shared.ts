@@ -437,12 +437,56 @@ export const shared = css`
   .switch[aria-checked="true"]::after {
     transform: translateX(18px);
   }
+  .switch[disabled] {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
 
   .sheet-title {
     padding-right: 40px;
   }
   .sheet-title .display {
     font-size: clamp(28px, 6vw, 36px);
+  }
+  /* Segmented choice (one of a few) */
+  .seg {
+    display: inline-flex;
+    background: var(--joe-surface-2);
+    border-radius: 999px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .seg button {
+    border: 0;
+    background: transparent;
+    padding: 6px 14px;
+    min-height: 36px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--joe-ink-2);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+  }
+  .seg button:hover:not([disabled]) {
+    background: var(--joe-surface);
+    color: var(--joe-ink);
+  }
+  .seg button:active:not([disabled]) {
+    transform: scale(0.97);
+  }
+  .seg button[aria-pressed="true"] {
+    background: var(--joe-ink);
+    color: var(--joe-bg);
+  }
+  .seg button[disabled] {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+  @media (pointer: coarse) {
+    .seg button {
+      min-height: 44px;
+    }
   }
   .group-label {
     margin: 18px 0 8px;

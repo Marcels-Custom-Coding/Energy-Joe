@@ -10,6 +10,16 @@ from collections.abc import Iterable
 import re
 from typing import Any
 
+from ..control.adapters import RoleAdapter
+from ..control.profiles import (
+    GENERIC,
+    NOT_ROLE_WORDS,
+    OPTION_WORDS,
+    PROFILES,
+    ROLE_DOMAINS,
+    ROLE_WORDS as CONTROL_WORDS,
+    Call,
+)
 from . import knowledge as kb
 from .energy import EnergyHints, Power
 from .snapshot import EntityInfo, Snapshot
@@ -192,7 +202,8 @@ def _has_power_sensor(snap: Snapshot, device_id: str | None) -> bool:
 
 
 def _scope(snap: Snapshot, soc: EntityInfo) -> list[EntityInfo]:
-    if kb.BATTERY_SCOPE.get(soc.platform or "") == "entry":
+    profile = PROFILES.get(soc.platform or "")
+    if profile and profile.scope == "entry":
         return snap.of_config_entry(soc.config_entry_id)
     return snap.of_device(soc.device_id)
 
@@ -223,19 +234,18 @@ def _known_battery(snap: Snapshot, soc: EntityInfo) -> dict[str, Any]:
             power = Power(entity.entity_id, invert=role.invert)
             break
 
-    controls: dict[str, str] = {}
-    for name, key in kb.ADAPTER_CONTROLS.get(platform, {}).items():
-        for entity in scope:
-            if entity.domain in ("number", "select", "switch") and entity.has_key(key):
-                controls[name] = entity.entity_id
-                break
-    required = kb.REQUIRED_CONTROLS.get(platform, ())
-    controllable = bool(required) and all(name in controls for name in required)
-    if controllable:
-        reasons.append({"code": "controls_found", "count": len(controls)})
+    steering = _profile_steering(snap, soc, scope)
+    if steering["controllable"]:
+        reasons.append({"code": "controls_found", "count": steering["count"]})
+    limits = steering["limits"]
+    controllable = steering["controllable"]
+    controls = steering["controls"]
+    mode_options = steering["mode_options"]
+    prepare = steering["prepare"]
+    steps = steering["steps"]
 
-    max_charge = _control_value(snap, controls.get("max_charge_power"))
-    max_discharge = _control_value(snap, controls.get("max_discharge_power"))
+    max_charge = limits.get("max_charge_w")
+    max_discharge = limits.get("max_discharge_w")
     return {
         "id": soc.device_id or soc.entity_id,
         "name": snap.device_name(soc.device_id) or soc.name,
@@ -250,9 +260,72 @@ def _known_battery(snap: Snapshot, soc: EntityInfo) -> dict[str, Any]:
         "max_discharge_w": max_discharge,
         "adapter": platform if controllable else "none",
         "controls": controls if controllable else {},
+        "mode_options": mode_options if controllable else {},
+        "prepare": prepare if controllable else [],
+        "steps": steps if controllable else {},
         "controllable": controllable,
+        "suggested": None if controllable else suggest_controls(snap, soc),
         "confidence": _round(0.95 if controllable else 0.85),
         "reasons": reasons,
+    }
+
+
+def _profile_steering(
+    snap: Snapshot, soc: EntityInfo, scope: list[EntityInfo]
+) -> dict[str, Any]:
+    """How Joe steers a battery of an integration he has a profile for."""
+    profile = PROFILES.get(soc.platform or "")
+    controls: dict[str, str] = {}
+    limits: dict[str, float | None] = {}
+    mode_options: dict[str, str] = {}
+    prepare: list[dict[str, Any]] = []
+    steps: dict[str, list[dict[str, Any]]] = {}
+    controllable = False
+    if profile:
+        for role, keys in profile.roles.items():
+            if found := _find_key(scope, ROLE_DOMAINS[role], keys):
+                controls[role] = found.entity_id
+        for name, keys in profile.limits.items():
+            found = _find_key(scope, (), keys)
+            limits[name] = _control_value(snap, found.entity_id if found else None)
+        mode = snap.get(controls.get("mode"))
+        offered = list((mode.attributes.get("options") if mode else None) or [])
+        for meaning, names in profile.options.items():
+            chosen = (
+                next((n for n in names if n in offered), None) if offered else names[0]
+            )
+            if chosen:
+                mode_options[meaning] = chosen
+        for item in profile.prepare:
+            if found := _find_key(scope, (), (item.key,)):
+                prepare.append({"entity_id": found.entity_id, "value": item.value})
+        complete = True
+        for name, items in profile.steps.items():
+            resolved = []
+            for item in items:
+                if isinstance(item, Call):
+                    resolved.append({"service": item.service, "data": dict(item.data)})
+                elif found := _find_key(scope, (), (item.key,)):
+                    resolved.append({"entity_id": found.entity_id, "value": item.value})
+                else:
+                    complete = False
+            steps[name] = resolved
+        if profile.steps:
+            controllable = complete and bool(steps.get("hold"))
+        else:
+            adapter = RoleAdapter(
+                {"name": "", "controls": controls, "mode_options": mode_options},
+                profile,
+            )
+            controllable = bool(adapter.hold_methods())
+    return {
+        "controllable": controllable,
+        "controls": controls,
+        "mode_options": mode_options,
+        "prepare": prepare,
+        "steps": steps,
+        "limits": limits,
+        "count": len(controls) + len(steps),
     }
 
 
@@ -269,7 +342,7 @@ def _generic_battery(
             power = Power(entity.entity_id)
             reasons = [*reasons, {"code": "power_guess"}]
             break
-    return {
+    battery = {
         "id": soc.device_id or soc.entity_id,
         "name": snap.device_name(soc.device_id) or soc.name,
         "device_id": soc.device_id,
@@ -283,10 +356,32 @@ def _generic_battery(
         "max_discharge_w": None,
         "adapter": "none",
         "controls": {},
+        "mode_options": {},
+        "prepare": [],
+        "steps": {},
         "controllable": False,
+        "suggested": suggest_controls(snap, soc),
         "confidence": _round(confidence),
         "reasons": reasons,
     }
+    steering = _profile_steering(snap, soc, _scope(snap, soc))
+    if steering["controllable"]:
+        battery.update(
+            adapter=soc.platform,
+            controls=steering["controls"],
+            mode_options=steering["mode_options"],
+            prepare=steering["prepare"],
+            steps=steering["steps"],
+            controllable=True,
+            suggested=None,
+            max_charge_w=steering["limits"].get("max_charge_w"),
+            max_discharge_w=steering["limits"].get("max_discharge_w"),
+        )
+        battery["reasons"] = [
+            *reasons,
+            {"code": "controls_found", "count": steering["count"]},
+        ]
+    return battery
 
 
 def _link_energy_batteries(
@@ -315,6 +410,137 @@ def _link_energy_batteries(
             target["power"] = eb.power.as_measurement()
         if eb.capacity_kwh and not target["capacity_kwh"]:
             target["capacity_kwh"] = eb.capacity_kwh
+
+
+def _norm(text: str) -> str:
+    return _words(text).strip()
+
+
+def _matches_words(text: str, words: Iterable[str]) -> str | None:
+    """The first of the words in a text (normalized; "name*" matches longer words)."""
+    hay = _words(text)
+    for word in words:
+        stem = _norm(word.rstrip("*"))
+        if (word.endswith("*") and f" {stem}" in hay) or f" {stem} " in hay:
+            return stem
+    return None
+
+
+def _mode_options(options: list[str]) -> dict[str, str]:
+    """Which option of a mode select means what (normal, force charge, ...)."""
+    result: dict[str, str] = {}
+    for meaning in ("force_charge", "force_discharge", "hold", "normal"):
+        for option in options:
+            if option in result.values():
+                continue
+            if meaning == "force_charge" and _matches_words(
+                option, OPTION_WORDS["force_discharge"]
+            ):
+                continue
+            if _matches_words(option, OPTION_WORDS[meaning]):
+                result[meaning] = option
+                break
+    return result
+
+
+def suggest_controls(snap: Snapshot, soc: EntityInfo) -> dict[str, Any] | None:
+    """Levers that may steer a battery Joe has no profile for, by names, units and options.
+
+    The suggestion is never used on its own: the user confirms it in the
+    panel and a test run checks it before Joe steers.
+    """
+    candidates = [
+        e
+        for e in (
+            snap.of_device(soc.device_id) or snap.of_config_entry(soc.config_entry_id)
+        )
+        if e.domain
+        in (
+            "number",
+            "switch",
+            "select",
+            "input_number",
+            "input_boolean",
+            "input_select",
+        )
+    ]
+    controls: dict[str, str] = {}
+    mode_options: dict[str, str] = {}
+    for role in CONTROL_WORDS:
+        for entity in candidates:
+            if (
+                entity.domain not in ROLE_DOMAINS[role]
+                or entity.entity_id in controls.values()
+            ):
+                continue
+            text = entity.name
+            if _matches_words(text, NOT_ROLE_WORDS):
+                continue
+            if not _matches_words(text, CONTROL_WORDS[role]):
+                continue
+            unit = entity.unit
+            if role in ("min_soc", "charge_target") and unit != "%":
+                continue
+            if role in ("charge_power", "discharge_power") and unit not in (
+                "W",
+                "kW",
+                "A",
+                "%",
+            ):
+                continue
+            if role == "mode":
+                options = list(entity.attributes.get("options") or [])
+                found = _mode_options(options)
+                if "force_charge" not in found and "hold" not in found:
+                    continue
+                mode_options = found
+            controls[role] = entity.entity_id
+            break
+    if not controls:
+        return None
+    adapter = RoleAdapter(
+        {"name": "", "controls": controls, "mode_options": mode_options}, GENERIC
+    )
+    return {
+        "controls": controls,
+        "mode_options": mode_options,
+        "complete": bool(adapter.charge_methods() and adapter.hold_methods()),
+    }
+
+
+_SEPARATORS = ("-", "_", ".", " - ")
+
+
+def _key_score(entity: EntityInfo, key: str) -> int:
+    """How surely an entity is the one an integration marks with this key."""
+    uid = entity.unique_id or ""
+    if entity.translation_key == key or uid == key:
+        return 3
+    if any(uid.endswith(f"{sep}{key}") for sep in _SEPARATORS):
+        return 2
+    if f"-{key}-" in uid:
+        return 1
+    return 0
+
+
+def _find_key(
+    entities: list[EntityInfo], domains: Iterable[str], keys: Iterable[str]
+) -> EntityInfo | None:
+    """The entity for the first key that matches; the surest, then the shortest id.
+
+    Shortest id: "x_max_soc" before "x_force_charge_max_soc" for the key "max_soc".
+    """
+    domains = tuple(domains)
+    for key in keys:
+        candidates = [
+            (_key_score(e, key), -len(e.unique_id or ""), e)
+            for e in entities
+            if not domains or e.domain in domains
+        ]
+        candidates = [c for c in candidates if c[0]]
+        if candidates:
+            return max(candidates, key=lambda c: (c[0], c[1]))[2]
+    return None
 
 
 def _control_value(snap: Snapshot, entity_id: str | None) -> float | None:

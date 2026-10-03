@@ -9,13 +9,14 @@ from pathlib import Path
 from homeassistant.components import frontend, panel_custom
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.loader import async_get_integration
 
-from . import api
+from . import api, services
 from .const import (
     DOMAIN,
     FRONTEND_DIR,
@@ -32,6 +33,7 @@ from .runtime import DATA_RUNTIME, JoeRuntime
 _LOGGER = logging.getLogger(__name__)
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+PLATFORMS = [Platform.BUTTON, Platform.SELECT, Platform.SENSOR, Platform.SWITCH]
 
 # Static routes cannot be removed again, so they are registered once per run.
 _DATA_STATIC_REGISTERED = f"{DOMAIN}_static_registered"
@@ -39,8 +41,9 @@ _DATA_ICONS_URL = f"{DOMAIN}_icons_url"
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Register the websocket API once per Home Assistant run."""
+    """Register the websocket API and the services once per Home Assistant run."""
     api.async_register(hass)
+    services.async_register(hass)
     return True
 
 
@@ -89,11 +92,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         runtime.async_start()
 
     entry.async_on_unload(async_at_started(hass, _start))
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Remove the panel from the sidebar."""
+    if not await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
+        return False
     frontend.async_remove_panel(hass, PANEL_URL_PATH)
     if icons_url := hass.data.pop(_DATA_ICONS_URL, None):
         frontend.remove_extra_js_url(hass, icons_url)
