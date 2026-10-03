@@ -128,6 +128,14 @@ class JoeRuntime:
         self._changed(config=True)
 
     @callback
+    def async_adopt(self, proposal: dict[str, Any]) -> None:
+        """Take over what discovery found; user and learned values stay."""
+        adopted = model.adopt_proposal(self._config, proposal)
+        if adopted is not self._config:
+            self._config = adopted
+            self._changed(config=True)
+
+    @callback
     def async_subscribe(self, listener: StateListener) -> CALLBACK_TYPE:
         """Call listener with every new state; returns the unsubscribe function."""
         self._listeners.add(listener)

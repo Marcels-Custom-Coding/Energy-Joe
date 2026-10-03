@@ -1,0 +1,2038 @@
+{
+ "discovery": {
+  "energy_dashboard": {
+   "configured": true,
+   "grid": 1,
+   "solar": 1,
+   "battery": 1,
+   "gas": 0,
+   "water": 0,
+   "devices": 7
+  },
+  "measurements": {
+   "grid_power": {
+    "entity": {
+     "entity_id": "sensor.house_meter_power",
+     "name": "Meter power",
+     "area": null,
+     "device": null,
+     "value": -60.0,
+     "unit": "W",
+     "integration": "tasmota"
+    },
+    "measurement": {
+     "entity_id": "sensor.house_meter_power",
+     "invert": false,
+     "minus_entity_id": null
+    },
+    "confidence": 0.95,
+    "reasons": [
+     {
+      "code": "energy_dashboard",
+      "part": "grid"
+     },
+     {
+      "code": "name",
+      "word": "meter"
+     }
+    ],
+    "alternatives": [
+     {
+      "entity_id": "sensor.solarnet_power_grid",
+      "name": "SolarNet Grid",
+      "area": null,
+      "device": "SolarNet",
+      "value": -60.0,
+      "unit": "W",
+      "integration": "fronius"
+     }
+    ]
+   },
+   "home_power": {
+    "entity": {
+     "entity_id": "sensor.solarnet_power_load_consumed",
+     "name": "SolarNet Consumption",
+     "area": null,
+     "device": "SolarNet",
+     "value": 1500.0,
+     "unit": "W",
+     "integration": "fronius"
+    },
+    "measurement": {
+     "entity_id": "sensor.solarnet_power_load_consumed",
+     "invert": false,
+     "minus_entity_id": null
+    },
+    "confidence": 0.85,
+    "reasons": [
+     {
+      "code": "integration_key",
+      "integration": "fronius"
+     },
+     {
+      "code": "name",
+      "word": "consumption"
+     }
+    ],
+    "alternatives": [
+     {
+      "entity_id": "sensor.solarnet_power_load",
+      "name": "SolarNet Load",
+      "area": null,
+      "device": "SolarNet",
+      "value": -1500.0,
+      "unit": "W",
+      "integration": "fronius"
+     },
+     {
+      "entity_id": "sensor.house_power",
+      "name": "House power",
+      "area": null,
+      "device": null,
+      "value": 1400.0,
+      "unit": "W",
+      "integration": "shelly"
+     }
+    ]
+   },
+   "solar_power": {
+    "entities": [
+     {
+      "entity_id": "sensor.solarnet_power_photovoltaics",
+      "name": "SolarNet PV",
+      "area": null,
+      "device": "SolarNet",
+      "value": 3000.0,
+      "unit": "W",
+      "integration": "fronius"
+     }
+    ],
+    "measurements": [
+     {
+      "entity_id": "sensor.solarnet_power_photovoltaics",
+      "invert": false,
+      "minus_entity_id": null
+     }
+    ],
+    "total": 3.0,
+    "confidence": 0.95,
+    "reasons": [
+     {
+      "code": "energy_dashboard",
+      "part": "solar"
+     }
+    ],
+    "alternatives": []
+   }
+  },
+  "batteries": [
+   {
+    "id": "storage",
+    "name": "BYD Battery-Box Premium HV",
+    "device_id": "storage",
+    "integration": "fronius",
+    "soc": {
+     "entity_id": "sensor.storage_soc",
+     "name": "Storage State of charge",
+     "area": null,
+     "device": "BYD Battery-Box Premium HV",
+     "value": 55.0,
+     "unit": "%",
+     "integration": "fronius"
+    },
+    "soc_entity": "sensor.storage_soc",
+    "power": {
+     "entity_id": "sensor.solarnet_power_battery",
+     "invert": true,
+     "minus_entity_id": null
+    },
+    "capacity_kwh": 10.24,
+    "capacity_entity": "sensor.storage_capacity",
+    "max_charge_w": null,
+    "max_discharge_w": null,
+    "adapter": "fronius",
+    "controls": {
+     "minimum_reserve": "number.inverter_minimum_reserve",
+     "grid_charging": "switch.inverter_grid_charging",
+     "charge_limit": "number.inverter_charge_limit",
+     "charge_limit_enabled": "switch.inverter_charge_limit_enabled"
+    },
+    "controllable": true,
+    "confidence": 1.0,
+    "reasons": [
+     {
+      "code": "integration_key",
+      "integration": "fronius"
+     },
+     {
+      "code": "capacity_read"
+     },
+     {
+      "code": "controls_found",
+      "count": 4
+     },
+     {
+      "code": "energy_dashboard",
+      "part": "battery"
+     }
+    ]
+   },
+   {
+    "id": "venus",
+    "name": "Marstek Venus E",
+    "device_id": "venus",
+    "integration": "omnibattery",
+    "soc": {
+     "entity_id": "sensor.venus_soc",
+     "name": "Venus Battery SoC",
+     "area": null,
+     "device": "Marstek Venus E",
+     "value": 40.0,
+     "unit": "%",
+     "integration": "omnibattery"
+    },
+    "soc_entity": "sensor.venus_soc",
+    "power": {
+     "entity_id": "sensor.venus_ac_power",
+     "invert": true,
+     "minus_entity_id": null
+    },
+    "capacity_kwh": 5.12,
+    "capacity_entity": "sensor.venus_total_energy",
+    "max_charge_w": 2500.0,
+    "max_discharge_w": null,
+    "adapter": "omnibattery",
+    "controls": {
+     "force_mode": "select.venus_force_mode",
+     "charge_power": "number.venus_charge_power",
+     "discharge_cutoff": "number.venus_discharge_cutoff",
+     "max_charge_power": "number.venus_max_charge"
+    },
+    "controllable": true,
+    "confidence": 0.95,
+    "reasons": [
+     {
+      "code": "integration_key",
+      "integration": "omnibattery"
+     },
+     {
+      "code": "capacity_read"
+     },
+     {
+      "code": "controls_found",
+      "count": 4
+     }
+    ]
+   }
+  ],
+  "tariff": {
+   "price_entity": "sensor.octopus_price",
+   "price": {
+    "entity_id": "sensor.octopus_price",
+    "name": "Electricity price",
+    "area": null,
+    "device": null,
+    "value": 0.285719,
+    "unit": "€/kWh",
+    "integration": "octopus_germany"
+   },
+   "provider": "Octopus Energy",
+   "kind": "fixed_window",
+   "window": {
+    "start": "00:00",
+    "end": "05:00"
+   },
+   "night_price": 0.18564,
+   "day_price": 0.285719,
+   "feed_in_price": 0.062,
+   "feed_in_entity": null,
+   "confidence": 0.9,
+   "reasons": [
+    {
+     "code": "energy_dashboard",
+     "part": "price"
+    },
+    {
+     "code": "energy_dashboard",
+     "part": "feed_in"
+    },
+    {
+     "code": "timeslots"
+    }
+   ]
+  },
+  "forecast": {
+   "provider": "forecast_solar",
+   "provider_name": "Forecast.Solar",
+   "planes": 2,
+   "config_entries": [
+    "A",
+    "B"
+   ],
+   "today": [
+    "sensor.fs_east_today",
+    "sensor.fs_west_today"
+   ],
+   "tomorrow": [
+    "sensor.fs_east_tomorrow",
+    "sensor.fs_west_tomorrow"
+   ],
+   "remaining_today": [
+    "sensor.fs_east_remaining"
+   ],
+   "today_kwh": 29.0,
+   "tomorrow_kwh": 27.3,
+   "confidence": 0.95,
+   "reasons": [
+    {
+     "code": "integration_key",
+     "integration": "forecast_solar"
+    },
+    {
+     "code": "energy_dashboard",
+     "part": "forecast"
+    }
+   ]
+  },
+  "wallboxes": [
+   {
+    "integration": "evcc_intg",
+    "device_id": "carport",
+    "name": "Carport",
+    "is_car": true,
+    "mode_entity": "select.evcc_carport_mode",
+    "mode_options": [
+     "off",
+     "pv",
+     "minpv",
+     "now"
+    ],
+    "mode": "pv",
+    "entities": {
+     "mode": "select.evcc_carport_mode",
+     "connected": "binary_sensor.evcc_carport_connected",
+     "power": "sensor.evcc_carport_charge_power"
+    },
+    "confidence": 0.9,
+    "reasons": [
+     {
+      "code": "integration_key",
+      "integration": "evcc_intg"
+     }
+    ]
+   },
+   {
+    "integration": "evcc_intg",
+    "device_id": "floor",
+    "name": "Floor heating",
+    "is_car": false,
+    "mode_entity": "select.evcc_floor_mode",
+    "mode_options": [],
+    "mode": "pv",
+    "entities": {
+     "mode": "select.evcc_floor_mode"
+    },
+    "confidence": 0.5,
+    "reasons": [
+     {
+      "code": "integration_key",
+      "integration": "evcc_intg"
+     }
+    ]
+   }
+  ],
+  "weather": {
+   "entity": {
+    "entity_id": "weather.home",
+    "name": "Home",
+    "area": null,
+    "device": null,
+    "value": "sunny",
+    "unit": null,
+    "integration": "met"
+   },
+   "confidence": 0.9,
+   "reasons": [
+    {
+     "code": "forecast_support"
+    }
+   ],
+   "alternatives": []
+  },
+  "holiday": {
+   "entity": {
+    "entity_id": "binary_sensor.workday",
+    "name": "Workday",
+    "area": null,
+    "device": null,
+    "value": "on",
+    "unit": null,
+    "integration": "workday"
+   },
+   "confidence": 0.9,
+   "reasons": [
+    {
+     "code": "integration_key",
+     "integration": "workday"
+    }
+   ]
+  },
+  "persons": [
+   {
+    "entity_id": "person.alex",
+    "name": "Alex",
+    "state": "home",
+    "calendars": [
+     "calendar.alex_work"
+    ],
+    "reasons": [
+     {
+      "code": "name_match"
+     }
+    ]
+   },
+   {
+    "entity_id": "person.sam",
+    "name": "Sam",
+    "state": "not_home",
+    "calendars": [],
+    "reasons": []
+   }
+  ],
+  "calendars": [
+   {
+    "entity_id": "calendar.alex_work",
+    "name": "Alex Arbeit",
+    "integration": "local_calendar"
+   },
+   {
+    "entity_id": "calendar.family",
+    "name": "Familie",
+    "integration": "local_calendar"
+   }
+  ],
+  "consumers": [
+   {
+    "id": "sensor.house_energy",
+    "name": "Haus",
+    "energy_entity": "sensor.house_energy",
+    "power_entity": "sensor.house_power",
+    "included_in": null,
+    "kind": "submeter",
+    "reasons": [
+     {
+      "code": "submeter"
+     }
+    ]
+   },
+   {
+    "id": "sensor.ac_office_energy",
+    "name": "Klimaanlage Büro",
+    "energy_entity": "sensor.ac_office_energy",
+    "power_entity": null,
+    "included_in": "sensor.house_energy",
+    "kind": "climate",
+    "reasons": [
+     {
+      "code": "name",
+      "word": "klima"
+     }
+    ]
+   },
+   {
+    "id": "sensor.basement_energy",
+    "name": "Heizungskeller",
+    "energy_entity": "sensor.basement_energy",
+    "power_entity": null,
+    "included_in": "sensor.house_energy",
+    "kind": "submeter",
+    "reasons": [
+     {
+      "code": "submeter"
+     }
+    ]
+   },
+   {
+    "id": "sensor.hot_water_energy",
+    "name": "Warmwasser Wärmepumpe",
+    "energy_entity": "sensor.hot_water_energy",
+    "power_entity": null,
+    "included_in": "sensor.basement_energy",
+    "kind": "hot_water",
+    "reasons": [
+     {
+      "code": "name",
+      "word": "warmwasser"
+     }
+    ]
+   },
+   {
+    "id": "sensor.floor_heating_energy",
+    "name": "Fussbodenheizung Küche",
+    "energy_entity": "sensor.floor_heating_energy",
+    "power_entity": null,
+    "included_in": "sensor.house_energy",
+    "kind": "electric_heating",
+    "reasons": [
+     {
+      "code": "name",
+      "word": "fussbodenheizung"
+     }
+    ]
+   },
+   {
+    "id": "sensor.fridge_energy",
+    "name": "Kühlschrank",
+    "energy_entity": "sensor.fridge_energy",
+    "power_entity": null,
+    "included_in": "sensor.house_energy",
+    "kind": "household",
+    "reasons": [
+     {
+      "code": "name",
+      "word": "kühlschrank"
+     }
+    ]
+   },
+   {
+    "id": "sensor.wallbox_energy",
+    "name": "Wallbox",
+    "energy_entity": "sensor.wallbox_energy",
+    "power_entity": null,
+    "included_in": null,
+    "kind": "ev",
+    "reasons": [
+     {
+      "code": "name",
+      "word": "wallbox"
+     }
+    ]
+   }
+  ],
+  "checks": [],
+  "proposal": {
+   "measurements": {
+    "grid_power": {
+     "entity_id": "sensor.house_meter_power",
+     "invert": false,
+     "minus_entity_id": null
+    },
+    "home_power": {
+     "entity_id": "sensor.solarnet_power_load_consumed",
+     "invert": false,
+     "minus_entity_id": null
+    },
+    "solar_power": [
+     {
+      "entity_id": "sensor.solarnet_power_photovoltaics",
+      "invert": false,
+      "minus_entity_id": null
+     }
+    ]
+   },
+   "batteries": [
+    {
+     "id": "storage",
+     "name": "BYD Battery-Box Premium HV",
+     "adapter": "fronius",
+     "soc_entity": "sensor.storage_soc",
+     "power": {
+      "entity_id": "sensor.solarnet_power_battery",
+      "invert": true,
+      "minus_entity_id": null
+     },
+     "capacity_kwh": 10.24,
+     "capacity_entity": "sensor.storage_capacity",
+     "max_charge_w": null,
+     "max_discharge_w": null,
+     "device_id": "storage",
+     "controls": {
+      "minimum_reserve": "number.inverter_minimum_reserve",
+      "grid_charging": "switch.inverter_grid_charging",
+      "charge_limit": "number.inverter_charge_limit",
+      "charge_limit_enabled": "switch.inverter_charge_limit_enabled"
+     },
+     "priority": 1
+    },
+    {
+     "id": "venus",
+     "name": "Marstek Venus E",
+     "adapter": "omnibattery",
+     "soc_entity": "sensor.venus_soc",
+     "power": {
+      "entity_id": "sensor.venus_ac_power",
+      "invert": true,
+      "minus_entity_id": null
+     },
+     "capacity_kwh": 5.12,
+     "capacity_entity": "sensor.venus_total_energy",
+     "max_charge_w": 2500.0,
+     "max_discharge_w": null,
+     "device_id": "venus",
+     "controls": {
+      "force_mode": "select.venus_force_mode",
+      "charge_power": "number.venus_charge_power",
+      "discharge_cutoff": "number.venus_discharge_cutoff",
+      "max_charge_power": "number.venus_max_charge"
+     },
+     "priority": 2
+    }
+   ],
+   "tariff": {
+    "kind": "fixed_window",
+    "price_entity": "sensor.octopus_price",
+    "window": {
+     "start": "00:00",
+     "end": "05:00"
+    },
+    "night_price": 0.18564,
+    "day_price": 0.285719,
+    "feed_in_price": 0.062,
+    "feed_in_entity": null
+   },
+   "forecast": {
+    "provider": "forecast_solar",
+    "config_entries": [
+     "A",
+     "B"
+    ],
+    "today": [
+     "sensor.fs_east_today",
+     "sensor.fs_west_today"
+    ],
+    "tomorrow": [
+     "sensor.fs_east_tomorrow",
+     "sensor.fs_west_tomorrow"
+    ],
+    "remaining_today": [
+     "sensor.fs_east_remaining"
+    ]
+   },
+   "context": {
+    "weather_entity": "weather.home",
+    "holiday_entity": "binary_sensor.workday"
+   },
+   "persons": [
+    {
+     "id": "person.alex",
+     "name": "Alex",
+     "person_entity": "person.alex",
+     "calendars": [
+      "calendar.alex_work"
+     ]
+    },
+    {
+     "id": "person.sam",
+     "name": "Sam",
+     "person_entity": "person.sam",
+     "calendars": []
+    }
+   ],
+   "consumers": [
+    {
+     "id": "sensor.house_energy",
+     "name": "Haus",
+     "kind": "submeter",
+     "energy_entity": "sensor.house_energy",
+     "power_entity": "sensor.house_power",
+     "included_in": null,
+     "source": "energy_dashboard"
+    },
+    {
+     "id": "sensor.ac_office_energy",
+     "name": "Klimaanlage Büro",
+     "kind": "climate",
+     "energy_entity": "sensor.ac_office_energy",
+     "power_entity": null,
+     "included_in": "sensor.house_energy",
+     "source": "energy_dashboard"
+    },
+    {
+     "id": "sensor.basement_energy",
+     "name": "Heizungskeller",
+     "kind": "submeter",
+     "energy_entity": "sensor.basement_energy",
+     "power_entity": null,
+     "included_in": "sensor.house_energy",
+     "source": "energy_dashboard"
+    },
+    {
+     "id": "sensor.hot_water_energy",
+     "name": "Warmwasser Wärmepumpe",
+     "kind": "hot_water",
+     "energy_entity": "sensor.hot_water_energy",
+     "power_entity": null,
+     "included_in": "sensor.basement_energy",
+     "source": "energy_dashboard"
+    },
+    {
+     "id": "sensor.floor_heating_energy",
+     "name": "Fussbodenheizung Küche",
+     "kind": "electric_heating",
+     "energy_entity": "sensor.floor_heating_energy",
+     "power_entity": null,
+     "included_in": "sensor.house_energy",
+     "source": "energy_dashboard"
+    },
+    {
+     "id": "sensor.fridge_energy",
+     "name": "Kühlschrank",
+     "kind": "household",
+     "energy_entity": "sensor.fridge_energy",
+     "power_entity": null,
+     "included_in": "sensor.house_energy",
+     "source": "energy_dashboard"
+    },
+    {
+     "id": "sensor.wallbox_energy",
+     "name": "Wallbox",
+     "kind": "ev",
+     "energy_entity": "sensor.wallbox_energy",
+     "power_entity": null,
+     "included_in": null,
+     "source": "energy_dashboard"
+    }
+   ]
+  }
+ },
+ "default_config": {
+  "version": 1,
+  "measurements": {
+   "grid_power": null,
+   "home_power": null,
+   "solar_power": []
+  },
+  "batteries": [],
+  "tariff": {
+   "kind": "unknown",
+   "price_entity": null,
+   "window": null,
+   "night_price": null,
+   "day_price": null,
+   "feed_in_price": null,
+   "feed_in_entity": null
+  },
+  "forecast": {
+   "provider": null,
+   "config_entries": [],
+   "today": [],
+   "tomorrow": [],
+   "remaining_today": []
+  },
+  "context": {
+   "weather_entity": null,
+   "holiday_entity": null
+  },
+  "persons": [],
+  "consumers": [],
+  "actions": [],
+  "rules": {
+   "reserve_soc": 10.0,
+   "max_target_soc": 100.0,
+   "evening_min_soc": null,
+   "grid_limit_w": null,
+   "max_night_kwh": null,
+   "priority": [
+    "ev",
+    "hot_water",
+    "battery"
+   ],
+   "discharge_in_window": "until_target",
+   "plan_offset_min": 15,
+   "reset_lead_min": 3,
+   "buffer_factor": 0.35
+  },
+  "answers": {
+   "ignored": [],
+   "confirmed": []
+  },
+  "provenance": {}
+ },
+ "adopted_config": {
+  "version": 1,
+  "measurements": {
+   "grid_power": {
+    "entity_id": "sensor.house_meter_power",
+    "invert": false,
+    "minus_entity_id": null
+   },
+   "home_power": {
+    "entity_id": "sensor.solarnet_power_load_consumed",
+    "invert": false,
+    "minus_entity_id": null
+   },
+   "solar_power": [
+    {
+     "entity_id": "sensor.solarnet_power_photovoltaics",
+     "invert": false,
+     "minus_entity_id": null
+    }
+   ]
+  },
+  "batteries": [
+   {
+    "id": "storage",
+    "name": "BYD Battery-Box Premium HV",
+    "adapter": "fronius",
+    "soc_entity": "sensor.storage_soc",
+    "power": {
+     "entity_id": "sensor.solarnet_power_battery",
+     "invert": true,
+     "minus_entity_id": null
+    },
+    "capacity_kwh": 10.24,
+    "capacity_entity": "sensor.storage_capacity",
+    "max_charge_w": null,
+    "max_discharge_w": null,
+    "device_id": "storage",
+    "controls": {
+     "minimum_reserve": "number.inverter_minimum_reserve",
+     "grid_charging": "switch.inverter_grid_charging",
+     "charge_limit": "number.inverter_charge_limit",
+     "charge_limit_enabled": "switch.inverter_charge_limit_enabled"
+    },
+    "priority": 1
+   },
+   {
+    "id": "venus",
+    "name": "Marstek Venus E",
+    "adapter": "omnibattery",
+    "soc_entity": "sensor.venus_soc",
+    "power": {
+     "entity_id": "sensor.venus_ac_power",
+     "invert": true,
+     "minus_entity_id": null
+    },
+    "capacity_kwh": 5.12,
+    "capacity_entity": "sensor.venus_total_energy",
+    "max_charge_w": 2500.0,
+    "max_discharge_w": null,
+    "device_id": "venus",
+    "controls": {
+     "force_mode": "select.venus_force_mode",
+     "charge_power": "number.venus_charge_power",
+     "discharge_cutoff": "number.venus_discharge_cutoff",
+     "max_charge_power": "number.venus_max_charge"
+    },
+    "priority": 2
+   }
+  ],
+  "tariff": {
+   "kind": "fixed_window",
+   "price_entity": "sensor.octopus_price",
+   "window": {
+    "start": "00:00",
+    "end": "05:00"
+   },
+   "night_price": 0.18564,
+   "day_price": 0.285719,
+   "feed_in_price": 0.062,
+   "feed_in_entity": null
+  },
+  "forecast": {
+   "provider": "forecast_solar",
+   "config_entries": [
+    "A",
+    "B"
+   ],
+   "today": [
+    "sensor.fs_east_today",
+    "sensor.fs_west_today"
+   ],
+   "tomorrow": [
+    "sensor.fs_east_tomorrow",
+    "sensor.fs_west_tomorrow"
+   ],
+   "remaining_today": [
+    "sensor.fs_east_remaining"
+   ]
+  },
+  "context": {
+   "weather_entity": "weather.home",
+   "holiday_entity": "binary_sensor.workday"
+  },
+  "persons": [
+   {
+    "id": "person.alex",
+    "name": "Alex",
+    "person_entity": "person.alex",
+    "calendars": [
+     "calendar.alex_work"
+    ]
+   },
+   {
+    "id": "person.sam",
+    "name": "Sam",
+    "person_entity": "person.sam",
+    "calendars": []
+   }
+  ],
+  "consumers": [
+   {
+    "id": "sensor.house_energy",
+    "name": "Haus",
+    "kind": "submeter",
+    "energy_entity": "sensor.house_energy",
+    "power_entity": "sensor.house_power",
+    "included_in": null,
+    "source": "energy_dashboard"
+   },
+   {
+    "id": "sensor.ac_office_energy",
+    "name": "Klimaanlage Büro",
+    "kind": "climate",
+    "energy_entity": "sensor.ac_office_energy",
+    "power_entity": null,
+    "included_in": "sensor.house_energy",
+    "source": "energy_dashboard"
+   },
+   {
+    "id": "sensor.basement_energy",
+    "name": "Heizungskeller",
+    "kind": "submeter",
+    "energy_entity": "sensor.basement_energy",
+    "power_entity": null,
+    "included_in": "sensor.house_energy",
+    "source": "energy_dashboard"
+   },
+   {
+    "id": "sensor.hot_water_energy",
+    "name": "Warmwasser Wärmepumpe",
+    "kind": "hot_water",
+    "energy_entity": "sensor.hot_water_energy",
+    "power_entity": null,
+    "included_in": "sensor.basement_energy",
+    "source": "energy_dashboard"
+   },
+   {
+    "id": "sensor.floor_heating_energy",
+    "name": "Fussbodenheizung Küche",
+    "kind": "electric_heating",
+    "energy_entity": "sensor.floor_heating_energy",
+    "power_entity": null,
+    "included_in": "sensor.house_energy",
+    "source": "energy_dashboard"
+   },
+   {
+    "id": "sensor.fridge_energy",
+    "name": "Kühlschrank",
+    "kind": "household",
+    "energy_entity": "sensor.fridge_energy",
+    "power_entity": null,
+    "included_in": "sensor.house_energy",
+    "source": "energy_dashboard"
+   },
+   {
+    "id": "sensor.wallbox_energy",
+    "name": "Wallbox",
+    "kind": "ev",
+    "energy_entity": "sensor.wallbox_energy",
+    "power_entity": null,
+    "included_in": null,
+    "source": "energy_dashboard"
+   }
+  ],
+  "actions": [],
+  "rules": {
+   "reserve_soc": 10.0,
+   "max_target_soc": 100.0,
+   "evening_min_soc": null,
+   "grid_limit_w": null,
+   "max_night_kwh": null,
+   "priority": [
+    "ev",
+    "hot_water",
+    "battery"
+   ],
+   "discharge_in_window": "until_target",
+   "plan_offset_min": 15,
+   "reset_lead_min": 3,
+   "buffer_factor": 0.35
+  },
+  "answers": {
+   "ignored": [],
+   "confirmed": []
+  },
+  "provenance": {
+   "measurements.grid_power": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "measurements.home_power": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "measurements.solar_power": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "tariff.kind": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "tariff.price_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "tariff.window": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "tariff.night_price": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "tariff.day_price": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "tariff.feed_in_price": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "tariff.feed_in_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "forecast.provider": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "forecast.config_entries": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "forecast.today": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "forecast.tomorrow": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "forecast.remaining_today": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "context.weather_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "context.holiday_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[storage].name": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[storage].adapter": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[storage].soc_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[storage].power": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[storage].capacity_kwh": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[storage].capacity_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[storage].max_charge_w": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[storage].max_discharge_w": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[storage].device_id": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[storage].controls": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[storage].priority": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[venus].name": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[venus].adapter": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[venus].soc_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[venus].power": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[venus].capacity_kwh": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[venus].capacity_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[venus].max_charge_w": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[venus].max_discharge_w": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[venus].device_id": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[venus].controls": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[venus].priority": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "persons[person.alex].name": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "persons[person.alex].person_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "persons[person.alex].calendars": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "persons[person.sam].name": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "persons[person.sam].person_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "persons[person.sam].calendars": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.house_energy].name": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.house_energy].kind": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.house_energy].energy_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.house_energy].power_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.house_energy].included_in": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.house_energy].source": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.ac_office_energy].name": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.ac_office_energy].kind": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.ac_office_energy].energy_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.ac_office_energy].power_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.ac_office_energy].included_in": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.ac_office_energy].source": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.basement_energy].name": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.basement_energy].kind": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.basement_energy].energy_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.basement_energy].power_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.basement_energy].included_in": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.basement_energy].source": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.hot_water_energy].name": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.hot_water_energy].kind": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.hot_water_energy].energy_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.hot_water_energy].power_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.hot_water_energy].included_in": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.hot_water_energy].source": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.floor_heating_energy].name": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.floor_heating_energy].kind": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.floor_heating_energy].energy_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.floor_heating_energy].power_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.floor_heating_energy].included_in": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.floor_heating_energy].source": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.fridge_energy].name": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.fridge_energy].kind": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.fridge_energy].energy_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.fridge_energy].power_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.fridge_energy].included_in": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.fridge_energy].source": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.wallbox_energy].name": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.wallbox_energy].kind": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.wallbox_energy].energy_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.wallbox_energy].power_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.wallbox_energy].included_in": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "consumers[sensor.wallbox_energy].source": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   }
+  }
+ },
+ "checks": [],
+ "hass": {
+  "states": {
+   "sensor.solarnet_power_grid": {
+    "entity_id": "sensor.solarnet_power_grid",
+    "state": "-60",
+    "attributes": {
+     "friendly_name": "SolarNet Grid",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.solarnet_power_load_consumed": {
+    "entity_id": "sensor.solarnet_power_load_consumed",
+    "state": "1500",
+    "attributes": {
+     "friendly_name": "SolarNet Consumption",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.solarnet_power_load": {
+    "entity_id": "sensor.solarnet_power_load",
+    "state": "-1500",
+    "attributes": {
+     "friendly_name": "SolarNet Load",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.solarnet_power_photovoltaics": {
+    "entity_id": "sensor.solarnet_power_photovoltaics",
+    "state": "3000",
+    "attributes": {
+     "friendly_name": "SolarNet PV",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.solarnet_power_battery": {
+    "entity_id": "sensor.solarnet_power_battery",
+    "state": "-1450",
+    "attributes": {
+     "friendly_name": "SolarNet Battery",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.storage_soc": {
+    "entity_id": "sensor.storage_soc",
+    "state": "55",
+    "attributes": {
+     "friendly_name": "Storage State of charge",
+     "unit_of_measurement": "%",
+     "device_class": "battery"
+    }
+   },
+   "sensor.storage_capacity": {
+    "entity_id": "sensor.storage_capacity",
+    "state": "10240",
+    "attributes": {
+     "friendly_name": "Storage Maximum capacity",
+     "unit_of_measurement": "Wh"
+    }
+   },
+   "number.inverter_minimum_reserve": {
+    "entity_id": "number.inverter_minimum_reserve",
+    "state": "5",
+    "attributes": {
+     "friendly_name": "Minimum reserve",
+     "unit_of_measurement": "%"
+    }
+   },
+   "switch.inverter_grid_charging": {
+    "entity_id": "switch.inverter_grid_charging",
+    "state": "on",
+    "attributes": {
+     "friendly_name": "Grid charging"
+    }
+   },
+   "number.inverter_charge_limit": {
+    "entity_id": "number.inverter_charge_limit",
+    "state": "100",
+    "attributes": {
+     "friendly_name": "Charge limit",
+     "unit_of_measurement": "%"
+    }
+   },
+   "switch.inverter_charge_limit_enabled": {
+    "entity_id": "switch.inverter_charge_limit_enabled",
+    "state": "off",
+    "attributes": {
+     "friendly_name": "Charge limit active"
+    }
+   },
+   "sensor.venus_soc": {
+    "entity_id": "sensor.venus_soc",
+    "state": "40",
+    "attributes": {
+     "friendly_name": "Venus Battery SoC",
+     "unit_of_measurement": "%",
+     "device_class": "battery"
+    }
+   },
+   "sensor.venus_ac_power": {
+    "entity_id": "sensor.venus_ac_power",
+    "state": "0",
+    "attributes": {
+     "friendly_name": "Venus AC power",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.venus_total_energy": {
+    "entity_id": "sensor.venus_total_energy",
+    "state": "5.12",
+    "attributes": {
+     "friendly_name": "Venus Total energy",
+     "unit_of_measurement": "kWh",
+     "device_class": "energy"
+    }
+   },
+   "select.venus_force_mode": {
+    "entity_id": "select.venus_force_mode",
+    "state": "None",
+    "attributes": {
+     "friendly_name": "Venus Force mode",
+     "options": [
+      "None",
+      "Charge",
+      "Discharge"
+     ]
+    }
+   },
+   "number.venus_charge_power": {
+    "entity_id": "number.venus_charge_power",
+    "state": "0",
+    "attributes": {
+     "friendly_name": "Venus Charge power",
+     "unit_of_measurement": "W"
+    }
+   },
+   "number.venus_discharge_cutoff": {
+    "entity_id": "number.venus_discharge_cutoff",
+    "state": "12",
+    "attributes": {
+     "friendly_name": "Venus Discharge cutoff",
+     "unit_of_measurement": "%"
+    }
+   },
+   "number.venus_max_charge": {
+    "entity_id": "number.venus_max_charge",
+    "state": "2500",
+    "attributes": {
+     "friendly_name": "Venus Max charge power",
+     "unit_of_measurement": "W"
+    }
+   },
+   "sensor.house_meter_power": {
+    "entity_id": "sensor.house_meter_power",
+    "state": "-60",
+    "attributes": {
+     "friendly_name": "Meter power",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.house_power": {
+    "entity_id": "sensor.house_power",
+    "state": "1400",
+    "attributes": {
+     "friendly_name": "House power",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.fs_east_today": {
+    "entity_id": "sensor.fs_east_today",
+    "state": "12.5",
+    "attributes": {
+     "friendly_name": "East today",
+     "unit_of_measurement": "kWh",
+     "device_class": "energy"
+    }
+   },
+   "sensor.fs_east_tomorrow": {
+    "entity_id": "sensor.fs_east_tomorrow",
+    "state": "11.0",
+    "attributes": {
+     "friendly_name": "East tomorrow",
+     "unit_of_measurement": "kWh",
+     "device_class": "energy"
+    }
+   },
+   "sensor.fs_east_remaining": {
+    "entity_id": "sensor.fs_east_remaining",
+    "state": "9.3",
+    "attributes": {
+     "friendly_name": "East remaining",
+     "unit_of_measurement": "kWh",
+     "device_class": "energy"
+    }
+   },
+   "sensor.fs_east_power_now": {
+    "entity_id": "sensor.fs_east_power_now",
+    "state": "1150",
+    "attributes": {
+     "friendly_name": "East estimated power now",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.fs_west_today": {
+    "entity_id": "sensor.fs_west_today",
+    "state": "16.5",
+    "attributes": {
+     "friendly_name": "West today",
+     "unit_of_measurement": "kWh",
+     "device_class": "energy"
+    }
+   },
+   "sensor.fs_west_tomorrow": {
+    "entity_id": "sensor.fs_west_tomorrow",
+    "state": "16.3",
+    "attributes": {
+     "friendly_name": "West tomorrow",
+     "unit_of_measurement": "kWh",
+     "device_class": "energy"
+    }
+   },
+   "sensor.octopus_price": {
+    "entity_id": "sensor.octopus_price",
+    "state": "0.285719",
+    "attributes": {
+     "friendly_name": "Electricity price",
+     "unit_of_measurement": "€/kWh",
+     "device_class": "monetary",
+     "timeslots": [
+      {
+       "name": "GO",
+       "rate": "18.564",
+       "activation_rules": [
+        {
+         "from_time": "00:00:00",
+         "to_time": "05:00:00"
+        }
+       ]
+      },
+      {
+       "name": "STANDARD",
+       "rate": "28.5719",
+       "activation_rules": [
+        {
+         "from_time": "05:00:00",
+         "to_time": "00:00:00"
+        }
+       ]
+      }
+     ],
+     "rates": [],
+     "unit_rate_forecast": []
+    }
+   },
+   "select.evcc_carport_mode": {
+    "entity_id": "select.evcc_carport_mode",
+    "state": "pv",
+    "attributes": {
+     "friendly_name": "Carport mode",
+     "options": [
+      "off",
+      "pv",
+      "minpv",
+      "now"
+     ]
+    }
+   },
+   "binary_sensor.evcc_carport_connected": {
+    "entity_id": "binary_sensor.evcc_carport_connected",
+    "state": "on",
+    "attributes": {
+     "friendly_name": "Carport connected"
+    }
+   },
+   "sensor.evcc_carport_charge_power": {
+    "entity_id": "sensor.evcc_carport_charge_power",
+    "state": "0",
+    "attributes": {
+     "friendly_name": "Carport charge power",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "select.evcc_floor_mode": {
+    "entity_id": "select.evcc_floor_mode",
+    "state": "pv",
+    "attributes": {
+     "friendly_name": "Floor heating mode"
+    }
+   },
+   "weather.home": {
+    "entity_id": "weather.home",
+    "state": "sunny",
+    "attributes": {
+     "friendly_name": "Home",
+     "supported_features": 3
+    }
+   },
+   "person.alex": {
+    "entity_id": "person.alex",
+    "state": "home",
+    "attributes": {
+     "friendly_name": "Alex"
+    }
+   },
+   "person.sam": {
+    "entity_id": "person.sam",
+    "state": "not_home",
+    "attributes": {
+     "friendly_name": "Sam"
+    }
+   },
+   "calendar.alex_work": {
+    "entity_id": "calendar.alex_work",
+    "state": "off",
+    "attributes": {
+     "friendly_name": "Alex Arbeit"
+    }
+   },
+   "calendar.family": {
+    "entity_id": "calendar.family",
+    "state": "off",
+    "attributes": {
+     "friendly_name": "Familie"
+    }
+   },
+   "binary_sensor.workday": {
+    "entity_id": "binary_sensor.workday",
+    "state": "on",
+    "attributes": {
+     "friendly_name": "Workday"
+    }
+   },
+   "sensor.battery_total_soc": {
+    "entity_id": "sensor.battery_total_soc",
+    "state": "48",
+    "attributes": {
+     "friendly_name": "Total SoC",
+     "unit_of_measurement": "%",
+     "device_class": "battery"
+    }
+   },
+   "sensor.window_battery": {
+    "entity_id": "sensor.window_battery",
+    "state": "90",
+    "attributes": {
+     "friendly_name": "Fenster Bad Batterie",
+     "unit_of_measurement": "%",
+     "device_class": "battery"
+    }
+   },
+   "sensor.ev_battery": {
+    "entity_id": "sensor.ev_battery",
+    "state": "71",
+    "attributes": {
+     "friendly_name": "EV Battery Level",
+     "unit_of_measurement": "%",
+     "device_class": "battery"
+    }
+   },
+   "sensor.ev_charging_power": {
+    "entity_id": "sensor.ev_charging_power",
+    "state": "0",
+    "attributes": {
+     "friendly_name": "EV Charging Power",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.network_power": {
+    "entity_id": "sensor.network_power",
+    "state": "45",
+    "attributes": {
+     "friendly_name": "Netzwerk Leistung",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.phone_battery": {
+    "entity_id": "sensor.phone_battery",
+    "state": "80",
+    "attributes": {
+     "friendly_name": "Phone battery",
+     "unit_of_measurement": "%",
+     "device_class": "battery"
+    }
+   }
+  },
+  "entities": {
+   "sensor.solarnet_power_grid": {
+    "entity_id": "sensor.solarnet_power_grid",
+    "device_id": "flow",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "sensor.solarnet_power_load_consumed": {
+    "entity_id": "sensor.solarnet_power_load_consumed",
+    "device_id": "flow",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "sensor.solarnet_power_load": {
+    "entity_id": "sensor.solarnet_power_load",
+    "device_id": "flow",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "sensor.solarnet_power_photovoltaics": {
+    "entity_id": "sensor.solarnet_power_photovoltaics",
+    "device_id": "flow",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "sensor.solarnet_power_battery": {
+    "entity_id": "sensor.solarnet_power_battery",
+    "device_id": "flow",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "sensor.storage_soc": {
+    "entity_id": "sensor.storage_soc",
+    "device_id": "storage",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "sensor.storage_capacity": {
+    "entity_id": "sensor.storage_capacity",
+    "device_id": "storage",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "number.inverter_minimum_reserve": {
+    "entity_id": "number.inverter_minimum_reserve",
+    "device_id": "inverter",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "switch.inverter_grid_charging": {
+    "entity_id": "switch.inverter_grid_charging",
+    "device_id": "inverter",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "number.inverter_charge_limit": {
+    "entity_id": "number.inverter_charge_limit",
+    "device_id": "inverter",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "switch.inverter_charge_limit_enabled": {
+    "entity_id": "switch.inverter_charge_limit_enabled",
+    "device_id": "inverter",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "sensor.venus_soc": {
+    "entity_id": "sensor.venus_soc",
+    "device_id": "venus",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "sensor.venus_ac_power": {
+    "entity_id": "sensor.venus_ac_power",
+    "device_id": "venus",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "sensor.venus_total_energy": {
+    "entity_id": "sensor.venus_total_energy",
+    "device_id": "venus",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "select.venus_force_mode": {
+    "entity_id": "select.venus_force_mode",
+    "device_id": "venus",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "number.venus_charge_power": {
+    "entity_id": "number.venus_charge_power",
+    "device_id": "venus",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "number.venus_discharge_cutoff": {
+    "entity_id": "number.venus_discharge_cutoff",
+    "device_id": "venus",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "number.venus_max_charge": {
+    "entity_id": "number.venus_max_charge",
+    "device_id": "venus",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "sensor.house_meter_power": {
+    "entity_id": "sensor.house_meter_power",
+    "device_id": "meter",
+    "area_id": null,
+    "platform": "tasmota"
+   },
+   "sensor.house_power": {
+    "entity_id": "sensor.house_power",
+    "device_id": "em",
+    "area_id": null,
+    "platform": "shelly"
+   },
+   "sensor.fs_east_today": {
+    "entity_id": "sensor.fs_east_today",
+    "device_id": null,
+    "area_id": null,
+    "platform": "forecast_solar"
+   },
+   "sensor.fs_east_tomorrow": {
+    "entity_id": "sensor.fs_east_tomorrow",
+    "device_id": null,
+    "area_id": null,
+    "platform": "forecast_solar"
+   },
+   "sensor.fs_east_remaining": {
+    "entity_id": "sensor.fs_east_remaining",
+    "device_id": null,
+    "area_id": null,
+    "platform": "forecast_solar"
+   },
+   "sensor.fs_east_power_now": {
+    "entity_id": "sensor.fs_east_power_now",
+    "device_id": null,
+    "area_id": null,
+    "platform": "forecast_solar"
+   },
+   "sensor.fs_west_today": {
+    "entity_id": "sensor.fs_west_today",
+    "device_id": null,
+    "area_id": null,
+    "platform": "forecast_solar"
+   },
+   "sensor.fs_west_tomorrow": {
+    "entity_id": "sensor.fs_west_tomorrow",
+    "device_id": null,
+    "area_id": null,
+    "platform": "forecast_solar"
+   },
+   "sensor.octopus_price": {
+    "entity_id": "sensor.octopus_price",
+    "device_id": null,
+    "area_id": null,
+    "platform": "octopus_germany"
+   },
+   "select.evcc_carport_mode": {
+    "entity_id": "select.evcc_carport_mode",
+    "device_id": "carport",
+    "area_id": null,
+    "platform": "evcc_intg"
+   },
+   "binary_sensor.evcc_carport_connected": {
+    "entity_id": "binary_sensor.evcc_carport_connected",
+    "device_id": "carport",
+    "area_id": null,
+    "platform": "evcc_intg"
+   },
+   "sensor.evcc_carport_charge_power": {
+    "entity_id": "sensor.evcc_carport_charge_power",
+    "device_id": "carport",
+    "area_id": null,
+    "platform": "evcc_intg"
+   },
+   "select.evcc_floor_mode": {
+    "entity_id": "select.evcc_floor_mode",
+    "device_id": "floor",
+    "area_id": null,
+    "platform": "evcc_intg"
+   },
+   "weather.home": {
+    "entity_id": "weather.home",
+    "device_id": null,
+    "area_id": null,
+    "platform": "met"
+   },
+   "person.alex": {
+    "entity_id": "person.alex",
+    "device_id": null,
+    "area_id": null,
+    "platform": null
+   },
+   "person.sam": {
+    "entity_id": "person.sam",
+    "device_id": null,
+    "area_id": null,
+    "platform": null
+   },
+   "calendar.alex_work": {
+    "entity_id": "calendar.alex_work",
+    "device_id": null,
+    "area_id": null,
+    "platform": "local_calendar"
+   },
+   "calendar.family": {
+    "entity_id": "calendar.family",
+    "device_id": null,
+    "area_id": null,
+    "platform": "local_calendar"
+   },
+   "binary_sensor.workday": {
+    "entity_id": "binary_sensor.workday",
+    "device_id": null,
+    "area_id": null,
+    "platform": "workday"
+   },
+   "sensor.battery_total_soc": {
+    "entity_id": "sensor.battery_total_soc",
+    "device_id": null,
+    "area_id": null,
+    "platform": "template"
+   },
+   "sensor.window_battery": {
+    "entity_id": "sensor.window_battery",
+    "device_id": "window",
+    "area_id": null,
+    "platform": "acme_sensors"
+   },
+   "sensor.ev_battery": {
+    "entity_id": "sensor.ev_battery",
+    "device_id": "car",
+    "area_id": null,
+    "platform": "kia_uvo"
+   },
+   "sensor.ev_charging_power": {
+    "entity_id": "sensor.ev_charging_power",
+    "device_id": "car",
+    "area_id": null,
+    "platform": "kia_uvo"
+   },
+   "sensor.network_power": {
+    "entity_id": "sensor.network_power",
+    "device_id": "plug",
+    "area_id": null,
+    "platform": "tasmota"
+   },
+   "sensor.phone_battery": {
+    "entity_id": "sensor.phone_battery",
+    "device_id": "phone",
+    "area_id": null,
+    "platform": "mobile_app"
+   }
+  },
+  "devices": {
+   "storage": {
+    "id": "storage",
+    "name": "BYD Battery-Box Premium HV",
+    "manufacturer": "BYD",
+    "model": "Battery-Box Premium HV",
+    "area_id": null
+   },
+   "inverter": {
+    "id": "inverter",
+    "name": "Symo GEN24 10.0",
+    "manufacturer": "Fronius",
+    "model": "Symo GEN24 10.0 Plus",
+    "area_id": null
+   },
+   "flow": {
+    "id": "flow",
+    "name": "SolarNet",
+    "manufacturer": "Fronius",
+    "model": "SolarNet",
+    "area_id": null
+   },
+   "venus": {
+    "id": "venus",
+    "name": "Marstek Venus E",
+    "manufacturer": "Marstek",
+    "model": "Venus E",
+    "area_id": null
+   },
+   "carport": {
+    "id": "carport",
+    "name": "Carport",
+    "manufacturer": "evcc",
+    "model": "loadpoint",
+    "area_id": null
+   },
+   "floor": {
+    "id": "floor",
+    "name": "Floor heating",
+    "manufacturer": "evcc",
+    "model": "loadpoint",
+    "area_id": null
+   },
+   "phone": {
+    "id": "phone",
+    "name": "Alex Phone",
+    "manufacturer": "Apple",
+    "model": "iPhone",
+    "area_id": null
+   },
+   "window": {
+    "id": "window",
+    "name": "Fenster Bad",
+    "manufacturer": "Acme",
+    "model": "Window sensor",
+    "area_id": null
+   },
+   "car": {
+    "id": "car",
+    "name": "Electric car",
+    "manufacturer": "Hyundai",
+    "model": "Battery electric vehicle",
+    "area_id": null
+   },
+   "plug": {
+    "id": "plug",
+    "name": "Netzwerk",
+    "manufacturer": "Tasmota",
+    "model": "Plug",
+    "area_id": null
+   }
+  },
+  "areas": {}
+ }
+}

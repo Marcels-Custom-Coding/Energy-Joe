@@ -27,3 +27,4 @@ async def test_info_without_energy_dashboard(
     assert msg["result"]["ha_version"] == HA_VERSION
     assert msg["result"]["version"] == "0.1.0"
     assert msg["result"]["energy"] == {"available": False}
+    assert msg["result"]["defaults"]["rules"]["reserve_soc"] == 10

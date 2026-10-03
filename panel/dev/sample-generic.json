@@ -1,0 +1,822 @@
+{
+ "discovery": {
+  "energy_dashboard": {
+   "configured": false
+  },
+  "measurements": {
+   "grid_power": {
+    "entity": {
+     "entity_id": "sensor.acme_grid_power",
+     "name": "Netz Leistung",
+     "area": null,
+     "device": null,
+     "value": 3900.0,
+     "unit": "W",
+     "integration": "acme_solar"
+    },
+    "measurement": {
+     "entity_id": "sensor.acme_grid_power",
+     "invert": false,
+     "minus_entity_id": null
+    },
+    "confidence": 0.5,
+    "reasons": [
+     {
+      "code": "name",
+      "word": "netz"
+     }
+    ],
+    "alternatives": []
+   },
+   "home_power": {
+    "entity": {
+     "entity_id": "sensor.acme_home_power",
+     "name": "Hausverbrauch",
+     "area": null,
+     "device": null,
+     "value": 2500.0,
+     "unit": "W",
+     "integration": "acme_solar"
+    },
+    "measurement": {
+     "entity_id": "sensor.acme_home_power",
+     "invert": false,
+     "minus_entity_id": null
+    },
+    "confidence": 0.5,
+    "reasons": [
+     {
+      "code": "name",
+      "word": "hausverbrauch"
+     }
+    ],
+    "alternatives": []
+   },
+   "solar_power": {
+    "entities": [
+     {
+      "entity_id": "sensor.acme_pv_power",
+      "name": "PV Leistung",
+      "area": null,
+      "device": null,
+      "value": 6500.0,
+      "unit": "W",
+      "integration": "acme_solar"
+     }
+    ],
+    "measurements": [
+     {
+      "entity_id": "sensor.acme_pv_power",
+      "invert": false,
+      "minus_entity_id": null
+     }
+    ],
+    "total": 6.5,
+    "confidence": 0.5,
+    "reasons": [
+     {
+      "code": "name",
+      "word": "pv"
+     }
+    ],
+    "alternatives": [
+     {
+      "entity_id": "sensor.solarflow_power",
+      "name": "SolarFlow Leistung",
+      "area": null,
+      "device": "SolarFlow 800",
+      "value": 0.0,
+      "unit": "W",
+      "integration": "zendure_ha"
+     }
+    ]
+   }
+  },
+  "batteries": [
+   {
+    "id": "flow800",
+    "name": "SolarFlow 800",
+    "device_id": "flow800",
+    "integration": "zendure_ha",
+    "soc": {
+     "entity_id": "sensor.solarflow_level",
+     "name": "SolarFlow Ladestand",
+     "area": null,
+     "device": "SolarFlow 800",
+     "value": 63.0,
+     "unit": "%",
+     "integration": "zendure_ha"
+    },
+    "soc_entity": "sensor.solarflow_level",
+    "power": {
+     "entity_id": "sensor.solarflow_power",
+     "invert": false,
+     "minus_entity_id": null
+    },
+    "capacity_kwh": null,
+    "capacity_entity": null,
+    "max_charge_w": null,
+    "max_discharge_w": null,
+    "adapter": "none",
+    "controls": {},
+    "controllable": false,
+    "confidence": 0.55,
+    "reasons": [
+     {
+      "code": "storage_name",
+      "word": "zendure"
+     },
+     {
+      "code": "power_guess"
+     }
+    ]
+   }
+  ],
+  "tariff": {
+   "price_entity": "sensor.nordpool_price",
+   "price": {
+    "entity_id": "sensor.nordpool_price",
+    "name": "Strompreis",
+    "area": null,
+    "device": null,
+    "value": 0.312,
+    "unit": "EUR/kWh",
+    "integration": "nordpool"
+   },
+   "provider": "Nord Pool",
+   "kind": "dynamic",
+   "window": null,
+   "night_price": 0.2,
+   "day_price": 0.37,
+   "feed_in_price": null,
+   "feed_in_entity": null,
+   "confidence": 0.85,
+   "reasons": [
+    {
+     "code": "integration_key",
+     "integration": "nordpool"
+    },
+    {
+     "code": "price_list",
+     "attribute": "raw_today"
+    }
+   ]
+  },
+  "forecast": {
+   "provider": "solcast_solar",
+   "provider_name": "Solcast",
+   "planes": 1,
+   "config_entries": [
+    "sol"
+   ],
+   "today": [
+    "sensor.solcast_today"
+   ],
+   "tomorrow": [
+    "sensor.solcast_tomorrow"
+   ],
+   "remaining_today": [],
+   "today_kwh": 18.2,
+   "tomorrow_kwh": 20.1,
+   "confidence": 0.85,
+   "reasons": [
+    {
+     "code": "integration_key",
+     "integration": "solcast_solar"
+    }
+   ]
+  },
+  "wallboxes": [],
+  "weather": null,
+  "holiday": null,
+  "persons": [],
+  "calendars": [],
+  "consumers": [],
+  "checks": [
+   {
+    "code": "grid_sign",
+    "level": "warn",
+    "entity_id": "sensor.acme_grid_power",
+    "expected": -4.0,
+    "actual": 3.9
+   },
+   {
+    "code": "capacity_unknown",
+    "level": "info",
+    "battery": "SolarFlow 800",
+    "battery_id": "flow800"
+   },
+   {
+    "code": "not_controllable",
+    "level": "info",
+    "battery": "SolarFlow 800",
+    "battery_id": "flow800"
+   }
+  ],
+  "proposal": {
+   "measurements": {
+    "grid_power": {
+     "entity_id": "sensor.acme_grid_power",
+     "invert": false,
+     "minus_entity_id": null
+    },
+    "home_power": {
+     "entity_id": "sensor.acme_home_power",
+     "invert": false,
+     "minus_entity_id": null
+    },
+    "solar_power": [
+     {
+      "entity_id": "sensor.acme_pv_power",
+      "invert": false,
+      "minus_entity_id": null
+     }
+    ]
+   },
+   "batteries": [
+    {
+     "id": "flow800",
+     "name": "SolarFlow 800",
+     "adapter": "none",
+     "soc_entity": "sensor.solarflow_level",
+     "power": {
+      "entity_id": "sensor.solarflow_power",
+      "invert": false,
+      "minus_entity_id": null
+     },
+     "capacity_kwh": null,
+     "capacity_entity": null,
+     "max_charge_w": null,
+     "max_discharge_w": null,
+     "device_id": "flow800",
+     "controls": {},
+     "priority": 1
+    }
+   ],
+   "tariff": {
+    "kind": "dynamic",
+    "price_entity": "sensor.nordpool_price",
+    "window": null,
+    "night_price": 0.2,
+    "day_price": 0.37,
+    "feed_in_price": null,
+    "feed_in_entity": null
+   },
+   "forecast": {
+    "provider": "solcast_solar",
+    "config_entries": [
+     "sol"
+    ],
+    "today": [
+     "sensor.solcast_today"
+    ],
+    "tomorrow": [
+     "sensor.solcast_tomorrow"
+    ],
+    "remaining_today": []
+   },
+   "context": {
+    "weather_entity": null,
+    "holiday_entity": null
+   },
+   "persons": [],
+   "consumers": []
+  }
+ },
+ "default_config": {
+  "version": 1,
+  "measurements": {
+   "grid_power": null,
+   "home_power": null,
+   "solar_power": []
+  },
+  "batteries": [],
+  "tariff": {
+   "kind": "unknown",
+   "price_entity": null,
+   "window": null,
+   "night_price": null,
+   "day_price": null,
+   "feed_in_price": null,
+   "feed_in_entity": null
+  },
+  "forecast": {
+   "provider": null,
+   "config_entries": [],
+   "today": [],
+   "tomorrow": [],
+   "remaining_today": []
+  },
+  "context": {
+   "weather_entity": null,
+   "holiday_entity": null
+  },
+  "persons": [],
+  "consumers": [],
+  "actions": [],
+  "rules": {
+   "reserve_soc": 10.0,
+   "max_target_soc": 100.0,
+   "evening_min_soc": null,
+   "grid_limit_w": null,
+   "max_night_kwh": null,
+   "priority": [
+    "ev",
+    "hot_water",
+    "battery"
+   ],
+   "discharge_in_window": "until_target",
+   "plan_offset_min": 15,
+   "reset_lead_min": 3,
+   "buffer_factor": 0.35
+  },
+  "answers": {
+   "ignored": [],
+   "confirmed": []
+  },
+  "provenance": {}
+ },
+ "adopted_config": {
+  "version": 1,
+  "measurements": {
+   "grid_power": {
+    "entity_id": "sensor.acme_grid_power",
+    "invert": false,
+    "minus_entity_id": null
+   },
+   "home_power": {
+    "entity_id": "sensor.acme_home_power",
+    "invert": false,
+    "minus_entity_id": null
+   },
+   "solar_power": [
+    {
+     "entity_id": "sensor.acme_pv_power",
+     "invert": false,
+     "minus_entity_id": null
+    }
+   ]
+  },
+  "batteries": [
+   {
+    "id": "flow800",
+    "name": "SolarFlow 800",
+    "adapter": "none",
+    "soc_entity": "sensor.solarflow_level",
+    "power": {
+     "entity_id": "sensor.solarflow_power",
+     "invert": false,
+     "minus_entity_id": null
+    },
+    "capacity_kwh": null,
+    "capacity_entity": null,
+    "max_charge_w": null,
+    "max_discharge_w": null,
+    "device_id": "flow800",
+    "controls": {},
+    "priority": 1
+   }
+  ],
+  "tariff": {
+   "kind": "dynamic",
+   "price_entity": "sensor.nordpool_price",
+   "window": null,
+   "night_price": 0.2,
+   "day_price": 0.37,
+   "feed_in_price": null,
+   "feed_in_entity": null
+  },
+  "forecast": {
+   "provider": "solcast_solar",
+   "config_entries": [
+    "sol"
+   ],
+   "today": [
+    "sensor.solcast_today"
+   ],
+   "tomorrow": [
+    "sensor.solcast_tomorrow"
+   ],
+   "remaining_today": []
+  },
+  "context": {
+   "weather_entity": null,
+   "holiday_entity": null
+  },
+  "persons": [],
+  "consumers": [],
+  "actions": [],
+  "rules": {
+   "reserve_soc": 10.0,
+   "max_target_soc": 100.0,
+   "evening_min_soc": null,
+   "grid_limit_w": null,
+   "max_night_kwh": null,
+   "priority": [
+    "ev",
+    "hot_water",
+    "battery"
+   ],
+   "discharge_in_window": "until_target",
+   "plan_offset_min": 15,
+   "reset_lead_min": 3,
+   "buffer_factor": 0.35
+  },
+  "answers": {
+   "ignored": [],
+   "confirmed": []
+  },
+  "provenance": {
+   "measurements.grid_power": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "measurements.home_power": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "measurements.solar_power": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "tariff.kind": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "tariff.price_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "tariff.window": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "tariff.night_price": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "tariff.day_price": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "forecast.provider": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "forecast.config_entries": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "forecast.today": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "forecast.tomorrow": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "forecast.remaining_today": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[flow800].name": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[flow800].adapter": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[flow800].soc_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[flow800].power": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[flow800].capacity_kwh": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[flow800].capacity_entity": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[flow800].max_charge_w": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[flow800].max_discharge_w": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[flow800].device_id": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[flow800].controls": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   },
+   "batteries[flow800].priority": {
+    "source": "read",
+    "updated": "2026-10-03T16:19:12+00:00"
+   }
+  }
+ },
+ "checks": [
+  {
+   "code": "grid_sign",
+   "level": "warn",
+   "entity_id": "sensor.acme_grid_power",
+   "expected": -4.0,
+   "actual": 3.9
+  },
+  {
+   "code": "capacity_unknown",
+   "level": "info",
+   "battery": "SolarFlow 800",
+   "battery_id": "flow800"
+  },
+  {
+   "code": "not_controllable",
+   "level": "info",
+   "battery": "SolarFlow 800",
+   "battery_id": "flow800"
+  }
+ ],
+ "hass": {
+  "states": {
+   "sensor.acme_pv_power": {
+    "entity_id": "sensor.acme_pv_power",
+    "state": "6500",
+    "attributes": {
+     "friendly_name": "PV Leistung",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.acme_grid_power": {
+    "entity_id": "sensor.acme_grid_power",
+    "state": "3900",
+    "attributes": {
+     "friendly_name": "Netz Leistung",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.acme_home_power": {
+    "entity_id": "sensor.acme_home_power",
+    "state": "2500",
+    "attributes": {
+     "friendly_name": "Hausverbrauch",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.acme_pv_forecast": {
+    "entity_id": "sensor.acme_pv_forecast",
+    "state": "1800",
+    "attributes": {
+     "friendly_name": "PV Prognose Leistung",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.solarflow_level": {
+    "entity_id": "sensor.solarflow_level",
+    "state": "63",
+    "attributes": {
+     "friendly_name": "SolarFlow Ladestand",
+     "unit_of_measurement": "%",
+     "device_class": "battery"
+    }
+   },
+   "sensor.solarflow_power": {
+    "entity_id": "sensor.solarflow_power",
+    "state": "0",
+    "attributes": {
+     "friendly_name": "SolarFlow Leistung",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.nordpool_price": {
+    "entity_id": "sensor.nordpool_price",
+    "state": "0.312",
+    "attributes": {
+     "friendly_name": "Strompreis",
+     "unit_of_measurement": "EUR/kWh",
+     "device_class": "monetary",
+     "raw_today": [
+      {
+       "start": "2026-10-03T00:00:00+02:00",
+       "end": "2026-10-03T00:59:59+02:00",
+       "value": 0.2
+      },
+      {
+       "start": "2026-10-03T01:00:00+02:00",
+       "end": "2026-10-03T01:59:59+02:00",
+       "value": 0.201
+      },
+      {
+       "start": "2026-10-03T02:00:00+02:00",
+       "end": "2026-10-03T02:59:59+02:00",
+       "value": 0.202
+      },
+      {
+       "start": "2026-10-03T03:00:00+02:00",
+       "end": "2026-10-03T03:59:59+02:00",
+       "value": 0.203
+      },
+      {
+       "start": "2026-10-03T04:00:00+02:00",
+       "end": "2026-10-03T04:59:59+02:00",
+       "value": 0.20400000000000001
+      },
+      {
+       "start": "2026-10-03T05:00:00+02:00",
+       "end": "2026-10-03T05:59:59+02:00",
+       "value": 0.20500000000000002
+      },
+      {
+       "start": "2026-10-03T06:00:00+02:00",
+       "end": "2026-10-03T06:59:59+02:00",
+       "value": 0.20600000000000002
+      },
+      {
+       "start": "2026-10-03T07:00:00+02:00",
+       "end": "2026-10-03T07:59:59+02:00",
+       "value": 0.357
+      },
+      {
+       "start": "2026-10-03T08:00:00+02:00",
+       "end": "2026-10-03T08:59:59+02:00",
+       "value": 0.358
+      },
+      {
+       "start": "2026-10-03T09:00:00+02:00",
+       "end": "2026-10-03T09:59:59+02:00",
+       "value": 0.359
+      },
+      {
+       "start": "2026-10-03T10:00:00+02:00",
+       "end": "2026-10-03T10:59:59+02:00",
+       "value": 0.36
+      },
+      {
+       "start": "2026-10-03T11:00:00+02:00",
+       "end": "2026-10-03T11:59:59+02:00",
+       "value": 0.361
+      },
+      {
+       "start": "2026-10-03T12:00:00+02:00",
+       "end": "2026-10-03T12:59:59+02:00",
+       "value": 0.362
+      },
+      {
+       "start": "2026-10-03T13:00:00+02:00",
+       "end": "2026-10-03T13:59:59+02:00",
+       "value": 0.363
+      },
+      {
+       "start": "2026-10-03T14:00:00+02:00",
+       "end": "2026-10-03T14:59:59+02:00",
+       "value": 0.364
+      },
+      {
+       "start": "2026-10-03T15:00:00+02:00",
+       "end": "2026-10-03T15:59:59+02:00",
+       "value": 0.365
+      },
+      {
+       "start": "2026-10-03T16:00:00+02:00",
+       "end": "2026-10-03T16:59:59+02:00",
+       "value": 0.366
+      },
+      {
+       "start": "2026-10-03T17:00:00+02:00",
+       "end": "2026-10-03T17:59:59+02:00",
+       "value": 0.367
+      },
+      {
+       "start": "2026-10-03T18:00:00+02:00",
+       "end": "2026-10-03T18:59:59+02:00",
+       "value": 0.368
+      },
+      {
+       "start": "2026-10-03T19:00:00+02:00",
+       "end": "2026-10-03T19:59:59+02:00",
+       "value": 0.369
+      },
+      {
+       "start": "2026-10-03T20:00:00+02:00",
+       "end": "2026-10-03T20:59:59+02:00",
+       "value": 0.37
+      },
+      {
+       "start": "2026-10-03T21:00:00+02:00",
+       "end": "2026-10-03T21:59:59+02:00",
+       "value": 0.221
+      },
+      {
+       "start": "2026-10-03T22:00:00+02:00",
+       "end": "2026-10-03T22:59:59+02:00",
+       "value": 0.222
+      },
+      {
+       "start": "2026-10-03T23:00:00+02:00",
+       "end": "2026-10-03T23:59:59+02:00",
+       "value": 0.223
+      }
+     ]
+    }
+   },
+   "sensor.solcast_today": {
+    "entity_id": "sensor.solcast_today",
+    "state": "18.2",
+    "attributes": {
+     "friendly_name": "Forecast Today",
+     "unit_of_measurement": "kWh",
+     "device_class": "energy"
+    }
+   },
+   "sensor.solcast_tomorrow": {
+    "entity_id": "sensor.solcast_tomorrow",
+    "state": "20.1",
+    "attributes": {
+     "friendly_name": "Forecast Tomorrow",
+     "unit_of_measurement": "kWh",
+     "device_class": "energy"
+    }
+   }
+  },
+  "entities": {
+   "sensor.acme_pv_power": {
+    "entity_id": "sensor.acme_pv_power",
+    "device_id": null,
+    "area_id": null,
+    "platform": "acme_solar"
+   },
+   "sensor.acme_grid_power": {
+    "entity_id": "sensor.acme_grid_power",
+    "device_id": null,
+    "area_id": null,
+    "platform": "acme_solar"
+   },
+   "sensor.acme_home_power": {
+    "entity_id": "sensor.acme_home_power",
+    "device_id": null,
+    "area_id": null,
+    "platform": "acme_solar"
+   },
+   "sensor.acme_pv_forecast": {
+    "entity_id": "sensor.acme_pv_forecast",
+    "device_id": null,
+    "area_id": null,
+    "platform": "acme_solar"
+   },
+   "sensor.solarflow_level": {
+    "entity_id": "sensor.solarflow_level",
+    "device_id": "flow800",
+    "area_id": null,
+    "platform": "zendure_ha"
+   },
+   "sensor.solarflow_power": {
+    "entity_id": "sensor.solarflow_power",
+    "device_id": "flow800",
+    "area_id": null,
+    "platform": "zendure_ha"
+   },
+   "sensor.nordpool_price": {
+    "entity_id": "sensor.nordpool_price",
+    "device_id": null,
+    "area_id": null,
+    "platform": "nordpool"
+   },
+   "sensor.solcast_today": {
+    "entity_id": "sensor.solcast_today",
+    "device_id": null,
+    "area_id": null,
+    "platform": "solcast_solar"
+   },
+   "sensor.solcast_tomorrow": {
+    "entity_id": "sensor.solcast_tomorrow",
+    "device_id": null,
+    "area_id": null,
+    "platform": "solcast_solar"
+   }
+  },
+  "devices": {
+   "flow800": {
+    "id": "flow800",
+    "name": "SolarFlow 800",
+    "manufacturer": "Zendure",
+    "model": "SolarFlow 800",
+    "area_id": null
+   }
+  },
+  "areas": {}
+ }
+}

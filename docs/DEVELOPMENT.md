@@ -11,7 +11,8 @@ cd panel && npm install
 - Tests: `.venv/bin/pytest`
 - Linter: `.venv/bin/ruff check .`
 - Panel bauen: `npm --prefix panel run build` (der Build liegt eingecheckt in `custom_components/energy_joe/frontend/`)
-- Panel ohne Home Assistant ansehen: im Repo-Wurzelverzeichnis `python3 -m http.server 8767` starten und `http://localhost:8767/panel/dev/` öffnen. Parameter: `?dark=1`, `?lang=en`, `?step=scan`, `?done=1`, `?page=settings`, `?mode=off`, `?sample=generic`, `?audit=1`
+- Panel ohne Home Assistant ansehen: im Repo-Wurzelverzeichnis `python3 -m http.server 8767` starten und `http://localhost:8767/panel/dev/` öffnen. Parameter: `?dark=1`, `?lang=en`, `?step=scan|questions|done`, `?done=1` (Einrichtung abgeschlossen), `?page=settings`, `?mode=off`, `?sample=generic`, `?audit=1`
+- Daten der Testseite neu erzeugen (nach Änderungen an Erkennung oder Modell): `.venv/bin/python scripts/make_dev_samples.py` – schreibt `panel/dev/sample-*.json` aus den erfundenen Haushalten in `tests/snapshots.py`
 
 ## Tooltips
 

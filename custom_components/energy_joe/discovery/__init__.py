@@ -6,7 +6,7 @@ from typing import Any
 
 from homeassistant.core import HomeAssistant
 
-from .checks import run_checks
+from .checks import run_checks, run_config_checks
 from .energy import parse_energy_prefs
 from .find import (
     find_batteries,
@@ -22,10 +22,19 @@ from .find import (
 from .proposal import build_proposal
 from .snapshot import Snapshot, async_collect
 
+__all__ = ["async_check", "async_collect", "async_discover", "discover"]
+
 
 async def async_discover(hass: HomeAssistant) -> dict[str, Any]:
     """Collect a snapshot of Home Assistant and run discovery on it."""
     return discover(await async_collect(hass))
+
+
+async def async_check(
+    hass: HomeAssistant, config: dict[str, Any]
+) -> list[dict[str, Any]]:
+    """Check what Joe is configured to use against the current states."""
+    return run_config_checks(await async_collect(hass), config)
 
 
 def discover(snap: Snapshot) -> dict[str, Any]:

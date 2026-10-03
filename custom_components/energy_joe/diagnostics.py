@@ -12,6 +12,7 @@ from .runtime import DATA_RUNTIME
 
 # Names of people and their calendars are personal; entity ids of meters are not.
 TO_REDACT = {"name", "person_entity", "calendars", "detail"}
+REDACTED = "**REDACTED**"
 
 
 async def async_get_config_entry_diagnostics(
@@ -23,6 +24,22 @@ async def async_get_config_entry_diagnostics(
         return {"loaded": False}
     state = runtime.state
     config = state.pop("config")
+    # Person ids are entity ids like "person.<name>"; they show up in ids,
+    # provenance paths and the list of ignored items.
+    config["persons"] = [
+        {**person, "id": f"person {index + 1}"}
+        for index, person in enumerate(config["persons"])
+    ]
+    config["provenance"] = {
+        path: entry
+        for path, entry in config["provenance"].items()
+        if not path.startswith("persons[")
+    }
+    answers = config["answers"]
+    answers["ignored"] = [
+        REDACTED if item.startswith("person:") else item
+        for item in answers.get("ignored", [])
+    ]
     return {
         "loaded": True,
         "state": state,

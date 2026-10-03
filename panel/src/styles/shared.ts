@@ -45,6 +45,13 @@ export const shared = css`
   .display .hl {
     color: var(--joe-amber);
   }
+  .display .title-tip {
+    display: inline-flex;
+    margin-left: 10px;
+    vertical-align: 0.12em;
+    text-transform: none;
+    font-style: normal;
+  }
   .swoosh {
     display: block;
     height: 12px;
@@ -176,6 +183,10 @@ export const shared = css`
     background: var(--joe-good-soft);
     color: var(--joe-good);
   }
+  .chip.warn {
+    background: var(--joe-warn-soft);
+    color: var(--joe-warn);
+  }
   .chip.soon {
     background: transparent;
     box-shadow: inset 0 0 0 1.5px var(--joe-line-2);
@@ -218,5 +229,214 @@ export const shared = css`
     align-items: center;
     flex-wrap: wrap;
     margin-top: 22px;
+  }
+  .with-tip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* How sure Joe is */
+  .conf {
+    display: inline-flex;
+    gap: 3px;
+  }
+  .conf i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--joe-line-2);
+  }
+  .conf i.on {
+    background: var(--joe-amber);
+  }
+
+  /* Small row actions ("Ändern", "Ignorieren") */
+  .mini-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 0;
+    cursor: pointer;
+    min-height: 34px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 13.5px;
+    background: var(--joe-surface-2);
+    color: var(--joe-ink);
+    transition: background 0.12s, transform 0.12s;
+  }
+  .mini-btn:hover:not([disabled]) {
+    background: var(--joe-line);
+  }
+  .mini-btn:active:not([disabled]) {
+    transform: scale(0.97);
+  }
+  .mini-btn[disabled] {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  .mini-btn.go {
+    background: var(--joe-amber);
+    color: var(--joe-amber-ink);
+  }
+  .mini-btn.go:hover:not([disabled]) {
+    background: var(--joe-amber-hover);
+  }
+  .mini-btn.quiet {
+    background: transparent;
+    color: var(--joe-ink-2);
+  }
+  .mini-btn.quiet:hover:not([disabled]) {
+    background: var(--joe-surface-2);
+    color: var(--joe-ink);
+  }
+  .mini-btn ha-icon {
+    --mdc-icon-size: 16px;
+  }
+  @media (pointer: coarse) {
+    .mini-btn {
+      min-height: 44px;
+    }
+  }
+
+  /* Inputs: filled, no frame, amber focus */
+  .input {
+    width: 100%;
+    min-height: 42px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 9px;
+    background: var(--joe-surface-2);
+    color: var(--joe-ink);
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+    box-shadow: inset 0 1px 2px rgba(7, 17, 24, 0.08);
+  }
+  .input:focus {
+    outline: 3px solid var(--joe-amber);
+    outline-offset: 1px;
+  }
+  .input::placeholder {
+    color: var(--joe-muted);
+  }
+  .unit-input {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    width: 100%;
+    max-width: 200px;
+  }
+  .unit-input .input {
+    padding-right: 64px;
+  }
+  .unit-input .unit {
+    position: absolute;
+    right: 12px;
+    color: var(--joe-muted);
+    font-size: 14px;
+    pointer-events: none;
+  }
+  select.input {
+    cursor: pointer;
+  }
+
+  /* Labeled fields in forms */
+  .field {
+    display: grid;
+    gap: 6px;
+    margin-top: 16px;
+  }
+  .field-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+  }
+  .field-hint {
+    color: var(--joe-muted);
+    font-size: 13px;
+    margin: -2px 0 0;
+  }
+  .field-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  /* Notes from Joe */
+  .note {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    background: var(--joe-info-soft);
+    color: var(--joe-ink);
+  }
+  .note > ha-icon {
+    color: var(--joe-info);
+    margin-top: 1px;
+  }
+  .note.warn {
+    background: var(--joe-warn-soft);
+  }
+  .note.warn > ha-icon {
+    color: var(--joe-warn);
+  }
+  .note .note-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  /* On/off switch */
+  .switch {
+    position: relative;
+    width: 46px;
+    height: 28px;
+    flex: none;
+    border: 0;
+    border-radius: 999px;
+    cursor: pointer;
+    background: var(--joe-line-2);
+    transition: background 0.12s;
+  }
+  .switch::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--joe-surface);
+    box-shadow: 0 1px 3px rgba(7, 17, 24, 0.3);
+    transition: transform 0.12s;
+  }
+  .switch[aria-checked="true"] {
+    background: var(--joe-amber);
+  }
+  .switch[aria-checked="true"]::after {
+    transform: translateX(18px);
+  }
+
+  .sheet-title {
+    padding-right: 40px;
+  }
+  .sheet-title .display {
+    font-size: clamp(28px, 6vw, 36px);
+  }
+  .group-label {
+    margin: 18px 0 8px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--joe-muted);
   }
 `;

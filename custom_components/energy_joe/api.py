@@ -11,8 +11,10 @@ from homeassistant.const import __version__ as HA_VERSION
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.loader import async_get_integration
 
+from . import model
 from .const import DOMAIN
-from .discovery import async_discover
+from .discovery import async_check, async_collect, async_discover, discover
+from .discovery.checks import run_config_checks
 from .runtime import (
     AVAILABLE_MODES,
     DATA_RUNTIME,
@@ -31,6 +33,8 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_onboarding)
     websocket_api.async_register_command(hass, ws_config_update)
     websocket_api.async_register_command(hass, ws_discover)
+    websocket_api.async_register_command(hass, ws_adopt)
+    websocket_api.async_register_command(hass, ws_check)
 
 
 def _runtime(
@@ -58,6 +62,7 @@ async def ws_info(
             "version": str(integration.version),
             "ha_version": HA_VERSION,
             "energy": await _async_energy_summary(hass),
+            "defaults": {"rules": model.default_config()["rules"]},
         },
     )
 
@@ -130,7 +135,7 @@ def ws_onboarding(
     {
         vol.Required("type"): f"{DOMAIN}/config/update",
         vol.Required("patch"): dict,
-        vol.Optional("source", default="user"): vol.In(("user", "read")),
+        vol.Optional("source", default="user"): vol.In(("user", "read", "default")),
         vol.Optional("detail"): str,
     }
 )
@@ -141,7 +146,11 @@ def ws_config_update(
     connection: websocket_api.ActiveConnection,
     msg: dict[str, Any],
 ) -> None:
-    """Merge a partial configuration update; "read" marks values taken from HA."""
+    """Merge a partial configuration update.
+
+    "read" marks values taken from Home Assistant, "default" puts a value back
+    to Joe's starting value.
+    """
     if (runtime := _runtime(hass, connection, msg)) is None:
         return
     try:
@@ -162,6 +171,46 @@ async def ws_discover(
 ) -> None:
     """Look around Home Assistant and report what Joe can use (read-only)."""
     connection.send_result(msg["id"], await async_discover(hass))
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/adopt"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_adopt(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Look around, take over what Joe found and check the result.
+
+    Values the user set, values Joe learned and things the user told him to
+    leave out stay as they are.
+    """
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    snap = await async_collect(hass)
+    result = discover(snap)
+    runtime.async_adopt(result["proposal"])
+    connection.send_result(
+        msg["id"],
+        {"discovery": result, "checks": run_config_checks(snap, runtime.config)},
+    )
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/check"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_check(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Check what Joe is configured to use against the current states."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    connection.send_result(
+        msg["id"], {"checks": await async_check(hass, runtime.config)}
+    )
 
 
 async def _async_energy_summary(hass: HomeAssistant) -> dict[str, Any]:

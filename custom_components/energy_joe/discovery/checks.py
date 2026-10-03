@@ -1,4 +1,4 @@
-"""Plausibility checks on what discovery found."""
+"""Plausibility checks on what discovery found or what Joe is configured to use."""
 
 from __future__ import annotations
 
@@ -72,32 +72,26 @@ def run_checks(snap: Snapshot, result: dict[str, Any]) -> list[dict[str, Any]]:
     checks.extend(_grid_sign(snap, result))
 
     for battery in result["batteries"]:
+        about = {"battery": battery["name"], "battery_id": battery["id"]}
         soc = snap.get(battery["soc_entity"])
-        if soc and soc.number is not None and not 0 <= soc.number <= 100:
+        if soc is None or not soc.available:
             checks.append(
                 {
-                    "code": "soc_range",
+                    "code": "soc_unavailable",
                     "level": "warn",
-                    "battery": battery["name"],
-                    "value": soc.number,
+                    "entity_id": battery["soc_entity"],
+                    **about,
                 }
+            )
+        elif soc.number is not None and not 0 <= soc.number <= 100:
+            checks.append(
+                {"code": "soc_range", "level": "warn", "value": soc.number, **about}
             )
         if not battery["capacity_kwh"]:
-            checks.append(
-                {
-                    "code": "capacity_unknown",
-                    "level": "info",
-                    "battery": battery["name"],
-                }
-            )
-        if not battery["controllable"]:
-            checks.append(
-                {
-                    "code": "not_controllable",
-                    "level": "info",
-                    "battery": battery["name"],
-                }
-            )
+            checks.append({"code": "capacity_unknown", "level": "info", **about})
+        # Controls Joe found but the user chose not to use are no news.
+        if not battery["controllable"] and not battery.get("controls"):
+            checks.append({"code": "not_controllable", "level": "info", **about})
 
     if result["tariff"]["kind"] == "unknown":
         checks.append({"code": "tariff_unknown", "level": "info"})
@@ -179,3 +173,56 @@ def _grid_sign(snap: Snapshot, result: dict[str, Any]) -> list[dict[str, Any]]:
             }
         ]
     return []
+
+
+def run_config_checks(snap: Snapshot, config: dict[str, Any]) -> list[dict[str, Any]]:
+    """Checks on what Joe is configured to use, minus what the user settled."""
+    measurements = config["measurements"]
+
+    def single(measurement: dict[str, Any] | None) -> dict[str, Any] | None:
+        if not measurement:
+            return None
+        return {
+            "measurement": measurement,
+            "entity": {"entity_id": measurement["entity_id"]},
+        }
+
+    view = {
+        "measurements": {
+            "grid_power": single(measurements["grid_power"]),
+            "home_power": single(measurements["home_power"]),
+            "solar_power": {"measurements": measurements["solar_power"]}
+            if measurements["solar_power"]
+            else None,
+        },
+        "batteries": [
+            {
+                "id": battery["id"],
+                "name": battery["name"],
+                "soc_entity": battery["soc_entity"],
+                "power": battery["power"],
+                "capacity_kwh": battery["capacity_kwh"] or battery["capacity_entity"],
+                "controllable": battery["adapter"] != "none",
+                "controls": battery["controls"],
+            }
+            for battery in config["batteries"]
+        ],
+        "tariff": {"kind": config["tariff"]["kind"]},
+    }
+    answers = config.get("answers") or {}
+    ignored = set(answers.get("ignored") or [])
+    confirmed = set(answers.get("confirmed") or [])
+
+    def settled(check: dict[str, Any]) -> bool:
+        code = check["code"]
+        if code == "missing":
+            return check.get("role") in ignored
+        if code == "grid_sign":
+            return f"grid_sign:{check.get('entity_id')}" in confirmed
+        if code == "capacity_unknown":
+            return answers.get(f"capacity:{check.get('battery_id')}") == "unknown"
+        if code == "tariff_unknown":
+            return answers.get("tariff") == "unknown"
+        return False
+
+    return [check for check in run_checks(snap, view) if not settled(check)]

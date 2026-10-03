@@ -3,6 +3,10 @@
 The configuration is stored as plain data and validated with voluptuous. Every
 change records where a value came from ("read" from Home Assistant, "learned"
 by Joe, a "default", or set by the "user"), so the panel can explain it.
+
+Provenance is kept per path: "tariff.kind", "measurements.grid_power" or, for
+lists of items with an id, "batteries[<id>].capacity_kwh". What the user set or
+Joe learned is never overwritten by what Joe reads from Home Assistant.
 """
 
 from __future__ import annotations
@@ -34,6 +38,16 @@ CONSUMER_KINDS = (
 )
 DISCHARGE_MODES = ("until_target", "block", "free")
 PRIORITY_ITEMS = ("ev", "hot_water", "battery")
+
+# Lists whose items have an "id"; a patch may address single items by id.
+KEYED_LISTS = ("batteries", "persons", "consumers")
+# Values that are replaced as a whole instead of merged key by key.
+REPLACED = frozenset({"grid_power", "home_power", "power", "controls", "window"})
+# Origins that Joe's own reading never overwrites.
+PROTECTED_SOURCES = ("user", "learned")
+# Answer keys that list things the user told Joe to leave out or accepted as they are.
+IGNORED = "ignored"
+CONFIRMED = "confirmed"
 
 _TIME = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
@@ -151,6 +165,16 @@ RULES = vol.Schema(
     }
 )
 
+# Answers to Joe's questions. Known keys are checked, others are kept as they are
+# (e.g. "heating", "hot_water", "ev", "tariff", "capacity:<battery id>").
+ANSWERS = vol.Schema(
+    {
+        vol.Optional(IGNORED, default=list): [str],
+        vol.Optional(CONFIRMED, default=list): [str],
+    },
+    extra=vol.ALLOW_EXTRA,
+)
+
 PROVENANCE = vol.Schema(
     {
         vol.Required("source"): vol.In(SOURCES),
@@ -182,7 +206,7 @@ CONFIG = vol.Schema(
         vol.Optional("consumers", default=list): [CONSUMER],
         vol.Optional("actions", default=list): [dict],
         vol.Optional("rules", default=dict): RULES,
-        vol.Optional("answers", default=dict): {str: object},
+        vol.Optional("answers", default=dict): ANSWERS,
         vol.Optional("provenance", default=dict): {str: PROVENANCE},
     }
 )
@@ -211,24 +235,138 @@ def apply_update(
 ) -> dict[str, Any]:
     """Merge a partial update into the configuration and record its origin.
 
-    Nested dicts are merged, lists and plain values are replaced. Every changed
-    leaf path gets a provenance entry. Raises vol.Invalid if the result is invalid.
+    Nested dicts are merged, lists and plain values are replaced. For the keyed
+    lists (batteries, persons, consumers) the patch may be a dict by item id:
+    a dict merges into that item (or adds it), None removes it. Every changed
+    path gets a provenance entry. Raises vol.Invalid if the result is invalid.
     """
     if source not in SOURCES:
         raise vol.Invalid(f"unknown source: {source}")
-    patch = {
-        key: value
-        for key, value in patch.items()
-        if key not in ("version", "provenance")
-    }
-    merged = _merge(deepcopy(config), patch)
+    merged = deepcopy(config)
+    provenance: dict[str, Any] = merged.setdefault("provenance", {})
+    paths: list[str] = []
+    for key, value in patch.items():
+        if key in ("version", "provenance"):
+            continue
+        if key in KEYED_LISTS and isinstance(value, dict):
+            merged[key] = _merge_items(merged.get(key) or [], value)
+            for item_id, change in value.items():
+                prefix = f"{key}[{item_id}]"
+                provenance.pop(prefix, None)
+                if change is None:
+                    _forget(provenance, prefix)
+                    paths.append(prefix)
+                else:
+                    fields = {k: v for k, v in change.items() if k != "id"}
+                    paths.extend(_leaf_paths(fields, f"{prefix}."))
+        elif key in KEYED_LISTS:
+            merged[key] = deepcopy(value)
+            _forget(provenance, key)
+            paths.append(key)
+        else:
+            merged = _merge(merged, {key: value})
+            paths.extend(_leaf_paths({key: value}))
     stamp = (now or datetime.now(UTC)).isoformat(timespec="seconds")
-    for path in _leaf_paths(patch):
+    for path in paths:
         entry: dict[str, Any] = {"source": source, "updated": stamp}
         if detail:
             entry["detail"] = detail
-        merged.setdefault("provenance", {})[path] = entry
+        _forget(provenance, path)
+        provenance[path] = entry
     return validate(merged)
+
+
+def adopt_proposal(
+    config: dict[str, Any], proposal: dict[str, Any], now: datetime | None = None
+) -> dict[str, Any]:
+    """Take over what Joe found, except what the user set, Joe learned or ignored.
+
+    Values discovery could not determine (None) never replace known ones.
+    """
+    answers = config.get("answers") or {}
+    ignored = set(answers.get(IGNORED) or [])
+
+    def free(path: str) -> bool:
+        return not is_protected(config, path)
+
+    patch: dict[str, Any] = {}
+
+    found = proposal.get("measurements") or {}
+    measurements: dict[str, Any] = {}
+    for role in ("grid_power", "home_power"):
+        if found.get(role) and role not in ignored and free(f"measurements.{role}"):
+            measurements[role] = found[role]
+    solar = found.get("solar_power") or []
+    if solar and "solar_power" not in ignored and free("measurements.solar_power"):
+        measurements["solar_power"] = solar
+    if measurements:
+        patch["measurements"] = measurements
+
+    tariff = proposal.get("tariff") or {}
+    if "tariff" not in ignored:
+        change: dict[str, Any] = {}
+        price = ("kind", "price_entity", "window", "night_price", "day_price")
+        if tariff.get("kind", "unknown") != "unknown" and all(
+            free(f"tariff.{field}") for field in price
+        ):
+            change.update({field: tariff.get(field) for field in price})
+        feed_in = ("feed_in_price", "feed_in_entity")
+        if any(tariff.get(field) is not None for field in feed_in) and all(
+            free(f"tariff.{field}") for field in feed_in
+        ):
+            change.update({field: tariff.get(field) for field in feed_in})
+        if change:
+            patch["tariff"] = change
+
+    forecast = proposal.get("forecast") or {}
+    if forecast and "forecast" not in ignored and free("forecast"):
+        patch["forecast"] = forecast
+
+    found_context = proposal.get("context") or {}
+    context: dict[str, Any] = {}
+    for key, name in (("weather_entity", "weather"), ("holiday_entity", "holiday")):
+        if found_context.get(key) and name not in ignored and free(f"context.{key}"):
+            context[key] = found_context[key]
+    if context:
+        patch["context"] = context
+
+    for key, kind in (
+        ("batteries", "battery"),
+        ("persons", "person"),
+        ("consumers", "consumer"),
+    ):
+        known = {item["id"] for item in config.get(key) or []}
+        items: dict[str, Any] = {}
+        for item in proposal.get(key) or []:
+            item_id = item["id"]
+            prefix = f"{key}[{item_id}]"
+            if f"{kind}:{item_id}" in ignored or _protected_above(config, prefix):
+                continue
+            if item_id not in known:
+                items[item_id] = item
+                continue
+            fields = {
+                field: value
+                for field, value in item.items()
+                if field != "id" and value is not None and free(f"{prefix}.{field}")
+            }
+            if fields:
+                items[item_id] = fields
+        if items:
+            patch[key] = items
+
+    return apply_update(config, patch, "read", now=now) if patch else config
+
+
+def is_protected(config: dict[str, Any], path: str) -> bool:
+    """Whether the user or Joe's learning owns this path, a parent or a child of it."""
+    if _protected_above(config, path):
+        return True
+    provenance = config.get("provenance") or {}
+    return any(
+        _is_below(other, path) and entry.get("source") in PROTECTED_SOURCES
+        for other, entry in provenance.items()
+    )
 
 
 def migrate(data: dict[str, Any]) -> dict[str, Any]:
@@ -239,20 +377,76 @@ def migrate(data: dict[str, Any]) -> dict[str, Any]:
     return validate(data)
 
 
+_TOKEN = re.compile(r"\[[^\]]*\]|[^.\[]+")
+
+
+def _ancestors(path: str) -> list[str]:
+    """ "a.b[c].d" -> ["a", "a.b", "a.b[c]", "a.b[c].d"]."""
+    result: list[str] = []
+    current = ""
+    for token in _TOKEN.findall(path):
+        if not current or token.startswith("["):
+            current += token
+        else:
+            current += f".{token}"
+        result.append(current)
+    return result
+
+
+def _is_below(other: str, path: str) -> bool:
+    return other.startswith((f"{path}.", f"{path}["))
+
+
+def _protected_above(config: dict[str, Any], path: str) -> bool:
+    provenance = config.get("provenance") or {}
+    return any(
+        (entry := provenance.get(candidate)) is not None
+        and entry.get("source") in PROTECTED_SOURCES
+        for candidate in _ancestors(path)
+    )
+
+
+def _forget(provenance: dict[str, Any], path: str) -> None:
+    """Drop provenance below a path (it is replaced as a whole)."""
+    for other in [key for key in provenance if _is_below(key, path)]:
+        del provenance[other]
+
+
 def _merge(base: dict[str, Any], patch: dict[str, Any]) -> dict[str, Any]:
     for key, value in patch.items():
-        if isinstance(value, dict) and isinstance(base.get(key), dict) and value:
+        if (
+            isinstance(value, dict)
+            and isinstance(base.get(key), dict)
+            and value
+            and key not in REPLACED
+        ):
             base[key] = _merge(base[key], value)
         else:
             base[key] = deepcopy(value)
     return base
 
 
+def _merge_items(
+    items: list[dict[str, Any]], patch: dict[str, dict[str, Any] | None]
+) -> list[dict[str, Any]]:
+    by_id = {item["id"]: deepcopy(item) for item in items}
+    order = [item["id"] for item in items]
+    for item_id, change in patch.items():
+        if change is None:
+            by_id.pop(item_id, None)
+        elif item_id in by_id:
+            by_id[item_id] = _merge(by_id[item_id], change)
+        else:
+            by_id[item_id] = {**deepcopy(change), "id": item_id}
+            order.append(item_id)
+    return [by_id[item_id] for item_id in order if item_id in by_id]
+
+
 def _leaf_paths(patch: dict[str, Any], prefix: str = "") -> list[str]:
     paths: list[str] = []
     for key, value in patch.items():
         path = f"{prefix}{key}"
-        if isinstance(value, dict) and value:
+        if isinstance(value, dict) and value and key not in REPLACED:
             paths.extend(_leaf_paths(value, f"{path}."))
         else:
             paths.append(path)

@@ -74,6 +74,86 @@ async def test_discover_reads_registry_and_states(
     assert result["proposal"]["batteries"][0]["adapter"] == "omnibattery"
 
 
+async def test_adopt_takes_over_and_keeps_user_values(
+    ready_hass: HomeAssistant, hass_ws_client: WebSocketGenerator
+) -> None:
+    """Adopting stores what Joe found; a second scan leaves user values alone."""
+    hass = ready_hass
+    await _setup(hass)
+    for entity_id, state in (
+        ("sensor.grid_power", "1200"),
+        ("sensor.house_consumption", "1500"),
+        ("sensor.pv_power", "300"),
+    ):
+        hass.states.async_set(
+            entity_id,
+            state,
+            {
+                "unit_of_measurement": "W",
+                "device_class": "power",
+                "friendly_name": entity_id,
+            },
+        )
+
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id({"type": f"{DOMAIN}/adopt"})
+    msg = await client.receive_json()
+    assert msg["success"]
+    assert "discovery" in msg["result"]
+    runtime = hass.data[DOMAIN]
+    assert (
+        runtime.config["measurements"]["grid_power"]["entity_id"] == "sensor.grid_power"
+    )
+
+    await client.send_json_auto_id(
+        {
+            "type": f"{DOMAIN}/config/update",
+            "patch": {"measurements": {"grid_power": {"entity_id": "sensor.pv_power"}}},
+        }
+    )
+    assert (await client.receive_json())["success"]
+    await client.send_json_auto_id({"type": f"{DOMAIN}/adopt"})
+    assert (await client.receive_json())["success"]
+    assert (
+        runtime.config["measurements"]["grid_power"]["entity_id"] == "sensor.pv_power"
+    )
+
+
+async def test_check_reports_and_forgets_settled_findings(
+    ready_hass: HomeAssistant, hass_ws_client: WebSocketGenerator
+) -> None:
+    """A grid sensor counting the other way round is reported until confirmed."""
+    hass = ready_hass
+    await _setup(hass)
+    attrs = {"unit_of_measurement": "kW", "device_class": "power"}
+    hass.states.async_set("sensor.grid", "2.0", attrs)
+    hass.states.async_set("sensor.home", "0.5", attrs)
+    hass.states.async_set("sensor.pv", "2.5", attrs)
+    runtime = hass.data[DOMAIN]
+    runtime.async_update_config(
+        {
+            "measurements": {
+                "grid_power": {"entity_id": "sensor.grid"},
+                "home_power": {"entity_id": "sensor.home"},
+                "solar_power": [{"entity_id": "sensor.pv"}],
+            }
+        },
+        "user",
+    )
+
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id({"type": f"{DOMAIN}/check"})
+    checks = (await client.receive_json())["result"]["checks"]
+    assert [c["code"] for c in checks if c["level"] == "warn"] == ["grid_sign"]
+
+    runtime.async_update_config(
+        {"answers": {"confirmed": ["grid_sign:sensor.grid"]}}, "user"
+    )
+    await client.send_json_auto_id({"type": f"{DOMAIN}/check"})
+    checks = (await client.receive_json())["result"]["checks"]
+    assert "grid_sign" not in [c["code"] for c in checks]
+
+
 async def test_diagnostics_hide_personal_data(ready_hass: HomeAssistant) -> None:
     """Names of people and calendars do not appear in diagnostics."""
     hass = ready_hass
@@ -92,8 +172,17 @@ async def test_diagnostics_hide_personal_data(ready_hass: HomeAssistant) -> None
         "user",
     )
 
+    hass.data[DOMAIN].async_update_config(
+        {
+            "persons": {"person.robin": {"calendars": []}},
+            "answers": {"ignored": ["person:person.robin"]},
+        },
+        "user",
+    )
+
     diagnostics = await async_get_config_entry_diagnostics(hass, entry)
     person = diagnostics["config"]["persons"][0]
     assert person["name"] == "**REDACTED**"
     assert person["calendars"] == "**REDACTED**"
+    assert "robin" not in str(diagnostics).lower()
     assert diagnostics["state"]["mode"] == "simulation"

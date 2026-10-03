@@ -21,9 +21,10 @@
       Zeigt das gebaute Panel mit einem nachgeahmten Home Assistant.
       Aufruf über einen lokalen Webserver im Repo-Wurzelverzeichnis, z. B.
       python3 -m http.server 8767  →  http://localhost:8767/panel/dev/
-      Parameter: ?dark=1  ?lang=en  ?step=scan  ?done=1  ?page=settings  ?mode=off  ?audit=1
-      discovery-sample.json enthält Funde eines erfundenen Haushalts (aus tests/snapshots.py),
-      ?sample=generic einen zweiten mit unbekanntem Wechselrichter und Hinweisen.
+      Parameter: ?dark=1  ?lang=en  ?step=scan  ?done=1  ?page=settings  ?mode=off  ?sample=generic  ?audit=1
+      sample-*.json kommen aus scripts/make_dev_samples.py (erfundene Haushalte aus tests/snapshots.py):
+      Funde, die Konfiguration nach dem Übernehmen, ihre Prüfungen sowie Zustände und Register.
+      ?done=1 startet mit übernommener Konfiguration.
       ?audit=1 rahmt jedes Bedienelement rot ein, das keinen Tooltip hat; joeAudit() in der
       Konsole listet sie auf. Ein Element gilt als erklärt, wenn es oder ein Vorfahr
       data-tipped (Container mit <joe-tip>) oder data-notip (reine Navigation) trägt.
@@ -31,6 +32,7 @@
     <energy-joe-panel></energy-joe-panel>
     <script type="module">
       const params = new URLSearchParams(location.search);
+      const sample = await (await fetch(`./sample-${params.get("sample") || "fronius"}.json`)).json();
 
       // Stand-ins for elements Home Assistant provides.
       customElements.define(
@@ -44,16 +46,93 @@
       );
       customElements.define("ha-menu-button", class extends HTMLElement {});
 
+      // The same merge rules as custom_components/energy_joe/model.py (simplified).
+      const KEYED = ["batteries", "persons", "consumers"];
+      const REPLACED = new Set(["grid_power", "home_power", "power", "controls", "window"]);
+      const ITEM_DEFAULTS = {
+        batteries: {
+          power: null,
+          capacity_kwh: null,
+          capacity_entity: null,
+          max_charge_w: null,
+          max_discharge_w: null,
+          device_id: null,
+          controls: {},
+          priority: 1,
+        },
+        persons: { person_entity: null, calendars: [] },
+        consumers: { energy_entity: null, power_entity: null, included_in: null, source: "manual" },
+      };
+      const isDict = (v) => v && typeof v === "object" && !Array.isArray(v);
+      const below = (other, path) => other.startsWith(`${path}.`) || other.startsWith(`${path}[`);
+      const forget = (prov, path) =>
+        Object.keys(prov)
+          .filter((k) => below(k, path))
+          .forEach((k) => delete prov[k]);
+      const merge = (base, patch) => {
+        for (const [k, v] of Object.entries(patch)) {
+          if (isDict(v) && isDict(base[k]) && Object.keys(v).length && !REPLACED.has(k)) merge(base[k], v);
+          else base[k] = structuredClone(v);
+        }
+        return base;
+      };
+      const leaves = (patch, prefix = "") =>
+        Object.entries(patch).flatMap(([k, v]) =>
+          isDict(v) && Object.keys(v).length && !REPLACED.has(k) ? leaves(v, `${prefix}${k}.`) : [`${prefix}${k}`],
+        );
+      const applyUpdate = (config, patch, source) => {
+        const c = structuredClone(config);
+        const prov = c.provenance;
+        const paths = [];
+        for (const [key, value] of Object.entries(patch)) {
+          if (KEYED.includes(key) && isDict(value)) {
+            for (const [id, change] of Object.entries(value)) {
+              const prefix = `${key}[${id}]`;
+              delete prov[prefix];
+              const index = c[key].findIndex((item) => item.id === id);
+              if (change === null) {
+                if (index >= 0) c[key].splice(index, 1);
+                forget(prov, prefix);
+                paths.push(prefix);
+              } else {
+                if (index >= 0) merge(c[key][index], change);
+                else c[key].push({ ...ITEM_DEFAULTS[key], ...structuredClone(change), id });
+                const { id: _, ...fields } = change;
+                paths.push(...leaves(fields, `${prefix}.`));
+              }
+            }
+          } else if (KEYED.includes(key)) {
+            c[key] = structuredClone(value);
+            forget(prov, key);
+            paths.push(key);
+          } else {
+            merge(c, { [key]: value });
+            paths.push(...leaves({ [key]: value }));
+          }
+        }
+        for (const path of paths) {
+          forget(prov, path);
+          prov[path] = { source, updated: new Date().toISOString() };
+        }
+        return c;
+      };
+
+      const done = params.get("done") === "1";
+      const step = params.get("step") || "welcome";
       const state = {
         mode: params.get("mode") || "simulation",
-        onboarding: { step: params.get("step") || "welcome", completed: params.get("done") === "1" },
+        onboarding: { step, completed: done },
+        config: structuredClone(done || ["questions", "done"].includes(step) ? sample.adopted_config : sample.default_config),
       };
+      let adopted = done;
       const listeners = new Set();
       const push = () => listeners.forEach((cb) => cb(structuredClone(state)));
 
       const hass = {
+        ...sample.hass,
         language: params.get("lang") || "de",
         themes: { darkMode: params.get("dark") === "1" },
+        config: { currency: "EUR" },
         async callWS(msg) {
           switch (msg.type) {
             case "energy_joe/info":
@@ -62,10 +141,11 @@
                 ha_version: "2026.9.4",
                 energy: {
                   available: true,
-                  configured: true,
+                  configured: Boolean(sample.discovery.energy_dashboard.configured),
                   sources: { grid: 1, solar: 4, battery: 1, gas: 0, water: 0 },
                   devices: 29,
                 },
+                defaults: { rules: sample.default_config.rules },
               };
             case "energy_joe/set_mode":
               if (msg.mode === "live") throw { code: "not_available" };
@@ -73,8 +153,21 @@
               push();
               return null;
             case "energy_joe/discover":
+              return sample.discovery;
+            case "energy_joe/adopt":
               await new Promise((resolve) => setTimeout(resolve, 900));
-              return (await fetch(params.get("sample") === "generic" ? "./discovery-generic.json" : "./discovery-sample.json")).json();
+              if (!adopted) {
+                state.config = structuredClone(sample.adopted_config);
+                adopted = true;
+                push();
+              }
+              return { discovery: sample.discovery, checks: sample.checks };
+            case "energy_joe/check":
+              return { checks: sample.checks };
+            case "energy_joe/config/update":
+              state.config = applyUpdate(state.config, msg.patch, msg.source || "user");
+              push();
+              return null;
             case "energy_joe/onboarding":
               if (msg.step) state.onboarding.step = msg.step;
               if ("completed" in msg) state.onboarding.completed = msg.completed;
@@ -102,6 +195,7 @@
         const page = location.pathname.replace(/^\/energy-joe\/?/, "");
         panel.route = routeFromPage(page);
       });
+      window.joeState = state;
 
       // Tooltip check: every control needs an explanation or must be plain navigation.
       const CONTROLS =
@@ -117,13 +211,16 @@
       };
       const deep = (root) =>
         [...root.querySelectorAll("*")].flatMap((el) => (el.shadowRoot ? [el, ...deep(el.shadowRoot)] : [el]));
-      const describe = (el) => `${el.localName}: ${(el.textContent || el.getAttribute("aria-label") || "").trim().replace(/\s+/g, " ").slice(0, 50)}`;
+      const describe = (el) =>
+        `${el.localName}: ${(el.textContent || el.getAttribute("aria-label") || "").trim().replace(/\s+/g, " ").slice(0, 50)}`;
       let marked = [];
       window.joeAudit = () => {
         const all = deep(panel.shadowRoot);
         const visible = (el) => el.getClientRects().length > 0;
         const missing = all.filter((el) => el.matches(CONTROLS) && visible(el) && !covered(el));
-        const empty = all.filter((el) => el.hasAttribute("data-tipped") && visible(el) && !deep(el).some((x) => x.localName === "joe-tip"));
+        const empty = all.filter(
+          (el) => el.hasAttribute("data-tipped") && visible(el) && !deep(el).some((x) => x.localName === "joe-tip"),
+        );
         marked.forEach((el) => (el.style.outline = ""));
         marked = [...missing, ...empty];
         marked.forEach((el) => (el.style.outline = "3px dashed #e00"));

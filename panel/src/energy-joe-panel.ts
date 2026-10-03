@@ -3,10 +3,17 @@ import { property, state } from "lit/decorators.js";
 import { asset } from "./assets";
 import { displayTitle, swoosh } from "./components/bits";
 import "./components/empty-state";
+import "./components/entity-picker";
 import "./components/pose";
+import "./components/sheet";
 import "./components/sim-switch";
 import { tip } from "./components/tip";
+import type { ConfigChange, PickEvent, PickResult } from "./config";
 import { define } from "./define";
+import "./editors/battery-editor";
+import "./editors/consumers";
+import "./editors/household";
+import "./editors/tariff-editor";
 import { ensureFonts } from "./fonts";
 import { translator, type Translate, type TranslationKey } from "./i18n";
 import "./pages/onboarding";
@@ -17,6 +24,8 @@ import { tokens } from "./styles/tokens";
 import {
   ONBOARDING_STEPS,
   PAGES,
+  type AdoptResult,
+  type Check,
   type Discovery,
   type HomeAssistant,
   type JoeInfo,
@@ -57,9 +66,25 @@ export class EnergyJoePanel extends LitElement {
   @state() private discovery?: Discovery;
   @state() private discovering = false;
   @state() private discoveryFailed = false;
+  @state() private checks: Check[] = [];
+  @state() private picker?: PickEvent;
+  @state() private editor?: { editor: string; id?: string };
 
   private unsubscribe?: Promise<() => Promise<void>>;
   private infoRequested = false;
+  private adopted = false;
+
+  constructor() {
+    super();
+    // Pages, editors and the picker ask the panel to save, pick and edit.
+    this.addEventListener("joe-config", (ev) => this.onConfig(ev as CustomEvent<ConfigChange>));
+    this.addEventListener("joe-pick", (ev) => {
+      this.picker = (ev as CustomEvent<PickEvent>).detail;
+    });
+    this.addEventListener("joe-edit", (ev) => {
+      this.editor = (ev as CustomEvent<{ editor: string; id?: string }>).detail;
+    });
+  }
 
   private get t(): Translate {
     return translator(this.hass?.language);
@@ -99,26 +124,81 @@ export class EnergyJoePanel extends LitElement {
   }
 
   protected updated(): void {
-    // Joe looks around as soon as the setup reaches that step.
-    const inScan = this.joe && !this.joe.onboarding.completed && this.joe.onboarding.step === "scan";
-    if (inScan && !this.discovery && !this.discovering && !this.discoveryFailed) {
-      this.discover();
+    const joe = this.joe;
+    if (!joe || this.discovering || this.discoveryFailed) {
+      return;
+    }
+    // Joe looks around and takes over what he finds as soon as the setup
+    // reaches that step; the settings only need to know what he would find.
+    const inScan = !joe.onboarding.completed && joe.onboarding.step === "scan";
+    if (inScan && !this.adopted) {
+      this.scan();
+    } else if (!this.discovery && (joe.onboarding.completed ? this.page === "settings" : joe.onboarding.step !== "welcome")) {
+      this.look();
     }
   }
 
-  private async discover(force = false): Promise<void> {
-    if (!this.hass || this.discovering || (this.discovery && !force)) {
+  /** Look around, take over the findings (user values stay) and check them. */
+  private async scan(): Promise<void> {
+    if (!this.hass || this.discovering) {
       return;
     }
     this.discovering = true;
     this.discoveryFailed = false;
     try {
-      this.discovery = await this.hass.callWS<Discovery>({ type: "energy_joe/discover" });
+      const result = await this.hass.callWS<AdoptResult>({ type: "energy_joe/adopt" });
+      this.discovery = result.discovery;
+      this.checks = result.checks;
+      this.adopted = true;
     } catch {
       this.discoveryFailed = true;
     } finally {
       this.discovering = false;
     }
+  }
+
+  /** Look around without changing anything (for suggestions in the settings). */
+  private async look(): Promise<void> {
+    if (!this.hass || this.discovering) {
+      return;
+    }
+    this.discovering = true;
+    try {
+      this.discovery = await this.hass.callWS<Discovery>({ type: "energy_joe/discover" });
+      await this.refreshChecks();
+    } catch {
+      this.discoveryFailed = true;
+    } finally {
+      this.discovering = false;
+    }
+  }
+
+  private async refreshChecks(): Promise<void> {
+    try {
+      const result = await this.hass?.callWS<{ checks: Check[] }>({ type: "energy_joe/check" });
+      this.checks = result?.checks ?? [];
+    } catch {
+      // Checks are a courtesy; the next change tries again.
+    }
+  }
+
+  private onConfig(ev: CustomEvent<ConfigChange>): void {
+    ev.stopPropagation();
+    ev.detail.result = this.saveConfig(ev.detail);
+  }
+
+  private async saveConfig(change: ConfigChange): Promise<boolean> {
+    if (!this.hass) {
+      return false;
+    }
+    try {
+      await this.hass.callWS({ type: "energy_joe/config/update", patch: change.patch, source: change.source ?? "user" });
+    } catch {
+      this.showNotice(this.t("error.action"));
+      return false;
+    }
+    this.refreshChecks();
+    return true;
   }
 
   private subscribe(): void {
@@ -172,7 +252,7 @@ export class EnergyJoePanel extends LitElement {
       ${this.notice ? html`<div class="notice" role="alert">${this.notice}</div>` : nothing}
       <main
         @joe-onboarding=${this.onOnboarding}
-        @joe-rediscover=${() => this.discover(true)}
+        @joe-rediscover=${() => this.scan()}
         @joe-set-mode=${(ev: CustomEvent<{ mode: JoeMode }>) => this.setMode(ev.detail.mode)}
       >
         ${onboarding
@@ -180,14 +260,17 @@ export class EnergyJoePanel extends LitElement {
               .step=${this.joe.onboarding.step}
               .t=${t}
               .info=${this.info}
+              .hass=${this.hass}
+              .config=${this.joe.config}
               .discovery=${this.discovery}
+              .checks=${this.checks}
               ?discovering=${this.discovering}
               ?discoveryFailed=${this.discoveryFailed}
-              language=${this.hass?.language ?? "de"}
             ></joe-onboarding>`
           : this.renderPage(t)}
       </main>
-      ${this.modeDialog ? this.renderModeDialog(t) : nothing}
+      ${this.modeDialog ? this.renderModeDialog(t) : nothing} ${this.editor ? this.renderEditor(t) : nothing}
+      ${this.picker ? this.renderPicker(t) : nothing}
     `;
   }
 
@@ -224,7 +307,14 @@ export class EnergyJoePanel extends LitElement {
       return html`<joe-overview .t=${t}></joe-overview>`;
     }
     if (page === "settings") {
-      return html`<joe-settings .t=${t} .state=${this.joe} .info=${this.info}></joe-settings>`;
+      return html`<joe-settings
+        .t=${t}
+        .hass=${this.hass}
+        .state=${this.joe}
+        .info=${this.info}
+        .discovery=${this.discovery}
+        .checks=${this.checks}
+      ></joe-settings>`;
     }
     const coming = COMING[page];
     return coming
@@ -250,10 +340,7 @@ export class EnergyJoePanel extends LitElement {
       >
         <joe-pose name="lever"></joe-pose>
         <div data-tipped>
-          <div class="title-row">
-            <div id="mode-title">${displayTitle(t("mode.dialog.title"))}</div>
-            ${tip(t, "mode")}
-          </div>
+          <div id="mode-title">${displayTitle(t("mode.dialog.title"), "h2", tip(t, "mode"))}</div>
           ${swoosh}
           <div class="modes" role="group" aria-labelledby="mode-title">
             ${MODES.map((mode) => {
@@ -288,6 +375,74 @@ export class EnergyJoePanel extends LitElement {
     </div>`;
   }
 
+  private renderEditor(t: Translate): TemplateResult {
+    const editor = this.editor;
+    const config = this.joe?.config;
+    const close = () => {
+      this.editor = undefined;
+    };
+    let content: TemplateResult = html``;
+    let label = "";
+    let wide = false;
+    switch (editor?.editor) {
+      case "battery":
+        label = t("edit.battery.label");
+        content = html`<joe-battery-editor
+          .hass=${this.hass}
+          .t=${t}
+          .config=${config}
+          .discovery=${this.discovery}
+          batteryId=${editor.id ?? ""}
+        ></joe-battery-editor>`;
+        break;
+      case "tariff":
+        label = t("edit.tariff.label");
+        content = html`<joe-tariff-editor
+          .hass=${this.hass}
+          .t=${t}
+          .config=${config}
+          .discovery=${this.discovery}
+        ></joe-tariff-editor>`;
+        break;
+      case "household":
+        label = t("edit.household.label");
+        content = html`<div class="sheet-title">${displayTitle(t("edit.household.title"), "h2", tip(t, "q_household"))}</div>
+          <joe-household .hass=${this.hass} .t=${t} .config=${config} .discovery=${this.discovery}></joe-household>
+          <div class="actions">
+            <button type="button" class="btn btn-secondary" data-notip @click=${close}>${t("mode.close")}</button>
+          </div>`;
+        break;
+      case "consumers":
+        label = t("edit.consumers.label");
+        wide = true;
+        content = html`<div class="sheet-title">${displayTitle(t("edit.consumers.title"))}</div>
+          <joe-consumers .hass=${this.hass} .t=${t} .config=${config}></joe-consumers>
+          <div class="actions">
+            <button type="button" class="btn btn-secondary" data-notip @click=${close}>${t("mode.close")}</button>
+          </div>`;
+        break;
+    }
+    return html`<joe-sheet label=${label} closeLabel=${t("common.close")} ?wide=${wide} @joe-close=${close}>
+      ${content}
+    </joe-sheet>`;
+  }
+
+  private renderPicker(t: Translate): TemplateResult {
+    const picker = this.picker;
+    const finish = (result: PickResult | null) => {
+      picker?.resolve(result);
+      this.picker = undefined;
+    };
+    return html`<joe-sheet
+      label=${picker?.request.heading.replace(/\|/g, "") ?? ""}
+      closeLabel=${t("common.close")}
+      @joe-close=${() => finish(null)}
+      @joe-picked=${(ev: CustomEvent<PickResult>) => finish(ev.detail)}
+    >
+      <joe-entity-picker .hass=${this.hass} .t=${t} .request=${picker?.request}></joe-entity-picker>
+    </joe-sheet>`;
+  }
+
   private onModeSwitch(): void {
     this.modeDialog = true;
   }
@@ -312,6 +467,11 @@ export class EnergyJoePanel extends LitElement {
   }
 
   private async onOnboarding(ev: CustomEvent<{ step?: OnboardingStep; completed?: boolean }>): Promise<void> {
+    if (ev.detail.step === "welcome") {
+      // Starting over: Joe looks around again when the setup gets there.
+      this.adopted = false;
+      this.discoveryFailed = false;
+    }
     try {
       await this.hass?.callWS({ type: "energy_joe/onboarding", ...ev.detail });
       if (ev.detail.completed) {
@@ -537,12 +697,6 @@ export class EnergyJoePanel extends LitElement {
       }
       .sheet .display {
         font-size: 40px;
-      }
-      .title-row {
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: 12px;
       }
       .modes {
         display: grid;
