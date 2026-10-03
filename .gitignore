@@ -9,4 +9,3 @@ node_modules/
 .DS_Store
 branding/*
 !branding/README.md
-.deploy.env
