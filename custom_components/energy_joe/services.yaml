@@ -20,7 +20,7 @@ set_mode:
             - "off"
 answer:
   fields:
-    yes:
+    accept:
       required: true
       selector:
         boolean:

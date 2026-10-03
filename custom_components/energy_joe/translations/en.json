@@ -95,7 +95,7 @@
       "name": "Answer for tonight",
       "description": "In the suggest mode: may Joe steer tonight?",
       "fields": {
-        "yes": {
+        "accept": {
           "name": "Yes",
           "description": "On: yes, steer."
         }

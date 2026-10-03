@@ -95,7 +95,7 @@
       "name": "Antwort für heute Nacht",
       "description": "Im Modus Vorschlagen: Darf Joe heute Nacht steuern?",
       "fields": {
-        "yes": {
+        "accept": {
           "name": "Ja",
           "description": "An: ja, steuern."
         }
