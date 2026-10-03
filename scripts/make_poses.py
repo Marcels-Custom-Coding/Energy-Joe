@@ -36,6 +36,8 @@ POSES: dict[str, tuple[str, tuple[int, int, int, int] | None]] = {
     "energy_joe_fernglas.png": ("scout", None),
     "energy_joe_lupe.png": ("inspect", None),
     "fuesse hoch.png": ("relax", None),
+    "kopf kratzen.png": ("puzzled", None),
+    "warmwasser.png": ("hot-water", None),
 }
 # Ganze Szenen ohne weißen Hintergrund: nur verkleinern, nicht freistellen.
 SCENES: dict[str, str] = {

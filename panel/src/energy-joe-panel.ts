@@ -16,6 +16,7 @@ import { tokens } from "./styles/tokens";
 import {
   ONBOARDING_STEPS,
   PAGES,
+  type Discovery,
   type HomeAssistant,
   type JoeInfo,
   type JoeMode,
@@ -43,6 +44,9 @@ export class EnergyJoePanel extends LitElement {
   @state() private failed = false;
   @state() private liveDialog = false;
   @state() private notice = "";
+  @state() private discovery?: Discovery;
+  @state() private discovering = false;
+  @state() private discoveryFailed = false;
 
   private unsubscribe?: Promise<() => Promise<void>>;
   private infoRequested = false;
@@ -84,6 +88,29 @@ export class EnergyJoePanel extends LitElement {
     }
   }
 
+  protected updated(): void {
+    // Joe looks around as soon as the setup reaches that step.
+    const inScan = this.joe && !this.joe.onboarding.completed && this.joe.onboarding.step === "scan";
+    if (inScan && !this.discovery && !this.discovering && !this.discoveryFailed) {
+      this.discover();
+    }
+  }
+
+  private async discover(force = false): Promise<void> {
+    if (!this.hass || this.discovering || (this.discovery && !force)) {
+      return;
+    }
+    this.discovering = true;
+    this.discoveryFailed = false;
+    try {
+      this.discovery = await this.hass.callWS<Discovery>({ type: "energy_joe/discover" });
+    } catch {
+      this.discoveryFailed = true;
+    } finally {
+      this.discovering = false;
+    }
+  }
+
   private subscribe(): void {
     if (!this.hass || this.unsubscribe || !this.isConnected) {
       return;
@@ -104,7 +131,7 @@ export class EnergyJoePanel extends LitElement {
   protected render(): TemplateResult {
     const t = this.t;
     if (this.failed) {
-      return html`<main><joe-empty-state pose="inspect" heading=${t("error.title")} text=${t("error.text")}></joe-empty-state></main>`;
+      return html`<main><joe-empty-state pose="puzzled" heading=${t("error.title")} text=${t("error.text")}></joe-empty-state></main>`;
     }
     if (!this.joe) {
       return html`<div class="loading">${t("loading")}</div>`;
@@ -134,10 +161,19 @@ export class EnergyJoePanel extends LitElement {
       ${this.notice ? html`<div class="notice" role="alert">${this.notice}</div>` : nothing}
       <main
         @joe-onboarding=${this.onOnboarding}
+        @joe-rediscover=${() => this.discover(true)}
         @joe-set-mode=${(ev: CustomEvent<{ mode: JoeMode }>) => this.setMode(ev.detail.mode)}
       >
         ${onboarding
-          ? html`<joe-onboarding .step=${this.joe.onboarding.step} .t=${t} .info=${this.info}></joe-onboarding>`
+          ? html`<joe-onboarding
+              .step=${this.joe.onboarding.step}
+              .t=${t}
+              .info=${this.info}
+              .discovery=${this.discovery}
+              ?discovering=${this.discovering}
+              ?discoveryFailed=${this.discoveryFailed}
+              language=${this.hass?.language ?? "de"}
+            ></joe-onboarding>`
           : this.renderPage(t)}
       </main>
       ${this.liveDialog ? this.renderLiveDialog(t) : nothing}

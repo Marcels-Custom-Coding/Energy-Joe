@@ -10,7 +10,7 @@ Joe braucht kein Vorwissen: Nach dem Hinzufügen der Integration findest du ihn 
 
 ## Stand
 
-Panel im eigenen Design mit Einrichtungsassistent, Übersicht und Einstellungen; Joe startet im Simulationsmodus. Erkennung der Geräte, Planung und Lernen folgen.
+Panel im eigenen Design mit Einrichtungsassistent, Übersicht und Einstellungen; Joe startet im Simulationsmodus. Joe erkennt Speicher, Tarif, Solarprognose, Messwerte, Wallbox und Haushalt selbst und erklärt, warum. Bestätigen der Funde, Planung und Lernen folgen.
 
 ## Installieren
 

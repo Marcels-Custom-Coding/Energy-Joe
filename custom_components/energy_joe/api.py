@@ -12,6 +12,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.loader import async_get_integration
 
 from .const import DOMAIN
+from .discovery import async_discover
 from .runtime import (
     AVAILABLE_MODES,
     DATA_RUNTIME,
@@ -28,6 +29,8 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_subscribe)
     websocket_api.async_register_command(hass, ws_set_mode)
     websocket_api.async_register_command(hass, ws_onboarding)
+    websocket_api.async_register_command(hass, ws_config_update)
+    websocket_api.async_register_command(hass, ws_discover)
 
 
 def _runtime(
@@ -121,6 +124,44 @@ def ws_onboarding(
         return
     runtime.async_set_onboarding(step=msg.get("step"), completed=msg.get("completed"))
     connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/config/update",
+        vol.Required("patch"): dict,
+        vol.Optional("source", default="user"): vol.In(("user", "read")),
+        vol.Optional("detail"): str,
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_config_update(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Merge a partial configuration update; "read" marks values taken from HA."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    try:
+        runtime.async_update_config(msg["patch"], msg["source"], msg.get("detail"))
+    except vol.Invalid as err:
+        connection.send_error(msg["id"], "invalid_config", str(err))
+        return
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/discover"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_discover(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Look around Home Assistant and report what Joe can use (read-only)."""
+    connection.send_result(msg["id"], await async_discover(hass))
 
 
 async def _async_energy_summary(hass: HomeAssistant) -> dict[str, Any]:
