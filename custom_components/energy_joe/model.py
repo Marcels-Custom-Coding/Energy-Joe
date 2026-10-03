@@ -41,6 +41,7 @@ DISCHARGE_MODES = ("until_target", "block", "free")
 PRIORITY_ITEMS = ("ev", "hot_water", "battery")
 
 ACTION_KINDS = ("switch", "target")
+DAY_LABELS = ("home_office", "office", "travel", "vacation", "guests", "home")
 CONDITION_OPS = ("eq", "ne", "lt", "le", "gt", "ge")
 
 # Lists whose items have an "id"; a patch may address single items by id.
@@ -56,6 +57,16 @@ REPLACED = frozenset(
         "window",
         "steps",
         "prepare",
+        # What Joe learned is replaced as a whole on every pass.
+        "consumption_model",
+        "group_models",
+        "presence",
+        "solar_classes",
+        "sources",
+        "battery_models",
+        "action_models",
+        "reset",
+        "alternatives",
     }
 )
 # Origins that Joe's own reading never overwrites.
@@ -147,6 +158,17 @@ TARIFF = vol.Schema(
     }
 )
 
+# Another forecast for the same panels: Joe learns how well it fits and
+# combines it with the main forecast (see learn/models.py).
+FORECAST_SOURCE = vol.Schema(
+    {
+        vol.Required("id"): vol.All(str, vol.Length(min=1, max=40)),
+        vol.Required("name"): vol.All(str, vol.Length(min=1, max=60)),
+        vol.Optional("provider", default=None): vol.Any(None, str),
+        vol.Optional("tomorrow", default=list): [cv.entity_id],
+    }
+)
+
 FORECAST = vol.Schema(
     {
         vol.Optional("provider", default=None): vol.Any(None, str),
@@ -154,6 +176,9 @@ FORECAST = vol.Schema(
         vol.Optional("today", default=list): [cv.entity_id],
         vol.Optional("tomorrow", default=list): [cv.entity_id],
         vol.Optional("remaining_today", default=list): [cv.entity_id],
+        vol.Optional("alternatives", default=list): [FORECAST_SOURCE],
+        # Whether Joe may combine the sources (off: only the main forecast).
+        vol.Optional("combine", default=True): bool,
     }
 )
 
@@ -253,6 +278,41 @@ RULES = vol.Schema(
     }
 )
 
+# Calendar events become a label per person and day ("office", "vacation", ...):
+# the first rule whose keyword is in an event's title or place wins; days
+# without a matching event get the default of a working day or a day off.
+CALENDAR = vol.Schema(
+    {
+        vol.Optional(
+            "rules",
+            default=lambda: [
+                {"keyword": keyword, "label": label}
+                # "Homeoffice" before "office", so it is not taken for the office.
+                for label, keywords in (
+                    ("vacation", ("urlaub", "vacation", "ferien", "holiday")),
+                    ("travel", ("dienstreise", "reise", "hotel", "trip", "travel")),
+                    (
+                        "home_office",
+                        ("homeoffice", "home office", "mobiles arbeiten", "remote"),
+                    ),
+                    ("office", ("büro", "buero", "office")),
+                    ("guests", ("besuch", "gäste", "gaeste", "guests", "visit")),
+                )
+                for keyword in keywords
+            ],
+        ): [
+            vol.Schema(
+                {
+                    vol.Required("keyword"): vol.All(str, vol.Length(min=1, max=40)),
+                    vol.Required("label"): vol.In(DAY_LABELS),
+                }
+            )
+        ],
+        vol.Optional("default_workday", default="home_office"): vol.In(DAY_LABELS),
+        vol.Optional("default_day_off", default="home"): vol.In(DAY_LABELS),
+    }
+)
+
 # Who hears from Joe: a notify service (e.g. a phone) and what he tells.
 NOTIFY = vol.Schema(
     {
@@ -290,6 +350,17 @@ LEARNED = vol.Schema(
         vol.Optional("buffer_days", default=0): vol.All(int, vol.Range(min=0)),
         vol.Optional("since", default=None): vol.Any(None, str),
         vol.Optional("updated", default=None): vol.Any(None, str),
+        # The models (see learn/models.py), learned once a day.
+        vol.Optional("consumption_model", default=None): vol.Any(None, dict),
+        vol.Optional("group_models", default=dict): dict,
+        vol.Optional("presence", default=dict): dict,
+        vol.Optional("solar_classes", default=dict): dict,
+        vol.Optional("sources", default=dict): dict,
+        vol.Optional("battery_models", default=dict): dict,
+        vol.Optional("action_models", default=dict): dict,
+        vol.Optional("models_day", default=None): vol.Any(None, str),
+        # When an area was reset last ({"forecast": "2026-10-03T21:00:00+02:00"}).
+        vol.Optional("reset", default=dict): {str: str},
     },
     extra=vol.ALLOW_EXTRA,
 )
@@ -326,6 +397,7 @@ CONFIG = vol.Schema(
         vol.Optional("actions", default=list): [ACTION],
         vol.Optional("rules", default=dict): RULES,
         vol.Optional("notify", default=dict): NOTIFY,
+        vol.Optional("calendar", default=dict): CALENDAR,
         vol.Optional("answers", default=dict): ANSWERS,
         vol.Optional("learned", default=dict): LEARNED,
         vol.Optional("provenance", default=dict): {str: PROVENANCE},

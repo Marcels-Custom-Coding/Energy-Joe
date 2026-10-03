@@ -38,6 +38,19 @@ from custom_components.energy_joe.learn.learning import (
     solar_ratios,
     solar_shift,
 )
+from custom_components.energy_joe.learn.models import (
+    MIN_DAYS,
+    SOURCE_DAYS,
+    battery_model,
+    class_factor,
+    consumption_model,
+    daily_rows,
+    expected,
+    group_models,
+    presence_by_label,
+    solar_classes,
+    surprises,
+)
 from custom_components.energy_joe.observe.records import (
     day_view,
     hour_starts,
@@ -97,7 +110,14 @@ def hass_data(snap: Snapshot) -> dict:
 
 # Made-up history: the sample ends on this day at 15:00.
 LAST_DAY = date(2026, 10, 3)
-HISTORY_DAYS = 14
+HISTORY_DAYS = 21
+# Share of energy that is not lost on the way into or out of a battery.
+LOSS = 0.95
+# The day the household had guests (Joe asks about it).
+GUESTS_DAY = LAST_DAY - timedelta(days=2)
+# Steady use per consumer kind (kWh a day) and what heating adds per degree below 15 °C.
+USE = {"climate": 0.4, "hot_water": 2.2, "household": 0.8, "ev": 0.0}
+HEAT_PER_DEGREE = {"electric_heating": 0.3}
 
 
 def history(config: dict) -> dict[str, dict]:
@@ -107,6 +127,7 @@ def history(config: dict) -> dict[str, dict]:
     capacity = {b["id"]: b["capacity_kwh"] or 5.0 for b in batteries}
     soc = {b["id"]: 30.0 for b in batteries}
     persons = [p["id"] for p in config["persons"]]
+    metered = [c for c in config["consumers"] if c["kind"] != "submeter"]
     days: dict[str, dict] = {}
     for offset in range(HISTORY_DAYS - 1, -1, -1):
         day = LAST_DAY - timedelta(days=offset)
@@ -114,16 +135,34 @@ def history(config: dict) -> dict[str, dict]:
         sun = rng.choice([0.25, 0.45, 0.7, 0.9, 1.0, 1.0])
         start = dt_util.start_of_local_day(day)
         end = start + timedelta(hours=15) if offset == 0 else start + timedelta(days=1)
+        # Autumn: it gets colder over the weeks, some days more than others.
+        mean_temp = 15 - 0.4 * (HISTORY_DAYS - offset) + rng.uniform(-2.5, 2.5)
+        # The first person goes to the office on some days, works at home on others.
+        office = not weekend and day.weekday() in (0, 2, 3)
         hours = []
         for hour in hour_starts(start, end):
             h = hour.hour
+            temp = mean_temp + 4 * math.sin((h - 9) / 24 * 2 * math.pi)
             solar = (
                 max(0.0, 4.6 * sun * math.exp(-((((h + 0.5) - 13) / 3.0) ** 2)))
                 if 7 <= h <= 19
                 else 0.0
             )
+            use = {
+                c["id"]: round(
+                    USE.get(c["kind"], 0.1) / 24
+                    + HEAT_PER_DEGREE.get(c["kind"], 0.0) * max(0.0, 15 - temp) / 24,
+                    4,
+                )
+                for c in metered
+            }
             home = 0.32 + (0.7 if h in (7, 8) else 0) + (1.2 if 18 <= h <= 21 else 0)
             home += (0.6 if weekend and 10 <= h <= 15 else 0) + rng.uniform(0, 0.15)
+            home += (0.5 if not weekend and not office and 9 <= h <= 16 else 0) + sum(
+                use.values()
+            )
+            if day == GUESTS_DAY and h >= 12:
+                home *= 1.8
             surplus = solar - home
             bat: dict[str, dict] = {}
             bat_in = bat_out = 0.0
@@ -131,9 +170,12 @@ def history(config: dict) -> dict[str, dict]:
                 share = surplus / len(soc)
                 room = (100 - soc[battery_id]) / 100 * capacity[battery_id]
                 stock = (soc[battery_id] - 10) / 100 * capacity[battery_id]
+                # About 5 % goes lost each way (90 % round trip).
+                room /= LOSS
+                stock *= LOSS
                 if 0 <= h < 5:
                     charge, discharge = (
-                        (0.5, 0.0) if sun < 0.5 else (0.0, min(stock, 0.15))
+                        (min(0.5, room), 0.0) if sun < 0.5 else (0.0, min(stock, 0.15))
                     )
                 elif share > 0:
                     charge, discharge = min(share, room, 2.5), 0.0
@@ -144,7 +186,9 @@ def history(config: dict) -> dict[str, dict]:
                     min(
                         100.0,
                         soc[battery_id]
-                        + (charge - discharge) / capacity[battery_id] * 100,
+                        + (charge * LOSS - discharge / LOSS)
+                        / capacity[battery_id]
+                        * 100,
                     ),
                 )
                 bat[battery_id] = {
@@ -166,26 +210,28 @@ def history(config: dict) -> dict[str, dict]:
                 "bat_in": round(bat_in, 4),
                 "bat_out": round(bat_out, 4),
                 "bat": bat,
-            }
-            if offset < 3:
-                record["temp"] = round(
-                    9
-                    + 6 * math.sin((h - 9) / 24 * 2 * math.pi)
-                    + rng.uniform(-0.5, 0.5),
-                    1,
-                )
-                record["present"] = {
-                    person: 1.0 if (weekend or h < 8 + i or h >= 17 - i) else 0.0
+                "use": use,
+                "temp": round(temp + rng.uniform(-0.5, 0.5), 1),
+                "present": {
+                    person: 1.0
+                    if weekend or (i == 0 and not office) or h < 8 + i or h >= 17 - i
+                    else 0.0
                     for i, person in enumerate(persons)
-                }
+                },
+            }
             hours.append(record)
         total = sum(r["solar"] for r in hours) if offset else 4.6 * sun * 5.3
         forecast = round(total * rng.uniform(0.8, 1.3), 1)
         # The hourly forecast as a bell from 7 to 19 h, in Wh like the real one.
         weights = [max(0.0, math.sin(math.pi * (h + 0.5 - 7) / 12)) for h in range(24)]
+        calendars = [p["id"] for p in config["persons"] if p["calendars"]]
         days[day.isoformat()] = {
             "hours": hours,
             "workday": not weekend,
+            "labels": {
+                person: "home" if weekend else "office" if office else "home_office"
+                for person in calendars
+            },
             "fc": {
                 "ahead_kwh": forecast,
                 "ahead_hours": {
@@ -273,7 +319,7 @@ def made_up_plan(
     )
 
 
-def look_back(days: dict[str, dict]) -> tuple[dict, dict, dict]:
+def look_back(days: dict[str, dict], config: dict) -> tuple[dict, dict, dict]:
     """Replay every finished night and learn from the days, as the learner does."""
     latest = max(
         datetime.fromisoformat(record["start"])
@@ -311,6 +357,10 @@ def look_back(days: dict[str, dict]) -> tuple[dict, dict, dict]:
     ]
     margin, buffer_days = buffer(evaluations)
     updated = dt_util.start_of_local_day(LAST_DAY) + timedelta(hours=14, minutes=10)
+    # The models, as the learner's daily pass builds them from the days before today.
+    past = {day: data for day, data in days.items() if day < LAST_DAY.isoformat()}
+    rows = daily_rows(past)
+    fitted = consumption_model(rows)
     learned = {
         "solar_factor": factor,
         "solar_days": solar_days,
@@ -320,6 +370,18 @@ def look_back(days: dict[str, dict]) -> tuple[dict, dict, dict]:
         "buffer_days": buffer_days,
         "since": None,
         "updated": updated.isoformat(timespec="seconds"),
+        "consumption_model": fitted,
+        "group_models": group_models(rows, config["consumers"]),
+        "presence": presence_by_label(past, [p["id"] for p in config["persons"]]),
+        "solar_classes": solar_classes(solar_ratios(past)),
+        "sources": {},
+        "battery_models": {
+            b["id"]: found
+            for b in config["batteries"]
+            if (found := battery_model(past, b["id"]))
+        },
+        "action_models": {},
+        "models_day": LAST_DAY.isoformat(),
     }
     profiles, consumption = consumption_profiles(
         {day: data for day, data in days.items() if day < LAST_DAY.isoformat()}
@@ -344,9 +406,66 @@ def look_back(days: dict[str, dict]) -> tuple[dict, dict, dict]:
             if (data.get("evaluation") or {}).get("complete")
             and data["evaluation"]["final"]
         ],
-        "needs": {"solar": SOLAR_DAYS, "shift": SHIFT_DAYS, "buffer": BUFFER_DAYS},
+        "days": [
+            {
+                "date": row.date,
+                "home": round(row.home, 2),
+                "temp": None if row.temp is None else round(row.temp, 1),
+                "workday": row.workday,
+                "excluded": row.excluded,
+                "answer": None,
+                "labels": past[row.date].get("labels") or {},
+            }
+            for row in rows
+        ],
+        "questions": surprises(rows, fitted, set()),
+        "needs": {
+            "solar": SOLAR_DAYS,
+            "shift": SHIFT_DAYS,
+            "buffer": BUFFER_DAYS,
+            "models": MIN_DAYS,
+            "sources": SOURCE_DAYS,
+        },
     }
     return learned, learning, results(days, None)
+
+
+def tomorrow_outlook(
+    config: dict, learned: dict, rows: list[dict], day: date, sun_kwh: float
+) -> dict:
+    """What plan/inputs.async_tomorrow says for the made-up tomorrow (7 °C, overcast)."""
+    workday = day.weekday() < 5
+    alike = [r["home"] for r in rows if r["workday"] == workday and not r["excluded"]]
+    usual = round(sum(alike) / len(alike), 2) if alike else 11.0
+    labels = {
+        p["id"]: config["calendar"]["default_workday" if workday else "default_day_off"]
+        for p in config["persons"]
+        if p["calendars"]
+    }
+    presence = None
+    for person, label in labels.items():
+        found = (learned["presence"].get(person) or {}).get(label)
+        if found:
+            presence = max(presence or 0.0, found["hours"])
+    meta = {
+        "date": day.isoformat(),
+        "workday": workday,
+        "temp": 7.0,
+        "labels": labels,
+        "presence": presence,
+        "profile_kwh": usual,
+        "scale": 1.0,
+        "solar_forecast": sun_kwh,
+        "solar_combined": None,
+        "solar_factor": None,
+        "solar_source": "learned",
+    }
+    if model_ := learned["consumption_model"]:
+        meta["expected_kwh"] = round(expected(model_, workday, 7.0, presence), 2)
+        meta["scale"] = round(max(0.5, min(2.0, meta["expected_kwh"] / usual)), 2)
+    if found := class_factor(learned["solar_classes"], sun_kwh):
+        meta.update(weather=found[0], solar_factor=found[1], solar_source="weather")
+    return meta
 
 
 def _state_getter(snap_hass: dict):
@@ -385,7 +504,7 @@ def history_sample(config: dict, snap_hass: dict | None = None) -> dict:
         )
         plan["fixed"] = True
         days[day]["plan"] = plan
-    learned, learning, summary = look_back(days)
+    learned, learning, summary = look_back(days, config)
     views = {}
     for day, data in days.items():
         moment = dt_util.start_of_local_day(date.fromisoformat(day))
@@ -423,6 +542,10 @@ def history_sample(config: dict, snap_hass: dict | None = None) -> dict:
             for a in actions
         ]
         tonight["meta"]["tomorrow_kwh"] = 5.5
+    if window:
+        tonight["meta"]["tomorrow"] = tomorrow_outlook(
+            config, learned, learning["days"], LAST_DAY + timedelta(days=1), 5.5
+        )
     return {
         "days": [summarize(day, data, window) for day, data in reversed(days.items())],
         "views": views,

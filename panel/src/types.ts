@@ -150,12 +150,33 @@ export interface TariffConfig {
   feed_in_entity: string | null;
 }
 
+/** Another forecast for the same panels, learned and combined with the main one. */
+export interface ForecastSource {
+  id: string;
+  name: string;
+  provider: string | null;
+  tomorrow: string[];
+}
+
 export interface ForecastConfig {
   provider: string | null;
   config_entries: string[];
   today: string[];
   tomorrow: string[];
   remaining_today: string[];
+  alternatives: ForecastSource[];
+  /** Whether Joe may combine the sources (off: only the main forecast). */
+  combine: boolean;
+}
+
+export type DayLabel = "home_office" | "office" | "travel" | "vacation" | "guests" | "home";
+export const DAY_LABELS: DayLabel[] = ["home_office", "office", "travel", "vacation", "guests", "home"];
+
+/** Calendar events become a label per person and day. */
+export interface CalendarConfig {
+  rules: { keyword: string; label: DayLabel }[];
+  default_workday: DayLabel;
+  default_day_off: DayLabel;
 }
 
 export interface PersonConfig {
@@ -241,7 +262,50 @@ export interface Learned {
   /** When learning (re)started; null: from the first day Joe knows. */
   since: string | null;
   updated: string | null;
+  /** The models, learned once a day (see learn/models.py). */
+  consumption_model: ConsumptionModel | null;
+  group_models: Record<string, ConsumptionModel & { average: number }>;
+  /** Hours at home per person and calendar label. */
+  presence: Record<string, Partial<Record<DayLabel, { hours: number; days: number }>>>;
+  solar_classes: {
+    classes?: Partial<Record<WeatherClass, { factor: number; days: number }>>;
+    top?: number;
+    days?: number;
+  };
+  /** How well each forecast source fits ("main" and the alternatives). */
+  sources: Record<string, { factor: number; error: number; days: number }>;
+  battery_models: Record<string, { capacity_kwh: number; efficiency: number; days: number }>;
+  action_models: Record<string, { rate_k_per_h: number; loss_k_per_h: number; demand_k: number; days: number }>;
+  models_day: string | null;
+  /** When an area was reset last. */
+  reset: Partial<Record<LearnScope, string>>;
 }
+
+export type WeatherClass = "clear" | "mixed" | "overcast";
+export type LearnScope = "forecast" | "consumption" | "battery" | "hot_water";
+export const LEARN_SCOPES: LearnScope[] = ["forecast", "consumption", "battery", "hot_water"];
+
+/** Daily consumption = base + working day + degrees below 15 °C / above 22 °C (+ presence). */
+export interface ConsumptionModel {
+  base: number;
+  workday: number;
+  heat: number;
+  cool: number;
+  presence: number | null;
+  presence_mean: number | null;
+  r2: number;
+  days: number;
+}
+
+/** A recent day far off what Joe expected. */
+export interface DayQuestion {
+  date: string;
+  actual: number;
+  expected: number;
+  kind: "more" | "less";
+}
+
+export type DayAnswer = "normal" | "guests" | "away" | "special";
 
 export type ConditionOp = "eq" | "ne" | "lt" | "le" | "gt" | "ge";
 
@@ -291,6 +355,7 @@ export interface JoeConfig {
   actions: ActionConfig[];
   rules: Rules;
   notify: NotifyConfig;
+  calendar: CalendarConfig;
   answers: Answers;
   learned: Learned;
   provenance: Record<string, Provenance>;
@@ -361,9 +426,28 @@ export interface Plan {
     solar_factor: number;
     workday?: boolean | null;
     tomorrow_kwh?: number;
+    tomorrow?: TomorrowOutlook;
+    efficiency?: number;
   };
   hours?: PlanHour[];
   actions?: PlanAction[];
+}
+
+/** Tomorrow as Joe's models see it (see plan/inputs.py). */
+export interface TomorrowOutlook {
+  date: string;
+  workday: boolean;
+  temp: number | null;
+  labels: Record<string, DayLabel>;
+  presence: number | null;
+  profile_kwh: number;
+  expected_kwh?: number;
+  scale: number;
+  weather?: WeatherClass;
+  solar_forecast: number | null;
+  solar_combined: number | null;
+  solar_factor: number | null;
+  solar_source: "combined" | "weather" | "learned";
 }
 
 /** A night action in tonight's plan (see plan/actions.py). */
@@ -391,6 +475,7 @@ export interface JoeState {
   observe?: ObserveStatus;
   plan?: Plan | null;
   results?: Results | null;
+  questions?: DayQuestion[];
   control?: ControlView;
 }
 
@@ -531,8 +616,19 @@ export interface Learning {
     bridge: { planned: number; actual: number };
   }[];
   results: Results | null;
+  /** The days behind the models: consumption against the outdoor temperature. */
+  days: {
+    date: string;
+    home: number;
+    temp: number | null;
+    workday: boolean;
+    excluded: boolean;
+    answer: DayAnswer | null;
+    labels: Record<string, DayLabel>;
+  }[];
+  questions: DayQuestion[];
   /** How many days each value needs before Joe uses it. */
-  needs: { solar: number; shift: number; buffer: number };
+  needs: { solar: number; shift: number; buffer: number; models: number; sources: number };
 }
 
 // --- History (see custom_components/energy_joe/observe) ---
@@ -717,6 +813,8 @@ export interface ForecastFinding {
   tomorrow_kwh: number | null;
   confidence: number;
   reasons: Reason[];
+  /** Other forecast integrations: alternatives to learn and combine. */
+  others?: { provider: string; provider_name: string; tomorrow: string[]; tomorrow_kwh: number | null }[];
 }
 
 export interface WallboxFinding {

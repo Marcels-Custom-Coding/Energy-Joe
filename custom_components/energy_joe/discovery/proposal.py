@@ -59,6 +59,15 @@ def build_proposal(result: dict[str, Any]) -> dict[str, Any]:
                 "today": forecast["today"],
                 "tomorrow": forecast["tomorrow"],
                 "remaining_today": forecast["remaining_today"],
+                "alternatives": [
+                    {
+                        "id": other["provider"],
+                        "name": other["provider_name"],
+                        "provider": other["provider"],
+                        "tomorrow": other["tomorrow"],
+                    }
+                    for other in forecast.get("others") or []
+                ],
             }
             if forecast
             else {}

@@ -740,6 +740,12 @@ export const de = {
   "plan.math.solar.sum": "Tagesprognose, über den Tag verteilt",
   "plan.math.solar.none": "keine Prognose – ich rechne ohne Sonne",
   "plan.math.solar.factor": "× {value}, so trifft die Prognose bei dir",
+  "plan.math.solar.combined": "× {value} aus mehreren Prognosen kombiniert",
+  "plan.math.solar.weather": "× {value}, so trifft sie bei Wetterlage „{weather}“",
+  "plan.math.tomorrow": "Morgen",
+  "plan.math.tomorrow.person": "{name}: {label}",
+  "plan.math.tomorrow.scaled": "für den ganzen Tag erwarte ich {expected} kWh statt der üblichen {usual} kWh",
+  "plan.math.tomorrow.usual": "ich rechne wie an einem üblichen Tag",
   "plan.math.home": "Verbrauch morgen",
   "plan.math.home.history": "aus {days} Tagen, {kind}",
   "plan.math.home.default": "Startwert eines typischen Haushalts",
@@ -841,27 +847,128 @@ export const de = {
   "learn.accuracy.value": "{expected} → {actual}",
   "learn.accuracy.none":
     "Sobald ich Pläne nachgespielt habe, siehst du hier für jede Nacht, was ich erwartet habe und was kam.",
-  "learn.later": "Das lerne ich als Nächstes",
-  "learn.later.capacity": "Wie viel deine Speicher wirklich fassen",
-  "learn.later.efficiency": "Wie viel beim Laden verloren geht",
-  "learn.later.cold": "Wie viel ihr bei Kälte mehr braucht",
-  "learn.later.presence": "Wer wann zu Hause ist",
-  "learn.later.calendar": "Urlaub und Homeoffice aus euren Kalendern",
+  "ask.title": "Joe fragt nach",
+  "ask.lead":
+    "An diesen Tagen lag euer Verbrauch weit neben dem, was ich erwartet habe. Sag mir kurz, was los war – dann lerne ich richtig daraus.",
+  "ask.more": "{day}: Ihr habt {actual} kWh verbraucht, ich hatte mit {expected} kWh gerechnet. War etwas Besonderes?",
+  "ask.less": "{day}: Ihr habt nur {actual} kWh verbraucht, ich hatte mit {expected} kWh gerechnet. Wart ihr weg?",
+  "ask.answers": "Antworten",
+  "ask.answer.guests": "Wir hatten Besuch",
+  "ask.answer.away": "Wir waren weg",
+  "ask.answer.special": "Etwas anderes Besonderes",
+  "ask.answer.normal": "Ganz normaler Tag",
+  "learn.models": "Was ich über euer Zuhause weiß",
+  "learn.model": "Verbrauch und Wetter",
+  "learn.model.no_weather":
+    "Ohne Wetter-Entität kenne ich die Außentemperatur nicht. Wähle in der Einrichtung eine aus, dann lerne ich, wie viel ihr bei Kälte mehr braucht.",
+  "learn.model.learning":
+    "Ich vergleiche jeden Tag euren Verbrauch mit der Außentemperatur. Ab {need} vollständigen Tagen rechne ich damit – {have} habe ich.",
+  "learn.model.base": "An warmen Tagen braucht ihr etwa {value} kWh.",
+  "learn.model.workday_more": "An Arbeitstagen {value} kWh mehr.",
+  "learn.model.workday_less": "An Arbeitstagen {value} kWh weniger.",
+  "learn.model.heat": "Jedes Grad unter 15 °C kostet {value} kWh mehr.",
+  "learn.model.cool": "Jedes Grad über 22 °C kostet {value} kWh mehr.",
+  "learn.model.presence": "Jede Stunde mehr, die jemand zu Hause ist, kostet {value} kWh.",
+  "learn.model.fit": "Das erklärt {share} % der Unterschiede zwischen euren Tagen.",
+  "learn.model.chart": "Verbrauch pro Tag nach Außentemperatur",
+  "learn.model.chart.actual": "gemessen (Mittel)",
+  "learn.model.chart.workday": "erwartet, Arbeitstag",
+  "learn.model.chart.day_off": "erwartet, freier Tag",
+  "learn.weather": "Sonne nach Wetterlage",
+  "learn.weather.say":
+    "Wie gut die Prognose trifft, hängt vom Wetter ab. Ein Tag gilt als klar, wenn die Prognose mindestens 70 % des besten Tages der letzten 30 Tage ({top} kWh) erreicht.",
+  "learn.weather.learning":
+    "Für jede Wetterlage brauche ich mindestens drei Tage, um zu sehen, wie gut die Prognose trifft – {have} Tage habe ich insgesamt.",
+  "learn.weather.clear": "klar",
+  "learn.weather.mixed": "wechselhaft",
+  "learn.weather.overcast": "trüb",
+  "learn.sources": "Prognosequellen",
+  "learn.sources.main": "Hauptprognose",
+  "learn.sources.error": "typisch ±{value} % daneben",
+  "learn.sources.weight": "zählt {value} %",
+  "learn.sources.learning": "lerne noch (ab {need} Tagen)",
+  "learn.sources.combine": "Prognosen kombinieren",
+  "learn.sources.single":
+    "Ich habe nur eine Prognose. Hast du eine zweite Integration (zum Beispiel Solcast und Forecast.Solar), finde ich sie bei der nächsten Suche und vergleiche beide.",
+  "learn.battery": "Speicher, wie sie wirklich sind",
+  "learn.battery.learning":
+    "Ich messe, wie viel hinein- und herausgeht und wie sich der Ladestand ändert. Nach etwa {need} Tagen mit Bewegung weiß ich, wie viel er wirklich fasst.",
+  "learn.battery.no_power": "Ohne Leistungsmessung des Speichers kann ich Größe und Verluste nicht messen.",
+  "learn.battery.user": "Du hast {value} kWh eingetragen – damit rechne ich weiter.",
+  "learn.battery.odd":
+    "Das passt nicht zu den {value} kWh laut Gerät – ich rechne lieber mit dem Gerätewert. Prüfe den Ladestand- und den Leistungs-Sensor.",
+  "learn.battery.uses_nominal": "Laut Gerät {value} kWh – ich rechne mit dem gemessenen Wert.",
+  "learn.battery.uses": "Ich rechne mit dem gemessenen Wert.",
+  "learn.battery.capacity": "{value} kWh nutzbar",
+  "learn.battery.efficiency": "{value} % kommen wieder heraus",
+  "learn.battery.none": "Noch ist kein Speicher eingerichtet.",
+  "learn.groups": "Geräte mit eigenem Zähler",
+  "learn.groups.average": "Ø {value} kWh am Tag",
+  "learn.groups.heat": "+{value} kWh je Grad unter 15 °C",
+  "learn.groups.steady": "unabhängig vom Wetter",
+  "learn.groups.none":
+    "Geräte mit eigenem Zähler aus dem Energie-Dashboard bekommen hier eine eigene Rechnung – zum Beispiel eine Wärmepumpe.",
+  "learn.hot_water": "Warmwasser",
+  "learn.hot_water.rate": "heizt {value} K/h",
+  "learn.hot_water.loss": "verliert {value} K/h",
+  "learn.hot_water.demand": "{value} K Verbrauch am Tag",
+  "learn.hot_water.learning":
+    "Ich lerne aus dem Temperaturverlauf der letzten drei Wochen (aus der Aufzeichnung von Home Assistant).",
+  "learn.hot_water.none":
+    "Lege unter Geräte eine Nacht-Aktion „Warmwasser“ mit Temperatursensor an, dann lerne ich, wie schnell es heizt und wie viel ihr am Tag braucht.",
+  "learn.presence": "Wer wann zu Hause ist",
+  "learn.presence.value": "{label}: {hours} h",
+  "learn.presence.no_person": "Ohne Personen-Entität sehe ich nicht, wann jemand zu Hause ist.",
+  "learn.presence.none":
+    "Ordne Personen ihre Kalender zu, dann lerne ich, wie viele Stunden sie bei Büro, Homeoffice oder Urlaub zu Hause sind.",
+  "learn.presence.calendars": "Kalender zuordnen",
+  "learn.calendar": "Kalender-Regeln",
+  "learn.calendar.say":
+    "Steht eines dieser Stichworte im Titel, Ort oder in der Beschreibung eines Termins, gilt der Tag für die Person als …",
+  "learn.calendar.remove": "Stichwort {keyword} entfernen",
+  "learn.calendar.keyword": "Stichwort",
+  "learn.calendar.add_to": "Stichwort für {label} hinzufügen",
+  "learn.calendar.add": "Hinzufügen",
+  "learn.calendar.defaults": "Ohne passenden Termin",
+  "learn.calendar.default_workday": "An Arbeitstagen",
+  "learn.calendar.default_day_off": "An freien Tagen",
+  "label.home_office": "Homeoffice",
+  "label.office": "Büro",
+  "label.travel": "Dienstreise",
+  "label.vacation": "Urlaub",
+  "label.guests": "Besuch",
+  "label.home": "Zu Hause",
   "learn.reset": "Neu anfangen",
   "learn.reset.text":
-    "Ich vergesse, was ich gelernt habe, und zähle ab jetzt neu. Deine Einstellungen und der Verlauf bleiben.",
+    "Ich vergesse, was ich gelernt habe – alles oder nur einen Bereich – und lerne es ab jetzt aus neuen Tagen. Deine Einstellungen und der Verlauf bleiben.",
+  "learn.reset.scope": "Was soll ich vergessen?",
+  "learn.reset.scope.all": "Alles",
+  "learn.reset.scope.forecast": "Sonne",
+  "learn.reset.scope.consumption": "Verbrauch",
+  "learn.reset.scope.battery": "Speicher",
+  "learn.reset.scope.hot_water": "Warmwasser",
   "learn.reset.button": "Lernen zurücksetzen",
+  "learn.reset.button.scope": "Diesen Bereich zurücksetzen",
   "learn.reset.off": "Im Modus „Aus“ lerne ich nicht – zurücksetzen geht, sobald ich wieder simuliere.",
   "learn.reset.label": "Lernen zurücksetzen",
   "learn.reset.confirm.title": "Wirklich |neu anfangen?",
   "learn.reset.confirm.forget": "Das vergesse ich",
-  "learn.reset.confirm.forget.text":
-    "Prognose-Faktor, Zeitversatz, den gelernten Puffer und die Bilanz, was es gebracht hätte.",
+  "learn.reset.forget.all":
+    "Prognose-Faktoren, Zeitversatz, Wetterlagen, Prognosequellen, den gelernten Puffer, alle Rechnungen zu Verbrauch, Speichern und Warmwasser und die Bilanz, was es gebracht hätte.",
+  "learn.reset.forget.forecast":
+    "Prognose-Faktor, Zeitversatz, die Faktoren je Wetterlage und wie gut die Prognosequellen treffen.",
+  "learn.reset.forget.consumption":
+    "Die Rechnung zu Verbrauch und Wetter, die Rechnungen je Gerät, die Anwesenheit nach Kalender und den gelernten Puffer.",
+  "learn.reset.forget.battery": "Die gemessene Größe und den Wirkungsgrad deiner Speicher.",
+  "learn.reset.forget.hot_water": "Heizrate, Standverlust und Tagesverbrauch des Warmwassers.",
   "learn.reset.confirm.keep": "Das bleibt",
   "learn.reset.confirm.keep.text":
     "Deine Einstellungen, ein selbst eingestellter Puffer und der ganze Verlauf. Gelernt wird ab jetzt nur aus neuen Tagen.",
+  "learn.reset.keep.scope":
+    "Alles andere, was ich gelernt habe, deine Einstellungen und der ganze Verlauf. Diesen Bereich lerne ich ab jetzt nur aus neuen Tagen.",
   "learn.reset.confirm.go": "Zurücksetzen",
   "learn.reset.done": "Erledigt – ich lerne ab jetzt neu.",
+  "learn.reset.done.scope": "Erledigt – diesen Bereich lerne ich ab jetzt neu.",
 
   "overview.sim.last": "Letzte Nacht",
   "overview.sim.night": "Nacht zum {day}",
@@ -922,6 +1029,41 @@ export const de = {
   "tip.learn_reset.title": "Wann neu anfangen?",
   "tip.learn_reset.text":
     "Wenn sich bei dir viel geändert hat – neue Module, ein anderer Speicher, ein neues Auto. Dann soll ich nicht mehr aus der alten Zeit lernen.",
+  "tip.ask_day.title": "Was passiert mit meiner Antwort?",
+  "tip.ask_day.text":
+    "Besuch, unterwegs oder etwas anderes Besonderes: Diesen Tag lasse ich beim Lernen weg, damit er mein Bild von einem normalen Tag nicht verzerrt.\n**Ganz normaler Tag**: Dann lerne ich ihn mit – vielleicht braucht ihr inzwischen einfach mehr oder weniger.",
+  "tip.learn_model.title": "Wie rechne ich mit dem Wetter?",
+  "tip.learn_model.text":
+    "Ich lege eine einfache Rechnung über eure Tage: ein Grundverbrauch, dazu Arbeitstag oder frei und ein Aufschlag für jedes Grad unter 15 °C (Heizen) oder über 22 °C (Kühlen). Mit der Wettervorhersage für morgen rechne ich so aus, ob ihr mehr oder weniger braucht als an einem üblichen Tag.\nTage, an denen etwas Besonderes los war, lasse ich weg.",
+  "tip.learn_model.hint":
+    "Die Prozentzahl sagt, wie gut die Rechnung zu euren Tagen passt. Unter 40 % nutze ich sie nicht.",
+  "tip.learn_weather.title": "Warum nach Wetterlage?",
+  "tip.learn_weather.text":
+    "Viele Prognosen liegen an klaren Tagen gut und an trüben deutlich daneben – oder umgekehrt. Deshalb merke ich mir für klare, wechselhafte und trübe Tage einen eigenen Faktor und nehme für morgen den, der zur Prognose passt. Die Grenzen wandern mit der Jahreszeit.",
+  "tip.learn_combine.title": "Was heißt kombinieren?",
+  "tip.learn_combine.text":
+    "Jede Prognose rechne ich erst mit ihrem eigenen Faktor um. Dann zählt jede so viel, wie gut sie bisher getroffen hat: Eine Quelle, die selten danebenliegt, zählt mehr als eine, die stark schwankt.\n**Aus**: Ich nehme nur die Hauptprognose.",
+  "tip.learn_battery.title": "Was messe ich am Speicher?",
+  "tip.learn_battery.text":
+    "Wie viel Energie wirklich hineinpasst und wie viel beim Laden und Entladen verloren geht. Ältere Speicher fassen oft weniger als auf dem Typenschild. Beides fließt in den Plan ein – außer du hast die Größe selbst eingetragen.",
+  "tip.learn_groups.title": "Wozu eine Rechnung je Gerät?",
+  "tip.learn_groups.text":
+    "So sehe ich, welches Gerät bei Kälte mehr braucht. Läuft ein Gerät per Nacht-Aktion in der günstigen Zeit, verschiebe ich genau so viel von seinem Tagesverbrauch in die Nacht, wie es morgen voraussichtlich braucht.",
+  "tip.learn_hot_water.title": "Was lerne ich am Warmwasser?",
+  "tip.learn_hot_water.text":
+    "Wie schnell der Speicher heizt, wie viel er im Stehen verliert und wie viele Grad ihr am Tag verbraucht. Daraus rechne ich die Zieltemperatur für die Nacht und wann das Heizen starten muss, damit es zum Ende der günstigen Zeit fertig ist.",
+  "tip.learn_presence.title": "Wozu die Anwesenheit?",
+  "tip.learn_presence.text":
+    "Aus euren Kalendern lese ich, was morgen ansteht – Büro, Homeoffice, Urlaub. Wie viele Stunden jemand an solchen Tagen zu Hause ist, lerne ich aus der Personen-Entität. Wer zu Hause ist, verbraucht mehr; das fließt in die Rechnung für morgen ein.",
+  "tip.learn_calendar.title": "Wie lese ich eure Kalender?",
+  "tip.learn_calendar.text":
+    "Für jede Person schaue ich in ihre Kalender, ganztägige Termine zuerst. Das erste passende Stichwort bestimmt die Art des Tages. Passt ein Termin zu mehreren Arten, gilt die obere Zeile.\nGroß- und Kleinschreibung spielt keine Rolle.",
+  "tip.cal_defaults.title": "Und ohne Termin?",
+  "tip.cal_defaults.text":
+    "Findet sich kein passender Termin, nehme ich diese Art – je nachdem, ob der Tag ein Arbeitstag oder ein freier Tag ist.",
+  "tip.learn_reset_scope.title": "Welchen Bereich?",
+  "tip.learn_reset_scope.text":
+    "**Sonne** nach neuen Modulen oder einer anderen Prognose, **Verbrauch** nach einem Umzug oder einer neuen Heizung, **Speicher** nach einem Tausch oder einer Erweiterung, **Warmwasser** nach einem neuen Boiler. **Alles**, wenn sich vieles geändert hat.",
   "tip.chart_replay.title": "Was sehe ich hier?",
   "tip.chart_replay.text":
     "Wie voll die Speicher an diesem Tag **mit meinem Plan** gewesen wären und wie voll **ohne**. Beides nachgespielt mit der echten Sonne und deinem echten Verbrauch.",

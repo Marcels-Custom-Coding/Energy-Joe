@@ -50,7 +50,25 @@
 
       // The same merge rules as custom_components/energy_joe/model.py (simplified).
       const KEYED = ["batteries", "persons", "consumers", "actions"];
-      const REPLACED = new Set(["grid_power", "home_power", "power", "controls", "window"]);
+      const REPLACED = new Set([
+        "grid_power",
+        "home_power",
+        "power",
+        "controls",
+        "mode_options",
+        "window",
+        "steps",
+        "prepare",
+        "consumption_model",
+        "group_models",
+        "presence",
+        "solar_classes",
+        "sources",
+        "battery_models",
+        "action_models",
+        "reset",
+        "alternatives",
+      ]);
       const ITEM_DEFAULTS = {
         batteries: {
           power: null,
@@ -140,6 +158,7 @@
         }
       }
       state.results = done ? history.results : null;
+      state.questions = done ? structuredClone(history.learning.questions) : [];
       // Steering: test runs, log and why Joe steers or not (control/executor.py).
       const control = { tests: {}, log: [], skip: null, answer: null, testing: null, tonight: {} };
       const controlView = () => {
@@ -272,6 +291,8 @@
                 accuracy: state.config.learned.since ? [] : history.learning.accuracy,
                 solar: state.config.learned.since ? [] : history.learning.solar,
                 solar_profile: state.config.learned.since ? null : history.learning.solar_profile,
+                days: state.config.learned.since ? [] : history.learning.days,
+                questions: state.questions,
                 learned: state.config.learned,
                 buffer: {
                   value: state.config.rules.buffer_factor,
@@ -325,11 +346,45 @@
               log("answer", { night: msg.night, yes: msg.yes });
               push();
               return null;
+            case "energy_joe/learning/answer": {
+              if (!state.observe.active) throw { code: "not_learning" };
+              state.questions = state.questions.filter((q) => q.date !== msg.date);
+              const day = history.learning.days.find((d) => d.date === msg.date);
+              if (day) {
+                day.answer = msg.answer;
+                day.excluded = msg.answer !== "normal";
+              }
+              push();
+              return null;
+            }
             case "energy_joe/learning/reset": {
               if (!state.observe.active) throw { code: "not_learning" };
               const now = stamp();
-              const fresh = { solar_factor: null, solar_days: 0, solar_shift: null, shift_days: 0, buffer: null, buffer_days: 0 };
-              state.config = applyUpdate(state.config, { learned: { ...fresh, since: now, updated: now } }, "default");
+              // What a reset forgets, by area (learn/learner.py SCOPES).
+              const areas = {
+                forecast: { solar_factor: null, solar_days: 0, solar_shift: null, shift_days: 0, solar_classes: {}, sources: {} },
+                consumption: { consumption_model: null, group_models: {}, presence: {}, buffer: null, buffer_days: 0 },
+                battery: { battery_models: {} },
+                hot_water: { action_models: {} },
+              };
+              const scope = msg.scope ?? "all";
+              if (scope !== "all") {
+                const reset = { ...(state.config.learned.reset ?? {}), [scope]: now };
+                state.config = applyUpdate(state.config, { learned: { ...areas[scope], reset, updated: now } }, "default");
+                if (scope === "consumption") state.questions = [];
+                if (scope === "consumption" && bufferSource() === "learned") {
+                  state.config = applyUpdate(
+                    state.config,
+                    { rules: { buffer_factor: sample.default_config.rules.buffer_factor } },
+                    "default",
+                  );
+                }
+                push();
+                return null;
+              }
+              const fresh = Object.assign({}, ...Object.values(areas));
+              state.config = applyUpdate(state.config, { learned: { ...fresh, since: now, updated: now, reset: {} } }, "default");
+              state.questions = [];
               if (bufferSource() === "learned") {
                 state.config = applyUpdate(
                   state.config,

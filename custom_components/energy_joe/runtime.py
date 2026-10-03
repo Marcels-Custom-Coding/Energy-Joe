@@ -156,11 +156,18 @@ class JoeRuntime:
         if self.planner.active:
             await self.planner.async_refresh()
 
-    async def async_reset_learning(self) -> bool:
-        """Forget what Joe learned (the panel's reset button)."""
+    async def async_reset_learning(self, scope: str = "all") -> bool:
+        """Forget what Joe learned, everything or one area (the panel's reset buttons)."""
         if not self.learner.active:
             return False
-        await self.learner.async_reset()
+        await self.learner.async_reset(scope)
+        return True
+
+    async def async_answer_day(self, day: str, answer: str) -> bool:
+        """The user's answer to "what was special about this day?"."""
+        if not self.learner.active:
+            return False
+        await self.learner.async_answer(day, answer)
         return True
 
     @callback
@@ -181,6 +188,7 @@ class JoeRuntime:
                 "observe": self.observer.status,
                 "plan": self.planner.plan,
                 "results": self.learner.results,
+                "questions": self.learner.questions,
                 "control": self.executor.view,
             }
         )
@@ -326,16 +334,29 @@ def _observed_parts(config: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+# What Joe learned that the plan uses.
+PLANNED_LEARNED = (
+    "solar_factor",
+    "solar_shift",
+    "consumption_model",
+    "group_models",
+    "presence",
+    "solar_classes",
+    "sources",
+    "battery_models",
+    "action_models",
+)
+
+
 def _planned_parts(config: dict[str, Any]) -> dict[str, Any]:
     """The parts of the configuration only the plan depends on."""
     return {
         "tariff": config["tariff"],
         "rules": config["rules"],
-        "learned": {
-            k: v
-            for k, v in config["learned"].items()
-            if k in ("solar_factor", "solar_shift")
-        },
+        "learned": {k: v for k, v in config["learned"].items() if k in PLANNED_LEARNED},
+        "actions": config["actions"],
+        "calendar": config["calendar"],
+        "calendars": [(p["id"], p["calendars"]) for p in config["persons"]],
         "batteries": [
             (
                 b["capacity_kwh"],

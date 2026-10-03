@@ -421,7 +421,7 @@ export class JoeReview extends LitElement {
 
   private ignoreForecast(): void {
     saveConfig(this, {
-      forecast: { provider: null, config_entries: [], today: [], tomorrow: [], remaining_today: [] },
+      forecast: { provider: null, config_entries: [], today: [], tomorrow: [], remaining_today: [], alternatives: [] },
       answers: { ignored: withIgnored(this.config!, "forecast", true) },
     });
   }
@@ -440,6 +440,12 @@ export class JoeReview extends LitElement {
           today: found.today ?? [],
           tomorrow: found.tomorrow ?? [],
           remaining_today: found.remaining_today ?? [],
+          alternatives: (found.others ?? []).map((other) => ({
+            id: other.provider,
+            name: other.provider_name,
+            provider: other.provider,
+            tomorrow: other.tomorrow,
+          })),
         },
         answers: { ignored: withIgnored(this.config!, "forecast", false) },
       },

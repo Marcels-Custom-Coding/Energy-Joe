@@ -802,7 +802,12 @@ def find_tariff(snap: Snapshot, energy: EnergyHints) -> dict[str, Any]:
 
 
 def find_forecast(snap: Snapshot, energy: EnergyHints) -> dict[str, Any] | None:
-    """Solar forecast integration and its daily sums."""
+    """Solar forecast integrations and their daily sums.
+
+    The one in the energy dashboard (else the first found) is the main forecast;
+    other integrations become alternatives Joe can learn and combine.
+    """
+    found: list[dict[str, Any]] = []
     for platform, keys in kb.FORECAST_KEYS.items():
         entities = snap.of_platform(platform)
         if not entities:
@@ -823,20 +828,37 @@ def find_forecast(snap: Snapshot, energy: EnergyHints) -> dict[str, Any] | None:
         ]
         if linked:
             reasons.append({"code": "energy_dashboard", "part": "forecast"})
-        return {
-            "provider": platform,
-            "provider_name": kb.FORECAST_NAMES.get(platform, platform),
-            "planes": len(entries),
-            "config_entries": entries,
-            "today": [e.entity_id for e in lists["today"]],
-            "tomorrow": [e.entity_id for e in lists["tomorrow"]],
-            "remaining_today": [e.entity_id for e in lists["remaining_today"]],
-            "today_kwh": _sum_kwh(lists["today"]),
-            "tomorrow_kwh": _sum_kwh(lists["tomorrow"]),
-            "confidence": _round(0.95 if linked else 0.85),
-            "reasons": reasons,
+        found.append(
+            {
+                "provider": platform,
+                "provider_name": kb.FORECAST_NAMES.get(platform, platform),
+                "planes": len(entries),
+                "config_entries": entries,
+                "today": [e.entity_id for e in lists["today"]],
+                "tomorrow": [e.entity_id for e in lists["tomorrow"]],
+                "remaining_today": [e.entity_id for e in lists["remaining_today"]],
+                "today_kwh": _sum_kwh(lists["today"]),
+                "tomorrow_kwh": _sum_kwh(lists["tomorrow"]),
+                "confidence": _round(0.95 if linked else 0.85),
+                "reasons": reasons,
+                "linked": bool(linked),
+            }
+        )
+    if not found:
+        return None
+    found.sort(key=lambda f: not f.pop("linked"))
+    main, *others = found
+    main["others"] = [
+        {
+            "provider": other["provider"],
+            "provider_name": other["provider_name"],
+            "tomorrow": other["tomorrow"],
+            "tomorrow_kwh": other["tomorrow_kwh"],
         }
-    return None
+        for other in others
+        if other["tomorrow"]
+    ]
+    return main
 
 
 def _sum_kwh(entities: list[EntityInfo]) -> float | None:

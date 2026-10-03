@@ -22,6 +22,8 @@ from homeassistant.core import State
 # day, and how fast the heat pump heats it.
 DEFAULT_DEMAND_K = 10.0
 DEFAULT_RATE_K_PER_H = 8.0
+# Hours the water must keep warm after the window (it loses heat while standing).
+DAY_HOURS = 17
 # Extra time before the end so the target is reached for sure.
 MARGIN = timedelta(minutes=15)
 
@@ -111,11 +113,20 @@ def plan_actions(
             mine = learned.get(action["id"]) or {}
             demand = mine.get("demand_k") or DEFAULT_DEMAND_K
             rate = mine.get("rate_k_per_h") or DEFAULT_RATE_K_PER_H
+            loss = (mine.get("loss_k_per_h") or 0.0) * DAY_HOURS
             target = min(
                 action["maximum"],
-                max(action["comfort"], action["comfort"] + demand + action["buffer"]),
+                max(
+                    action["comfort"],
+                    action["comfort"] + demand + loss + action["buffer"],
+                ),
             )
-            entry.update(target=round(target, 1), temperature=temperature, rate=rate)
+            entry.update(
+                target=round(target, 1),
+                temperature=temperature,
+                rate=rate,
+                learned=bool(mine),
+            )
             if temperature is None:
                 reasons.append("no_temperature")
             elif temperature >= target:

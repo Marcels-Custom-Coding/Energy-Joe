@@ -6,7 +6,7 @@ from custom_components.energy_joe import model
 from custom_components.energy_joe.discovery import discover
 from custom_components.energy_joe.discovery.snapshot import Snapshot
 
-from .snapshots import fronius_household, generic_household
+from .snapshots import entity, fronius_household, generic_household
 
 
 def test_fronius_household_batteries() -> None:
@@ -137,6 +137,44 @@ def test_fronius_household_proposal_is_valid_config() -> None:
     ]
     assert config["tariff"]["kind"] == "fixed_window"
     assert config["forecast"]["config_entries"] == ["A", "B"]
+
+
+def test_a_second_forecast_becomes_an_alternative() -> None:
+    """Forecast.Solar is in the energy dashboard, Solcast is there as well."""
+    snap = fronius_household()
+    for key, value in (("today", 27.0), ("tomorrow", 21.5)):
+        found = entity(
+            f"sensor.solcast_{key}",
+            f"Forecast {key}",
+            value,
+            unit="kWh",
+            device_class="energy",
+            platform="solcast_solar",
+            unique_id=f"solcast_api_forecast_{key}",
+            entry="sol",
+        )
+        snap.entities[found.entity_id] = found
+    result = discover(snap)
+    forecast = result["forecast"]
+    assert forecast["provider"] == "forecast_solar"
+    assert forecast["others"] == [
+        {
+            "provider": "solcast_solar",
+            "provider_name": "Solcast",
+            "tomorrow": ["sensor.solcast_tomorrow"],
+            "tomorrow_kwh": 21.5,
+        }
+    ]
+    config = model.validate({"version": model.CONFIG_VERSION, **result["proposal"]})
+    assert config["forecast"]["alternatives"] == [
+        {
+            "id": "solcast_solar",
+            "name": "Solcast",
+            "provider": "solcast_solar",
+            "tomorrow": ["sensor.solcast_tomorrow"],
+        }
+    ]
+    assert config["forecast"]["combine"] is True
 
 
 def test_generic_household() -> None:

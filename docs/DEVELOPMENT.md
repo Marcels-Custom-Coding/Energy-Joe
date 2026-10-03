@@ -12,9 +12,18 @@ cd panel && npm install
 - Linter: `.venv/bin/ruff check .`
 - Panel bauen: `npm --prefix panel run build` (der Build liegt eingecheckt in `custom_components/energy_joe/frontend/`)
 - Panel ohne Home Assistant ansehen: im Repo-Wurzelverzeichnis `python3 -m http.server 8767` starten und `http://localhost:8767/panel/dev/` öffnen. Parameter: `?dark=1`, `?lang=en`, `?step=scan|questions|done`, `?done=1` (Einrichtung abgeschlossen), `?page=settings`, `?mode=off|advisory|live`, `?sample=generic`, `?audit=1`
-- Daten der Testseite neu erzeugen (nach Änderungen an Erkennung, Modell, Historie, Planen oder Lernen): `.venv/bin/python scripts/make_dev_samples.py` – schreibt `panel/dev/sample-*.json` aus den erfundenen Haushalten in `tests/snapshots.py`, dazu zwei Wochen erfundenen Verlauf mit festen Plänen, nachgespielten Nächten (die letzte vorläufig) und dem, was Joe daraus lernt. Mit `?done=1` hat Joe schon zwei Wochen gelernt; „Lernen zurücksetzen“ und „Wieder selbst lernen“ funktionieren auf der Testseite
+- Daten der Testseite neu erzeugen (nach Änderungen an Erkennung, Modell, Historie, Planen oder Lernen): `.venv/bin/python scripts/make_dev_samples.py` – schreibt `panel/dev/sample-*.json` aus den erfundenen Haushalten in `tests/snapshots.py`, dazu drei Wochen erfundenen Verlauf (mit Außentemperatur, Geräteverbrauch, Kalender und einem Tag mit Besuch) mit festen Plänen, nachgespielten Nächten (die letzte vorläufig) und dem, was Joe daraus lernt. Mit `?done=1` hat Joe schon drei Wochen gelernt; Fragen beantworten, „Lernen zurücksetzen“ (auch je Bereich) und „Wieder selbst lernen“ funktionieren auf der Testseite
 - Joes Historie liegt in `.storage/energy_joe.history` (Index) und `.storage/energy_joe.history.JJJJ-MM` (eine Datei pro Monat). Ein Tag enthält seine Stunden, die Prognose, den festen Plan der Nacht, die an ihm beginnt, und dessen Auswertung (`evaluation`, mit `final: false` solange der Tag des Plans läuft)
 - Was Joe gelernt hat, steht in der Konfiguration unter `learned` (Herkunft „gelernt“); einen selbst eingestellten Puffer überschreibt er nie
+
+## Lernen
+
+- Die Modelle stehen in `custom_components/energy_joe/learn/models.py`: kleinste Quadrate, Mediane und Mittelwerte über gespeicherte Tage, damit jede Zahl im Panel erklärbar bleibt. Der Lernlauf (`learn/learner.py`) baut sie einmal am Tag (`learned.models_day`) aus bis zu 60 Tagen.
+- Verbrauch: `Tag = Grundlast + Arbeitstag + Heizgrade (unter 15 °C) + Kühlgrade (über 22 °C) [+ Anwesenheitsstunden]`. Tage mit der Antwort Besuch, unterwegs oder „etwas Besonderes“ (`answer` am Tag) zählen nicht. Die Planung skaliert den Tagesgang von morgen mit dem Modell, wenn es mindestens 40 % erklärt (`plan/inputs.py`, `async_tomorrow`).
+- Kalender: `learn/context.py` fragt `calendar.get_events` je Person; die Regeln (`calendar.rules`, Stichwort → Art des Tages) prüft Joe in ihrer Reihenfolge, ganztägige Termine zuerst. Die Arten vergangener Tage stehen als `labels` am Tag.
+- Prognose: Faktoren je Wetterlage (`solar_classes`, Grenzen relativ zum besten Tag der letzten 30 Tage) und – wenn es mehrere Prognose-Integrationen gibt – Güte je Quelle (`sources`); die Alternativen speichert der Beobachter als `fc.alt` am Tag.
+- Speicher: Größe und Wirkungsgrad aus `entladen = η · geladen − Größe · √η · ΔSoC`; die Planung nimmt die gemessene Größe, außer sie ist selbst eingetragen oder passt nicht zum Gerätewert (50–115 %).
+- Zurücksetzen je Bereich (`forecast`, `consumption`, `battery`, `hot_water`) merkt sich den Zeitpunkt in `learned.reset`; ältere Tage zählen für diesen Bereich nicht mehr.
 
 ## Speicher steuern
 

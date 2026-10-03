@@ -368,12 +368,43 @@ async def test_learning_api(
     assert result["results"]["days"] == 0
     assert result["accuracy"] == [] and result["solar"] == []
     assert len(result["consumption"]["workday"]) == 24
-    assert result["needs"] == {"solar": 5, "shift": 5, "buffer": 7}
+    assert result["needs"] == {
+        "solar": 5,
+        "shift": 5,
+        "buffer": 7,
+        "models": 14,
+        "sources": 7,
+    }
     assert result["solar_profile"] is None
+    assert result["days"] == [] and result["questions"] == []
+
+    # One area only: the rest stays, the area counts again from now.
+    runtime.async_update_config(
+        {"learned": {"solar_factor": 0.8, "battery_models": {"b": {"days": 20}}}},
+        "learned",
+    )
+    await client.send_json_auto_id(
+        {"type": f"{DOMAIN}/learning/reset", "scope": "battery"}
+    )
+    assert (await client.receive_json())["success"]
+    learned = runtime.config["learned"]
+    assert learned["battery_models"] == {} and learned["solar_factor"] == 0.8
+    assert learned["since"] is None and "battery" in learned["reset"]
+
+    await client.send_json_auto_id(
+        {"type": f"{DOMAIN}/learning/answer", "date": "2026-10-01", "answer": "guests"}
+    )
+    assert (await client.receive_json())["success"]
+    assert (await runtime.history.async_day("2026-10-01"))["answer"] == "guests"
+    await client.send_json_auto_id(
+        {"type": f"{DOMAIN}/learning/answer", "date": "2026-10-01", "answer": "party"}
+    )
+    assert not (await client.receive_json())["success"]
 
     await client.send_json_auto_id({"type": f"{DOMAIN}/learning/reset"})
     assert (await client.receive_json())["success"]
     assert runtime.config["learned"]["since"] is not None
+    assert runtime.config["learned"]["solar_factor"] is None
     assert runtime.state["results"]["since"] == runtime.config["learned"]["since"]
 
     runtime.async_set_mode("off")

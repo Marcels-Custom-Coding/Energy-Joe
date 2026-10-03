@@ -1,0 +1,464 @@
+"""Joe's explainable models: consumption by temperature and presence, consumer
+groups, the real size and efficiency of the batteries, solar factors by weather,
+the hot water heat pump, presence by calendar label, and days worth a question.
+
+Everything is plain least squares, medians and averages over stored days (see
+observe/store.py), so each number can be shown and explained in the panel.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Iterable
+from dataclasses import dataclass
+from datetime import date, datetime, timedelta
+import math
+from statistics import median
+from typing import Any
+
+# Degree-day limits: below this the house heats, above that it cools (°C).
+HEAT_BELOW = 15.0
+COOL_ABOVE = 22.0
+# Days a model needs, and how much of a day must be recorded.
+MIN_DAYS = 14
+MIN_HOURS = 20
+# A day this far from what the model expects is worth a question.
+SURPRISE_SHARE = 0.35
+SURPRISE_KWH = 3.0
+# Days a forecast source needs before Joe weighs it.
+SOURCE_DAYS = 7
+
+
+@dataclass(slots=True)
+class DayRow:
+    """What a day was like: consumption and what drives it."""
+
+    date: str
+    home: float
+    workday: bool
+    temp: float | None
+    presence: float | None
+    use: dict[str, float]
+    excluded: bool
+
+
+def daily_rows(days: dict[str, dict[str, Any]]) -> list[DayRow]:
+    """Complete days with their totals, mean temperature and presence hours."""
+    rows = []
+    for day, data in sorted(days.items()):
+        hours = [h for h in data.get("hours") or [] if h.get("cov", 0) >= 0.8]
+        if len(hours) < MIN_HOURS or not all("home" in h for h in hours):
+            continue
+        temps = [h["temp"] for h in hours if "temp" in h]
+        present = [
+            max((h.get("present") or {}).values(), default=0.0)
+            for h in hours
+            if h.get("present")
+        ]
+        use: dict[str, float] = {}
+        for hour in hours:
+            for consumer, kwh in (hour.get("use") or {}).items():
+                use[consumer] = use.get(consumer, 0.0) + kwh
+        workday = data.get("workday")
+        if workday is None:
+            workday = date.fromisoformat(day).weekday() < 5
+        answer = data.get("answer")
+        rows.append(
+            DayRow(
+                date=day,
+                home=sum(h["home"] for h in hours),
+                workday=bool(workday),
+                temp=sum(temps) / len(temps) if len(temps) >= 12 else None,
+                presence=sum(present) if len(present) >= 12 else None,
+                use=use,
+                excluded=answer in ("special", "guests", "away"),
+            )
+        )
+    return rows
+
+
+def _features(row_workday: bool, temp: float, presence: float | None) -> list[float]:
+    features = [
+        1.0,
+        1.0 if row_workday else 0.0,
+        max(0.0, HEAT_BELOW - temp),
+        max(0.0, temp - COOL_ABOVE),
+    ]
+    if presence is not None:
+        features.append(presence)
+    return features
+
+
+def _solve(rows: list[list[float]], targets: list[float]) -> list[float] | None:
+    """Least squares via the normal equations (a few features, a little ridge)."""
+    size = len(rows[0])
+    matrix = [[0.0] * size for _ in range(size)]
+    vector = [0.0] * size
+    for features, target in zip(rows, targets, strict=True):
+        for i in range(size):
+            vector[i] += features[i] * target
+            for j in range(size):
+                matrix[i][j] += features[i] * features[j]
+    for i in range(1, size):
+        matrix[i][i] += 1e-3
+    # Gaussian elimination with partial pivoting.
+    for col in range(size):
+        pivot = max(range(col, size), key=lambda r: abs(matrix[r][col]))
+        if abs(matrix[pivot][col]) < 1e-9:
+            return None
+        matrix[col], matrix[pivot] = matrix[pivot], matrix[col]
+        vector[col], vector[pivot] = vector[pivot], vector[col]
+        for row in range(col + 1, size):
+            factor = matrix[row][col] / matrix[col][col]
+            for k in range(col, size):
+                matrix[row][k] -= factor * matrix[col][k]
+            vector[row] -= factor * vector[col]
+    result = [0.0] * size
+    for row in range(size - 1, -1, -1):
+        result[row] = (
+            vector[row] - sum(matrix[row][k] * result[k] for k in range(row + 1, size))
+        ) / matrix[row][row]
+    return result
+
+
+def _fit(rows: list[DayRow], value: Any, use_presence: bool) -> dict[str, Any] | None:
+    usable = [
+        r
+        for r in rows
+        if not r.excluded
+        and r.temp is not None
+        and (not use_presence or r.presence is not None)
+    ]
+    if len(usable) < MIN_DAYS:
+        return None
+    features = [
+        _features(r.workday, r.temp, r.presence if use_presence else None)
+        for r in usable
+    ]  # type: ignore[arg-type]
+    targets = [value(r) for r in usable]
+    coefficients = _solve(features, targets)
+    if coefficients is None:
+        return None
+    predicted = [
+        sum(c * f for c, f in zip(coefficients, row, strict=True)) for row in features
+    ]
+    mean = sum(targets) / len(targets)
+    total = sum((t - mean) ** 2 for t in targets) or 1e-9
+    residual = sum((t - p) ** 2 for t, p in zip(targets, predicted, strict=True))
+    model = {
+        "base": round(coefficients[0], 3),
+        "workday": round(coefficients[1], 3),
+        "heat": round(max(0.0, coefficients[2]), 3),
+        "cool": round(max(0.0, coefficients[3]), 3),
+        "presence": round(coefficients[4], 3) if use_presence else None,
+        "presence_mean": round(sum(r.presence or 0.0 for r in usable) / len(usable), 1)
+        if use_presence
+        else None,
+        "r2": round(max(0.0, 1 - residual / total), 2),
+        "days": len(usable),
+    }
+    return model
+
+
+def consumption_model(rows: list[DayRow]) -> dict[str, Any] | None:
+    """Daily consumption = base + working day + heating and cooling degrees (+ presence)."""
+    with_presence = _fit(rows, lambda r: r.home, use_presence=True)
+    without = _fit(rows, lambda r: r.home, use_presence=False)
+    if with_presence and without and with_presence["r2"] > without["r2"] + 0.03:
+        return with_presence
+    return without
+
+
+def expected(
+    model: dict[str, Any], workday: bool, temp: float, presence: float | None
+) -> float:
+    """What a model expects for a day (kWh)."""
+    value = (
+        model["base"]
+        + (model["workday"] if workday else 0.0)
+        + model["heat"] * max(0.0, HEAT_BELOW - temp)
+        + model["cool"] * max(0.0, temp - COOL_ABOVE)
+    )
+    if model.get("presence") is not None:
+        hours = presence if presence is not None else model.get("presence_mean")
+        value += model["presence"] * (hours or 0.0)
+    return max(0.0, value)
+
+
+def group_models(
+    rows: list[DayRow], consumers: Iterable[dict[str, Any]]
+) -> dict[str, Any]:
+    """A model per consumer with a meter: how its energy follows the weather."""
+    result = {}
+    for consumer in consumers:
+        key = consumer["id"]
+        if consumer.get("kind") in ("submeter",):
+            continue
+        rows_with = [r for r in rows if key in r.use]
+        if len(rows_with) < MIN_DAYS:
+            continue
+        model = _fit(
+            rows_with, lambda r, key=key: r.use.get(key, 0.0), use_presence=False
+        )
+        if model:
+            model["average"] = round(
+                sum(r.use[key] for r in rows_with) / len(rows_with), 2
+            )
+            result[key] = model
+    return result
+
+
+def battery_model(
+    days: dict[str, dict[str, Any]], battery_id: str
+) -> dict[str, Any] | None:
+    """Real usable size and round-trip efficiency from charged, discharged and level change.
+
+    Per day: discharged = efficiency * charged - size * efficiency_out * level change.
+    Solved as least squares over the days with enough movement.
+    """
+    features: list[list[float]] = []
+    targets: list[float] = []
+    for _, data in sorted(days.items()):
+        hours = [
+            h for h in data.get("hours") or [] if battery_id in (h.get("bat") or {})
+        ]
+        if len(hours) < MIN_HOURS:
+            continue
+        entries = [h["bat"][battery_id] for h in hours]
+        marks = [i for i, e in enumerate(entries) if "soc" in e]
+        if len(marks) < 2:
+            continue
+        # The level is read at the end of an hour: count what flowed after the first reading.
+        first, last = marks[0], marks[-1]
+        between = entries[first + 1 : last + 1]
+        charged = sum(e.get("in", 0.0) for e in between)
+        discharged = sum(e.get("out", 0.0) for e in between)
+        if charged + discharged < 1.0:
+            continue
+        change = (entries[last]["soc"] - entries[first]["soc"]) / 100
+        features.append([charged, -change])
+        targets.append(discharged)
+    if len(features) < MIN_DAYS:
+        return None
+    coefficients = _solve(features, targets)
+    if coefficients is None:
+        return None
+    efficiency, stored = coefficients
+    if not 0.6 <= efficiency <= 1.0 or stored <= 0:
+        return None
+    capacity = stored / (efficiency**0.5)
+    return {
+        "capacity_kwh": round(capacity, 2),
+        "efficiency": round(efficiency, 3),
+        "days": len(features),
+    }
+
+
+def solar_classes(ratios: list[dict[str, Any]]) -> dict[str, Any]:
+    """How well the forecast fits on clear, mixed and overcast days (median ratios).
+
+    A day's weather is its forecast against the best forecast of the 30 days
+    before it, so the classes follow the seasons. "top" is that best forecast
+    for the days to come.
+    """
+    usable = sorted(
+        (r for r in ratios if r.get("ratio") is not None and r.get("forecast")),
+        key=lambda r: r.get("date") or "",
+    )
+    if not usable:
+        return {}
+    groups: dict[str, list[float]] = {"clear": [], "mixed": [], "overcast": []}
+    for ratio in usable:
+        groups[
+            weather_class(ratio["forecast"], _top(usable, ratio.get("date")))
+        ].append(ratio["ratio"])
+    classes = {
+        name: {
+            "factor": round(max(0.3, min(2.0, median(values))), 2),
+            "days": len(values),
+        }
+        for name, values in groups.items()
+        if len(values) >= 3
+    }
+    return {
+        "classes": classes,
+        "top": round(_top(usable, None), 2),
+        "days": len(usable),
+    }
+
+
+def _top(ratios: list[dict[str, Any]], day: str | None) -> float:
+    """The best forecast in the 30 days up to a day (the latest 30 days for None)."""
+    last = date.fromisoformat(day) if day else None
+    if last is None:
+        dated = [r for r in ratios if r.get("date")]
+        last = date.fromisoformat(dated[-1]["date"]) if dated else None
+    first = (last - timedelta(days=30)).isoformat() if last else ""
+    values = [
+        r["forecast"]
+        for r in ratios
+        if not r.get("date") or last is None or first <= r["date"] <= last.isoformat()
+    ]
+    return max(values) if values else 0.0
+
+
+def class_factor(
+    solar: dict[str, Any] | None, forecast: float | None
+) -> tuple[str, float] | None:
+    """The weather class of a forecast and the factor Joe learned for it."""
+    if not solar or forecast is None or not solar.get("top"):
+        return None
+    name = weather_class(forecast, solar["top"])
+    found = (solar.get("classes") or {}).get(name)
+    return (name, found["factor"]) if found else None
+
+
+def weather_class(forecast: float, top: float) -> str:
+    """A day's weather from its forecast against the best recent forecast."""
+    share = forecast / top if top else 0.0
+    return "clear" if share >= 0.7 else "mixed" if share >= 0.35 else "overcast"
+
+
+def source_quality(
+    days: dict[str, dict[str, Any]], source_ids: Iterable[str]
+) -> dict[str, dict[str, Any]]:
+    """How well each forecast source fits: its median ratio and typical error.
+
+    "main" is the forecast Joe plans with, the others are alternatives whose
+    daily sum for tomorrow is stored as fc.alt (see observe/observer.py).
+    """
+    ratios: dict[str, list[float]] = {}
+    for data in days.values():
+        hours = [h for h in data.get("hours") or [] if "solar" in h]
+        if len(hours) < MIN_HOURS or not all(h.get("cov", 0) >= 0.8 for h in hours):
+            continue
+        actual = sum(h["solar"] for h in hours)
+        forecast = data.get("fc") or {}
+        values = {"main": forecast.get("ahead_kwh"), **(forecast.get("alt") or {})}
+        for source in ("main", *source_ids):
+            value = values.get(source)
+            if isinstance(value, int | float) and value >= 1.0 and actual > 0:
+                ratios.setdefault(source, []).append(actual / value)
+    result = {}
+    for source, values in ratios.items():
+        if len(values) < SOURCE_DAYS:
+            continue
+        factor = median(values)
+        error = median(abs(math.log(v / factor)) for v in values)
+        result[source] = {
+            "factor": round(max(0.3, min(2.0, factor)), 2),
+            "error": round(error, 3),
+            "days": len(values),
+        }
+    return result
+
+
+def combined_forecast(
+    quality: dict[str, dict[str, Any]], forecasts: dict[str, float | None]
+) -> float | None:
+    """Tomorrow's sun from all sources: each corrected, weighted by how well it fits.
+
+    None unless at least two sources have a forecast and a learned quality.
+    """
+    weighted, weights = 0.0, 0.0
+    used = 0
+    for source, value in forecasts.items():
+        found = quality.get(source)
+        if value is None or not found:
+            continue
+        weight = 1 / max(found["error"], 0.05) ** 2
+        weighted += weight * value * found["factor"]
+        weights += weight
+        used += 1
+    return round(weighted / weights, 2) if used >= 2 and weights else None
+
+
+def hot_water_model(
+    series: list[tuple[datetime, float]], workdays: dict[str, bool] | None = None
+) -> dict[str, Any] | None:
+    """Heating rate, standing loss and daily use in kelvin from a temperature curve.
+
+    Rising hours are heating (median rise per hour), slow falls at night are the
+    standing loss, and the falls during the day beyond that are what people use.
+    """
+    if len(series) < 24:
+        return None
+    hourly: dict[datetime, float] = {}
+    for moment, value in series:
+        hourly[moment.replace(minute=0, second=0, microsecond=0)] = value
+    stamps = sorted(hourly)
+    rises, losses = [], []
+    falls_by_day: dict[str, float] = {}
+    for previous, current in zip(stamps, stamps[1:], strict=False):
+        if current - previous != timedelta(hours=1):
+            continue
+        change = hourly[current] - hourly[previous]
+        if change >= 0.5:
+            rises.append(change)
+        elif change < 0:
+            if 0 <= current.hour < 5 and change > -1.0:
+                losses.append(-change)
+            elif 6 <= current.hour < 23:
+                day = current.date().isoformat()
+                falls_by_day[day] = falls_by_day.get(day, 0.0) - change
+    if len(rises) < 3 or len(falls_by_day) < 3:
+        return None
+    loss = median(losses) if losses else 0.3
+    demand = [max(0.0, fall - loss * 17) for fall in falls_by_day.values()]
+    return {
+        "rate_k_per_h": round(median(rises), 2),
+        "loss_k_per_h": round(loss, 2),
+        "demand_k": round(median(demand), 1),
+        "days": len(falls_by_day),
+    }
+
+
+def presence_by_label(
+    days: dict[str, dict[str, Any]], person_ids: Iterable[str]
+) -> dict[str, dict[str, Any]]:
+    """Average hours at home per person and calendar label (e.g. "office": 9 h)."""
+    sums: dict[str, dict[str, list[float]]] = {}
+    for data in days.values():
+        labels = data.get("labels") or {}
+        hours = data.get("hours") or []
+        for person in person_ids:
+            label = labels.get(person)
+            present = [
+                h["present"][person]
+                for h in hours
+                if person in (h.get("present") or {})
+            ]
+            if label and len(present) >= MIN_HOURS:
+                sums.setdefault(person, {}).setdefault(label, []).append(sum(present))
+    return {
+        person: {
+            label: {"hours": round(sum(values) / len(values), 1), "days": len(values)}
+            for label, values in labels.items()
+        }
+        for person, labels in sums.items()
+    }
+
+
+def surprises(
+    rows: list[DayRow], model: dict[str, Any] | None, answered: set[str]
+) -> list[dict[str, Any]]:
+    """Recent days far off what Joe expected – worth asking about."""
+    if not model:
+        return []
+    result = []
+    for row in rows[-14:]:
+        if row.date in answered or row.temp is None:
+            continue
+        guess = expected(model, row.workday, row.temp, row.presence)
+        difference = row.home - guess
+        if abs(difference) >= SURPRISE_KWH and abs(difference) >= SURPRISE_SHARE * max(
+            guess, 1.0
+        ):
+            result.append(
+                {
+                    "date": row.date,
+                    "actual": round(row.home, 1),
+                    "expected": round(guess, 1),
+                    "kind": "more" if difference > 0 else "less",
+                }
+            )
+    return result[-3:]

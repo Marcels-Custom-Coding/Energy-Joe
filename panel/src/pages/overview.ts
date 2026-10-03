@@ -3,6 +3,7 @@ import { property, state } from "lit/decorators.js";
 import { displayTitle, swoosh } from "../components/bits";
 import "../components/chart";
 import type { ChartSeries } from "../components/chart";
+import "../components/day-questions";
 import "../components/pose";
 import { tip } from "../components/tip";
 import { define } from "../define";
@@ -329,7 +330,11 @@ export class JoeOverview extends LitElement {
     const observing = Boolean(this.state?.observe?.active);
     const planning = Boolean(this.state?.plan && this.state.plan.kind !== "unavailable");
     const evaluated = (this.state?.results?.days ?? 0) > 0;
+    const questions = this.state?.questions ?? [];
     return html`<div class="grid">
+      ${questions.length
+        ? html`<joe-day-questions class="wide" .hass=${this.hass} .t=${t} .questions=${questions}></joe-day-questions>`
+        : nothing}
       ${this.renderNow(t)} ${this.renderWeek(t)}
       ${this.renderNight(t)} ${this.renderSim(t)}
       <section class="card wide">

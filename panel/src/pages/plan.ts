@@ -452,8 +452,10 @@ export class JoePlanPage extends LitElement {
     const ct = (value: number | undefined) => (value == null ? "–" : `${formatNumber(t.lang, value * 100, 1)} ct`);
     const windowDay = plan.window?.start.slice(0, 10) ?? "";
     const source = plan.meta?.solar.sources[windowDay] ?? "none";
-    const factor = plan.meta?.solar_factor ?? 1;
+    const tomorrow = plan.meta?.tomorrow;
+    const factor = tomorrow?.solar_factor ?? plan.meta?.solar_factor ?? 1;
     const consumption = plan.meta?.consumption;
+    const persons = this.state?.config.persons ?? [];
     const rows: [string, TemplateResult | string][] = [
       [
         t("plan.math.battery_now"),
@@ -469,7 +471,17 @@ export class JoePlanPage extends LitElement {
         t("plan.math.solar"),
         html`${kwh(plan.solar_kwh)}<small
             >${t(`plan.math.solar.${source}`)}${factor !== 1
-              ? ` · ${t("plan.math.solar.factor", { value: formatNumber(t.lang, factor, 2) })}`
+              ? ` · ${t(
+                  tomorrow?.solar_source === "combined"
+                    ? "plan.math.solar.combined"
+                    : tomorrow?.solar_source === "weather" && tomorrow.weather
+                      ? "plan.math.solar.weather"
+                      : "plan.math.solar.factor",
+                  {
+                    value: formatNumber(t.lang, factor, 2),
+                    weather: tomorrow?.weather ? t(`learn.weather.${tomorrow.weather}`) : "",
+                  },
+                )}`
               : ""}</small
           >`,
       ],
@@ -484,6 +496,31 @@ export class JoePlanPage extends LitElement {
               : t("plan.math.home.default")}</small
           >`,
       ],
+      ...(tomorrow && (tomorrow.temp != null || Object.keys(tomorrow.labels).length)
+        ? [
+            [
+              t("plan.math.tomorrow"),
+              html`${[
+                  tomorrow.temp != null ? `${formatNumber(t.lang, tomorrow.temp, 0)} °C` : "",
+                  ...Object.entries(tomorrow.labels).map(([id, label]) =>
+                    t("plan.math.tomorrow.person", {
+                      name: persons.find((p) => p.id === id)?.name ?? id,
+                      label: t(`label.${label}`),
+                    }),
+                  ),
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}<small
+                  >${tomorrow.expected_kwh != null
+                    ? t("plan.math.tomorrow.scaled", {
+                        expected: formatNumber(t.lang, tomorrow.expected_kwh, 1),
+                        usual: formatNumber(t.lang, tomorrow.profile_kwh, 1),
+                      })
+                    : t("plan.math.tomorrow.usual")}</small
+                >`,
+            ] as [string, TemplateResult | string],
+          ]
+        : []),
       [
         t("plan.math.target"),
         html`${formatNumber(t.lang, plan.target ?? 0, 0)} %<small

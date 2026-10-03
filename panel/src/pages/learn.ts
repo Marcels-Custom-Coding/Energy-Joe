@@ -3,6 +3,7 @@ import { property, state } from "lit/decorators.js";
 import { displayTitle, sourceChip, swoosh } from "../components/bits";
 import "../components/chart";
 import type { ChartSeries } from "../components/chart";
+import "../components/day-questions";
 import { currencySymbol, dayText, fixed, money, nights } from "../components/look-back";
 import "../components/pose";
 import "../components/sheet";
@@ -12,11 +13,39 @@ import { define } from "../define";
 import { formatNumber } from "../entities";
 import type { Translate } from "../i18n";
 import { shared } from "../styles/shared";
-import type { HomeAssistant, JoeState, Learning } from "../types";
+import {
+  DAY_LABELS,
+  LEARN_SCOPES,
+  type CalendarConfig,
+  type ConsumptionModel,
+  type DayLabel,
+  type HomeAssistant,
+  type JoeState,
+  type LearnScope,
+  type Learning,
+  type WeatherClass,
+} from "../types";
 
 // Nights shown in the table and the buffer chart.
 const RECENT = 14;
-const LATER = ["capacity", "efficiency", "cold", "presence", "calendar"] as const;
+const WEATHER: WeatherClass[] = ["clear", "mixed", "overcast"];
+// Calendar labels in the order their rules are checked (the first match wins).
+const RULE_ORDER: DayLabel[] = ["vacation", "travel", "home_office", "office", "guests", "home"];
+const FORECAST_NAMES: Record<string, string> = {
+  forecast_solar: "Forecast.Solar",
+  open_meteo_solar_forecast: "Open-Meteo Solar Forecast",
+  solcast_solar: "Solcast",
+};
+
+/** What a consumption model expects for a day (see learn/models.py). */
+function expectedKwh(model: ConsumptionModel, workday: boolean, temp: number): number {
+  let value =
+    model.base + (workday ? model.workday : 0) + model.heat * Math.max(0, 15 - temp) + model.cool * Math.max(0, temp - 22);
+  if (model.presence != null) {
+    value += model.presence * (model.presence_mean ?? 0);
+  }
+  return Math.max(0, value);
+}
 
 /** Day ticks for a chart of days: about one label per week. */
 function dayTicks(lang: string, dates: string[]): Map<number, string> {
@@ -40,6 +69,8 @@ export class JoeLearnPage extends LitElement {
   @state() private failed = false;
   @state() private confirming = false;
   @state() private resetting = false;
+  @state() private scope: LearnScope | "all" = "all";
+  @state() private keyword: Partial<Record<DayLabel, string>> = {};
   @state() private notice?: { text: string; ok: boolean };
 
   private marker?: string;
@@ -212,36 +243,141 @@ export class JoeLearnPage extends LitElement {
       .table .bad {
         color: var(--joe-crit);
       }
-      .later {
-        display: grid;
-        gap: 8px;
-        list-style: none;
-        margin: 12px 0 0;
-        padding: 0;
-      }
-      .later li {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        color: var(--joe-ink-2);
-      }
-      .later li ha-icon {
-        --mdc-icon-size: 18px;
-        color: var(--joe-muted);
-      }
-      .later + .chip {
-        margin-top: 14px;
-      }
-      .bottom {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-        margin-top: 12px;
-      }
       .danger p {
         margin: 10px 0 0;
         color: var(--joe-ink-2);
         max-width: 56ch;
+      }
+      .scopes {
+        margin-top: 12px;
+        flex-wrap: wrap;
+      }
+      .eyebrow.section {
+        margin: 28px 0 0;
+      }
+      joe-day-questions.wide {
+        margin-top: 12px;
+      }
+      .rows {
+        display: grid;
+        margin-top: 10px;
+      }
+      .row-item {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 2px 12px;
+        padding: 9px 0;
+        border-top: 1px solid var(--joe-line);
+      }
+      .row-item:first-child {
+        border-top: 0;
+      }
+      .row-item b {
+        overflow-wrap: anywhere;
+      }
+      .row-item .values {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 4px 12px;
+        margin-left: auto;
+        font-variant-numeric: tabular-nums;
+        color: var(--joe-ink-2);
+      }
+      .row-item small {
+        flex-basis: 100%;
+        color: var(--joe-muted);
+        font-size: 12.5px;
+        line-height: 1.4;
+      }
+      .sub-head {
+        margin-top: 16px;
+        font-size: 14px;
+      }
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--joe-line);
+      }
+      .rules {
+        display: grid;
+        gap: 2px;
+        margin-top: 12px;
+      }
+      .rule {
+        display: grid;
+        grid-template-columns: 150px minmax(0, 1fr);
+        gap: 6px 12px;
+        align-items: center;
+        padding: 8px 0;
+        border-top: 1px solid var(--joe-line);
+      }
+      .rule:first-child {
+        border-top: 0;
+      }
+      .keywords {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+      }
+      .keyword {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        padding: 2px 4px 2px 10px;
+        border-radius: 999px;
+        background: var(--joe-surface-2);
+        font-size: 13.5px;
+      }
+      .keyword button {
+        display: grid;
+        place-items: center;
+        width: 26px;
+        height: 26px;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        color: var(--joe-muted);
+        cursor: pointer;
+        transition: background 0.12s, color 0.12s;
+      }
+      .keyword button:hover {
+        background: var(--joe-line);
+        color: var(--joe-ink);
+      }
+      .keyword button:active {
+        transform: scale(0.94);
+      }
+      .keyword ha-icon {
+        --mdc-icon-size: 15px;
+      }
+      .add {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .add .input {
+        width: 150px;
+        min-height: 34px;
+        padding: 6px 10px;
+      }
+      .defaults {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 8px;
+      }
+      .sub-head.with-tip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
       }
       .danger .actions {
         margin-top: 14px;
@@ -264,8 +400,17 @@ export class JoeLearnPage extends LitElement {
       }
       @media (max-width: 900px) {
         .grid,
-        .bottom {
+        .defaults {
           grid-template-columns: 1fr;
+        }
+        .rule {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (pointer: coarse) {
+        .keyword button {
+          width: 36px;
+          height: 36px;
         }
       }
       @media (max-width: 760px) {
@@ -346,11 +491,22 @@ export class JoeLearnPage extends LitElement {
         ${this.failed ? html`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon>${t("learn.failed")}</div>` : nothing}
         ${data
           ? html`${this.renderResults(t, data)}
+              <joe-day-questions
+                class="wide"
+                .hass=${this.hass}
+                .t=${t}
+                .questions=${data.questions}
+                @joe-answered=${() => this.load()}
+              ></joe-day-questions>
               <div class="grid">
                 ${this.renderSolar(t, data)} ${this.renderShift(t, data)} ${this.renderBuffer(t, data)} ${this.renderHome(t, data)}
               </div>
-              ${this.renderAccuracy(t, data)}
-              <div class="bottom">${this.renderLater(t)} ${this.renderReset(t)}</div>`
+              <div class="eyebrow section"><ha-icon icon="mdi:brain"></ha-icon>${t("learn.models")}</div>
+              <div class="grid">
+                ${this.renderWeather(t, data)} ${this.renderSources(t, data)} ${this.renderBatteries(t, data)}
+                ${this.renderGroups(t, data)} ${this.renderHotWater(t, data)} ${this.renderPresence(t, data)}
+              </div>
+              ${this.renderCalendar(t)} ${this.renderAccuracy(t, data)} ${this.renderReset(t)}`
           : nothing}
       </div>
       ${this.confirming ? this.renderConfirm(t) : nothing}`;
@@ -637,6 +793,434 @@ export class JoeLearnPage extends LitElement {
       </div>`;
   }
 
+  /** A small table: one row per item, a label and a few values. */
+  private rows(rows: { name: string; values: (string | TemplateResult)[]; note?: string }[]): TemplateResult {
+    return html`<div class="rows">
+      ${rows.map(
+        (row) => html`<div class="row-item">
+          <b>${row.name}</b>
+          <span class="values">${row.values.map((value) => html`<span>${value}</span>`)}</span>
+          ${row.note ? html`<small>${row.note}</small>` : nothing}
+        </div>`,
+      )}
+    </div>`;
+  }
+
+  private renderWeather(t: Translate, data: Learning): TemplateResult {
+    const lang = t.lang;
+    const model = data.learned.consumption_model;
+    const days = data.days.filter((d) => d.temp != null);
+    const usable = days.filter((d) => !d.excluded).length;
+    const weather = this.state?.config.context.weather_entity;
+    let say: string;
+    if (!weather) {
+      say = t("learn.model.no_weather");
+    } else if (!model) {
+      say = t("learn.model.learning", { need: data.needs.models, have: usable });
+    } else {
+      // The base includes the hours someone is usually at home.
+      const base = model.base + (model.presence ?? 0) * (model.presence_mean ?? 0);
+      const parts = [t("learn.model.base", { value: fixed(lang, base, 1) })];
+      if (Math.abs(model.workday) >= 0.3) {
+        parts.push(t(model.workday > 0 ? "learn.model.workday_more" : "learn.model.workday_less", { value: fixed(lang, Math.abs(model.workday), 1) }));
+      }
+      if (model.heat >= 0.05) {
+        parts.push(t("learn.model.heat", { value: fixed(lang, model.heat, 2) }));
+      }
+      if (model.cool >= 0.05) {
+        parts.push(t("learn.model.cool", { value: fixed(lang, model.cool, 2) }));
+      }
+      if (model.presence != null && Math.abs(model.presence) >= 0.05) {
+        parts.push(t("learn.model.presence", { value: fixed(lang, model.presence, 2) }));
+      }
+      parts.push(t("learn.model.fit", { share: formatNumber(lang, model.r2 * 100, 0) }));
+      say = parts.join(" ");
+    }
+    const heating = model != null && model.heat >= 0.05;
+    return html`<section class="card" data-tipped>
+      <div class="head">
+        <div class="eyebrow"><ha-icon icon="mdi:thermometer"></ha-icon>${t("learn.model")}</div>
+        ${tip(t, "learn_model")}
+      </div>
+      <div class="figure">
+        <div class="big ${model ? "" : "small"}">
+          ${model
+            ? heating
+              ? html`+${fixed(lang, model.heat, 2)}<small> kWh/°C</small>`
+              : html`${fixed(lang, model.base + (model.presence ?? 0) * (model.presence_mean ?? 0), 1)}<small> kWh</small>`
+            : t("learn.still")}
+        </div>
+        ${model ? html`${sourceChip(t, { source: "learned" })}<span class="chip">${t("learn.days", { days: model.days })}</span>` : nothing}
+      </div>
+      <p class="say">${say}</p>
+      ${days.length > 2 ? this.temperatureChart(t, data, model) : nothing}
+    </section>`;
+  }
+
+  /** Consumption per 2 °C of outdoor temperature, with what the model expects. */
+  private temperatureChart(t: Translate, data: Learning, model: ConsumptionModel | null): TemplateResult {
+    const days = data.days.filter((d) => d.temp != null && !d.excluded);
+    const temps = days.map((d) => d.temp as number);
+    const low = Math.floor(Math.min(...temps) / 2) * 2;
+    const high = Math.floor(Math.max(...temps) / 2) * 2 + 2;
+    const bins: number[] = [];
+    for (let from = low; from < high; from += 2) {
+      bins.push(from);
+    }
+    const degrees = (value: number) => formatNumber(t.lang, value, 0);
+    const average = (from: number) => {
+      const found = days.filter((d) => (d.temp as number) >= from && (d.temp as number) < from + 2);
+      return found.length ? found.reduce((sum, d) => sum + d.home, 0) / found.length : null;
+    };
+    const series: ChartSeries[] = [
+      { label: t("learn.model.chart.actual"), kind: "bar", values: bins.map(average), color: "var(--joe-c-ist)", digits: 1 },
+    ];
+    if (model) {
+      series.push(
+        {
+          label: t("learn.model.chart.workday"),
+          kind: "line",
+          values: bins.map((from) => expectedKwh(model, true, from + 1)),
+          color: "var(--joe-c-soc)",
+          digits: 1,
+        },
+        {
+          label: t("learn.model.chart.day_off"),
+          kind: "line",
+          values: bins.map((from) => expectedKwh(model, false, from + 1)),
+          color: "var(--joe-c-soc-2)",
+          dashed: true,
+          digits: 1,
+        },
+      );
+    }
+    const every = Math.max(1, Math.ceil(bins.length / 8));
+    const ticks = new Map<number, string>();
+    bins.forEach((from, i) => {
+      if (i % every === 0) {
+        ticks.set(i, `${degrees(from)}°`);
+      }
+    });
+    return html`<joe-chart
+        .labels=${bins.map((from) => `${degrees(from)} … ${degrees(from + 2)} °C`)}
+        .ticks=${ticks}
+        .series=${series}
+        unit="kWh"
+        height="150"
+        lang=${t.lang}
+        label=${t("learn.model.chart")}
+      ></joe-chart>
+      <div class="legend">
+        ${series.map(
+          (s) =>
+            html`<span
+              ><i class=${s.dashed ? "dash" : ""} style="background:${s.color};color:${s.color};height:${s.kind === "bar" ? "10px" : "4px"}"></i
+              >${s.label}</span
+            >`,
+        )}
+      </div>`;
+  }
+
+  private renderSources(t: Translate, data: Learning): TemplateResult {
+    const lang = t.lang;
+    const config = this.state!.config;
+    const solar = data.learned.solar_classes ?? {};
+    const classes = solar.classes ?? {};
+    const forecast = config.forecast;
+    const sources = data.learned.sources ?? {};
+    const known = WEATHER.filter((name) => classes[name]);
+    const percent = (value: number) => formatNumber(lang, value * 100, 0);
+    const names: [string, string][] = [
+      ["main", forecast.provider ? (FORECAST_NAMES[forecast.provider] ?? forecast.provider) : t("learn.sources.main")],
+      ...forecast.alternatives.map((a): [string, string] => [a.id, a.name]),
+    ];
+    const weights = Object.fromEntries(
+      names.map(([id]) => [id, sources[id] ? 1 / Math.max(sources[id].error, 0.05) ** 2 : 0]),
+    );
+    const total = Object.values(weights).reduce((sum, w) => sum + w, 0);
+    return html`<section class="card" data-tipped>
+      <div class="head">
+        <div class="eyebrow"><ha-icon icon="mdi:weather-partly-cloudy"></ha-icon>${t("learn.weather")}</div>
+        ${tip(t, "learn_weather")}
+      </div>
+      <p class="say">
+        ${known.length
+          ? t("learn.weather.say", { top: fixed(lang, solar.top ?? 0, 1) })
+          : t("learn.weather.learning", { have: solar.days ?? 0 })}
+      </p>
+      ${known.length
+        ? this.rows(
+            WEATHER.map((name) => {
+              const found = classes[name];
+              return {
+                name: t(`learn.weather.${name}`),
+                values: found
+                  ? [`× ${formatNumber(lang, found.factor, 2)}`, t("learn.days", { days: found.days })]
+                  : [t("learn.still")],
+              };
+            }),
+          )
+        : nothing}
+      <div class="sub-head">
+        <b>${t("learn.sources")}</b>
+      </div>
+      ${forecast.alternatives.length
+        ? html`${this.rows(
+              names.map(([id, name]) => {
+                const found = sources[id];
+                return {
+                  name,
+                  values: found
+                    ? [
+                        `× ${formatNumber(lang, found.factor, 2)}`,
+                        t("learn.sources.error", { value: percent(found.error) }),
+                        forecast.combine && total ? t("learn.sources.weight", { value: percent(weights[id] / total) }) : "",
+                      ]
+                    : [t("learn.sources.learning", { need: data.needs.sources })],
+                };
+              }),
+            )}
+            <div class="toggle-row">
+              <span class="with-tip"><span id="combine-label">${t("learn.sources.combine")}</span>${tip(t, "learn_combine")}</span>
+              <button
+                type="button"
+                class="switch"
+                role="switch"
+                aria-checked=${String(forecast.combine)}
+                aria-labelledby="combine-label"
+                @click=${() => saveConfig(this, { forecast: { combine: !forecast.combine } })}
+              ></button>
+            </div>`
+        : html`<p class="say">${t("learn.sources.single")}</p>`}
+    </section>`;
+  }
+
+  private renderBatteries(t: Translate, data: Learning): TemplateResult {
+    const lang = t.lang;
+    const config = this.state!.config;
+    const models = data.learned.battery_models ?? {};
+    return html`<section class="card" data-tipped>
+      <div class="head">
+        <div class="eyebrow"><ha-icon icon="mdi:battery-heart-variant"></ha-icon>${t("learn.battery")}</div>
+        ${tip(t, "learn_battery")}
+      </div>
+      ${config.batteries.length
+        ? this.rows(
+            config.batteries.map((battery) => {
+              const found = models[battery.id];
+              const nominal = battery.capacity_kwh;
+              const own = config.provenance[`batteries[${battery.id}].capacity_kwh`]?.source === "user";
+              let note: string;
+              if (!found) {
+                note = battery.power ? t("learn.battery.learning", { need: data.needs.models }) : t("learn.battery.no_power");
+              } else if (own && nominal) {
+                note = t("learn.battery.user", { value: fixed(lang, nominal, 1) });
+              } else if (nominal && (found.capacity_kwh / nominal < 0.5 || found.capacity_kwh / nominal > 1.15)) {
+                note = t("learn.battery.odd", { value: fixed(lang, nominal, 1) });
+              } else {
+                note = nominal
+                  ? t("learn.battery.uses_nominal", { value: fixed(lang, nominal, 1) })
+                  : t("learn.battery.uses");
+              }
+              return {
+                name: battery.name,
+                values: found
+                  ? [
+                      t("learn.battery.capacity", { value: fixed(lang, found.capacity_kwh, 1) }),
+                      t("learn.battery.efficiency", { value: formatNumber(lang, found.efficiency * 100, 0) }),
+                    ]
+                  : [t("learn.still")],
+                note,
+              };
+            }),
+          )
+        : html`<p class="say">${t("learn.battery.none")}</p>`}
+    </section>`;
+  }
+
+  private renderGroups(t: Translate, data: Learning): TemplateResult {
+    const lang = t.lang;
+    const config = this.state!.config;
+    const models = data.learned.group_models ?? {};
+    const consumers = config.consumers.filter((c) => c.energy_entity && c.kind !== "submeter");
+    return html`<section class="card" data-tipped>
+      <div class="head">
+        <div class="eyebrow"><ha-icon icon="mdi:chart-donut"></ha-icon>${t("learn.groups")}</div>
+        ${tip(t, "learn_groups")}
+      </div>
+      ${consumers.length
+        ? this.rows(
+            consumers.map((consumer) => {
+              const found = models[consumer.id];
+              return {
+                name: consumer.name,
+                values: found
+                  ? [
+                      t("learn.groups.average", { value: fixed(lang, found.average, 1) }),
+                      found.heat >= 0.05 ? t("learn.groups.heat", { value: fixed(lang, found.heat, 2) }) : t("learn.groups.steady"),
+                    ]
+                  : [t("learn.still")],
+              };
+            }),
+          )
+        : html`<p class="say">${t("learn.groups.none")}</p>`}
+    </section>`;
+  }
+
+  private renderHotWater(t: Translate, data: Learning): TemplateResult {
+    const lang = t.lang;
+    const config = this.state!.config;
+    const models = data.learned.action_models ?? {};
+    const actions = config.actions.filter((a) => a.kind === "target");
+    return html`<section class="card" data-tipped>
+      <div class="head">
+        <div class="eyebrow"><ha-icon icon="mdi:water-boiler"></ha-icon>${t("learn.hot_water")}</div>
+        ${tip(t, "learn_hot_water")}
+      </div>
+      ${actions.length
+        ? this.rows(
+            actions.map((action) => {
+              const found = models[action.id];
+              return {
+                name: action.name,
+                values: found
+                  ? [
+                      t("learn.hot_water.rate", { value: fixed(lang, found.rate_k_per_h, 1) }),
+                      t("learn.hot_water.loss", { value: fixed(lang, found.loss_k_per_h, 1) }),
+                      t("learn.hot_water.demand", { value: fixed(lang, found.demand_k, 0) }),
+                    ]
+                  : [t("learn.still")],
+                note: found ? undefined : t("learn.hot_water.learning"),
+              };
+            }),
+          )
+        : html`<p class="say">${t("learn.hot_water.none")}</p>`}
+    </section>`;
+  }
+
+  private renderPresence(t: Translate, data: Learning): TemplateResult {
+    const lang = t.lang;
+    const config = this.state!.config;
+    const presence = data.learned.presence ?? {};
+    const withCalendar = config.persons.filter((p) => p.calendars.length);
+    return html`<section class="card" data-tipped>
+      <div class="head">
+        <div class="eyebrow"><ha-icon icon="mdi:account-clock-outline"></ha-icon>${t("learn.presence")}</div>
+        ${tip(t, "learn_presence")}
+      </div>
+      ${withCalendar.length
+        ? this.rows(
+            withCalendar.map((person) => {
+              const labels = DAY_LABELS.filter((label) => presence[person.id]?.[label]);
+              return {
+                name: person.name,
+                values: labels.length
+                  ? labels.map((label) =>
+                      t("learn.presence.value", {
+                        label: t(`label.${label}`),
+                        hours: fixed(lang, presence[person.id]![label]!.hours, 0),
+                      }),
+                    )
+                  : [t("learn.still")],
+                note: person.person_entity ? undefined : t("learn.presence.no_person"),
+              };
+            }),
+          )
+        : html`<p class="say">${t("learn.presence.none")}</p>`}
+      <div class="own">
+        <button type="button" class="mini-btn" @click=${() => this.edit("household")}>
+          <ha-icon icon="mdi:calendar-account-outline"></ha-icon>${t("learn.presence.calendars")}
+        </button>
+      </div>
+    </section>`;
+  }
+
+  /** The rules that turn calendar events into day labels, grouped by label. */
+  private renderCalendar(t: Translate): TemplateResult {
+    const calendar = this.state!.config.calendar;
+    const byLabel = (label: DayLabel) => calendar.rules.filter((rule) => rule.label === label);
+    return html`<section class="card wide" data-tipped>
+      <div class="head">
+        <div class="eyebrow"><ha-icon icon="mdi:calendar-text-outline"></ha-icon>${t("learn.calendar")}</div>
+        ${tip(t, "learn_calendar")}
+      </div>
+      <p class="say">${t("learn.calendar.say")}</p>
+      <div class="rules">
+        ${RULE_ORDER.map(
+          (label) => html`<div class="rule">
+            <b>${t(`label.${label}`)}</b>
+            <div class="keywords">
+              ${byLabel(label).map(
+                (rule) =>
+                  html`<span class="keyword"
+                    >${rule.keyword}<button
+                      type="button"
+                      aria-label=${t("learn.calendar.remove", { keyword: rule.keyword })}
+                      @click=${() => this.saveRules(calendar.rules.filter((r) => r !== rule))}
+                    >
+                      <ha-icon icon="mdi:close"></ha-icon></button
+                  ></span>`,
+              )}
+              <form
+                class="add"
+                @submit=${(ev: Event) => {
+                  ev.preventDefault();
+                  this.addKeyword(calendar, label);
+                }}
+              >
+                <input
+                  class="input"
+                  .value=${this.keyword[label] ?? ""}
+                  maxlength="40"
+                  placeholder=${t("learn.calendar.keyword")}
+                  aria-label=${t("learn.calendar.add_to", { label: t(`label.${label}`) })}
+                  @input=${(ev: Event) => (this.keyword = { ...this.keyword, [label]: (ev.target as HTMLInputElement).value })}
+                />
+                <button type="submit" class="mini-btn" ?disabled=${!(this.keyword[label] ?? "").trim()}>
+                  <ha-icon icon="mdi:plus"></ha-icon>${t("learn.calendar.add")}
+                </button>
+              </form>
+            </div>
+          </div>`,
+        )}
+      </div>
+      <div class="sub-head with-tip"><b>${t("learn.calendar.defaults")}</b>${tip(t, "cal_defaults")}</div>
+      <div class="defaults">
+        ${(["default_workday", "default_day_off"] as const).map(
+          (key) => html`<label class="field">
+            <span class="field-label">${t(`learn.calendar.${key}`)}</span>
+            <select
+              class="input"
+              @change=${(ev: Event) =>
+                saveConfig(this, { calendar: { [key]: (ev.target as HTMLSelectElement).value as DayLabel } })}
+            >
+              ${DAY_LABELS.map((label) => html`<option value=${label} ?selected=${calendar[key] === label}>${t(`label.${label}`)}</option>`)}
+            </select>
+          </label>`,
+        )}
+      </div>
+    </section>`;
+  }
+
+  private addKeyword(calendar: CalendarConfig, label: DayLabel): void {
+    const keyword = (this.keyword[label] ?? "").trim().toLowerCase();
+    if (!keyword || calendar.rules.some((rule) => rule.keyword.toLowerCase() === keyword && rule.label === label)) {
+      return;
+    }
+    this.keyword = { ...this.keyword, [label]: "" };
+    this.saveRules([...calendar.rules, { keyword, label }]);
+  }
+
+  /** Saves the rules in the order they are checked: by label, as shown. */
+  private saveRules(rules: CalendarConfig["rules"]): void {
+    const ordered = RULE_ORDER.flatMap((label) => rules.filter((rule) => rule.label === label));
+    saveConfig(this, { calendar: { rules: ordered } });
+  }
+
+  private edit(editor: "household"): void {
+    this.dispatchEvent(new CustomEvent("joe-edit", { detail: { editor }, bubbles: true, composed: true }));
+  }
+
   private renderAccuracy(t: Translate, data: Learning): TemplateResult {
     const rows = data.accuracy.slice(-RECENT).reverse();
     const kwh = (value: number | null | undefined) => (value == null ? "–" : fixed(t.lang, value, 1));
@@ -664,26 +1248,27 @@ export class JoeLearnPage extends LitElement {
     </section>`;
   }
 
-  private renderLater(t: Translate): TemplateResult {
-    return html`<section class="card">
-      <div class="eyebrow"><ha-icon icon="mdi:book-open-page-variant-outline"></ha-icon>${t("learn.later")}</div>
-      <ul class="later">
-        ${LATER.map((item) => html`<li><ha-icon icon="mdi:circle-outline"></ha-icon>${t(`learn.later.${item}`)}</li>`)}
-      </ul>
-      <span class="chip soon">${t("soon")}</span>
-    </section>`;
-  }
-
   private renderReset(t: Translate): TemplateResult {
     const active = Boolean(this.state?.observe?.active);
-    return html`<section class="card danger" data-tipped>
-      <div class="eyebrow"><ha-icon icon="mdi:restore"></ha-icon>${t("learn.reset")}</div>
+    return html`<section class="card danger wide" data-tipped>
+      <div class="head">
+        <div class="eyebrow"><ha-icon icon="mdi:restore"></ha-icon>${t("learn.reset")}</div>
+        ${tip(t, "learn_reset")}
+      </div>
       <p>${t("learn.reset.text")}</p>
+      <div class="sub-head with-tip"><b>${t("learn.reset.scope")}</b>${tip(t, "learn_reset_scope")}</div>
+      <div class="seg scopes" role="group" aria-label=${t("learn.reset.scope")}>
+        ${(["all", ...LEARN_SCOPES] as const).map(
+          (scope) =>
+            html`<button type="button" aria-pressed=${String(this.scope === scope)} @click=${() => (this.scope = scope)}>
+              ${t(`learn.reset.scope.${scope}`)}
+            </button>`,
+        )}
+      </div>
       <div class="actions">
         <button type="button" class="btn btn-danger" ?disabled=${!active} @click=${() => (this.confirming = true)}>
-          ${t("learn.reset.button")}
+          ${t(this.scope === "all" ? "learn.reset.button" : "learn.reset.button.scope")}
         </button>
-        ${tip(t, "learn_reset")}
       </div>
       ${active ? nothing : html`<p>${t("learn.reset.off")}</p>`}
       ${this.notice
@@ -698,14 +1283,15 @@ export class JoeLearnPage extends LitElement {
     const close = () => {
       this.confirming = false;
     };
+    const scope = this.scope;
     return html`<joe-sheet label=${t("learn.reset.label")} closeLabel=${t("common.close")} @joe-close=${close}>
       <div data-tipped>
         <div class="sheet-title">${displayTitle(t("learn.reset.confirm.title"), "h2", tip(t, "learn_reset"))}</div>
         <dl class="forget">
           <dt>${t("learn.reset.confirm.forget")}</dt>
-          <dd>${t("learn.reset.confirm.forget.text")}</dd>
+          <dd>${t(`learn.reset.forget.${scope}`)}</dd>
           <dt>${t("learn.reset.confirm.keep")}</dt>
-          <dd>${t("learn.reset.confirm.keep.text")}</dd>
+          <dd>${t(scope === "all" ? "learn.reset.confirm.keep.text" : "learn.reset.keep.scope")}</dd>
         </dl>
         <div class="actions">
           <button type="button" class="btn btn-secondary" data-notip @click=${close}>${t("common.cancel")}</button>
@@ -721,9 +1307,9 @@ export class JoeLearnPage extends LitElement {
     const t = this.t!;
     this.resetting = true;
     try {
-      await this.hass?.callWS({ type: "energy_joe/learning/reset" });
+      await this.hass?.callWS({ type: "energy_joe/learning/reset", scope: this.scope });
       this.confirming = false;
-      this.notice = { text: t("learn.reset.done"), ok: true };
+      this.notice = { text: t(this.scope === "all" ? "learn.reset.done" : "learn.reset.done.scope"), ok: true };
       await this.load();
     } catch {
       this.confirming = false;

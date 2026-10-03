@@ -209,11 +209,24 @@ async def test_observer_records_live_hours(
     hass.states.async_set("sensor.soc", "40", {"unit_of_measurement": "%"})
     hass.states.async_set("person.robin", "home")
     hass.states.async_set("weather.home", "sunny", {"temperature": 14})
+    energy = {"unit_of_measurement": "kWh", "device_class": "energy"}
+    hass.states.async_set("sensor.fc_tomorrow", "12.5", energy)
+    hass.states.async_set("sensor.solcast_tomorrow", "10.0", energy)
 
     store = HistoryStore(hass)
     await store.async_load()
     observer = JoeObserver(hass, store, lambda: None)
-    await observer.async_start(config_with())
+    forecast = {
+        "tomorrow": ["sensor.fc_tomorrow"],
+        "alternatives": [
+            {
+                "id": "solcast",
+                "name": "Solcast",
+                "tomorrow": ["sensor.solcast_tomorrow"],
+            }
+        ],
+    }
+    await observer.async_start(config_with(forecast=forecast))
     await hass.async_block_till_done()
 
     freezer.move_to("2026-10-03T12:30:00+02:00")
@@ -242,6 +255,10 @@ async def test_observer_records_live_hours(
     assert record["present"] == {"person.robin": 0.5}
     assert record["cov"] == pytest.approx(1.0, abs=0.01)
     assert observer.status["last_hour"] == record["start"]
+    # Tomorrow's forecasts: the main one and the alternative to compare.
+    tomorrow = await store.async_day("2026-10-04")
+    assert tomorrow["fc"]["ahead_kwh"] == 12.5
+    assert tomorrow["fc"]["alt"] == {"solcast": 10.0}
     await observer.async_stop()
     await store.async_unload()
 

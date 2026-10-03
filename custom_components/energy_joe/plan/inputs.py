@@ -11,7 +11,10 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.sun import get_astral_event_date
 from homeassistant.util import dt as dt_util
 
+from .. import model
 from ..control.adapters import make_adapter
+from ..learn.context import async_day_labels, async_weather_temp
+from ..learn.models import class_factor, combined_forecast, expected
 from ..observe.readings import energy_kwh, number, sum_kwh
 from ..observe.records import hour_starts, local_hour
 from ..observe.store import HistoryStore
@@ -30,6 +33,12 @@ DEFAULT_PROFILE = [
 ]  # fmt: skip
 # Prices Joe assumes when the tariff does not say (per kWh).
 ASSUMED = Prices(night=0.20, day=0.30, feed_in=0.08, assumed=True)
+# A consumption model explains enough to scale tomorrow by from this fit on,
+# and never scales by more than these limits.
+MIN_R2 = 0.4
+SCALE_LIMITS = (0.5, 2.0)
+# A learned battery size counts if it fits the nominal one this well.
+CAPACITY_LIMITS = (0.5, 1.15)
 
 
 def next_window(now: datetime, window: dict[str, str]) -> tuple[datetime, datetime]:
@@ -233,10 +242,16 @@ async def async_build_input(
 
     notes: list[str] = []
     batteries = []
+    learned = config["learned"]
+    battery_models = learned.get("battery_models") or {}
+    efficiencies: list[tuple[float, float]] = []
     for battery in config["batteries"]:
         capacity = battery["capacity_kwh"] or energy_kwh(
             hass.states.get(battery["capacity_entity"] or "")
         )
+        if found := battery_models.get(battery["id"]):
+            capacity = _real_capacity(config, battery["id"], capacity, found)
+            efficiencies.append((found["efficiency"], capacity or 0.0))
         soc = number(hass.states.get(battery["soc_entity"]))
         if not capacity:
             notes.append("capacity_unknown")
@@ -274,7 +289,6 @@ async def async_build_input(
         day: await async_workday(hass, holiday, day)
         for day in {dt_util.as_local(s).date() for s in starts}
     }
-    learned = config["learned"]
     solar_factor = learned["solar_factor"] or 1.0
     solar, sun_meta = await async_solar(
         hass, config, history, starts, now, learned["solar_shift"] or 0
@@ -284,6 +298,18 @@ async def async_build_input(
     if consumption["source"] == "default":
         notes.append("default_profile")
 
+    # Tomorrow as Joe's models see it: weather, calendars, presence, sun.
+    tomorrow = dt_util.as_local(window_end).date()
+    outlook = await async_tomorrow(
+        hass,
+        config,
+        history,
+        tomorrow,
+        workdays.get(tomorrow, tomorrow.weekday() < 5),
+        sum(profiles[workdays.get(tomorrow, tomorrow.weekday() < 5)]),
+        sun_meta["totals"].get(tomorrow.isoformat()),
+    )
+
     hours = []
     for start in starts:
         fraction = 1.0
@@ -292,11 +318,17 @@ async def async_build_input(
                 0.0, (start + timedelta(hours=1) - now).total_seconds() / 3600
             )
         local = dt_util.as_local(start)
+        is_tomorrow = local.date() == tomorrow
+        sun = outlook["solar_factor"] if is_tomorrow else None
         hours.append(
             Hour(
                 start=start,
-                solar=solar.get(start, 0.0) * solar_factor * fraction,
-                home=profiles[workdays[local.date()]][local.hour] * fraction,
+                solar=solar.get(start, 0.0)
+                * (sun if sun is not None else solar_factor)
+                * fraction,
+                home=profiles[workdays[local.date()]][local.hour]
+                * (outlook["scale"] if is_tomorrow else 1.0)
+                * fraction,
                 window=window_start <= start < window_end,
                 fraction=fraction,
             )
@@ -304,7 +336,6 @@ async def async_build_input(
 
     # Night actions: tomorrow's sun decides, running ones take grid power and
     # move their consumer's daytime energy into the night.
-    tomorrow = dt_util.as_local(window_end).date()
     tomorrow_kwh = round(
         sum(
             h.solar
@@ -320,7 +351,7 @@ async def async_build_input(
         window_end,
         tomorrow_kwh if "no_forecast" not in notes else None,
         manual or {},
-        (config["learned"].get("actions") or {}),
+        learned.get("action_models") or {},
     )
     reserved = [
         reserved_kw(actions, h.start, h.start + timedelta(hours=1)) for h in hours
@@ -333,10 +364,14 @@ async def async_build_input(
     }
     if linked:
         profiles_use = await async_consumer_profiles(history, today)
+        groups = learned.get("group_models") or {}
         for consumer in linked:
             profile = profiles_use.get(consumer)
             if not profile:
                 continue
+            # A consumer that follows the weather moves as much as it will use tomorrow.
+            share = _group_scale(groups.get(consumer), outlook)
+            profile = [value * share for value in profile]
             for hour in hours:
                 if hour.start >= window_end and hour.start < window_end + timedelta(
                     hours=20
@@ -376,6 +411,7 @@ async def async_build_input(
             max_night_kwh=rules["max_night_kwh"],
             discharge_mode=rules["discharge_in_window"],
             buffer=rules["buffer_factor"],
+            efficiency=_efficiency(efficiencies),
             notes=notes,
             actions=actions,
             reserved=reserved,
@@ -387,7 +423,115 @@ async def async_build_input(
                 "solar_shift": learned["solar_shift"] or 0,
                 "workday": workdays.get(dt_util.as_local(window_start).date()),
                 "tomorrow_kwh": tomorrow_kwh,
+                "tomorrow": outlook["meta"],
+                "efficiency": _efficiency(efficiencies),
             },
         ),
         notes,
     )
+
+
+async def async_tomorrow(
+    hass: HomeAssistant,
+    config: dict[str, Any],
+    history: HistoryStore,
+    day: date,
+    workday: bool,
+    profile_kwh: float,
+    raw_solar: float | None,
+) -> dict[str, Any]:
+    """How tomorrow differs from an average day: consumption scale and sun factor."""
+    learned = config["learned"]
+    temp = await async_weather_temp(hass, config["context"]["weather_entity"], day)
+    labels = (
+        await async_day_labels(hass, config, day, workday) if config["persons"] else {}
+    )
+    presence = _presence(learned.get("presence") or {}, labels)
+    meta: dict[str, Any] = {
+        "date": day.isoformat(),
+        "workday": workday,
+        "temp": None if temp is None else round(temp, 1),
+        "labels": labels,
+        "presence": presence,
+        "profile_kwh": round(profile_kwh, 2),
+    }
+    scale = 1.0
+    consumption = learned.get("consumption_model")
+    if consumption and consumption["r2"] >= MIN_R2 and temp is not None:
+        day_kwh = expected(consumption, workday, temp, presence)
+        if profile_kwh > 0:
+            scale = max(SCALE_LIMITS[0], min(SCALE_LIMITS[1], day_kwh / profile_kwh))
+        meta["expected_kwh"] = round(day_kwh, 2)
+    meta["scale"] = round(scale, 2)
+
+    # The sun: all forecasts combined, else the factor of tomorrow's weather.
+    stored = ((await history.async_day(day.isoformat())) or {}).get("fc") or {}
+    main = stored.get("ahead_kwh") or raw_solar
+    forecast = config["forecast"]
+    factor: float | None = None
+    source = "learned"
+    combined = None
+    if forecast["combine"] and forecast["alternatives"] and main:
+        others = {
+            a["id"]: (stored.get("alt") or {}).get(a["id"])
+            for a in forecast["alternatives"]
+        }
+        combined = combined_forecast(
+            learned.get("sources") or {}, {"main": main, **others}
+        )
+        if combined is not None and main >= 1.0:
+            factor, source = combined / main, "combined"
+    weather = class_factor(learned.get("solar_classes"), main)
+    if weather is not None:
+        meta["weather"] = weather[0]
+        if factor is None:
+            factor, source = weather[1], "weather"
+    meta.update(
+        solar_forecast=None if main is None else round(main, 2),
+        solar_combined=combined,
+        solar_factor=None if factor is None else round(factor, 2),
+        solar_source=source if factor is not None else "learned",
+    )
+    return {"scale": scale, "solar_factor": factor, "meta": meta, "temp": temp}
+
+
+def _presence(learned: dict[str, Any], labels: dict[str, str]) -> float | None:
+    """Hours someone is at home tomorrow, from what each person's label usually means."""
+    hours = [
+        found["hours"]
+        for person, label in labels.items()
+        if (found := (learned.get(person) or {}).get(label)) and found["days"] >= 2
+    ]
+    return max(hours) if hours else None
+
+
+def _group_scale(group: dict[str, Any] | None, outlook: dict[str, Any]) -> float:
+    """How much more or less than usual a consumer will use tomorrow."""
+    temp = outlook["temp"]
+    if not group or temp is None or not group.get("average"):
+        return 1.0
+    workday = outlook["meta"]["workday"]
+    return max(0.3, min(3.0, expected(group, workday, temp, None) / group["average"]))
+
+
+def _real_capacity(
+    config: dict[str, Any],
+    battery_id: str,
+    nominal: float | None,
+    found: dict[str, Any],
+) -> float | None:
+    """The size Joe measured, unless the user set one or it does not fit the nominal."""
+    if model.source_of(config, f"batteries[{battery_id}].capacity_kwh") == "user":
+        return nominal
+    real = found["capacity_kwh"]
+    if nominal and not CAPACITY_LIMITS[0] <= real / nominal <= CAPACITY_LIMITS[1]:
+        return nominal
+    return real
+
+
+def _efficiency(found: list[tuple[float, float]]) -> float:
+    """Round-trip efficiency of all batteries (by size); 90 % until Joe has measured."""
+    weight = sum(size for _, size in found)
+    if not weight:
+        return 0.9
+    return round(sum(value * size for value, size in found) / weight, 3)

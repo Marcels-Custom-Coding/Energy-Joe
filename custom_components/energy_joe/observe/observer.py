@@ -309,6 +309,14 @@ class JoeObserver:
             )
         if (value := sum_kwh(get, forecast["tomorrow"])) is not None:
             await self._store.async_update_day(tomorrow, fc={"ahead_kwh": value})
+        # Other forecasts for the same panels, so Joe learns how well each fits.
+        others = {
+            source["id"]: value
+            for source in forecast["alternatives"]
+            if (value := sum_kwh(get, source["tomorrow"])) is not None
+        }
+        if others:
+            await self._store.async_update_day(tomorrow, fc={"alt": others})
         hours = await self._async_forecast_hours(forecast["config_entries"])
         by_day: dict[str, dict[str, float]] = {}
         for start, wh in hours.items():

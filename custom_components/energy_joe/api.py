@@ -10,6 +10,7 @@ import voluptuous as vol
 from homeassistant.components import websocket_api
 from homeassistant.const import __version__ as HA_VERSION
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.sun import get_astral_event_date
 from homeassistant.loader import async_get_integration
 from homeassistant.util import dt as dt_util
@@ -19,6 +20,7 @@ from .const import DOMAIN
 from .control.profiles import PROFILES
 from .discovery import async_check, async_collect, async_discover, discover
 from .discovery.checks import run_config_checks
+from .learn.learner import ANSWERS, MODEL_DAYS, SCOPES
 from .learn.learning import (
     BUFFER_DAYS,
     SHIFT_DAYS,
@@ -26,6 +28,7 @@ from .learn.learning import (
     solar_profile,
     solar_ratios,
 )
+from .learn.models import MIN_DAYS, SOURCE_DAYS, daily_rows
 from .observe.records import day_view, summarize
 from .plan.inputs import async_consumption
 from .runtime import (
@@ -54,6 +57,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_plan_refresh)
     websocket_api.async_register_command(hass, ws_learning)
     websocket_api.async_register_command(hass, ws_learning_reset)
+    websocket_api.async_register_command(hass, ws_learning_answer)
     websocket_api.async_register_command(hass, ws_control_test)
     websocket_api.async_register_command(hass, ws_control_release)
     websocket_api.async_register_command(hass, ws_control_skip)
@@ -357,6 +361,25 @@ async def ws_learning(
         first = since[:10]
     days = await runtime.history.async_days(first, today.isoformat())
     profiles, consumption = await async_consumption(runtime.history, today)
+    # The days behind the models: consumption against the outdoor temperature.
+    model_first = (today - timedelta(days=MODEL_DAYS)).isoformat()
+    if since and since[:10] > model_first:
+        model_first = since[:10]
+    model_days = await runtime.history.async_days(
+        model_first, (today - timedelta(days=1)).isoformat()
+    )
+    points = [
+        {
+            "date": row.date,
+            "home": round(row.home, 2),
+            "temp": None if row.temp is None else round(row.temp, 1),
+            "workday": row.workday,
+            "excluded": row.excluded,
+            "answer": model_days[row.date].get("answer"),
+            "labels": model_days[row.date].get("labels") or {},
+        }
+        for row in daily_rows(model_days)
+    ]
     accuracy = []
     for day, data in days.items():
         evaluation = data.get("evaluation") or {}
@@ -388,12 +411,25 @@ async def ws_learning(
             },
             "accuracy": accuracy,
             "results": runtime.learner.results,
-            "needs": {"solar": SOLAR_DAYS, "shift": SHIFT_DAYS, "buffer": BUFFER_DAYS},
+            "days": points,
+            "questions": runtime.learner.questions,
+            "needs": {
+                "solar": SOLAR_DAYS,
+                "shift": SHIFT_DAYS,
+                "buffer": BUFFER_DAYS,
+                "models": MIN_DAYS,
+                "sources": SOURCE_DAYS,
+            },
         },
     )
 
 
-@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/learning/reset"})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/learning/reset",
+        vol.Optional("scope", default="all"): vol.In(("all", *SCOPES)),
+    }
+)
 @websocket_api.require_admin
 @websocket_api.async_response
 async def ws_learning_reset(
@@ -401,10 +437,33 @@ async def ws_learning_reset(
     connection: websocket_api.ActiveConnection,
     msg: dict[str, Any],
 ) -> None:
-    """Forget what Joe learned; he starts learning again from now."""
+    """Forget what Joe learned (all or one area); he learns it again from now."""
     if (runtime := _runtime(hass, connection, msg)) is None:
         return
-    if not await runtime.async_reset_learning():
+    if not await runtime.async_reset_learning(msg["scope"]):
+        connection.send_error(msg["id"], "not_learning", "Joe is not learning.")
+        return
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/learning/answer",
+        vol.Required("date"): cv.date,
+        vol.Required("answer"): vol.In(ANSWERS),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_learning_answer(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """What was special about a day Joe asked about."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    if not await runtime.async_answer_day(msg["date"].isoformat(), msg["answer"]):
         connection.send_error(msg["id"], "not_learning", "Joe is not learning.")
         return
     connection.send_result(msg["id"])
