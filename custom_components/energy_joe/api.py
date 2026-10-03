@@ -12,12 +12,31 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.loader import async_get_integration
 
 from .const import DOMAIN
+from .runtime import (
+    AVAILABLE_MODES,
+    DATA_RUNTIME,
+    MODES,
+    ONBOARDING_STEPS,
+    JoeRuntime,
+)
 
 
 @callback
 def async_register(hass: HomeAssistant) -> None:
     """Register all websocket commands."""
     websocket_api.async_register_command(hass, ws_info)
+    websocket_api.async_register_command(hass, ws_subscribe)
+    websocket_api.async_register_command(hass, ws_set_mode)
+    websocket_api.async_register_command(hass, ws_onboarding)
+
+
+def _runtime(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> JoeRuntime | None:
+    """Return the runtime or answer with an error if Joe is not set up."""
+    if (runtime := hass.data.get(DATA_RUNTIME)) is None:
+        connection.send_error(msg["id"], "not_loaded", "Energy Joe is not set up.")
+    return runtime
 
 
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/info"})
@@ -38,6 +57,70 @@ async def ws_info(
             "energy": await _async_energy_summary(hass),
         },
     )
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/subscribe"})
+@websocket_api.require_admin
+@callback
+def ws_subscribe(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Send Joe's state now and after every change."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+
+    @callback
+    def forward(state: dict[str, Any]) -> None:
+        connection.send_message(websocket_api.event_message(msg["id"], state))
+
+    connection.subscriptions[msg["id"]] = runtime.async_subscribe(forward)
+    connection.send_result(msg["id"])
+    forward(runtime.state)
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/set_mode", vol.Required("mode"): vol.In(MODES)}
+)
+@websocket_api.require_admin
+@callback
+def ws_set_mode(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Switch between simulation, live and off."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    if msg["mode"] not in AVAILABLE_MODES:
+        connection.send_error(
+            msg["id"], "not_available", "Joe cannot control devices yet."
+        )
+        return
+    runtime.async_set_mode(msg["mode"])
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/onboarding",
+        vol.Optional("step"): vol.In(ONBOARDING_STEPS),
+        vol.Optional("completed"): bool,
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_onboarding(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Store the progress of the setup in the panel."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    runtime.async_set_onboarding(step=msg.get("step"), completed=msg.get("completed"))
+    connection.send_result(msg["id"])
 
 
 async def _async_energy_summary(hass: HomeAssistant) -> dict[str, Any]:

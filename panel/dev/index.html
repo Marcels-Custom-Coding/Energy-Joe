@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Energy Joe – Panel ohne Home Assistant</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+      }
+      energy-joe-panel {
+        display: block;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <!--
+      Zeigt das gebaute Panel mit einem nachgeahmten Home Assistant.
+      Aufruf über einen lokalen Webserver im Repo-Wurzelverzeichnis, z. B.
+      python3 -m http.server 8767  →  http://localhost:8767/panel/dev/
+      Parameter: ?dark=1  ?lang=en  ?step=scan  ?done=1  ?page=settings  ?mode=off
+    -->
+    <energy-joe-panel></energy-joe-panel>
+    <script type="module">
+      const params = new URLSearchParams(location.search);
+
+      // Stand-ins for elements Home Assistant provides.
+      customElements.define(
+        "ha-icon",
+        class extends HTMLElement {
+          connectedCallback() {
+            this.style.cssText =
+              "display:inline-block;width:var(--mdc-icon-size,24px);height:var(--mdc-icon-size,24px);border-radius:50%;background:currentColor;opacity:.4";
+          }
+        },
+      );
+      customElements.define("ha-menu-button", class extends HTMLElement {});
+
+      const state = {
+        mode: params.get("mode") || "simulation",
+        onboarding: { step: params.get("step") || "welcome", completed: params.get("done") === "1" },
+      };
+      const listeners = new Set();
+      const push = () => listeners.forEach((cb) => cb(structuredClone(state)));
+
+      const hass = {
+        language: params.get("lang") || "de",
+        themes: { darkMode: params.get("dark") === "1" },
+        async callWS(msg) {
+          switch (msg.type) {
+            case "energy_joe/info":
+              return {
+                version: "0.1.0",
+                ha_version: "2026.9.4",
+                energy: {
+                  available: true,
+                  configured: true,
+                  sources: { grid: 1, solar: 4, battery: 1, gas: 0, water: 0 },
+                  devices: 29,
+                },
+              };
+            case "energy_joe/set_mode":
+              if (msg.mode === "live") throw { code: "not_available" };
+              state.mode = msg.mode;
+              push();
+              return null;
+            case "energy_joe/onboarding":
+              if (msg.step) state.onboarding.step = msg.step;
+              if ("completed" in msg) state.onboarding.completed = msg.completed;
+              push();
+              return null;
+          }
+          throw new Error(`Unbekannter Befehl ${msg.type}`);
+        },
+        connection: {
+          async subscribeMessage(cb) {
+            listeners.add(cb);
+            setTimeout(() => cb(structuredClone(state)));
+            return async () => listeners.delete(cb);
+          },
+        },
+      };
+
+      await import("../../custom_components/energy_joe/frontend/energy-joe-panel.js");
+      const panel = document.querySelector("energy-joe-panel");
+      const routeFromPage = (page) => ({ prefix: "/energy-joe", path: page ? `/${page}` : "" });
+      panel.hass = hass;
+      panel.narrow = window.innerWidth < 870;
+      panel.route = routeFromPage(params.get("page"));
+      window.addEventListener("location-changed", () => {
+        const page = location.pathname.replace(/^\/energy-joe\/?/, "");
+        panel.route = routeFromPage(page);
+      });
+    </script>
+  </body>
+</html>

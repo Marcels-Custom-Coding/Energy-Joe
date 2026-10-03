@@ -10,7 +10,7 @@ Joe braucht kein Vorwissen: Nach dem Hinzufügen der Integration findest du ihn 
 
 ## Stand
 
-Grundgerüst: Integration, Seitenleisten-Panel und Websocket-API. Das Panel zeigt vorerst eine Installationsprüfung.
+Panel im eigenen Design mit Einrichtungsassistent, Übersicht und Einstellungen; Joe startet im Simulationsmodus. Erkennung der Geräte, Planung und Lernen folgen.
 
 ## Installieren
 

@@ -26,6 +26,7 @@ from .const import (
     PANEL_WEBCOMPONENT,
     STATIC_URL,
 )
+from .runtime import DATA_RUNTIME, JoeRuntime
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -43,7 +44,11 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Serve the panel and add it to the sidebar."""
+    """Load Joe's state, serve the panel and add it to the sidebar."""
+    runtime = JoeRuntime(hass)
+    await runtime.async_load()
+    hass.data[DATA_RUNTIME] = runtime
+
     frontend_path = Path(__file__).parent / FRONTEND_DIR
     if not hass.data.get(_DATA_STATIC_REGISTERED):
         await hass.http.async_register_static_paths(
@@ -84,7 +89,14 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     frontend.async_remove_panel(hass, PANEL_URL_PATH)
     if icons_url := hass.data.pop(_DATA_ICONS_URL, None):
         frontend.remove_extra_js_url(hass, icons_url)
+    if runtime := hass.data.pop(DATA_RUNTIME, None):
+        await runtime.async_unload()
     return True
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Delete Joe's stored state when the integration is removed."""
+    await JoeRuntime(hass).async_remove()
 
 
 def _file_hashes(*paths: Path) -> tuple[str, ...]:

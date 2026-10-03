@@ -11,6 +11,17 @@ cd panel && npm install
 - Tests: `.venv/bin/pytest`
 - Linter: `.venv/bin/ruff check .`
 - Panel bauen: `npm --prefix panel run build` (der Build liegt eingecheckt in `custom_components/energy_joe/frontend/`)
+- Panel ohne Home Assistant ansehen: im Repo-Wurzelverzeichnis `python3 -m http.server 8767` starten und `http://localhost:8767/panel/dev/` öffnen. Parameter: `?dark=1`, `?lang=en`, `?step=scan`, `?done=1`, `?page=settings`, `?mode=off`
+
+## Grafiken
+
+Die Originale liegen lokal in `branding/` und werden nicht eingecheckt. Daraus erzeugen:
+
+- `scripts/make_brand.py` – Icon und Logo für Home Assistant, Logo fürs Panel, README-Bild
+- `scripts/make_poses.py` – Joes Posen, freigestellt, als WebP unter `panel/public/poses/`
+- `scripts/make_icon.py` – Seitenleisten-Icon aus `branding/logo.svg`
+
+Danach `npm --prefix panel run build`.
 
 ## Auf Home Assistant testen
 
