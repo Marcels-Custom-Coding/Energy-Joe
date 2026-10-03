@@ -33,7 +33,10 @@ interface NumberRule {
     | "max_night_kwh"
     | "plan_offset_min"
     | "reset_lead_min"
-    | "buffer_factor";
+    | "buffer_factor"
+    | "max_price"
+    | "min_saving"
+    | "balance_days";
   unit: string;
   min: number;
   max: number;
@@ -41,6 +44,8 @@ interface NumberRule {
   /** Shown value = stored value × scale (W → kW, factor → %). */
   scale?: number;
   optional?: boolean;
+  /** Whole numbers only (minutes, days). */
+  integer?: boolean;
 }
 
 const NUMBER_RULES: NumberRule[] = [
@@ -50,9 +55,16 @@ const NUMBER_RULES: NumberRule[] = [
   { key: "grid_limit_w", unit: "kW", min: 0.1, max: 1000, step: 0.1, scale: 0.001, optional: true },
   { key: "max_night_kwh", unit: "kWh", min: 0.1, max: 1000, step: 0.1, optional: true },
   { key: "buffer_factor", unit: "%", min: 0, max: 300, step: 1, scale: 100 },
-  { key: "plan_offset_min", unit: "min", min: 0, max: 180, step: 1 },
-  { key: "reset_lead_min", unit: "min", min: 0, max: 60, step: 1 },
+  { key: "plan_offset_min", unit: "min", min: 0, max: 180, step: 1, integer: true },
+  { key: "reset_lead_min", unit: "min", min: 0, max: 60, step: 1, integer: true },
 ];
+
+// Safety limits and the maintenance charge (shown after the first rules).
+const SAFETY_RULES: NumberRule[] = [
+  { key: "max_price", unit: "ct/kWh", min: 0, max: 1000, step: 0.1, scale: 100, optional: true },
+  { key: "min_saving", unit: "ct", min: 0, max: 500, step: 1, scale: 100 },
+];
+const BALANCE_RULE: NumberRule = { key: "balance_days", unit: "", min: 3, max: 90, step: 1, optional: true, integer: true };
 
 const ANSWERS: { key: "heating" | "hot_water" | "ev"; tip: TipName }[] = [
   { key: "heating", tip: "q_heating" },
@@ -347,6 +359,8 @@ export class JoeSettings extends LitElement {
           ${this.pro
             ? html`<p class="intro">${t("settings.pro.intro")}</p>
                 ${NUMBER_RULES.slice(0, 5).map((rule) => this.numberRow(t, config.rules, rule))}
+                ${SAFETY_RULES.map((rule) => this.numberRow(t, config.rules, rule))} ${this.guardRow(t, config.rules)}
+                ${this.numberRow(t, config.rules, BALANCE_RULE)}
                 ${this.priorityRow(t, config.rules)} ${this.dischargeRow(t, config.rules)}
                 ${NUMBER_RULES.slice(5).map((rule) => this.numberRow(t, config.rules, rule))}`
             : nothing}
@@ -557,7 +571,7 @@ export class JoeSettings extends LitElement {
             .value=${shown}
             @change=${(ev: Event) => this.setNumber(rule, ev.target as HTMLInputElement)}
           />
-          <span class="unit">${rule.unit}</span>
+          <span class="unit">${rule.unit || t(`rule.${rule.key}.unit` as TranslationKey)}</span>
         </span>
         ${changed && fallback !== undefined
           ? html`<button
@@ -586,8 +600,32 @@ export class JoeSettings extends LitElement {
       input.reportValidity();
       return;
     }
-    const stored = rule.unit === "min" ? Math.round(value) : Math.round((value / scale) * 10000) / 10000;
+    const stored = rule.integer ? Math.round(value) : Math.round((value / scale) * 10000) / 10000;
     saveConfig(this, { rules: { [rule.key]: stored } });
+  }
+
+  /** Protect the main fuse: pause charging while the house draws more than the limit. */
+  private guardRow(t: Translate, rules: Rules): TemplateResult {
+    const config = this.state!.config;
+    const limit = rules.grid_limit_w;
+    return html`<div class="row" data-tipped>
+      <div>
+        <div class="name"><b id="guard-grid">${t("rule.guard_grid")}</b>${tip(t, "r_guard_grid")}</div>
+        <small>${t(limit ? "rule.guard_grid.hint" : "rule.guard_grid.no_limit")}</small>
+      </div>
+      <div class="control">
+        ${sourceChip(t, sourceOf(config, "rules.guard_grid"))}
+        <button
+          type="button"
+          class="switch"
+          role="switch"
+          aria-checked=${String(rules.guard_grid)}
+          aria-labelledby="guard-grid"
+          ?disabled=${!limit}
+          @click=${() => saveConfig(this, { rules: { guard_grid: !rules.guard_grid } })}
+        ></button>
+      </div>
+    </div>`;
   }
 
   private priorityRow(t: Translate, rules: Rules): TemplateResult {

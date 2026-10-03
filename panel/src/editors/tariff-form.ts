@@ -135,17 +135,47 @@ export class JoeTariffForm extends LitElement {
   private renderDynamic(t: Translate, tariff: TariffConfig) {
     const hass = this.hass;
     const entity = tariff.price_entity;
+    // For a dynamic tariff the window is the span Joe searches (20:00–07:00 by default).
+    const window = tariff.window ?? { start: "20:00", end: "07:00" };
+    const setTime = (part: "start" | "end", value: string) => {
+      const next = { ...window, [part]: value };
+      this.emit({ window: next.start && next.end ? next : null });
+    };
     return html`<div class="field" data-tipped>
-      <div class="field-label">${t("f.price_entity")} ${tip(t, "f_price_entity")}</div>
-      <div class="entity">
-        ${entity && hass
-          ? html`<span><b>${entityName(hass, entity)}</b> <small>${formatState(hass, entity, t.lang)}</small></span>`
-          : html`<small>${t("f.price_entity.none")}</small>`}
-        <button type="button" class="mini-btn" @click=${this.pickPrice}>
-          <ha-icon icon="mdi:magnify"></ha-icon>${t(entity ? "review.change" : "review.choose")}
-        </button>
+        <div class="field-label">${t("f.price_entity")} ${tip(t, "f_price_entity")}</div>
+        <div class="entity">
+          ${entity && hass
+            ? html`<span><b>${entityName(hass, entity)}</b> <small>${formatState(hass, entity, t.lang)}</small></span>`
+            : html`<small>${t("f.price_entity.none")}</small>`}
+          <button type="button" class="mini-btn" @click=${this.pickPrice}>
+            <ha-icon icon="mdi:magnify"></ha-icon>${t(entity ? "review.change" : "review.choose")}
+          </button>
+        </div>
       </div>
-    </div>`;
+      <div class="field" data-tipped>
+        <div class="field-label">${t("f.search")} ${tip(t, "f_search")}</div>
+        <div class="field-row">
+          <input
+            class="input time"
+            type="time"
+            aria-label=${t("f.search.start")}
+            .value=${window.start}
+            @change=${(ev: Event) => setTime("start", (ev.target as HTMLInputElement).value)}
+          />
+          <span>${t("f.window.until")}</span>
+          <input
+            class="input time"
+            type="time"
+            aria-label=${t("f.search.end")}
+            .value=${window.end}
+            @change=${(ev: Event) => setTime("end", (ev.target as HTMLInputElement).value)}
+          />
+        </div>
+      </div>
+      <div class="field" data-tipped>
+        <div class="field-label">${t("f.surcharge")} ${tip(t, "f_surcharge")}</div>
+        ${this.centInput(t, tariff.surcharge, "surcharge")}
+      </div>`;
   }
 
   private renderFeedIn(t: Translate, tariff: TariffConfig) {
@@ -160,7 +190,11 @@ export class JoeTariffForm extends LitElement {
     </div>`;
   }
 
-  private centInput(t: Translate, price: number | null, field: "night_price" | "day_price" | "feed_in_price") {
+  private centInput(
+    t: Translate,
+    price: number | null,
+    field: "night_price" | "day_price" | "feed_in_price" | "surcharge",
+  ) {
     return html`<span class="unit-input">
       <input
         class="input"

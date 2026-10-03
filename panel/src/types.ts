@@ -148,6 +148,8 @@ export interface TariffConfig {
   day_price: number | null;
   feed_in_price: number | null;
   feed_in_entity: string | null;
+  /** Added to every dynamic price (grid fees, taxes), per kWh. */
+  surcharge: number | null;
 }
 
 /** Another forecast for the same panels, learned and combined with the main one. */
@@ -234,6 +236,14 @@ export interface Rules {
   reset_lead_min: number;
   buffer_factor: number;
   ask_time: string;
+  /** No grid charging above this price (per kWh). */
+  max_price: number | null;
+  /** A night that saves less than this is left alone. */
+  min_saving: number;
+  /** Pause charging while the house draws more than the grid limit. */
+  guard_grid: boolean;
+  /** Charge full once every so many days (maintenance); null: off. */
+  balance_days: number | null;
 }
 
 export interface NotifyConfig {
@@ -376,6 +386,8 @@ export interface PlanHour {
   solar: number;
   home: number;
   window: boolean;
+  /** A dynamic tariff's price for this hour (per kWh). */
+  price?: number;
   soc: number;
   soc_without: number;
   charge: number;
@@ -410,6 +422,11 @@ export interface Plan {
   soc_start?: number;
   grid_charge_kwh?: number;
   charge_from?: string | null;
+  /** When to charge, in quarter hours (the cheapest ones with a dynamic tariff). */
+  charge_slots?: { start: string; end: string }[];
+  tariff?: "fixed" | "dynamic";
+  /** Dynamic tariff: the span Joe searched for the best window. */
+  search?: { start: string; end: string };
   charge_kw?: number;
   batteries?: PlanBattery[];
   sun_takes_over?: string | null;
@@ -419,7 +436,16 @@ export interface Plan {
   home_kwh?: number;
   cost?: { night_charge: number; plan: number; without: number; saving: number };
   prices?: { night: number; day: number; feed_in: number; assumed: boolean };
-  rules?: { reserve: number; max_target: number; buffer: number; discharge_mode: string; evening_min: number | null };
+  rules?: {
+    reserve: number;
+    max_target: number;
+    buffer: number;
+    discharge_mode: string;
+    evening_min: number | null;
+    max_price?: number | null;
+    min_saving?: number;
+    force_target?: number | null;
+  };
   meta?: {
     consumption: { source: "history" | "default"; days: number };
     solar: { sources: Record<string, "hours" | "sum" | "none">; totals: Record<string, number> };

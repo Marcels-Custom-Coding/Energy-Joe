@@ -677,6 +677,7 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"reason.timeslots": "Zeitfenster aus dem Tarif gelesen",
 	"reason.price_list": "Preisliste gelesen",
 	"reason.price_only": "nur der aktuelle Preis bekannt",
+	"reason.dynamic_provider": "Preise kommen von {integration}",
 	"reason.forecast_support": "mit stündlicher Vorhersage",
 	"reason.name_match": "Kalender passt zum Namen",
 	"reason.submeter": "andere Geräte hängen dahinter",
@@ -771,7 +772,7 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"tariff.flat": "fester Preis",
 	"tariff.kind.fixed_window": "Nachts günstiger",
 	"tariff.kind.flat": "Immer gleicher Preis",
-	"tariff.kind.dynamic": "Börsenpreis, stündlich anders",
+	"tariff.kind.dynamic": "Börsenpreis, wechselt über den Tag",
 	"review.change": "Ändern",
 	"review.choose": "Auswählen",
 	"review.enter": "Eintragen",
@@ -865,6 +866,10 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"f.price.unknown": "",
 	"f.price_entity": "Preis-Sensor",
 	"f.price_entity.none": "Noch keiner ausgewählt",
+	"f.search": "Suchzeitraum",
+	"f.search.start": "Suche ab",
+	"f.search.end": "Suche bis",
+	"f.surcharge": "Aufschlag auf den Börsenpreis",
 	"f.feed_in": "Einspeisevergütung",
 	"f.feed_in.entity": "Lese ich aus „{name}“.",
 	"f.battery.name": "Name",
@@ -944,6 +949,16 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"rule.grid_limit_w.hint": "Höchstleistung aus dem Netz, alles zusammen.",
 	"rule.max_night_kwh": "Höchstens pro Nacht",
 	"rule.max_night_kwh.hint": "Leer = so viel wie nötig.",
+	"rule.max_price": "Höchstpreis fürs Netzladen",
+	"rule.max_price.hint": "Leer = kein Höchstpreis.",
+	"rule.min_saving": "Mindestersparnis pro Nacht",
+	"rule.min_saving.hint": "Darunter lasse ich die Speicher in Ruhe.",
+	"rule.guard_grid": "Hauptsicherung schützen",
+	"rule.guard_grid.hint": "Zieht das Haus mehr als das Netzlimit, pausiert das Laden ein paar Minuten.",
+	"rule.guard_grid.no_limit": "Braucht ein Netzlimit (oben).",
+	"rule.balance_days": "Pflegeladung",
+	"rule.balance_days.hint": "Alle so viele Tage einmal ganz voll laden. Leer = aus.",
+	"rule.balance_days.unit": "Tage",
 	"rule.buffer_factor": "Sicherheitspuffer",
 	"rule.buffer_factor.hint": "Aufschlag auf meine Rechnung, solange ich noch lerne.",
 	"rule.plan_offset_min": "Plan festlegen",
@@ -1038,6 +1053,11 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"tip.f_prices.text": "Was dich eine kWh kostet, in Cent und mit allem drum und dran. Weißt du es nicht, lass es leer – dann rechne ich mit üblichen Preisen.",
 	"tip.f_price_entity.title": "Woher kenne ich den Preis?",
 	"tip.f_price_entity.text": "Von einem Sensor, der den aktuellen Strompreis zeigt. Beim Börsenpreis brauche ich ihn, sonst weiß ich nicht, wann es günstig wird.",
+	"tip.f_search.title": "Wo sucht Joe?",
+	"tip.f_search.text": "In dieser Zeit suche ich das Zeitfenster, mit dem die nächsten 24 Stunden am wenigsten kosten: Darin halte ich die Speicher und lade in den günstigsten Viertelstunden. Meist liegt es mitten in der Nacht.",
+	"tip.f_search.hint": "Ohne Angabe suche ich von 20 bis 7 Uhr.",
+	"tip.f_surcharge.title": "Wozu der Aufschlag?",
+	"tip.f_surcharge.text": "Manche Integrationen liefern nur den reinen Börsenpreis. Was du wirklich zahlst, ist mehr: Netzentgelt, Steuern und Abgaben. Trag diesen Teil pro kWh hier ein, damit ich richtig abwäge, ob sich das Laden lohnt.\nLiefert dein Sensor schon den Endpreis (z. B. Tibber), lass das Feld leer.",
 	"tip.f_battery_name.title": "Wie soll ich ihn nennen?",
 	"tip.f_battery_name.text": "So taucht der Speicher bei mir überall auf. Am Gerät und in Home Assistant ändert sich nichts.",
 	"tip.f_battery_soc.title": "Was ist der Ladezustand?",
@@ -1069,6 +1089,15 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"tip.r_grid_limit_w.hint": "Ein Hausanschluss mit 3 × 35 A schafft rund 24 kW.",
 	"tip.r_max_night_kwh.title": "Warum eine Obergrenze?",
 	"tip.r_max_night_kwh.text": "Wenn du pro Nacht nie mehr als eine bestimmte Menge aus dem Netz laden willst, trag sie ein. Leer = so viel wie nötig.",
+	"tip.r_max_price.title": "Wozu ein Höchstpreis?",
+	"tip.r_max_price.text": "Teurer als das lade ich nie aus dem Netz – auch wenn die Rechnung es knapp empfehlen würde. Halten darf ich die Speicher trotzdem.",
+	"tip.r_min_saving.title": "Warum eine Mindestersparnis?",
+	"tip.r_min_saving.text": "Jedes Steuern schreibt Werte in deine Geräte. Bringt eine Nacht weniger als diesen Betrag, lasse ich es und die Speicher laufen wie ohne mich. Pflegenächte sind ausgenommen.",
+	"tip.r_guard_grid.title": "Was macht der Schutz?",
+	"tip.r_guard_grid.text": "Während ich lade, schaue ich jede Minute auf den Netzbezug. Liegt er über deinem Netzlimit – weil gerade Herd, Wallbox und Wärmepumpe laufen –, halte ich die Speicher fünf Minuten lang, statt zu laden. Danach geht es weiter.",
+	"tip.r_balance_days.title": "Was ist eine Pflegeladung?",
+	"tip.r_balance_days.text": "Viele Speicher gleichen ihre Zellen nur ab, wenn sie ab und zu ganz voll werden – sonst stimmt die Ladestandsanzeige mit der Zeit nicht mehr. War ein Speicher so viele Tage nicht voll und füllt ihn auch die Sonne morgen nicht, lade ich ihn in der günstigen Zeit einmal auf 100 %.",
+	"tip.r_balance_days.hint": "Üblich sind 14 bis 30 Tage. Steht im Handbuch deines Speichers.",
 	"tip.r_buffer_factor.title": "Was ist der Sicherheitspuffer?",
 	"tip.r_buffer_factor.text": "So viel schlage ich auf meine Rechnung drauf, solange ich dein Haus noch nicht gut kenne. Je besser meine Prognosen treffen, desto kleiner wird er.",
 	"tip.r_plan_offset_min.title": "Wann lege ich den Plan fest?",
@@ -1175,6 +1204,10 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"plan.preview_at": "Vorschau, Stand {time} Uhr",
 	"plan.refresh": "Neu rechnen",
 	"plan.say.charge": "Ich lade ab {from} Uhr auf {target} % – mehr braucht's nicht.",
+	"plan.say.charge_slots": "Ich lade in den günstigsten Viertelstunden der Nacht ({slots}) auf {target} %.",
+	"plan.say.balance": "Heute ist Pflegenacht: Ich lade einmal ganz voll, damit die Speicher ihre Zellen abgleichen.",
+	"plan.say.small_saving": "Heute Nacht lasse ich es: Es würde weniger bringen, als du in den Regeln als Mindestersparnis eingestellt hast.",
+	"plan.say.max_price": "Über deinem Höchstpreis lade ich nicht aus dem Netz.",
 	"plan.say.hold": "Ich lade nicht, halte die Speicher in der günstigen Zeit aber bei {target} % – lieber jetzt günstig aus dem Netz als morgen früh teuer.",
 	"plan.say.empty": "Ohne mich wären sie um {time} Uhr leer.",
 	"plan.say.none": "Heute Nacht muss ich nichts tun: Die Speicher reichen, bis die Sonne um {time} Uhr übernimmt.",
@@ -1190,7 +1223,9 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"plan.empty.off": "Ich mache gerade Pause. Stell mich auf Simulation, dann plane ich wieder jede Nacht.",
 	"plan.empty.waiting": "Sobald die Einrichtung fertig ist, plane ich hier jede Nacht – mit Kurven für Sonne, Verbrauch und Ladezustand.",
 	"plan.why.no_window": "Dein Tarif hat keine günstige Zeit – nachts zu laden lohnt sich nicht. Ich schaue weiter zu und lerne.",
-	"plan.why.dynamic": "Börsenpreise plane ich ab einem späteren Update. Bis dahin schaue ich zu und lerne.",
+	"plan.why.dynamic": "Für Börsenpreise brauche ich die Preise der nächsten Stunden. Wähle unter Einstellungen → Tarif den Preis-Sensor deiner Tarif-Integration.",
+	"plan.why.no_prices": "Dein Preis-Sensor liefert keine Preisliste für die nächsten Stunden. Wähle unter Einstellungen → Tarif einen Sensor, der die Preise mitbringt (z. B. Nord Pool, EPEX Spot, Tibber, ENTSO-E).",
+	"plan.why.prices_pending": "Die Preise für die Nacht sind noch nicht da – sie kommen meist gegen 13 Uhr. Dann plane ich.",
 	"plan.why.no_battery": "Ohne Speicher, dessen Größe ich kenne, gibt es nachts nichts zu planen.",
 	"plan.why.failed": "Beim Planen ist etwas schiefgegangen. Ich versuche es zur nächsten vollen Stunde wieder.",
 	"plan.note.capacity_unknown": "Ein Speicher fehlt in der Rechnung, weil ich seine Größe nicht kenne.",
@@ -1198,6 +1233,8 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"plan.note.not_controllable": "Einen Speicher kann ich nur beobachten – in der Simulation rechne ich so, als könnte ich ihn steuern.",
 	"plan.note.no_forecast": "Ohne Prognose rechne ich, als käme morgen keine Sonne – also vorsichtig.",
 	"plan.note.default_profile": "Deinen Verbrauch kenne ich noch nicht gut und rechne mit einem typischen Haushalt.",
+	"plan.note.prices_partly": "Für einige Stunden kenne ich die Preise noch nicht und rechne dort mit dem Durchschnitt.",
+	"plan.note.balance_due": "Ein Speicher war länger nicht ganz voll – Zeit für eine Pflegeladung.",
 	"plan.chart.energy": "Sonne, Verbrauch und Laden",
 	"plan.chart.solar": "Sonne (Prognose)",
 	"plan.chart.home": "Verbrauch (erwartet)",
@@ -1209,6 +1246,10 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"plan.chart.target": "Ziel {value} %",
 	"plan.chart.full": "voll {time}",
 	"plan.chart.reserve": "Reserve {value} %",
+	"plan.chart.prices": "Preise",
+	"plan.chart.price": "Preis je kWh",
+	"plan.chart.charge_at": "Laden ab {time}",
+	"plan.slots": "Laden: {slots}",
 	"plan.math": "So habe ich gerechnet",
 	"plan.math.battery_now": "Speicher jetzt",
 	"plan.math.battery_now.sub": "{stored} von {capacity} kWh",
@@ -1246,6 +1287,8 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"tip.plan_math.text": "Ich spiele die Stunden bis zur nächsten Nacht durch – für jedes mögliche Ziel – und nehme das, bei dem du am wenigsten bezahlst. Weil ich noch lerne, lege ich einen Puffer drauf.",
 	"tip.chart_plan_energy.title": "Was sehe ich hier?",
 	"tip.chart_plan_energy.text": "Was ich pro Stunde erwarte: **Sonne** laut Prognose, deinen **Verbrauch** aus ähnlichen Tagen und wann ich **aus dem Netz lade**. Hinterlegt ist die günstige Zeit.",
+	"tip.chart_plan_prices.title": "Was sehe ich hier?",
+	"tip.chart_plan_prices.text": "Die Preise deines Tarifs für jede Stunde. Grau hinterlegt ist das Zeitfenster, in dem ich die Speicher halte; die Marken zeigen, wann ich lade – in den günstigsten Viertelstunden.",
 	"tip.chart_plan_soc.title": "Was sehe ich hier?",
 	"tip.chart_plan_soc.text": "Wie voll die Speicher **mit Plan** wären und wie voll **ohne Plan**. Der Unterschied ist das, was ich dir spare.",
 	"learn.page.title": "Was ich |gelernt habe",
@@ -1739,6 +1782,8 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"log.action_done": "{battery}: Ziel erreicht",
 	"log.call": "{battery}: {entity}",
 	"log.tonight": "„Heute Nacht“ umgeschaltet",
+	"log.grid_guard": "Hauptsicherung: {power} kW aus dem Netz – Laden kurz pausiert",
+	"log.no_progress": "{battery} lädt nicht (bei {soc} %)",
 	"tip.a_name.title": "Wie heißt die Aktion?",
 	"tip.a_name.text": "So steht sie auf der Seite Geräte, im Plan und als Schalter in Home Assistant.",
 	"tip.a_kind.title": "Welche Art?",
@@ -1872,6 +1917,7 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"reason.timeslots": "time slots read from the tariff",
 	"reason.price_list": "price list read",
 	"reason.price_only": "only the current price is known",
+	"reason.dynamic_provider": "prices come from {integration}",
 	"reason.forecast_support": "with hourly forecast",
 	"reason.name_match": "calendar matches the name",
 	"reason.submeter": "other devices are behind it",
@@ -1966,7 +2012,7 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"tariff.flat": "fixed price",
 	"tariff.kind.fixed_window": "Cheaper at night",
 	"tariff.kind.flat": "Always the same price",
-	"tariff.kind.dynamic": "Market price, changes hourly",
+	"tariff.kind.dynamic": "Market price, changes during the day",
 	"review.change": "Change",
 	"review.choose": "Choose",
 	"review.enter": "Enter",
@@ -2060,6 +2106,10 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"f.price.unknown": "",
 	"f.price_entity": "Price sensor",
 	"f.price_entity.none": "None chosen yet",
+	"f.search": "Search span",
+	"f.search.start": "Search from",
+	"f.search.end": "Search until",
+	"f.surcharge": "Surcharge on the market price",
 	"f.feed_in": "Feed-in tariff",
 	"f.feed_in.entity": "I read it from “{name}”.",
 	"f.battery.name": "Name",
@@ -2139,6 +2189,16 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"rule.grid_limit_w.hint": "Maximum power from the grid, everything together.",
 	"rule.max_night_kwh": "At most per night",
 	"rule.max_night_kwh.hint": "Empty = as much as needed.",
+	"rule.max_price": "Highest price for grid charging",
+	"rule.max_price.hint": "Empty = no highest price.",
+	"rule.min_saving": "Minimum saving per night",
+	"rule.min_saving.hint": "Below that I leave the batteries alone.",
+	"rule.guard_grid": "Protect the main fuse",
+	"rule.guard_grid.hint": "If the house draws more than the grid limit, charging pauses for a few minutes.",
+	"rule.guard_grid.no_limit": "Needs a grid limit (above).",
+	"rule.balance_days": "Maintenance charge",
+	"rule.balance_days.hint": "Charge full once every so many days. Empty = off.",
+	"rule.balance_days.unit": "days",
 	"rule.buffer_factor": "Safety buffer",
 	"rule.buffer_factor.hint": "Added to my calculation while I'm still learning.",
 	"rule.plan_offset_min": "Fix the plan",
@@ -2233,6 +2293,11 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"tip.f_prices.text": "What one kWh costs you, in cents and with everything included. If you don't know, leave it empty – I'll use typical prices.",
 	"tip.f_price_entity.title": "Where do I get the price?",
 	"tip.f_price_entity.text": "From a sensor that shows the current electricity price. With market prices I need it, otherwise I don't know when it gets cheap.",
+	"tip.f_search.title": "Where does Joe search?",
+	"tip.f_search.text": "In this span I look for the window with which the next 24 hours cost least: in it I hold the batteries and charge in the cheapest quarter hours. It usually lies in the middle of the night.",
+	"tip.f_search.hint": "Without a span I search from 8 pm to 7 am.",
+	"tip.f_surcharge.title": "Why a surcharge?",
+	"tip.f_surcharge.text": "Some integrations only deliver the bare market price. What you really pay is more: grid fees, taxes and levies. Enter that part per kWh here, so I can weigh correctly whether charging pays off.\nIf your sensor already has the final price (e.g. Tibber), leave the field empty.",
 	"tip.f_battery_name.title": "What should I call it?",
 	"tip.f_battery_name.text": "That's how the battery shows up everywhere with me. Nothing changes on the device or in Home Assistant.",
 	"tip.f_battery_soc.title": "What is the charge level?",
@@ -2264,6 +2329,15 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"tip.r_grid_limit_w.hint": "A 3 × 35 A grid connection handles about 24 kW.",
 	"tip.r_max_night_kwh.title": "Why an upper limit?",
 	"tip.r_max_night_kwh.text": "If you never want to charge more than a certain amount from the grid per night, enter it. Empty = as much as needed.",
+	"tip.r_max_price.title": "Why a highest price?",
+	"tip.r_max_price.text": "I never charge from the grid above this price – even if the calculation would narrowly recommend it. I may still hold the batteries.",
+	"tip.r_min_saving.title": "Why a minimum saving?",
+	"tip.r_min_saving.text": "Every time I steer, I write values to your devices. If a night brings less than this amount, I leave it and the batteries run as without me. Maintenance nights are the exception.",
+	"tip.r_guard_grid.title": "What does the protection do?",
+	"tip.r_guard_grid.text": "While I charge, I look at the grid draw every minute. If it is above your grid limit – because stove, wallbox and heat pump run at the same time – I hold the batteries for five minutes instead of charging. Then I carry on.",
+	"tip.r_balance_days.title": "What is a maintenance charge?",
+	"tip.r_balance_days.text": "Many batteries only balance their cells when they get full now and then – otherwise the level shown drifts over time. If a battery has not been full for that many days and the sun won't fill it tomorrow either, I charge it to 100 % once in the cheap hours.",
+	"tip.r_balance_days.hint": "Usual are 14 to 30 days. See your battery's manual.",
 	"tip.r_buffer_factor.title": "What is the safety buffer?",
 	"tip.r_buffer_factor.text": "This much I add to my calculation while I don't know your home well yet. The better my forecasts get, the smaller it becomes.",
 	"tip.r_plan_offset_min.title": "When do I fix the plan?",
@@ -2370,6 +2444,10 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"plan.preview_at": "preview, as of {time}",
 	"plan.refresh": "Plan again",
 	"plan.say.charge": "I'll charge to {target} % from {from} – no more than needed.",
+	"plan.say.charge_slots": "I charge in the cheapest quarter hours of the night ({slots}) to {target} %.",
+	"plan.say.balance": "Tonight is a maintenance night: I charge full once so the batteries can balance their cells.",
+	"plan.say.small_saving": "I leave it tonight: it would save less than the minimum saving you set in the rules.",
+	"plan.say.max_price": "Above your highest price I don't charge from the grid.",
 	"plan.say.hold": "I won't charge, but I'll hold the batteries at {target} % during the cheap hours – better cheap grid power now than expensive power tomorrow morning.",
 	"plan.say.empty": "Without me they'd be empty at {time}.",
 	"plan.say.none": "Nothing to do tonight: the batteries last until the sun takes over at {time}.",
@@ -2385,7 +2463,9 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"plan.empty.off": "I'm taking a break. Switch me to simulation and I'll plan every night again.",
 	"plan.empty.waiting": "Once the setup is done, I plan here every night – with curves for sun, consumption and charge level.",
 	"plan.why.no_window": "Your tariff has no cheap hours – charging at night doesn't pay off. I keep watching and learning.",
-	"plan.why.dynamic": "I'll plan with market prices in a later update. Until then I watch and learn.",
+	"plan.why.dynamic": "For market prices I need the prices of the coming hours. Pick the price sensor of your tariff integration under Settings → Tariff.",
+	"plan.why.no_prices": "Your price sensor does not provide a price list for the coming hours. Pick a sensor that has them under Settings → Tariff (e.g. Nord Pool, EPEX Spot, Tibber, ENTSO-E).",
+	"plan.why.prices_pending": "The prices for the night are not there yet – they usually come around 1 pm. Then I plan.",
 	"plan.why.no_battery": "Without a battery whose size I know, there's nothing to plan at night.",
 	"plan.why.failed": "Something went wrong while planning. I'll try again at the next full hour.",
 	"plan.note.capacity_unknown": "One battery is missing from the calculation because I don't know its size.",
@@ -2393,6 +2473,8 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"plan.note.not_controllable": "I can only watch one battery – in the simulation I calculate as if I could control it.",
 	"plan.note.no_forecast": "Without a forecast I calculate as if no sun came tomorrow – so, cautiously.",
 	"plan.note.default_profile": "I don't know your consumption well yet and use a typical household.",
+	"plan.note.prices_partly": "For some hours I don't know the prices yet and use the average there.",
+	"plan.note.balance_due": "A battery has not been full for a while – time for a maintenance charge.",
 	"plan.chart.energy": "Sun, consumption and charging",
 	"plan.chart.solar": "Sun (forecast)",
 	"plan.chart.home": "Consumption (expected)",
@@ -2404,6 +2486,10 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"plan.chart.target": "target {value} %",
 	"plan.chart.full": "full {time}",
 	"plan.chart.reserve": "reserve {value} %",
+	"plan.chart.prices": "Prices",
+	"plan.chart.price": "Price per kWh",
+	"plan.chart.charge_at": "Charging from {time}",
+	"plan.slots": "Charging: {slots}",
 	"plan.math": "How I calculated",
 	"plan.math.battery_now": "Batteries now",
 	"plan.math.battery_now.sub": "{stored} of {capacity} kWh",
@@ -2441,6 +2527,8 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"tip.plan_math.text": "I play through the hours until the next night – for every possible target – and take the one that costs you least. Since I'm still learning, I add a buffer.",
 	"tip.chart_plan_energy.title": "What am I looking at?",
 	"tip.chart_plan_energy.text": "What I expect per hour: **sun** from the forecast, your **consumption** from similar days and when I **charge from the grid**. The cheap hours are shaded.",
+	"tip.chart_plan_prices.title": "What am I looking at?",
+	"tip.chart_plan_prices.text": "Your tariff's price for every hour. The shaded part is the window in which I hold the batteries; the marks show when I charge – in the cheapest quarter hours.",
 	"tip.chart_plan_soc.title": "What am I looking at?",
 	"tip.chart_plan_soc.text": "How full the batteries would be **with the plan** and **without it**. The difference is what I save you.",
 	"learn.page.title": "What I've |learned",
@@ -2934,6 +3022,8 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"log.action_done": "{battery}: target reached",
 	"log.call": "{battery}: {entity}",
 	"log.tonight": "“Tonight” switched",
+	"log.grid_guard": "Main fuse: {power} kW from the grid – charging paused briefly",
+	"log.no_progress": "{battery} does not charge (at {soc} %)",
 	"tip.a_name.title": "What is it called?",
 	"tip.a_name.text": "That's how it shows on the Devices page, in the plan and as a switch in Home Assistant.",
 	"tip.a_kind.title": "Which kind?",
@@ -6427,16 +6517,49 @@ var nn = class extends y {
     </div>`;
 	}
 	renderDynamic(e, t) {
-		let n = this.hass, r = t.price_entity;
+		let n = this.hass, r = t.price_entity, i = t.window ?? {
+			start: "20:00",
+			end: "07:00"
+		}, a = (e, t) => {
+			let n = {
+				...i,
+				[e]: t
+			};
+			this.emit({ window: n.start && n.end ? n : null });
+		};
 		return g`<div class="field" data-tipped>
-      <div class="field-label">${e("f.price_entity")} ${P(e, "f_price_entity")}</div>
-      <div class="entity">
-        ${r && n ? g`<span><b>${A(n, r)}</b> <small>${M(n, r, e.lang)}</small></span>` : g`<small>${e("f.price_entity.none")}</small>`}
-        <button type="button" class="mini-btn" @click=${this.pickPrice}>
-          <ha-icon icon="mdi:magnify"></ha-icon>${e(r ? "review.change" : "review.choose")}
-        </button>
+        <div class="field-label">${e("f.price_entity")} ${P(e, "f_price_entity")}</div>
+        <div class="entity">
+          ${r && n ? g`<span><b>${A(n, r)}</b> <small>${M(n, r, e.lang)}</small></span>` : g`<small>${e("f.price_entity.none")}</small>`}
+          <button type="button" class="mini-btn" @click=${this.pickPrice}>
+            <ha-icon icon="mdi:magnify"></ha-icon>${e(r ? "review.change" : "review.choose")}
+          </button>
+        </div>
       </div>
-    </div>`;
+      <div class="field" data-tipped>
+        <div class="field-label">${e("f.search")} ${P(e, "f_search")}</div>
+        <div class="field-row">
+          <input
+            class="input time"
+            type="time"
+            aria-label=${e("f.search.start")}
+            .value=${i.start}
+            @change=${(e) => a("start", e.target.value)}
+          />
+          <span>${e("f.window.until")}</span>
+          <input
+            class="input time"
+            type="time"
+            aria-label=${e("f.search.end")}
+            .value=${i.end}
+            @change=${(e) => a("end", e.target.value)}
+          />
+        </div>
+      </div>
+      <div class="field" data-tipped>
+        <div class="field-label">${e("f.surcharge")} ${P(e, "f_surcharge")}</div>
+        ${this.centInput(e, t.surcharge, "surcharge")}
+      </div>`;
 	}
 	renderFeedIn(e, t) {
 		let n = this.hass;
@@ -6688,32 +6811,38 @@ function pn(e) {
 		default: return "sleep";
 	}
 }
-function mn(e, t) {
+function mn(e) {
+	return (e.charge_slots ?? []).map((e) => `${q(e.start)}–${q(e.end)}`).join(", ");
+}
+function hn(e, t) {
 	if (!t.window) return "";
 	let n = [`${q(t.window.start)}–${q(t.window.end)}`];
 	return t.prices && n.push(`${j(e.lang, t.prices.night * 100, 1)} ct/kWh`), n.join(" · ");
 }
-function hn(e, t) {
+function gn(e, t) {
 	if (t.kind === "unavailable") {
 		let n = t.reasons.find((t) => e.optional(`plan.why.${t}`)) ?? "failed";
 		return e.optional(`plan.why.${n}`) ?? "";
 	}
 	let n = [], r = j(e.lang, t.target ?? 0, 0), i = t.sun_takes_over;
-	return t.kind === "charge" ? n.push(e("plan.say.charge", {
+	return t.reasons.includes("balance") && n.push(e("plan.say.balance")), t.kind === "charge" && t.tariff === "dynamic" && t.charge_slots?.length ? n.push(e("plan.say.charge_slots", {
+		slots: mn(t),
+		target: r
+	})) : t.kind === "charge" ? n.push(e("plan.say.charge", {
 		from: q(t.charge_from),
 		target: r
-	})) : t.kind === "hold" ? (n.push(e("plan.say.hold", { target: r })), t.empty_without && n.push(e("plan.say.empty", { time: q(t.empty_without) }))) : n.push(i ? e("plan.say.none", { time: q(i) }) : e("plan.say.none_nosun")), t.kind !== "none" && (i && t.full_at && fn(t.full_at) === fn(i) ? n.push(e("plan.say.sun_full", {
+	})) : t.kind === "hold" ? (n.push(e("plan.say.hold", { target: r })), t.empty_without && n.push(e("plan.say.empty", { time: q(t.empty_without) }))) : t.reasons.includes("small_saving") ? n.push(e("plan.say.small_saving")) : n.push(i ? e("plan.say.none", { time: q(i) }) : e("plan.say.none_nosun")), t.reasons.includes("max_price") && t.kind !== "charge" && n.push(e("plan.say.max_price")), t.kind !== "none" && (i && t.full_at && fn(t.full_at) === fn(i) ? n.push(e("plan.say.sun_full", {
 		sun: q(i),
 		full: q(t.full_at)
 	})) : i ? n.push(e("plan.say.sun", { sun: q(i) })) : n.push(e("plan.say.nosun"))), n.join(" ");
 }
-function gn(e, t) {
+function _n(e, t) {
 	return (t.batteries ?? []).map((n) => {
 		let r = [n.name];
 		return t.kind === "charge" ? r.push(`${j(e.lang, n.soc_start, 0)} → ${j(e.lang, n.target, 0)} %`, `${j(e.lang, n.charge_kwh, 1)} kWh`, `${j(e.lang, n.power_kw, 1)} kW`) : t.kind === "hold" ? r.push(e("plan.line.hold", { target: j(e.lang, n.target, 0) })) : r.push(e("plan.line.now", { soc: j(e.lang, n.soc, 0) })), n.controllable || r.push(e("plan.line.watch_only")), r.join(" · ");
 	});
 }
-function _n(e, t, n = "EUR") {
+function vn(e, t, n = "EUR") {
 	if (!t.cost) return "";
 	let r = (t) => new Intl.NumberFormat(e.lang, {
 		style: "currency",
@@ -6723,7 +6852,7 @@ function _n(e, t, n = "EUR") {
 }
 //#endregion
 //#region src/pages/devices.ts
-var vn = [
+var yn = [
 	"hold",
 	"charge",
 	"release"
@@ -7108,7 +7237,7 @@ var vn = [
 		let i = new Map(t.map((e) => [e.step, e])), a = !n && r?.problem ? e.optional(`devices.test.problem.${r.problem}`, { missing: (r.missing ?? []).map((t) => e.optional(`role.${t}`) ?? t).join(", ") }) : null;
 		return g`<ul class="steps">
       ${a ? g`<li class="bad"><ha-icon icon="mdi:close-circle"></ha-icon><b>${e("devices.test.step.check")}</b><small>${a}</small></li>` : v}
-      ${a ? v : vn.map((t) => {
+      ${a ? v : yn.map((t) => {
 			let r = i.get(t);
 			return g`<li class=${r ? r.ok ? "ok" : "bad" : "wait"}>
               <ha-icon icon=${r ? r.ok ? "mdi:check-circle" : "mdi:close-circle" : n === t ? "mdi:progress-clock" : "mdi:circle-outline"}></ha-icon>
@@ -7139,7 +7268,9 @@ var vn = [
 			battery: this.state?.config.batteries.find((e) => e.id === t.battery)?.name ?? t.battery ?? "",
 			entity: t.entity ? A(n, t.entity) : "",
 			value: t.value == null ? "–" : String(t.value),
-			target: String(t.target ?? "")
+			target: String(t.target ?? ""),
+			power: typeof t.power == "number" ? j(e.lang, t.power, 1) : "–",
+			soc: typeof t.soc == "number" ? j(e.lang, t.soc, 0) : "–"
 		};
 		return t.kind === "answer" ? e(t.yes ? "log.answer.yes" : "log.answer.no") : t.kind === "test" ? e(t.ok ? "log.test.ok" : "log.test.failed", r) : e.optional(`log.${t.kind}`, r) ?? t.kind;
 	}
@@ -7194,8 +7325,8 @@ var vn = [
 D([b({ attribute: !1 })], J.prototype, "hass", void 0), D([b({ attribute: !1 })], J.prototype, "t", void 0), D([b({ attribute: !1 })], J.prototype, "state", void 0), D([b({ attribute: !1 })], J.prototype, "discovery", void 0), D([b({ attribute: !1 })], J.prototype, "info", void 0), D([x()], J.prototype, "confirm", void 0), D([x()], J.prototype, "notice", void 0), T("joe-devices-page", J);
 //#endregion
 //#region src/components/chart.ts
-var yn = 40, bn = 10, xn = 16, Sn = 24;
-function Cn(e) {
+var bn = 40, xn = 10, Sn = 16, Cn = 24;
+function wn(e) {
 	let t = 10 ** Math.floor(Math.log10(e));
 	for (let n of [
 		1,
@@ -7206,7 +7337,7 @@ function Cn(e) {
 	]) if (n * t >= e) return n * t;
 	return 10 * t;
 }
-function wn(e) {
+function Tn(e) {
 	let t = [], n = [];
 	return e.forEach((e, r) => {
 		e == null ? (n.length && t.push(n), n = []) : n.push([r, e]);
@@ -7311,8 +7442,8 @@ var Y = class extends y {
 	render() {
 		let e = this.labels.length;
 		if (!e) return v;
-		let t = Math.max(260, this.width), n = this.height, r = t - yn - bn, i = n - xn - Sn, a = r / e, o = this.series.flatMap((e) => e.values.filter((e) => e != null)), s = this.max || Cn(Math.max(.1, ...o)), c = Math.min(0, ...o), l = c < 0 ? -Math.max(Cn(-c), s / 4) : 0, u = (e) => xn + i - (Math.max(l, Math.min(e, s)) - l) / (s - l) * i, d = (e) => yn + e * a, f = (e) => yn + (e + .5) * a, p = (e, t = 2) => new Intl.NumberFormat(this.lang, { maximumFractionDigits: t }).format(e), m = [];
-		for (let e of this.bands) m.push(_`<rect class="band" x=${d(e.from)} y=${xn} width=${Math.max(0, d(e.to) - d(e.from))} height=${i}></rect>
+		let t = Math.max(260, this.width), n = this.height, r = t - bn - xn, i = n - Sn - Cn, a = r / e, o = this.series.flatMap((e) => e.values.filter((e) => e != null)), s = this.max || wn(Math.max(.1, ...o)), c = Math.min(0, ...o), l = c < 0 ? -Math.max(wn(-c), s / 4) : 0, u = (e) => Sn + i - (Math.max(l, Math.min(e, s)) - l) / (s - l) * i, d = (e) => bn + e * a, f = (e) => bn + (e + .5) * a, p = (e, t = 2) => new Intl.NumberFormat(this.lang, { maximumFractionDigits: t }).format(e), m = [];
+		for (let e of this.bands) m.push(_`<rect class="band" x=${d(e.from)} y=${Sn} width=${Math.max(0, d(e.to) - d(e.from))} height=${i}></rect>
         <text class="note" x=${(d(e.from) + d(e.to)) / 2} y=${28} text-anchor="middle">${e.label}</text>`);
 		for (let e of l < 0 ? [
 			l,
@@ -7322,7 +7453,7 @@ var Y = class extends y {
 			0,
 			s / 2,
 			s
-		]) m.push(_`<line class="grid" x1=${yn} x2=${t - bn} y1=${u(e)} y2=${u(e)}></line>
+		]) m.push(_`<line class="grid" x1=${bn} x2=${t - xn} y1=${u(e)} y2=${u(e)}></line>
         <text class="tick" x=${34} y=${u(e) + 4} text-anchor="end">${p(e, 2)}</text>`);
 		m.push(_`<text class="tick" x=${34} y=${11} text-anchor="end">${this.unit}</text>`);
 		for (let [e, t] of this.ticks) m.push(_`<text class="tick" x=${this.centerTicks ? f(e) : d(e)} y=${n - 6}
@@ -7341,7 +7472,7 @@ var Y = class extends y {
 				});
 				continue;
 			}
-			for (let t of wn(e.values)) {
+			for (let t of Tn(e.values)) {
 				let n = t.map(([e, t]) => `${f(e).toFixed(1)},${u(t).toFixed(1)}`).join(" ");
 				if (e.kind === "area" && t.length > 1) {
 					let r = u(0).toFixed(1);
@@ -7353,14 +7484,14 @@ var Y = class extends y {
 			}
 		}
 		for (let e of this.markers) {
-			let n = yn + e.at * a, o = n < yn + r * .75;
-			m.push(_`<line class="marker" x1=${n} x2=${n} y1=${xn} y2=${xn + i}></line>
+			let n = bn + e.at * a, o = n < bn + r * .75;
+			m.push(_`<line class="marker" x1=${n} x2=${n} y1=${Sn} y2=${Sn + i}></line>
         <text class="note" x=${o ? n + 4 : n - 4} y=${28} text-anchor=${o ? "start" : "end"}>
           ${t < 520 ? e.short ?? e.label : e.label}
         </text>`);
 		}
-		this.hover != null && m.push(_`<line class="guide" x1=${f(this.hover)} x2=${f(this.hover)} y1=${xn} y2=${xn + i}></line>`);
-		for (let t = 0; t < e; t++) m.push(_`<rect class="slot" x=${d(t)} y=${xn} width=${a} height=${i}
+		this.hover != null && m.push(_`<line class="guide" x1=${f(this.hover)} x2=${f(this.hover)} y1=${Sn} y2=${Sn + i}></line>`);
+		for (let t = 0; t < e; t++) m.push(_`<rect class="slot" x=${d(t)} y=${Sn} width=${a} height=${i}
         @pointerenter=${() => this.hover = t} @click=${() => this.hover = t}></rect>`);
 		return g`<svg
         viewBox="0 0 ${t} ${n}"
@@ -7389,13 +7520,13 @@ var Y = class extends y {
 D([b({ attribute: !1 })], Y.prototype, "labels", void 0), D([b({ attribute: !1 })], Y.prototype, "ticks", void 0), D([b({ attribute: !1 })], Y.prototype, "series", void 0), D([b({ attribute: !1 })], Y.prototype, "bands", void 0), D([b({ attribute: !1 })], Y.prototype, "markers", void 0), D([b()], Y.prototype, "unit", void 0), D([b({ type: Number })], Y.prototype, "max", void 0), D([b({ type: Number })], Y.prototype, "height", void 0), D([b()], Y.prototype, "label", void 0), D([b()], Y.prototype, "lang", void 0), D([b({ type: Boolean })], Y.prototype, "centerTicks", void 0), D([x()], Y.prototype, "width", void 0), D([x()], Y.prototype, "hover", void 0), T("joe-chart", Y);
 //#endregion
 //#region src/pages/history.ts
-var Tn = 14, En = [
+var En = 14, Dn = [
 	"var(--joe-c-soc)",
 	"var(--joe-c-soc-2)",
 	"var(--joe-c-grid)",
 	"var(--joe-c-ist)"
 ];
-function Dn(e, t, n) {
+function On(e, t, n) {
 	let r = /* @__PURE__ */ new Date(`${t}T12:00:00Z`);
 	return n === "long" ? new Intl.DateTimeFormat(e, {
 		weekday: "long",
@@ -7407,7 +7538,7 @@ function Dn(e, t, n) {
 		timeZone: "UTC"
 	}).format(r);
 }
-var On = class extends y {
+var kn = class extends y {
 	constructor(...e) {
 		super(...e), this.failed = !1;
 	}
@@ -7668,7 +7799,7 @@ var On = class extends y {
 		if (this.hass) try {
 			this.days = await this.hass.callWS({
 				type: "energy_joe/history/days",
-				days: Tn
+				days: En
 			}), this.failed = !1;
 			let e = this.days.days.map((e) => e.date), t = this.selected && e.includes(this.selected) ? this.selected : e[0];
 			t && await this.select(t);
@@ -7745,10 +7876,10 @@ var On = class extends y {
           type="button"
           aria-pressed=${String(t === this.selected)}
           ?disabled=${!n}
-          aria-label=${Dn(e.lang, t, "long")}
+          aria-label=${On(e.lang, t, "long")}
           @click=${() => this.select(t)}
         >
-          <small>${Dn(e.lang, t, "short")}</small>
+          <small>${On(e.lang, t, "short")}</small>
           <b>${Number(t.slice(8))}</b>
           <span class="mini" aria-hidden="true">
             <i style="height:${(n?.home ?? 0) / a * 26}px;background:var(--joe-c-load)"></i>
@@ -7761,7 +7892,7 @@ var On = class extends y {
 	renderDay(e, t) {
 		let n = t.summary, r = Math.max(0, n.expected - t.hours.filter((e) => e.cov >= .9).length), i = n.sources.live ?? 0, a = (n.sources.stats ?? 0) + (n.sources.history ?? 0);
 		return g`<div class="day-head">
-        <h3>${Dn(e.lang, t.date, "long")}</h3>
+        <h3>${On(e.lang, t.date, "long")}</h3>
         ${t.workday === !0 ? g`<span class="chip">${e("history.workday")}</span>` : t.workday === !1 ? g`<span class="chip">${e("history.day_off")}</span>` : v}
         ${i ? g`<span class="chip ok"><ha-icon icon="mdi:eye-outline"></ha-icon>${e("history.live")}</span>` : v}
         ${a ? g`<span class="chip read"><ha-icon icon="mdi:database-outline"></ha-icon>${e("history.read")}</span>` : v}
@@ -7880,7 +8011,7 @@ var On = class extends y {
 				label: e.name,
 				kind: "line",
 				values: r,
-				color: En[n % En.length],
+				color: Dn[n % Dn.length],
 				digits: 0
 			};
 		});
@@ -7986,10 +8117,10 @@ var On = class extends y {
 		return e.slice(11, 16);
 	}
 };
-D([b({ attribute: !1 })], On.prototype, "hass", void 0), D([b({ attribute: !1 })], On.prototype, "t", void 0), D([b({ attribute: !1 })], On.prototype, "state", void 0), D([x()], On.prototype, "days", void 0), D([x()], On.prototype, "selected", void 0), D([x()], On.prototype, "detail", void 0), D([x()], On.prototype, "failed", void 0), T("joe-history", On);
+D([b({ attribute: !1 })], kn.prototype, "hass", void 0), D([b({ attribute: !1 })], kn.prototype, "t", void 0), D([b({ attribute: !1 })], kn.prototype, "state", void 0), D([x()], kn.prototype, "days", void 0), D([x()], kn.prototype, "selected", void 0), D([x()], kn.prototype, "detail", void 0), D([x()], kn.prototype, "failed", void 0), T("joe-history", kn);
 //#endregion
 //#region src/components/day-questions.ts
-var kn = {
+var An = {
 	more: [
 		"guests",
 		"special",
@@ -8000,7 +8131,7 @@ var kn = {
 		"special",
 		"normal"
 	]
-}, An = class extends y {
+}, jn = class extends y {
 	constructor(...e) {
 		super(...e), this.questions = [], this.failed = !1, this.answered = /* @__PURE__ */ new Set();
 	}
@@ -8064,7 +8195,7 @@ var kn = {
 		})}
           </p>
           <div class="answers" role="group" aria-label=${e("ask.answers")}>
-            ${kn[t.kind].map((n) => g`<button
+            ${An[t.kind].map((n) => g`<button
                   type="button"
                   class="mini-btn ${n === "normal" ? "quiet" : ""}"
                   ?disabled=${this.busy === t.date}
@@ -8099,30 +8230,30 @@ var kn = {
 		}
 	}
 };
-D([b({ attribute: !1 })], An.prototype, "hass", void 0), D([b({ attribute: !1 })], An.prototype, "t", void 0), D([b({ attribute: !1 })], An.prototype, "questions", void 0), D([x()], An.prototype, "busy", void 0), D([x()], An.prototype, "failed", void 0), D([x()], An.prototype, "answered", void 0), T("joe-day-questions", An);
+D([b({ attribute: !1 })], jn.prototype, "hass", void 0), D([b({ attribute: !1 })], jn.prototype, "t", void 0), D([b({ attribute: !1 })], jn.prototype, "questions", void 0), D([x()], jn.prototype, "busy", void 0), D([x()], jn.prototype, "failed", void 0), D([x()], jn.prototype, "answered", void 0), T("joe-day-questions", jn);
 //#endregion
 //#region src/pages/learn.ts
-var jn = [
+var Mn = [
 	"clear",
 	"mixed",
 	"overcast"
-], Mn = [
+], Nn = [
 	"vacation",
 	"travel",
 	"home_office",
 	"office",
 	"guests",
 	"home"
-], Nn = {
+], Pn = {
 	forecast_solar: "Forecast.Solar",
 	open_meteo_solar_forecast: "Open-Meteo Solar Forecast",
 	solcast_solar: "Solcast"
 };
-function Pn(e, t, n) {
+function Fn(e, t, n) {
 	let r = e.base + (t ? e.workday : 0) + e.heat * Math.max(0, 15 - n) + e.cool * Math.max(0, n - 22);
 	return e.presence != null && (r += e.presence * (e.presence_mean ?? 0)), Math.max(0, r);
 }
-function Fn(e, t) {
+function In(e, t) {
 	let n = Math.max(1, Math.ceil(t.length / 7)), r = /* @__PURE__ */ new Map();
 	return t.forEach((i, a) => {
 		(t.length - 1 - a) % n == 0 && r.set(a, K(e, i, "short"));
@@ -8596,7 +8727,7 @@ var X = class extends y {
       </p>
       ${i.length > 1 ? g`<joe-chart
             .labels=${i.map((t) => K(e.lang, t.date, "weekday"))}
-            .ticks=${Fn(e.lang, i.map((e) => e.date))}
+            .ticks=${In(e.lang, i.map((e) => e.date))}
             .series=${a}
             centerTicks
             unit=${ln(e.lang, this.currency)}
@@ -8772,7 +8903,7 @@ var X = class extends y {
 	chartWithLegend(e, t, n, r, i) {
 		return g`<joe-chart
         .labels=${t.map((t) => K(e.lang, t, "weekday"))}
-        .ticks=${Fn(e.lang, t)}
+        .ticks=${In(e.lang, t)}
         .series=${n}
         centerTicks
         unit=${r}
@@ -8839,13 +8970,13 @@ var X = class extends y {
 		n && l.push({
 			label: e("learn.model.chart.workday"),
 			kind: "line",
-			values: s.map((e) => Pn(n, !0, e + 1)),
+			values: s.map((e) => Fn(n, !0, e + 1)),
 			color: "var(--joe-c-soc)",
 			digits: 1
 		}, {
 			label: e("learn.model.chart.day_off"),
 			kind: "line",
-			values: s.map((e) => Pn(n, !1, e + 1)),
+			values: s.map((e) => Fn(n, !1, e + 1)),
 			color: "var(--joe-c-soc-2)",
 			dashed: !0,
 			digits: 1
@@ -8870,7 +9001,7 @@ var X = class extends y {
       </div>`;
 	}
 	renderSources(e, t) {
-		let n = e.lang, r = this.state.config, i = t.learned.solar_classes ?? {}, a = i.classes ?? {}, o = r.forecast, s = t.learned.sources ?? {}, c = jn.filter((e) => a[e]), l = (e) => j(n, e * 100, 0), u = [["main", o.provider ? Nn[o.provider] ?? o.provider : e("learn.sources.main")], ...o.alternatives.map((e) => [e.id, e.name])], d = Object.fromEntries(u.map(([e]) => [e, s[e] ? 1 / Math.max(s[e].error, .05) ** 2 : 0])), f = Object.values(d).reduce((e, t) => e + t, 0);
+		let n = e.lang, r = this.state.config, i = t.learned.solar_classes ?? {}, a = i.classes ?? {}, o = r.forecast, s = t.learned.sources ?? {}, c = Mn.filter((e) => a[e]), l = (e) => j(n, e * 100, 0), u = [["main", o.provider ? Pn[o.provider] ?? o.provider : e("learn.sources.main")], ...o.alternatives.map((e) => [e.id, e.name])], d = Object.fromEntries(u.map(([e]) => [e, s[e] ? 1 / Math.max(s[e].error, .05) ** 2 : 0])), f = Object.values(d).reduce((e, t) => e + t, 0);
 		return g`<section class="card" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:weather-partly-cloudy"></ha-icon>${e("learn.weather")}</div>
@@ -8879,7 +9010,7 @@ var X = class extends y {
       <p class="say">
         ${c.length ? e("learn.weather.say", { top: G(n, i.top ?? 0, 1) }) : e("learn.weather.learning", { have: i.days ?? 0 })}
       </p>
-      ${c.length ? this.rows(jn.map((t) => {
+      ${c.length ? this.rows(Mn.map((t) => {
 			let r = a[t];
 			return {
 				name: e(`learn.weather.${t}`),
@@ -9001,7 +9132,7 @@ var X = class extends y {
       </div>
       <p class="say">${e("learn.calendar.say")}</p>
       <div class="rules">
-        ${Mn.map((r) => g`<div class="rule">
+        ${Nn.map((r) => g`<div class="rule">
             <b>${e(`label.${r}`)}</b>
             <div class="keywords">
               ${n(r).map((n) => g`<span class="keyword"
@@ -9061,7 +9192,7 @@ var X = class extends y {
 		}]));
 	}
 	saveRules(e) {
-		let t = Mn.flatMap((t) => e.filter((e) => e.label === t));
+		let t = Nn.flatMap((t) => e.filter((e) => e.label === t));
 		z(this, { calendar: { rules: t } });
 	}
 	edit(e) {
@@ -9169,10 +9300,10 @@ var X = class extends y {
 D([b({ attribute: !1 })], X.prototype, "hass", void 0), D([b({ attribute: !1 })], X.prototype, "t", void 0), D([b({ attribute: !1 })], X.prototype, "state", void 0), D([x()], X.prototype, "data", void 0), D([x()], X.prototype, "failed", void 0), D([x()], X.prototype, "confirming", void 0), D([x()], X.prototype, "resetting", void 0), D([x()], X.prototype, "scope", void 0), D([x()], X.prototype, "keyword", void 0), D([x()], X.prototype, "notice", void 0), T("joe-learn-page", X);
 //#endregion
 //#region src/components/texts.ts
-function In(e, t) {
+function Ln(e, t) {
 	return t == null ? "–" : j(e.lang, t * 100, 2);
 }
-function Ln(e, t, n = !0) {
+function Rn(e, t, n = !0) {
 	let r;
 	return r = t.kind === "fixed_window" && t.window ? t.night_price == null && t.day_price == null ? e("tariff.window_only", {
 		start: t.window.start,
@@ -9180,14 +9311,14 @@ function Ln(e, t, n = !0) {
 	}) : e("find.tariff.window", {
 		start: t.window.start,
 		end: t.window.end,
-		night: In(e, t.night_price),
-		day: In(e, t.day_price)
+		night: Ln(e, t.night_price),
+		day: Ln(e, t.day_price)
 	}) : t.kind === "dynamic" ? t.night_price != null && t.day_price != null ? e("find.tariff.dynamic", {
-		night: In(e, t.night_price),
-		day: In(e, t.day_price)
-	}) : e("tariff.dynamic") : t.kind === "flat" ? t.day_price == null ? e("tariff.flat") : e("find.tariff.flat", { day: In(e, t.day_price) }) : e("find.tariff.unknown"), n && t.feed_in_price != null && (r += ` · ${e("find.tariff.feedin", { price: In(e, t.feed_in_price) })}`), r;
+		night: Ln(e, t.night_price),
+		day: Ln(e, t.day_price)
+	}) : e("tariff.dynamic") : t.kind === "flat" ? t.day_price == null ? e("tariff.flat") : e("find.tariff.flat", { day: Ln(e, t.day_price) }) : e("find.tariff.unknown"), n && t.feed_in_price != null && (r += ` · ${e("find.tariff.feedin", { price: Ln(e, t.feed_in_price) })}`), r;
 }
-function Rn(e, t) {
+function zn(e, t) {
 	let n = {};
 	for (let [r, i] of Object.entries(t)) typeof i == "number" ? n[r] = j(e.lang, i, 2) : typeof i == "string" && (n[r] = i);
 	typeof t.role == "string" && (n.role = e.optional(`role.${t.role}`) ?? t.role);
@@ -9196,12 +9327,12 @@ function Rn(e, t) {
 }
 //#endregion
 //#region src/components/review.ts
-var zn = /* @__PURE__ */ new Set([
+var Bn = /* @__PURE__ */ new Set([
 	"climate",
 	"heat_pump",
 	"electric_heating",
 	"hot_water"
-]), Bn = class extends y {
+]), Vn = class extends y {
 	constructor(...e) {
 		super(...e), this.checks = [], this.context = "setup";
 	}
@@ -9363,7 +9494,7 @@ var zn = /* @__PURE__ */ new Set([
 			title: t("find.devices"),
 			detail: t("find.devices.detail", {
 				count: this.count(t, c.length, "word.device"),
-				heating: c.filter((e) => zn.has(e.kind)).length
+				heating: c.filter((e) => Bn.has(e.kind)).length
 			}),
 			chips: o ? [] : s,
 			tip: o ? "f_consumer_kind" : void 0,
@@ -9462,7 +9593,7 @@ var zn = /* @__PURE__ */ new Set([
 			key: "tariff",
 			icon: "mdi:cash-clock",
 			title: this.discovery?.tariff.provider ?? e("find.tariff"),
-			detail: Ln(e, n),
+			detail: Rn(e, n),
 			chips: r ? [] : [w(e, I(t, "tariff.kind")), ...this.discovery && this.discovery.tariff.kind !== "unknown" ? [ot(e, this.discovery.tariff.confidence)] : []],
 			reasons: this.discovery?.tariff.reasons,
 			notes: r ? [this.info(e("review.tariff.ask"))] : [],
@@ -9732,7 +9863,7 @@ var zn = /* @__PURE__ */ new Set([
 		return g`<div class="note ${t.level}">
       <ha-icon icon=${t.level === "warn" ? "mdi:alert-outline" : "mdi:information-outline"}></ha-icon>
       <div>
-        <span>${Rn(e, t)}</span>
+        <span>${zn(e, t)}</span>
         ${n.length ? g`<div class="note-actions">${n}</div>` : v}
       </div>
     </div>`;
@@ -9762,10 +9893,10 @@ var zn = /* @__PURE__ */ new Set([
     </li>`;
 	}
 };
-D([b({ attribute: !1 })], Bn.prototype, "hass", void 0), D([b({ attribute: !1 })], Bn.prototype, "t", void 0), D([b({ attribute: !1 })], Bn.prototype, "config", void 0), D([b({ attribute: !1 })], Bn.prototype, "discovery", void 0), D([b({ attribute: !1 })], Bn.prototype, "checks", void 0), D([b()], Bn.prototype, "context", void 0), T("joe-review", Bn);
+D([b({ attribute: !1 })], Vn.prototype, "hass", void 0), D([b({ attribute: !1 })], Vn.prototype, "t", void 0), D([b({ attribute: !1 })], Vn.prototype, "config", void 0), D([b({ attribute: !1 })], Vn.prototype, "discovery", void 0), D([b({ attribute: !1 })], Vn.prototype, "checks", void 0), D([b()], Vn.prototype, "context", void 0), T("joe-review", Vn);
 //#endregion
 //#region src/pages/questions.ts
-var Vn = {
+var Hn = {
 	tariff: "plan",
 	feed_in: "plug",
 	capacity: "night-charge",
@@ -9773,12 +9904,12 @@ var Vn = {
 	hot_water: "hot-water",
 	ev: "ev",
 	household: "relax"
-}, Hn = [
+}, Un = [
 	"climate",
 	"heat_pump",
 	"electric_heating"
 ];
-function Un(e) {
+function Wn(e) {
 	let t = [], n = (t) => I(e, t)?.source === "user", r = (t) => e.answers[t] !== void 0 && e.answers[t] !== null, i = e.tariff;
 	(i.kind === "unknown" || n("tariff.kind") || r("tariff")) && t.push("tariff"), (i.feed_in_price == null && !i.feed_in_entity || n("tariff.feed_in_price") || r("feed_in")) && t.push("feed_in");
 	for (let i of e.batteries) {
@@ -9787,7 +9918,7 @@ function Un(e) {
 	}
 	return t.push("heating", "hot_water", "ev", "household"), t;
 }
-var Wn = class extends y {
+var Gn = class extends y {
 	constructor(...e) {
 		super(...e), this.single = "", this.index = 0;
 	}
@@ -9858,9 +9989,9 @@ var Wn = class extends y {
 		let { t: e, config: t } = this;
 		if (!e || !t) return v;
 		if (this.single) return this.renderQuestion(e, t, this.single);
-		let n = Un(t), r = Math.min(this.index, n.length - 1), i = n[r], a = r === n.length - 1;
+		let n = Wn(t), r = Math.min(this.index, n.length - 1), i = n[r], a = r === n.length - 1;
 		return g`<div class="wrap">
-      <joe-pose name=${Vn[i.split(":")[0]] ?? "ask"}></joe-pose>
+      <joe-pose name=${Hn[i.split(":")[0]] ?? "ask"}></joe-pose>
       <div>
         <div class="eyebrow">${e("ask.count", {
 			n: r + 1,
@@ -9953,7 +10084,7 @@ var Wn = class extends y {
     ></joe-choice>`;
 	}
 	renderHeating(e, t) {
-		let n = t.answers.heating, r = Array.isArray(n) ? n : [], i = t.consumers.filter((e) => r.includes(e.kind)), a = r.some((e) => Hn.includes(e));
+		let n = t.answers.heating, r = Array.isArray(n) ? n : [], i = t.consumers.filter((e) => r.includes(e.kind)), a = r.some((e) => Un.includes(e));
 		return this.question(e("q.heating.title"), "q_heating", g`${this.choice(e, "heating", [
 			{
 				value: "climate",
@@ -10097,14 +10228,14 @@ var Wn = class extends y {
 		}));
 	}
 };
-D([b({ attribute: !1 })], Wn.prototype, "hass", void 0), D([b({ attribute: !1 })], Wn.prototype, "t", void 0), D([b({ attribute: !1 })], Wn.prototype, "config", void 0), D([b({ attribute: !1 })], Wn.prototype, "discovery", void 0), D([b()], Wn.prototype, "single", void 0), D([x()], Wn.prototype, "index", void 0), T("joe-questions", Wn);
+D([b({ attribute: !1 })], Gn.prototype, "hass", void 0), D([b({ attribute: !1 })], Gn.prototype, "t", void 0), D([b({ attribute: !1 })], Gn.prototype, "config", void 0), D([b({ attribute: !1 })], Gn.prototype, "discovery", void 0), D([b()], Gn.prototype, "single", void 0), D([x()], Gn.prototype, "index", void 0), T("joe-questions", Gn);
 //#endregion
 //#region src/pages/onboarding.ts
-function Gn(e, t, n) {
+function Kn(e, t, n) {
 	let [r, i] = e(n).split("|");
 	return `${j(e.lang, t, 0)} ${t === 1 ? r : i}`;
 }
-var Kn = {
+var qn = {
 	climate: "q.heating.climate",
 	heat_pump: "q.heating.heat_pump",
 	electric_heating: "q.heating.electric",
@@ -10317,13 +10448,13 @@ var Kn = {
 				count: t.batteries.length,
 				kwh: r ? j(e.lang, r, 1) : "?"
 			}) : e("sum.none")],
-			[e("sum.tariff"), t.tariff.kind === "unknown" ? e("sum.unknown") : Ln(e, t.tariff, !1)],
-			[e("sum.feed_in"), t.tariff.feed_in_price == null ? t.tariff.feed_in_entity ? e("sum.from_sensor") : e("sum.unknown") : `${In(e, t.tariff.feed_in_price)} ct`],
+			[e("sum.tariff"), t.tariff.kind === "unknown" ? e("sum.unknown") : Rn(e, t.tariff, !1)],
+			[e("sum.feed_in"), t.tariff.feed_in_price == null ? t.tariff.feed_in_entity ? e("sum.from_sensor") : e("sum.unknown") : `${Ln(e, t.tariff.feed_in_price)} ct`],
 			[e("sum.forecast"), t.forecast.provider ? a ? e("sum.forecast.value", {
 				provider: a.provider_name,
-				planes: Gn(e, a.planes, "word.plane")
+				planes: Kn(e, a.planes, "word.plane")
 			}) : t.forecast.provider : e("sum.none")],
-			[e("sum.heating"), i("heating", Kn)],
+			[e("sum.heating"), i("heating", qn)],
 			[e("sum.hot_water"), i("hot_water", {
 				hot_water_heat_pump: "q.hot_water.heat_pump",
 				electric: "q.hot_water.electric",
@@ -10335,8 +10466,8 @@ var Kn = {
 				no: "q.ev.no"
 			})],
 			[e("sum.household"), e("sum.household.value", {
-				persons: Gn(e, t.persons.length, "word.person"),
-				calendars: Gn(e, t.persons.reduce((e, t) => e + t.calendars.length, 0), "word.calendar")
+				persons: Kn(e, t.persons.length, "word.person"),
+				calendars: Kn(e, t.persons.reduce((e, t) => e + t.calendars.length, 0), "word.calendar")
 			})]
 		].map(([e, t]) => g`<div><span>${e}</span><span>${t}</span></div>`)}
     </div>`;
@@ -10390,7 +10521,7 @@ var Kn = {
 D([b()], Z.prototype, "step", void 0), D([b({ attribute: !1 })], Z.prototype, "t", void 0), D([b({ attribute: !1 })], Z.prototype, "info", void 0), D([b({ attribute: !1 })], Z.prototype, "hass", void 0), D([b({ attribute: !1 })], Z.prototype, "config", void 0), D([b({ attribute: !1 })], Z.prototype, "discovery", void 0), D([b({ attribute: !1 })], Z.prototype, "checks", void 0), D([b({ type: Boolean })], Z.prototype, "discovering", void 0), D([b({ type: Boolean })], Z.prototype, "discoveryFailed", void 0), T("joe-onboarding", Z);
 //#endregion
 //#region src/pages/overview.ts
-var qn = class extends y {
+var Jn = class extends y {
 	constructor(...e) {
 		super(...e), this.prefix = "/energy-joe";
 	}
@@ -10725,18 +10856,18 @@ var qn = class extends y {
         ${C(e("overview.night.empty.title"))} ${S}
         <p class="lead">${e("overview.night.empty.text")}</p>
       </section>`;
-		let n = gn(e, t), r = _n(e, t, this.hass?.config?.currency), i = t.kind === "charge" || t.kind === "hold" ? g`${j(e.lang, t.target ?? 0, 0)}<small>%</small>` : g`${e(t.kind === "none" ? "plan.big.none" : "plan.big.unavailable")}`;
+		let n = _n(e, t), r = vn(e, t, this.hass?.config?.currency), i = t.kind === "charge" || t.kind === "hold" ? g`${j(e.lang, t.target ?? 0, 0)}<small>%</small>` : g`${e(t.kind === "none" ? "plan.big.none" : "plan.big.unavailable")}`;
 		return g`<section class="card figure-card" data-tipped>
       <joe-pose name=${pn(t)}></joe-pose>
       <div class="head">
         <div class="eyebrow">
-          <ha-icon icon="mdi:weather-night"></ha-icon>${e("overview.night")}${t.window ? ` · ${mn(e, t)}` : ""}
+          <ha-icon icon="mdi:weather-night"></ha-icon>${e("overview.night")}${t.window ? ` · ${hn(e, t)}` : ""}
         </div>
         ${P(e, "plan_target")}
       </div>
       <div class="big">${i}</div>
       ${S}
-      <p class="say">${hn(e, t)}</p>
+      <p class="say">${gn(e, t)}</p>
       ${n.length ? g`<div class="lines">${n.map((e) => g`<div>${e}</div>`)}</div>` : v}
       ${r ? g`<p class="cost">${r}</p>` : v}
       <div class="bottom">
@@ -10884,10 +11015,10 @@ var qn = class extends y {
 		})));
 	}
 };
-D([b({ attribute: !1 })], qn.prototype, "t", void 0), D([b({ attribute: !1 })], qn.prototype, "hass", void 0), D([b({ attribute: !1 })], qn.prototype, "state", void 0), D([b()], qn.prototype, "prefix", void 0), D([x()], qn.prototype, "week", void 0), T("joe-overview", qn);
+D([b({ attribute: !1 })], Jn.prototype, "t", void 0), D([b({ attribute: !1 })], Jn.prototype, "hass", void 0), D([b({ attribute: !1 })], Jn.prototype, "state", void 0), D([b()], Jn.prototype, "prefix", void 0), D([x()], Jn.prototype, "week", void 0), T("joe-overview", Jn);
 //#endregion
 //#region src/pages/plan.ts
-var Jn = 36e5, Yn = class extends y {
+var Yn = 36e5, Xn = class extends y {
 	constructor(...e) {
 		super(...e), this.refreshing = !1;
 	}
@@ -10969,6 +11100,11 @@ var Jn = 36e5, Yn = class extends y {
         gap: 8px;
         font-weight: 700;
         margin-bottom: 6px;
+      }
+      .slots {
+        margin: 8px 0 0;
+        font-size: 13.5px;
+        color: var(--joe-ink-2);
       }
       .legend {
         display: flex;
@@ -11057,9 +11193,9 @@ var Jn = 36e5, Yn = class extends y {
 		if (!e) return v;
 		let t = this.state?.plan;
 		if (!t || t.kind === "unavailable" || !t.hours) return this.renderEmpty(e, t);
-		let n = gn(e, t), r = _n(e, t, this.hass?.config?.currency);
+		let n = _n(e, t), r = vn(e, t, this.hass?.config?.currency);
 		return g`<div class="wrap">
-      <div class="eyebrow"><ha-icon icon="mdi:weather-night"></ha-icon>${e("overview.night")} · ${mn(e, t)}</div>
+      <div class="eyebrow"><ha-icon icon="mdi:weather-night"></ha-icon>${e("overview.night")} · ${hn(e, t)}</div>
       ${C(e("plan.page.title"))} ${S}
       <div class="top" data-tipped>
         ${this.state?.mode === "simulation" ? g`<span class="pill-sim">${e("mode.simulation")}</span>` : g`<span class="chip ${this.state?.mode === "live" ? "ok" : "learned"}">${e(`mode.${this.state?.mode ?? "off"}`)}</span>`}
@@ -11076,12 +11212,12 @@ var Jn = 36e5, Yn = class extends y {
         <div class="big">
           ${t.kind === "none" ? e("plan.big.none") : g`${j(e.lang, t.target ?? 0, 0)}<small>%</small>`}
         </div>
-        <p class="say">${hn(e, t)} ${P(e, "plan_target")}</p>
+        <p class="say">${gn(e, t)} ${P(e, "plan_target")}</p>
         ${n.length ? g`<div class="lines">${n.map((e) => g`<div>${e}</div>`)}</div>` : v}
         ${r ? g`<p class="cost">${r}</p>` : v}
       </section>
       ${this.renderSteer(e, t)} ${this.renderActions(e, t)} ${this.renderEnergy(e, t, t.hours)}
-      ${this.renderSoc(e, t, t.hours)}
+      ${this.renderPrices(e, t, t.hours)} ${this.renderSoc(e, t, t.hours)}
       ${this.renderMath(e, t)}
     </div>`;
 	}
@@ -11149,7 +11285,7 @@ var Jn = 36e5, Yn = class extends y {
 		} catch {}
 	}
 	renderEmpty(e, t) {
-		let n = t ? hn(e, t) : e(this.state?.mode === "off" ? "plan.empty.off" : "plan.empty.waiting");
+		let n = t ? gn(e, t) : e(this.state?.mode === "off" ? "plan.empty.off" : "plan.empty.waiting");
 		return g`<div class="empty">
       <joe-pose name=${t ? pn(t) : "plan"}></joe-pose>
       <div>
@@ -11185,7 +11321,7 @@ var Jn = 36e5, Yn = class extends y {
 				let t = Date.parse(e);
 				for (let e = 0; e < n.length; e++) {
 					let r = Date.parse(n[e].start);
-					if (t >= r && t < r + Jn) return e + (t - r) / Jn;
+					if (t >= r && t < r + Yn) return e + (t - r) / Yn;
 				}
 				return null;
 			}
@@ -11234,6 +11370,37 @@ var Jn = 36e5, Yn = class extends y {
       <div class="legend">
         ${i.map((e) => g`<span><i style="background:${e.color}"></i>${e.label}</span>`)}
       </div>
+    </div>`;
+	}
+	renderPrices(e, t, n) {
+		if (!n.some((e) => e.price != null)) return v;
+		let r = this.frame(e, t, n), i = [{
+			label: e("plan.chart.price"),
+			kind: "bar",
+			values: n.map((e) => e.price == null ? null : Math.round(e.price * 1e3) / 10),
+			color: "var(--joe-c-ist)",
+			digits: 1
+		}], a = (t.charge_slots ?? []).flatMap((t) => {
+			let n = r.at(t.start);
+			return n == null ? [] : [{
+				at: n,
+				label: e("plan.chart.charge_at", { time: q(t.start) }),
+				short: q(t.start)
+			}];
+		});
+		return g`<div class="chart-card" data-tipped>
+      <div class="chart-head">${e("plan.chart.prices")} ${P(e, "chart_plan_prices")}</div>
+      <joe-chart
+        .labels=${r.labels}
+        .ticks=${r.ticks}
+        .series=${i}
+        .bands=${r.bands}
+        .markers=${a}
+        unit="ct"
+        lang=${e.lang}
+        label=${e("plan.chart.prices")}
+      ></joe-chart>
+      ${t.charge_slots?.length ? g`<p class="slots">${e("plan.slots", { slots: mn(t) })}</p>` : v}
     </div>`;
 	}
 	renderSoc(e, t, n) {
@@ -11352,15 +11519,15 @@ var Jn = 36e5, Yn = class extends y {
 		}
 	}
 };
-D([b({ attribute: !1 })], Yn.prototype, "hass", void 0), D([b({ attribute: !1 })], Yn.prototype, "t", void 0), D([b({ attribute: !1 })], Yn.prototype, "state", void 0), D([x()], Yn.prototype, "refreshing", void 0), T("joe-plan-page", Yn);
+D([b({ attribute: !1 })], Xn.prototype, "hass", void 0), D([b({ attribute: !1 })], Xn.prototype, "t", void 0), D([b({ attribute: !1 })], Xn.prototype, "state", void 0), D([x()], Xn.prototype, "refreshing", void 0), T("joe-plan-page", Xn);
 //#endregion
 //#region src/pages/settings.ts
-var Xn = [
+var Zn = [
 	"simulation",
 	"advisory",
 	"live",
 	"off"
-], Zn = [
+], Qn = [
 	{
 		key: "reserve_soc",
 		unit: "%",
@@ -11413,16 +11580,41 @@ var Xn = [
 		unit: "min",
 		min: 0,
 		max: 180,
-		step: 1
+		step: 1,
+		integer: !0
 	},
 	{
 		key: "reset_lead_min",
 		unit: "min",
 		min: 0,
 		max: 60,
-		step: 1
+		step: 1,
+		integer: !0
 	}
-], Qn = [
+], $n = [{
+	key: "max_price",
+	unit: "ct/kWh",
+	min: 0,
+	max: 1e3,
+	step: .1,
+	scale: 100,
+	optional: !0
+}, {
+	key: "min_saving",
+	unit: "ct",
+	min: 0,
+	max: 500,
+	step: 1,
+	scale: 100
+}], er = {
+	key: "balance_days",
+	unit: "",
+	min: 3,
+	max: 90,
+	step: 1,
+	optional: !0,
+	integer: !0
+}, tr = [
 	{
 		key: "heating",
 		tip: "q_heating"
@@ -11435,7 +11627,7 @@ var Xn = [
 		key: "ev",
 		tip: "q_ev"
 	}
-], $n = {
+], nr = {
 	heating: {
 		climate: "q.heating.climate",
 		heat_pump: "q.heating.heat_pump",
@@ -11637,7 +11829,7 @@ var Xn = [
               <small>${e("settings.mode.hint")}</small>
             </div>
             <div class="seg" role="group" aria-label=${e("settings.mode")}>
-              ${Xn.map((n) => g`<button
+              ${Zn.map((n) => g`<button
                     type="button"
                     aria-pressed=${String(t.mode === n)}
                     @click=${() => this.emit("joe-set-mode", { mode: n })}
@@ -11681,7 +11873,7 @@ var Xn = [
 
         <section class="group">
           <h2>${e("settings.answers")}</h2>
-          ${Qn.map((t) => this.answerRow(e, t.key, t.tip))}
+          ${tr.map((t) => this.answerRow(e, t.key, t.tip))}
         </section>
 
         ${this.renderObserve(e)}
@@ -11708,9 +11900,11 @@ var Xn = [
             <h2>${e("settings.pro")}</h2>
           </button>
           ${this.pro ? g`<p class="intro">${e("settings.pro.intro")}</p>
-                ${Zn.slice(0, 5).map((t) => this.numberRow(e, n.rules, t))}
+                ${Qn.slice(0, 5).map((t) => this.numberRow(e, n.rules, t))}
+                ${$n.map((t) => this.numberRow(e, n.rules, t))} ${this.guardRow(e, n.rules)}
+                ${this.numberRow(e, n.rules, er)}
                 ${this.priorityRow(e, n.rules)} ${this.dischargeRow(e, n.rules)}
-                ${Zn.slice(5).map((t) => this.numberRow(e, n.rules, t))}` : v}
+                ${Qn.slice(5).map((t) => this.numberRow(e, n.rules, t))}` : v}
         </section>
 
         <section class="group">
@@ -11823,7 +12017,7 @@ var Xn = [
 		} catch {}
 	}
 	answerRow(e, t, n) {
-		let r = this.state.config, i = r.answers[t], a = Array.isArray(i) ? i : typeof i == "string" ? [i] : [], o = i === "unknown" ? e("sum.unknown") : a.length ? a.map((n) => $n[t][n] ? e($n[t][n]) : n).join(", ") : e("sum.open");
+		let r = this.state.config, i = r.answers[t], a = Array.isArray(i) ? i : typeof i == "string" ? [i] : [], o = i === "unknown" ? e("sum.unknown") : a.length ? a.map((n) => nr[t][n] ? e(nr[t][n]) : n).join(", ") : e("sum.open");
 		return g`<div class="row" data-tipped>
       <div>
         <div class="name"><b>${e(`settings.answer.${t}`)}</b>${P(e, n)}</div>
@@ -11876,7 +12070,7 @@ var Xn = [
             .value=${o}
             @change=${(e) => this.setNumber(n, e.target)}
           />
-          <span class="unit">${n.unit}</span>
+          <span class="unit">${n.unit || e(`rule.${n.key}.unit`)}</span>
         </span>
         ${l && s !== void 0 ? g`<button
               type="button"
@@ -11899,8 +12093,29 @@ var Xn = [
 			t.reportValidity();
 			return;
 		}
-		let a = e.unit === "min" ? Math.round(i) : Math.round(i / r * 1e4) / 1e4;
+		let a = e.integer ? Math.round(i) : Math.round(i / r * 1e4) / 1e4;
 		z(this, { rules: { [e.key]: a } });
+	}
+	guardRow(e, t) {
+		let n = this.state.config, r = t.grid_limit_w;
+		return g`<div class="row" data-tipped>
+      <div>
+        <div class="name"><b id="guard-grid">${e("rule.guard_grid")}</b>${P(e, "r_guard_grid")}</div>
+        <small>${e(r ? "rule.guard_grid.hint" : "rule.guard_grid.no_limit")}</small>
+      </div>
+      <div class="control">
+        ${w(e, I(n, "rules.guard_grid"))}
+        <button
+          type="button"
+          class="switch"
+          role="switch"
+          aria-checked=${String(t.guard_grid)}
+          aria-labelledby="guard-grid"
+          ?disabled=${!r}
+          @click=${() => z(this, { rules: { guard_grid: !t.guard_grid } })}
+        ></button>
+      </div>
+    </div>`;
 	}
 	priorityRow(e, t) {
 		let n = this.state.config, r = t.priority, i = (e, t) => {
@@ -11993,7 +12208,7 @@ var Xn = [
 D([b({ attribute: !1 })], Q.prototype, "t", void 0), D([b({ attribute: !1 })], Q.prototype, "hass", void 0), D([b({ attribute: !1 })], Q.prototype, "state", void 0), D([b({ attribute: !1 })], Q.prototype, "info", void 0), D([b({ attribute: !1 })], Q.prototype, "discovery", void 0), D([b({ attribute: !1 })], Q.prototype, "checks", void 0), D([x()], Q.prototype, "pro", void 0), D([x()], Q.prototype, "question", void 0), T("joe-settings", Q);
 //#endregion
 //#region src/styles/tokens.ts
-var er = o`
+var rr = o`
   :host {
     --joe-bg: #fbf6ec;
     --joe-surface: #ffffff;
@@ -12080,17 +12295,17 @@ var er = o`
     --joe-show-dark: block;
     color-scheme: dark;
   }
-`, tr = [
+`, ir = [
 	"simulation",
 	"advisory",
 	"live",
 	"off"
-], nr = {
+], ar = {
 	simulation: "mdi:pause",
 	advisory: "mdi:comment-question-outline",
 	live: "mdi:play",
 	off: "mdi:power"
-}, rr = tr, $ = class extends y {
+}, or = ir, $ = class extends y {
 	constructor() {
 		super(), this.narrow = !1, this.failed = !1, this.modeDialog = !1, this.notice = "", this.discovering = !1, this.discoveryFailed = !1, this.checks = [], this.infoRequested = !1, this.adopted = !1, this.addEventListener("joe-config", (e) => this.onConfig(e)), this.addEventListener("joe-pick", (e) => {
 			this.picker = e.detail;
@@ -12280,8 +12495,8 @@ var er = o`
           ${S}
           ${this.renderReadiness(e)}
           <div class="modes" role="group" aria-labelledby="mode-title">
-            ${tr.map((n) => {
-			let r = rr.includes(n);
+            ${ir.map((n) => {
+			let r = or.includes(n);
 			return g`<button
                 type="button"
                 class="mode ${n}"
@@ -12289,7 +12504,7 @@ var er = o`
                 ?disabled=${!r}
                 @click=${() => this.chooseMode(n)}
               >
-                <span class="knob"><ha-icon icon=${nr[n]}></ha-icon></span>
+                <span class="knob"><ha-icon icon=${ar[n]}></ha-icon></span>
                 <span class="label">
                   <b>${e(`mode.${n}`)}</b>
                   <small>${e(`mode.${n}.desc`)}</small>
@@ -12422,7 +12637,7 @@ var er = o`
 	}
 	static {
 		this.styles = [
-			er,
+			rr,
 			E,
 			o`
       :host {

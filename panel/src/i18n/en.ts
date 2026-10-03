@@ -100,6 +100,7 @@ export const en: Record<Key, string> = {
   "reason.timeslots": "time slots read from the tariff",
   "reason.price_list": "price list read",
   "reason.price_only": "only the current price is known",
+  "reason.dynamic_provider": "prices come from {integration}",
   "reason.forecast_support": "with hourly forecast",
   "reason.name_match": "calendar matches the name",
   "reason.submeter": "other devices are behind it",
@@ -213,7 +214,7 @@ export const en: Record<Key, string> = {
   "tariff.flat": "fixed price",
   "tariff.kind.fixed_window": "Cheaper at night",
   "tariff.kind.flat": "Always the same price",
-  "tariff.kind.dynamic": "Market price, changes hourly",
+  "tariff.kind.dynamic": "Market price, changes during the day",
 
   "review.change": "Change",
   "review.choose": "Choose",
@@ -314,6 +315,10 @@ export const en: Record<Key, string> = {
   "f.price.unknown": "",
   "f.price_entity": "Price sensor",
   "f.price_entity.none": "None chosen yet",
+  "f.search": "Search span",
+  "f.search.start": "Search from",
+  "f.search.end": "Search until",
+  "f.surcharge": "Surcharge on the market price",
   "f.feed_in": "Feed-in tariff",
   "f.feed_in.entity": "I read it from “{name}”.",
   "f.battery.name": "Name",
@@ -399,6 +404,16 @@ export const en: Record<Key, string> = {
   "rule.grid_limit_w.hint": "Maximum power from the grid, everything together.",
   "rule.max_night_kwh": "At most per night",
   "rule.max_night_kwh.hint": "Empty = as much as needed.",
+  "rule.max_price": "Highest price for grid charging",
+  "rule.max_price.hint": "Empty = no highest price.",
+  "rule.min_saving": "Minimum saving per night",
+  "rule.min_saving.hint": "Below that I leave the batteries alone.",
+  "rule.guard_grid": "Protect the main fuse",
+  "rule.guard_grid.hint": "If the house draws more than the grid limit, charging pauses for a few minutes.",
+  "rule.guard_grid.no_limit": "Needs a grid limit (above).",
+  "rule.balance_days": "Maintenance charge",
+  "rule.balance_days.hint": "Charge full once every so many days. Empty = off.",
+  "rule.balance_days.unit": "days",
   "rule.buffer_factor": "Safety buffer",
   "rule.buffer_factor.hint": "Added to my calculation while I'm still learning.",
   "rule.plan_offset_min": "Fix the plan",
@@ -523,6 +538,13 @@ export const en: Record<Key, string> = {
   "tip.f_price_entity.title": "Where do I get the price?",
   "tip.f_price_entity.text":
     "From a sensor that shows the current electricity price. With market prices I need it, otherwise I don't know when it gets cheap.",
+  "tip.f_search.title": "Where does Joe search?",
+  "tip.f_search.text":
+    "In this span I look for the window with which the next 24 hours cost least: in it I hold the batteries and charge in the cheapest quarter hours. It usually lies in the middle of the night.",
+  "tip.f_search.hint": "Without a span I search from 8 pm to 7 am.",
+  "tip.f_surcharge.title": "Why a surcharge?",
+  "tip.f_surcharge.text":
+    "Some integrations only deliver the bare market price. What you really pay is more: grid fees, taxes and levies. Enter that part per kWh here, so I can weigh correctly whether charging pays off.\nIf your sensor already has the final price (e.g. Tibber), leave the field empty.",
   "tip.f_battery_name.title": "What should I call it?",
   "tip.f_battery_name.text": "That's how the battery shows up everywhere with me. Nothing changes on the device or in Home Assistant.",
   "tip.f_battery_soc.title": "What is the charge level?",
@@ -563,6 +585,19 @@ export const en: Record<Key, string> = {
   "tip.r_max_night_kwh.title": "Why an upper limit?",
   "tip.r_max_night_kwh.text":
     "If you never want to charge more than a certain amount from the grid per night, enter it. Empty = as much as needed.",
+  "tip.r_max_price.title": "Why a highest price?",
+  "tip.r_max_price.text":
+    "I never charge from the grid above this price – even if the calculation would narrowly recommend it. I may still hold the batteries.",
+  "tip.r_min_saving.title": "Why a minimum saving?",
+  "tip.r_min_saving.text":
+    "Every time I steer, I write values to your devices. If a night brings less than this amount, I leave it and the batteries run as without me. Maintenance nights are the exception.",
+  "tip.r_guard_grid.title": "What does the protection do?",
+  "tip.r_guard_grid.text":
+    "While I charge, I look at the grid draw every minute. If it is above your grid limit – because stove, wallbox and heat pump run at the same time – I hold the batteries for five minutes instead of charging. Then I carry on.",
+  "tip.r_balance_days.title": "What is a maintenance charge?",
+  "tip.r_balance_days.text":
+    "Many batteries only balance their cells when they get full now and then – otherwise the level shown drifts over time. If a battery has not been full for that many days and the sun won't fill it tomorrow either, I charge it to 100 % once in the cheap hours.",
+  "tip.r_balance_days.hint": "Usual are 14 to 30 days. See your battery's manual.",
   "tip.r_buffer_factor.title": "What is the safety buffer?",
   "tip.r_buffer_factor.text":
     "This much I add to my calculation while I don't know your home well yet. The better my forecasts get, the smaller it becomes.",
@@ -686,6 +721,10 @@ export const en: Record<Key, string> = {
   "plan.preview_at": "preview, as of {time}",
   "plan.refresh": "Plan again",
   "plan.say.charge": "I'll charge to {target} % from {from} – no more than needed.",
+  "plan.say.charge_slots": "I charge in the cheapest quarter hours of the night ({slots}) to {target} %.",
+  "plan.say.balance": "Tonight is a maintenance night: I charge full once so the batteries can balance their cells.",
+  "plan.say.small_saving": "I leave it tonight: it would save less than the minimum saving you set in the rules.",
+  "plan.say.max_price": "Above your highest price I don't charge from the grid.",
   "plan.say.hold":
     "I won't charge, but I'll hold the batteries at {target} % during the cheap hours – better cheap grid power now than expensive power tomorrow morning.",
   "plan.say.empty": "Without me they'd be empty at {time}.",
@@ -704,7 +743,11 @@ export const en: Record<Key, string> = {
     "Once the setup is done, I plan here every night – with curves for sun, consumption and charge level.",
   "plan.why.no_window":
     "Your tariff has no cheap hours – charging at night doesn't pay off. I keep watching and learning.",
-  "plan.why.dynamic": "I'll plan with market prices in a later update. Until then I watch and learn.",
+  "plan.why.dynamic":
+    "For market prices I need the prices of the coming hours. Pick the price sensor of your tariff integration under Settings → Tariff.",
+  "plan.why.no_prices":
+    "Your price sensor does not provide a price list for the coming hours. Pick a sensor that has them under Settings → Tariff (e.g. Nord Pool, EPEX Spot, Tibber, ENTSO-E).",
+  "plan.why.prices_pending": "The prices for the night are not there yet – they usually come around 1 pm. Then I plan.",
   "plan.why.no_battery": "Without a battery whose size I know, there's nothing to plan at night.",
   "plan.why.failed": "Something went wrong while planning. I'll try again at the next full hour.",
   "plan.note.capacity_unknown": "One battery is missing from the calculation because I don't know its size.",
@@ -713,6 +756,8 @@ export const en: Record<Key, string> = {
     "I can only watch one battery – in the simulation I calculate as if I could control it.",
   "plan.note.no_forecast": "Without a forecast I calculate as if no sun came tomorrow – so, cautiously.",
   "plan.note.default_profile": "I don't know your consumption well yet and use a typical household.",
+  "plan.note.prices_partly": "For some hours I don't know the prices yet and use the average there.",
+  "plan.note.balance_due": "A battery has not been full for a while – time for a maintenance charge.",
   "plan.chart.energy": "Sun, consumption and charging",
   "plan.chart.solar": "Sun (forecast)",
   "plan.chart.home": "Consumption (expected)",
@@ -724,6 +769,10 @@ export const en: Record<Key, string> = {
   "plan.chart.target": "target {value} %",
   "plan.chart.full": "full {time}",
   "plan.chart.reserve": "reserve {value} %",
+  "plan.chart.prices": "Prices",
+  "plan.chart.price": "Price per kWh",
+  "plan.chart.charge_at": "Charging from {time}",
+  "plan.slots": "Charging: {slots}",
   "plan.math": "How I calculated",
   "plan.math.battery_now": "Batteries now",
   "plan.math.battery_now.sub": "{stored} of {capacity} kWh",
@@ -766,6 +815,9 @@ export const en: Record<Key, string> = {
   "tip.chart_plan_energy.title": "What am I looking at?",
   "tip.chart_plan_energy.text":
     "What I expect per hour: **sun** from the forecast, your **consumption** from similar days and when I **charge from the grid**. The cheap hours are shaded.",
+  "tip.chart_plan_prices.title": "What am I looking at?",
+  "tip.chart_plan_prices.text":
+    "Your tariff's price for every hour. The shaded part is the window in which I hold the batteries; the marks show when I charge – in the cheapest quarter hours.",
   "tip.chart_plan_soc.title": "What am I looking at?",
   "tip.chart_plan_soc.text":
     "How full the batteries would be **with the plan** and **without it**. The difference is what I save you.",
@@ -1314,6 +1366,8 @@ export const en: Record<Key, string> = {
   "log.action_done": "{battery}: target reached",
   "log.call": "{battery}: {entity}",
   "log.tonight": "“Tonight” switched",
+  "log.grid_guard": "Main fuse: {power} kW from the grid – charging paused briefly",
+  "log.no_progress": "{battery} does not charge (at {soc} %)",
   "tip.a_name.title": "What is it called?",
   "tip.a_name.text": "That's how it shows on the Devices page, in the plan and as a switch in Home Assistant.",
   "tip.a_kind.title": "Which kind?",

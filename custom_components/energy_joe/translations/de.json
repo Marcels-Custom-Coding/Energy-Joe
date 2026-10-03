@@ -137,6 +137,10 @@
     "control_failed": {
       "title": "Steuern hat nicht geklappt",
       "description": "Beim Steuern von {battery} ging etwas schief ({code}). Joe lässt den Speicher für heute Nacht in Ruhe."
+    },
+    "no_progress": {
+      "title": "Speicher lädt nicht",
+      "description": "{battery} soll laden, der Ladestand steigt aber seit einer halben Stunde nicht. Prüfe, ob der Speicher Netzladen erlaubt; ein Testlauf im Energy-Joe-Panel unter Geräte hilft."
     }
   },
   "exceptions": {

@@ -106,6 +106,7 @@ def evaluate(
                     hour["solar"],
                     hour["home"],
                     hour["window"],
+                    price=hour.get("price"),
                 )
             )
             continue
@@ -116,6 +117,7 @@ def evaluate(
                 max(0.0, record.get("solar", 0.0)),
                 max(0.0, record["home"]),
                 hour["window"],
+                price=hour.get("price"),
             )
         )
     result["missing"] = missing
@@ -156,6 +158,7 @@ def evaluate(
         discharge_mode=rules["discharge_mode"],
         buffer=0.0,
         efficiency=rules.get("efficiency", 0.9),
+        max_price=rules.get("max_price"),
     )
     with_plan = simulate(inp, plan["capacity_kwh"] * plan["target"] / 100)
     without = simulate(inp, None)
@@ -164,7 +167,9 @@ def evaluate(
     for hour, record in zip(hours, real, strict=True):
         if record is None:
             continue
-        price = prices["night"] if hour.window else prices["day"]
+        price = hour.price
+        if price is None:
+            price = prices["night"] if hour.window else prices["day"]
         bought = record.get("grid_in", 0.0)
         cost += bought * price - record.get("grid_out", 0.0) * prices["feed_in"]
         sold += record.get("grid_out", 0.0)

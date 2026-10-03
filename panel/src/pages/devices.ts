@@ -566,6 +566,8 @@ export class JoeDevicesPage extends LitElement {
       entity,
       value: entry.value == null ? "–" : String(entry.value),
       target: String(entry.target ?? ""),
+      power: typeof entry.power === "number" ? formatNumber(t.lang, entry.power, 1) : "–",
+      soc: typeof entry.soc === "number" ? formatNumber(t.lang, entry.soc, 0) : "–",
     };
     if (entry.kind === "answer") {
       return t(entry.yes ? "log.answer.yes" : "log.answer.no");

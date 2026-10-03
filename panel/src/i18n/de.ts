@@ -101,6 +101,7 @@ export const de = {
   "reason.timeslots": "Zeitfenster aus dem Tarif gelesen",
   "reason.price_list": "Preisliste gelesen",
   "reason.price_only": "nur der aktuelle Preis bekannt",
+  "reason.dynamic_provider": "Preise kommen von {integration}",
   "reason.forecast_support": "mit stündlicher Vorhersage",
   "reason.name_match": "Kalender passt zum Namen",
   "reason.submeter": "andere Geräte hängen dahinter",
@@ -214,7 +215,7 @@ export const de = {
   "tariff.flat": "fester Preis",
   "tariff.kind.fixed_window": "Nachts günstiger",
   "tariff.kind.flat": "Immer gleicher Preis",
-  "tariff.kind.dynamic": "Börsenpreis, stündlich anders",
+  "tariff.kind.dynamic": "Börsenpreis, wechselt über den Tag",
 
   "review.change": "Ändern",
   "review.choose": "Auswählen",
@@ -315,6 +316,10 @@ export const de = {
   "f.price.unknown": "",
   "f.price_entity": "Preis-Sensor",
   "f.price_entity.none": "Noch keiner ausgewählt",
+  "f.search": "Suchzeitraum",
+  "f.search.start": "Suche ab",
+  "f.search.end": "Suche bis",
+  "f.surcharge": "Aufschlag auf den Börsenpreis",
   "f.feed_in": "Einspeisevergütung",
   "f.feed_in.entity": "Lese ich aus „{name}“.",
   "f.battery.name": "Name",
@@ -401,6 +406,16 @@ export const de = {
   "rule.grid_limit_w.hint": "Höchstleistung aus dem Netz, alles zusammen.",
   "rule.max_night_kwh": "Höchstens pro Nacht",
   "rule.max_night_kwh.hint": "Leer = so viel wie nötig.",
+  "rule.max_price": "Höchstpreis fürs Netzladen",
+  "rule.max_price.hint": "Leer = kein Höchstpreis.",
+  "rule.min_saving": "Mindestersparnis pro Nacht",
+  "rule.min_saving.hint": "Darunter lasse ich die Speicher in Ruhe.",
+  "rule.guard_grid": "Hauptsicherung schützen",
+  "rule.guard_grid.hint": "Zieht das Haus mehr als das Netzlimit, pausiert das Laden ein paar Minuten.",
+  "rule.guard_grid.no_limit": "Braucht ein Netzlimit (oben).",
+  "rule.balance_days": "Pflegeladung",
+  "rule.balance_days.hint": "Alle so viele Tage einmal ganz voll laden. Leer = aus.",
+  "rule.balance_days.unit": "Tage",
   "rule.buffer_factor": "Sicherheitspuffer",
   "rule.buffer_factor.hint": "Aufschlag auf meine Rechnung, solange ich noch lerne.",
   "rule.plan_offset_min": "Plan festlegen",
@@ -526,6 +541,13 @@ export const de = {
   "tip.f_price_entity.title": "Woher kenne ich den Preis?",
   "tip.f_price_entity.text":
     "Von einem Sensor, der den aktuellen Strompreis zeigt. Beim Börsenpreis brauche ich ihn, sonst weiß ich nicht, wann es günstig wird.",
+  "tip.f_search.title": "Wo sucht Joe?",
+  "tip.f_search.text":
+    "In dieser Zeit suche ich das Zeitfenster, mit dem die nächsten 24 Stunden am wenigsten kosten: Darin halte ich die Speicher und lade in den günstigsten Viertelstunden. Meist liegt es mitten in der Nacht.",
+  "tip.f_search.hint": "Ohne Angabe suche ich von 20 bis 7 Uhr.",
+  "tip.f_surcharge.title": "Wozu der Aufschlag?",
+  "tip.f_surcharge.text":
+    "Manche Integrationen liefern nur den reinen Börsenpreis. Was du wirklich zahlst, ist mehr: Netzentgelt, Steuern und Abgaben. Trag diesen Teil pro kWh hier ein, damit ich richtig abwäge, ob sich das Laden lohnt.\nLiefert dein Sensor schon den Endpreis (z. B. Tibber), lass das Feld leer.",
   "tip.f_battery_name.title": "Wie soll ich ihn nennen?",
   "tip.f_battery_name.text": "So taucht der Speicher bei mir überall auf. Am Gerät und in Home Assistant ändert sich nichts.",
   "tip.f_battery_soc.title": "Was ist der Ladezustand?",
@@ -567,6 +589,19 @@ export const de = {
   "tip.r_max_night_kwh.title": "Warum eine Obergrenze?",
   "tip.r_max_night_kwh.text":
     "Wenn du pro Nacht nie mehr als eine bestimmte Menge aus dem Netz laden willst, trag sie ein. Leer = so viel wie nötig.",
+  "tip.r_max_price.title": "Wozu ein Höchstpreis?",
+  "tip.r_max_price.text":
+    "Teurer als das lade ich nie aus dem Netz – auch wenn die Rechnung es knapp empfehlen würde. Halten darf ich die Speicher trotzdem.",
+  "tip.r_min_saving.title": "Warum eine Mindestersparnis?",
+  "tip.r_min_saving.text":
+    "Jedes Steuern schreibt Werte in deine Geräte. Bringt eine Nacht weniger als diesen Betrag, lasse ich es und die Speicher laufen wie ohne mich. Pflegenächte sind ausgenommen.",
+  "tip.r_guard_grid.title": "Was macht der Schutz?",
+  "tip.r_guard_grid.text":
+    "Während ich lade, schaue ich jede Minute auf den Netzbezug. Liegt er über deinem Netzlimit – weil gerade Herd, Wallbox und Wärmepumpe laufen –, halte ich die Speicher fünf Minuten lang, statt zu laden. Danach geht es weiter.",
+  "tip.r_balance_days.title": "Was ist eine Pflegeladung?",
+  "tip.r_balance_days.text":
+    "Viele Speicher gleichen ihre Zellen nur ab, wenn sie ab und zu ganz voll werden – sonst stimmt die Ladestandsanzeige mit der Zeit nicht mehr. War ein Speicher so viele Tage nicht voll und füllt ihn auch die Sonne morgen nicht, lade ich ihn in der günstigen Zeit einmal auf 100 %.",
+  "tip.r_balance_days.hint": "Üblich sind 14 bis 30 Tage. Steht im Handbuch deines Speichers.",
   "tip.r_buffer_factor.title": "Was ist der Sicherheitspuffer?",
   "tip.r_buffer_factor.text":
     "So viel schlage ich auf meine Rechnung drauf, solange ich dein Haus noch nicht gut kenne. Je besser meine Prognosen treffen, desto kleiner wird er.",
@@ -693,6 +728,11 @@ export const de = {
   "plan.preview_at": "Vorschau, Stand {time} Uhr",
   "plan.refresh": "Neu rechnen",
   "plan.say.charge": "Ich lade ab {from} Uhr auf {target} % – mehr braucht's nicht.",
+  "plan.say.charge_slots": "Ich lade in den günstigsten Viertelstunden der Nacht ({slots}) auf {target} %.",
+  "plan.say.balance": "Heute ist Pflegenacht: Ich lade einmal ganz voll, damit die Speicher ihre Zellen abgleichen.",
+  "plan.say.small_saving":
+    "Heute Nacht lasse ich es: Es würde weniger bringen, als du in den Regeln als Mindestersparnis eingestellt hast.",
+  "plan.say.max_price": "Über deinem Höchstpreis lade ich nicht aus dem Netz.",
   "plan.say.hold":
     "Ich lade nicht, halte die Speicher in der günstigen Zeit aber bei {target} % – lieber jetzt günstig aus dem Netz als morgen früh teuer.",
   "plan.say.empty": "Ohne mich wären sie um {time} Uhr leer.",
@@ -711,7 +751,12 @@ export const de = {
     "Sobald die Einrichtung fertig ist, plane ich hier jede Nacht – mit Kurven für Sonne, Verbrauch und Ladezustand.",
   "plan.why.no_window":
     "Dein Tarif hat keine günstige Zeit – nachts zu laden lohnt sich nicht. Ich schaue weiter zu und lerne.",
-  "plan.why.dynamic": "Börsenpreise plane ich ab einem späteren Update. Bis dahin schaue ich zu und lerne.",
+  "plan.why.dynamic":
+    "Für Börsenpreise brauche ich die Preise der nächsten Stunden. Wähle unter Einstellungen → Tarif den Preis-Sensor deiner Tarif-Integration.",
+  "plan.why.no_prices":
+    "Dein Preis-Sensor liefert keine Preisliste für die nächsten Stunden. Wähle unter Einstellungen → Tarif einen Sensor, der die Preise mitbringt (z. B. Nord Pool, EPEX Spot, Tibber, ENTSO-E).",
+  "plan.why.prices_pending":
+    "Die Preise für die Nacht sind noch nicht da – sie kommen meist gegen 13 Uhr. Dann plane ich.",
   "plan.why.no_battery": "Ohne Speicher, dessen Größe ich kenne, gibt es nachts nichts zu planen.",
   "plan.why.failed": "Beim Planen ist etwas schiefgegangen. Ich versuche es zur nächsten vollen Stunde wieder.",
   "plan.note.capacity_unknown": "Ein Speicher fehlt in der Rechnung, weil ich seine Größe nicht kenne.",
@@ -720,6 +765,8 @@ export const de = {
     "Einen Speicher kann ich nur beobachten – in der Simulation rechne ich so, als könnte ich ihn steuern.",
   "plan.note.no_forecast": "Ohne Prognose rechne ich, als käme morgen keine Sonne – also vorsichtig.",
   "plan.note.default_profile": "Deinen Verbrauch kenne ich noch nicht gut und rechne mit einem typischen Haushalt.",
+  "plan.note.prices_partly": "Für einige Stunden kenne ich die Preise noch nicht und rechne dort mit dem Durchschnitt.",
+  "plan.note.balance_due": "Ein Speicher war länger nicht ganz voll – Zeit für eine Pflegeladung.",
   "plan.chart.energy": "Sonne, Verbrauch und Laden",
   "plan.chart.solar": "Sonne (Prognose)",
   "plan.chart.home": "Verbrauch (erwartet)",
@@ -731,6 +778,10 @@ export const de = {
   "plan.chart.target": "Ziel {value} %",
   "plan.chart.full": "voll {time}",
   "plan.chart.reserve": "Reserve {value} %",
+  "plan.chart.prices": "Preise",
+  "plan.chart.price": "Preis je kWh",
+  "plan.chart.charge_at": "Laden ab {time}",
+  "plan.slots": "Laden: {slots}",
   "plan.math": "So habe ich gerechnet",
   "plan.math.battery_now": "Speicher jetzt",
   "plan.math.battery_now.sub": "{stored} von {capacity} kWh",
@@ -774,6 +825,9 @@ export const de = {
   "tip.chart_plan_energy.title": "Was sehe ich hier?",
   "tip.chart_plan_energy.text":
     "Was ich pro Stunde erwarte: **Sonne** laut Prognose, deinen **Verbrauch** aus ähnlichen Tagen und wann ich **aus dem Netz lade**. Hinterlegt ist die günstige Zeit.",
+  "tip.chart_plan_prices.title": "Was sehe ich hier?",
+  "tip.chart_plan_prices.text":
+    "Die Preise deines Tarifs für jede Stunde. Grau hinterlegt ist das Zeitfenster, in dem ich die Speicher halte; die Marken zeigen, wann ich lade – in den günstigsten Viertelstunden.",
   "tip.chart_plan_soc.title": "Was sehe ich hier?",
   "tip.chart_plan_soc.text":
     "Wie voll die Speicher **mit Plan** wären und wie voll **ohne Plan**. Der Unterschied ist das, was ich dir spare.",
@@ -1324,6 +1378,8 @@ export const de = {
   "log.action_done": "{battery}: Ziel erreicht",
   "log.call": "{battery}: {entity}",
   "log.tonight": "„Heute Nacht“ umgeschaltet",
+  "log.grid_guard": "Hauptsicherung: {power} kW aus dem Netz – Laden kurz pausiert",
+  "log.no_progress": "{battery} lädt nicht (bei {soc} %)",
   "tip.a_name.title": "Wie heißt die Aktion?",
   "tip.a_name.text": "So steht sie auf der Seite Geräte, im Plan und als Schalter in Home Assistant.",
   "tip.a_kind.title": "Welche Art?",

@@ -513,6 +513,15 @@ def generic_household(
         }
         for h in range(24)
     ]
+    # Tomorrow: cheapest in the early morning, as with most exchange prices.
+    raw_tomorrow = [
+        {
+            "start": f"2026-10-04T{h:02d}:00:00+02:00",
+            "end": f"2026-10-04T{h:02d}:59:59+02:00",
+            "value": 0.18 + (0.15 if 7 <= h <= 20 else 0) + abs(h - 3) / 500,
+        }
+        for h in range(24)
+    ]
     entities = [
         entity(
             "sensor.acme_pv_power",
@@ -597,7 +606,7 @@ def generic_household(
             unit="EUR/kWh",
             device_class="monetary",
             platform="nordpool",
-            attributes={"raw_today": raw_today},
+            attributes={"raw_today": raw_today, "raw_tomorrow": raw_tomorrow},
         ),
         entity(
             "sensor.solcast_today",

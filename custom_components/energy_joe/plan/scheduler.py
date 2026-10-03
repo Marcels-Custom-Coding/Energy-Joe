@@ -15,7 +15,7 @@ from homeassistant.helpers.event import (
 from homeassistant.util import dt as dt_util
 
 from ..observe.store import HistoryStore
-from .inputs import async_build_input, next_window
+from .inputs import DEFAULT_SEARCH, async_build_input, next_window
 from .planner import make_plan
 
 _LOGGER = logging.getLogger(__name__)
@@ -40,6 +40,8 @@ class JoePlanner:
         self._unsubs: list[CALLBACK_TYPE] = []
         self._commit: CALLBACK_TYPE | None = None
         self._fixed: dict[str, Any] | None = None
+        # The start of the window (or search span) the last fixed plan was for.
+        self._fixed_span: str | None = None
         self.plan: dict[str, Any] | None = None
 
     @property
@@ -106,22 +108,27 @@ class JoePlanner:
                 "reasons": notes,
                 "created": now.isoformat(timespec="seconds"),
             }
-        return make_plan(inp)
+        # Trying many windows takes a moment: not in the event loop.
+        return await self._hass.async_add_executor_job(make_plan, inp)
 
     async def _async_restore(self) -> None:
         """After a restart during the night, the fixed plan is still the plan."""
-        tariff = self._config["tariff"]
-        if tariff["kind"] != "fixed_window" or not tariff["window"]:
+        if _span(self._config) is None:
             return
-        start, end = next_window(dt_util.now(), tariff["window"])
-        day = await self._history.async_day(start.date().isoformat())
-        plan = (day or {}).get("plan")
-        if (
-            plan
-            and plan.get("fixed")
-            and datetime.fromisoformat(plan["window"]["end"]) > dt_util.now()
-        ):
-            self._fixed = plan
+        now = dt_util.now()
+        today = now.date()
+        # A dynamic window may start on the evening's day or the morning's.
+        for offset in (0, -1, 1):
+            name = (today + timedelta(days=offset)).isoformat()
+            plan = ((await self._history.async_day(name)) or {}).get("plan")
+            if (
+                plan
+                and plan.get("fixed")
+                and datetime.fromisoformat(plan["window"]["end"]) > now
+            ):
+                self._fixed = plan
+                self._fixed_span = (plan.get("search") or plan["window"])["start"]
+                return
 
     @callback
     def _on_tick(self, now: datetime) -> None:
@@ -132,15 +139,22 @@ class JoePlanner:
         if self._commit:
             self._commit()
             self._commit = None
-        tariff = self._config["tariff"]
-        if tariff["kind"] != "fixed_window" or not tariff["window"]:
+        span = _span(self._config)
+        if span is None:
             return
         offset = timedelta(minutes=self._config["rules"]["plan_offset_min"])
         now = dt_util.now()
-        start, _ = next_window(now, tariff["window"])
+        # Fixed tariffs: before the cheap window; dynamic ones: before the search span.
+        start, end = next_window(now, span)
         moment = start - offset
+        # A dynamic window lies somewhere in the span: until its end there is time.
+        latest = end if self._config["tariff"]["kind"] == "dynamic" else start
         if moment <= now:
-            if now < start and self._fixed is None:
+            if (
+                now < latest
+                and self._fixed is None
+                and self._fixed_span != start.isoformat()
+            ):
                 # Started just before the window: fix tonight's plan right away.
                 moment = now + timedelta(seconds=1)
             else:
@@ -160,7 +174,18 @@ class JoePlanner:
         if plan and plan.get("kind") != "unavailable":
             plan["fixed"] = True
             self._fixed = plan
+            self._fixed_span = (plan.get("search") or plan["window"])["start"]
             night = datetime.fromisoformat(plan["window"]["start"]).date().isoformat()
             await self._history.async_update_day(night, plan=plan)
             self._changed()
         self._schedule_commit()
+
+
+def _span(config: dict[str, Any]) -> dict[str, str] | None:
+    """The cheap window of a fixed tariff, or the search span of a dynamic one."""
+    tariff = config["tariff"]
+    if tariff["kind"] == "fixed_window":
+        return tariff["window"]
+    if tariff["kind"] == "dynamic":
+        return tariff["window"] or DEFAULT_SEARCH
+    return None

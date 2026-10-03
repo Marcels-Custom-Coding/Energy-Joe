@@ -19,7 +19,8 @@ from ..observe.readings import energy_kwh, number, sum_kwh
 from ..observe.records import hour_starts, local_hour
 from ..observe.store import HistoryStore
 from .actions import plan_actions, reserved_kw
-from .planner import Battery, Hour, PlanInput, Prices
+from .planner import Battery, Hour, PlanInput, Prices, best_window
+from .prices import async_price_slots, quarters
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,6 +40,12 @@ MIN_R2 = 0.4
 SCALE_LIMITS = (0.5, 2.0)
 # A learned battery size counts if it fits the nominal one this well.
 CAPACITY_LIMITS = (0.5, 1.15)
+# Dynamic tariffs: where Joe looks for the cheapest window unless the user
+# set a span, and how long running night actions need at least (hours).
+DEFAULT_SEARCH = {"start": "20:00", "end": "07:00"}
+ACTION_HOURS = 3
+# A battery counts as full from this level (for the maintenance charge).
+FULL = 99.0
 
 
 def next_window(now: datetime, window: dict[str, str]) -> tuple[datetime, datetime]:
@@ -237,8 +244,9 @@ async def async_build_input(
 ) -> tuple[PlanInput | None, list[str]]:
     """Gather everything for tonight's plan; None with reasons if there is nothing to plan."""
     tariff = config["tariff"]
-    if tariff["kind"] != "fixed_window" or not tariff["window"]:
-        return None, ["dynamic" if tariff["kind"] == "dynamic" else "no_window"]
+    dynamic = tariff["kind"] == "dynamic"
+    if not dynamic and (tariff["kind"] != "fixed_window" or not tariff["window"]):
+        return None, ["no_window"]
 
     notes: list[str] = []
     batteries = []
@@ -280,7 +288,10 @@ async def async_build_input(
     if not batteries:
         return None, [*notes, "no_battery"]
 
-    window_start, window_end = next_window(now, tariff["window"])
+    # A fixed tariff's cheap window, or the span a dynamic one is searched in.
+    window_start, window_end = next_window(
+        now, tariff["window"] or (DEFAULT_SEARCH if dynamic else {})
+    )
     starts = hour_starts(local_hour(now), window_start + timedelta(days=1))
     today = dt_util.as_local(now).date()
     profiles, consumption = await async_consumption(history, today)
@@ -310,6 +321,18 @@ async def async_build_input(
         sun_meta["totals"].get(tomorrow.isoformat()),
     )
 
+    hourly: dict[datetime, tuple[float | None, ...]] = {}
+    if dynamic:
+        slots, _ = await async_price_slots(
+            hass, tariff, today, dt_util.as_local(starts[-1]).date()
+        )
+        if not slots:
+            return None, [*notes, "no_prices"]
+        for start in starts:
+            hourly[start] = tuple(quarters(slots, start, start + timedelta(hours=1)))
+        if any(all(q is None for q in found) for found in hourly.values()):
+            notes.append("prices_partly")
+
     hours = []
     for start in starts:
         fraction = 1.0
@@ -320,6 +343,7 @@ async def async_build_input(
         local = dt_util.as_local(start)
         is_tomorrow = local.date() == tomorrow
         sun = outlook["solar_factor"] if is_tomorrow else None
+        known = [q for q in hourly.get(start, ()) if q is not None]
         hours.append(
             Hour(
                 start=start,
@@ -329,10 +353,17 @@ async def async_build_input(
                 home=profiles[workdays[local.date()]][local.hour]
                 * (outlook["scale"] if is_tomorrow else 1.0)
                 * fraction,
-                window=window_start <= start < window_end,
+                # A dynamic tariff's window is chosen below.
+                window=not dynamic and window_start <= start < window_end,
                 fraction=fraction,
+                price=sum(known) / len(known) if known else None,
+                quarters=hourly.get(start, ()),
             )
         )
+
+    rules = config["rules"]
+    prices = _prices(tariff, hours if dynamic else [])
+    search = (window_start, window_end) if dynamic else None
 
     # Night actions: tomorrow's sun decides, running ones take grid power and
     # move their consumer's daytime energy into the night.
@@ -344,12 +375,57 @@ async def async_build_input(
         ),
         2,
     )
+    sun_tomorrow = tomorrow_kwh if "no_forecast" not in notes else None
+    if dynamic:
+        # The cheapest window first; running actions need it long enough.
+        preview = plan_actions(
+            config["actions"],
+            hass.states.get,
+            window_start,
+            window_end,
+            sun_tomorrow,
+            manual or {},
+            learned.get("action_models") or {},
+        )
+        needed = max(
+            [
+                math.ceil(
+                    (
+                        datetime.fromisoformat(a["end"])
+                        - datetime.fromisoformat(a["start"])
+                    ).total_seconds()
+                    / 3600
+                )
+                if a["kind"] == "target"
+                else ACTION_HOURS
+                for a in preview
+                if a["run"]
+            ],
+            default=1,
+        )
+        chosen = best_window(
+            _input(
+                now,
+                window_start,
+                window_end,
+                hours,
+                batteries,
+                prices,
+                rules,
+                search=search,
+            ),
+            needed,
+        )
+        if chosen is None:
+            return None, [*notes, "prices_pending"]
+        hours, prices = chosen.hours, chosen.prices
+        window_start, window_end = chosen.window_start, chosen.window_end
     actions = plan_actions(
         config["actions"],
         hass.states.get,
         window_start,
         window_end,
-        tomorrow_kwh if "no_forecast" not in notes else None,
+        sun_tomorrow,
         manual or {},
         learned.get("action_models") or {},
     )
@@ -382,39 +458,24 @@ async def async_build_input(
                     )
         notes.append("shifted")
 
-    night, day, feed_in = (
-        tariff["night_price"],
-        tariff["day_price"],
-        tariff["feed_in_price"],
-    )
-    prices = Prices(
-        night=night if night is not None else ASSUMED.night,
-        day=day if day is not None else ASSUMED.day,
-        feed_in=feed_in if feed_in is not None else ASSUMED.feed_in,
-        assumed=None in (night, day, feed_in),
-    )
-    rules = config["rules"]
+    balance = await async_balance_due(history, config, today)
+    if balance:
+        notes.append("balance_due")
     return (
-        PlanInput(
-            now=now,
-            window_start=window_start,
-            window_end=window_end,
-            hours=hours,
-            batteries=batteries,
-            prices=prices,
-            reserve=rules["reserve_soc"],
-            max_target=rules["max_target_soc"],
-            evening_min=rules["evening_min_soc"],
-            grid_limit_kw=rules["grid_limit_w"] / 1000
-            if rules["grid_limit_w"]
-            else None,
-            max_night_kwh=rules["max_night_kwh"],
-            discharge_mode=rules["discharge_in_window"],
-            buffer=rules["buffer_factor"],
+        _input(
+            now,
+            window_start,
+            window_end,
+            hours,
+            batteries,
+            prices,
+            rules,
+            search=search,
             efficiency=_efficiency(efficiencies),
             notes=notes,
             actions=actions,
             reserved=reserved,
+            force_target=100.0 if balance else None,
             meta={
                 "consumption": consumption,
                 "solar": sun_meta,
@@ -425,10 +486,92 @@ async def async_build_input(
                 "tomorrow_kwh": tomorrow_kwh,
                 "tomorrow": outlook["meta"],
                 "efficiency": _efficiency(efficiencies),
+                "balance": balance,
             },
         ),
         notes,
     )
+
+
+def _input(
+    now: datetime,
+    window_start: datetime,
+    window_end: datetime,
+    hours: list[Hour],
+    batteries: list[Battery],
+    prices: Prices,
+    rules: dict[str, Any],
+    **extra: Any,
+) -> PlanInput:
+    """The plan input with the user's rules."""
+    force = extra.pop("force_target", None)
+    return PlanInput(
+        now=now,
+        window_start=window_start,
+        window_end=window_end,
+        hours=hours,
+        batteries=batteries,
+        prices=prices,
+        reserve=rules["reserve_soc"],
+        # A maintenance night may go above the usual highest level.
+        max_target=max(rules["max_target_soc"], force or 0.0),
+        evening_min=rules["evening_min_soc"],
+        grid_limit_kw=rules["grid_limit_w"] / 1000 if rules["grid_limit_w"] else None,
+        max_night_kwh=rules["max_night_kwh"],
+        discharge_mode=rules["discharge_in_window"],
+        buffer=rules["buffer_factor"],
+        max_price=rules["max_price"],
+        min_saving=rules["min_saving"],
+        force_target=force,
+        **extra,
+    )
+
+
+def _prices(tariff: dict[str, Any], hours: list[Hour]) -> Prices:
+    """Night, day and feed-in price: from the tariff, or a dynamic tariff's hours."""
+    feed_in = tariff["feed_in_price"]
+    if hours:
+        known = [h.price for h in hours if h.price is not None]
+        average = sum(known) / len(known) if known else ASSUMED.day
+        return Prices(
+            night=min(known, default=ASSUMED.night),
+            day=average,
+            feed_in=feed_in if feed_in is not None else ASSUMED.feed_in,
+            assumed=feed_in is None,
+        )
+    night, day = tariff["night_price"], tariff["day_price"]
+    return Prices(
+        night=night if night is not None else ASSUMED.night,
+        day=day if day is not None else ASSUMED.day,
+        feed_in=feed_in if feed_in is not None else ASSUMED.feed_in,
+        assumed=None in (night, day, feed_in),
+    )
+
+
+async def async_balance_due(
+    history: HistoryStore, config: dict[str, Any], today: date
+) -> bool:
+    """Whether a battery has not been full for longer than the maintenance rule allows.
+
+    Only once Joe has seen that many days, so a fresh setup does not start with it.
+    """
+    every = config["rules"]["balance_days"]
+    if not every or not config["batteries"]:
+        return False
+    first = today - timedelta(days=every)
+    known = history.overview()["first_day"]
+    if known is None or known > first.isoformat():
+        return False
+    days = await history.async_days(first.isoformat(), today.isoformat())
+    for battery in config["batteries"]:
+        full = any(
+            ((hour.get("bat") or {}).get(battery["id"]) or {}).get("soc", 0.0) >= FULL
+            for data in days.values()
+            for hour in data.get("hours") or []
+        )
+        if not full:
+            return True
+    return False
 
 
 async def async_tomorrow(

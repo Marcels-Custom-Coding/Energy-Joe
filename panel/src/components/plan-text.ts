@@ -26,6 +26,11 @@ export function planPose(plan: Plan | null | undefined): string {
   }
 }
 
+/** "03:00–04:00, 04:15–04:45" */
+export function slotsText(plan: Plan): string {
+  return (plan.charge_slots ?? []).map((slot) => `${timeOf(slot.start)}–${timeOf(slot.end)}`).join(", ");
+}
+
 /** "00:00–05:00 · 18,6 ct/kWh" */
 export function windowText(t: Translate, plan: Plan): string {
   if (!plan.window) {
@@ -47,15 +52,25 @@ export function planSentence(t: Translate, plan: Plan): string {
   const parts: string[] = [];
   const target = formatNumber(t.lang, plan.target ?? 0, 0);
   const sun = plan.sun_takes_over;
-  if (plan.kind === "charge") {
+  if (plan.reasons.includes("balance")) {
+    parts.push(t("plan.say.balance"));
+  }
+  if (plan.kind === "charge" && plan.tariff === "dynamic" && plan.charge_slots?.length) {
+    parts.push(t("plan.say.charge_slots", { slots: slotsText(plan), target }));
+  } else if (plan.kind === "charge") {
     parts.push(t("plan.say.charge", { from: timeOf(plan.charge_from), target }));
   } else if (plan.kind === "hold") {
     parts.push(t("plan.say.hold", { target }));
     if (plan.empty_without) {
       parts.push(t("plan.say.empty", { time: timeOf(plan.empty_without) }));
     }
+  } else if (plan.reasons.includes("small_saving")) {
+    parts.push(t("plan.say.small_saving"));
   } else {
     parts.push(sun ? t("plan.say.none", { time: timeOf(sun) }) : t("plan.say.none_nosun"));
+  }
+  if (plan.reasons.includes("max_price") && plan.kind !== "charge") {
+    parts.push(t("plan.say.max_price"));
   }
   if (plan.kind !== "none") {
     if (sun && plan.full_at && dayOf(plan.full_at) === dayOf(sun)) {

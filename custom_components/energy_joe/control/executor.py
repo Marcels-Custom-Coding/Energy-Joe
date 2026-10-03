@@ -56,6 +56,11 @@ TEST_CHARGE = 25
 TEST_RELEASE = 8
 # A test is valid this long, as long as the way of steering stays the same.
 TEST_VALID = timedelta(days=180)
+# Safety: charging pauses this long when the house draws more than the grid
+# limit, and a battery that has not gained a percent in this time is reported.
+GRID_PAUSE = timedelta(minutes=5)
+GRID_MARGIN = 1.02
+NO_PROGRESS = timedelta(minutes=30)
 
 DEFAULT_DATA: dict[str, Any] = {
     "saved": {},
@@ -78,9 +83,32 @@ DEFAULT_DATA: dict[str, Any] = {
     "tests": {},
     "log": [],
     "failures": 0,
+    # Charging paused for the grid limit until then (ISO time).
+    "paused": None,
+    # Per charging battery: since when and from which level it should rise.
+    "progress": {},
 }
 
 type Changed = Callable[[], None]
+
+
+def _charging_time(plan: dict[str, Any], now: datetime) -> bool:
+    """Whether the plan charges now: in one of its quarter-hour slots, or after
+    the last one until the target is reached (older plans: from charge_from on)."""
+    if plan.get("kind") != "charge":
+        return False
+    slots = plan.get("charge_slots")
+    if slots:
+        if any(
+            datetime.fromisoformat(slot["start"])
+            <= now
+            < datetime.fromisoformat(slot["end"])
+            for slot in slots
+        ):
+            return True
+        return now >= datetime.fromisoformat(slots[-1]["end"])
+    charge_from = plan.get("charge_from")
+    return charge_from is not None and now >= datetime.fromisoformat(charge_from)
 
 
 class JoeExecutor:
@@ -244,6 +272,8 @@ class JoeExecutor:
             for battery, _, _ in items
         }
         desired = self._desired(plan, items, socs, now)
+        desired = self._guard_grid(config, desired, socs, now)
+        await self._async_watch_progress(items, desired, socs, now)
         batteries: dict[str, Any] = {}
         for battery, planned, adapter in items:
             soc = socs[battery["id"]]
@@ -435,12 +465,7 @@ class JoeExecutor:
             if window
             else None
         )
-        charge_from = plan.get("charge_from")
-        charging_time = (
-            plan.get("kind") == "charge"
-            and charge_from is not None
-            and now >= datetime.fromisoformat(charge_from)
-        )
+        charging_time = _charging_time(plan, now)
         floors: dict[str, int] = self.data["floors"]
         reached: list[str] = self.data["reached"]
         result: dict[str, Desired] = {}
@@ -457,6 +482,8 @@ class JoeExecutor:
             if charging_time and key not in reached and adapter.can_charge:
                 power = (planned.get("power_kw") or 0) * 1000 or None
                 result[key] = Desired(charge_to=target, power_w=power, span_s=span)
+                # Between charging slots Joe holds what the battery has by then.
+                floors.pop(key, None)
                 continue
             if key in reached:
                 floors[key] = target
@@ -759,6 +786,78 @@ class JoeExecutor:
 
     # --- nights ------------------------------------------------------------------
 
+    def _guard_grid(
+        self,
+        config: dict[str, Any],
+        desired: dict[str, Desired],
+        socs: dict[str, float | None],
+        now: datetime,
+    ) -> dict[str, Desired]:
+        """Protect the main fuse: while the house draws more than the grid limit,
+        the batteries hold instead of charging, for a few minutes at a time."""
+        rules = config["rules"]
+        charging = [k for k, d in desired.items() if d.charge_to is not None]
+        if not rules["guard_grid"] or not rules["grid_limit_w"] or not charging:
+            return desired
+        grid = measurement_kw(
+            self._hass.states.get, config["measurements"]["grid_power"]
+        )
+        paused = self.data["paused"]
+        if grid is not None and grid * 1000 > rules["grid_limit_w"] * GRID_MARGIN:
+            if not paused or datetime.fromisoformat(paused) <= now:
+                self._log("grid_guard", power=round(grid, 2))
+            self.data["paused"] = (now + GRID_PAUSE).isoformat()
+        elif paused and datetime.fromisoformat(paused) <= now:
+            self.data["paused"] = None
+        if not self.data["paused"]:
+            return desired
+        result = dict(desired)
+        for key in charging:
+            soc = socs.get(key)
+            result[key] = Desired(
+                floor=max(0, math.floor(soc)) if soc is not None else None,
+                span_s=desired[key].span_s,
+            )
+        return result
+
+    async def _async_watch_progress(
+        self,
+        items: list[tuple[dict[str, Any], dict[str, Any], Adapter | None]],
+        desired: dict[str, Desired],
+        socs: dict[str, float | None],
+        now: datetime,
+    ) -> None:
+        """A battery that should charge but does not rise gets reported, once a night."""
+        progress: dict[str, Any] = self.data["progress"]
+        names = {battery["id"]: battery["name"] for battery, _, _ in items}
+        for key in list(progress):
+            want = desired.get(key)
+            if want is None or want.charge_to is None:
+                progress.pop(key)
+        for key, want in desired.items():
+            soc = socs.get(key)
+            if want.charge_to is None or soc is None or soc >= want.charge_to - 1:
+                continue
+            mark = progress.get(key)
+            if mark is None or soc >= mark["soc"] + 1:
+                if mark and mark.get("told") and self.notifier:
+                    # It charges again: the hint can go.
+                    await self.notifier.async_clear("no_progress")
+                progress[key] = {"since": now.isoformat(), "soc": soc, "told": False}
+                continue
+            if (
+                mark.get("told")
+                or now - datetime.fromisoformat(mark["since"]) < NO_PROGRESS
+            ):
+                continue
+            mark["told"] = True
+            self._log("no_progress", battery=key, soc=round(soc, 1))
+            self._fire("no_progress", battery=key)
+            if self.notifier:
+                await self.notifier.async_problem(
+                    "no_progress", battery=names.get(key, key)
+                )
+
     def _start_night(self, night: str) -> None:
         self.data.update(
             night=night,
@@ -768,6 +867,8 @@ class JoeExecutor:
             first={},
             steered=False,
             done=[],
+            paused=None,
+            progress={},
         )
         self._log("start", night=night)
         if self.notifier:

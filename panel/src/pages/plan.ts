@@ -3,7 +3,7 @@ import { property, state } from "lit/decorators.js";
 import { displayTitle, swoosh } from "../components/bits";
 import "../components/chart";
 import type { ChartBand, ChartMarker, ChartSeries } from "../components/chart";
-import { planCostLine, planLines, planPose, planSentence, timeOf, windowText } from "../components/plan-text";
+import { planCostLine, planLines, planPose, planSentence, slotsText, timeOf, windowText } from "../components/plan-text";
 import "../components/pose";
 import { tip } from "../components/tip";
 import { define } from "../define";
@@ -101,6 +101,11 @@ export class JoePlanPage extends LitElement {
         gap: 8px;
         font-weight: 700;
         margin-bottom: 6px;
+      }
+      .slots {
+        margin: 8px 0 0;
+        font-size: 13.5px;
+        color: var(--joe-ink-2);
       }
       .legend {
         display: flex;
@@ -223,7 +228,7 @@ export class JoePlanPage extends LitElement {
         ${cost ? html`<p class="cost">${cost}</p>` : nothing}
       </section>
       ${this.renderSteer(t, plan)} ${this.renderActions(t, plan)} ${this.renderEnergy(t, plan, plan.hours)}
-      ${this.renderSoc(t, plan, plan.hours)}
+      ${this.renderPrices(t, plan, plan.hours)} ${this.renderSoc(t, plan, plan.hours)}
       ${this.renderMath(t, plan)}
     </div>`;
   }
@@ -398,6 +403,43 @@ export class JoePlanPage extends LitElement {
       <div class="legend">
         ${series.map((s) => html`<span><i style="background:${s.color}"></i>${s.label}</span>`)}
       </div>
+    </div>`;
+  }
+
+  /** A dynamic tariff's prices per hour, with the window and when Joe charges. */
+  private renderPrices(t: Translate, plan: Plan, hours: PlanHour[]): TemplateResult | typeof nothing {
+    if (!hours.some((h) => h.price != null)) {
+      return nothing;
+    }
+    const frame = this.frame(t, plan, hours);
+    const series: ChartSeries[] = [
+      {
+        label: t("plan.chart.price"),
+        kind: "bar",
+        values: hours.map((h) => (h.price != null ? Math.round(h.price * 1000) / 10 : null)),
+        color: "var(--joe-c-ist)",
+        digits: 1,
+      },
+    ];
+    const markers: ChartMarker[] = (plan.charge_slots ?? []).flatMap((slot) => {
+      const at = frame.at(slot.start);
+      return at == null ? [] : [{ at, label: t("plan.chart.charge_at", { time: timeOf(slot.start) }), short: timeOf(slot.start) }];
+    });
+    return html`<div class="chart-card" data-tipped>
+      <div class="chart-head">${t("plan.chart.prices")} ${tip(t, "chart_plan_prices")}</div>
+      <joe-chart
+        .labels=${frame.labels}
+        .ticks=${frame.ticks}
+        .series=${series}
+        .bands=${frame.bands}
+        .markers=${markers}
+        unit="ct"
+        lang=${t.lang}
+        label=${t("plan.chart.prices")}
+      ></joe-chart>
+      ${plan.charge_slots?.length
+        ? html`<p class="slots">${t("plan.slots", { slots: slotsText(plan) })}</p>`
+        : nothing}
     </div>`;
   }
 

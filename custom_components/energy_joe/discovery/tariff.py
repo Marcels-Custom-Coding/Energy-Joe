@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
+from ..plan.prices import parse_list
 from .snapshot import EntityInfo
 
 # Attribute names holding lists of time-stamped prices (Nord Pool, EPEX Spot, …).
@@ -20,8 +21,6 @@ PRICE_LIST_ATTRIBUTES = (
     "rates",
     "unit_rate_forecast",
 )
-_START_KEYS = ("start", "start_time", "starts_at", "from", "valid_from")
-_PRICE_KEYS = ("value", "price", "total", "price_per_kwh", "value_inc_vat", "rate")
 
 
 @dataclass(slots=True)
@@ -35,6 +34,10 @@ class TariffInsight:
     reasons: list[dict[str, Any]] = field(default_factory=list)
 
 
+# Integrations that hand out their prices through an action (see plan/prices.py).
+ACTION_PROVIDERS = ("tibber", "nordpool", "energyzero", "easyenergy")
+
+
 def analyze_price_entity(entity: EntityInfo) -> TariffInsight:
     """Read tariff structure and prices from a price entity's attributes."""
     attrs = entity.attributes
@@ -45,6 +48,12 @@ def analyze_price_entity(entity: EntityInfo) -> TariffInsight:
             insight.reasons.append({"code": "price_list", "attribute": name})
             return insight
     price = _to_eur(entity.number, entity.unit)
+    if entity.platform in ACTION_PROVIDERS:
+        return TariffInsight(
+            kind="dynamic",
+            day_price=price,
+            reasons=[{"code": "dynamic_provider", "integration": entity.platform}],
+        )
     return TariffInsight(
         kind="unknown", day_price=price, reasons=[{"code": "price_only"}]
     )
@@ -82,22 +91,10 @@ def _from_timeslots(timeslots: Any) -> TariffInsight | None:
 
 def _from_price_list(value: Any, unit: str | None) -> TariffInsight | None:
     """Dynamic tariffs that publish a list of prices for coming hours."""
-    if not isinstance(value, list) or len(value) < 12:
+    slots = parse_list(value, unit)
+    if len(slots) < 12:
         return None
-    prices: list[float] = []
-    for item in value:
-        if not isinstance(item, dict):
-            continue
-        if not any(key in item for key in _START_KEYS):
-            continue
-        price = next(
-            (_number(item.get(key)) for key in _PRICE_KEYS if key in item), None
-        )
-        if price is not None:
-            prices.append(price)
-    if len(prices) < 12:
-        return None
-    eur = [_to_eur(p, unit) or p for p in prices]
+    eur = [slot.price for slot in slots]
     if max(eur) - min(eur) < 0.005:
         return TariffInsight(kind="flat", day_price=round(eur[0], 6))
     return TariffInsight(

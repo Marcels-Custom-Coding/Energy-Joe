@@ -155,6 +155,9 @@ TARIFF = vol.Schema(
         vol.Optional("day_price", default=None): _PRICE,
         vol.Optional("feed_in_price", default=None): _PRICE,
         vol.Optional("feed_in_entity", default=None): _ENTITY,
+        # Added to every dynamic price (grid fees, taxes) when the sensor only
+        # has the market price (per kWh).
+        vol.Optional("surcharge", default=None): _PRICE,
     }
 )
 
@@ -275,6 +278,18 @@ RULES = vol.Schema(
         ),
         # When Joe asks in the "suggest" mode whether he may steer tonight.
         vol.Optional("ask_time", default="21:00"): _time,
+        # Safety limits: never charge from the grid above this price, leave
+        # a night alone that saves less than this, protect the main fuse live.
+        vol.Optional("max_price", default=None): _PRICE,
+        vol.Optional("min_saving", default=0.05): vol.All(
+            vol.Coerce(float), vol.Range(min=0, max=5)
+        ),
+        vol.Optional("guard_grid", default=True): bool,
+        # Maintenance: once every so many days the batteries charge full so
+        # they can balance their cells (None: off).
+        vol.Optional("balance_days", default=None): vol.Any(
+            None, vol.All(int, vol.Range(min=3, max=90))
+        ),
     }
 )
 

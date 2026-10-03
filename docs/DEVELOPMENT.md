@@ -25,11 +25,18 @@ cd panel && npm install
 - Speicher: Größe und Wirkungsgrad aus `entladen = η · geladen − Größe · √η · ΔSoC`; die Planung nimmt die gemessene Größe, außer sie ist selbst eingetragen oder passt nicht zum Gerätewert (50–115 %).
 - Zurücksetzen je Bereich (`forecast`, `consumption`, `battery`, `hot_water`) merkt sich den Zeitpunkt in `learned.reset`; ältere Tage zählen für diesen Bereich nicht mehr.
 
+## Dynamische Tarife
+
+- Preise liest `custom_components/energy_joe/plan/prices.py`: zuerst Preislisten in den Attributen des Preis-Sensors (Start, optional Ende, Preis; Einheiten €/kWh, ct/kWh, €/MWh), sonst die Aktionen von Tibber (`tibber.get_prices`), Nord Pool aus Home Assistant (`nordpool.get_prices_for_date`), EnergyZero und easyEnergy. Ein neues Format ist meist nur ein weiterer Schlüssel in `START_KEYS`, `END_KEYS` oder `PRICE_KEYS`.
+- Der Planer (`plan/planner.py`) bekommt Preise je Stunde (`Hour.price`) und je Viertelstunde (`Hour.quarters`). Mit `PlanInput.search` probiert `best_window` jedes Fenster aus ganzen Stunden im Suchzeitraum (bei laufenden Nacht-Aktionen mindestens so lang, wie sie brauchen) und nimmt das mit den geringsten Kosten. Geladen wird in den günstigsten Stunden des Fensters; `charge_slots` legt in jeder Ladestunde die günstigsten Viertelstunden fest, die der Ausführer abarbeitet (nach dem letzten Block lädt er weiter, bis das Ziel erreicht ist).
+- Den dynamischen Plan legt Joe vor Beginn des Suchzeitraums fest (`plan_offset_min`), nach einem Neustart im Suchzeitraum sofort.
+
 ## Speicher steuern
 
 - Grundgriffe (Rollen) und das Wissen über Integrationen stehen in `custom_components/energy_joe/control/profiles.py`: je Integration die Schlüssel der Entitäten (Ende der unique_id oder translation_key), die Bedeutung der Optionen einer Betriebsart, Vorher-Schalter (`prepare`), umgekehrte Werte (`inverted`) und – für Integrationen, die über Dienste gesteuert werden – Schritte. Eine neue Integration ist ein neuer Eintrag dort plus ein Test in `tests/test_profiles.py`.
 - Nur Fronius und Marstek (OmniBattery) sind an echter Hardware geprüft (`proven`); alle anderen Profile stammen aus dem Quellcode der Integrationen. Deshalb steuert Joe einen Speicher erst nach einem bestandenen Testlauf.
 - Was Joe verändert hat, merkt er sich in `.storage/energy_joe.control` und stellt es zurück, bis alles wieder stimmt.
+- Sicherheit im Ausführer: Zieht das Haus mehr als das Netzlimit (`rules.guard_grid`), hält er statt zu laden, jeweils fünf Minuten; steigt ein ladender Speicher eine halbe Stunde lang nicht, meldet er das einmal pro Nacht (Reparaturhinweis `no_progress`).
 
 ## Tooltips
 

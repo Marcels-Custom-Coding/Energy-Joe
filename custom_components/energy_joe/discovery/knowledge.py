@@ -76,6 +76,7 @@ TARIFF_NAMES: dict[str, str] = {
     "awattar": "aWATTar",
     "entsoe": "ENTSO-E",
     "energyzero": "EnergyZero",
+    "easyenergy": "easyEnergy",
 }
 
 # Wallbox integrations: keys of the entities Joe uses per charge point.

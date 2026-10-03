@@ -137,6 +137,10 @@
     "control_failed": {
       "title": "Steering failed",
       "description": "Something went wrong steering {battery} ({code}). Joe leaves this battery alone tonight."
+    },
+    "no_progress": {
+      "title": "Battery does not charge",
+      "description": "{battery} should charge, but its level has not risen for half an hour. Check whether the battery allows charging from the grid; a test run in the Energy Joe panel under Devices helps."
     }
   },
   "exceptions": {

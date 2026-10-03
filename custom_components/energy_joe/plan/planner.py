@@ -12,7 +12,7 @@ All energies are kWh, powers kW, charge levels percent, prices per kWh.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, time, timedelta
 import math
 from typing import Any
@@ -33,6 +33,10 @@ class Hour:
     home: float
     window: bool
     fraction: float = 1.0
+    # A dynamic tariff's price for this hour (None: the night or day price).
+    price: float | None = None
+    # The price of each of its quarter hours, if the tariff has them.
+    quarters: tuple[float | None, ...] = ()
 
 
 @dataclass(slots=True)
@@ -81,6 +85,13 @@ class PlanInput:
     # Night actions (see actions.py) and the power they take per hour (kW).
     actions: list[dict[str, Any]] = field(default_factory=list)
     reserved: list[float] = field(default_factory=list)
+    # Dynamic tariff: the span in which Joe looks for the best window.
+    search: tuple[datetime, datetime] | None = None
+    # Safety limits: no grid charging above this price, no action for less.
+    max_price: float | None = None
+    min_saving: float = 0.0
+    # Maintenance night: charge to at least this level (percent).
+    force_target: float | None = None
 
     @property
     def capacity(self) -> float:
@@ -102,6 +113,13 @@ class Run:
     bought_night: float = 0.0
     sold: float = 0.0
     end_stored: float = 0.0
+
+
+def _price(inp: PlanInput, hour: Hour) -> float:
+    """What a kWh from the grid costs in this hour."""
+    if hour.price is not None:
+        return hour.price
+    return inp.prices.night if hour.window else inp.prices.day
 
 
 def simulate(inp: PlanInput, target: float | None) -> Run:
@@ -128,8 +146,19 @@ def simulate(inp: PlanInput, target: float | None) -> Run:
                     inp.grid_limit_kw - hour.home / max(hour.fraction, 0.01) - taken,
                 ),
             )
-        limits.append(power * hour.fraction if hour.window else 0.0)
-    later = [sum(limits[i + 1 :]) for i in range(len(limits))]
+        price = _price(inp, hour)
+        allowed = inp.max_price is None or price <= inp.max_price + 1e-9
+        limits.append(power * hour.fraction if hour.window and allowed else 0.0)
+    # Charge in the cheapest window hours (equal prices: as late as possible):
+    # an hour only takes what cheaper hours still ahead cannot.
+    cheaper = [
+        sum(
+            limits[k]
+            for k in range(i + 1, len(limits))
+            if _price(inp, inp.hours[k]) <= _price(inp, inp.hours[i]) + 1e-9
+        )
+        for i in range(len(limits))
+    ]
     budget = inp.max_night_kwh if inp.max_night_kwh is not None else math.inf
 
     soc, charges, imports, exports = [], [], [], []
@@ -142,7 +171,7 @@ def simulate(inp: PlanInput, target: float | None) -> Run:
             at_window = stored
         surplus = hour.solar - hour.home
         charged = bought = sold = 0.0
-        price = inp.prices.night if hour.window else inp.prices.day
+        price = _price(inp, hour)
         if surplus >= 0:
             # Sun first: into the batteries, the rest to the grid.
             take = min(
@@ -167,9 +196,8 @@ def simulate(inp: PlanInput, target: float | None) -> Run:
             stored -= give / eta
             bought = need - give
         if hour.window and target is not None and stored < target:
-            # Charge as late as possible: only what the later hours cannot.
             missing = (target - stored) / eta
-            amount = min(limits[index], max(0.0, missing - later[index]), budget)
+            amount = min(limits[index], max(0.0, missing - cheaper[index]), budget)
             if amount > 0:
                 stored += amount * eta
                 charged = amount
@@ -240,7 +268,89 @@ def _when_level(
 
 
 def make_plan(inp: PlanInput) -> dict[str, Any]:
-    """The cheapest target with buffer, and everything Joe says about it."""
+    """The cheapest target with buffer, and everything Joe says about it.
+
+    With a dynamic tariff Joe first tries every window of whole hours in the
+    search span and keeps the one with which the next day costs least.
+    """
+    if inp.search is None or any(h.window for h in inp.hours):
+        plan = _plan(inp)
+        if inp.search is not None:
+            plan["search"] = {
+                "start": dt_util.as_local(inp.search[0]).isoformat(),
+                "end": dt_util.as_local(inp.search[1]).isoformat(),
+            }
+        return plan
+    found = best_window(inp)
+    if found is None:
+        return {
+            "kind": "unavailable",
+            "reasons": ["prices_pending"],
+            "created": dt_util.as_local(inp.now).isoformat(timespec="seconds"),
+        }
+    plan = _plan(found)
+    plan["search"] = {
+        "start": dt_util.as_local(inp.search[0]).isoformat(),
+        "end": dt_util.as_local(inp.search[1]).isoformat(),
+    }
+    return plan
+
+
+def best_window(inp: PlanInput, min_hours: int = 1) -> PlanInput | None:
+    """The window of whole hours in the search span with the cheapest outcome."""
+    start, end = inp.search or (inp.window_start, inp.window_end)
+    inside = [
+        i
+        for i, hour in enumerate(inp.hours)
+        if hour.price is not None
+        and hour.start + timedelta(hours=1) > start
+        and hour.start < end
+        and hour.start + timedelta(hours=1) > inp.now
+    ]
+    if not inside:
+        return None
+    capacity = inp.capacity
+    low = math.ceil(inp.reserve)
+    high = max(low, math.floor(min(inp.max_target, 100)))
+    steps = sorted({*range(low, high + 1, 5), high})
+    best: tuple[tuple[float, int, int], PlanInput] | None = None
+    min_hours = max(1, min(min_hours, len(inside)))
+    for a, first in enumerate(inside):
+        for last in inside[a:]:
+            if last - first != inside.index(last) - a:
+                break
+            if last - first + 1 < min_hours:
+                continue
+            candidate = with_window(inp, first, last + 1)
+            cost = min(
+                simulate(candidate, capacity * percent / 100).cost for percent in steps
+            )
+            key = (round(cost, 3), last - first, -first)
+            if best is None or key < best[0]:
+                best = (key, candidate)
+    return best[1] if best else None
+
+
+def with_window(inp: PlanInput, first: int, last: int) -> PlanInput:
+    """The plan input with the window over hours first … last - 1."""
+    hours = [
+        replace(hour, window=first <= index < last)
+        for index, hour in enumerate(inp.hours)
+    ]
+    inside = [h.price for h in hours[first:last] if h.price is not None]
+    after = [h.price for h in hours[last:] if h.price is not None and h.solar < h.home]
+    night = sum(inside) / len(inside) if inside else inp.prices.night
+    day = sum(after) / len(after) if after else inp.prices.day
+    return replace(
+        inp,
+        hours=hours,
+        window_start=hours[first].start,
+        window_end=hours[last - 1].start + timedelta(hours=1),
+        prices=replace(inp.prices, night=round(night, 5), day=round(day, 5)),
+    )
+
+
+def _plan(inp: PlanInput) -> dict[str, Any]:
     capacity = inp.capacity
     base = simulate(inp, None)
     lowest = math.ceil(inp.reserve)
@@ -269,6 +379,14 @@ def make_plan(inp: PlanInput) -> dict[str, Any]:
     target = optimum
     if optimum > inp.reserve:
         target = min(highest, round(optimum + inp.buffer * (optimum - inp.reserve)))
+    if (
+        inp.force_target is not None
+        and target < inp.force_target
+        and max(base.soc, default=0.0) < inp.force_target - 0.5
+    ):
+        # Maintenance night: once full, so the batteries can balance their cells.
+        target = max(target, min(100, math.ceil(inp.force_target)))
+        reasons.append("balance")
     run = simulate(inp, capacity * target / 100)
 
     if inp.evening_min is not None:
@@ -297,6 +415,14 @@ def make_plan(inp: PlanInput) -> dict[str, Any]:
         and inp.discharge_mode != "free"
     )
     kind = "charge" if charging else "hold" if held and target > inp.reserve else "none"
+    # Not worth the effort: below the saving the user wants, Joe leaves it be.
+    if (
+        kind != "none"
+        and "balance" not in reasons
+        and base.cost - run.cost < inp.min_saving
+    ):
+        kind = "none"
+        reasons.append("small_saving")
 
     sun = _crossing(inp)
     empty = _when_level(
@@ -308,8 +434,12 @@ def make_plan(inp: PlanInput) -> dict[str, Any]:
         reasons.append("bridge" if sun is not None else "no_sun")
     elif kind == "hold":
         reasons.append("hold")
-    else:
+    elif "small_saving" not in reasons:
         reasons.append("enough")
+    if inp.max_price is not None and any(
+        h.window and _price(inp, h) > inp.max_price + 1e-9 for h in inp.hours
+    ):
+        reasons.append("max_price")
     if inp.prices.night / inp.efficiency >= inp.prices.day:
         reasons.append("not_worth")
     if charging and target >= highest and highest < 100:
@@ -317,14 +447,9 @@ def make_plan(inp: PlanInput) -> dict[str, Any]:
     if inp.max_night_kwh is not None and run.grid_charge >= inp.max_night_kwh - EPSILON:
         reasons.append("limit_energy")
 
-    first_charge = next((i for i, c in enumerate(run.charge) if c > EPSILON), None)
-    charge_from = None
     charge_kw = sum(b.charge_kw for b in inp.batteries if b.grid)
-    if first_charge is not None:
-        # Charging ends with the hour, so it starts as long before as it takes.
-        hour = inp.hours[first_charge]
-        busy = min(hour.fraction, run.charge[first_charge] / max(charge_kw, 0.01))
-        charge_from = max(hour.start + timedelta(hours=1 - busy), inp.now)
+    slots = charge_slots(inp, run.charge, charge_kw) if kind == "charge" else []
+    charge_from = datetime.fromisoformat(slots[0]["start"]) if slots else None
 
     drop = max(0.0, _soc_now(inp) - at_start)
     batteries = []
@@ -351,7 +476,9 @@ def make_plan(inp: PlanInput) -> dict[str, Any]:
             }
         )
 
-    plan_cost = sum(c * inp.prices.night for c in run.charge)
+    plan_cost = sum(
+        c * _price(inp, h) for c, h in zip(run.charge, inp.hours, strict=True)
+    )
     return {
         "created": dt_util.as_local(inp.now).isoformat(timespec="seconds"),
         "window": {
@@ -369,6 +496,8 @@ def make_plan(inp: PlanInput) -> dict[str, Any]:
         "charge_from": dt_util.as_local(charge_from).isoformat(timespec="minutes")
         if charge_from
         else None,
+        "charge_slots": slots,
+        "tariff": "dynamic" if inp.search is not None else "fixed",
         "charge_kw": round(charge_kw, 2),
         "discharge_kw": round(sum(b.discharge_kw for b in inp.batteries), 2),
         "batteries": batteries,
@@ -404,12 +533,15 @@ def make_plan(inp: PlanInput) -> dict[str, Any]:
             "grid_limit_kw": inp.grid_limit_kw,
             "max_night_kwh": inp.max_night_kwh,
             "efficiency": inp.efficiency,
+            "max_price": inp.max_price,
+            "min_saving": inp.min_saving,
+            "force_target": inp.force_target,
         },
         "reasons": reasons,
         "notes": list(inp.notes),
         "meta": inp.meta,
         "actions": [
-            {**action, "cost": round(action["energy_kwh"] * inp.prices.night, 2)}
+            {**action, "cost": round(_action_cost(inp, action), 2)}
             for action in inp.actions
         ],
         "hours": [
@@ -418,6 +550,7 @@ def make_plan(inp: PlanInput) -> dict[str, Any]:
                 "solar": round(hour.solar, 3),
                 "home": round(hour.home, 3),
                 "window": hour.window,
+                **({"price": round(hour.price, 4)} if hour.price is not None else {}),
                 "soc": round(run.soc[i], 1),
                 "soc_without": round(base.soc[i], 1),
                 "charge": round(run.charge[i], 3),
@@ -427,6 +560,58 @@ def make_plan(inp: PlanInput) -> dict[str, Any]:
             for i, hour in enumerate(inp.hours)
         ],
     }
+
+
+def charge_slots(
+    inp: PlanInput, charges: list[float], charge_kw: float
+) -> list[dict[str, str]]:
+    """When to charge, in quarter hours: in each charging hour the cheapest ones.
+
+    Without quarter prices the last quarters of the hour (as late as possible).
+    """
+    picked: list[datetime] = []
+    for hour, amount in zip(inp.hours, charges, strict=True):
+        if amount <= EPSILON:
+            continue
+        # The hour's real charging power (the grid limit may take some of it).
+        power = max(charge_kw, 0.01)
+        if inp.grid_limit_kw is not None:
+            power = min(power, max(0.01, inp.grid_limit_kw - hour.home))
+        needed = min(4, max(1, math.ceil(4 * amount / power - 1e-6)))
+        starts = [hour.start + timedelta(minutes=15 * q) for q in range(4)]
+        open_ = [q for q in range(4) if starts[q] + timedelta(minutes=15) > inp.now]
+        prices = list(hour.quarters) + [None] * (4 - len(hour.quarters))
+        open_.sort(key=lambda q: (prices[q] if prices[q] is not None else 0.0, -q))
+        picked += [starts[q] for q in open_[:needed]]
+    picked.sort()
+    slots: list[dict[str, str]] = []
+    for start in picked:
+        end = start + timedelta(minutes=15)
+        if slots and slots[-1]["end"] == _iso(start):
+            slots[-1]["end"] = _iso(end) or ""
+        else:
+            slots.append(
+                {"start": _iso(max(start, inp.now)) or "", "end": _iso(end) or ""}
+            )
+    return slots
+
+
+def _action_cost(inp: PlanInput, action: dict[str, Any]) -> float:
+    """What a night action's energy costs at the prices of the hours it runs."""
+    if not action.get("run") or not action.get("energy_kwh"):
+        return 0.0
+    start = datetime.fromisoformat(action["start"])
+    end = datetime.fromisoformat(action["end"])
+    total = 0.0
+    for hour in inp.hours:
+        overlap = (
+            min(end, hour.start + timedelta(hours=1)) - max(start, hour.start)
+        ).total_seconds()
+        if overlap > 0:
+            total += (
+                (action.get("power_kw") or 0.0) * overlap / 3600 * _price(inp, hour)
+            )
+    return total if total else action["energy_kwh"] * inp.prices.night
 
 
 def _soc_now(inp: PlanInput) -> float:

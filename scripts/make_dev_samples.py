@@ -58,7 +58,11 @@ from custom_components.energy_joe.observe.records import (
     summarize,
 )
 from custom_components.energy_joe.plan.actions import plan_actions
-from custom_components.energy_joe.plan.inputs import consumption_profiles, next_window
+from custom_components.energy_joe.plan.inputs import (
+    DEFAULT_SEARCH,
+    consumption_profiles,
+    next_window,
+)
 from custom_components.energy_joe.plan.planner import (
     Battery,
     Hour,
@@ -66,6 +70,7 @@ from custom_components.energy_joe.plan.planner import (
     Prices,
     make_plan,
 )
+from custom_components.energy_joe.plan.prices import from_attributes, quarters
 from homeassistant.util import dt as dt_util
 from tests.snapshots import fronius_household, generic_household
 
@@ -252,11 +257,17 @@ def made_up_plan(
     now: datetime,
     socs: dict[str, float],
     sun_kwh: dict[date, float],
+    price_attributes: dict | None = None,
 ) -> dict:
-    """A plan from the real planner with made-up inputs (sun as a bell 7–19 h)."""
+    """A plan from the real planner with made-up inputs (sun as a bell 7–19 h).
+
+    With a dynamic tariff the prices come from the price sensor's attributes.
+    """
     tariff = config["tariff"]
     rules = config["rules"]
-    start, end = next_window(now, tariff["window"])
+    dynamic = tariff["kind"] == "dynamic"
+    start, end = next_window(now, tariff["window"] or DEFAULT_SEARCH)
+    slots = from_attributes(price_attributes or {}, "EUR/kWh") if dynamic else []
     profile = [0.0] * 24
     counts = [0] * 24
     for data in days.values():
@@ -273,13 +284,17 @@ def made_up_plan(
         if hour < now:
             fraction = (hour + timedelta(hours=1) - now).total_seconds() / 3600
         day_sun = sun_kwh.get(hour.date(), 0.0)
+        quarter = tuple(quarters(slots, hour, hour + timedelta(hours=1)))
+        known = [q for q in quarter if q is not None]
         hours.append(
             Hour(
                 start=hour,
                 solar=day_sun * weights[hour.hour] / total * fraction,
                 home=profile[hour.hour] * fraction,
-                window=start <= hour < end,
+                window=not dynamic and start <= hour < end,
                 fraction=fraction,
+                price=sum(known) / len(known) if known else None,
+                quarters=quarter if dynamic else (),
             )
         )
     batteries = [
@@ -302,10 +317,12 @@ def made_up_plan(
             hours=hours,
             batteries=batteries,
             prices=Prices(
-                tariff["night_price"],
-                tariff["day_price"],
+                tariff["night_price"] or 0.2,
+                tariff["day_price"] or 0.3,
                 tariff["feed_in_price"] or 0.062,
             ),
+            search=(start, end) if dynamic else None,
+            min_saving=rules["min_saving"],
             reserve=rules["reserve_soc"],
             max_target=rules["max_target_soc"],
             buffer=rules["buffer_factor"],
@@ -517,6 +534,12 @@ def history_sample(config: dict, snap_hass: dict | None = None) -> dict:
     last_day = days[max(days)]
     socs = {k: v["soc"] for k, v in last_day["hours"][-1]["bat"].items()}
     now = dt_util.start_of_local_day(LAST_DAY) + timedelta(hours=14, minutes=5)
+    price_entity = tariff.get("price_entity")
+    attributes = (
+        ((snap_hass or {}).get("states", {}).get(price_entity) or {}).get("attributes")
+        if price_entity
+        else None
+    )
     tonight = (
         made_up_plan(
             config,
@@ -524,16 +547,17 @@ def history_sample(config: dict, snap_hass: dict | None = None) -> dict:
             now,
             socs,
             {LAST_DAY: 4.6, LAST_DAY + timedelta(days=1): 5.5},
+            attributes,
         )
-        if window
+        if window or tariff["kind"] == "dynamic"
         else {
             "kind": "unavailable",
-            "reasons": ["dynamic" if tariff["kind"] == "dynamic" else "no_window"],
+            "reasons": ["no_window"],
             "created": now.isoformat(timespec="seconds"),
         }
     )
     if window and config["actions"] and snap_hass:
-        start, end = next_window(now, tariff["window"])
+        start, end = next_window(now, window)
         actions = plan_actions(
             config["actions"], _state_getter(snap_hass), start, end, 5.5, {}
         )
@@ -542,7 +566,7 @@ def history_sample(config: dict, snap_hass: dict | None = None) -> dict:
             for a in actions
         ]
         tonight["meta"]["tomorrow_kwh"] = 5.5
-    if window:
+    if tonight.get("meta") is not None:
         tonight["meta"]["tomorrow"] = tomorrow_outlook(
             config, learned, learning["days"], LAST_DAY + timedelta(days=1), 5.5
         )
