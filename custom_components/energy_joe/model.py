@@ -175,6 +175,25 @@ ANSWERS = vol.Schema(
     extra=vol.ALLOW_EXTRA,
 )
 
+# What Joe learned from his own observations (see learn/learning.py).
+LEARNED = vol.Schema(
+    {
+        vol.Optional("solar_factor", default=None): vol.Any(
+            None, vol.All(vol.Coerce(float), vol.Range(min=0.2, max=3))
+        ),
+        vol.Optional("solar_days", default=0): vol.All(int, vol.Range(min=0)),
+        vol.Optional("solar_shift", default=None): vol.Any(None, vol.In((-1, 0, 1))),
+        vol.Optional("shift_days", default=0): vol.All(int, vol.Range(min=0)),
+        vol.Optional("buffer", default=None): vol.Any(
+            None, vol.All(vol.Coerce(float), vol.Range(min=0, max=3))
+        ),
+        vol.Optional("buffer_days", default=0): vol.All(int, vol.Range(min=0)),
+        vol.Optional("since", default=None): vol.Any(None, str),
+        vol.Optional("updated", default=None): vol.Any(None, str),
+    },
+    extra=vol.ALLOW_EXTRA,
+)
+
 PROVENANCE = vol.Schema(
     {
         vol.Required("source"): vol.In(SOURCES),
@@ -207,6 +226,7 @@ CONFIG = vol.Schema(
         vol.Optional("actions", default=list): [dict],
         vol.Optional("rules", default=dict): RULES,
         vol.Optional("answers", default=dict): ANSWERS,
+        vol.Optional("learned", default=dict): LEARNED,
         vol.Optional("provenance", default=dict): {str: PROVENANCE},
     }
 )
@@ -356,6 +376,27 @@ def adopt_proposal(
             patch[key] = items
 
     return apply_update(config, patch, "read", now=now) if patch else config
+
+
+def source_of(config: dict[str, Any], path: str) -> str:
+    """Where a value came from: its own entry or the nearest parent's ("default" if none)."""
+    provenance = config.get("provenance") or {}
+    for candidate in reversed(_ancestors(path)):
+        if entry := provenance.get(candidate):
+            return entry.get("source", "default")
+    return "default"
+
+
+def prefer_learned(config: dict[str, Any]) -> dict[str, Any]:
+    """A starting value gives way to what Joe learned (so far only the buffer)."""
+    learned = config["learned"].get("buffer")
+    if (
+        learned is None
+        or source_of(config, "rules.buffer_factor") != "default"
+        or config["rules"]["buffer_factor"] == learned
+    ):
+        return config
+    return apply_update(config, {"rules": {"buffer_factor": learned}}, "learned")
 
 
 def is_protected(config: dict[str, Any], path: str) -> bool:

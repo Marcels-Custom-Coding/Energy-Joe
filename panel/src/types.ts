@@ -51,7 +51,7 @@ export interface HomeAssistant {
   entities?: Record<string, HassEntityEntry>;
   devices?: Record<string, HassDevice>;
   areas?: Record<string, HassArea>;
-  config?: { currency?: string };
+  config?: { currency?: string; time_zone?: string };
   formatEntityState?: (stateObj: HassEntity, state?: string) => string;
 }
 
@@ -180,6 +180,21 @@ export interface Answers {
   [key: string]: unknown;
 }
 
+/** What Joe learned (see custom_components/energy_joe/learn). */
+export interface Learned {
+  solar_factor: number | null;
+  solar_days: number;
+  /** +1: the forecast's hours belong one hour later. */
+  solar_shift: -1 | 0 | 1 | null;
+  shift_days: number;
+  /** The buffer Joe learned, also when the user set their own. */
+  buffer: number | null;
+  buffer_days: number;
+  /** When learning (re)started; null: from the first day Joe knows. */
+  since: string | null;
+  updated: string | null;
+}
+
 export interface JoeConfig {
   version: number;
   measurements: {
@@ -196,6 +211,7 @@ export interface JoeConfig {
   actions: unknown[];
   rules: Rules;
   answers: Answers;
+  learned: Learned;
   provenance: Record<string, Provenance>;
 }
 
@@ -273,6 +289,80 @@ export interface JoeState {
   config: JoeConfig;
   observe?: ObserveStatus;
   plan?: Plan | null;
+  results?: Results | null;
+}
+
+// --- Looking back (see custom_components/energy_joe/learn) ---
+
+export interface Purchases {
+  day_kwh: number;
+  night_kwh: number;
+  sold_kwh: number;
+}
+
+/** A fixed plan replayed with the real day. */
+export interface Evaluation {
+  created: string;
+  target: number | null;
+  window?: { start: string; end: string };
+  complete: boolean;
+  /** False until the plan's day is over: the rest is played as Joe expected it. */
+  final: boolean;
+  /** End of the last real hour in a provisional result. */
+  until: string | null;
+  missing: number;
+  start_soc?: number;
+  /** What steering would have saved (negative: cost more). */
+  saving?: number;
+  with_plan?: Purchases;
+  without?: Purchases;
+  actual?: Purchases & { cost: number };
+  solar?: { actual: number; forecast: number | null };
+  home?: { actual: number; forecast: number | null };
+  /** Energy the batteries had to give until the sun took over, as planned and as it came. */
+  bridge?: { planned: number; actual: number };
+  takeover?: { planned: string | null; actual: string | null };
+}
+
+export interface Results {
+  since: string | null;
+  /** The first night counted. */
+  first: string | null;
+  days: number;
+  saving: number;
+  better: number;
+  worse: number;
+  last: {
+    date: string;
+    window?: { start: string; end: string } | null;
+    final: boolean;
+    until: string | null;
+    saving: number;
+    day_kwh: number;
+    day_kwh_without: number;
+    night_kwh: number;
+    night_kwh_without: number;
+  } | null;
+  daily: { date: string; saving: number }[];
+}
+
+export interface Learning {
+  learned: Learned;
+  buffer: { value: number; source: Source; default: number };
+  solar: { date: string; forecast: number; actual: number; ratio: number | null }[];
+  /** Average sun per hour of the day, as it came and as forecast (kWh). */
+  solar_profile: { actual: number[]; forecast: number[]; days: number } | null;
+  consumption: { workday: number[]; day_off: number[]; source: "history" | "default"; days: number };
+  accuracy: {
+    date: string;
+    saving: number;
+    solar: { actual: number; forecast: number | null };
+    home: { actual: number; forecast: number | null };
+    bridge: { planned: number; actual: number };
+  }[];
+  results: Results | null;
+  /** How many days each value needs before Joe uses it. */
+  needs: { solar: number; shift: number; buffer: number };
 }
 
 // --- History (see custom_components/energy_joe/observe) ---
@@ -326,6 +416,9 @@ export interface DayDetail {
   /** The plan Joe fixed for the night that starts on this day. */
   plan: Omit<Plan, "hours" | "meta"> | null;
   plan_soc_slots: (number | null)[];
+  /** That plan replayed with the real day, once the day is over. */
+  evaluation: Evaluation | null;
+  evaluation_slots: { with: (number | null)[]; without: (number | null)[] };
   /** Local start time of every hour of the day ("02:00" twice when the clocks go back). */
   slots: string[];
   hours: (HourRecord & { slot: number })[];

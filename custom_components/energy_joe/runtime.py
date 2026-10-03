@@ -16,6 +16,7 @@ from homeassistant.util.hass_dict import HassKey
 
 from . import model
 from .const import DOMAIN
+from .learn.learner import JoeLearner
 from .observe.observer import BACKFILL_DAYS, JoeObserver
 from .observe.store import HistoryStore
 from .plan.scheduler import JoePlanner
@@ -68,6 +69,13 @@ class JoeRuntime:
         self.history = HistoryStore(hass)
         self.observer = JoeObserver(hass, self.history, self._changed)
         self.planner = JoePlanner(hass, self.history, self._changed)
+        self.learner = JoeLearner(
+            hass,
+            self.history,
+            lambda: self._config,
+            self.async_update_config,
+            self._changed,
+        )
         self._started = False
         self._planned: dict[str, Any] | None = None
         self._observed: dict[str, Any] | None = None
@@ -92,6 +100,7 @@ class JoeRuntime:
         """Stop watching and write pending changes immediately."""
         self._started = False
         async with self._observe_lock:
+            await self.learner.async_stop()
             await self.planner.async_stop()
             await self.observer.async_stop()
         await self.history.async_unload()
@@ -117,6 +126,13 @@ class JoeRuntime:
             return None
         return await self.planner.async_refresh()
 
+    async def async_reset_learning(self) -> bool:
+        """Forget what Joe learned (the panel's reset button)."""
+        if not self.learner.active:
+            return False
+        await self.learner.async_reset()
+        return True
+
     @callback
     def async_rebuild_history(self) -> bool:
         """Read the history again (after other sensors were chosen)."""
@@ -134,6 +150,7 @@ class JoeRuntime:
                 "config": self._config,
                 "observe": self.observer.status,
                 "plan": self.planner.plan,
+                "results": self.learner.results,
             }
         )
 
@@ -172,7 +189,8 @@ class JoeRuntime:
         self, patch: dict[str, Any], source: str, detail: str | None = None
     ) -> None:
         """Merge a partial configuration update (raises vol.Invalid)."""
-        self._config = model.apply_update(self._config, patch, source, detail)
+        config = model.apply_update(self._config, patch, source, detail)
+        self._config = model.prefer_learned(config)
         self._changed(config=True)
         self._update_observer()
 
@@ -216,14 +234,16 @@ class JoeRuntime:
             if not self._started:
                 return
             if self._observed is None:
+                await self.learner.async_stop()
                 await self.planner.async_stop()
                 await self.observer.async_stop()
                 return
             if restart or not self.observer.active:
                 await self.observer.async_start(self.config)
                 await self.planner.async_start(self.config)
+                await self.learner.async_start()
             else:
-                # Only rules or the tariff changed: plan again.
+                # Only rules, the tariff or learned values changed: plan again.
                 await self.planner.async_update(self.config)
 
     @callback
@@ -266,6 +286,11 @@ def _planned_parts(config: dict[str, Any]) -> dict[str, Any]:
     return {
         "tariff": config["tariff"],
         "rules": config["rules"],
+        "learned": {
+            k: v
+            for k, v in config["learned"].items()
+            if k in ("solar_factor", "solar_shift")
+        },
         "batteries": [
             (
                 b["capacity_kwh"],

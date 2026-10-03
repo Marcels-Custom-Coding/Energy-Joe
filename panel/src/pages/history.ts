@@ -6,6 +6,7 @@ import type { ChartBand, ChartMarker, ChartSeries } from "../components/chart";
 import "../components/pose";
 import { tip } from "../components/tip";
 import { define } from "../define";
+import { fixed, money } from "../components/look-back";
 import { formatNumber } from "../entities";
 import type { Translate } from "../i18n";
 import { shared } from "../styles/shared";
@@ -201,6 +202,51 @@ export class JoeHistory extends LitElement {
       .note {
         margin-top: 12px;
       }
+      .eval-top {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 8px 24px;
+        align-items: start;
+        margin-top: 4px;
+      }
+      .eval-big {
+        font-family: var(--joe-display);
+        font-style: italic;
+        font-weight: 800;
+        font-size: 40px;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+      }
+      .eval-big small {
+        display: block;
+        margin-top: 4px;
+        font-family: inherit;
+        font-style: normal;
+        font-weight: 600;
+        font-size: 13px;
+        color: var(--joe-ink-2);
+      }
+      .eval-big.good {
+        color: var(--joe-good);
+      }
+      .eval-big.bad {
+        color: var(--joe-crit);
+      }
+      .eval-top dl {
+        display: grid;
+        grid-template-columns: minmax(130px, auto) 1fr;
+        gap: 4px 14px;
+        margin: 0;
+        font-size: 14px;
+        font-variant-numeric: tabular-nums;
+      }
+      .eval-top dt {
+        color: var(--joe-ink-2);
+      }
+      .eval-top dd {
+        margin: 0;
+        font-weight: 600;
+      }
       .empty {
         display: grid;
         grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
@@ -226,6 +272,13 @@ export class JoeHistory extends LitElement {
         }
         .empty joe-pose {
           max-width: 260px;
+        }
+        .eval-top,
+        .eval-top dl {
+          grid-template-columns: 1fr;
+        }
+        .eval-top dd {
+          margin-bottom: 6px;
         }
       }
     `,
@@ -396,6 +449,7 @@ export class JoeHistory extends LitElement {
         ${read ? html`<span class="chip read"><ha-icon icon="mdi:database-outline"></ha-icon>${t("history.read")}</span>` : nothing}
       </div>
       ${this.renderTiles(t, s)} ${this.renderEnergyChart(t, day)} ${this.renderSocChart(t, day)}
+      ${this.renderEvaluation(t, day)}
       ${missing && s.date !== this.days?.days[0]?.date
         ? html`<div class="note warn">
             <ha-icon icon="mdi:alert-outline"></ha-icon><span>${t("history.missing", { hours: missing })}</span>
@@ -588,6 +642,109 @@ export class JoeHistory extends LitElement {
           (s) => html`<span><i class=${s.dashed ? "dash" : ""} style="background:${s.color};color:${s.color}"></i>${s.label}</span>`,
         )}
       </div>
+    </div>`;
+  }
+
+  /** The night's fixed plan replayed with the real day. */
+  private renderEvaluation(t: Translate, day: DayDetail): TemplateResult | typeof nothing {
+    const evaluation = day.evaluation;
+    if (!day.plan?.fixed) {
+      return nothing;
+    }
+    if (!evaluation) {
+      return html`<div class="note"><ha-icon icon="mdi:timer-sand"></ha-icon><span>${t("history.eval.pending")}</span></div>`;
+    }
+    if (!evaluation.complete) {
+      return html`<div class="note warn">
+        <ha-icon icon="mdi:alert-outline"></ha-icon><span>${t("history.eval.incomplete")}</span>
+      </div>`;
+    }
+    const currency = this.hass?.config?.currency;
+    const saving = evaluation.saving ?? 0;
+    const tone = saving > 0.005 ? "good" : saving < -0.005 ? "bad" : "";
+    const kwh = (value: number | null | undefined) => fixed(t.lang, value ?? 0, 1);
+    const clock = (iso: string | null | undefined) =>
+      iso ? t("history.eval.clock", { time: this.time(iso) }) : t("history.eval.never");
+    const provisional = !evaluation.final;
+    const rows: [string, string][] = [
+      [
+        t("history.eval.day"),
+        t("history.eval.instead", { with: kwh(evaluation.with_plan?.day_kwh), without: kwh(evaluation.without?.day_kwh) }),
+      ],
+      [
+        t("history.eval.night"),
+        t("history.eval.instead", { with: kwh(evaluation.with_plan?.night_kwh), without: kwh(evaluation.without?.night_kwh) }),
+      ],
+    ];
+    // Sun, morning and takeover are only known once the day is over.
+    if (!provisional && evaluation.solar?.forecast != null) {
+      rows.push([
+        t("history.eval.solar"),
+        t("history.eval.solar.value", { actual: kwh(evaluation.solar.actual), expected: kwh(evaluation.solar.forecast) }),
+      ]);
+    }
+    if (!provisional && evaluation.bridge) {
+      rows.push([
+        t("history.eval.morning"),
+        t("history.eval.morning.value", { actual: kwh(evaluation.bridge.actual), expected: kwh(evaluation.bridge.planned) }),
+      ]);
+    }
+    if (!provisional && evaluation.takeover) {
+      rows.push([
+        t("history.eval.takeover"),
+        t("history.eval.takeover.value", { actual: clock(evaluation.takeover.actual), expected: clock(evaluation.takeover.planned) }),
+      ]);
+    }
+    const series: ChartSeries[] = [
+      { label: t("history.eval.chart.with"), kind: "line", values: day.evaluation_slots.with, color: "var(--joe-c-soc)", digits: 0 },
+      {
+        label: t("history.eval.chart.without"),
+        kind: "line",
+        values: day.evaluation_slots.without,
+        color: "var(--joe-c-ist)",
+        dashed: true,
+        digits: 0,
+      },
+    ];
+    const frame = this.chartFrame(day);
+    return html`<div class="chart-card" data-tipped>
+      <div class="chart-head">
+        ${t("history.eval")} ${tip(t, "chart_replay")}
+        ${provisional && evaluation.until
+          ? html`<span class="chip warn">${t("history.eval.provisional", { time: this.time(evaluation.until) })}</span>`
+          : nothing}
+      </div>
+      <div class="eval-top">
+        <div class="eval-big ${tone}">
+          ${tone === "bad" ? money(t, -saving, currency) : money(t, saving, currency)}
+          <small>${t(tone === "good" ? "history.eval.saved" : tone === "bad" ? "history.eval.cost" : "history.eval.same")}</small>
+        </div>
+        <dl>${rows.map(([label, value]) => html`<dt>${label}</dt><dd>${value}</dd>`)}</dl>
+      </div>
+      ${provisional && evaluation.until
+        ? html`<div class="note">
+            <ha-icon icon="mdi:timer-sand"></ha-icon
+            ><span>${t("history.eval.provisional.note", { time: this.time(evaluation.until) })}</span>
+          </div>`
+        : nothing}
+      ${series.some((s) => s.values.some((v) => v != null))
+        ? html`<joe-chart
+              .labels=${frame.labels}
+              .ticks=${frame.ticks}
+              .series=${series}
+              .bands=${frame.bands}
+              max="100"
+              height="150"
+              unit="%"
+              lang=${t.lang}
+              label=${t("history.eval")}
+            ></joe-chart>
+            <div class="legend">
+              ${series.map(
+                (s) => html`<span><i class=${s.dashed ? "dash" : ""} style="background:${s.color};color:${s.color}"></i>${s.label}</span>`,
+              )}
+            </div>`
+        : nothing}
     </div>`;
   }
 

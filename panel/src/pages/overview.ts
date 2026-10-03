@@ -7,6 +7,7 @@ import "../components/pose";
 import { tip } from "../components/tip";
 import { define } from "../define";
 import { formatNumber, measurementKw, numberState, sumKw } from "../entities";
+import { dayText, money, nights, today } from "../components/look-back";
 import { planCostLine, planLines, planPose, planSentence, windowText } from "../components/plan-text";
 import type { Translate } from "../i18n";
 import { shared } from "../styles/shared";
@@ -57,11 +58,11 @@ export class JoeOverview extends LitElement {
         width: 170px;
         pointer-events: none;
       }
-      .night .head .eyebrow {
+      .figure-card .head .eyebrow {
         flex: none;
         max-width: calc(100% - 210px);
       }
-      .night .big {
+      .figure-card .big {
         font-family: var(--joe-display);
         font-style: italic;
         font-weight: 800;
@@ -71,25 +72,31 @@ export class JoeOverview extends LitElement {
         max-width: 62%;
         font-variant-numeric: tabular-nums;
       }
-      .night .big small {
+      .figure-card .big.good {
+        color: var(--joe-good);
+      }
+      .figure-card .big.bad {
+        color: var(--joe-crit);
+      }
+      .figure-card .big small {
         font-size: 0.5em;
         margin-left: 2px;
       }
-      .night .say {
+      .figure-card .say {
         margin: 10px 0 0;
         font-size: 15px;
         line-height: 1.5;
         color: var(--joe-ink-2);
         max-width: 60ch;
       }
-      .night .lines {
+      .figure-card .lines {
         display: grid;
         gap: 2px;
         margin-top: 10px;
         font-size: 14px;
         font-variant-numeric: tabular-nums;
       }
-      .night .cost {
+      .figure-card .cost {
         margin: 8px 0 0;
         font-size: 14px;
         font-weight: 600;
@@ -273,6 +280,9 @@ export class JoeOverview extends LitElement {
         .card .display {
           max-width: 64%;
         }
+        .figure-card .head .eyebrow {
+          max-width: calc(100% - 150px);
+        }
         .flow {
           padding: 10px;
           gap: 2px 8px;
@@ -318,15 +328,10 @@ export class JoeOverview extends LitElement {
     }
     const observing = Boolean(this.state?.observe?.active);
     const planning = Boolean(this.state?.plan && this.state.plan.kind !== "unavailable");
+    const evaluated = (this.state?.results?.days ?? 0) > 0;
     return html`<div class="grid">
       ${this.renderNow(t)} ${this.renderWeek(t)}
-      ${this.renderNight(t)}
-      <section class="card">
-        <joe-pose name="plan"></joe-pose>
-        <div class="eyebrow"><ha-icon icon="mdi:calculator-variant-outline"></ha-icon>${t("overview.sim")}</div>
-        ${displayTitle(t("overview.sim.empty.title"))} ${swoosh}
-        <p class="lead">${t("overview.sim.empty.text")}</p>
-      </section>
+      ${this.renderNight(t)} ${this.renderSim(t)}
       <section class="card wide">
         <div class="eyebrow"><ha-icon icon="mdi:map-marker-path"></ha-icon>${t("overview.next")}</div>
         <ol class="next">
@@ -342,9 +347,9 @@ export class JoeOverview extends LitElement {
             <b>${t("overview.next.3.title")}</b><span>${t("overview.next.3.text")}</span>
             ${this.stepChip(t, planning)}
           </li>
-          <li>
+          <li class=${evaluated ? "done" : ""}>
             <b>${t("overview.next.4.title")}</b><span>${t("overview.next.4.text")}</span>
-            <span class="chip soon">${t("soon")}</span>
+            ${this.stepChip(t, evaluated)}
           </li>
         </ol>
       </section>
@@ -373,7 +378,7 @@ export class JoeOverview extends LitElement {
       plan.kind === "charge" || plan.kind === "hold"
         ? html`${formatNumber(t.lang, plan.target ?? 0, 0)}<small>%</small>`
         : html`${t(plan.kind === "none" ? "plan.big.none" : "plan.big.unavailable")}`;
-    return html`<section class="card night" data-tipped>
+    return html`<section class="card figure-card" data-tipped>
       <joe-pose name=${planPose(plan)}></joe-pose>
       <div class="head">
         <div class="eyebrow">
@@ -394,6 +399,71 @@ export class JoeOverview extends LitElement {
         </span>
         <a class="btn btn-secondary" data-notip href=${`${this.prefix}/plan`} @click=${(ev: MouseEvent) => this.open(ev, "plan")}
           >${t("overview.night.more")}</a
+        >
+      </div>
+    </section>`;
+  }
+
+  /** What steering would have saved last night, and in total. */
+  private renderSim(t: Translate): TemplateResult {
+    const results = this.state?.results;
+    const last = results?.last;
+    if (!results || !last) {
+      return html`<section class="card">
+        <joe-pose name="plan"></joe-pose>
+        <div class="eyebrow"><ha-icon icon="mdi:calculator-variant-outline"></ha-icon>${t("overview.sim")}</div>
+        ${displayTitle(t("overview.sim.empty.title"))} ${swoosh}
+        <p class="lead">${t("overview.sim.empty.text")}</p>
+      </section>`;
+    }
+    const currency = this.hass?.config?.currency;
+    // The night is named after the morning it ends on.
+    const end = last.window?.end.slice(0, 10) ?? last.date;
+    const night =
+      end === today(this.hass?.config?.time_zone)
+        ? t("overview.sim.last")
+        : t("overview.sim.night", { day: dayText(t.lang, end, "weekday") });
+    const saving = last.saving;
+    const tone = saving > 0.005 ? "good" : saving < -0.005 ? "bad" : "";
+    const say =
+      tone === "good"
+        ? t("overview.sim.saved", {
+            value: money(t, saving, currency),
+            day: formatNumber(t.lang, Math.max(0, last.day_kwh_without - last.day_kwh), 1),
+            night: formatNumber(t.lang, Math.max(0, last.night_kwh - last.night_kwh_without), 1),
+          })
+        : tone === "bad"
+          ? t("overview.sim.cost", { value: money(t, -saving, currency) })
+          : t("overview.sim.same");
+    const since = results.since ?? results.first;
+    return html`<section class="card figure-card" data-tipped>
+      <joe-pose name=${tone === "good" ? "relax" : "inspect"}></joe-pose>
+      <div class="head">
+        <div class="eyebrow"><ha-icon icon="mdi:calculator-variant-outline"></ha-icon>${t("overview.sim")} · ${night}</div>
+        ${tip(t, "sim_result")}
+      </div>
+      <div class="big ${tone}">${money(t, saving, currency, true)}</div>
+      ${swoosh}
+      <p class="say">${say}</p>
+      <p class="cost">
+        ${t("overview.sim.total", {
+          since: since ? dayText(t.lang, since) : "–",
+          value: money(t, results.saving, currency, true),
+          nights: nights(t, results.days),
+        })}
+      </p>
+      <div class="bottom">
+        ${last.final || !last.until
+          ? html`<span class="chip">
+              ${t("learn.results.split", {
+            better: results.better,
+            worse: results.worse,
+                same: Math.max(0, results.days - results.better - results.worse),
+              })}
+            </span>`
+          : html`<span class="chip warn">${t("overview.sim.provisional", { time: last.until.slice(11, 16) })}</span>`}
+        <a class="btn btn-secondary" data-notip href=${`${this.prefix}/learn`} @click=${(ev: MouseEvent) => this.open(ev, "learn")}
+          >${t("overview.sim.more")}</a
         >
       </div>
     </section>`;
@@ -522,7 +592,7 @@ export class JoeOverview extends LitElement {
     this.open(ev, "history");
   }
 
-  private open(ev: MouseEvent, page: "history" | "plan"): void {
+  private open(ev: MouseEvent, page: "history" | "plan" | "learn"): void {
     if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button !== 0) {
       return;
     }

@@ -93,6 +93,10 @@ class Run:
     cost: float
     energy_at_window_start: float
     grid_charge: float
+    bought_day: float = 0.0
+    bought_night: float = 0.0
+    sold: float = 0.0
+    end_stored: float = 0.0
 
 
 def simulate(inp: PlanInput, target: float | None) -> Run:
@@ -120,6 +124,7 @@ def simulate(inp: PlanInput, target: float | None) -> Run:
     soc, charges, imports, exports = [], [], [], []
     cost = 0.0
     grid_charge = 0.0
+    bought_day = bought_night = sold_total = 0.0
     at_window = None
     for index, hour in enumerate(inp.hours):
         if hour.window and at_window is None:
@@ -161,13 +166,30 @@ def simulate(inp: PlanInput, target: float | None) -> Run:
                 budget -= amount
                 grid_charge += amount
         cost += bought * price - sold * inp.prices.feed_in
+        if hour.window:
+            bought_night += bought
+        else:
+            bought_day += bought
+        sold_total += sold
         soc.append(100 * stored / capacity if capacity else 0.0)
         charges.append(charged)
         imports.append(bought)
         exports.append(sold)
     # Energy left at the end still saves buying at night.
     cost -= stored * eta * inp.prices.night
-    return Run(soc, charges, imports, exports, cost, at_window or stored, grid_charge)
+    return Run(
+        soc,
+        charges,
+        imports,
+        exports,
+        cost,
+        at_window or stored,
+        grid_charge,
+        bought_day,
+        bought_night,
+        sold_total,
+        stored,
+    )
 
 
 def _crossing(inp: PlanInput) -> datetime | None:
@@ -307,6 +329,7 @@ def make_plan(inp: PlanInput) -> dict[str, Any]:
             {
                 "id": battery.id,
                 "name": battery.name,
+                "capacity": round(battery.capacity, 3),
                 "soc": round(battery.soc, 1),
                 "soc_start": round(start_soc, 1),
                 "target": target,
@@ -335,6 +358,7 @@ def make_plan(inp: PlanInput) -> dict[str, Any]:
         if charge_from
         else None,
         "charge_kw": round(charge_kw, 2),
+        "discharge_kw": round(sum(b.discharge_kw for b in inp.batteries), 2),
         "batteries": batteries,
         "sun_takes_over": _iso(sun),
         "full_at": _iso(
@@ -365,6 +389,9 @@ def make_plan(inp: PlanInput) -> dict[str, Any]:
             "buffer": inp.buffer,
             "discharge_mode": inp.discharge_mode,
             "evening_min": inp.evening_min,
+            "grid_limit_kw": inp.grid_limit_kw,
+            "max_night_kwh": inp.max_night_kwh,
+            "efficiency": inp.efficiency,
         },
         "reasons": reasons,
         "notes": list(inp.notes),

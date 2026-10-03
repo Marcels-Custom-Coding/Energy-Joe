@@ -11,6 +11,8 @@ export interface ChartSeries {
   fill?: string;
   dashed?: boolean;
   digits?: number;
+  /** Color of bars below zero (e.g. a night that would have cost more). */
+  negative?: string;
 }
 
 export interface ChartBand {
@@ -198,7 +200,10 @@ export class JoeChart extends LitElement {
     const step = plotW / count;
     const known = this.series.flatMap((s) => s.values.filter((v): v is number => v != null));
     const top = this.max || niceMax(Math.max(0.1, ...known));
-    const y = (value: number) => TOP + plotH - (Math.max(0, Math.min(value, top)) / top) * plotH;
+    // Values below zero get their own part of the axis.
+    const lowest = Math.min(0, ...known);
+    const bottom = lowest < 0 ? -Math.max(niceMax(-lowest), top / 4) : 0;
+    const y = (value: number) => TOP + plotH - ((Math.max(bottom, Math.min(value, top)) - bottom) / (top - bottom)) * plotH;
     const x = (slot: number) => LEFT + slot * step;
     const mid = (slot: number) => LEFT + (slot + 0.5) * step;
     const format = (value: number, digits = 2) =>
@@ -209,7 +214,7 @@ export class JoeChart extends LitElement {
       parts.push(svg`<rect class="band" x=${x(band.from)} y=${TOP} width=${Math.max(0, x(band.to) - x(band.from))} height=${plotH}></rect>
         <text class="note" x=${(x(band.from) + x(band.to)) / 2} y=${TOP + 12} text-anchor="middle">${band.label}</text>`);
     }
-    for (const value of [0, top / 2, top]) {
+    for (const value of bottom < 0 ? [bottom, 0, top] : [0, top / 2, top]) {
       parts.push(svg`<line class="grid" x1=${LEFT} x2=${width - RIGHT} y1=${y(value)} y2=${y(value)}></line>
         <text class="tick" x=${LEFT - 6} y=${y(value) + 4} text-anchor="end">${format(value, 2)}</text>`);
     }
@@ -225,9 +230,11 @@ export class JoeChart extends LitElement {
       if (series.kind === "bar") {
         const offset = step * 0.16 + bars.indexOf(series) * barWidth;
         series.values.forEach((value, slot) => {
-          if (value != null && value > 0) {
-            parts.push(svg`<rect x=${x(slot) + offset} y=${y(value)} width=${Math.max(1, barWidth - 1)}
-              height=${Math.max(0, y(0) - y(value))} rx="2" fill=${series.color}></rect>`);
+          if (value != null && value !== 0) {
+            const from = Math.min(y(value), y(0));
+            parts.push(svg`<rect x=${x(slot) + offset} y=${from} width=${Math.max(1, barWidth - 1)}
+              height=${Math.max(1, Math.abs(y(0) - y(value)))} rx="2"
+              fill=${value < 0 ? (series.negative ?? series.color) : series.color}></rect>`);
           }
         });
         continue;
@@ -286,7 +293,7 @@ export class JoeChart extends LitElement {
         return value == null
           ? nothing
           : html`<div>
-              <i style="background:${series.color}"></i><span>${series.label}</span
+              <i style="background:${value < 0 ? (series.negative ?? series.color) : series.color}"></i><span>${series.label}</span
               ><em>${format(value, series.digits ?? 2)} ${this.unit}</em>
             </div>`;
       })}

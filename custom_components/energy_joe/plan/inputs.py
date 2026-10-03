@@ -75,6 +75,13 @@ async def async_consumption(
         (today - timedelta(days=PROFILE_DAYS)).isoformat(),
         (today - timedelta(days=1)).isoformat(),
     )
+    return consumption_profiles(days)
+
+
+def consumption_profiles(
+    days: dict[str, dict[str, Any]],
+) -> tuple[dict[bool, list[float]], dict[str, Any]]:
+    """Average consumption per hour of the day from stored days (see async_consumption)."""
     rows: dict[bool, list[list[float | None]]] = {True: [], False: []}
     for day, data in days.items():
         hours = [
@@ -133,8 +140,12 @@ async def async_solar(
     history: HistoryStore,
     starts: list[datetime],
     now: datetime,
+    shift: int = 0,
 ) -> tuple[dict[datetime, float], dict[str, Any]]:
-    """Expected solar energy per hour (kWh) and where it comes from."""
+    """Expected solar energy per hour (kWh) and where it comes from.
+
+    A learned shift moves the hourly forecast later (+1) or earlier (-1).
+    """
     get = hass.states.get
     forecast = config["forecast"]
     today = dt_util.as_local(now).date()
@@ -150,9 +161,8 @@ async def async_solar(
         hourly = stored.get("hours") or stored.get("ahead_hours")
         if hourly:
             for start in day_starts:
-                values[start] = (
-                    hourly.get(dt_util.as_local(start).isoformat(), 0.0) / 1000
-                )
+                key = dt_util.as_local(start - timedelta(hours=shift)).isoformat()
+                values[start] = hourly.get(key, 0.0) / 1000
             sources[day.isoformat()] = "hours"
         else:
             if day == today:
@@ -186,7 +196,6 @@ async def async_build_input(
     config: dict[str, Any],
     history: HistoryStore,
     now: datetime,
-    solar_factor: float = 1.0,
 ) -> tuple[PlanInput | None, list[str]]:
     """Gather everything for tonight's plan; None with reasons if there is nothing to plan."""
     tariff = config["tariff"]
@@ -233,7 +242,11 @@ async def async_build_input(
         day: await async_workday(hass, holiday, day)
         for day in {dt_util.as_local(s).date() for s in starts}
     }
-    solar, sun_meta = await async_solar(hass, config, history, starts, now)
+    learned = config["learned"]
+    solar_factor = learned["solar_factor"] or 1.0
+    solar, sun_meta = await async_solar(
+        hass, config, history, starts, now, learned["solar_shift"] or 0
+    )
     if "none" in sun_meta["sources"].values():
         notes.append("no_forecast")
     if consumption["source"] == "default":
@@ -291,6 +304,8 @@ async def async_build_input(
                 "consumption": consumption,
                 "solar": sun_meta,
                 "solar_factor": solar_factor,
+                "solar_days": learned["solar_days"],
+                "solar_shift": learned["solar_shift"] or 0,
                 "workday": workdays.get(dt_util.as_local(window_start).date()),
             },
         ),

@@ -24,7 +24,8 @@
       Parameter: ?dark=1  ?lang=en  ?step=scan  ?done=1  ?page=settings  ?mode=off  ?sample=generic  ?audit=1
       sample-*.json kommen aus scripts/make_dev_samples.py (erfundene Haushalte aus tests/snapshots.py):
       Funde, die Konfiguration nach dem Übernehmen, ihre Prüfungen, Zustände und Register sowie
-      zwei Wochen erfundener Verlauf (Seite Historie, Übersicht).
+      zwei Wochen erfundener Verlauf mit festen Plänen, nachgespielten Nächten und dem, was Joe
+      daraus gelernt hat (Seiten Übersicht, Plan, Historie, Lernen).
       ?done=1 startet mit übernommener Konfiguration.
       ?audit=1 rahmt jedes Bedienelement rot ein, das keinen Tooltip hat; joeAudit() in der
       Konsole listet sie auf. Ein Element gilt als erklärt, wenn es oder ein Vorfahr
@@ -126,6 +127,18 @@
         config: structuredClone(done || ["questions", "done"].includes(step) ? sample.adopted_config : sample.default_config),
       };
       const history = sample.history;
+      // Local time in Berlin (summer time) as Home Assistant would send it.
+      const stamp = () => new Date(Date.now() + 2 * 3600e3).toISOString().slice(0, 19) + "+02:00";
+      const bufferSource = () =>
+        state.config.provenance["rules.buffer_factor"]?.source ?? state.config.provenance.rules?.source ?? "default";
+      // With ?done=1 Joe has been learning for two weeks.
+      if (done && history.learned) {
+        state.config = applyUpdate(state.config, { learned: history.learned }, "learned");
+        if (history.learned.buffer != null) {
+          state.config = applyUpdate(state.config, { rules: { buffer_factor: history.learned.buffer } }, "learned");
+        }
+      }
+      state.results = done ? history.results : null;
       const watching = () => ({
         active: true,
         since: "2026-10-01T09:12:00+02:00",
@@ -145,7 +158,7 @@
         ...sample.hass,
         language: params.get("lang") || "de",
         themes: { darkMode: params.get("dark") === "1" },
-        config: { currency: "EUR" },
+        config: { currency: "EUR", time_zone: "Europe/Berlin" },
         async callWS(msg) {
           switch (msg.type) {
             case "energy_joe/info":
@@ -188,7 +201,7 @@
               );
             case "energy_joe/plan/refresh":
               if (!state.plan) throw { code: "not_planning" };
-              state.plan = { ...history.plan, created: new Date().toISOString().slice(0, 19) + "+02:00" };
+              state.plan = { ...history.plan, created: stamp() };
               push();
               return state.plan;
             case "energy_joe/history/rebuild":
@@ -212,10 +225,47 @@
               return { discovery: sample.discovery, checks: sample.checks };
             case "energy_joe/check":
               return { checks: sample.checks };
-            case "energy_joe/config/update":
+            case "energy_joe/config/update": {
               state.config = applyUpdate(state.config, msg.patch, msg.source || "user");
+              // A starting value gives way to what Joe learned (model.prefer_learned).
+              const learned = state.config.learned?.buffer;
+              if (learned != null && bufferSource() === "default" && state.config.rules.buffer_factor !== learned) {
+                state.config = applyUpdate(state.config, { rules: { buffer_factor: learned } }, "learned");
+              }
               push();
               return null;
+            }
+            case "energy_joe/learning":
+              return {
+                ...history.learning,
+                // After a reset Joe only learns from new days.
+                accuracy: state.config.learned.since ? [] : history.learning.accuracy,
+                solar: state.config.learned.since ? [] : history.learning.solar,
+                solar_profile: state.config.learned.since ? null : history.learning.solar_profile,
+                learned: state.config.learned,
+                buffer: {
+                  value: state.config.rules.buffer_factor,
+                  source: bufferSource(),
+                  default: sample.default_config.rules.buffer_factor,
+                },
+                results: state.results,
+              };
+            case "energy_joe/learning/reset": {
+              if (!state.observe.active) throw { code: "not_learning" };
+              const now = stamp();
+              const fresh = { solar_factor: null, solar_days: 0, solar_shift: null, shift_days: 0, buffer: null, buffer_days: 0 };
+              state.config = applyUpdate(state.config, { learned: { ...fresh, since: now, updated: now } }, "default");
+              if (bufferSource() === "learned") {
+                state.config = applyUpdate(
+                  state.config,
+                  { rules: { buffer_factor: sample.default_config.rules.buffer_factor } },
+                  "default",
+                );
+              }
+              state.results = { since: now, first: null, days: 0, saving: 0, better: 0, worse: 0, last: null, daily: [] };
+              push();
+              return null;
+            }
             case "energy_joe/onboarding":
               if (msg.step) state.onboarding.step = msg.step;
               if ("completed" in msg) state.onboarding.completed = msg.completed;

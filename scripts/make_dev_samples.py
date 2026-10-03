@@ -25,13 +25,25 @@ from custom_components.energy_joe import model
 from custom_components.energy_joe.discovery import discover
 from custom_components.energy_joe.discovery.checks import run_config_checks
 from custom_components.energy_joe.discovery.snapshot import Snapshot
+from custom_components.energy_joe.learn.evaluate import evaluate
+from custom_components.energy_joe.learn.learning import (
+    BUFFER_DAYS,
+    SHIFT_DAYS,
+    SOLAR_DAYS,
+    buffer,
+    results,
+    solar_factor,
+    solar_profile,
+    solar_ratios,
+    solar_shift,
+)
 from custom_components.energy_joe.observe.records import (
     day_view,
     hour_starts,
     local_hour,
     summarize,
 )
-from custom_components.energy_joe.plan.inputs import next_window
+from custom_components.energy_joe.plan.inputs import consumption_profiles, next_window
 from custom_components.energy_joe.plan.planner import (
     Battery,
     Hour,
@@ -166,10 +178,22 @@ def history(config: dict) -> dict[str, dict]:
                 }
             hours.append(record)
         total = sum(r["solar"] for r in hours) if offset else 4.6 * sun * 5.3
+        forecast = round(total * rng.uniform(0.8, 1.3), 1)
+        # The hourly forecast as a bell from 7 to 19 h, in Wh like the real one.
+        weights = [max(0.0, math.sin(math.pi * (h + 0.5 - 7) / 12)) for h in range(24)]
         days[day.isoformat()] = {
             "hours": hours,
             "workday": not weekend,
-            "fc": {"ahead_kwh": round(total * rng.uniform(0.8, 1.3), 1)},
+            "fc": {
+                "ahead_kwh": forecast,
+                "ahead_hours": {
+                    (start + timedelta(hours=h)).isoformat(): round(
+                        forecast * 1000 * weight / sum(weights), 1
+                    )
+                    for h, weight in enumerate(weights)
+                    if weight > 0
+                },
+            },
         }
     return days
 
@@ -247,6 +271,82 @@ def made_up_plan(
     )
 
 
+def look_back(days: dict[str, dict]) -> tuple[dict, dict, dict]:
+    """Replay every finished night and learn from the days, as the learner does."""
+    latest = max(
+        datetime.fromisoformat(record["start"])
+        for data in days.values()
+        for record in data["hours"]
+    )
+    for day, data in days.items():
+        plan = data.get("plan")
+        if not plan:
+            continue
+        # Final once the day is recorded, provisional from the window's end.
+        recorded = latest + timedelta(hours=1)
+        end = datetime.fromisoformat(plan["window"]["start"]) + timedelta(days=1)
+        until = None if recorded >= end else recorded
+        if until is not None and until <= datetime.fromisoformat(plan["window"]["end"]):
+            continue
+        current = date.fromisoformat(day)
+        records = {
+            record["start"]: record
+            for offset in (-1, 0, 1)
+            for record in days.get(
+                (current + timedelta(days=offset)).isoformat(), {}
+            ).get("hours", [])
+        }
+        data["evaluation"] = evaluate(
+            plan, records, (until or end) + timedelta(minutes=10), until
+        )
+    factor, solar_days = solar_factor(days)
+    shift, shift_days = solar_shift(days)
+    evaluations = [
+        data["evaluation"]
+        for _, data in sorted(days.items())
+        if (data.get("evaluation") or {}).get("complete")
+        and data["evaluation"]["final"]
+    ]
+    margin, buffer_days = buffer(evaluations)
+    updated = dt_util.start_of_local_day(LAST_DAY) + timedelta(hours=14, minutes=10)
+    learned = {
+        "solar_factor": factor,
+        "solar_days": solar_days,
+        "solar_shift": shift,
+        "shift_days": shift_days,
+        "buffer": margin,
+        "buffer_days": buffer_days,
+        "since": None,
+        "updated": updated.isoformat(timespec="seconds"),
+    }
+    profiles, consumption = consumption_profiles(
+        {day: data for day, data in days.items() if day < LAST_DAY.isoformat()}
+    )
+    learning = {
+        "solar": solar_ratios(days),
+        "solar_profile": solar_profile(days),
+        "consumption": {
+            "workday": profiles[True],
+            "day_off": profiles[False],
+            **consumption,
+        },
+        "accuracy": [
+            {
+                "date": day,
+                "saving": data["evaluation"]["saving"],
+                "solar": data["evaluation"]["solar"],
+                "home": data["evaluation"]["home"],
+                "bridge": data["evaluation"]["bridge"],
+            }
+            for day, data in sorted(days.items())
+            if (data.get("evaluation") or {}).get("complete")
+            and data["evaluation"]["final"]
+        ],
+        "needs": {"solar": SOLAR_DAYS, "shift": SHIFT_DAYS, "buffer": BUFFER_DAYS},
+    }
+    return learned, learning, results(days, None)
+
+
 def history_sample(config: dict) -> dict:
     """What the history commands answer for the made-up days."""
     tariff = config["tariff"]
@@ -270,6 +370,7 @@ def history_sample(config: dict) -> dict:
         )
         plan["fixed"] = True
         days[day]["plan"] = plan
+    learned, learning, summary = look_back(days)
     views = {}
     for day, data in days.items():
         moment = dt_util.start_of_local_day(date.fromisoformat(day))
@@ -277,7 +378,8 @@ def history_sample(config: dict) -> dict:
             "sunrise": moment + timedelta(hours=7, minutes=21),
             "sunset": moment + timedelta(hours=18, minutes=52),
         }
-        views[day] = day_view(day, data, window, sun)
+        previous = days.get((date.fromisoformat(day) - timedelta(days=1)).isoformat())
+        views[day] = day_view(day, data, window, sun, previous)
     last_day = days[max(days)]
     socs = {k: v["soc"] for k, v in last_day["hours"][-1]["bat"].items()}
     now = dt_util.start_of_local_day(LAST_DAY) + timedelta(hours=14, minutes=5)
@@ -303,6 +405,9 @@ def history_sample(config: dict) -> dict:
         "last_day": max(days),
         "day_count": len(days),
         "plan": tonight,
+        "learned": learned,
+        "learning": learning,
+        "results": summary,
     }
 
 

@@ -287,11 +287,14 @@ def day_view(
     data: dict[str, Any],
     window: dict[str, str] | None,
     sun: dict[str, datetime],
+    previous: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """A day laid out on its local hours, ready to draw.
 
     Every hour gets a slot (23 to 25 per day); records, the forecast, the
-    cheap window and sunrise and sunset are placed on those slots.
+    cheap window and sunrise and sunset are placed on those slots. The night
+    of a day is the one that ends on it: with a window from 22:00, its plan
+    and evaluation are stored on the day before ("previous").
     """
     first = dt_util.start_of_local_day(date.fromisoformat(day))
     last = dt_util.start_of_local_day(date.fromisoformat(day) + timedelta(days=1))
@@ -325,14 +328,39 @@ def day_view(
         sun_view[event] = dt_util.as_local(moment).isoformat()
         sun_view[f"{event}_slot"] = round((moment - first).total_seconds() / 3600, 2)
     forecast = data.get("fc") or {}
-    plan = data.get("plan")
+    owner = next(
+        (
+            source
+            for source in (previous or {}, data)
+            if ((source.get("plan") or {}).get("window") or {}).get("end", "")[:10]
+            == day
+        ),
+        {},
+    )
+    plan = owner.get("plan")
     plan_slots: list[float | None] = [None] * len(starts)
-    for hour in (plan or {}).get("hours") or []:
+    # The night's plan first, then the next night's (it starts on this day).
+    for source in (owner, data):
+        for hour in (source.get("plan") or {}).get("hours") or []:
+            index = slots.get(hour["start"])
+            if index is not None and plan_slots[index] is None:
+                plan_slots[index] = hour["soc"]
+    evaluation = owner.get("evaluation")
+    replay: dict[str, list[float | None]] = {
+        "with": [None] * len(starts),
+        "without": [None] * len(starts),
+    }
+    for hour in (evaluation or {}).get("hours") or []:
         index = slots.get(hour["start"])
         if index is not None:
-            plan_slots[index] = hour["soc"]
+            replay["with"][index] = hour["with"]
+            replay["without"][index] = hour["without"]
     return {
         "date": day,
+        "evaluation": None
+        if evaluation is None
+        else {k: v for k, v in evaluation.items() if k != "hours"},
+        "evaluation_slots": replay,
         "plan": None
         if plan is None
         else {k: v for k, v in plan.items() if k not in ("hours", "meta")},

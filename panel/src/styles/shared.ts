@@ -138,6 +138,19 @@ export const shared = css`
     background: transparent;
     color: var(--joe-ink-2);
   }
+  /* Something that cannot be undone: away from the main path, red text and ring. */
+  .btn-danger {
+    background: var(--joe-surface);
+    color: var(--joe-crit);
+    box-shadow: inset 0 0 0 2px var(--joe-crit);
+  }
+  .btn-danger:not([disabled]):hover {
+    background: var(--joe-crit-soft);
+  }
+  .btn-danger:not([disabled]):active {
+    background: var(--joe-crit-soft);
+    box-shadow: inset 0 0 0 3px var(--joe-crit);
+  }
   .btn-ghost:not([disabled]):hover {
     background: var(--joe-surface-2);
     color: var(--joe-ink);

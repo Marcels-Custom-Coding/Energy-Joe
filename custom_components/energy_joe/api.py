@@ -18,7 +18,15 @@ from . import model
 from .const import DOMAIN
 from .discovery import async_check, async_collect, async_discover, discover
 from .discovery.checks import run_config_checks
+from .learn.learning import (
+    BUFFER_DAYS,
+    SHIFT_DAYS,
+    SOLAR_DAYS,
+    solar_profile,
+    solar_ratios,
+)
 from .observe.records import day_view, summarize
+from .plan.inputs import async_consumption
 from .runtime import (
     AVAILABLE_MODES,
     DATA_RUNTIME,
@@ -43,6 +51,8 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_history_day)
     websocket_api.async_register_command(hass, ws_history_rebuild)
     websocket_api.async_register_command(hass, ws_plan_refresh)
+    websocket_api.async_register_command(hass, ws_learning)
+    websocket_api.async_register_command(hass, ws_learning_reset)
 
 
 def _runtime(
@@ -277,13 +287,14 @@ async def ws_history_day(
         return
     data = await runtime.history.async_day(msg["date"]) or {}
     day = date.fromisoformat(msg["date"])
+    previous = await runtime.history.async_day((day - timedelta(days=1)).isoformat())
     sun = {
         event: moment
         for event in ("sunrise", "sunset")
         if (moment := get_astral_event_date(hass, event, day)) is not None
     }
     connection.send_result(
-        msg["id"], day_view(msg["date"], data, _window(runtime), sun)
+        msg["id"], day_view(msg["date"], data, _window(runtime), sun, previous)
     )
 
 
@@ -320,6 +331,78 @@ async def ws_plan_refresh(
         connection.send_error(msg["id"], "not_planning", "Joe is not planning.")
         return
     connection.send_result(msg["id"], plan)
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/learning"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_learning(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """What Joe learned, with the days behind it."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    config = runtime.config
+    today = dt_util.now().date()
+    since = config["learned"]["since"]
+    first = (today - timedelta(days=28)).isoformat()
+    if since and since[:10] > first:
+        first = since[:10]
+    days = await runtime.history.async_days(first, today.isoformat())
+    profiles, consumption = await async_consumption(runtime.history, today)
+    accuracy = []
+    for day, data in days.items():
+        evaluation = data.get("evaluation") or {}
+        if evaluation.get("complete") and evaluation.get("final", True):
+            accuracy.append(
+                {
+                    "date": day,
+                    "saving": evaluation["saving"],
+                    "solar": evaluation["solar"],
+                    "home": evaluation["home"],
+                    "bridge": evaluation["bridge"],
+                }
+            )
+    connection.send_result(
+        msg["id"],
+        {
+            "learned": config["learned"],
+            "buffer": {
+                "value": config["rules"]["buffer_factor"],
+                "source": model.source_of(config, "rules.buffer_factor"),
+                "default": model.default_config()["rules"]["buffer_factor"],
+            },
+            "solar": solar_ratios(days),
+            "solar_profile": solar_profile(days),
+            "consumption": {
+                "workday": profiles[True],
+                "day_off": profiles[False],
+                **consumption,
+            },
+            "accuracy": accuracy,
+            "results": runtime.learner.results,
+            "needs": {"solar": SOLAR_DAYS, "shift": SHIFT_DAYS, "buffer": BUFFER_DAYS},
+        },
+    )
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/learning/reset"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_learning_reset(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Forget what Joe learned; he starts learning again from now."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    if not await runtime.async_reset_learning():
+        connection.send_error(msg["id"], "not_learning", "Joe is not learning.")
+        return
+    connection.send_result(msg["id"])
 
 
 async def _async_energy_summary(hass: HomeAssistant) -> dict[str, Any]:
