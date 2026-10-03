@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable
 from copy import deepcopy
 import logging
@@ -15,6 +16,8 @@ from homeassistant.util.hass_dict import HassKey
 
 from . import model
 from .const import DOMAIN
+from .observe.observer import BACKFILL_DAYS, JoeObserver
+from .observe.store import HistoryStore
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -57,9 +60,15 @@ class JoeRuntime:
         self._backup_store: Store[dict[str, Any]] = Store(
             hass, model.CONFIG_VERSION, f"{CONFIG_KEY}.unreadable"
         )
+        self._hass = hass
         self._state: dict[str, Any] = deepcopy(DEFAULT_STATE)
         self._config: dict[str, Any] = model.default_config()
         self._listeners: set[StateListener] = set()
+        self.history = HistoryStore(hass)
+        self.observer = JoeObserver(hass, self.history, self._changed)
+        self._started = False
+        self._observed: dict[str, Any] | None = None
+        self._observe_lock = asyncio.Lock()
 
     async def async_load(self) -> None:
         """Load stored state and configuration."""
@@ -74,9 +83,14 @@ class JoeRuntime:
                     "Stored configuration is invalid, starting fresh: %s", err
                 )
                 await self._backup_store.async_save(stored)
+        await self.history.async_load()
 
     async def async_unload(self) -> None:
-        """Write pending changes immediately."""
+        """Stop watching and write pending changes immediately."""
+        self._started = False
+        async with self._observe_lock:
+            await self.observer.async_stop()
+        await self.history.async_unload()
         await self._state_store.async_save(self._state)
         await self._config_store.async_save(self._config)
 
@@ -85,11 +99,28 @@ class JoeRuntime:
         await self._state_store.async_remove()
         await self._config_store.async_remove()
         await self._backup_store.async_remove()
+        await self.history.async_remove()
+
+    @callback
+    def async_start(self) -> None:
+        """Home Assistant is running: Joe may start watching."""
+        self._started = True
+        self._update_observer()
+
+    @callback
+    def async_rebuild_history(self) -> bool:
+        """Read the history again (after other sensors were chosen)."""
+        if not self.observer.active:
+            return False
+        self.observer.start_backfill(BACKFILL_DAYS, rebuild=True)
+        return True
 
     @property
     def state(self) -> dict[str, Any]:
         """Return a copy of everything the panel shows live."""
-        return deepcopy({**self._state, "config": self._config})
+        return deepcopy(
+            {**self._state, "config": self._config, "observe": self.observer.status}
+        )
 
     @property
     def config(self) -> dict[str, Any]:
@@ -104,6 +135,7 @@ class JoeRuntime:
         if self._state["mode"] != mode:
             self._state["mode"] = mode
             self._changed(state=True)
+            self._update_observer()
 
     @callback
     def async_set_onboarding(
@@ -118,6 +150,7 @@ class JoeRuntime:
         if completed is not None:
             onboarding["completed"] = completed
         self._changed(state=True)
+        self._update_observer()
 
     @callback
     def async_update_config(
@@ -126,6 +159,7 @@ class JoeRuntime:
         """Merge a partial configuration update (raises vol.Invalid)."""
         self._config = model.apply_update(self._config, patch, source, detail)
         self._changed(config=True)
+        self._update_observer()
 
     @callback
     def async_adopt(self, proposal: dict[str, Any]) -> None:
@@ -134,12 +168,38 @@ class JoeRuntime:
         if adopted is not self._config:
             self._config = adopted
             self._changed(config=True)
+            self._update_observer()
 
     @callback
     def async_subscribe(self, listener: StateListener) -> CALLBACK_TYPE:
         """Call listener with every new state; returns the unsubscribe function."""
         self._listeners.add(listener)
         return lambda: self._listeners.discard(listener)
+
+    @callback
+    def _update_observer(self) -> None:
+        """Start, restart or stop watching to match mode, setup and sensors."""
+        if not self._started:
+            return
+        wanted = (
+            self._state["onboarding"]["completed"]
+            and self._state["mode"] != "off"
+            and _has_inputs(self._config)
+        )
+        observed = _observed_parts(self._config) if wanted else None
+        if observed == self._observed:
+            return
+        self._observed = observed
+        self._hass.async_create_task(self._async_apply_observer(), eager_start=False)
+
+    async def _async_apply_observer(self) -> None:
+        async with self._observe_lock:
+            if not self._started:
+                return
+            if self._observed is None:
+                await self.observer.async_stop()
+            else:
+                await self.observer.async_start(self.config)
 
     @callback
     def _changed(self, *, state: bool = False, config: bool = False) -> None:
@@ -150,6 +210,30 @@ class JoeRuntime:
         snapshot = self.state
         for listener in list(self._listeners):
             listener(snapshot)
+
+
+def _has_inputs(config: dict[str, Any]) -> bool:
+    """Whether Joe has anything to watch."""
+    m = config["measurements"]
+    return bool(
+        m["grid_power"] or m["home_power"] or m["solar_power"] or config["batteries"]
+    )
+
+
+def _observed_parts(config: dict[str, Any]) -> dict[str, Any]:
+    """The parts of the configuration the observer depends on."""
+    return {
+        "measurements": config["measurements"],
+        "batteries": [
+            (b["id"], b["power"], b["soc_entity"]) for b in config["batteries"]
+        ],
+        "context": config["context"],
+        "persons": [(p["id"], p["person_entity"]) for p in config["persons"]],
+        "consumers": [
+            (c["id"], c["energy_entity"], c["kind"]) for c in config["consumers"]
+        ],
+        "forecast": config["forecast"],
+    }
 
 
 def _with_defaults(stored: dict[str, Any], defaults: dict[str, Any]) -> dict[str, Any]:

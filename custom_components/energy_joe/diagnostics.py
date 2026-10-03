@@ -40,8 +40,11 @@ async def async_get_config_entry_diagnostics(
         REDACTED if item.startswith("person:") else item
         for item in answers.get("ignored", [])
     ]
+    observe = state.get("observe", {})
     return {
         "loaded": True,
         "state": state,
         "config": async_redact_data(config, TO_REDACT),
+        "history": {**runtime.history.overview(), "months": runtime.history.months},
+        "observe": observe,
     }

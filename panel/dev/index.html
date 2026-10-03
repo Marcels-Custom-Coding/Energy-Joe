@@ -23,7 +23,8 @@
       python3 -m http.server 8767  →  http://localhost:8767/panel/dev/
       Parameter: ?dark=1  ?lang=en  ?step=scan  ?done=1  ?page=settings  ?mode=off  ?sample=generic  ?audit=1
       sample-*.json kommen aus scripts/make_dev_samples.py (erfundene Haushalte aus tests/snapshots.py):
-      Funde, die Konfiguration nach dem Übernehmen, ihre Prüfungen sowie Zustände und Register.
+      Funde, die Konfiguration nach dem Übernehmen, ihre Prüfungen, Zustände und Register sowie
+      zwei Wochen erfundener Verlauf (Seite Historie, Übersicht).
       ?done=1 startet mit übernommener Konfiguration.
       ?audit=1 rahmt jedes Bedienelement rot ein, das keinen Tooltip hat; joeAudit() in der
       Konsole listet sie auf. Ein Element gilt als erklärt, wenn es oder ein Vorfahr
@@ -124,6 +125,17 @@
         onboarding: { step, completed: done },
         config: structuredClone(done || ["questions", "done"].includes(step) ? sample.adopted_config : sample.default_config),
       };
+      const history = sample.history;
+      const watching = () => ({
+        active: true,
+        since: "2026-10-01T09:12:00+02:00",
+        last_hour: "2026-10-03T14:00:00+02:00",
+        first_day: history.first_day,
+        last_day: history.last_day,
+        day_count: history.day_count,
+        backfill: { state: "done", hours: 312 },
+      });
+      state.observe = done && state.mode !== "off" ? watching() : { active: false, backfill: { state: "idle" } };
       let adopted = done;
       const listeners = new Set();
       const push = () => listeners.forEach((cb) => cb(structuredClone(state)));
@@ -150,7 +162,36 @@
             case "energy_joe/set_mode":
               if (msg.mode === "live") throw { code: "not_available" };
               state.mode = msg.mode;
+              state.observe =
+                state.onboarding.completed && msg.mode !== "off" ? watching() : { ...state.observe, active: false };
               push();
+              return null;
+            case "energy_joe/history/days":
+              return { ...history, views: undefined, days: history.days.slice(0, msg.days || 14) };
+            case "energy_joe/history/day":
+              return (
+                history.views[msg.date] ?? {
+                  date: msg.date,
+                  slots: Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, "0")}:00`),
+                  hours: [],
+                  fc: {},
+                  fc_slots: [],
+                  fc_ahead_slots: [],
+                  workday: null,
+                  summary: { date: msg.date, hours: 0, expected: 24, cov: 0, sources: {} },
+                  window: null,
+                  window_slots: [],
+                  sun: {},
+                }
+              );
+            case "energy_joe/history/rebuild":
+              if (!state.observe.active) throw { code: "not_observing" };
+              state.observe = { ...state.observe, backfill: { state: "running" } };
+              push();
+              setTimeout(() => {
+                state.observe = watching();
+                push();
+              }, 1500);
               return null;
             case "energy_joe/discover":
               return sample.discovery;
@@ -171,6 +212,7 @@
             case "energy_joe/onboarding":
               if (msg.step) state.onboarding.step = msg.step;
               if ("completed" in msg) state.onboarding.completed = msg.completed;
+              if (state.onboarding.completed && state.mode !== "off") state.observe = watching();
               push();
               return null;
           }

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date, timedelta
 from typing import Any
 
 import voluptuous as vol
@@ -9,12 +10,15 @@ import voluptuous as vol
 from homeassistant.components import websocket_api
 from homeassistant.const import __version__ as HA_VERSION
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.sun import get_astral_event_date
 from homeassistant.loader import async_get_integration
+from homeassistant.util import dt as dt_util
 
 from . import model
 from .const import DOMAIN
 from .discovery import async_check, async_collect, async_discover, discover
 from .discovery.checks import run_config_checks
+from .observe.records import day_view, summarize
 from .runtime import (
     AVAILABLE_MODES,
     DATA_RUNTIME,
@@ -35,6 +39,9 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_discover)
     websocket_api.async_register_command(hass, ws_adopt)
     websocket_api.async_register_command(hass, ws_check)
+    websocket_api.async_register_command(hass, ws_history_days)
+    websocket_api.async_register_command(hass, ws_history_day)
+    websocket_api.async_register_command(hass, ws_history_rebuild)
 
 
 def _runtime(
@@ -211,6 +218,89 @@ async def ws_check(
     connection.send_result(
         msg["id"], {"checks": await async_check(hass, runtime.config)}
     )
+
+
+def _window(runtime: JoeRuntime) -> dict[str, str] | None:
+    tariff = runtime.config["tariff"]
+    return tariff["window"] if tariff["kind"] == "fixed_window" else None
+
+
+def _day(value: Any) -> str:
+    return date.fromisoformat(value).isoformat()
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/history/days",
+        vol.Optional("days", default=14): vol.All(int, vol.Range(min=1, max=400)),
+        vol.Optional("until"): _day,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_history_days(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Summaries of the most recent days Joe knows, newest first."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    last = date.fromisoformat(msg.get("until") or dt_util.now().date().isoformat())
+    first = last - timedelta(days=msg["days"] - 1)
+    days = await runtime.history.async_days(first.isoformat(), last.isoformat())
+    window = _window(runtime)
+    connection.send_result(
+        msg["id"],
+        {
+            "days": [
+                summarize(day, data, window) for day, data in reversed(days.items())
+            ],
+            **runtime.history.overview(),
+        },
+    )
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/history/day", vol.Required("date"): _day}
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_history_day(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """One day with all its hours, the forecast and the times of the sun."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    data = await runtime.history.async_day(msg["date"]) or {}
+    day = date.fromisoformat(msg["date"])
+    sun = {
+        event: moment
+        for event in ("sunrise", "sunset")
+        if (moment := get_astral_event_date(hass, event, day)) is not None
+    }
+    connection.send_result(
+        msg["id"], day_view(msg["date"], data, _window(runtime), sun)
+    )
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/history/rebuild"})
+@websocket_api.require_admin
+@callback
+def ws_history_rebuild(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Read the history again from Home Assistant (keeps what only Joe saw)."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    if not runtime.async_rebuild_history():
+        connection.send_error(msg["id"], "not_observing", "Joe is not watching.")
+        return
+    connection.send_result(msg["id"])
 
 
 async def _async_energy_summary(hass: HomeAssistant) -> dict[str, Any]:

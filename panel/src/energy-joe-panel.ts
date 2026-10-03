@@ -16,6 +16,7 @@ import "./editors/household";
 import "./editors/tariff-editor";
 import { ensureFonts } from "./fonts";
 import { translator, type Translate, type TranslationKey } from "./i18n";
+import "./pages/history";
 import "./pages/onboarding";
 import "./pages/overview";
 import "./pages/settings";
@@ -48,7 +49,6 @@ const AVAILABLE: JoeMode[] = ["simulation", "off"];
 // Pages that show Joe's empty state until their feature arrives.
 const COMING: Partial<Record<Page, { pose: string; title: TranslationKey; text: TranslationKey }>> = {
   plan: { pose: "plan", title: "plan.title", text: "plan.text" },
-  history: { pose: "inspect", title: "history.title", text: "history.text" },
   learn: { pose: "learn", title: "learn.title", text: "learn.text" },
   devices: { pose: "switch", title: "devices.title", text: "devices.text" },
 };
@@ -254,6 +254,7 @@ export class EnergyJoePanel extends LitElement {
         @joe-onboarding=${this.onOnboarding}
         @joe-rediscover=${() => this.scan()}
         @joe-set-mode=${(ev: CustomEvent<{ mode: JoeMode }>) => this.setMode(ev.detail.mode)}
+        @joe-navigate=${(ev: CustomEvent<{ page: Page }>) => this.go(ev.detail.page)}
       >
         ${onboarding
           ? html`<joe-onboarding
@@ -304,7 +305,15 @@ export class EnergyJoePanel extends LitElement {
   private renderPage(t: Translate): TemplateResult {
     const page = this.page;
     if (page === "overview") {
-      return html`<joe-overview .t=${t}></joe-overview>`;
+      return html`<joe-overview
+        .t=${t}
+        .hass=${this.hass}
+        .state=${this.joe}
+        prefix=${this.route?.prefix ?? "/energy-joe"}
+      ></joe-overview>`;
+    }
+    if (page === "history") {
+      return html`<joe-history .t=${t} .hass=${this.hass} .state=${this.joe}></joe-history>`;
     }
     if (page === "settings") {
       return html`<joe-settings

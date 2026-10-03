@@ -9,8 +9,9 @@ from pathlib import Path
 from homeassistant.components import frontend, panel_custom
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.loader import async_get_integration
 
@@ -81,6 +82,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         require_admin=True,
         config={"version": str(integration.version)},
     )
+
+    @callback
+    def _start(_: HomeAssistant) -> None:
+        # Joe starts watching once all integrations are up.
+        runtime.async_start()
+
+    entry.async_on_unload(async_at_started(hass, _start))
     return True
 
 

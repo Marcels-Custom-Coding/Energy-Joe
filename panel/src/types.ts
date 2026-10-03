@@ -199,10 +199,90 @@ export interface JoeConfig {
   provenance: Record<string, Provenance>;
 }
 
+export interface ObserveStatus {
+  active: boolean;
+  since?: string;
+  last_hour?: string;
+  first_day?: string | null;
+  last_day?: string | null;
+  day_count?: number;
+  backfill: { state: "idle" | "running" | "done" | "unavailable" | "failed"; hours?: number; from?: string };
+}
+
 export interface JoeState {
   mode: JoeMode;
   onboarding: { step: OnboardingStep; completed: boolean };
   config: JoeConfig;
+  observe?: ObserveStatus;
+}
+
+// --- History (see custom_components/energy_joe/observe) ---
+
+export interface HourRecord {
+  start: string;
+  src: "live" | "stats" | "history";
+  cov: number;
+  home?: number;
+  home_calc?: boolean;
+  solar?: number;
+  grid_in?: number;
+  grid_out?: number;
+  bat_in?: number;
+  bat_out?: number;
+  bat?: Record<string, { in?: number; out?: number; soc?: number }>;
+  use?: Record<string, number>;
+  temp?: number;
+  present?: Record<string, number>;
+  fc_today?: number;
+  fc_tomorrow?: number;
+  fc_remaining?: number;
+}
+
+export interface DaySummary {
+  date: string;
+  hours: number;
+  expected: number;
+  cov: number;
+  home: number | null;
+  solar: number | null;
+  grid_in: number | null;
+  grid_out: number | null;
+  bat_in: number | null;
+  bat_out: number | null;
+  grid_in_cheap?: number | null;
+  fc_ahead?: number | null;
+  fc_latest?: number | null;
+  solar_vs_fc?: number | null;
+  temp?: { min: number; max: number; mean: number };
+  present?: Record<string, number>;
+  soc?: Record<string, { min: number; max: number; end: number }>;
+  self_sufficiency?: number;
+  sun_covers?: string;
+  workday?: boolean | null;
+  sources: Record<string, number>;
+}
+
+export interface DayDetail {
+  date: string;
+  /** Local start time of every hour of the day ("02:00" twice when the clocks go back). */
+  slots: string[];
+  hours: (HourRecord & { slot: number })[];
+  fc: { ahead_kwh?: number; latest_kwh?: number };
+  /** Forecast in kWh per slot: latest, and as it stood the evening before. */
+  fc_slots: (number | null)[];
+  fc_ahead_slots: (number | null)[];
+  workday: boolean | null;
+  summary: DaySummary;
+  window: { start: string; end: string } | null;
+  window_slots: [number, number][];
+  sun: { sunrise?: string; sunset?: string; sunrise_slot?: number; sunset_slot?: number };
+}
+
+export interface HistoryDays {
+  days: DaySummary[];
+  first_day: string | null;
+  last_day: string | null;
+  day_count: number;
 }
 
 export interface EnergySummary {

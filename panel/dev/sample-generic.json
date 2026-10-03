@@ -429,99 +429,99 @@
   "provenance": {
    "measurements.grid_power": {
     "source": "read",
-    "updated": "2026-10-03T16:19:12+00:00"
+    "updated": "2026-10-03T16:57:15+00:00"
    },
    "measurements.home_power": {
     "source": "read",
-    "updated": "2026-10-03T16:19:12+00:00"
+    "updated": "2026-10-03T16:57:15+00:00"
    },
    "measurements.solar_power": {
     "source": "read",
-    "updated": "2026-10-03T16:19:12+00:00"
+    "updated": "2026-10-03T16:57:15+00:00"
    },
    "tariff.kind": {
     "source": "read",
-    "updated": "2026-10-03T16:19:12+00:00"
+    "updated": "2026-10-03T16:57:15+00:00"
    },
    "tariff.price_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:19:12+00:00"
+    "updated": "2026-10-03T16:57:15+00:00"
    },
    "tariff.window": {
     "source": "read",
-    "updated": "2026-10-03T16:19:12+00:00"
+    "updated": "2026-10-03T16:57:15+00:00"
    },
    "tariff.night_price": {
     "source": "read",
-    "updated": "2026-10-03T16:19:12+00:00"
+    "updated": "2026-10-03T16:57:15+00:00"
    },
    "tariff.day_price": {
     "source": "read",
-    "updated": "2026-10-03T16:19:12+00:00"
+    "updated": "2026-10-03T16:57:15+00:00"
    },
    "forecast.provider": {
     "source": "read",
-    "updated": "2026-10-03T16:19:12+00:00"
+    "updated": "2026-10-03T16:57:15+00:00"
    },
    "forecast.config_entries": {
     "source": "read",
-    "updated": "2026-10-03T16:19:12+00:00"
+    "updated": "2026-10-03T16:57:15+00:00"
    },
    "forecast.today": {
     "source": "read",
-    "updated": "2026-10-03T16:19:12+00:00"
+    "updated": "2026-10-03T16:57:15+00:00"
    },
    "forecast.tomorrow": {
     "source": "read",
-    "updated": "2026-10-03T16:19:12+00:00"
+    "updated": "2026-10-03T16:57:15+00:00"
    },
    "forecast.remaining_today": {
     "source": "read",
-    "updated": "2026-10-03T16:19:12+00:00"
+    "updated": "2026-10-03T16:57:15+00:00"
    },
    "batteries[flow800].name": {
     "source": "read",
-    "updated": "2026-10-03T16:19:12+00:00"
+    "updated": "2026-10-03T16:57:15+00:00"
    },
    "batteries[flow800].adapter": {
     "source": "read",
-    "updated": "2026-10-03T16:19:12+00:00"
+    "updated": "2026-10-03T16:57:15+00:00"
    },
    "batteries[flow800].soc_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:19:12+00:00"
+    "updated": "2026-10-03T16:57:15+00:00"
    },
    "batteries[flow800].power": {
     "source": "read",
-    "updated": "2026-10-03T16:19:12+00:00"
+    "updated": "2026-10-03T16:57:15+00:00"
    },
    "batteries[flow800].capacity_kwh": {
     "source": "read",
-    "updated": "2026-10-03T16:19:12+00:00"
+    "updated": "2026-10-03T16:57:15+00:00"
    },
    "batteries[flow800].capacity_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:19:12+00:00"
+    "updated": "2026-10-03T16:57:15+00:00"
    },
    "batteries[flow800].max_charge_w": {
     "source": "read",
-    "updated": "2026-10-03T16:19:12+00:00"
+    "updated": "2026-10-03T16:57:15+00:00"
    },
    "batteries[flow800].max_discharge_w": {
     "source": "read",
-    "updated": "2026-10-03T16:19:12+00:00"
+    "updated": "2026-10-03T16:57:15+00:00"
    },
    "batteries[flow800].device_id": {
     "source": "read",
-    "updated": "2026-10-03T16:19:12+00:00"
+    "updated": "2026-10-03T16:57:15+00:00"
    },
    "batteries[flow800].controls": {
     "source": "read",
-    "updated": "2026-10-03T16:19:12+00:00"
+    "updated": "2026-10-03T16:57:15+00:00"
    },
    "batteries[flow800].priority": {
     "source": "read",
-    "updated": "2026-10-03T16:19:12+00:00"
+    "updated": "2026-10-03T16:57:15+00:00"
    }
   }
  },
@@ -818,5 +818,8497 @@
    }
   },
   "areas": {}
+ },
+ "history": {
+  "days": [
+   {
+    "date": "2026-10-03",
+    "hours": 15,
+    "expected": 24,
+    "cov": 0.625,
+    "home": 10.389,
+    "solar": 5.058,
+    "grid_in": 5.425,
+    "grid_out": 0.0,
+    "bat_in": 2.647,
+    "bat_out": 2.552,
+    "sources": {
+     "live": 15
+    },
+    "workday": false,
+    "fc_ahead": 4.9,
+    "fc_latest": null,
+    "solar_vs_fc": 1.032,
+    "temp": {
+     "min": 2.7,
+     "max": 14.6,
+     "mean": 7.6
+    },
+    "soc": {
+     "flow800": {
+      "min": 10.0,
+      "max": 60.0,
+      "end": 11.9
+     }
+    },
+    "self_sufficiency": 0.478,
+    "sun_covers": "2026-10-03T12:00:00+02:00"
+   },
+   {
+    "date": "2026-10-02",
+    "hours": 24,
+    "expected": 24,
+    "cov": 1.0,
+    "home": 15.218,
+    "solar": 10.979,
+    "grid_in": 7.242,
+    "grid_out": 3.003,
+    "bat_in": 7.0,
+    "bat_out": 7.0,
+    "sources": {
+     "live": 24
+    },
+    "workday": true,
+    "fc_ahead": 13.9,
+    "fc_latest": null,
+    "solar_vs_fc": 0.79,
+    "temp": {
+     "min": 3.0,
+     "max": 14.7,
+     "mean": 8.9
+    },
+    "soc": {
+     "flow800": {
+      "min": 10.0,
+      "max": 100.0,
+      "end": 10.0
+     }
+    },
+    "self_sufficiency": 0.524,
+    "sun_covers": "2026-10-02T09:00:00+02:00"
+   },
+   {
+    "date": "2026-10-01",
+    "hours": 24,
+    "expected": 24,
+    "cov": 1.0,
+    "home": 15.552,
+    "solar": 10.979,
+    "grid_in": 7.289,
+    "grid_out": 2.716,
+    "bat_in": 7.0,
+    "bat_out": 7.0,
+    "sources": {
+     "live": 24
+    },
+    "workday": true,
+    "fc_ahead": 9.0,
+    "fc_latest": null,
+    "solar_vs_fc": 1.22,
+    "temp": {
+     "min": 2.6,
+     "max": 14.8,
+     "mean": 9.0
+    },
+    "soc": {
+     "flow800": {
+      "min": 10.0,
+      "max": 100.0,
+      "end": 10.0
+     }
+    },
+    "self_sufficiency": 0.531,
+    "sun_covers": "2026-10-01T09:00:00+02:00"
+   },
+   {
+    "date": "2026-09-30",
+    "hours": 24,
+    "expected": 24,
+    "cov": 1.0,
+    "home": 15.765,
+    "solar": 10.979,
+    "grid_in": 7.417,
+    "grid_out": 2.63,
+    "bat_in": 7.0,
+    "bat_out": 7.0,
+    "sources": {
+     "stats": 24
+    },
+    "workday": true,
+    "fc_ahead": 11.4,
+    "fc_latest": null,
+    "solar_vs_fc": 0.963,
+    "soc": {
+     "flow800": {
+      "min": 10.0,
+      "max": 100.0,
+      "end": 10.0
+     }
+    },
+    "self_sufficiency": 0.53,
+    "sun_covers": "2026-09-30T09:00:00+02:00"
+   },
+   {
+    "date": "2026-09-29",
+    "hours": 24,
+    "expected": 24,
+    "cov": 1.0,
+    "home": 15.571,
+    "solar": 10.979,
+    "grid_in": 7.285,
+    "grid_out": 2.692,
+    "bat_in": 7.0,
+    "bat_out": 7.0,
+    "sources": {
+     "stats": 24
+    },
+    "workday": true,
+    "fc_ahead": 8.8,
+    "fc_latest": null,
+    "solar_vs_fc": 1.248,
+    "soc": {
+     "flow800": {
+      "min": 10.0,
+      "max": 100.0,
+      "end": 10.0
+     }
+    },
+    "self_sufficiency": 0.532,
+    "sun_covers": "2026-09-29T09:00:00+02:00"
+   },
+   {
+    "date": "2026-09-28",
+    "hours": 24,
+    "expected": 24,
+    "cov": 1.0,
+    "home": 15.677,
+    "solar": 10.979,
+    "grid_in": 7.356,
+    "grid_out": 2.657,
+    "bat_in": 7.0,
+    "bat_out": 7.0,
+    "sources": {
+     "stats": 24
+    },
+    "workday": true,
+    "fc_ahead": 12.9,
+    "fc_latest": null,
+    "solar_vs_fc": 0.851,
+    "soc": {
+     "flow800": {
+      "min": 10.0,
+      "max": 100.0,
+      "end": 10.0
+     }
+    },
+    "self_sufficiency": 0.531,
+    "sun_covers": "2026-09-28T09:00:00+02:00"
+   },
+   {
+    "date": "2026-09-27",
+    "hours": 24,
+    "expected": 24,
+    "cov": 1.0,
+    "home": 19.322,
+    "solar": 6.099,
+    "grid_in": 13.223,
+    "grid_out": 0.0,
+    "bat_in": 2.774,
+    "bat_out": 2.774,
+    "sources": {
+     "stats": 24
+    },
+    "workday": false,
+    "fc_ahead": 5.5,
+    "fc_latest": null,
+    "solar_vs_fc": 1.109,
+    "soc": {
+     "flow800": {
+      "min": 10.0,
+      "max": 60.0,
+      "end": 10.0
+     }
+    },
+    "self_sufficiency": 0.316,
+    "sun_covers": "2026-09-27T12:00:00+02:00"
+   },
+   {
+    "date": "2026-09-26",
+    "hours": 24,
+    "expected": 24,
+    "cov": 1.0,
+    "home": 19.397,
+    "solar": 24.396,
+    "grid_in": 6.771,
+    "grid_out": 11.771,
+    "bat_in": 4.5,
+    "bat_out": 4.5,
+    "sources": {
+     "stats": 24
+    },
+    "workday": false,
+    "fc_ahead": 28.4,
+    "fc_latest": null,
+    "solar_vs_fc": 0.859,
+    "soc": {
+     "flow800": {
+      "min": 10.0,
+      "max": 100.0,
+      "end": 10.0
+     }
+    },
+    "self_sufficiency": 0.651,
+    "sun_covers": "2026-09-26T09:00:00+02:00"
+   },
+   {
+    "date": "2026-09-25",
+    "hours": 24,
+    "expected": 24,
+    "cov": 1.0,
+    "home": 15.738,
+    "solar": 17.077,
+    "grid_in": 7.037,
+    "grid_out": 8.377,
+    "bat_in": 4.5,
+    "bat_out": 4.5,
+    "sources": {
+     "stats": 24
+    },
+    "workday": true,
+    "fc_ahead": 15.4,
+    "fc_latest": null,
+    "solar_vs_fc": 1.109,
+    "soc": {
+     "flow800": {
+      "min": 10.0,
+      "max": 100.0,
+      "end": 10.0
+     }
+    },
+    "self_sufficiency": 0.553,
+    "sun_covers": "2026-09-25T09:00:00+02:00"
+   },
+   {
+    "date": "2026-09-24",
+    "hours": 24,
+    "expected": 24,
+    "cov": 1.0,
+    "home": 15.593,
+    "solar": 6.099,
+    "grid_in": 9.494,
+    "grid_out": 0.0,
+    "bat_in": 5.171,
+    "bat_out": 5.171,
+    "sources": {
+     "stats": 24
+    },
+    "workday": true,
+    "fc_ahead": 5.4,
+    "fc_latest": null,
+    "solar_vs_fc": 1.129,
+    "soc": {
+     "flow800": {
+      "min": 10.0,
+      "max": 63.4,
+      "end": 10.0
+     }
+    },
+    "self_sufficiency": 0.391,
+    "sun_covers": "2026-09-24T10:00:00+02:00"
+   },
+   {
+    "date": "2026-09-23",
+    "hours": 24,
+    "expected": 24,
+    "cov": 1.0,
+    "home": 15.528,
+    "solar": 24.396,
+    "grid_in": 6.689,
+    "grid_out": 15.558,
+    "bat_in": 4.5,
+    "bat_out": 4.5,
+    "sources": {
+     "stats": 24
+    },
+    "workday": true,
+    "fc_ahead": 27.5,
+    "fc_latest": null,
+    "solar_vs_fc": 0.887,
+    "soc": {
+     "flow800": {
+      "min": 10.0,
+      "max": 100.0,
+      "end": 10.0
+     }
+    },
+    "self_sufficiency": 0.569,
+    "sun_covers": "2026-09-23T09:00:00+02:00"
+   },
+   {
+    "date": "2026-09-22",
+    "hours": 24,
+    "expected": 24,
+    "cov": 1.0,
+    "home": 15.605,
+    "solar": 6.099,
+    "grid_in": 9.506,
+    "grid_out": 0.0,
+    "bat_in": 5.435,
+    "bat_out": 5.435,
+    "sources": {
+     "stats": 24
+    },
+    "workday": true,
+    "fc_ahead": 7.1,
+    "fc_latest": null,
+    "solar_vs_fc": 0.859,
+    "soc": {
+     "flow800": {
+      "min": 10.0,
+      "max": 68.7,
+      "end": 10.0
+     }
+    },
+    "self_sufficiency": 0.391,
+    "sun_covers": "2026-09-22T10:00:00+02:00"
+   },
+   {
+    "date": "2026-09-21",
+    "hours": 24,
+    "expected": 24,
+    "cov": 1.0,
+    "home": 15.57,
+    "solar": 24.396,
+    "grid_in": 6.675,
+    "grid_out": 15.502,
+    "bat_in": 4.5,
+    "bat_out": 4.5,
+    "sources": {
+     "stats": 24
+    },
+    "workday": true,
+    "fc_ahead": 31.5,
+    "fc_latest": null,
+    "solar_vs_fc": 0.774,
+    "soc": {
+     "flow800": {
+      "min": 10.0,
+      "max": 100.0,
+      "end": 10.0
+     }
+    },
+    "self_sufficiency": 0.571,
+    "sun_covers": "2026-09-21T09:00:00+02:00"
+   },
+   {
+    "date": "2026-09-20",
+    "hours": 24,
+    "expected": 24,
+    "cov": 1.0,
+    "home": 18.998,
+    "solar": 17.077,
+    "grid_in": 5.817,
+    "grid_out": 4.897,
+    "bat_in": 4.5,
+    "bat_out": 5.5,
+    "sources": {
+     "stats": 24
+    },
+    "workday": false,
+    "fc_ahead": 18.3,
+    "fc_latest": null,
+    "solar_vs_fc": 0.933,
+    "soc": {
+     "flow800": {
+      "min": 10.0,
+      "max": 100.0,
+      "end": 10.0
+     }
+    },
+    "self_sufficiency": 0.694,
+    "sun_covers": "2026-09-20T09:00:00+02:00"
+   }
+  ],
+  "views": {
+   "2026-09-20": {
+    "date": "2026-09-20",
+    "slots": [
+     "00:00",
+     "01:00",
+     "02:00",
+     "03:00",
+     "04:00",
+     "05:00",
+     "06:00",
+     "07:00",
+     "08:00",
+     "09:00",
+     "10:00",
+     "11:00",
+     "12:00",
+     "13:00",
+     "14:00",
+     "15:00",
+     "16:00",
+     "17:00",
+     "18:00",
+     "19:00",
+     "20:00",
+     "21:00",
+     "22:00",
+     "23:00"
+    ],
+    "hours": [
+     {
+      "start": "2026-09-20T00:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4622,
+      "solar": 0.0,
+      "grid_in": 0.3122,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.15,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.15,
+        "soc": 27.0
+       }
+      },
+      "slot": 0
+     },
+     {
+      "start": "2026-09-20T01:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3792,
+      "solar": 0.0,
+      "grid_in": 0.2292,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.15,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.15,
+        "soc": 24.0
+       }
+      },
+      "slot": 1
+     },
+     {
+      "start": "2026-09-20T02:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3272,
+      "solar": 0.0,
+      "grid_in": 0.1772,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.15,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.15,
+        "soc": 21.0
+       }
+      },
+      "slot": 2
+     },
+     {
+      "start": "2026-09-20T03:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4432,
+      "solar": 0.0,
+      "grid_in": 0.2932,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.15,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.15,
+        "soc": 18.0
+       }
+      },
+      "slot": 3
+     },
+     {
+      "start": "2026-09-20T04:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3341,
+      "solar": 0.0,
+      "grid_in": 0.1841,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.15,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.15,
+        "soc": 15.0
+       }
+      },
+      "slot": 4
+     },
+     {
+      "start": "2026-09-20T05:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4074,
+      "solar": 0.0,
+      "grid_in": 0.1574,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.25,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.25,
+        "soc": 10.0
+       }
+      },
+      "slot": 5
+     },
+     {
+      "start": "2026-09-20T06:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4565,
+      "solar": 0.0,
+      "grid_in": 0.4565,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 6
+     },
+     {
+      "start": "2026-09-20T07:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.0522,
+      "solar": 0.1117,
+      "grid_in": 0.9405,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 7
+     },
+     {
+      "start": "2026-09-20T08:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.0329,
+      "solar": 0.3394,
+      "grid_in": 0.6935,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 8
+     },
+     {
+      "start": "2026-09-20T09:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3827,
+      "solar": 0.8255,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.4428,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.4428,
+        "out": 0.0,
+        "soc": 18.9
+       }
+      },
+      "slot": 9
+     },
+     {
+      "start": "2026-09-20T10:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.9561,
+      "solar": 1.6079,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.6518,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.6518,
+        "out": 0.0,
+        "soc": 31.9
+       }
+      },
+      "slot": 10
+     },
+     {
+      "start": "2026-09-20T11:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.0027,
+      "solar": 2.5077,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 1.5051,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 1.5051,
+        "out": 0.0,
+        "soc": 62.0
+       }
+      },
+      "slot": 11
+     },
+     {
+      "start": "2026-09-20T12:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.9289,
+      "solar": 3.1318,
+      "grid_in": 0.0,
+      "grid_out": 0.3026,
+      "bat_in": 1.9003,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 1.9003,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 12
+     },
+     {
+      "start": "2026-09-20T13:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.0048,
+      "solar": 3.1318,
+      "grid_in": 0.0,
+      "grid_out": 2.127,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 13
+     },
+     {
+      "start": "2026-09-20T14:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.0621,
+      "solar": 2.5077,
+      "grid_in": 0.0,
+      "grid_out": 1.4456,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 14
+     },
+     {
+      "start": "2026-09-20T15:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.0146,
+      "solar": 1.6079,
+      "grid_in": 0.0,
+      "grid_out": 0.5933,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 15
+     },
+     {
+      "start": "2026-09-20T16:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4074,
+      "solar": 0.8255,
+      "grid_in": 0.0,
+      "grid_out": 0.4181,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 16
+     },
+     {
+      "start": "2026-09-20T17:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3293,
+      "solar": 0.3394,
+      "grid_in": 0.0,
+      "grid_out": 0.0101,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 17
+     },
+     {
+      "start": "2026-09-20T18:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.6078,
+      "solar": 0.1117,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.4961,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.4961,
+        "soc": 70.1
+       }
+      },
+      "slot": 18
+     },
+     {
+      "start": "2026-09-20T19:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5274,
+      "solar": 0.0294,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.498,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.498,
+        "soc": 40.1
+       }
+      },
+      "slot": 19
+     },
+     {
+      "start": "2026-09-20T20:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5532,
+      "solar": 0.0,
+      "grid_in": 0.0473,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.5059,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.5059,
+        "soc": 10.0
+       }
+      },
+      "slot": 20
+     },
+     {
+      "start": "2026-09-20T21:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.6035,
+      "solar": 0.0,
+      "grid_in": 1.6035,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 21
+     },
+     {
+      "start": "2026-09-20T22:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.34,
+      "solar": 0.0,
+      "grid_in": 0.34,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 22
+     },
+     {
+      "start": "2026-09-20T23:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3829,
+      "solar": 0.0,
+      "grid_in": 0.3829,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 23
+     }
+    ],
+    "fc": {
+     "ahead_kwh": 18.3
+    },
+    "fc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "fc_ahead_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "workday": false,
+    "summary": {
+     "date": "2026-09-20",
+     "hours": 24,
+     "expected": 24,
+     "cov": 1.0,
+     "home": 18.998,
+     "solar": 17.077,
+     "grid_in": 5.817,
+     "grid_out": 4.897,
+     "bat_in": 4.5,
+     "bat_out": 5.5,
+     "sources": {
+      "stats": 24
+     },
+     "workday": false,
+     "fc_ahead": 18.3,
+     "fc_latest": null,
+     "solar_vs_fc": 0.933,
+     "soc": {
+      "flow800": {
+       "min": 10.0,
+       "max": 100.0,
+       "end": 10.0
+      }
+     },
+     "self_sufficiency": 0.694,
+     "sun_covers": "2026-09-20T09:00:00+02:00"
+    },
+    "window": null,
+    "window_slots": [],
+    "sun": {
+     "sunrise": "2026-09-20T07:21:00+02:00",
+     "sunrise_slot": 7.35,
+     "sunset": "2026-09-20T18:52:00+02:00",
+     "sunset_slot": 18.87
+    }
+   },
+   "2026-09-21": {
+    "date": "2026-09-21",
+    "slots": [
+     "00:00",
+     "01:00",
+     "02:00",
+     "03:00",
+     "04:00",
+     "05:00",
+     "06:00",
+     "07:00",
+     "08:00",
+     "09:00",
+     "10:00",
+     "11:00",
+     "12:00",
+     "13:00",
+     "14:00",
+     "15:00",
+     "16:00",
+     "17:00",
+     "18:00",
+     "19:00",
+     "20:00",
+     "21:00",
+     "22:00",
+     "23:00"
+    ],
+    "hours": [
+     {
+      "start": "2026-09-21T00:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3663,
+      "solar": 0.0,
+      "grid_in": 0.3663,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 0
+     },
+     {
+      "start": "2026-09-21T01:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4424,
+      "solar": 0.0,
+      "grid_in": 0.4424,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 1
+     },
+     {
+      "start": "2026-09-21T02:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3471,
+      "solar": 0.0,
+      "grid_in": 0.3471,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 2
+     },
+     {
+      "start": "2026-09-21T03:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4072,
+      "solar": 0.0,
+      "grid_in": 0.4072,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 3
+     },
+     {
+      "start": "2026-09-21T04:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4158,
+      "solar": 0.0,
+      "grid_in": 0.4158,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 4
+     },
+     {
+      "start": "2026-09-21T05:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3759,
+      "solar": 0.0,
+      "grid_in": 0.3759,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 5
+     },
+     {
+      "start": "2026-09-21T06:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4022,
+      "solar": 0.0,
+      "grid_in": 0.4022,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 6
+     },
+     {
+      "start": "2026-09-21T07:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.0294,
+      "solar": 0.1596,
+      "grid_in": 0.8698,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 7
+     },
+     {
+      "start": "2026-09-21T08:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.0289,
+      "solar": 0.4848,
+      "grid_in": 0.5441,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 8
+     },
+     {
+      "start": "2026-09-21T09:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3509,
+      "solar": 1.1793,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.8284,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.8284,
+        "out": 0.0,
+        "soc": 26.6
+       }
+      },
+      "slot": 9
+     },
+     {
+      "start": "2026-09-21T10:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4221,
+      "solar": 2.297,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 1.875,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 1.875,
+        "out": 0.0,
+        "soc": 64.1
+       }
+      },
+      "slot": 10
+     },
+     {
+      "start": "2026-09-21T11:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3841,
+      "solar": 3.5825,
+      "grid_in": 0.0,
+      "grid_out": 1.4017,
+      "bat_in": 1.7966,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 1.7966,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 11
+     },
+     {
+      "start": "2026-09-21T12:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3671,
+      "solar": 4.474,
+      "grid_in": 0.0,
+      "grid_out": 4.1069,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 12
+     },
+     {
+      "start": "2026-09-21T13:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4078,
+      "solar": 4.474,
+      "grid_in": 0.0,
+      "grid_out": 4.0661,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 13
+     },
+     {
+      "start": "2026-09-21T14:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.388,
+      "solar": 3.5825,
+      "grid_in": 0.0,
+      "grid_out": 3.1945,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 14
+     },
+     {
+      "start": "2026-09-21T15:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.365,
+      "solar": 2.297,
+      "grid_in": 0.0,
+      "grid_out": 1.9321,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 15
+     },
+     {
+      "start": "2026-09-21T16:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4392,
+      "solar": 1.1793,
+      "grid_in": 0.0,
+      "grid_out": 0.7402,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 16
+     },
+     {
+      "start": "2026-09-21T17:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4248,
+      "solar": 0.4848,
+      "grid_in": 0.0,
+      "grid_out": 0.06,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 17
+     },
+     {
+      "start": "2026-09-21T18:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5566,
+      "solar": 0.1596,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.397,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.397,
+        "soc": 72.1
+       }
+      },
+      "slot": 18
+     },
+     {
+      "start": "2026-09-21T19:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.6062,
+      "solar": 0.0421,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.5641,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.5641,
+        "soc": 40.8
+       }
+      },
+      "slot": 19
+     },
+     {
+      "start": "2026-09-21T20:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5988,
+      "solar": 0.0,
+      "grid_in": 0.0599,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.5389,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.5389,
+        "soc": 10.0
+       }
+      },
+      "slot": 20
+     },
+     {
+      "start": "2026-09-21T21:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.6513,
+      "solar": 0.0,
+      "grid_in": 1.6513,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 21
+     },
+     {
+      "start": "2026-09-21T22:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4294,
+      "solar": 0.0,
+      "grid_in": 0.4294,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 22
+     },
+     {
+      "start": "2026-09-21T23:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3632,
+      "solar": 0.0,
+      "grid_in": 0.3632,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 23
+     }
+    ],
+    "fc": {
+     "ahead_kwh": 31.5
+    },
+    "fc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "fc_ahead_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "workday": true,
+    "summary": {
+     "date": "2026-09-21",
+     "hours": 24,
+     "expected": 24,
+     "cov": 1.0,
+     "home": 15.57,
+     "solar": 24.396,
+     "grid_in": 6.675,
+     "grid_out": 15.502,
+     "bat_in": 4.5,
+     "bat_out": 4.5,
+     "sources": {
+      "stats": 24
+     },
+     "workday": true,
+     "fc_ahead": 31.5,
+     "fc_latest": null,
+     "solar_vs_fc": 0.774,
+     "soc": {
+      "flow800": {
+       "min": 10.0,
+       "max": 100.0,
+       "end": 10.0
+      }
+     },
+     "self_sufficiency": 0.571,
+     "sun_covers": "2026-09-21T09:00:00+02:00"
+    },
+    "window": null,
+    "window_slots": [],
+    "sun": {
+     "sunrise": "2026-09-21T07:21:00+02:00",
+     "sunrise_slot": 7.35,
+     "sunset": "2026-09-21T18:52:00+02:00",
+     "sunset_slot": 18.87
+    }
+   },
+   "2026-09-22": {
+    "date": "2026-09-22",
+    "slots": [
+     "00:00",
+     "01:00",
+     "02:00",
+     "03:00",
+     "04:00",
+     "05:00",
+     "06:00",
+     "07:00",
+     "08:00",
+     "09:00",
+     "10:00",
+     "11:00",
+     "12:00",
+     "13:00",
+     "14:00",
+     "15:00",
+     "16:00",
+     "17:00",
+     "18:00",
+     "19:00",
+     "20:00",
+     "21:00",
+     "22:00",
+     "23:00"
+    ],
+    "hours": [
+     {
+      "start": "2026-09-22T00:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3968,
+      "solar": 0.0,
+      "grid_in": 0.8968,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 20.0
+       }
+      },
+      "slot": 0
+     },
+     {
+      "start": "2026-09-22T01:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3447,
+      "solar": 0.0,
+      "grid_in": 0.8447,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 30.0
+       }
+      },
+      "slot": 1
+     },
+     {
+      "start": "2026-09-22T02:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3713,
+      "solar": 0.0,
+      "grid_in": 0.8713,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 40.0
+       }
+      },
+      "slot": 2
+     },
+     {
+      "start": "2026-09-22T03:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.46,
+      "solar": 0.0,
+      "grid_in": 0.96,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 50.0
+       }
+      },
+      "slot": 3
+     },
+     {
+      "start": "2026-09-22T04:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3833,
+      "solar": 0.0,
+      "grid_in": 0.8833,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 60.0
+       }
+      },
+      "slot": 4
+     },
+     {
+      "start": "2026-09-22T05:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4643,
+      "solar": 0.0,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.4643,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.4643,
+        "soc": 50.7
+       }
+      },
+      "slot": 5
+     },
+     {
+      "start": "2026-09-22T06:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3316,
+      "solar": 0.0,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.3316,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.3316,
+        "soc": 44.1
+       }
+      },
+      "slot": 6
+     },
+     {
+      "start": "2026-09-22T07:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.1037,
+      "solar": 0.0399,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.0638,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.0638,
+        "soc": 22.8
+       }
+      },
+      "slot": 7
+     },
+     {
+      "start": "2026-09-22T08:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.1384,
+      "solar": 0.1212,
+      "grid_in": 0.3769,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.6402,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.6402,
+        "soc": 10.0
+       }
+      },
+      "slot": 8
+     },
+     {
+      "start": "2026-09-22T09:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4428,
+      "solar": 0.2948,
+      "grid_in": 0.1479,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 9
+     },
+     {
+      "start": "2026-09-22T10:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.371,
+      "solar": 0.5743,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.2032,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.2032,
+        "out": 0.0,
+        "soc": 14.1
+       }
+      },
+      "slot": 10
+     },
+     {
+      "start": "2026-09-22T11:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3725,
+      "solar": 0.8956,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.5231,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5231,
+        "out": 0.0,
+        "soc": 24.5
+       }
+      },
+      "slot": 11
+     },
+     {
+      "start": "2026-09-22T12:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3945,
+      "solar": 1.1185,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.724,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.724,
+        "out": 0.0,
+        "soc": 39.0
+       }
+      },
+      "slot": 12
+     },
+     {
+      "start": "2026-09-22T13:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4395,
+      "solar": 1.1185,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.679,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.679,
+        "out": 0.0,
+        "soc": 52.6
+       }
+      },
+      "slot": 13
+     },
+     {
+      "start": "2026-09-22T14:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3303,
+      "solar": 0.8956,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.5653,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5653,
+        "out": 0.0,
+        "soc": 63.9
+       }
+      },
+      "slot": 14
+     },
+     {
+      "start": "2026-09-22T15:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.334,
+      "solar": 0.5743,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.2402,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.2402,
+        "out": 0.0,
+        "soc": 68.7
+       }
+      },
+      "slot": 15
+     },
+     {
+      "start": "2026-09-22T16:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3605,
+      "solar": 0.2948,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0657,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0657,
+        "soc": 67.4
+       }
+      },
+      "slot": 16
+     },
+     {
+      "start": "2026-09-22T17:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4246,
+      "solar": 0.1212,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.3033,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.3033,
+        "soc": 61.3
+       }
+      },
+      "slot": 17
+     },
+     {
+      "start": "2026-09-22T18:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5297,
+      "solar": 0.0399,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.4898,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.4898,
+        "soc": 31.5
+       }
+      },
+      "slot": 18
+     },
+     {
+      "start": "2026-09-22T19:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.6297,
+      "solar": 0.0105,
+      "grid_in": 0.5432,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.076,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.076,
+        "soc": 10.0
+       }
+      },
+      "slot": 19
+     },
+     {
+      "start": "2026-09-22T20:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5664,
+      "solar": 0.0,
+      "grid_in": 1.5664,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 20
+     },
+     {
+      "start": "2026-09-22T21:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.6067,
+      "solar": 0.0,
+      "grid_in": 1.6067,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 21
+     },
+     {
+      "start": "2026-09-22T22:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4222,
+      "solar": 0.0,
+      "grid_in": 0.4222,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 22
+     },
+     {
+      "start": "2026-09-22T23:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3868,
+      "solar": 0.0,
+      "grid_in": 0.3868,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 23
+     }
+    ],
+    "fc": {
+     "ahead_kwh": 7.1
+    },
+    "fc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "fc_ahead_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "workday": true,
+    "summary": {
+     "date": "2026-09-22",
+     "hours": 24,
+     "expected": 24,
+     "cov": 1.0,
+     "home": 15.605,
+     "solar": 6.099,
+     "grid_in": 9.506,
+     "grid_out": 0.0,
+     "bat_in": 5.435,
+     "bat_out": 5.435,
+     "sources": {
+      "stats": 24
+     },
+     "workday": true,
+     "fc_ahead": 7.1,
+     "fc_latest": null,
+     "solar_vs_fc": 0.859,
+     "soc": {
+      "flow800": {
+       "min": 10.0,
+       "max": 68.7,
+       "end": 10.0
+      }
+     },
+     "self_sufficiency": 0.391,
+     "sun_covers": "2026-09-22T10:00:00+02:00"
+    },
+    "window": null,
+    "window_slots": [],
+    "sun": {
+     "sunrise": "2026-09-22T07:21:00+02:00",
+     "sunrise_slot": 7.35,
+     "sunset": "2026-09-22T18:52:00+02:00",
+     "sunset_slot": 18.87
+    }
+   },
+   "2026-09-23": {
+    "date": "2026-09-23",
+    "slots": [
+     "00:00",
+     "01:00",
+     "02:00",
+     "03:00",
+     "04:00",
+     "05:00",
+     "06:00",
+     "07:00",
+     "08:00",
+     "09:00",
+     "10:00",
+     "11:00",
+     "12:00",
+     "13:00",
+     "14:00",
+     "15:00",
+     "16:00",
+     "17:00",
+     "18:00",
+     "19:00",
+     "20:00",
+     "21:00",
+     "22:00",
+     "23:00"
+    ],
+    "hours": [
+     {
+      "start": "2026-09-23T00:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3721,
+      "solar": 0.0,
+      "grid_in": 0.3721,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 0
+     },
+     {
+      "start": "2026-09-23T01:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4611,
+      "solar": 0.0,
+      "grid_in": 0.4611,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 1
+     },
+     {
+      "start": "2026-09-23T02:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3733,
+      "solar": 0.0,
+      "grid_in": 0.3733,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 2
+     },
+     {
+      "start": "2026-09-23T03:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4116,
+      "solar": 0.0,
+      "grid_in": 0.4116,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 3
+     },
+     {
+      "start": "2026-09-23T04:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3941,
+      "solar": 0.0,
+      "grid_in": 0.3941,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 4
+     },
+     {
+      "start": "2026-09-23T05:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3527,
+      "solar": 0.0,
+      "grid_in": 0.3527,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 5
+     },
+     {
+      "start": "2026-09-23T06:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3631,
+      "solar": 0.0,
+      "grid_in": 0.3631,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 6
+     },
+     {
+      "start": "2026-09-23T07:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.1308,
+      "solar": 0.1596,
+      "grid_in": 0.9711,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 7
+     },
+     {
+      "start": "2026-09-23T08:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.0797,
+      "solar": 0.4848,
+      "grid_in": 0.5948,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 8
+     },
+     {
+      "start": "2026-09-23T09:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4575,
+      "solar": 1.1793,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.7218,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.7218,
+        "out": 0.0,
+        "soc": 24.4
+       }
+      },
+      "slot": 9
+     },
+     {
+      "start": "2026-09-23T10:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3945,
+      "solar": 2.297,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 1.9025,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 1.9025,
+        "out": 0.0,
+        "soc": 62.5
+       }
+      },
+      "slot": 10
+     },
+     {
+      "start": "2026-09-23T11:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.345,
+      "solar": 3.5825,
+      "grid_in": 0.0,
+      "grid_out": 1.3619,
+      "bat_in": 1.8757,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 1.8757,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 11
+     },
+     {
+      "start": "2026-09-23T12:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3802,
+      "solar": 4.474,
+      "grid_in": 0.0,
+      "grid_out": 4.0937,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 12
+     },
+     {
+      "start": "2026-09-23T13:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3617,
+      "solar": 4.474,
+      "grid_in": 0.0,
+      "grid_out": 4.1123,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 13
+     },
+     {
+      "start": "2026-09-23T14:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3405,
+      "solar": 3.5825,
+      "grid_in": 0.0,
+      "grid_out": 3.2419,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 14
+     },
+     {
+      "start": "2026-09-23T15:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3846,
+      "solar": 2.297,
+      "grid_in": 0.0,
+      "grid_out": 1.9124,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 15
+     },
+     {
+      "start": "2026-09-23T16:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4025,
+      "solar": 1.1793,
+      "grid_in": 0.0,
+      "grid_out": 0.7768,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 16
+     },
+     {
+      "start": "2026-09-23T17:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.426,
+      "solar": 0.4848,
+      "grid_in": 0.0,
+      "grid_out": 0.0589,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 17
+     },
+     {
+      "start": "2026-09-23T18:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.668,
+      "solar": 0.1596,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.5084,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.5084,
+        "soc": 69.8
+       }
+      },
+      "slot": 18
+     },
+     {
+      "start": "2026-09-23T19:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.6224,
+      "solar": 0.0421,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.5803,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.5803,
+        "soc": 38.2
+       }
+      },
+      "slot": 19
+     },
+     {
+      "start": "2026-09-23T20:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5771,
+      "solar": 0.0,
+      "grid_in": 0.1658,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.4113,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.4113,
+        "soc": 10.0
+       }
+      },
+      "slot": 20
+     },
+     {
+      "start": "2026-09-23T21:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5546,
+      "solar": 0.0,
+      "grid_in": 1.5546,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 21
+     },
+     {
+      "start": "2026-09-23T22:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3324,
+      "solar": 0.0,
+      "grid_in": 0.3324,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 22
+     },
+     {
+      "start": "2026-09-23T23:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3427,
+      "solar": 0.0,
+      "grid_in": 0.3427,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 23
+     }
+    ],
+    "fc": {
+     "ahead_kwh": 27.5
+    },
+    "fc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "fc_ahead_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "workday": true,
+    "summary": {
+     "date": "2026-09-23",
+     "hours": 24,
+     "expected": 24,
+     "cov": 1.0,
+     "home": 15.528,
+     "solar": 24.396,
+     "grid_in": 6.689,
+     "grid_out": 15.558,
+     "bat_in": 4.5,
+     "bat_out": 4.5,
+     "sources": {
+      "stats": 24
+     },
+     "workday": true,
+     "fc_ahead": 27.5,
+     "fc_latest": null,
+     "solar_vs_fc": 0.887,
+     "soc": {
+      "flow800": {
+       "min": 10.0,
+       "max": 100.0,
+       "end": 10.0
+      }
+     },
+     "self_sufficiency": 0.569,
+     "sun_covers": "2026-09-23T09:00:00+02:00"
+    },
+    "window": null,
+    "window_slots": [],
+    "sun": {
+     "sunrise": "2026-09-23T07:21:00+02:00",
+     "sunrise_slot": 7.35,
+     "sunset": "2026-09-23T18:52:00+02:00",
+     "sunset_slot": 18.87
+    }
+   },
+   "2026-09-24": {
+    "date": "2026-09-24",
+    "slots": [
+     "00:00",
+     "01:00",
+     "02:00",
+     "03:00",
+     "04:00",
+     "05:00",
+     "06:00",
+     "07:00",
+     "08:00",
+     "09:00",
+     "10:00",
+     "11:00",
+     "12:00",
+     "13:00",
+     "14:00",
+     "15:00",
+     "16:00",
+     "17:00",
+     "18:00",
+     "19:00",
+     "20:00",
+     "21:00",
+     "22:00",
+     "23:00"
+    ],
+    "hours": [
+     {
+      "start": "2026-09-24T00:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3927,
+      "solar": 0.0,
+      "grid_in": 0.8927,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 20.0
+       }
+      },
+      "slot": 0
+     },
+     {
+      "start": "2026-09-24T01:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4084,
+      "solar": 0.0,
+      "grid_in": 0.9084,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 30.0
+       }
+      },
+      "slot": 1
+     },
+     {
+      "start": "2026-09-24T02:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3594,
+      "solar": 0.0,
+      "grid_in": 0.8594,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 40.0
+       }
+      },
+      "slot": 2
+     },
+     {
+      "start": "2026-09-24T03:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3206,
+      "solar": 0.0,
+      "grid_in": 0.8206,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 50.0
+       }
+      },
+      "slot": 3
+     },
+     {
+      "start": "2026-09-24T04:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3828,
+      "solar": 0.0,
+      "grid_in": 0.8828,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 60.0
+       }
+      },
+      "slot": 4
+     },
+     {
+      "start": "2026-09-24T05:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3754,
+      "solar": 0.0,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.3754,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.3754,
+        "soc": 52.5
+       }
+      },
+      "slot": 5
+     },
+     {
+      "start": "2026-09-24T06:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.405,
+      "solar": 0.0,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.405,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.405,
+        "soc": 44.4
+       }
+      },
+      "slot": 6
+     },
+     {
+      "start": "2026-09-24T07:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.163,
+      "solar": 0.0399,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.1231,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.1231,
+        "soc": 21.9
+       }
+      },
+      "slot": 7
+     },
+     {
+      "start": "2026-09-24T08:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.1236,
+      "solar": 0.1212,
+      "grid_in": 0.4058,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.5966,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.5966,
+        "soc": 10.0
+       }
+      },
+      "slot": 8
+     },
+     {
+      "start": "2026-09-24T09:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3973,
+      "solar": 0.2948,
+      "grid_in": 0.1025,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 9
+     },
+     {
+      "start": "2026-09-24T10:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4126,
+      "solar": 0.5743,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.1616,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.1616,
+        "out": 0.0,
+        "soc": 13.2
+       }
+      },
+      "slot": 10
+     },
+     {
+      "start": "2026-09-24T11:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4214,
+      "solar": 0.8956,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.4742,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.4742,
+        "out": 0.0,
+        "soc": 22.7
+       }
+      },
+      "slot": 11
+     },
+     {
+      "start": "2026-09-24T12:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3281,
+      "solar": 1.1185,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.7904,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.7904,
+        "out": 0.0,
+        "soc": 38.5
+       }
+      },
+      "slot": 12
+     },
+     {
+      "start": "2026-09-24T13:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4549,
+      "solar": 1.1185,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.6636,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.6636,
+        "out": 0.0,
+        "soc": 51.8
+       }
+      },
+      "slot": 13
+     },
+     {
+      "start": "2026-09-24T14:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.437,
+      "solar": 0.8956,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.4586,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.4586,
+        "out": 0.0,
+        "soc": 61.0
+       }
+      },
+      "slot": 14
+     },
+     {
+      "start": "2026-09-24T15:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4512,
+      "solar": 0.5743,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.1231,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.1231,
+        "out": 0.0,
+        "soc": 63.4
+       }
+      },
+      "slot": 15
+     },
+     {
+      "start": "2026-09-24T16:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4397,
+      "solar": 0.2948,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.1448,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.1448,
+        "soc": 60.5
+       }
+      },
+      "slot": 16
+     },
+     {
+      "start": "2026-09-24T17:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3789,
+      "solar": 0.1212,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.2576,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.2576,
+        "soc": 55.4
+       }
+      },
+      "slot": 17
+     },
+     {
+      "start": "2026-09-24T18:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5798,
+      "solar": 0.0399,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.5399,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.5399,
+        "soc": 24.6
+       }
+      },
+      "slot": 18
+     },
+     {
+      "start": "2026-09-24T19:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5355,
+      "solar": 0.0105,
+      "grid_in": 0.796,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.729,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.729,
+        "soc": 10.0
+       }
+      },
+      "slot": 19
+     },
+     {
+      "start": "2026-09-24T20:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.6151,
+      "solar": 0.0,
+      "grid_in": 1.6151,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 20
+     },
+     {
+      "start": "2026-09-24T21:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5293,
+      "solar": 0.0,
+      "grid_in": 1.5293,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 21
+     },
+     {
+      "start": "2026-09-24T22:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3301,
+      "solar": 0.0,
+      "grid_in": 0.3301,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 22
+     },
+     {
+      "start": "2026-09-24T23:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3513,
+      "solar": 0.0,
+      "grid_in": 0.3513,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 23
+     }
+    ],
+    "fc": {
+     "ahead_kwh": 5.4
+    },
+    "fc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "fc_ahead_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "workday": true,
+    "summary": {
+     "date": "2026-09-24",
+     "hours": 24,
+     "expected": 24,
+     "cov": 1.0,
+     "home": 15.593,
+     "solar": 6.099,
+     "grid_in": 9.494,
+     "grid_out": 0.0,
+     "bat_in": 5.171,
+     "bat_out": 5.171,
+     "sources": {
+      "stats": 24
+     },
+     "workday": true,
+     "fc_ahead": 5.4,
+     "fc_latest": null,
+     "solar_vs_fc": 1.129,
+     "soc": {
+      "flow800": {
+       "min": 10.0,
+       "max": 63.4,
+       "end": 10.0
+      }
+     },
+     "self_sufficiency": 0.391,
+     "sun_covers": "2026-09-24T10:00:00+02:00"
+    },
+    "window": null,
+    "window_slots": [],
+    "sun": {
+     "sunrise": "2026-09-24T07:21:00+02:00",
+     "sunrise_slot": 7.35,
+     "sunset": "2026-09-24T18:52:00+02:00",
+     "sunset_slot": 18.87
+    }
+   },
+   "2026-09-25": {
+    "date": "2026-09-25",
+    "slots": [
+     "00:00",
+     "01:00",
+     "02:00",
+     "03:00",
+     "04:00",
+     "05:00",
+     "06:00",
+     "07:00",
+     "08:00",
+     "09:00",
+     "10:00",
+     "11:00",
+     "12:00",
+     "13:00",
+     "14:00",
+     "15:00",
+     "16:00",
+     "17:00",
+     "18:00",
+     "19:00",
+     "20:00",
+     "21:00",
+     "22:00",
+     "23:00"
+    ],
+    "hours": [
+     {
+      "start": "2026-09-25T00:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4101,
+      "solar": 0.0,
+      "grid_in": 0.4101,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 0
+     },
+     {
+      "start": "2026-09-25T01:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3354,
+      "solar": 0.0,
+      "grid_in": 0.3354,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 1
+     },
+     {
+      "start": "2026-09-25T02:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.405,
+      "solar": 0.0,
+      "grid_in": 0.405,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 2
+     },
+     {
+      "start": "2026-09-25T03:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4005,
+      "solar": 0.0,
+      "grid_in": 0.4005,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 3
+     },
+     {
+      "start": "2026-09-25T04:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4623,
+      "solar": 0.0,
+      "grid_in": 0.4623,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 4
+     },
+     {
+      "start": "2026-09-25T05:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4121,
+      "solar": 0.0,
+      "grid_in": 0.4121,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 5
+     },
+     {
+      "start": "2026-09-25T06:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3305,
+      "solar": 0.0,
+      "grid_in": 0.3305,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 6
+     },
+     {
+      "start": "2026-09-25T07:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.0512,
+      "solar": 0.1117,
+      "grid_in": 0.9395,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 7
+     },
+     {
+      "start": "2026-09-25T08:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.0764,
+      "solar": 0.3394,
+      "grid_in": 0.737,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 8
+     },
+     {
+      "start": "2026-09-25T09:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4152,
+      "solar": 0.8255,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.4104,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.4104,
+        "out": 0.0,
+        "soc": 18.2
+       }
+      },
+      "slot": 9
+     },
+     {
+      "start": "2026-09-25T10:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4633,
+      "solar": 1.6079,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 1.1446,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 1.1446,
+        "out": 0.0,
+        "soc": 41.1
+       }
+      },
+      "slot": 10
+     },
+     {
+      "start": "2026-09-25T11:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4103,
+      "solar": 2.5077,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 2.0974,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 2.0974,
+        "out": 0.0,
+        "soc": 83.0
+       }
+      },
+      "slot": 11
+     },
+     {
+      "start": "2026-09-25T12:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3911,
+      "solar": 3.1318,
+      "grid_in": 0.0,
+      "grid_out": 1.893,
+      "bat_in": 0.8476,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.8476,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 12
+     },
+     {
+      "start": "2026-09-25T13:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3373,
+      "solar": 3.1318,
+      "grid_in": 0.0,
+      "grid_out": 2.7945,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 13
+     },
+     {
+      "start": "2026-09-25T14:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3932,
+      "solar": 2.5077,
+      "grid_in": 0.0,
+      "grid_out": 2.1145,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 14
+     },
+     {
+      "start": "2026-09-25T15:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4667,
+      "solar": 1.6079,
+      "grid_in": 0.0,
+      "grid_out": 1.1412,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 15
+     },
+     {
+      "start": "2026-09-25T16:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3921,
+      "solar": 0.8255,
+      "grid_in": 0.0,
+      "grid_out": 0.4335,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 16
+     },
+     {
+      "start": "2026-09-25T17:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3668,
+      "solar": 0.3394,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0274,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0274,
+        "soc": 99.5
+       }
+      },
+      "slot": 17
+     },
+     {
+      "start": "2026-09-25T18:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5416,
+      "solar": 0.1117,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.4299,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.4299,
+        "soc": 70.9
+       }
+      },
+      "slot": 18
+     },
+     {
+      "start": "2026-09-25T19:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.6325,
+      "solar": 0.0294,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.603,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.603,
+        "soc": 38.8
+       }
+      },
+      "slot": 19
+     },
+     {
+      "start": "2026-09-25T20:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.6311,
+      "solar": 0.0,
+      "grid_in": 0.1913,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.4397,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.4397,
+        "soc": 10.0
+       }
+      },
+      "slot": 20
+     },
+     {
+      "start": "2026-09-25T21:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5918,
+      "solar": 0.0,
+      "grid_in": 1.5918,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 21
+     },
+     {
+      "start": "2026-09-25T22:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4238,
+      "solar": 0.0,
+      "grid_in": 0.4238,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 22
+     },
+     {
+      "start": "2026-09-25T23:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3975,
+      "solar": 0.0,
+      "grid_in": 0.3975,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 23
+     }
+    ],
+    "fc": {
+     "ahead_kwh": 15.4
+    },
+    "fc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "fc_ahead_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "workday": true,
+    "summary": {
+     "date": "2026-09-25",
+     "hours": 24,
+     "expected": 24,
+     "cov": 1.0,
+     "home": 15.738,
+     "solar": 17.077,
+     "grid_in": 7.037,
+     "grid_out": 8.377,
+     "bat_in": 4.5,
+     "bat_out": 4.5,
+     "sources": {
+      "stats": 24
+     },
+     "workday": true,
+     "fc_ahead": 15.4,
+     "fc_latest": null,
+     "solar_vs_fc": 1.109,
+     "soc": {
+      "flow800": {
+       "min": 10.0,
+       "max": 100.0,
+       "end": 10.0
+      }
+     },
+     "self_sufficiency": 0.553,
+     "sun_covers": "2026-09-25T09:00:00+02:00"
+    },
+    "window": null,
+    "window_slots": [],
+    "sun": {
+     "sunrise": "2026-09-25T07:21:00+02:00",
+     "sunrise_slot": 7.35,
+     "sunset": "2026-09-25T18:52:00+02:00",
+     "sunset_slot": 18.87
+    }
+   },
+   "2026-09-26": {
+    "date": "2026-09-26",
+    "slots": [
+     "00:00",
+     "01:00",
+     "02:00",
+     "03:00",
+     "04:00",
+     "05:00",
+     "06:00",
+     "07:00",
+     "08:00",
+     "09:00",
+     "10:00",
+     "11:00",
+     "12:00",
+     "13:00",
+     "14:00",
+     "15:00",
+     "16:00",
+     "17:00",
+     "18:00",
+     "19:00",
+     "20:00",
+     "21:00",
+     "22:00",
+     "23:00"
+    ],
+    "hours": [
+     {
+      "start": "2026-09-26T00:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3743,
+      "solar": 0.0,
+      "grid_in": 0.3743,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 0
+     },
+     {
+      "start": "2026-09-26T01:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4235,
+      "solar": 0.0,
+      "grid_in": 0.4235,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 1
+     },
+     {
+      "start": "2026-09-26T02:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4571,
+      "solar": 0.0,
+      "grid_in": 0.4571,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 2
+     },
+     {
+      "start": "2026-09-26T03:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4337,
+      "solar": 0.0,
+      "grid_in": 0.4337,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 3
+     },
+     {
+      "start": "2026-09-26T04:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3647,
+      "solar": 0.0,
+      "grid_in": 0.3647,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 4
+     },
+     {
+      "start": "2026-09-26T05:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4164,
+      "solar": 0.0,
+      "grid_in": 0.4164,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 5
+     },
+     {
+      "start": "2026-09-26T06:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3337,
+      "solar": 0.0,
+      "grid_in": 0.3337,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 6
+     },
+     {
+      "start": "2026-09-26T07:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.1468,
+      "solar": 0.1596,
+      "grid_in": 0.9872,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 7
+     },
+     {
+      "start": "2026-09-26T08:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.0978,
+      "solar": 0.4848,
+      "grid_in": 0.6129,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 8
+     },
+     {
+      "start": "2026-09-26T09:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4562,
+      "solar": 1.1793,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.7231,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.7231,
+        "out": 0.0,
+        "soc": 24.5
+       }
+      },
+      "slot": 9
+     },
+     {
+      "start": "2026-09-26T10:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.9734,
+      "solar": 2.297,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 1.3237,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 1.3237,
+        "out": 0.0,
+        "soc": 50.9
+       }
+      },
+      "slot": 10
+     },
+     {
+      "start": "2026-09-26T11:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.9534,
+      "solar": 3.5825,
+      "grid_in": 0.0,
+      "grid_out": 0.1758,
+      "bat_in": 2.4532,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 2.4532,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 11
+     },
+     {
+      "start": "2026-09-26T12:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.0012,
+      "solar": 4.474,
+      "grid_in": 0.0,
+      "grid_out": 3.4727,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 12
+     },
+     {
+      "start": "2026-09-26T13:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.9954,
+      "solar": 4.474,
+      "grid_in": 0.0,
+      "grid_out": 3.4786,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 13
+     },
+     {
+      "start": "2026-09-26T14:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.0155,
+      "solar": 3.5825,
+      "grid_in": 0.0,
+      "grid_out": 2.567,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 14
+     },
+     {
+      "start": "2026-09-26T15:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.012,
+      "solar": 2.297,
+      "grid_in": 0.0,
+      "grid_out": 1.285,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 15
+     },
+     {
+      "start": "2026-09-26T16:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4383,
+      "solar": 1.1793,
+      "grid_in": 0.0,
+      "grid_out": 0.7411,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 16
+     },
+     {
+      "start": "2026-09-26T17:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4337,
+      "solar": 0.4848,
+      "grid_in": 0.0,
+      "grid_out": 0.0511,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 17
+     },
+     {
+      "start": "2026-09-26T18:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5493,
+      "solar": 0.1596,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.3897,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.3897,
+        "soc": 72.2
+       }
+      },
+      "slot": 18
+     },
+     {
+      "start": "2026-09-26T19:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5559,
+      "solar": 0.0421,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.5138,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.5138,
+        "soc": 41.9
+       }
+      },
+      "slot": 19
+     },
+     {
+      "start": "2026-09-26T20:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5801,
+      "solar": 0.0,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.5801,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.5801,
+        "soc": 10.3
+       }
+      },
+      "slot": 20
+     },
+     {
+      "start": "2026-09-26T21:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.6405,
+      "solar": 0.0,
+      "grid_in": 1.6241,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0164,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0164,
+        "soc": 10.0
+       }
+      },
+      "slot": 21
+     },
+     {
+      "start": "2026-09-26T22:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.35,
+      "solar": 0.0,
+      "grid_in": 0.35,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 22
+     },
+     {
+      "start": "2026-09-26T23:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3939,
+      "solar": 0.0,
+      "grid_in": 0.3939,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 23
+     }
+    ],
+    "fc": {
+     "ahead_kwh": 28.4
+    },
+    "fc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "fc_ahead_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "workday": false,
+    "summary": {
+     "date": "2026-09-26",
+     "hours": 24,
+     "expected": 24,
+     "cov": 1.0,
+     "home": 19.397,
+     "solar": 24.396,
+     "grid_in": 6.771,
+     "grid_out": 11.771,
+     "bat_in": 4.5,
+     "bat_out": 4.5,
+     "sources": {
+      "stats": 24
+     },
+     "workday": false,
+     "fc_ahead": 28.4,
+     "fc_latest": null,
+     "solar_vs_fc": 0.859,
+     "soc": {
+      "flow800": {
+       "min": 10.0,
+       "max": 100.0,
+       "end": 10.0
+      }
+     },
+     "self_sufficiency": 0.651,
+     "sun_covers": "2026-09-26T09:00:00+02:00"
+    },
+    "window": null,
+    "window_slots": [],
+    "sun": {
+     "sunrise": "2026-09-26T07:21:00+02:00",
+     "sunrise_slot": 7.35,
+     "sunset": "2026-09-26T18:52:00+02:00",
+     "sunset_slot": 18.87
+    }
+   },
+   "2026-09-27": {
+    "date": "2026-09-27",
+    "slots": [
+     "00:00",
+     "01:00",
+     "02:00",
+     "03:00",
+     "04:00",
+     "05:00",
+     "06:00",
+     "07:00",
+     "08:00",
+     "09:00",
+     "10:00",
+     "11:00",
+     "12:00",
+     "13:00",
+     "14:00",
+     "15:00",
+     "16:00",
+     "17:00",
+     "18:00",
+     "19:00",
+     "20:00",
+     "21:00",
+     "22:00",
+     "23:00"
+    ],
+    "hours": [
+     {
+      "start": "2026-09-27T00:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4385,
+      "solar": 0.0,
+      "grid_in": 0.9385,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 20.0
+       }
+      },
+      "slot": 0
+     },
+     {
+      "start": "2026-09-27T01:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3908,
+      "solar": 0.0,
+      "grid_in": 0.8908,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 30.0
+       }
+      },
+      "slot": 1
+     },
+     {
+      "start": "2026-09-27T02:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.349,
+      "solar": 0.0,
+      "grid_in": 0.849,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 40.0
+       }
+      },
+      "slot": 2
+     },
+     {
+      "start": "2026-09-27T03:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4108,
+      "solar": 0.0,
+      "grid_in": 0.9108,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 50.0
+       }
+      },
+      "slot": 3
+     },
+     {
+      "start": "2026-09-27T04:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3716,
+      "solar": 0.0,
+      "grid_in": 0.8716,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 60.0
+       }
+      },
+      "slot": 4
+     },
+     {
+      "start": "2026-09-27T05:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4413,
+      "solar": 0.0,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.4413,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.4413,
+        "soc": 51.2
+       }
+      },
+      "slot": 5
+     },
+     {
+      "start": "2026-09-27T06:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4285,
+      "solar": 0.0,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.4285,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.4285,
+        "soc": 42.6
+       }
+      },
+      "slot": 6
+     },
+     {
+      "start": "2026-09-27T07:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.0724,
+      "solar": 0.0399,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.0325,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.0325,
+        "soc": 22.0
+       }
+      },
+      "slot": 7
+     },
+     {
+      "start": "2026-09-27T08:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.1662,
+      "solar": 0.1212,
+      "grid_in": 0.4472,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.5977,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.5977,
+        "soc": 10.0
+       }
+      },
+      "slot": 8
+     },
+     {
+      "start": "2026-09-27T09:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3321,
+      "solar": 0.2948,
+      "grid_in": 0.0372,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 9
+     },
+     {
+      "start": "2026-09-27T10:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.9353,
+      "solar": 0.5743,
+      "grid_in": 0.3611,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 10
+     },
+     {
+      "start": "2026-09-27T11:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.9905,
+      "solar": 0.8956,
+      "grid_in": 0.0949,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 11
+     },
+     {
+      "start": "2026-09-27T12:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.9707,
+      "solar": 1.1185,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.1478,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.1478,
+        "out": 0.0,
+        "soc": 13.0
+       }
+      },
+      "slot": 12
+     },
+     {
+      "start": "2026-09-27T13:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.9924,
+      "solar": 1.1185,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.1261,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.1261,
+        "out": 0.0,
+        "soc": 15.5
+       }
+      },
+      "slot": 13
+     },
+     {
+      "start": "2026-09-27T14:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.0678,
+      "solar": 0.8956,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.1722,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.1722,
+        "soc": 12.0
+       }
+      },
+      "slot": 14
+     },
+     {
+      "start": "2026-09-27T15:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.0115,
+      "solar": 0.5743,
+      "grid_in": 0.3355,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.1018,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.1018,
+        "soc": 10.0
+       }
+      },
+      "slot": 15
+     },
+     {
+      "start": "2026-09-27T16:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3203,
+      "solar": 0.2948,
+      "grid_in": 0.0255,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 16
+     },
+     {
+      "start": "2026-09-27T17:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4564,
+      "solar": 0.1212,
+      "grid_in": 0.3352,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 17
+     },
+     {
+      "start": "2026-09-27T18:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5716,
+      "solar": 0.0399,
+      "grid_in": 1.5317,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 18
+     },
+     {
+      "start": "2026-09-27T19:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.6165,
+      "solar": 0.0105,
+      "grid_in": 1.606,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 19
+     },
+     {
+      "start": "2026-09-27T20:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.6452,
+      "solar": 0.0,
+      "grid_in": 1.6452,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 20
+     },
+     {
+      "start": "2026-09-27T21:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.538,
+      "solar": 0.0,
+      "grid_in": 1.538,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 21
+     },
+     {
+      "start": "2026-09-27T22:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3783,
+      "solar": 0.0,
+      "grid_in": 0.3783,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 22
+     },
+     {
+      "start": "2026-09-27T23:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4267,
+      "solar": 0.0,
+      "grid_in": 0.4267,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 23
+     }
+    ],
+    "fc": {
+     "ahead_kwh": 5.5
+    },
+    "fc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "fc_ahead_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "workday": false,
+    "summary": {
+     "date": "2026-09-27",
+     "hours": 24,
+     "expected": 24,
+     "cov": 1.0,
+     "home": 19.322,
+     "solar": 6.099,
+     "grid_in": 13.223,
+     "grid_out": 0.0,
+     "bat_in": 2.774,
+     "bat_out": 2.774,
+     "sources": {
+      "stats": 24
+     },
+     "workday": false,
+     "fc_ahead": 5.5,
+     "fc_latest": null,
+     "solar_vs_fc": 1.109,
+     "soc": {
+      "flow800": {
+       "min": 10.0,
+       "max": 60.0,
+       "end": 10.0
+      }
+     },
+     "self_sufficiency": 0.316,
+     "sun_covers": "2026-09-27T12:00:00+02:00"
+    },
+    "window": null,
+    "window_slots": [],
+    "sun": {
+     "sunrise": "2026-09-27T07:21:00+02:00",
+     "sunrise_slot": 7.35,
+     "sunset": "2026-09-27T18:52:00+02:00",
+     "sunset_slot": 18.87
+    }
+   },
+   "2026-09-28": {
+    "date": "2026-09-28",
+    "slots": [
+     "00:00",
+     "01:00",
+     "02:00",
+     "03:00",
+     "04:00",
+     "05:00",
+     "06:00",
+     "07:00",
+     "08:00",
+     "09:00",
+     "10:00",
+     "11:00",
+     "12:00",
+     "13:00",
+     "14:00",
+     "15:00",
+     "16:00",
+     "17:00",
+     "18:00",
+     "19:00",
+     "20:00",
+     "21:00",
+     "22:00",
+     "23:00"
+    ],
+    "hours": [
+     {
+      "start": "2026-09-28T00:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3851,
+      "solar": 0.0,
+      "grid_in": 0.8851,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 20.0
+       }
+      },
+      "slot": 0
+     },
+     {
+      "start": "2026-09-28T01:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4154,
+      "solar": 0.0,
+      "grid_in": 0.9154,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 30.0
+       }
+      },
+      "slot": 1
+     },
+     {
+      "start": "2026-09-28T02:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.333,
+      "solar": 0.0,
+      "grid_in": 0.833,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 40.0
+       }
+      },
+      "slot": 2
+     },
+     {
+      "start": "2026-09-28T03:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4619,
+      "solar": 0.0,
+      "grid_in": 0.9619,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 50.0
+       }
+      },
+      "slot": 3
+     },
+     {
+      "start": "2026-09-28T04:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4283,
+      "solar": 0.0,
+      "grid_in": 0.9283,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 60.0
+       }
+      },
+      "slot": 4
+     },
+     {
+      "start": "2026-09-28T05:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3895,
+      "solar": 0.0,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.3895,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.3895,
+        "soc": 52.2
+       }
+      },
+      "slot": 5
+     },
+     {
+      "start": "2026-09-28T06:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4315,
+      "solar": 0.0,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.4315,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.4315,
+        "soc": 43.6
+       }
+      },
+      "slot": 6
+     },
+     {
+      "start": "2026-09-28T07:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.0327,
+      "solar": 0.0718,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.9609,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.9609,
+        "soc": 24.4
+       }
+      },
+      "slot": 7
+     },
+     {
+      "start": "2026-09-28T08:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.0438,
+      "solar": 0.2182,
+      "grid_in": 0.1075,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.7181,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.7181,
+        "soc": 10.0
+       }
+      },
+      "slot": 8
+     },
+     {
+      "start": "2026-09-28T09:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.469,
+      "solar": 0.5307,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0617,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0617,
+        "out": 0.0,
+        "soc": 11.2
+       }
+      },
+      "slot": 9
+     },
+     {
+      "start": "2026-09-28T10:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3241,
+      "solar": 1.0337,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.7095,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.7095,
+        "out": 0.0,
+        "soc": 25.4
+       }
+      },
+      "slot": 10
+     },
+     {
+      "start": "2026-09-28T11:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4086,
+      "solar": 1.6121,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 1.2035,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 1.2035,
+        "out": 0.0,
+        "soc": 49.5
+       }
+      },
+      "slot": 11
+     },
+     {
+      "start": "2026-09-28T12:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3898,
+      "solar": 2.0133,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 1.6235,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 1.6235,
+        "out": 0.0,
+        "soc": 82.0
+       }
+      },
+      "slot": 12
+     },
+     {
+      "start": "2026-09-28T13:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4184,
+      "solar": 2.0133,
+      "grid_in": 0.0,
+      "grid_out": 0.6932,
+      "bat_in": 0.9018,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.9018,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 13
+     },
+     {
+      "start": "2026-09-28T14:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4117,
+      "solar": 1.6121,
+      "grid_in": 0.0,
+      "grid_out": 1.2004,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 14
+     },
+     {
+      "start": "2026-09-28T15:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4094,
+      "solar": 1.0337,
+      "grid_in": 0.0,
+      "grid_out": 0.6243,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 15
+     },
+     {
+      "start": "2026-09-28T16:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3912,
+      "solar": 0.5307,
+      "grid_in": 0.0,
+      "grid_out": 0.1395,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 16
+     },
+     {
+      "start": "2026-09-28T17:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4606,
+      "solar": 0.2182,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.2424,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.2424,
+        "soc": 95.2
+       }
+      },
+      "slot": 17
+     },
+     {
+      "start": "2026-09-28T18:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5434,
+      "solar": 0.0718,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.4716,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.4716,
+        "soc": 65.7
+       }
+      },
+      "slot": 18
+     },
+     {
+      "start": "2026-09-28T19:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.6022,
+      "solar": 0.0189,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.5833,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.5833,
+        "soc": 34.1
+       }
+      },
+      "slot": 19
+     },
+     {
+      "start": "2026-09-28T20:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5232,
+      "solar": 0.0,
+      "grid_in": 0.3205,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.2027,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.2027,
+        "soc": 10.0
+       }
+      },
+      "slot": 20
+     },
+     {
+      "start": "2026-09-28T21:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.6399,
+      "solar": 0.0,
+      "grid_in": 1.6399,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 21
+     },
+     {
+      "start": "2026-09-28T22:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.429,
+      "solar": 0.0,
+      "grid_in": 0.429,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 22
+     },
+     {
+      "start": "2026-09-28T23:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3354,
+      "solar": 0.0,
+      "grid_in": 0.3354,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 23
+     }
+    ],
+    "fc": {
+     "ahead_kwh": 12.9
+    },
+    "fc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "fc_ahead_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "workday": true,
+    "summary": {
+     "date": "2026-09-28",
+     "hours": 24,
+     "expected": 24,
+     "cov": 1.0,
+     "home": 15.677,
+     "solar": 10.979,
+     "grid_in": 7.356,
+     "grid_out": 2.657,
+     "bat_in": 7.0,
+     "bat_out": 7.0,
+     "sources": {
+      "stats": 24
+     },
+     "workday": true,
+     "fc_ahead": 12.9,
+     "fc_latest": null,
+     "solar_vs_fc": 0.851,
+     "soc": {
+      "flow800": {
+       "min": 10.0,
+       "max": 100.0,
+       "end": 10.0
+      }
+     },
+     "self_sufficiency": 0.531,
+     "sun_covers": "2026-09-28T09:00:00+02:00"
+    },
+    "window": null,
+    "window_slots": [],
+    "sun": {
+     "sunrise": "2026-09-28T07:21:00+02:00",
+     "sunrise_slot": 7.35,
+     "sunset": "2026-09-28T18:52:00+02:00",
+     "sunset_slot": 18.87
+    }
+   },
+   "2026-09-29": {
+    "date": "2026-09-29",
+    "slots": [
+     "00:00",
+     "01:00",
+     "02:00",
+     "03:00",
+     "04:00",
+     "05:00",
+     "06:00",
+     "07:00",
+     "08:00",
+     "09:00",
+     "10:00",
+     "11:00",
+     "12:00",
+     "13:00",
+     "14:00",
+     "15:00",
+     "16:00",
+     "17:00",
+     "18:00",
+     "19:00",
+     "20:00",
+     "21:00",
+     "22:00",
+     "23:00"
+    ],
+    "hours": [
+     {
+      "start": "2026-09-29T00:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3851,
+      "solar": 0.0,
+      "grid_in": 0.8851,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 20.0
+       }
+      },
+      "slot": 0
+     },
+     {
+      "start": "2026-09-29T01:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4508,
+      "solar": 0.0,
+      "grid_in": 0.9508,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 30.0
+       }
+      },
+      "slot": 1
+     },
+     {
+      "start": "2026-09-29T02:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4439,
+      "solar": 0.0,
+      "grid_in": 0.9439,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 40.0
+       }
+      },
+      "slot": 2
+     },
+     {
+      "start": "2026-09-29T03:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3517,
+      "solar": 0.0,
+      "grid_in": 0.8517,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 50.0
+       }
+      },
+      "slot": 3
+     },
+     {
+      "start": "2026-09-29T04:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3578,
+      "solar": 0.0,
+      "grid_in": 0.8578,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 60.0
+       }
+      },
+      "slot": 4
+     },
+     {
+      "start": "2026-09-29T05:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3639,
+      "solar": 0.0,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.3639,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.3639,
+        "soc": 52.7
+       }
+      },
+      "slot": 5
+     },
+     {
+      "start": "2026-09-29T06:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3561,
+      "solar": 0.0,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.3561,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.3561,
+        "soc": 45.6
+       }
+      },
+      "slot": 6
+     },
+     {
+      "start": "2026-09-29T07:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.108,
+      "solar": 0.0718,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.0361,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.0361,
+        "soc": 24.9
+       }
+      },
+      "slot": 7
+     },
+     {
+      "start": "2026-09-29T08:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.0589,
+      "solar": 0.2182,
+      "grid_in": 0.0969,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.7438,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.7438,
+        "soc": 10.0
+       }
+      },
+      "slot": 8
+     },
+     {
+      "start": "2026-09-29T09:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3829,
+      "solar": 0.5307,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.1478,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.1478,
+        "out": 0.0,
+        "soc": 13.0
+       }
+      },
+      "slot": 9
+     },
+     {
+      "start": "2026-09-29T10:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3397,
+      "solar": 1.0337,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.694,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.694,
+        "out": 0.0,
+        "soc": 26.8
+       }
+      },
+      "slot": 10
+     },
+     {
+      "start": "2026-09-29T11:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4565,
+      "solar": 1.6121,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 1.1556,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 1.1556,
+        "out": 0.0,
+        "soc": 49.9
+       }
+      },
+      "slot": 11
+     },
+     {
+      "start": "2026-09-29T12:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3731,
+      "solar": 2.0133,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 1.6402,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 1.6402,
+        "out": 0.0,
+        "soc": 82.8
+       }
+      },
+      "slot": 12
+     },
+     {
+      "start": "2026-09-29T13:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3887,
+      "solar": 2.0133,
+      "grid_in": 0.0,
+      "grid_out": 0.7622,
+      "bat_in": 0.8623,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.8623,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 13
+     },
+     {
+      "start": "2026-09-29T14:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4075,
+      "solar": 1.6121,
+      "grid_in": 0.0,
+      "grid_out": 1.2046,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 14
+     },
+     {
+      "start": "2026-09-29T15:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4556,
+      "solar": 1.0337,
+      "grid_in": 0.0,
+      "grid_out": 0.578,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 15
+     },
+     {
+      "start": "2026-09-29T16:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3831,
+      "solar": 0.5307,
+      "grid_in": 0.0,
+      "grid_out": 0.1476,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 16
+     },
+     {
+      "start": "2026-09-29T17:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4577,
+      "solar": 0.2182,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.2395,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.2395,
+        "soc": 95.2
+       }
+      },
+      "slot": 17
+     },
+     {
+      "start": "2026-09-29T18:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5952,
+      "solar": 0.0718,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.5234,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.5234,
+        "soc": 64.7
+       }
+      },
+      "slot": 18
+     },
+     {
+      "start": "2026-09-29T19:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5998,
+      "solar": 0.0189,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.5808,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.5808,
+        "soc": 33.1
+       }
+      },
+      "slot": 19
+     },
+     {
+      "start": "2026-09-29T20:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5985,
+      "solar": 0.0,
+      "grid_in": 0.4423,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.1563,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.1563,
+        "soc": 10.0
+       }
+      },
+      "slot": 20
+     },
+     {
+      "start": "2026-09-29T21:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5228,
+      "solar": 0.0,
+      "grid_in": 1.5228,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 21
+     },
+     {
+      "start": "2026-09-29T22:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.386,
+      "solar": 0.0,
+      "grid_in": 0.386,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 22
+     },
+     {
+      "start": "2026-09-29T23:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3475,
+      "solar": 0.0,
+      "grid_in": 0.3475,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 23
+     }
+    ],
+    "fc": {
+     "ahead_kwh": 8.8
+    },
+    "fc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "fc_ahead_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "workday": true,
+    "summary": {
+     "date": "2026-09-29",
+     "hours": 24,
+     "expected": 24,
+     "cov": 1.0,
+     "home": 15.571,
+     "solar": 10.979,
+     "grid_in": 7.285,
+     "grid_out": 2.692,
+     "bat_in": 7.0,
+     "bat_out": 7.0,
+     "sources": {
+      "stats": 24
+     },
+     "workday": true,
+     "fc_ahead": 8.8,
+     "fc_latest": null,
+     "solar_vs_fc": 1.248,
+     "soc": {
+      "flow800": {
+       "min": 10.0,
+       "max": 100.0,
+       "end": 10.0
+      }
+     },
+     "self_sufficiency": 0.532,
+     "sun_covers": "2026-09-29T09:00:00+02:00"
+    },
+    "window": null,
+    "window_slots": [],
+    "sun": {
+     "sunrise": "2026-09-29T07:21:00+02:00",
+     "sunrise_slot": 7.35,
+     "sunset": "2026-09-29T18:52:00+02:00",
+     "sunset_slot": 18.87
+    }
+   },
+   "2026-09-30": {
+    "date": "2026-09-30",
+    "slots": [
+     "00:00",
+     "01:00",
+     "02:00",
+     "03:00",
+     "04:00",
+     "05:00",
+     "06:00",
+     "07:00",
+     "08:00",
+     "09:00",
+     "10:00",
+     "11:00",
+     "12:00",
+     "13:00",
+     "14:00",
+     "15:00",
+     "16:00",
+     "17:00",
+     "18:00",
+     "19:00",
+     "20:00",
+     "21:00",
+     "22:00",
+     "23:00"
+    ],
+    "hours": [
+     {
+      "start": "2026-09-30T00:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3459,
+      "solar": 0.0,
+      "grid_in": 0.8459,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 20.0
+       }
+      },
+      "slot": 0
+     },
+     {
+      "start": "2026-09-30T01:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.391,
+      "solar": 0.0,
+      "grid_in": 0.891,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 30.0
+       }
+      },
+      "slot": 1
+     },
+     {
+      "start": "2026-09-30T02:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4288,
+      "solar": 0.0,
+      "grid_in": 0.9288,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 40.0
+       }
+      },
+      "slot": 2
+     },
+     {
+      "start": "2026-09-30T03:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4035,
+      "solar": 0.0,
+      "grid_in": 0.9035,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 50.0
+       }
+      },
+      "slot": 3
+     },
+     {
+      "start": "2026-09-30T04:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3689,
+      "solar": 0.0,
+      "grid_in": 0.8689,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 60.0
+       }
+      },
+      "slot": 4
+     },
+     {
+      "start": "2026-09-30T05:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3978,
+      "solar": 0.0,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.3978,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.3978,
+        "soc": 52.0
+       }
+      },
+      "slot": 5
+     },
+     {
+      "start": "2026-09-30T06:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4033,
+      "solar": 0.0,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.4033,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.4033,
+        "soc": 44.0
+       }
+      },
+      "slot": 6
+     },
+     {
+      "start": "2026-09-30T07:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.1376,
+      "solar": 0.0718,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.0658,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.0658,
+        "soc": 22.7
+       }
+      },
+      "slot": 7
+     },
+     {
+      "start": "2026-09-30T08:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.0359,
+      "solar": 0.2182,
+      "grid_in": 0.1846,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.6331,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.6331,
+        "soc": 10.0
+       }
+      },
+      "slot": 8
+     },
+     {
+      "start": "2026-09-30T09:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.404,
+      "solar": 0.5307,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.1267,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.1267,
+        "out": 0.0,
+        "soc": 12.5
+       }
+      },
+      "slot": 9
+     },
+     {
+      "start": "2026-09-30T10:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3573,
+      "solar": 1.0337,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.6764,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.6764,
+        "out": 0.0,
+        "soc": 26.1
+       }
+      },
+      "slot": 10
+     },
+     {
+      "start": "2026-09-30T11:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3615,
+      "solar": 1.6121,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 1.2506,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 1.2506,
+        "out": 0.0,
+        "soc": 51.1
+       }
+      },
+      "slot": 11
+     },
+     {
+      "start": "2026-09-30T12:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4358,
+      "solar": 2.0133,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 1.5775,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 1.5775,
+        "out": 0.0,
+        "soc": 82.6
+       }
+      },
+      "slot": 12
+     },
+     {
+      "start": "2026-09-30T13:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3962,
+      "solar": 2.0133,
+      "grid_in": 0.0,
+      "grid_out": 0.7482,
+      "bat_in": 0.8689,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.8689,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 13
+     },
+     {
+      "start": "2026-09-30T14:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4043,
+      "solar": 1.6121,
+      "grid_in": 0.0,
+      "grid_out": 1.2079,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 14
+     },
+     {
+      "start": "2026-09-30T15:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.434,
+      "solar": 1.0337,
+      "grid_in": 0.0,
+      "grid_out": 0.5997,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 15
+     },
+     {
+      "start": "2026-09-30T16:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4569,
+      "solar": 0.5307,
+      "grid_in": 0.0,
+      "grid_out": 0.0738,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "slot": 16
+     },
+     {
+      "start": "2026-09-30T17:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3865,
+      "solar": 0.2182,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.1683,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.1683,
+        "soc": 96.6
+       }
+      },
+      "slot": 17
+     },
+     {
+      "start": "2026-09-30T18:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.6119,
+      "solar": 0.0718,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.5401,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.5401,
+        "soc": 65.8
+       }
+      },
+      "slot": 18
+     },
+     {
+      "start": "2026-09-30T19:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5958,
+      "solar": 0.0189,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.5769,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.5769,
+        "soc": 34.3
+       }
+      },
+      "slot": 19
+     },
+     {
+      "start": "2026-09-30T20:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.5968,
+      "solar": 0.0,
+      "grid_in": 0.3821,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.2147,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.2147,
+        "soc": 10.0
+       }
+      },
+      "slot": 20
+     },
+     {
+      "start": "2026-09-30T21:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 1.6239,
+      "solar": 0.0,
+      "grid_in": 1.6239,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": -0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": -0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 21
+     },
+     {
+      "start": "2026-09-30T22:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.3879,
+      "solar": 0.0,
+      "grid_in": 0.3879,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 22
+     },
+     {
+      "start": "2026-09-30T23:00:00+02:00",
+      "src": "stats",
+      "cov": 1.0,
+      "home": 0.4,
+      "solar": 0.0,
+      "grid_in": 0.4,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "slot": 23
+     }
+    ],
+    "fc": {
+     "ahead_kwh": 11.4
+    },
+    "fc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "fc_ahead_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "workday": true,
+    "summary": {
+     "date": "2026-09-30",
+     "hours": 24,
+     "expected": 24,
+     "cov": 1.0,
+     "home": 15.765,
+     "solar": 10.979,
+     "grid_in": 7.417,
+     "grid_out": 2.63,
+     "bat_in": 7.0,
+     "bat_out": 7.0,
+     "sources": {
+      "stats": 24
+     },
+     "workday": true,
+     "fc_ahead": 11.4,
+     "fc_latest": null,
+     "solar_vs_fc": 0.963,
+     "soc": {
+      "flow800": {
+       "min": 10.0,
+       "max": 100.0,
+       "end": 10.0
+      }
+     },
+     "self_sufficiency": 0.53,
+     "sun_covers": "2026-09-30T09:00:00+02:00"
+    },
+    "window": null,
+    "window_slots": [],
+    "sun": {
+     "sunrise": "2026-09-30T07:21:00+02:00",
+     "sunrise_slot": 7.35,
+     "sunset": "2026-09-30T18:52:00+02:00",
+     "sunset_slot": 18.87
+    }
+   },
+   "2026-10-01": {
+    "date": "2026-10-01",
+    "slots": [
+     "00:00",
+     "01:00",
+     "02:00",
+     "03:00",
+     "04:00",
+     "05:00",
+     "06:00",
+     "07:00",
+     "08:00",
+     "09:00",
+     "10:00",
+     "11:00",
+     "12:00",
+     "13:00",
+     "14:00",
+     "15:00",
+     "16:00",
+     "17:00",
+     "18:00",
+     "19:00",
+     "20:00",
+     "21:00",
+     "22:00",
+     "23:00"
+    ],
+    "hours": [
+     {
+      "start": "2026-10-01T00:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.4249,
+      "solar": 0.0,
+      "grid_in": 0.9249,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 20.0
+       }
+      },
+      "temp": 5.1,
+      "present": {},
+      "slot": 0
+     },
+     {
+      "start": "2026-10-01T01:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.4613,
+      "solar": 0.0,
+      "grid_in": 0.9613,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 30.0
+       }
+      },
+      "temp": 3.6,
+      "present": {},
+      "slot": 1
+     },
+     {
+      "start": "2026-10-01T02:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.4039,
+      "solar": 0.0,
+      "grid_in": 0.9039,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 40.0
+       }
+      },
+      "temp": 3.6,
+      "present": {},
+      "slot": 2
+     },
+     {
+      "start": "2026-10-01T03:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.446,
+      "solar": 0.0,
+      "grid_in": 0.946,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 50.0
+       }
+      },
+      "temp": 2.6,
+      "present": {},
+      "slot": 3
+     },
+     {
+      "start": "2026-10-01T04:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.3382,
+      "solar": 0.0,
+      "grid_in": 0.8382,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 60.0
+       }
+      },
+      "temp": 3.1,
+      "present": {},
+      "slot": 4
+     },
+     {
+      "start": "2026-10-01T05:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.3309,
+      "solar": 0.0,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.3309,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.3309,
+        "soc": 53.4
+       }
+      },
+      "temp": 3.5,
+      "present": {},
+      "slot": 5
+     },
+     {
+      "start": "2026-10-01T06:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.331,
+      "solar": 0.0,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.331,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.331,
+        "soc": 46.8
+       }
+      },
+      "temp": 4.9,
+      "present": {},
+      "slot": 6
+     },
+     {
+      "start": "2026-10-01T07:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 1.1376,
+      "solar": 0.0718,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.0658,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.0658,
+        "soc": 25.4
+       }
+      },
+      "temp": 6.4,
+      "present": {},
+      "slot": 7
+     },
+     {
+      "start": "2026-10-01T08:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 1.0432,
+      "solar": 0.2182,
+      "grid_in": 0.0526,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.7724,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.7724,
+        "soc": 10.0
+       }
+      },
+      "temp": 7.7,
+      "present": {},
+      "slot": 8
+     },
+     {
+      "start": "2026-10-01T09:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.419,
+      "solar": 0.5307,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.1117,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.1117,
+        "out": 0.0,
+        "soc": 12.2
+       }
+      },
+      "temp": 8.6,
+      "present": {},
+      "slot": 9
+     },
+     {
+      "start": "2026-10-01T10:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.4524,
+      "solar": 1.0337,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.5812,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5812,
+        "out": 0.0,
+        "soc": 23.9
+       }
+      },
+      "temp": 11.0,
+      "present": {},
+      "slot": 10
+     },
+     {
+      "start": "2026-10-01T11:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.3529,
+      "solar": 1.6121,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 1.2592,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 1.2592,
+        "out": 0.0,
+        "soc": 49.0
+       }
+      },
+      "temp": 12.5,
+      "present": {},
+      "slot": 11
+     },
+     {
+      "start": "2026-10-01T12:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.3797,
+      "solar": 2.0133,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 1.6336,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 1.6336,
+        "out": 0.0,
+        "soc": 81.7
+       }
+      },
+      "temp": 13.2,
+      "present": {},
+      "slot": 12
+     },
+     {
+      "start": "2026-10-01T13:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.4685,
+      "solar": 2.0133,
+      "grid_in": 0.0,
+      "grid_out": 0.6304,
+      "bat_in": 0.9144,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.9144,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "temp": 14.5,
+      "present": {},
+      "slot": 13
+     },
+     {
+      "start": "2026-10-01T14:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.3442,
+      "solar": 1.6121,
+      "grid_in": 0.0,
+      "grid_out": 1.2679,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "temp": 14.7,
+      "present": {},
+      "slot": 14
+     },
+     {
+      "start": "2026-10-01T15:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.3973,
+      "solar": 1.0337,
+      "grid_in": 0.0,
+      "grid_out": 0.6363,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "temp": 14.8,
+      "present": {},
+      "slot": 15
+     },
+     {
+      "start": "2026-10-01T16:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.3494,
+      "solar": 0.5307,
+      "grid_in": 0.0,
+      "grid_out": 0.1813,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "temp": 14.6,
+      "present": {},
+      "slot": 16
+     },
+     {
+      "start": "2026-10-01T17:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.4283,
+      "solar": 0.2182,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.2101,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.2101,
+        "soc": 95.8
+       }
+      },
+      "temp": 13.7,
+      "present": {},
+      "slot": 17
+     },
+     {
+      "start": "2026-10-01T18:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 1.6031,
+      "solar": 0.0718,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.5313,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.5313,
+        "soc": 65.2
+       }
+      },
+      "temp": 13.2,
+      "present": {},
+      "slot": 18
+     },
+     {
+      "start": "2026-10-01T19:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 1.5227,
+      "solar": 0.0189,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.5038,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.5038,
+        "soc": 35.1
+       }
+      },
+      "temp": 11.8,
+      "present": {},
+      "slot": 19
+     },
+     {
+      "start": "2026-10-01T20:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 1.6136,
+      "solar": 0.0,
+      "grid_in": 0.3588,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.2548,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.2548,
+        "soc": 10.0
+       }
+      },
+      "temp": 10.6,
+      "present": {},
+      "slot": 20
+     },
+     {
+      "start": "2026-10-01T21:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 1.5296,
+      "solar": 0.0,
+      "grid_in": 1.5296,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "temp": 9.5,
+      "present": {},
+      "slot": 21
+     },
+     {
+      "start": "2026-10-01T22:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.4383,
+      "solar": 0.0,
+      "grid_in": 0.4383,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "temp": 7.9,
+      "present": {},
+      "slot": 22
+     },
+     {
+      "start": "2026-10-01T23:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.3357,
+      "solar": 0.0,
+      "grid_in": 0.3357,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "temp": 5.8,
+      "present": {},
+      "slot": 23
+     }
+    ],
+    "fc": {
+     "ahead_kwh": 9.0
+    },
+    "fc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "fc_ahead_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "workday": true,
+    "summary": {
+     "date": "2026-10-01",
+     "hours": 24,
+     "expected": 24,
+     "cov": 1.0,
+     "home": 15.552,
+     "solar": 10.979,
+     "grid_in": 7.289,
+     "grid_out": 2.716,
+     "bat_in": 7.0,
+     "bat_out": 7.0,
+     "sources": {
+      "live": 24
+     },
+     "workday": true,
+     "fc_ahead": 9.0,
+     "fc_latest": null,
+     "solar_vs_fc": 1.22,
+     "temp": {
+      "min": 2.6,
+      "max": 14.8,
+      "mean": 9.0
+     },
+     "soc": {
+      "flow800": {
+       "min": 10.0,
+       "max": 100.0,
+       "end": 10.0
+      }
+     },
+     "self_sufficiency": 0.531,
+     "sun_covers": "2026-10-01T09:00:00+02:00"
+    },
+    "window": null,
+    "window_slots": [],
+    "sun": {
+     "sunrise": "2026-10-01T07:21:00+02:00",
+     "sunrise_slot": 7.35,
+     "sunset": "2026-10-01T18:52:00+02:00",
+     "sunset_slot": 18.87
+    }
+   },
+   "2026-10-02": {
+    "date": "2026-10-02",
+    "slots": [
+     "00:00",
+     "01:00",
+     "02:00",
+     "03:00",
+     "04:00",
+     "05:00",
+     "06:00",
+     "07:00",
+     "08:00",
+     "09:00",
+     "10:00",
+     "11:00",
+     "12:00",
+     "13:00",
+     "14:00",
+     "15:00",
+     "16:00",
+     "17:00",
+     "18:00",
+     "19:00",
+     "20:00",
+     "21:00",
+     "22:00",
+     "23:00"
+    ],
+    "hours": [
+     {
+      "start": "2026-10-02T00:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.3606,
+      "solar": 0.0,
+      "grid_in": 0.8606,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 20.0
+       }
+      },
+      "temp": 4.4,
+      "present": {},
+      "slot": 0
+     },
+     {
+      "start": "2026-10-02T01:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.3833,
+      "solar": 0.0,
+      "grid_in": 0.8833,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 30.0
+       }
+      },
+      "temp": 4.2,
+      "present": {},
+      "slot": 1
+     },
+     {
+      "start": "2026-10-02T02:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.4428,
+      "solar": 0.0,
+      "grid_in": 0.9428,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 40.0
+       }
+      },
+      "temp": 3.0,
+      "present": {},
+      "slot": 2
+     },
+     {
+      "start": "2026-10-02T03:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.3424,
+      "solar": 0.0,
+      "grid_in": 0.8424,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 50.0
+       }
+      },
+      "temp": 3.4,
+      "present": {},
+      "slot": 3
+     },
+     {
+      "start": "2026-10-02T04:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.4056,
+      "solar": 0.0,
+      "grid_in": 0.9056,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 60.0
+       }
+      },
+      "temp": 3.4,
+      "present": {},
+      "slot": 4
+     },
+     {
+      "start": "2026-10-02T05:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.3334,
+      "solar": 0.0,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.3334,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.3334,
+        "soc": 53.3
+       }
+      },
+      "temp": 3.4,
+      "present": {},
+      "slot": 5
+     },
+     {
+      "start": "2026-10-02T06:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.4232,
+      "solar": 0.0,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.4232,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.4232,
+        "soc": 44.9
+       }
+      },
+      "temp": 4.7,
+      "present": {},
+      "slot": 6
+     },
+     {
+      "start": "2026-10-02T07:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 1.0309,
+      "solar": 0.0718,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.959,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.959,
+        "soc": 25.7
+       }
+      },
+      "temp": 6.4,
+      "present": {},
+      "slot": 7
+     },
+     {
+      "start": "2026-10-02T08:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 1.1152,
+      "solar": 0.2182,
+      "grid_in": 0.1127,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.7843,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.7843,
+        "soc": 10.0
+       }
+      },
+      "temp": 7.7,
+      "present": {},
+      "slot": 8
+     },
+     {
+      "start": "2026-10-02T09:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.3326,
+      "solar": 0.5307,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.1981,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.1981,
+        "out": 0.0,
+        "soc": 14.0
+       }
+      },
+      "temp": 9.4,
+      "present": {},
+      "slot": 9
+     },
+     {
+      "start": "2026-10-02T10:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.33,
+      "solar": 1.0337,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.7037,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.7037,
+        "out": 0.0,
+        "soc": 28.0
+       }
+      },
+      "temp": 10.9,
+      "present": {},
+      "slot": 10
+     },
+     {
+      "start": "2026-10-02T11:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.3881,
+      "solar": 1.6121,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 1.2241,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 1.2241,
+        "out": 0.0,
+        "soc": 52.5
+       }
+      },
+      "temp": 11.8,
+      "present": {},
+      "slot": 11
+     },
+     {
+      "start": "2026-10-02T12:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.403,
+      "solar": 2.0133,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 1.6103,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 1.6103,
+        "out": 0.0,
+        "soc": 84.7
+       }
+      },
+      "temp": 13.7,
+      "present": {},
+      "slot": 12
+     },
+     {
+      "start": "2026-10-02T13:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.3602,
+      "solar": 2.0133,
+      "grid_in": 0.0,
+      "grid_out": 0.8893,
+      "bat_in": 0.7638,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.7638,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "temp": 13.8,
+      "present": {},
+      "slot": 13
+     },
+     {
+      "start": "2026-10-02T14:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.399,
+      "solar": 1.6121,
+      "grid_in": 0.0,
+      "grid_out": 1.2131,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "temp": 14.5,
+      "present": {},
+      "slot": 14
+     },
+     {
+      "start": "2026-10-02T15:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.3364,
+      "solar": 1.0337,
+      "grid_in": 0.0,
+      "grid_out": 0.6972,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "temp": 14.7,
+      "present": {},
+      "slot": 15
+     },
+     {
+      "start": "2026-10-02T16:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.3276,
+      "solar": 0.5307,
+      "grid_in": 0.0,
+      "grid_out": 0.2031,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 100.0
+       }
+      },
+      "temp": 14.5,
+      "present": {},
+      "slot": 16
+     },
+     {
+      "start": "2026-10-02T17:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.3668,
+      "solar": 0.2182,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.1486,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.1486,
+        "soc": 97.0
+       }
+      },
+      "temp": 14.0,
+      "present": {},
+      "slot": 17
+     },
+     {
+      "start": "2026-10-02T18:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 1.6339,
+      "solar": 0.0718,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.5621,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.5621,
+        "soc": 65.8
+       }
+      },
+      "temp": 13.0,
+      "present": {},
+      "slot": 18
+     },
+     {
+      "start": "2026-10-02T19:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 1.595,
+      "solar": 0.0189,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.5761,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.5761,
+        "soc": 34.3
+       }
+      },
+      "temp": 11.7,
+      "present": {},
+      "slot": 19
+     },
+     {
+      "start": "2026-10-02T20:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 1.5721,
+      "solar": 0.0,
+      "grid_in": 0.3589,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.2132,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.2132,
+        "soc": 10.0
+       }
+      },
+      "temp": 10.1,
+      "present": {},
+      "slot": 20
+     },
+     {
+      "start": "2026-10-02T21:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 1.5576,
+      "solar": 0.0,
+      "grid_in": 1.5576,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "temp": 8.5,
+      "present": {},
+      "slot": 21
+     },
+     {
+      "start": "2026-10-02T22:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.43,
+      "solar": 0.0,
+      "grid_in": 0.43,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "temp": 7.5,
+      "present": {},
+      "slot": 22
+     },
+     {
+      "start": "2026-10-02T23:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.3484,
+      "solar": 0.0,
+      "grid_in": 0.3484,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "temp": 6.0,
+      "present": {},
+      "slot": 23
+     }
+    ],
+    "fc": {
+     "ahead_kwh": 13.9
+    },
+    "fc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "fc_ahead_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "workday": true,
+    "summary": {
+     "date": "2026-10-02",
+     "hours": 24,
+     "expected": 24,
+     "cov": 1.0,
+     "home": 15.218,
+     "solar": 10.979,
+     "grid_in": 7.242,
+     "grid_out": 3.003,
+     "bat_in": 7.0,
+     "bat_out": 7.0,
+     "sources": {
+      "live": 24
+     },
+     "workday": true,
+     "fc_ahead": 13.9,
+     "fc_latest": null,
+     "solar_vs_fc": 0.79,
+     "temp": {
+      "min": 3.0,
+      "max": 14.7,
+      "mean": 8.9
+     },
+     "soc": {
+      "flow800": {
+       "min": 10.0,
+       "max": 100.0,
+       "end": 10.0
+      }
+     },
+     "self_sufficiency": 0.524,
+     "sun_covers": "2026-10-02T09:00:00+02:00"
+    },
+    "window": null,
+    "window_slots": [],
+    "sun": {
+     "sunrise": "2026-10-02T07:21:00+02:00",
+     "sunrise_slot": 7.35,
+     "sunset": "2026-10-02T18:52:00+02:00",
+     "sunset_slot": 18.87
+    }
+   },
+   "2026-10-03": {
+    "date": "2026-10-03",
+    "slots": [
+     "00:00",
+     "01:00",
+     "02:00",
+     "03:00",
+     "04:00",
+     "05:00",
+     "06:00",
+     "07:00",
+     "08:00",
+     "09:00",
+     "10:00",
+     "11:00",
+     "12:00",
+     "13:00",
+     "14:00",
+     "15:00",
+     "16:00",
+     "17:00",
+     "18:00",
+     "19:00",
+     "20:00",
+     "21:00",
+     "22:00",
+     "23:00"
+    ],
+    "hours": [
+     {
+      "start": "2026-10-03T00:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.4187,
+      "solar": 0.0,
+      "grid_in": 0.9187,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 20.0
+       }
+      },
+      "temp": 4.9,
+      "present": {},
+      "slot": 0
+     },
+     {
+      "start": "2026-10-03T01:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.4185,
+      "solar": 0.0,
+      "grid_in": 0.9185,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 30.0
+       }
+      },
+      "temp": 3.8,
+      "present": {},
+      "slot": 1
+     },
+     {
+      "start": "2026-10-03T02:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.4533,
+      "solar": 0.0,
+      "grid_in": 0.9533,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 40.0
+       }
+      },
+      "temp": 3.7,
+      "present": {},
+      "slot": 2
+     },
+     {
+      "start": "2026-10-03T03:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.3662,
+      "solar": 0.0,
+      "grid_in": 0.8662,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 50.0
+       }
+      },
+      "temp": 2.7,
+      "present": {},
+      "slot": 3
+     },
+     {
+      "start": "2026-10-03T04:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.3544,
+      "solar": 0.0,
+      "grid_in": 0.8544,
+      "grid_out": 0.0,
+      "bat_in": 0.5,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.5,
+        "out": 0.0,
+        "soc": 60.0
+       }
+      },
+      "temp": 2.9,
+      "present": {},
+      "slot": 4
+     },
+     {
+      "start": "2026-10-03T05:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.4523,
+      "solar": 0.0,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.4523,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.4523,
+        "soc": 51.0
+       }
+      },
+      "temp": 4.0,
+      "present": {},
+      "slot": 5
+     },
+     {
+      "start": "2026-10-03T06:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.341,
+      "solar": 0.0,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.341,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.341,
+        "soc": 44.1
+       }
+      },
+      "temp": 5.2,
+      "present": {},
+      "slot": 6
+     },
+     {
+      "start": "2026-10-03T07:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 1.1673,
+      "solar": 0.0399,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 1.1274,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 1.1274,
+        "soc": 21.6
+       }
+      },
+      "temp": 6.3,
+      "present": {},
+      "slot": 7
+     },
+     {
+      "start": "2026-10-03T08:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 1.0221,
+      "solar": 0.1212,
+      "grid_in": 0.3216,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.5794,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.5794,
+        "soc": 10.0
+       }
+      },
+      "temp": 7.6,
+      "present": {},
+      "slot": 8
+     },
+     {
+      "start": "2026-10-03T09:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.452,
+      "solar": 0.2948,
+      "grid_in": 0.1571,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "temp": 8.9,
+      "present": {},
+      "slot": 9
+     },
+     {
+      "start": "2026-10-03T10:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.9283,
+      "solar": 0.5743,
+      "grid_in": 0.3541,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "temp": 10.7,
+      "present": {},
+      "slot": 10
+     },
+     {
+      "start": "2026-10-03T11:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.9771,
+      "solar": 0.8956,
+      "grid_in": 0.0815,
+      "grid_out": 0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0,
+        "soc": 10.0
+       }
+      },
+      "temp": 12.0,
+      "present": {},
+      "slot": 11
+     },
+     {
+      "start": "2026-10-03T12:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 1.0656,
+      "solar": 1.1185,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0529,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0529,
+        "out": 0.0,
+        "soc": 11.1
+       }
+      },
+      "temp": 13.3,
+      "present": {},
+      "slot": 12
+     },
+     {
+      "start": "2026-10-03T13:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 1.0239,
+      "solar": 1.1185,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0946,
+      "bat_out": 0.0,
+      "bat": {
+       "flow800": {
+        "in": 0.0946,
+        "out": 0.0,
+        "soc": 12.9
+       }
+      },
+      "temp": 13.7,
+      "present": {},
+      "slot": 13
+     },
+     {
+      "start": "2026-10-03T14:00:00+02:00",
+      "src": "live",
+      "cov": 1.0,
+      "home": 0.9478,
+      "solar": 0.8956,
+      "grid_in": 0.0,
+      "grid_out": -0.0,
+      "bat_in": 0.0,
+      "bat_out": 0.0522,
+      "bat": {
+       "flow800": {
+        "in": 0.0,
+        "out": 0.0522,
+        "soc": 11.9
+       }
+      },
+      "temp": 14.6,
+      "present": {},
+      "slot": 14
+     }
+    ],
+    "fc": {
+     "ahead_kwh": 4.9
+    },
+    "fc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "fc_ahead_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "workday": false,
+    "summary": {
+     "date": "2026-10-03",
+     "hours": 15,
+     "expected": 24,
+     "cov": 0.625,
+     "home": 10.389,
+     "solar": 5.058,
+     "grid_in": 5.425,
+     "grid_out": 0.0,
+     "bat_in": 2.647,
+     "bat_out": 2.552,
+     "sources": {
+      "live": 15
+     },
+     "workday": false,
+     "fc_ahead": 4.9,
+     "fc_latest": null,
+     "solar_vs_fc": 1.032,
+     "temp": {
+      "min": 2.7,
+      "max": 14.6,
+      "mean": 7.6
+     },
+     "soc": {
+      "flow800": {
+       "min": 10.0,
+       "max": 60.0,
+       "end": 11.9
+      }
+     },
+     "self_sufficiency": 0.478,
+     "sun_covers": "2026-10-03T12:00:00+02:00"
+    },
+    "window": null,
+    "window_slots": [],
+    "sun": {
+     "sunrise": "2026-10-03T07:21:00+02:00",
+     "sunrise_slot": 7.35,
+     "sunset": "2026-10-03T18:52:00+02:00",
+     "sunset_slot": 18.87
+    }
+   }
+  },
+  "first_day": "2026-09-20",
+  "last_day": "2026-10-03",
+  "day_count": 14
  }
 }

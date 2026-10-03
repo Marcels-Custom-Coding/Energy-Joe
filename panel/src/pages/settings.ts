@@ -349,6 +349,8 @@ export class JoeSettings extends LitElement {
           ${ANSWERS.map((item) => this.answerRow(t, item.key, item.tip))}
         </section>
 
+        ${this.renderObserve(t)}
+
         <section class="group">
           <button
             type="button"
@@ -386,6 +388,65 @@ export class JoeSettings extends LitElement {
         </section>
       </div>
       ${this.question ? this.renderQuestionSheet(t) : nothing}`;
+  }
+
+  private renderObserve(t: Translate): TemplateResult {
+    const joe = this.state!;
+    const observe = joe.observe;
+    const active = Boolean(observe?.active);
+    const running = observe?.backfill.state === "running";
+    const day = (iso: string) =>
+      new Intl.DateTimeFormat(t.lang, { day: "numeric", month: "long", timeZone: "UTC" }).format(
+        new Date(`${iso.slice(0, 10)}T12:00:00Z`),
+      );
+    const status = active
+      ? t("settings.observe.since", { day: day(observe!.since!), time: observe!.since!.slice(11, 16) })
+      : joe.mode === "off"
+        ? t("settings.observe.off")
+        : t("settings.observe.waiting");
+    const parts: string[] = [];
+    if (observe?.first_day) {
+      parts.push(t("settings.observe.days", { days: observe.day_count ?? 0, first: day(observe.first_day) }));
+    } else {
+      parts.push(t("settings.observe.nothing"));
+    }
+    const backfill = observe?.backfill;
+    if (backfill?.state === "running") {
+      parts.push(t("history.reading"));
+    } else if (backfill?.state === "unavailable") {
+      parts.push(t("settings.observe.no_recorder"));
+    } else if (backfill?.state === "failed") {
+      parts.push(t("settings.observe.failed"));
+    }
+    return html`<section class="group">
+      <h2>${t("settings.observe")}</h2>
+      <div class="row" data-tipped>
+        <div>
+          <div class="name"><b>${t("settings.observe.recording")}</b>${tip(t, "observe")}</div>
+          <small>${status}</small>
+        </div>
+        <span class="chip ${active ? "ok" : ""}">
+          ${t(active ? "status.running" : joe.mode === "off" ? "status.paused" : "status.waiting")}
+        </span>
+      </div>
+      <div class="row" data-tipped>
+        <div>
+          <div class="name"><b>${t("settings.observe.history")}</b>${tip(t, "rebuild")}</div>
+          <small>${parts.join(" · ")}</small>
+        </div>
+        <button type="button" class="btn btn-secondary" ?disabled=${!active || running} @click=${this.rebuild}>
+          ${t("settings.observe.rebuild")}
+        </button>
+      </div>
+    </section>`;
+  }
+
+  private async rebuild(): Promise<void> {
+    try {
+      await this.hass?.callWS({ type: "energy_joe/history/rebuild" });
+    } catch {
+      // The status line says what happened.
+    }
   }
 
   private answerRow(t: Translate, key: "heating" | "hot_water" | "ev", tipName: TipName): TemplateResult {
