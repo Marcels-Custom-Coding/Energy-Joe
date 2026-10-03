@@ -43,6 +43,17 @@ def test_fronius_household_ignores_helpers_and_phones() -> None:
     socs = {b["soc_entity"] for b in result["batteries"]}
     assert "sensor.battery_total_soc" not in socs
     assert "sensor.phone_battery" not in socs
+    assert "sensor.window_battery" not in socs  # a gadget's own battery
+    assert "sensor.ev_battery" not in socs  # a car, even with "battery" and power
+
+
+def test_network_is_no_grid() -> None:
+    """Whole words count: "Netzwerk" is no "Netz"."""
+    m = discover(fronius_household())["measurements"]
+    candidates = {m["grid_power"]["entity"]["entity_id"]} | {
+        a["entity_id"] for a in m["grid_power"]["alternatives"]
+    }
+    assert "sensor.network_power" not in candidates
 
 
 def test_fronius_household_measurements() -> None:

@@ -154,20 +154,47 @@ NOT_HARDWARE = {
 # Platforms that only forecast; their power values are not measurements.
 FORECAST_PLATFORMS = set(FORECAST_KEYS)
 
-# Words hinting that a device is a home battery.
+# Words in a device's name, model or maker hinting at a home battery.
+# Whole words; a trailing "*" also matches longer words.
 STORAGE_WORDS = (
-    "battery-box",
+    "battery box",
+    "batteriespeicher*",
+    "stromspeicher*",
+    "speicher*",
     "batterie",
     "battery",
-    "speicher",
-    "akku",
     "storage",
     "powerwall",
-    "luna",
+    "luna*",
     "venus",
     "zendure",
-    "solarflow",
+    "solarflow*",
     "solix",
     "pylontech",
-    "sonnen",
+    "sonnen*",
+    "byd",
 )
+
+# Integrations of cars, robots and gadgets: their batteries are no home batteries.
+NOT_HOME_BATTERY = {
+    "kia_uvo",
+    "mbapi2020",
+    "tesla_fleet",
+    "teslemetry",
+    "bmw_connected_drive",
+    "renault",
+    "volkswagen_we_connect_id",
+    "skoda_connect",
+    "smartcar",
+    "roborock",
+    "ecovacs",
+    "husqvarna_automower",
+    "oilfox",
+    "homematicip_cloud",
+    "homematicip_local",
+    "shelly",
+    "tado",
+    "netatmo",
+    "nuki",
+    "switchbot",
+}

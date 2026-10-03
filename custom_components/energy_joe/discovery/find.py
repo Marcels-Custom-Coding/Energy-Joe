@@ -18,20 +18,25 @@ from .tariff import analyze_price_entity
 POWER_UNITS = ("W", "kW", "MW")
 ENERGY_UNITS = ("Wh", "kWh", "MWh")
 
+# Whole words; a trailing "*" also matches longer words.
 ROLE_WORDS: dict[str, tuple[str, ...]] = {
     "grid_power": (
         "netz",
+        "netzbezug*",
+        "netzeinspeisung*",
         "grid",
-        "bezug",
-        "einspeis",
+        "bezug*",
+        "einspeis*",
         "import",
         "export",
         "stromzähler",
         "zähler",
         "meter",
+        "smartmeter",
     ),
     "home_power": (
         "hausverbrauch",
+        "gesamtverbrauch",
         "verbrauch",
         "consumption",
         "house",
@@ -42,8 +47,8 @@ ROLE_WORDS: dict[str, tuple[str, ...]] = {
     ),
     "solar_power": (
         "pv",
-        "solar",
-        "photovolt",
+        "solar*",
+        "photovolt*",
         "erzeugung",
         "production",
         "generation",
@@ -52,19 +57,19 @@ ROLE_WORDS: dict[str, tuple[str, ...]] = {
     ),
 }
 NOT_MEASUREMENT_WORDS = (
-    "prognose",
-    "forecast",
-    "geschätzt",
+    "prognose*",
+    "forecast*",
+    "geschätzt*",
     "estimated",
     "peak",
-    "spitze",
-    "maximal",
-    "durchschnitt",
+    "spitze*",
+    "maximal*",
+    "durchschnitt*",
     "average",
     "kosten",
-    "cost",
-    "limit",
-    "grenzwert",
+    "cost*",
+    "limit*",
+    "grenzwert*",
 )
 
 
@@ -95,10 +100,12 @@ def _words(text: str) -> str:
 
 
 def _has_word(text: str, words: Iterable[str]) -> str | None:
+    """Return the first word found; "name*" also matches longer words."""
     hay = _words(text)
     for word in words:
-        if f" {word}" in hay:
-            return word
+        stem = word.rstrip("*")
+        if (word.endswith("*") and f" {stem}" in hay) or f" {stem} " in hay:
+            return stem
     return None
 
 
@@ -152,22 +159,18 @@ def find_batteries(snap: Snapshot, energy: EnergyHints) -> list[dict[str, Any]]:
     for entity in snap.of_domain("sensor"):
         if entity.device_class != "battery" or entity.unit != "%":
             continue
-        if entity.platform in kb.NOT_HARDWARE or entity.device_id in seen_devices:
+        if entity.platform in kb.NOT_HARDWARE or entity.platform in kb.NOT_HOME_BATTERY:
             continue
+        if entity.device_id in seen_devices:
+            continue
+        # A home battery shows itself in the device (not the sensor name, many
+        # gadgets call their own battery "Battery") and always reports power.
         device = snap.devices.get(entity.device_id or "")
-        text = " ".join(
-            filter(
-                None,
-                [
-                    entity.name,
-                    device.name if device else "",
-                    device.model if device else "",
-                    device.manufacturer if device else "",
-                ],
-            )
-        )
+        if device is None:
+            continue
+        text = " ".join(filter(None, [device.name, device.model, device.manufacturer]))
         word = _has_word(text, kb.STORAGE_WORDS)
-        if not word:
+        if not word or not _has_power_sensor(snap, entity.device_id):
             continue
         batteries.append(
             _generic_battery(
@@ -179,6 +182,13 @@ def find_batteries(snap: Snapshot, energy: EnergyHints) -> list[dict[str, Any]]:
 
     _link_energy_batteries(snap, energy, batteries)
     return batteries
+
+
+def _has_power_sensor(snap: Snapshot, device_id: str | None) -> bool:
+    return any(
+        e.domain == "sensor" and e.device_class == "power" and e.unit in POWER_UNITS
+        for e in snap.of_device(device_id)
+    )
 
 
 def _scope(snap: Snapshot, soc: EntityInfo) -> list[EntityInfo]:
@@ -722,21 +732,24 @@ def find_people(snap: Snapshot) -> tuple[list[dict[str, Any]], list[dict[str, An
 # --- Consumers from the Energy dashboard ------------------------------------
 
 KIND_WORDS: tuple[tuple[str, tuple[str, ...]], ...] = (
-    ("hot_water", ("warmwasser", "boiler", "hot water", "brauchwasser", "trinkwasser")),
+    (
+        "hot_water",
+        ("warmwasser*", "boiler", "hot water", "brauchwasser*", "trinkwasser*"),
+    ),
     (
         "electric_heating",
         (
-            "fussbodenheizung",
-            "fußbodenheizung",
+            "fussbodenheizung*",
+            "fußbodenheizung*",
             "heizstrahler",
-            "infrarot",
+            "infrarot*",
             "heizlüfter",
             "heizstab",
             "heater",
             "radiator",
         ),
     ),
-    ("climate", ("klima", "air condition", "aircon", "split")),
+    ("climate", ("klima*", "air condition*", "aircon", "split")),
     ("heat_pump", ("wärmepumpe", "waermepumpe", "heat pump", "heizung", "heating")),
     (
         "ev",
@@ -758,13 +771,13 @@ KIND_WORDS: tuple[tuple[str, tuple[str, ...]], ...] = (
             "kühlschrank",
             "kuehlschrank",
             "fridge",
-            "gefrier",
+            "gefrier*",
             "freezer",
-            "wasch",
+            "wasch*",
             "washer",
             "trockner",
             "dryer",
-            "spül",
+            "spül*",
             "dishwasher",
             "tv",
             "fernseher",
@@ -772,16 +785,16 @@ KIND_WORDS: tuple[tuple[str, tuple[str, ...]], ...] = (
             "network",
             "server",
             "nas",
-            "drucker",
+            "drucker*",
             "printer",
             "kompressor",
-            "licht",
+            "licht*",
             "light",
-            "steckdose",
+            "steckdose*",
             "büro",
             "office",
             "computer",
-            "stromkreis",
+            "stromkreis*",
         ),
     ),
 )

@@ -380,6 +380,42 @@ def fronius_household() -> Snapshot:
             platform="template",
         ),
         entity(
+            "sensor.window_battery",
+            "Fenster Bad Batterie",
+            90,
+            unit="%",
+            device_class="battery",
+            platform="acme_sensors",
+            device_id="window",
+        ),
+        entity(
+            "sensor.ev_battery",
+            "EV Battery Level",
+            71,
+            unit="%",
+            device_class="battery",
+            platform="kia_uvo",
+            device_id="car",
+        ),
+        entity(
+            "sensor.ev_charging_power",
+            "EV Charging Power",
+            0,
+            unit="W",
+            device_class="power",
+            platform="kia_uvo",
+            device_id="car",
+        ),
+        entity(
+            "sensor.network_power",
+            "Netzwerk Leistung",
+            45,
+            unit="W",
+            device_class="power",
+            platform="tasmota",
+            device_id="plug",
+        ),
+        entity(
             "sensor.phone_battery",
             "Phone battery",
             80,
@@ -399,6 +435,9 @@ def fronius_household() -> Snapshot:
         DeviceInfo("carport", "Carport", "evcc", "loadpoint"),
         DeviceInfo("floor", "Floor heating", "evcc", "loadpoint"),
         DeviceInfo("phone", "Alex Phone", "Apple", "iPhone"),
+        DeviceInfo("window", "Fenster Bad", "Acme", "Window sensor"),
+        DeviceInfo("car", "Electric car", "Hyundai", "Battery electric vehicle"),
+        DeviceInfo("plug", "Netzwerk", "Tasmota", "Plug"),
     ]
     energy = {
         "energy_sources": [
