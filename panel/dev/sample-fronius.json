@@ -956,351 +956,351 @@
   "provenance": {
    "measurements.grid_power": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "measurements.home_power": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "measurements.solar_power": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "tariff.kind": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "tariff.price_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "tariff.window": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "tariff.night_price": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "tariff.day_price": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "tariff.feed_in_price": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "tariff.feed_in_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "forecast.provider": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "forecast.config_entries": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "forecast.today": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "forecast.tomorrow": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "forecast.remaining_today": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "context.weather_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "context.holiday_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[storage].name": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[storage].adapter": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[storage].soc_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[storage].power": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[storage].capacity_kwh": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[storage].capacity_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[storage].max_charge_w": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[storage].max_discharge_w": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[storage].device_id": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[storage].controls": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[storage].priority": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[venus].name": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[venus].adapter": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[venus].soc_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[venus].power": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[venus].capacity_kwh": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[venus].capacity_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[venus].max_charge_w": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[venus].max_discharge_w": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[venus].device_id": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[venus].controls": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[venus].priority": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "persons[person.alex].name": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "persons[person.alex].person_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "persons[person.alex].calendars": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "persons[person.sam].name": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "persons[person.sam].person_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "persons[person.sam].calendars": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.house_energy].name": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.house_energy].kind": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.house_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.house_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.house_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.house_energy].source": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.ac_office_energy].name": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.ac_office_energy].kind": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.ac_office_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.ac_office_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.ac_office_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.ac_office_energy].source": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.basement_energy].name": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.basement_energy].kind": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.basement_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.basement_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.basement_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.basement_energy].source": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.hot_water_energy].name": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.hot_water_energy].kind": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.hot_water_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.hot_water_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.hot_water_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.hot_water_energy].source": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.floor_heating_energy].name": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.floor_heating_energy].kind": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.floor_heating_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.floor_heating_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.floor_heating_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.floor_heating_energy].source": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.fridge_energy].name": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.fridge_energy].kind": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.fridge_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.fridge_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.fridge_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.fridge_energy].source": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.wallbox_energy].name": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.wallbox_energy].kind": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.wallbox_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.wallbox_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.wallbox_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "consumers[sensor.wallbox_energy].source": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    }
   }
  },
@@ -2544,6 +2544,33 @@
   "views": {
    "2026-09-20": {
     "date": "2026-09-20",
+    "plan": null,
+    "plan_soc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -3257,6 +3284,100 @@
    },
    "2026-09-21": {
     "date": "2026-09-21",
+    "plan": {
+     "created": "2026-09-20T23:45:00+02:00",
+     "window": {
+      "start": "2026-09-21T00:00:00+02:00",
+      "end": "2026-09-21T05:00:00+02:00"
+     },
+     "kind": "hold",
+     "target": 22,
+     "optimum": 19,
+     "target_kwh": 3.38,
+     "capacity_kwh": 15.36,
+     "soc_now": 26.2,
+     "soc_start": 25.5,
+     "grid_charge_kwh": 0.0,
+     "charge_from": null,
+     "charge_kw": 5.0,
+     "batteries": [
+      {
+       "id": "storage",
+       "name": "BYD Battery-Box Premium HV",
+       "soc": 22.8,
+       "soc_start": 22.1,
+       "target": 22,
+       "charge_kwh": 0.0,
+       "power_kw": 0.0,
+       "controllable": true
+      },
+      {
+       "id": "venus",
+       "name": "Marstek Venus E",
+       "soc": 32.9,
+       "soc_start": 32.2,
+       "target": 22,
+       "charge_kwh": 0.0,
+       "power_kw": 0.0,
+       "controllable": true
+      }
+     ],
+     "sun_takes_over": "2026-09-21T07:59+02:00",
+     "full_at": "2026-09-21T14:33+02:00",
+     "empty_without": "2026-09-21T05:46+02:00",
+     "solar_kwh": 31.5,
+     "home_kwh": 17.05,
+     "cost": {
+      "night_charge": 0.0,
+      "plan": -1.74,
+      "without": -1.68,
+      "saving": 0.06
+     },
+     "prices": {
+      "night": 0.18564,
+      "day": 0.285719,
+      "feed_in": 0.062,
+      "assumed": false
+     },
+     "rules": {
+      "reserve": 10.0,
+      "max_target": 100.0,
+      "buffer": 0.35,
+      "discharge_mode": "until_target",
+      "evening_min": null
+     },
+     "reasons": [
+      "hold"
+     ],
+     "notes": [],
+     "fixed": true
+    },
+    "plan_soc_slots": [
+     22.3,
+     22.0,
+     22.0,
+     22.0,
+     22.0,
+     19.2,
+     16.1,
+     12.5,
+     15.9,
+     29.0,
+     43.2,
+     60.5,
+     79.9,
+     98.9,
+     100.0,
+     100.0,
+     100.0,
+     100.0,
+     92.6,
+     82.2,
+     71.5,
+     60.5,
+     58.2,
+     55.5
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -3970,6 +4091,100 @@
    },
    "2026-09-22": {
     "date": "2026-09-22",
+    "plan": {
+     "created": "2026-09-21T23:45:00+02:00",
+     "window": {
+      "start": "2026-09-22T00:00:00+02:00",
+      "end": "2026-09-22T05:00:00+02:00"
+     },
+     "kind": "charge",
+     "target": 88,
+     "optimum": 68,
+     "target_kwh": 13.52,
+     "capacity_kwh": 15.36,
+     "soc_now": 54.4,
+     "soc_start": 53.8,
+     "grid_charge_kwh": 5.54,
+     "charge_from": "2026-09-22T03:53+02:00",
+     "charge_kw": 5.0,
+     "batteries": [
+      {
+       "id": "storage",
+       "name": "BYD Battery-Box Premium HV",
+       "soc": 65.8,
+       "soc_start": 65.2,
+       "target": 88,
+       "charge_kwh": 2.34,
+       "power_kw": 2.5,
+       "controllable": true
+      },
+      {
+       "id": "venus",
+       "name": "Marstek Venus E",
+       "soc": 31.6,
+       "soc_start": 31.0,
+       "target": 88,
+       "charge_kwh": 2.92,
+       "power_kw": 2.5,
+       "controllable": true
+      }
+     ],
+     "sun_takes_over": "2026-09-22T09:16+02:00",
+     "full_at": null,
+     "empty_without": null,
+     "solar_kwh": 7.1,
+     "home_kwh": 15.32,
+     "cost": {
+      "night_charge": 1.03,
+      "plan": 0.56,
+      "without": 0.85,
+      "saving": 0.29
+     },
+     "prices": {
+      "night": 0.18564,
+      "day": 0.285719,
+      "feed_in": 0.062,
+      "assumed": false
+     },
+     "rules": {
+      "reserve": 10.0,
+      "max_target": 100.0,
+      "buffer": 0.35,
+      "discharge_mode": "until_target",
+      "evening_min": null
+     },
+     "reasons": [
+      "bridge"
+     ],
+     "notes": [],
+     "fixed": true
+    },
+    "plan_soc_slots": [
+     53.8,
+     53.8,
+     53.8,
+     57.1,
+     88.0,
+     85.3,
+     82.4,
+     76.1,
+     71.4,
+     72.6,
+     72.9,
+     73.9,
+     75.6,
+     76.9,
+     77.7,
+     78.0,
+     78.9,
+     78.7,
+     68.7,
+     57.9,
+     47.1,
+     36.0,
+     33.3,
+     30.7
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -4683,6 +4898,100 @@
    },
    "2026-09-23": {
     "date": "2026-09-23",
+    "plan": {
+     "created": "2026-09-22T23:45:00+02:00",
+     "window": {
+      "start": "2026-09-23T00:00:00+02:00",
+      "end": "2026-09-23T05:00:00+02:00"
+     },
+     "kind": "none",
+     "target": 10,
+     "optimum": 10,
+     "target_kwh": 1.54,
+     "capacity_kwh": 15.36,
+     "soc_now": 38.9,
+     "soc_start": 38.2,
+     "grid_charge_kwh": 0.0,
+     "charge_from": null,
+     "charge_kw": 5.0,
+     "batteries": [
+      {
+       "id": "storage",
+       "name": "BYD Battery-Box Premium HV",
+       "soc": 53.3,
+       "soc_start": 52.7,
+       "target": 10,
+       "charge_kwh": 0.0,
+       "power_kw": 0.0,
+       "controllable": true
+      },
+      {
+       "id": "venus",
+       "name": "Marstek Venus E",
+       "soc": 10.0,
+       "soc_start": 10.0,
+       "target": 10,
+       "charge_kwh": 0.0,
+       "power_kw": 0.0,
+       "controllable": true
+      }
+     ],
+     "sun_takes_over": "2026-09-23T08:09+02:00",
+     "full_at": "2026-09-23T14:53+02:00",
+     "empty_without": null,
+     "solar_kwh": 27.5,
+     "home_kwh": 14.76,
+     "cost": {
+      "night_charge": 0.0,
+      "plan": -1.91,
+      "without": -1.91,
+      "saving": 0.0
+     },
+     "prices": {
+      "night": 0.18564,
+      "day": 0.285719,
+      "feed_in": 0.062,
+      "assumed": false
+     },
+     "rules": {
+      "reserve": 10.0,
+      "max_target": 100.0,
+      "buffer": 0.35,
+      "discharge_mode": "until_target",
+      "evening_min": null
+     },
+     "reasons": [
+      "enough"
+     ],
+     "notes": [],
+     "fixed": true
+    },
+    "plan_soc_slots": [
+     35.4,
+     32.7,
+     30.4,
+     27.4,
+     24.8,
+     21.9,
+     19.2,
+     15.1,
+     17.0,
+     28.1,
+     42.1,
+     58.9,
+     77.4,
+     95.6,
+     100.0,
+     100.0,
+     100.0,
+     100.0,
+     92.5,
+     81.6,
+     70.8,
+     59.7,
+     56.9,
+     54.3
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -5396,6 +5705,100 @@
    },
    "2026-09-24": {
     "date": "2026-09-24",
+    "plan": {
+     "created": "2026-09-23T23:45:00+02:00",
+     "window": {
+      "start": "2026-09-24T00:00:00+02:00",
+      "end": "2026-09-24T05:00:00+02:00"
+     },
+     "kind": "charge",
+     "target": 95,
+     "optimum": 73,
+     "target_kwh": 14.59,
+     "capacity_kwh": 15.36,
+     "soc_now": 55.1,
+     "soc_start": 54.5,
+     "grid_charge_kwh": 6.56,
+     "charge_from": "2026-09-24T03:41+02:00",
+     "charge_kw": 5.0,
+     "batteries": [
+      {
+       "id": "storage",
+       "name": "BYD Battery-Box Premium HV",
+       "soc": 66.3,
+       "soc_start": 65.7,
+       "target": 95,
+       "charge_kwh": 3.0,
+       "power_kw": 2.5,
+       "controllable": true
+      },
+      {
+       "id": "venus",
+       "name": "Marstek Venus E",
+       "soc": 32.7,
+       "soc_start": 32.1,
+       "target": 95,
+       "charge_kwh": 3.22,
+       "power_kw": 2.5,
+       "controllable": true
+      }
+     ],
+     "sun_takes_over": "2026-09-24T09:28+02:00",
+     "full_at": null,
+     "empty_without": null,
+     "solar_kwh": 5.4,
+     "home_kwh": 14.45,
+     "cost": {
+      "night_charge": 1.22,
+      "plan": 0.71,
+      "without": 1.05,
+      "saving": 0.34
+     },
+     "prices": {
+      "night": 0.18564,
+      "day": 0.285719,
+      "feed_in": 0.062,
+      "assumed": false
+     },
+     "rules": {
+      "reserve": 10.0,
+      "max_target": 100.0,
+      "buffer": 0.35,
+      "discharge_mode": "until_target",
+      "evening_min": null
+     },
+     "reasons": [
+      "bridge"
+     ],
+     "notes": [],
+     "fixed": true
+    },
+    "plan_soc_slots": [
+     54.5,
+     54.5,
+     54.5,
+     64.1,
+     95.0,
+     92.3,
+     89.6,
+     82.8,
+     77.3,
+     77.5,
+     77.6,
+     78.4,
+     79.5,
+     80.4,
+     81.1,
+     81.3,
+     81.5,
+     80.6,
+     70.3,
+     59.4,
+     48.6,
+     37.6,
+     34.9,
+     32.4
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -6109,6 +6512,100 @@
    },
    "2026-09-25": {
     "date": "2026-09-25",
+    "plan": {
+     "created": "2026-09-24T23:45:00+02:00",
+     "window": {
+      "start": "2026-09-25T00:00:00+02:00",
+      "end": "2026-09-25T05:00:00+02:00"
+     },
+     "kind": "none",
+     "target": 10,
+     "optimum": 10,
+     "target_kwh": 1.54,
+     "capacity_kwh": 15.36,
+     "soc_now": 39.0,
+     "soc_start": 38.4,
+     "grid_charge_kwh": 0.0,
+     "charge_from": null,
+     "charge_kw": 5.0,
+     "batteries": [
+      {
+       "id": "storage",
+       "name": "BYD Battery-Box Premium HV",
+       "soc": 53.5,
+       "soc_start": 52.9,
+       "target": 10,
+       "charge_kwh": 0.0,
+       "power_kw": 0.0,
+       "controllable": true
+      },
+      {
+       "id": "venus",
+       "name": "Marstek Venus E",
+       "soc": 10.0,
+       "soc_start": 10.0,
+       "target": 10,
+       "charge_kwh": 0.0,
+       "power_kw": 0.0,
+       "controllable": true
+      }
+     ],
+     "sun_takes_over": "2026-09-25T08:46+02:00",
+     "full_at": null,
+     "empty_without": null,
+     "solar_kwh": 15.4,
+     "home_kwh": 14.31,
+     "cost": {
+      "night_charge": 0.0,
+      "plan": -0.7,
+      "without": -0.7,
+      "saving": 0.0
+     },
+     "prices": {
+      "night": 0.18564,
+      "day": 0.285719,
+      "feed_in": 0.062,
+      "assumed": false
+     },
+     "rules": {
+      "reserve": 10.0,
+      "max_target": 100.0,
+      "buffer": 0.35,
+      "discharge_mode": "until_target",
+      "evening_min": null
+     },
+     "reasons": [
+      "enough"
+     ],
+     "notes": [],
+     "fixed": true
+    },
+    "plan_soc_slots": [
+     35.6,
+     32.8,
+     30.4,
+     27.6,
+     25.0,
+     22.3,
+     19.6,
+     13.9,
+     11.7,
+     16.8,
+     23.5,
+     31.8,
+     41.2,
+     50.2,
+     58.5,
+     65.2,
+     70.2,
+     72.5,
+     63.4,
+     52.5,
+     41.7,
+     30.8,
+     28.2,
+     25.7
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -6822,6 +7319,100 @@
    },
    "2026-09-26": {
     "date": "2026-09-26",
+    "plan": {
+     "created": "2026-09-25T23:45:00+02:00",
+     "window": {
+      "start": "2026-09-26T00:00:00+02:00",
+      "end": "2026-09-26T05:00:00+02:00"
+     },
+     "kind": "none",
+     "target": 10,
+     "optimum": 10,
+     "target_kwh": 1.54,
+     "capacity_kwh": 15.36,
+     "soc_now": 51.9,
+     "soc_start": 51.2,
+     "grid_charge_kwh": 0.0,
+     "charge_from": null,
+     "charge_kw": 5.0,
+     "batteries": [
+      {
+       "id": "storage",
+       "name": "BYD Battery-Box Premium HV",
+       "soc": 62.5,
+       "soc_start": 61.9,
+       "target": 10,
+       "charge_kwh": 0.0,
+       "power_kw": 0.0,
+       "controllable": true
+      },
+      {
+       "id": "venus",
+       "name": "Marstek Venus E",
+       "soc": 30.6,
+       "soc_start": 30.0,
+       "target": 10,
+       "charge_kwh": 0.0,
+       "power_kw": 0.0,
+       "controllable": true
+      }
+     ],
+     "sun_takes_over": "2026-09-26T08:08+02:00",
+     "full_at": "2026-09-26T13:54+02:00",
+     "empty_without": null,
+     "solar_kwh": 28.4,
+     "home_kwh": 14.21,
+     "cost": {
+      "night_charge": 0.0,
+      "plan": -2.13,
+      "without": -2.13,
+      "saving": 0.0
+     },
+     "prices": {
+      "night": 0.18564,
+      "day": 0.285719,
+      "feed_in": 0.062,
+      "assumed": false
+     },
+     "rules": {
+      "reserve": 10.0,
+      "max_target": 100.0,
+      "buffer": 0.35,
+      "discharge_mode": "until_target",
+      "evening_min": null
+     },
+     "reasons": [
+      "enough"
+     ],
+     "notes": [],
+     "fixed": true
+    },
+    "plan_soc_slots": [
+     48.5,
+     45.8,
+     43.3,
+     40.5,
+     37.8,
+     35.0,
+     32.4,
+     28.3,
+     30.4,
+     41.8,
+     56.8,
+     75.0,
+     94.8,
+     100.0,
+     100.0,
+     100.0,
+     100.0,
+     100.0,
+     92.5,
+     81.5,
+     70.6,
+     59.7,
+     57.1,
+     54.6
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -7535,6 +8126,100 @@
    },
    "2026-09-27": {
     "date": "2026-09-27",
+    "plan": {
+     "created": "2026-09-26T23:45:00+02:00",
+     "window": {
+      "start": "2026-09-27T00:00:00+02:00",
+      "end": "2026-09-27T05:00:00+02:00"
+     },
+     "kind": "charge",
+     "target": 96,
+     "optimum": 74,
+     "target_kwh": 14.75,
+     "capacity_kwh": 15.36,
+     "soc_now": 55.3,
+     "soc_start": 54.7,
+     "grid_charge_kwh": 6.69,
+     "charge_from": "2026-09-27T03:39+02:00",
+     "charge_kw": 5.0,
+     "batteries": [
+      {
+       "id": "storage",
+       "name": "BYD Battery-Box Premium HV",
+       "soc": 66.5,
+       "soc_start": 65.9,
+       "target": 96,
+       "charge_kwh": 3.09,
+       "power_kw": 2.5,
+       "controllable": true
+      },
+      {
+       "id": "venus",
+       "name": "Marstek Venus E",
+       "soc": 32.9,
+       "soc_start": 32.3,
+       "target": 96,
+       "charge_kwh": 3.26,
+       "power_kw": 2.5,
+       "controllable": true
+      }
+     ],
+     "sun_takes_over": "2026-09-27T09:28+02:00",
+     "full_at": null,
+     "empty_without": null,
+     "solar_kwh": 5.5,
+     "home_kwh": 14.66,
+     "cost": {
+      "night_charge": 1.24,
+      "plan": 0.72,
+      "without": 1.07,
+      "saving": 0.34
+     },
+     "prices": {
+      "night": 0.18564,
+      "day": 0.285719,
+      "feed_in": 0.062,
+      "assumed": false
+     },
+     "rules": {
+      "reserve": 10.0,
+      "max_target": 100.0,
+      "buffer": 0.35,
+      "discharge_mode": "until_target",
+      "evening_min": null
+     },
+     "reasons": [
+      "bridge"
+     ],
+     "notes": [],
+     "fixed": true
+    },
+    "plan_soc_slots": [
+     54.7,
+     54.7,
+     54.7,
+     65.1,
+     96.0,
+     93.3,
+     90.7,
+     83.8,
+     78.3,
+     78.4,
+     78.4,
+     79.0,
+     80.1,
+     81.0,
+     81.6,
+     81.5,
+     81.7,
+     80.8,
+     70.7,
+     59.8,
+     48.9,
+     37.9,
+     35.3,
+     32.8
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -8248,6 +8933,100 @@
    },
    "2026-09-28": {
     "date": "2026-09-28",
+    "plan": {
+     "created": "2026-09-27T23:45:00+02:00",
+     "window": {
+      "start": "2026-09-28T00:00:00+02:00",
+      "end": "2026-09-28T05:00:00+02:00"
+     },
+     "kind": "charge",
+     "target": 36,
+     "optimum": 29,
+     "target_kwh": 5.53,
+     "capacity_kwh": 15.36,
+     "soc_now": 27.3,
+     "soc_start": 26.6,
+     "grid_charge_kwh": 1.52,
+     "charge_from": "2026-09-28T04:41+02:00",
+     "charge_kw": 5.0,
+     "batteries": [
+      {
+       "id": "storage",
+       "name": "BYD Battery-Box Premium HV",
+       "soc": 35.9,
+       "soc_start": 35.2,
+       "target": 36,
+       "charge_kwh": 0.08,
+       "power_kw": 2.5,
+       "controllable": true
+      },
+      {
+       "id": "venus",
+       "name": "Marstek Venus E",
+       "soc": 10.0,
+       "soc_start": 10.0,
+       "target": 36,
+       "charge_kwh": 1.33,
+       "power_kw": 2.5,
+       "controllable": true
+      }
+     ],
+     "sun_takes_over": "2026-09-28T08:55+02:00",
+     "full_at": null,
+     "empty_without": "2026-09-28T05:55+02:00",
+     "solar_kwh": 12.9,
+     "home_kwh": 15.0,
+     "cost": {
+      "night_charge": 0.28,
+      "plan": 0.19,
+      "without": 0.4,
+      "saving": 0.21
+     },
+     "prices": {
+      "night": 0.18564,
+      "day": 0.285719,
+      "feed_in": 0.062,
+      "assumed": false
+     },
+     "rules": {
+      "reserve": 10.0,
+      "max_target": 100.0,
+      "buffer": 0.35,
+      "discharge_mode": "until_target",
+      "evening_min": null
+     },
+     "reasons": [
+      "bridge"
+     ],
+     "notes": [],
+     "fixed": true
+    },
+    "plan_soc_slots": [
+     26.6,
+     26.6,
+     26.6,
+     26.6,
+     36.0,
+     33.2,
+     30.6,
+     24.6,
+     21.5,
+     25.4,
+     29.8,
+     35.6,
+     42.3,
+     48.7,
+     54.5,
+     58.8,
+     62.7,
+     64.2,
+     54.8,
+     43.9,
+     33.0,
+     22.1,
+     19.5,
+     16.9
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -8961,6 +9740,100 @@
    },
    "2026-09-29": {
     "date": "2026-09-29",
+    "plan": {
+     "created": "2026-09-28T23:45:00+02:00",
+     "window": {
+      "start": "2026-09-29T00:00:00+02:00",
+      "end": "2026-09-29T05:00:00+02:00"
+     },
+     "kind": "charge",
+     "target": 69,
+     "optimum": 54,
+     "target_kwh": 10.6,
+     "capacity_kwh": 15.36,
+     "soc_now": 41.3,
+     "soc_start": 40.6,
+     "grid_charge_kwh": 4.59,
+     "charge_from": "2026-09-29T04:04+02:00",
+     "charge_kw": 5.0,
+     "batteries": [
+      {
+       "id": "storage",
+       "name": "BYD Battery-Box Premium HV",
+       "soc": 47.2,
+       "soc_start": 46.6,
+       "target": 69,
+       "charge_kwh": 2.3,
+       "power_kw": 2.5,
+       "controllable": true
+      },
+      {
+       "id": "venus",
+       "name": "Marstek Venus E",
+       "soc": 29.4,
+       "soc_start": 28.8,
+       "target": 69,
+       "charge_kwh": 2.06,
+       "power_kw": 2.5,
+       "controllable": true
+      }
+     ],
+     "sun_takes_over": "2026-09-29T09:11+02:00",
+     "full_at": null,
+     "empty_without": null,
+     "solar_kwh": 8.8,
+     "home_kwh": 14.85,
+     "cost": {
+      "night_charge": 0.85,
+      "plan": 0.54,
+      "without": 0.84,
+      "saving": 0.3
+     },
+     "prices": {
+      "night": 0.18564,
+      "day": 0.285719,
+      "feed_in": 0.062,
+      "assumed": false
+     },
+     "rules": {
+      "reserve": 10.0,
+      "max_target": 100.0,
+      "buffer": 0.35,
+      "discharge_mode": "until_target",
+      "evening_min": null
+     },
+     "reasons": [
+      "bridge"
+     ],
+     "notes": [],
+     "fixed": true
+    },
+    "plan_soc_slots": [
+     40.6,
+     40.6,
+     40.6,
+     40.6,
+     69.0,
+     66.2,
+     63.6,
+     57.1,
+     52.7,
+     54.5,
+     56.5,
+     59.4,
+     62.9,
+     66.2,
+     69.1,
+     70.9,
+     72.8,
+     73.0,
+     63.2,
+     52.3,
+     41.4,
+     30.4,
+     27.8,
+     25.3
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -9674,6 +10547,100 @@
    },
    "2026-09-30": {
     "date": "2026-09-30",
+    "plan": {
+     "created": "2026-09-29T23:45:00+02:00",
+     "window": {
+      "start": "2026-09-30T00:00:00+02:00",
+      "end": "2026-09-30T05:00:00+02:00"
+     },
+     "kind": "hold",
+     "target": 46,
+     "optimum": 37,
+     "target_kwh": 7.07,
+     "capacity_kwh": 15.36,
+     "soc_now": 49.2,
+     "soc_start": 48.5,
+     "grid_charge_kwh": 0.0,
+     "charge_from": null,
+     "charge_kw": 5.0,
+     "batteries": [
+      {
+       "id": "storage",
+       "name": "BYD Battery-Box Premium HV",
+       "soc": 58.9,
+       "soc_start": 58.3,
+       "target": 46,
+       "charge_kwh": 0.0,
+       "power_kw": 0.0,
+       "controllable": true
+      },
+      {
+       "id": "venus",
+       "name": "Marstek Venus E",
+       "soc": 29.7,
+       "soc_start": 29.1,
+       "target": 46,
+       "charge_kwh": 0.0,
+       "power_kw": 0.0,
+       "controllable": true
+      }
+     ],
+     "sun_takes_over": "2026-09-30T09:00+02:00",
+     "full_at": null,
+     "empty_without": null,
+     "solar_kwh": 11.4,
+     "home_kwh": 14.72,
+     "cost": {
+      "night_charge": 0.0,
+      "plan": -0.22,
+      "without": -0.2,
+      "saving": 0.03
+     },
+     "prices": {
+      "night": 0.18564,
+      "day": 0.285719,
+      "feed_in": 0.062,
+      "assumed": false
+     },
+     "rules": {
+      "reserve": 10.0,
+      "max_target": 100.0,
+      "buffer": 0.35,
+      "discharge_mode": "until_target",
+      "evening_min": null
+     },
+     "reasons": [
+      "hold"
+     ],
+     "notes": [],
+     "fixed": true
+    },
+    "plan_soc_slots": [
+     46.0,
+     46.0,
+     46.0,
+     46.0,
+     46.0,
+     43.3,
+     40.6,
+     34.5,
+     30.9,
+     34.0,
+     37.9,
+     42.8,
+     48.5,
+     54.0,
+     58.9,
+     62.5,
+     65.7,
+     66.6,
+     57.2,
+     46.2,
+     35.3,
+     24.4,
+     21.8,
+     19.2
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -10387,6 +11354,100 @@
    },
    "2026-10-01": {
     "date": "2026-10-01",
+    "plan": {
+     "created": "2026-09-30T23:45:00+02:00",
+     "window": {
+      "start": "2026-10-01T00:00:00+02:00",
+      "end": "2026-10-01T05:00:00+02:00"
+     },
+     "kind": "charge",
+     "target": 67,
+     "optimum": 52,
+     "target_kwh": 10.29,
+     "capacity_kwh": 15.36,
+     "soc_now": 52.5,
+     "soc_start": 51.9,
+     "grid_charge_kwh": 2.45,
+     "charge_from": "2026-10-01T04:30+02:00",
+     "charge_kw": 5.0,
+     "batteries": [
+      {
+       "id": "storage",
+       "name": "BYD Battery-Box Premium HV",
+       "soc": 64.4,
+       "soc_start": 63.8,
+       "target": 67,
+       "charge_kwh": 0.33,
+       "power_kw": 2.5,
+       "controllable": true
+      },
+      {
+       "id": "venus",
+       "name": "Marstek Venus E",
+       "soc": 28.8,
+       "soc_start": 28.2,
+       "target": 67,
+       "charge_kwh": 1.99,
+       "power_kw": 2.5,
+       "controllable": true
+      }
+     ],
+     "sun_takes_over": "2026-10-01T09:10+02:00",
+     "full_at": null,
+     "empty_without": null,
+     "solar_kwh": 9.0,
+     "home_kwh": 14.64,
+     "cost": {
+      "night_charge": 0.45,
+      "plan": 0.12,
+      "without": 0.27,
+      "saving": 0.14
+     },
+     "prices": {
+      "night": 0.18564,
+      "day": 0.285719,
+      "feed_in": 0.062,
+      "assumed": false
+     },
+     "rules": {
+      "reserve": 10.0,
+      "max_target": 100.0,
+      "buffer": 0.35,
+      "discharge_mode": "until_target",
+      "evening_min": null
+     },
+     "reasons": [
+      "bridge"
+     ],
+     "notes": [],
+     "fixed": true
+    },
+    "plan_soc_slots": [
+     51.9,
+     51.9,
+     51.9,
+     51.9,
+     67.0,
+     64.3,
+     61.6,
+     55.2,
+     50.8,
+     52.7,
+     55.1,
+     58.4,
+     62.3,
+     66.0,
+     69.2,
+     71.4,
+     73.3,
+     73.5,
+     63.7,
+     52.8,
+     41.9,
+     31.0,
+     28.4,
+     25.8
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -11229,6 +12290,100 @@
    },
    "2026-10-02": {
     "date": "2026-10-02",
+    "plan": {
+     "created": "2026-10-01T23:45:00+02:00",
+     "window": {
+      "start": "2026-10-02T00:00:00+02:00",
+      "end": "2026-10-02T05:00:00+02:00"
+     },
+     "kind": "none",
+     "target": 10,
+     "optimum": 10,
+     "target_kwh": 1.54,
+     "capacity_kwh": 15.36,
+     "soc_now": 53.4,
+     "soc_start": 52.7,
+     "grid_charge_kwh": 0.0,
+     "charge_from": null,
+     "charge_kw": 5.0,
+     "batteries": [
+      {
+       "id": "storage",
+       "name": "BYD Battery-Box Premium HV",
+       "soc": 65.0,
+       "soc_start": 64.4,
+       "target": 10,
+       "charge_kwh": 0.0,
+       "power_kw": 0.0,
+       "controllable": true
+      },
+      {
+       "id": "venus",
+       "name": "Marstek Venus E",
+       "soc": 30.1,
+       "soc_start": 29.5,
+       "target": 10,
+       "charge_kwh": 0.0,
+       "power_kw": 0.0,
+       "controllable": true
+      }
+     ],
+     "sun_takes_over": "2026-10-02T08:51+02:00",
+     "full_at": null,
+     "empty_without": null,
+     "solar_kwh": 13.9,
+     "home_kwh": 14.54,
+     "cost": {
+      "night_charge": 0.0,
+      "plan": -0.79,
+      "without": -0.79,
+      "saving": 0.0
+     },
+     "prices": {
+      "night": 0.18564,
+      "day": 0.285719,
+      "feed_in": 0.062,
+      "assumed": false
+     },
+     "rules": {
+      "reserve": 10.0,
+      "max_target": 100.0,
+      "buffer": 0.35,
+      "discharge_mode": "until_target",
+      "evening_min": null
+     },
+     "reasons": [
+      "enough"
+     ],
+     "notes": [],
+     "fixed": true
+    },
+    "plan_soc_slots": [
+     50.0,
+     47.2,
+     44.6,
+     41.7,
+     39.1,
+     36.4,
+     33.8,
+     27.9,
+     25.3,
+     29.6,
+     35.2,
+     42.2,
+     50.0,
+     57.7,
+     64.7,
+     70.1,
+     74.4,
+     76.2,
+     67.0,
+     56.1,
+     45.1,
+     34.3,
+     31.6,
+     29.0
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -12071,6 +13226,100 @@
    },
    "2026-10-03": {
     "date": "2026-10-03",
+    "plan": {
+     "created": "2026-10-02T23:45:00+02:00",
+     "window": {
+      "start": "2026-10-03T00:00:00+02:00",
+      "end": "2026-10-03T05:00:00+02:00"
+     },
+     "kind": "charge",
+     "target": 99,
+     "optimum": 76,
+     "target_kwh": 15.21,
+     "capacity_kwh": 15.36,
+     "soc_now": 53.2,
+     "soc_start": 52.5,
+     "grid_charge_kwh": 7.52,
+     "charge_from": "2026-10-03T03:29+02:00",
+     "charge_kw": 5.0,
+     "batteries": [
+      {
+       "id": "storage",
+       "name": "BYD Battery-Box Premium HV",
+       "soc": 64.9,
+       "soc_start": 64.3,
+       "target": 99,
+       "charge_kwh": 3.56,
+       "power_kw": 2.5,
+       "controllable": true
+      },
+      {
+       "id": "venus",
+       "name": "Marstek Venus E",
+       "soc": 29.7,
+       "soc_start": 29.1,
+       "target": 99,
+       "charge_kwh": 3.58,
+       "power_kw": 2.5,
+       "controllable": true
+      }
+     ],
+     "sun_takes_over": "2026-10-03T10:38+02:00",
+     "full_at": null,
+     "empty_without": null,
+     "solar_kwh": 4.9,
+     "home_kwh": 14.45,
+     "cost": {
+      "night_charge": 1.4,
+      "plan": 0.86,
+      "without": 1.26,
+      "saving": 0.4
+     },
+     "prices": {
+      "night": 0.18564,
+      "day": 0.285719,
+      "feed_in": 0.062,
+      "assumed": false
+     },
+     "rules": {
+      "reserve": 10.0,
+      "max_target": 100.0,
+      "buffer": 0.35,
+      "discharge_mode": "until_target",
+      "evening_min": null
+     },
+     "reasons": [
+      "bridge"
+     ],
+     "notes": [],
+     "fixed": true
+    },
+    "plan_soc_slots": [
+     52.5,
+     52.5,
+     52.5,
+     68.1,
+     99.0,
+     96.3,
+     93.7,
+     86.8,
+     81.0,
+     80.9,
+     80.9,
+     81.3,
+     82.0,
+     82.6,
+     82.9,
+     82.6,
+     82.6,
+     81.5,
+     71.2,
+     60.3,
+     49.4,
+     38.5,
+     35.8,
+     33.3
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -12653,6 +13902,463 @@
   },
   "first_day": "2026-09-20",
   "last_day": "2026-10-03",
-  "day_count": 14
+  "day_count": 14,
+  "plan": {
+   "created": "2026-10-03T14:05:00+02:00",
+   "window": {
+    "start": "2026-10-04T00:00:00+02:00",
+    "end": "2026-10-04T05:00:00+02:00"
+   },
+   "kind": "charge",
+   "target": 95,
+   "optimum": 73,
+   "target_kwh": 14.59,
+   "capacity_kwh": 15.36,
+   "soc_now": 64.1,
+   "soc_start": 13.9,
+   "grid_charge_kwh": 13.13,
+   "charge_from": "2026-10-04T02:22+02:00",
+   "charge_kw": 5.0,
+   "batteries": [
+    {
+     "id": "storage",
+     "name": "BYD Battery-Box Premium HV",
+     "soc": 73.1,
+     "soc_start": 22.9,
+     "target": 95,
+     "charge_kwh": 7.38,
+     "power_kw": 2.5,
+     "controllable": true
+    },
+    {
+     "id": "venus",
+     "name": "Marstek Venus E",
+     "soc": 46.2,
+     "soc_start": 10.0,
+     "target": 95,
+     "charge_kwh": 4.35,
+     "power_kw": 2.5,
+     "controllable": true
+    }
+   ],
+   "sun_takes_over": "2026-10-04T09:27+02:00",
+   "full_at": null,
+   "empty_without": "2026-10-04T01:35+02:00",
+   "solar_kwh": 5.5,
+   "home_kwh": 14.62,
+   "cost": {
+    "night_charge": 2.44,
+    "plan": 1.94,
+    "without": 2.61,
+    "saving": 0.67
+   },
+   "prices": {
+    "night": 0.18564,
+    "day": 0.285719,
+    "feed_in": 0.062,
+    "assumed": false
+   },
+   "rules": {
+    "reserve": 10.0,
+    "max_target": 100.0,
+    "buffer": 0.35,
+    "discharge_mode": "until_target",
+    "evening_min": null
+   },
+   "reasons": [
+    "bridge"
+   ],
+   "notes": [],
+   "meta": {
+    "consumption": {
+     "source": "history",
+     "days": 14
+    },
+    "solar": {
+     "sources": {
+      "2026-10-04": "hours"
+     },
+     "totals": {}
+    },
+    "solar_factor": 1.0,
+    "workday": false
+   },
+   "hours": [
+    {
+     "start": "2026-10-03T14:00:00+02:00",
+     "solar": 0.508,
+     "home": 0.52,
+     "window": false,
+     "soc": 64.1,
+     "soc_without": 64.1,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-03T15:00:00+02:00",
+     "solar": 0.476,
+     "home": 0.544,
+     "window": false,
+     "soc": 63.6,
+     "soc_without": 63.6,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-03T16:00:00+02:00",
+     "solar": 0.366,
+     "home": 0.393,
+     "window": false,
+     "soc": 63.4,
+     "soc_without": 63.4,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-03T17:00:00+02:00",
+     "solar": 0.23,
+     "home": 0.411,
+     "window": false,
+     "soc": 62.2,
+     "soc_without": 62.2,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-03T18:00:00+02:00",
+     "solar": 0.078,
+     "home": 1.584,
+     "window": false,
+     "soc": 51.8,
+     "soc_without": 51.8,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-03T19:00:00+02:00",
+     "solar": 0.0,
+     "home": 1.588,
+     "window": false,
+     "soc": 40.9,
+     "soc_without": 40.9,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-03T20:00:00+02:00",
+     "solar": 0.0,
+     "home": 1.59,
+     "window": false,
+     "soc": 30.0,
+     "soc_without": 30.0,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-03T21:00:00+02:00",
+     "solar": 0.0,
+     "home": 1.584,
+     "window": false,
+     "soc": 19.1,
+     "soc_without": 19.1,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-03T22:00:00+02:00",
+     "solar": 0.0,
+     "home": 0.391,
+     "window": false,
+     "soc": 16.5,
+     "soc_without": 16.5,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-03T23:00:00+02:00",
+     "solar": 0.0,
+     "home": 0.37,
+     "window": false,
+     "soc": 13.9,
+     "soc_without": 13.9,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-04T00:00:00+02:00",
+     "solar": 0.0,
+     "home": 0.395,
+     "window": true,
+     "soc": 13.9,
+     "soc_without": 11.2,
+     "charge": 0.0,
+     "grid_in": 0.395,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-04T01:00:00+02:00",
+     "solar": 0.0,
+     "home": 0.408,
+     "window": true,
+     "soc": 13.9,
+     "soc_without": 10.0,
+     "charge": 0.0,
+     "grid_in": 0.408,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-04T02:00:00+02:00",
+     "solar": 0.0,
+     "home": 0.393,
+     "window": true,
+     "soc": 33.2,
+     "soc_without": 10.0,
+     "charge": 3.127,
+     "grid_in": 3.519,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-04T03:00:00+02:00",
+     "solar": 0.0,
+     "home": 0.404,
+     "window": true,
+     "soc": 64.1,
+     "soc_without": 10.0,
+     "charge": 5.0,
+     "grid_in": 5.404,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-04T04:00:00+02:00",
+     "solar": 0.0,
+     "home": 0.383,
+     "window": true,
+     "soc": 95.0,
+     "soc_without": 10.0,
+     "charge": 5.0,
+     "grid_in": 5.383,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-04T05:00:00+02:00",
+     "solar": 0.0,
+     "home": 0.394,
+     "window": false,
+     "soc": 92.3,
+     "soc_without": 10.0,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-04T06:00:00+02:00",
+     "solar": 0.0,
+     "home": 0.381,
+     "window": false,
+     "soc": 89.7,
+     "soc_without": 10.0,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-04T07:00:00+02:00",
+     "solar": 0.094,
+     "home": 1.097,
+     "window": false,
+     "soc": 82.8,
+     "soc_without": 10.0,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-04T08:00:00+02:00",
+     "solar": 0.275,
+     "home": 1.076,
+     "window": false,
+     "soc": 77.3,
+     "soc_without": 10.0,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-04T09:00:00+02:00",
+     "solar": 0.437,
+     "home": 0.407,
+     "window": false,
+     "soc": 77.5,
+     "soc_without": 10.2,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-04T10:00:00+02:00",
+     "solar": 0.57,
+     "home": 0.547,
+     "window": false,
+     "soc": 77.6,
+     "soc_without": 10.3,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-04T11:00:00+02:00",
+     "solar": 0.663,
+     "home": 0.559,
+     "window": false,
+     "soc": 78.3,
+     "soc_without": 11.0,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-04T12:00:00+02:00",
+     "solar": 0.712,
+     "home": 0.558,
+     "window": false,
+     "soc": 79.2,
+     "soc_without": 11.9,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-04T13:00:00+02:00",
+     "solar": 0.712,
+     "home": 0.575,
+     "window": false,
+     "soc": 80.1,
+     "soc_without": 12.8,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-04T14:00:00+02:00",
+     "solar": 0.663,
+     "home": 0.568,
+     "window": false,
+     "soc": 80.7,
+     "soc_without": 13.4,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-04T15:00:00+02:00",
+     "solar": 0.57,
+     "home": 0.544,
+     "window": false,
+     "soc": 80.8,
+     "soc_without": 13.5,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-04T16:00:00+02:00",
+     "solar": 0.437,
+     "home": 0.393,
+     "window": false,
+     "soc": 81.1,
+     "soc_without": 13.8,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-04T17:00:00+02:00",
+     "solar": 0.275,
+     "home": 0.411,
+     "window": false,
+     "soc": 80.1,
+     "soc_without": 12.9,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-04T18:00:00+02:00",
+     "solar": 0.094,
+     "home": 1.584,
+     "window": false,
+     "soc": 69.9,
+     "soc_without": 10.0,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-04T19:00:00+02:00",
+     "solar": 0.0,
+     "home": 1.588,
+     "window": false,
+     "soc": 59.0,
+     "soc_without": 10.0,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-04T20:00:00+02:00",
+     "solar": 0.0,
+     "home": 1.59,
+     "window": false,
+     "soc": 48.1,
+     "soc_without": 10.0,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-04T21:00:00+02:00",
+     "solar": 0.0,
+     "home": 1.584,
+     "window": false,
+     "soc": 37.2,
+     "soc_without": 10.0,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-04T22:00:00+02:00",
+     "solar": 0.0,
+     "home": 0.391,
+     "window": false,
+     "soc": 34.6,
+     "soc_without": 10.0,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    },
+    {
+     "start": "2026-10-04T23:00:00+02:00",
+     "solar": 0.0,
+     "home": 0.37,
+     "window": false,
+     "soc": 32.0,
+     "soc_without": 10.0,
+     "charge": 0.0,
+     "grid_in": 0.0,
+     "grid_out": 0.0
+    }
+   ]
+  }
  }
 }

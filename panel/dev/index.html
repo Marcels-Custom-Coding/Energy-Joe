@@ -136,6 +136,7 @@
         backfill: { state: "done", hours: 312 },
       });
       state.observe = done && state.mode !== "off" ? watching() : { active: false, backfill: { state: "idle" } };
+      state.plan = done && state.mode !== "off" ? history.plan : null;
       let adopted = done;
       const listeners = new Set();
       const push = () => listeners.forEach((cb) => cb(structuredClone(state)));
@@ -164,6 +165,7 @@
               state.mode = msg.mode;
               state.observe =
                 state.onboarding.completed && msg.mode !== "off" ? watching() : { ...state.observe, active: false };
+              state.plan = state.onboarding.completed && msg.mode !== "off" ? history.plan : null;
               push();
               return null;
             case "energy_joe/history/days":
@@ -184,6 +186,11 @@
                   sun: {},
                 }
               );
+            case "energy_joe/plan/refresh":
+              if (!state.plan) throw { code: "not_planning" };
+              state.plan = { ...history.plan, created: new Date().toISOString().slice(0, 19) + "+02:00" };
+              push();
+              return state.plan;
             case "energy_joe/history/rebuild":
               if (!state.observe.active) throw { code: "not_observing" };
               state.observe = { ...state.observe, backfill: { state: "running" } };
@@ -212,7 +219,10 @@
             case "energy_joe/onboarding":
               if (msg.step) state.onboarding.step = msg.step;
               if ("completed" in msg) state.onboarding.completed = msg.completed;
-              if (state.onboarding.completed && state.mode !== "off") state.observe = watching();
+              if (state.onboarding.completed && state.mode !== "off") {
+                state.observe = watching();
+                state.plan = history.plan;
+              }
               push();
               return null;
           }

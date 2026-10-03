@@ -7,6 +7,7 @@ import "../components/pose";
 import { tip } from "../components/tip";
 import { define } from "../define";
 import { formatNumber, measurementKw, numberState, sumKw } from "../entities";
+import { planCostLine, planLines, planPose, planSentence, windowText } from "../components/plan-text";
 import type { Translate } from "../i18n";
 import { shared } from "../styles/shared";
 import type { DaySummary, HistoryDays, HomeAssistant, JoeState } from "../types";
@@ -55,6 +56,43 @@ export class JoeOverview extends LitElement {
         top: 10px;
         width: 170px;
         pointer-events: none;
+      }
+      .night .head .eyebrow {
+        flex: none;
+        max-width: calc(100% - 210px);
+      }
+      .night .big {
+        font-family: var(--joe-display);
+        font-style: italic;
+        font-weight: 800;
+        font-size: clamp(44px, 6vw, 64px);
+        line-height: 1;
+        margin-top: 12px;
+        max-width: 62%;
+        font-variant-numeric: tabular-nums;
+      }
+      .night .big small {
+        font-size: 0.5em;
+        margin-left: 2px;
+      }
+      .night .say {
+        margin: 10px 0 0;
+        font-size: 15px;
+        line-height: 1.5;
+        color: var(--joe-ink-2);
+        max-width: 60ch;
+      }
+      .night .lines {
+        display: grid;
+        gap: 2px;
+        margin-top: 10px;
+        font-size: 14px;
+        font-variant-numeric: tabular-nums;
+      }
+      .night .cost {
+        margin: 8px 0 0;
+        font-size: 14px;
+        font-weight: 600;
       }
       .wide {
         grid-column: 1 / -1;
@@ -279,14 +317,10 @@ export class JoeOverview extends LitElement {
       return nothing;
     }
     const observing = Boolean(this.state?.observe?.active);
+    const planning = Boolean(this.state?.plan && this.state.plan.kind !== "unavailable");
     return html`<div class="grid">
       ${this.renderNow(t)} ${this.renderWeek(t)}
-      <section class="card">
-        <joe-pose name="relax"></joe-pose>
-        <div class="eyebrow"><ha-icon icon="mdi:weather-night"></ha-icon>${t("overview.night")}</div>
-        ${displayTitle(t("overview.night.empty.title"))} ${swoosh}
-        <p class="lead">${t("overview.night.empty.text")}</p>
-      </section>
+      ${this.renderNight(t)}
       <section class="card">
         <joe-pose name="plan"></joe-pose>
         <div class="eyebrow"><ha-icon icon="mdi:calculator-variant-outline"></ha-icon>${t("overview.sim")}</div>
@@ -300,15 +334,13 @@ export class JoeOverview extends LitElement {
             <b>${t("overview.next.1.title")}</b><span>${t("overview.next.1.text")}</span>
             <span class="chip ok"><ha-icon icon="mdi:check"></ha-icon>${t("status.done")}</span>
           </li>
-          <li class="done">
-            <b>${t("overview.next.2.title")}</b><span>${t("overview.next.2.text")}</span>
-            <span class="chip ok"><ha-icon icon="mdi:check"></ha-icon>${t("status.done")}</span>
-          </li>
           <li class=${observing ? "done" : ""}>
+            <b>${t("overview.next.2.title")}</b><span>${t("overview.next.2.text")}</span>
+            ${this.stepChip(t, observing)}
+          </li>
+          <li class=${planning ? "done" : ""}>
             <b>${t("overview.next.3.title")}</b><span>${t("overview.next.3.text")}</span>
-            ${observing
-              ? html`<span class="chip ok"><ha-icon icon="mdi:eye-outline"></ha-icon>${t("status.running")}</span>`
-              : html`<span class="chip">${t(this.state?.mode === "off" ? "status.paused" : "status.waiting")}</span>`}
+            ${this.stepChip(t, planning)}
           </li>
           <li>
             <b>${t("overview.next.4.title")}</b><span>${t("overview.next.4.text")}</span>
@@ -317,6 +349,54 @@ export class JoeOverview extends LitElement {
         </ol>
       </section>
     </div>`;
+  }
+
+  private stepChip(t: Translate, running: boolean): TemplateResult {
+    return running
+      ? html`<span class="chip ok"><ha-icon icon="mdi:check"></ha-icon>${t("status.running")}</span>`
+      : html`<span class="chip">${t(this.state?.mode === "off" ? "status.paused" : "status.waiting")}</span>`;
+  }
+
+  private renderNight(t: Translate): TemplateResult {
+    const plan = this.state?.plan;
+    if (!plan) {
+      return html`<section class="card">
+        <joe-pose name="relax"></joe-pose>
+        <div class="eyebrow"><ha-icon icon="mdi:weather-night"></ha-icon>${t("overview.night")}</div>
+        ${displayTitle(t("overview.night.empty.title"))} ${swoosh}
+        <p class="lead">${t("overview.night.empty.text")}</p>
+      </section>`;
+    }
+    const lines = planLines(t, plan);
+    const cost = planCostLine(t, plan, this.hass?.config?.currency);
+    const big =
+      plan.kind === "charge" || plan.kind === "hold"
+        ? html`${formatNumber(t.lang, plan.target ?? 0, 0)}<small>%</small>`
+        : html`${t(plan.kind === "none" ? "plan.big.none" : "plan.big.unavailable")}`;
+    return html`<section class="card night" data-tipped>
+      <joe-pose name=${planPose(plan)}></joe-pose>
+      <div class="head">
+        <div class="eyebrow">
+          <ha-icon icon="mdi:weather-night"></ha-icon>${t("overview.night")}${plan.window ? ` · ${windowText(t, plan)}` : ""}
+        </div>
+        ${tip(t, "plan_target")}
+      </div>
+      <div class="big">${big}</div>
+      ${swoosh}
+      <p class="say">${planSentence(t, plan)}</p>
+      ${lines.length ? html`<div class="lines">${lines.map((line) => html`<div>${line}</div>`)}</div>` : nothing}
+      ${cost ? html`<p class="cost">${cost}</p>` : nothing}
+      <div class="bottom">
+        <span class="chip ${plan.fixed ? "ok" : ""}">
+          ${plan.fixed
+            ? t("plan.fixed_at", { time: plan.created.slice(11, 16) })
+            : t("plan.preview_at", { time: plan.created.slice(11, 16) })}
+        </span>
+        <a class="btn btn-secondary" data-notip href=${`${this.prefix}/plan`} @click=${(ev: MouseEvent) => this.open(ev, "plan")}
+          >${t("overview.night.more")}</a
+        >
+      </div>
+    </section>`;
   }
 
   private renderNow(t: Translate): TemplateResult {
@@ -439,11 +519,15 @@ export class JoeOverview extends LitElement {
   }
 
   private openHistory(ev: MouseEvent): void {
+    this.open(ev, "history");
+  }
+
+  private open(ev: MouseEvent, page: "history" | "plan"): void {
     if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button !== 0) {
       return;
     }
     ev.preventDefault();
-    this.dispatchEvent(new CustomEvent("joe-navigate", { detail: { page: "history" }, bubbles: true, composed: true }));
+    this.dispatchEvent(new CustomEvent("joe-navigate", { detail: { page }, bubbles: true, composed: true }));
   }
 }
 

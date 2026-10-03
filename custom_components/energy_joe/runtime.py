@@ -18,6 +18,7 @@ from . import model
 from .const import DOMAIN
 from .observe.observer import BACKFILL_DAYS, JoeObserver
 from .observe.store import HistoryStore
+from .plan.scheduler import JoePlanner
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -66,7 +67,9 @@ class JoeRuntime:
         self._listeners: set[StateListener] = set()
         self.history = HistoryStore(hass)
         self.observer = JoeObserver(hass, self.history, self._changed)
+        self.planner = JoePlanner(hass, self.history, self._changed)
         self._started = False
+        self._planned: dict[str, Any] | None = None
         self._observed: dict[str, Any] | None = None
         self._observe_lock = asyncio.Lock()
 
@@ -89,6 +92,7 @@ class JoeRuntime:
         """Stop watching and write pending changes immediately."""
         self._started = False
         async with self._observe_lock:
+            await self.planner.async_stop()
             await self.observer.async_stop()
         await self.history.async_unload()
         await self._state_store.async_save(self._state)
@@ -107,6 +111,12 @@ class JoeRuntime:
         self._started = True
         self._update_observer()
 
+    async def async_refresh_plan(self) -> dict[str, Any] | None:
+        """Plan again now (the panel's "plan again")."""
+        if not self.planner.active:
+            return None
+        return await self.planner.async_refresh()
+
     @callback
     def async_rebuild_history(self) -> bool:
         """Read the history again (after other sensors were chosen)."""
@@ -119,7 +129,12 @@ class JoeRuntime:
     def state(self) -> dict[str, Any]:
         """Return a copy of everything the panel shows live."""
         return deepcopy(
-            {**self._state, "config": self._config, "observe": self.observer.status}
+            {
+                **self._state,
+                "config": self._config,
+                "observe": self.observer.status,
+                "plan": self.planner.plan,
+            }
         )
 
     @property
@@ -187,19 +202,29 @@ class JoeRuntime:
             and _has_inputs(self._config)
         )
         observed = _observed_parts(self._config) if wanted else None
-        if observed == self._observed:
+        planned = _planned_parts(self._config) if wanted else None
+        if observed == self._observed and planned == self._planned:
             return
-        self._observed = observed
-        self._hass.async_create_task(self._async_apply_observer(), eager_start=False)
+        restart = observed != self._observed
+        self._observed, self._planned = observed, planned
+        self._hass.async_create_task(
+            self._async_apply_observer(restart), eager_start=False
+        )
 
-    async def _async_apply_observer(self) -> None:
+    async def _async_apply_observer(self, restart: bool) -> None:
         async with self._observe_lock:
             if not self._started:
                 return
             if self._observed is None:
+                await self.planner.async_stop()
                 await self.observer.async_stop()
-            else:
+                return
+            if restart or not self.observer.active:
                 await self.observer.async_start(self.config)
+                await self.planner.async_start(self.config)
+            else:
+                # Only rules or the tariff changed: plan again.
+                await self.planner.async_update(self.config)
 
     @callback
     def _changed(self, *, state: bool = False, config: bool = False) -> None:
@@ -233,6 +258,25 @@ def _observed_parts(config: dict[str, Any]) -> dict[str, Any]:
             (c["id"], c["energy_entity"], c["kind"]) for c in config["consumers"]
         ],
         "forecast": config["forecast"],
+    }
+
+
+def _planned_parts(config: dict[str, Any]) -> dict[str, Any]:
+    """The parts of the configuration only the plan depends on."""
+    return {
+        "tariff": config["tariff"],
+        "rules": config["rules"],
+        "batteries": [
+            (
+                b["capacity_kwh"],
+                b["capacity_entity"],
+                b["max_charge_w"],
+                b["max_discharge_w"],
+                b["adapter"],
+                b["name"],
+            )
+            for b in config["batteries"]
+        ],
     }
 
 

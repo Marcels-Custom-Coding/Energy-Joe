@@ -10,7 +10,7 @@ Run from the repository root: .venv/bin/python scripts/make_dev_samples.py
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 import json
 import math
 from pathlib import Path
@@ -28,7 +28,16 @@ from custom_components.energy_joe.discovery.snapshot import Snapshot
 from custom_components.energy_joe.observe.records import (
     day_view,
     hour_starts,
+    local_hour,
     summarize,
+)
+from custom_components.energy_joe.plan.inputs import next_window
+from custom_components.energy_joe.plan.planner import (
+    Battery,
+    Hour,
+    PlanInput,
+    Prices,
+    make_plan,
 )
 from homeassistant.util import dt as dt_util
 from tests.snapshots import fronius_household, generic_household
@@ -165,11 +174,102 @@ def history(config: dict) -> dict[str, dict]:
     return days
 
 
+def made_up_plan(
+    config: dict,
+    days: dict[str, dict],
+    now: datetime,
+    socs: dict[str, float],
+    sun_kwh: dict[date, float],
+) -> dict:
+    """A plan from the real planner with made-up inputs (sun as a bell 7–19 h)."""
+    tariff = config["tariff"]
+    rules = config["rules"]
+    start, end = next_window(now, tariff["window"])
+    profile = [0.0] * 24
+    counts = [0] * 24
+    for data in days.values():
+        for record in data["hours"]:
+            hour = datetime.fromisoformat(record["start"]).hour
+            profile[hour] += record["home"]
+            counts[hour] += 1
+    profile = [p / c if c else 0.4 for p, c in zip(profile, counts, strict=True)]
+    weights = {h: max(0.0, math.sin(math.pi * (h + 0.5 - 7) / 12)) for h in range(24)}
+    total = sum(weights.values())
+    hours = []
+    for hour in hour_starts(local_hour(now), start + timedelta(days=1)):
+        fraction = 1.0
+        if hour < now:
+            fraction = (hour + timedelta(hours=1) - now).total_seconds() / 3600
+        day_sun = sun_kwh.get(hour.date(), 0.0)
+        hours.append(
+            Hour(
+                start=hour,
+                solar=day_sun * weights[hour.hour] / total * fraction,
+                home=profile[hour.hour] * fraction,
+                window=start <= hour < end,
+                fraction=fraction,
+            )
+        )
+    batteries = [
+        Battery(
+            b["id"],
+            b["name"],
+            b["capacity_kwh"] or 5.0,
+            socs[b["id"]],
+            2.5,
+            2.5,
+            b["adapter"] != "none",
+        )
+        for b in config["batteries"]
+    ]
+    return make_plan(
+        PlanInput(
+            now=now,
+            window_start=start,
+            window_end=end,
+            hours=hours,
+            batteries=batteries,
+            prices=Prices(
+                tariff["night_price"],
+                tariff["day_price"],
+                tariff["feed_in_price"] or 0.062,
+            ),
+            reserve=rules["reserve_soc"],
+            max_target=rules["max_target_soc"],
+            buffer=rules["buffer_factor"],
+            meta={
+                "consumption": {"source": "history", "days": len(days)},
+                "solar": {"sources": {start.date().isoformat(): "hours"}, "totals": {}},
+                "solar_factor": 1.0,
+                "workday": start.weekday() < 5,
+            },
+        )
+    )
+
+
 def history_sample(config: dict) -> dict:
     """What the history commands answer for the made-up days."""
     tariff = config["tariff"]
     window = tariff["window"] if tariff["kind"] == "fixed_window" else None
     days = history(config)
+    # Each night's fixed plan, made at 23:45 the evening before.
+    names = sorted(days) if window else []
+    for previous, day in zip(names, names[1:], strict=False):
+        last = days[previous]["hours"][-1]
+        socs = {k: v["soc"] for k, v in last["bat"].items()}
+        now = dt_util.start_of_local_day(date.fromisoformat(day)) - timedelta(
+            minutes=15
+        )
+        earlier = {k: v for k, v in days.items() if k < day}
+        plan = made_up_plan(
+            config,
+            earlier,
+            now,
+            socs,
+            {date.fromisoformat(day): days[day]["fc"]["ahead_kwh"]},
+        )
+        plan["fixed"] = True
+        days[day]["plan"] = plan
     views = {}
     for day, data in days.items():
         moment = dt_util.start_of_local_day(date.fromisoformat(day))
@@ -178,12 +278,31 @@ def history_sample(config: dict) -> dict:
             "sunset": moment + timedelta(hours=18, minutes=52),
         }
         views[day] = day_view(day, data, window, sun)
+    last_day = days[max(days)]
+    socs = {k: v["soc"] for k, v in last_day["hours"][-1]["bat"].items()}
+    now = dt_util.start_of_local_day(LAST_DAY) + timedelta(hours=14, minutes=5)
+    tonight = (
+        made_up_plan(
+            config,
+            days,
+            now,
+            socs,
+            {LAST_DAY: 4.6, LAST_DAY + timedelta(days=1): 5.5},
+        )
+        if window
+        else {
+            "kind": "unavailable",
+            "reasons": ["dynamic" if tariff["kind"] == "dynamic" else "no_window"],
+            "created": now.isoformat(timespec="seconds"),
+        }
+    )
     return {
         "days": [summarize(day, data, window) for day, data in reversed(days.items())],
         "views": views,
         "first_day": min(days),
         "last_day": max(days),
         "day_count": len(days),
+        "plan": tonight,
     }
 
 

@@ -19,6 +19,7 @@ import { translator, type Translate, type TranslationKey } from "./i18n";
 import "./pages/history";
 import "./pages/onboarding";
 import "./pages/overview";
+import "./pages/plan";
 import "./pages/settings";
 import { shared } from "./styles/shared";
 import { tokens } from "./styles/tokens";
@@ -48,7 +49,6 @@ const AVAILABLE: JoeMode[] = ["simulation", "off"];
 
 // Pages that show Joe's empty state until their feature arrives.
 const COMING: Partial<Record<Page, { pose: string; title: TranslationKey; text: TranslationKey }>> = {
-  plan: { pose: "plan", title: "plan.title", text: "plan.text" },
   learn: { pose: "learn", title: "learn.title", text: "learn.text" },
   devices: { pose: "switch", title: "devices.title", text: "devices.text" },
 };
@@ -314,6 +314,9 @@ export class EnergyJoePanel extends LitElement {
     }
     if (page === "history") {
       return html`<joe-history .t=${t} .hass=${this.hass} .state=${this.joe}></joe-history>`;
+    }
+    if (page === "plan") {
+      return html`<joe-plan-page .t=${t} .hass=${this.hass} .state=${this.joe}></joe-plan-page>`;
     }
     if (page === "settings") {
       return html`<joe-settings

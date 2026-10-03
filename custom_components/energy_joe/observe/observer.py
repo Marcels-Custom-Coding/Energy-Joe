@@ -44,6 +44,8 @@ BACKFILL_DAYS = 56
 REPAIR_DAYS = 2
 HOUR = 3600.0
 COUNTER_GROUPS = ("grid_in", "grid_out", "solar", "bat_in", "bat_out")
+# These forecast integrations stamp an hour's energy with the end of the hour.
+PERIOD_END = {"forecast_solar", "open_meteo_solar_forecast"}
 
 
 class JoeObserver:
@@ -101,6 +103,7 @@ class JoeObserver:
         )
         self.status.update(self._store.overview())
         self._changed()
+        await self._async_forecast(now)
         latest = self._store.latest_start()
         days = BACKFILL_DAYS
         if latest is not None:
@@ -347,9 +350,11 @@ class JoeObserver:
             except Exception:  # noqa: BLE001 - a forecast integration must not stop Joe
                 _LOGGER.debug("Forecast of %s not available", entry_id, exc_info=True)
                 continue
+            shift = timedelta(hours=1) if entry.domain in PERIOD_END else timedelta(0)
             for stamp, wh in ((result or {}).get("wh_hours") or {}).items():
                 if (moment := dt_util.parse_datetime(stamp)) is not None:
-                    key = dt_util.as_local(moment)
+                    # Joe keys every hour by its start.
+                    key = dt_util.as_local(moment - shift)
                     total[key] = total.get(key, 0.0) + float(wh)
         return total
 

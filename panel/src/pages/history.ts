@@ -559,6 +559,16 @@ export class JoeHistory extends LitElement {
     if (!series.some((s) => s.values.some((v) => v != null))) {
       return nothing;
     }
+    if (day.plan_soc_slots.some((v) => v != null)) {
+      series.push({
+        label: t("history.chart.plan"),
+        kind: "line",
+        values: day.plan_soc_slots,
+        color: "var(--joe-c-ist)",
+        dashed: true,
+        digits: 0,
+      });
+    }
     const frame = this.chartFrame(day);
     return html`<div class="chart-card" data-tipped>
       <div class="chart-head">${t("history.chart.soc")} ${tip(t, "chart_soc")}</div>
@@ -574,7 +584,9 @@ export class JoeHistory extends LitElement {
         label=${t("history.chart.soc")}
       ></joe-chart>
       <div class="legend">
-        ${series.map((s) => html`<span><i style="background:${s.color}"></i>${s.label}</span>`)}
+        ${series.map(
+          (s) => html`<span><i class=${s.dashed ? "dash" : ""} style="background:${s.color};color:${s.color}"></i>${s.label}</span>`,
+        )}
       </div>
     </div>`;
   }

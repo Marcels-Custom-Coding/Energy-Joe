@@ -209,11 +209,70 @@ export interface ObserveStatus {
   backfill: { state: "idle" | "running" | "done" | "unavailable" | "failed"; hours?: number; from?: string };
 }
 
+export interface PlanHour {
+  start: string;
+  solar: number;
+  home: number;
+  window: boolean;
+  soc: number;
+  soc_without: number;
+  charge: number;
+  grid_in: number;
+  grid_out: number;
+}
+
+export interface PlanBattery {
+  id: string;
+  name: string;
+  soc: number;
+  soc_start: number;
+  target: number;
+  charge_kwh: number;
+  power_kw: number;
+  controllable: boolean;
+}
+
+/** Tonight's plan (see custom_components/energy_joe/plan). */
+export interface Plan {
+  kind: "charge" | "hold" | "none" | "unavailable";
+  created: string;
+  fixed?: boolean;
+  reasons: string[];
+  notes?: string[];
+  window?: { start: string; end: string };
+  target?: number;
+  optimum?: number;
+  target_kwh?: number;
+  capacity_kwh?: number;
+  soc_now?: number;
+  soc_start?: number;
+  grid_charge_kwh?: number;
+  charge_from?: string | null;
+  charge_kw?: number;
+  batteries?: PlanBattery[];
+  sun_takes_over?: string | null;
+  full_at?: string | null;
+  empty_without?: string | null;
+  solar_kwh?: number;
+  home_kwh?: number;
+  cost?: { night_charge: number; plan: number; without: number; saving: number };
+  prices?: { night: number; day: number; feed_in: number; assumed: boolean };
+  rules?: { reserve: number; max_target: number; buffer: number; discharge_mode: string; evening_min: number | null };
+  meta?: {
+    consumption: { source: "history" | "default"; days: number };
+    solar: { sources: Record<string, "hours" | "sum" | "none">; totals: Record<string, number> };
+    solar_factor: number;
+    workday?: boolean | null;
+  };
+  hours?: PlanHour[];
+}
+
 export interface JoeState {
   mode: JoeMode;
   onboarding: { step: OnboardingStep; completed: boolean };
   config: JoeConfig;
   observe?: ObserveStatus;
+  plan?: Plan | null;
 }
 
 // --- History (see custom_components/energy_joe/observe) ---
@@ -264,6 +323,9 @@ export interface DaySummary {
 
 export interface DayDetail {
   date: string;
+  /** The plan Joe fixed for the night that starts on this day. */
+  plan: Omit<Plan, "hours" | "meta"> | null;
+  plan_soc_slots: (number | null)[];
   /** Local start time of every hour of the day ("02:00" twice when the clocks go back). */
   slots: string[];
   hours: (HourRecord & { slot: number })[];

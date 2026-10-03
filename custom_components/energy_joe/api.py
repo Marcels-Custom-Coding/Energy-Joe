@@ -42,6 +42,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_history_days)
     websocket_api.async_register_command(hass, ws_history_day)
     websocket_api.async_register_command(hass, ws_history_rebuild)
+    websocket_api.async_register_command(hass, ws_plan_refresh)
 
 
 def _runtime(
@@ -301,6 +302,24 @@ def ws_history_rebuild(
         connection.send_error(msg["id"], "not_observing", "Joe is not watching.")
         return
     connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/plan/refresh"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_plan_refresh(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Plan tonight again with the latest values (a fixed plan stays)."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    plan = await runtime.async_refresh_plan()
+    if plan is None:
+        connection.send_error(msg["id"], "not_planning", "Joe is not planning.")
+        return
+    connection.send_result(msg["id"], plan)
 
 
 async def _async_energy_summary(hass: HomeAssistant) -> dict[str, Any]:

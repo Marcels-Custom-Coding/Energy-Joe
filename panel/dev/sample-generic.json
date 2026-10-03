@@ -429,99 +429,99 @@
   "provenance": {
    "measurements.grid_power": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "measurements.home_power": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "measurements.solar_power": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "tariff.kind": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "tariff.price_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "tariff.window": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "tariff.night_price": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "tariff.day_price": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "forecast.provider": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "forecast.config_entries": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "forecast.today": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "forecast.tomorrow": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "forecast.remaining_today": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[flow800].name": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[flow800].adapter": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[flow800].soc_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[flow800].power": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[flow800].capacity_kwh": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[flow800].capacity_entity": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[flow800].max_charge_w": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[flow800].max_discharge_w": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[flow800].device_id": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[flow800].controls": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    },
    "batteries[flow800].priority": {
     "source": "read",
-    "updated": "2026-10-03T16:57:15+00:00"
+    "updated": "2026-10-03T18:05:33+00:00"
    }
   }
  },
@@ -1232,6 +1232,33 @@
   "views": {
    "2026-09-20": {
     "date": "2026-09-20",
+    "plan": null,
+    "plan_soc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -1811,6 +1838,33 @@
    },
    "2026-09-21": {
     "date": "2026-09-21",
+    "plan": null,
+    "plan_soc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -2390,6 +2444,33 @@
    },
    "2026-09-22": {
     "date": "2026-09-22",
+    "plan": null,
+    "plan_soc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -2969,6 +3050,33 @@
    },
    "2026-09-23": {
     "date": "2026-09-23",
+    "plan": null,
+    "plan_soc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -3548,6 +3656,33 @@
    },
    "2026-09-24": {
     "date": "2026-09-24",
+    "plan": null,
+    "plan_soc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -4127,6 +4262,33 @@
    },
    "2026-09-25": {
     "date": "2026-09-25",
+    "plan": null,
+    "plan_soc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -4706,6 +4868,33 @@
    },
    "2026-09-26": {
     "date": "2026-09-26",
+    "plan": null,
+    "plan_soc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -5285,6 +5474,33 @@
    },
    "2026-09-27": {
     "date": "2026-09-27",
+    "plan": null,
+    "plan_soc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -5864,6 +6080,33 @@
    },
    "2026-09-28": {
     "date": "2026-09-28",
+    "plan": null,
+    "plan_soc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -6443,6 +6686,33 @@
    },
    "2026-09-29": {
     "date": "2026-09-29",
+    "plan": null,
+    "plan_soc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -7022,6 +7292,33 @@
    },
    "2026-09-30": {
     "date": "2026-09-30",
+    "plan": null,
+    "plan_soc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -7601,6 +7898,33 @@
    },
    "2026-10-01": {
     "date": "2026-10-01",
+    "plan": null,
+    "plan_soc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -8233,6 +8557,33 @@
    },
    "2026-10-02": {
     "date": "2026-10-02",
+    "plan": null,
+    "plan_soc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -8865,6 +9216,33 @@
    },
    "2026-10-03": {
     "date": "2026-10-03",
+    "plan": null,
+    "plan_soc_slots": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
     "slots": [
      "00:00",
      "01:00",
@@ -9309,6 +9687,13 @@
   },
   "first_day": "2026-09-20",
   "last_day": "2026-10-03",
-  "day_count": 14
+  "day_count": 14,
+  "plan": {
+   "kind": "unavailable",
+   "reasons": [
+    "dynamic"
+   ],
+   "created": "2026-10-03T14:05:00+02:00"
+  }
  }
 }

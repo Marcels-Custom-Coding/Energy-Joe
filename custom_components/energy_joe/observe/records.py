@@ -325,8 +325,18 @@ def day_view(
         sun_view[event] = dt_util.as_local(moment).isoformat()
         sun_view[f"{event}_slot"] = round((moment - first).total_seconds() / 3600, 2)
     forecast = data.get("fc") or {}
+    plan = data.get("plan")
+    plan_slots: list[float | None] = [None] * len(starts)
+    for hour in (plan or {}).get("hours") or []:
+        index = slots.get(hour["start"])
+        if index is not None:
+            plan_slots[index] = hour["soc"]
     return {
         "date": day,
+        "plan": None
+        if plan is None
+        else {k: v for k, v in plan.items() if k not in ("hours", "meta")},
+        "plan_soc_slots": plan_slots,
         "slots": [start.strftime("%H:%M") for start in starts],
         "hours": hours,
         "fc": {k: v for k, v in forecast.items() if k in ("ahead_kwh", "latest_kwh")},
