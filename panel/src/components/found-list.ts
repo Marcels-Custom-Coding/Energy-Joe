@@ -343,7 +343,7 @@ export class JoeFoundList extends LitElement {
         <div class="t">${row.title}</div>
         <div class="d">${row.detail}</div>
         ${row.reasons?.length
-          ? html`<details>
+          ? html`<details data-notip>
               <summary>${t("scan.why")}</summary>
               <ul>
                 ${row.reasons.map((reason) => html`<li>${this.reasonText(reason)}</li>`)}

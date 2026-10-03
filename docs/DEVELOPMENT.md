@@ -11,7 +11,11 @@ cd panel && npm install
 - Tests: `.venv/bin/pytest`
 - Linter: `.venv/bin/ruff check .`
 - Panel bauen: `npm --prefix panel run build` (der Build liegt eingecheckt in `custom_components/energy_joe/frontend/`)
-- Panel ohne Home Assistant ansehen: im Repo-Wurzelverzeichnis `python3 -m http.server 8767` starten und `http://localhost:8767/panel/dev/` öffnen. Parameter: `?dark=1`, `?lang=en`, `?step=scan`, `?done=1`, `?page=settings`, `?mode=off`
+- Panel ohne Home Assistant ansehen: im Repo-Wurzelverzeichnis `python3 -m http.server 8767` starten und `http://localhost:8767/panel/dev/` öffnen. Parameter: `?dark=1`, `?lang=en`, `?step=scan`, `?done=1`, `?page=settings`, `?mode=off`, `?sample=generic`, `?audit=1`
+
+## Tooltips
+
+Alles, was jemand im Panel eingibt oder entscheidet, bekommt einen Tooltip (`<joe-tip>`, Texte als `tip.<name>.title/.text/.hint` in `panel/src/i18n/`). Der Container aus Bedienelement und Tooltip trägt `data-tipped`; reine Navigation wie „Zurück“ trägt `data-notip`. Mit `?audit=1` rahmt die Testseite jedes Bedienelement ohne Tooltip rot ein, `joeAudit()` in der Browser-Konsole listet sie auf.
 
 ## Grafiken
 

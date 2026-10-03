@@ -3,6 +3,7 @@ import { property } from "lit/decorators.js";
 import { displayTitle, swoosh } from "../components/bits";
 import "../components/found-list";
 import "../components/pose";
+import { tip } from "../components/tip";
 import { define } from "../define";
 import type { Translate } from "../i18n";
 import { shared } from "../styles/shared";
@@ -71,6 +72,11 @@ export class JoeOnboarding extends LitElement {
       .note {
         margin-top: 14px;
       }
+      .with-tip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
       .wrap.wide {
         grid-template-columns: minmax(0, 0.55fr) minmax(0, 1.45fr);
         align-items: start;
@@ -127,14 +133,15 @@ export class JoeOnboarding extends LitElement {
           html`${displayTitle(t("onb.welcome.title"), "h1")} ${swoosh}
             <p class="lead">${t("onb.welcome.lead")}</p>
             <div class="calm"><span class="pill-sim">${t("mode.simulation")}</span>${t("onb.calm")}</div>
-            <details>
+            <details data-notip>
               <summary>${t("onb.welcome.more")}</summary>
               <p>${t("onb.welcome.more.text")}</p>
             </details>
-            <div class="actions">
+            <div class="actions" data-tipped>
               <button type="button" class="btn btn-primary" @click=${() => this.go("scan")}>
                 ${t("onb.welcome.go")}
               </button>
+              ${tip(t, "scan_start")}
             </div>`,
         );
       case "scan":
@@ -145,7 +152,7 @@ export class JoeOnboarding extends LitElement {
           html`${displayTitle(t("onb.questions.title"))} ${swoosh}
             <p class="lead">${t("onb.questions.lead")}</p>
             <div class="note"><span class="chip soon">${t("soon")}</span></div>
-            <div class="actions">
+            <div class="actions" data-notip>
               <button type="button" class="btn btn-primary" @click=${() => this.go("done")}>
                 ${t("onb.next")}
               </button>
@@ -160,10 +167,13 @@ export class JoeOnboarding extends LitElement {
           html`${displayTitle(t("onb.done.title"))} ${swoosh}
             <div class="calm"><span class="pill-sim">${t("mode.simulation")}</span>${t("onb.done.lead")}</div>
             <div class="actions">
-              <button type="button" class="btn btn-primary" @click=${this.complete}>
-                ${t("onb.done.go")}
-              </button>
-              <button type="button" class="btn btn-ghost" @click=${() => this.go("questions")}>
+              <span class="with-tip" data-tipped>
+                <button type="button" class="btn btn-primary" @click=${this.complete}>
+                  ${t("onb.done.go")}
+                </button>
+                ${tip(t, "start")}
+              </span>
+              <button type="button" class="btn btn-ghost" data-notip @click=${() => this.go("questions")}>
                 ${t("onb.back")}
               </button>
             </div>`,
@@ -191,11 +201,14 @@ export class JoeOnboarding extends LitElement {
           : html`<joe-found-list .discovery=${this.discovery} .t=${t} language=${this.language}></joe-found-list>`}
         <div class="note"><span class="chip soon">${t("scan.confirm.soon")}</span></div>
         <div class="actions">
-          <button type="button" class="btn btn-primary" @click=${() => this.go("questions")}>
+          <button type="button" class="btn btn-primary" data-notip @click=${() => this.go("questions")}>
             ${t("onb.next")}
           </button>
-          <button type="button" class="btn btn-secondary" @click=${this.rediscover}>${t("scan.again")}</button>
-          <button type="button" class="btn btn-ghost" @click=${() => this.go("welcome")}>
+          <span class="with-tip" data-tipped>
+            <button type="button" class="btn btn-secondary" @click=${this.rediscover}>${t("scan.again")}</button>
+            ${tip(t, "rescan")}
+          </span>
+          <button type="button" class="btn btn-ghost" data-notip @click=${() => this.go("welcome")}>
             ${t("onb.back")}
           </button>
         </div>

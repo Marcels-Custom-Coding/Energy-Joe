@@ -21,9 +21,12 @@
       Zeigt das gebaute Panel mit einem nachgeahmten Home Assistant.
       Aufruf über einen lokalen Webserver im Repo-Wurzelverzeichnis, z. B.
       python3 -m http.server 8767  →  http://localhost:8767/panel/dev/
-      Parameter: ?dark=1  ?lang=en  ?step=scan  ?done=1  ?page=settings  ?mode=off
+      Parameter: ?dark=1  ?lang=en  ?step=scan  ?done=1  ?page=settings  ?mode=off  ?audit=1
       discovery-sample.json enthält Funde eines erfundenen Haushalts (aus tests/snapshots.py),
       ?sample=generic einen zweiten mit unbekanntem Wechselrichter und Hinweisen.
+      ?audit=1 rahmt jedes Bedienelement rot ein, das keinen Tooltip hat; joeAudit() in der
+      Konsole listet sie auf. Ein Element gilt als erklärt, wenn es oder ein Vorfahr
+      data-tipped (Container mit <joe-tip>) oder data-notip (reine Navigation) trägt.
     -->
     <energy-joe-panel></energy-joe-panel>
     <script type="module">
@@ -99,6 +102,36 @@
         const page = location.pathname.replace(/^\/energy-joe\/?/, "");
         panel.route = routeFromPage(page);
       });
+
+      // Tooltip check: every control needs an explanation or must be plain navigation.
+      const CONTROLS =
+        "button, input, select, textarea, summary, [role=radio], [role=checkbox], [role=switch], [role=option], [role=slider]";
+      const up = (node) => node.parentElement ?? node.getRootNode().host ?? null;
+      const covered = (el) => {
+        for (let node = el; node; node = up(node)) {
+          if (node.localName === "joe-tip" || node.hasAttribute("data-tipped") || node.hasAttribute("data-notip")) {
+            return true;
+          }
+        }
+        return false;
+      };
+      const deep = (root) =>
+        [...root.querySelectorAll("*")].flatMap((el) => (el.shadowRoot ? [el, ...deep(el.shadowRoot)] : [el]));
+      const describe = (el) => `${el.localName}: ${(el.textContent || el.getAttribute("aria-label") || "").trim().replace(/\s+/g, " ").slice(0, 50)}`;
+      let marked = [];
+      window.joeAudit = () => {
+        const all = deep(panel.shadowRoot);
+        const visible = (el) => el.getClientRects().length > 0;
+        const missing = all.filter((el) => el.matches(CONTROLS) && visible(el) && !covered(el));
+        const empty = all.filter((el) => el.hasAttribute("data-tipped") && visible(el) && !deep(el).some((x) => x.localName === "joe-tip"));
+        marked.forEach((el) => (el.style.outline = ""));
+        marked = [...missing, ...empty];
+        marked.forEach((el) => (el.style.outline = "3px dashed #e00"));
+        return { missing: missing.map(describe), empty: empty.map(describe) };
+      };
+      if (params.get("audit") === "1") {
+        setInterval(window.joeAudit, 1000);
+      }
     </script>
   </body>
 </html>

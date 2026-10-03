@@ -34,6 +34,10 @@ export const tokens = css`
     --joe-stripe-a: #fea707;
     --joe-stripe-b: #ffc649;
     --joe-shadow: 0 1px 0 rgba(7, 17, 24, 0.04), 0 10px 24px -16px rgba(7, 17, 24, 0.35);
+    --joe-tip-bg: #071118;
+    --joe-tip-ink: #f7efe1;
+    --joe-tip-accent: #fea707;
+    --joe-tip-line: rgba(247, 239, 225, 0.18);
     --joe-show-light: block;
     --joe-show-dark: none;
     --joe-display: "Energy Joe Barlow Condensed", "Barlow Condensed", "Arial Narrow", sans-serif;
@@ -64,6 +68,10 @@ export const tokens = css`
     --joe-info: #6ea9d8;
     --joe-info-soft: rgba(110, 169, 216, 0.14);
     --joe-shadow: 0 1px 0 rgba(0, 0, 0, 0.35), 0 14px 30px -18px rgba(0, 0, 0, 0.8);
+    --joe-tip-bg: #f7efe1;
+    --joe-tip-ink: #071118;
+    --joe-tip-accent: #975a00;
+    --joe-tip-line: rgba(7, 17, 24, 0.14);
     --joe-show-light: none;
     --joe-show-dark: block;
     color-scheme: dark;

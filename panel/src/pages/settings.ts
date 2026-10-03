@@ -1,5 +1,6 @@
 import { LitElement, css, html, nothing } from "lit";
 import { property } from "lit/decorators.js";
+import { tip } from "../components/tip";
 import { define } from "../define";
 import type { Translate } from "../i18n";
 import { shared } from "../styles/shared";
@@ -52,6 +53,11 @@ export class JoeSettings extends LitElement {
       .row b {
         display: block;
         font-weight: 700;
+      }
+      .name {
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
       .row small {
         display: block;
@@ -121,9 +127,9 @@ export class JoeSettings extends LitElement {
     return html`<div class="list">
       <section class="group">
         <h2>${t("settings.operation")}</h2>
-        <div class="row">
+        <div class="row" data-tipped>
           <div>
-            <b>${t("settings.mode")}</b>
+            <div class="name"><b>${t("settings.mode")}</b>${tip(t, "mode")}</div>
             <small>${t("settings.mode.hint")} ${t("settings.live.unavailable")}</small>
           </div>
           <div class="seg" role="group" aria-label=${t("settings.mode")}>
@@ -140,9 +146,9 @@ export class JoeSettings extends LitElement {
             )}
           </div>
         </div>
-        <div class="row">
+        <div class="row" data-tipped>
           <div>
-            <b>${t("settings.setup")}</b>
+            <div class="name"><b>${t("settings.setup")}</b>${tip(t, "restart")}</div>
             <small>${t("settings.setup.hint")}</small>
           </div>
           <button type="button" class="btn btn-secondary" @click=${() => this.emit("joe-onboarding", { step: "welcome", completed: false })}>

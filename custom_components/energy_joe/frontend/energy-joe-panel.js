@@ -254,34 +254,34 @@ var g = class extends HTMLElement {
 g.elementStyles = [], g.shadowRootOptions = { mode: "open" }, g[p("elementProperties")] = /* @__PURE__ */ new Map(), g[p("finalized")] = /* @__PURE__ */ new Map(), ae?.({ ReactiveElement: g }), (f.reactiveElementVersions ??= []).push("2.1.2");
 //#endregion
 //#region node_modules/lit-html/lit-html.js
-var _ = globalThis, se = (e) => e, v = _.trustedTypes, ce = v ? v.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, le = "$lit$", y = `lit$${Math.random().toFixed(9).slice(2)}$`, ue = "?" + y, de = `<${ue}>`, b = document, x = () => b.createComment(""), S = (e) => e === null || typeof e != "object" && typeof e != "function", C = Array.isArray, fe = (e) => C(e) || typeof e?.[Symbol.iterator] == "function", w = "[ 	\n\f\r]", T = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, pe = /-->/g, me = />/g, E = RegExp(`>|${w}(?:([^\\s"'>=/]+)(${w}*=${w}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`, "g"), he = /'/g, ge = /"/g, _e = /^(?:script|style|textarea|title)$/i, D = ((e) => (t, ...n) => ({
+var _ = globalThis, se = (e) => e, v = _.trustedTypes, ce = v ? v.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, le = "$lit$", y = `lit$${Math.random().toFixed(9).slice(2)}$`, ue = "?" + y, de = `<${ue}>`, b = document, x = () => b.createComment(""), S = (e) => e === null || typeof e != "object" && typeof e != "function", fe = Array.isArray, pe = (e) => fe(e) || typeof e?.[Symbol.iterator] == "function", me = "[ 	\n\f\r]", C = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, he = /-->/g, ge = />/g, w = RegExp(`>|${me}(?:([^\\s"'>=/]+)(${me}*=${me}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`, "g"), _e = /'/g, ve = /"/g, ye = /^(?:script|style|textarea|title)$/i, T = ((e) => (t, ...n) => ({
 	_$litType$: e,
 	strings: t,
 	values: n
-}))(1), O = Symbol.for("lit-noChange"), k = Symbol.for("lit-nothing"), ve = /* @__PURE__ */ new WeakMap(), A = b.createTreeWalker(b, 129);
-function ye(e, t) {
-	if (!C(e) || !e.hasOwnProperty("raw")) throw Error("invalid template strings array");
+}))(1), E = Symbol.for("lit-noChange"), D = Symbol.for("lit-nothing"), be = /* @__PURE__ */ new WeakMap(), O = b.createTreeWalker(b, 129);
+function xe(e, t) {
+	if (!fe(e) || !e.hasOwnProperty("raw")) throw Error("invalid template strings array");
 	return ce === void 0 ? t : ce.createHTML(t);
 }
-var be = (e, t) => {
-	let n = e.length - 1, r = [], i, a = t === 2 ? "<svg>" : t === 3 ? "<math>" : "", o = T;
+var Se = (e, t) => {
+	let n = e.length - 1, r = [], i, a = t === 2 ? "<svg>" : t === 3 ? "<math>" : "", o = C;
 	for (let t = 0; t < n; t++) {
 		let n = e[t], s, c, l = -1, u = 0;
-		for (; u < n.length && (o.lastIndex = u, c = o.exec(n), c !== null);) u = o.lastIndex, o === T ? c[1] === "!--" ? o = pe : c[1] === void 0 ? c[2] === void 0 ? c[3] !== void 0 && (o = E) : (_e.test(c[2]) && (i = RegExp("</" + c[2], "g")), o = E) : o = me : o === E ? c[0] === ">" ? (o = i ?? T, l = -1) : c[1] === void 0 ? l = -2 : (l = o.lastIndex - c[2].length, s = c[1], o = c[3] === void 0 ? E : c[3] === "\"" ? ge : he) : o === ge || o === he ? o = E : o === pe || o === me ? o = T : (o = E, i = void 0);
-		let d = o === E && e[t + 1].startsWith("/>") ? " " : "";
-		a += o === T ? n + de : l >= 0 ? (r.push(s), n.slice(0, l) + le + n.slice(l) + y + d) : n + y + (l === -2 ? t : d);
+		for (; u < n.length && (o.lastIndex = u, c = o.exec(n), c !== null);) u = o.lastIndex, o === C ? c[1] === "!--" ? o = he : c[1] === void 0 ? c[2] === void 0 ? c[3] !== void 0 && (o = w) : (ye.test(c[2]) && (i = RegExp("</" + c[2], "g")), o = w) : o = ge : o === w ? c[0] === ">" ? (o = i ?? C, l = -1) : c[1] === void 0 ? l = -2 : (l = o.lastIndex - c[2].length, s = c[1], o = c[3] === void 0 ? w : c[3] === "\"" ? ve : _e) : o === ve || o === _e ? o = w : o === he || o === ge ? o = C : (o = w, i = void 0);
+		let d = o === w && e[t + 1].startsWith("/>") ? " " : "";
+		a += o === C ? n + de : l >= 0 ? (r.push(s), n.slice(0, l) + le + n.slice(l) + y + d) : n + y + (l === -2 ? t : d);
 	}
-	return [ye(e, a + (e[n] || "<?>") + (t === 2 ? "</svg>" : t === 3 ? "</math>" : "")), r];
-}, j = class e {
+	return [xe(e, a + (e[n] || "<?>") + (t === 2 ? "</svg>" : t === 3 ? "</math>" : "")), r];
+}, k = class e {
 	constructor({ strings: t, _$litType$: n }, r) {
 		let i;
 		this.parts = [];
-		let a = 0, o = 0, s = t.length - 1, c = this.parts, [l, u] = be(t, n);
-		if (this.el = e.createElement(l, r), A.currentNode = this.el.content, n === 2 || n === 3) {
+		let a = 0, o = 0, s = t.length - 1, c = this.parts, [l, u] = Se(t, n);
+		if (this.el = e.createElement(l, r), O.currentNode = this.el.content, n === 2 || n === 3) {
 			let e = this.el.content.firstChild;
 			e.replaceWith(...e.childNodes);
 		}
-		for (; (i = A.nextNode()) !== null && c.length < s;) {
+		for (; (i = O.nextNode()) !== null && c.length < s;) {
 			if (i.nodeType === 1) {
 				if (i.hasAttributes()) for (let e of i.getAttributeNames()) if (e.endsWith(le)) {
 					let t = u[o++], n = i.getAttribute(e).split(y), r = /([.?@])?(.*)/.exec(t);
@@ -290,17 +290,17 @@ var be = (e, t) => {
 						index: a,
 						name: r[2],
 						strings: n,
-						ctor: r[1] === "." ? Se : r[1] === "?" ? Ce : r[1] === "@" ? we : P
+						ctor: r[1] === "." ? we : r[1] === "?" ? Te : r[1] === "@" ? Ee : M
 					}), i.removeAttribute(e);
 				} else e.startsWith(y) && (c.push({
 					type: 6,
 					index: a
 				}), i.removeAttribute(e));
-				if (_e.test(i.tagName)) {
+				if (ye.test(i.tagName)) {
 					let e = i.textContent.split(y), t = e.length - 1;
 					if (t > 0) {
 						i.textContent = v ? v.emptyScript : "";
-						for (let n = 0; n < t; n++) i.append(e[n], x()), A.nextNode(), c.push({
+						for (let n = 0; n < t; n++) i.append(e[n], x()), O.nextNode(), c.push({
 							type: 2,
 							index: ++a
 						});
@@ -328,12 +328,12 @@ var be = (e, t) => {
 		return n.innerHTML = e, n;
 	}
 };
-function M(e, t, n = e, r) {
-	if (t === O) return t;
+function A(e, t, n = e, r) {
+	if (t === E) return t;
 	let i = r === void 0 ? n._$Cl : n._$Co?.[r], a = S(t) ? void 0 : t._$litDirective$;
-	return i?.constructor !== a && (i?._$AO?.(!1), a === void 0 ? i = void 0 : (i = new a(e), i._$AT(e, n, r)), r === void 0 ? n._$Cl = i : (n._$Co ??= [])[r] = i), i !== void 0 && (t = M(e, i._$AS(e, t.values), i, r)), t;
+	return i?.constructor !== a && (i?._$AO?.(!1), a === void 0 ? i = void 0 : (i = new a(e), i._$AT(e, n, r)), r === void 0 ? n._$Cl = i : (n._$Co ??= [])[r] = i), i !== void 0 && (t = A(e, i._$AS(e, t.values), i, r)), t;
 }
-var xe = class {
+var Ce = class {
 	constructor(e, t) {
 		this._$AV = [], this._$AN = void 0, this._$AD = e, this._$AM = t;
 	}
@@ -345,27 +345,27 @@ var xe = class {
 	}
 	u(e) {
 		let { el: { content: t }, parts: n } = this._$AD, r = (e?.creationScope ?? b).importNode(t, !0);
-		A.currentNode = r;
-		let i = A.nextNode(), a = 0, o = 0, s = n[0];
+		O.currentNode = r;
+		let i = O.nextNode(), a = 0, o = 0, s = n[0];
 		for (; s !== void 0;) {
 			if (a === s.index) {
 				let t;
-				s.type === 2 ? t = new N(i, i.nextSibling, this, e) : s.type === 1 ? t = new s.ctor(i, s.name, s.strings, this, e) : s.type === 6 && (t = new Te(i, this, e)), this._$AV.push(t), s = n[++o];
+				s.type === 2 ? t = new j(i, i.nextSibling, this, e) : s.type === 1 ? t = new s.ctor(i, s.name, s.strings, this, e) : s.type === 6 && (t = new De(i, this, e)), this._$AV.push(t), s = n[++o];
 			}
-			a !== s?.index && (i = A.nextNode(), a++);
+			a !== s?.index && (i = O.nextNode(), a++);
 		}
-		return A.currentNode = b, r;
+		return O.currentNode = b, r;
 	}
 	p(e) {
 		let t = 0;
 		for (let n of this._$AV) n !== void 0 && (n.strings === void 0 ? n._$AI(e[t]) : (n._$AI(e, n, t), t += n.strings.length - 2)), t++;
 	}
-}, N = class e {
+}, j = class e {
 	get _$AU() {
 		return this._$AM?._$AU ?? this._$Cv;
 	}
 	constructor(e, t, n, r) {
-		this.type = 2, this._$AH = k, this._$AN = void 0, this._$AA = e, this._$AB = t, this._$AM = n, this.options = r, this._$Cv = r?.isConnected ?? !0;
+		this.type = 2, this._$AH = D, this._$AN = void 0, this._$AA = e, this._$AB = t, this._$AM = n, this.options = r, this._$Cv = r?.isConnected ?? !0;
 	}
 	get parentNode() {
 		let e = this._$AA.parentNode, t = this._$AM;
@@ -378,7 +378,7 @@ var xe = class {
 		return this._$AB;
 	}
 	_$AI(e, t = this) {
-		e = M(this, e, t), S(e) ? e === k || e == null || e === "" ? (this._$AH !== k && this._$AR(), this._$AH = k) : e !== this._$AH && e !== O && this._(e) : e._$litType$ === void 0 ? e.nodeType === void 0 ? fe(e) ? this.k(e) : this._(e) : this.T(e) : this.$(e);
+		e = A(this, e, t), S(e) ? e === D || e == null || e === "" ? (this._$AH !== D && this._$AR(), this._$AH = D) : e !== this._$AH && e !== E && this._(e) : e._$litType$ === void 0 ? e.nodeType === void 0 ? pe(e) ? this.k(e) : this._(e) : this.T(e) : this.$(e);
 	}
 	O(e) {
 		return this._$AA.parentNode.insertBefore(e, this._$AB);
@@ -387,22 +387,22 @@ var xe = class {
 		this._$AH !== e && (this._$AR(), this._$AH = this.O(e));
 	}
 	_(e) {
-		this._$AH !== k && S(this._$AH) ? this._$AA.nextSibling.data = e : this.T(b.createTextNode(e)), this._$AH = e;
+		this._$AH !== D && S(this._$AH) ? this._$AA.nextSibling.data = e : this.T(b.createTextNode(e)), this._$AH = e;
 	}
 	$(e) {
-		let { values: t, _$litType$: n } = e, r = typeof n == "number" ? this._$AC(e) : (n.el === void 0 && (n.el = j.createElement(ye(n.h, n.h[0]), this.options)), n);
+		let { values: t, _$litType$: n } = e, r = typeof n == "number" ? this._$AC(e) : (n.el === void 0 && (n.el = k.createElement(xe(n.h, n.h[0]), this.options)), n);
 		if (this._$AH?._$AD === r) this._$AH.p(t);
 		else {
-			let e = new xe(r, this), n = e.u(this.options);
+			let e = new Ce(r, this), n = e.u(this.options);
 			e.p(t), this.T(n), this._$AH = e;
 		}
 	}
 	_$AC(e) {
-		let t = ve.get(e.strings);
-		return t === void 0 && ve.set(e.strings, t = new j(e)), t;
+		let t = be.get(e.strings);
+		return t === void 0 && be.set(e.strings, t = new k(e)), t;
 	}
 	k(t) {
-		C(this._$AH) || (this._$AH = [], this._$AR());
+		fe(this._$AH) || (this._$AH = [], this._$AR());
 		let n = this._$AH, r, i = 0;
 		for (let a of t) i === n.length ? n.push(r = new e(this.O(x()), this.O(x()), this, this.options)) : r = n[i], r._$AI(a), i++;
 		i < n.length && (this._$AR(r && r._$AB.nextSibling, i), n.length = i);
@@ -416,7 +416,7 @@ var xe = class {
 	setConnected(e) {
 		this._$AM === void 0 && (this._$Cv = e, this._$AP?.(e));
 	}
-}, P = class {
+}, M = class {
 	get tagName() {
 		return this.element.tagName;
 	}
@@ -424,47 +424,47 @@ var xe = class {
 		return this._$AM._$AU;
 	}
 	constructor(e, t, n, r, i) {
-		this.type = 1, this._$AH = k, this._$AN = void 0, this.element = e, this.name = t, this._$AM = r, this.options = i, n.length > 2 || n[0] !== "" || n[1] !== "" ? (this._$AH = Array(n.length - 1).fill(/* @__PURE__ */ new String()), this.strings = n) : this._$AH = k;
+		this.type = 1, this._$AH = D, this._$AN = void 0, this.element = e, this.name = t, this._$AM = r, this.options = i, n.length > 2 || n[0] !== "" || n[1] !== "" ? (this._$AH = Array(n.length - 1).fill(/* @__PURE__ */ new String()), this.strings = n) : this._$AH = D;
 	}
 	_$AI(e, t = this, n, r) {
 		let i = this.strings, a = !1;
-		if (i === void 0) e = M(this, e, t, 0), a = !S(e) || e !== this._$AH && e !== O, a && (this._$AH = e);
+		if (i === void 0) e = A(this, e, t, 0), a = !S(e) || e !== this._$AH && e !== E, a && (this._$AH = e);
 		else {
 			let r = e, o, s;
-			for (e = i[0], o = 0; o < i.length - 1; o++) s = M(this, r[n + o], t, o), s === O && (s = this._$AH[o]), a ||= !S(s) || s !== this._$AH[o], s === k ? e = k : e !== k && (e += (s ?? "") + i[o + 1]), this._$AH[o] = s;
+			for (e = i[0], o = 0; o < i.length - 1; o++) s = A(this, r[n + o], t, o), s === E && (s = this._$AH[o]), a ||= !S(s) || s !== this._$AH[o], s === D ? e = D : e !== D && (e += (s ?? "") + i[o + 1]), this._$AH[o] = s;
 		}
 		a && !r && this.j(e);
 	}
 	j(e) {
-		e === k ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, e ?? "");
+		e === D ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, e ?? "");
 	}
-}, Se = class extends P {
+}, we = class extends M {
 	constructor() {
 		super(...arguments), this.type = 3;
 	}
 	j(e) {
-		this.element[this.name] = e === k ? void 0 : e;
+		this.element[this.name] = e === D ? void 0 : e;
 	}
-}, Ce = class extends P {
+}, Te = class extends M {
 	constructor() {
 		super(...arguments), this.type = 4;
 	}
 	j(e) {
-		this.element.toggleAttribute(this.name, !!e && e !== k);
+		this.element.toggleAttribute(this.name, !!e && e !== D);
 	}
-}, we = class extends P {
+}, Ee = class extends M {
 	constructor(e, t, n, r, i) {
 		super(e, t, n, r, i), this.type = 5;
 	}
 	_$AI(e, t = this) {
-		if ((e = M(this, e, t, 0) ?? k) === O) return;
-		let n = this._$AH, r = e === k && n !== k || e.capture !== n.capture || e.once !== n.once || e.passive !== n.passive, i = e !== k && (n === k || r);
+		if ((e = A(this, e, t, 0) ?? D) === E) return;
+		let n = this._$AH, r = e === D && n !== D || e.capture !== n.capture || e.once !== n.once || e.passive !== n.passive, i = e !== D && (n === D || r);
 		r && this.element.removeEventListener(this.name, this, n), i && this.element.addEventListener(this.name, this, e), this._$AH = e;
 	}
 	handleEvent(e) {
 		typeof this._$AH == "function" ? this._$AH.call(this.options?.host ?? this.element, e) : this._$AH.handleEvent(e);
 	}
-}, Te = class {
+}, De = class {
 	constructor(e, t, n) {
 		this.element = e, this.type = 6, this._$AN = void 0, this._$AM = t, this.options = n;
 	}
@@ -472,18 +472,18 @@ var xe = class {
 		return this._$AM._$AU;
 	}
 	_$AI(e) {
-		M(this, e);
+		A(this, e);
 	}
-}, Ee = _.litHtmlPolyfillSupport;
-Ee?.(j, N), (_.litHtmlVersions ??= []).push("3.3.3");
-var De = (e, t, n) => {
+}, Oe = _.litHtmlPolyfillSupport;
+Oe?.(k, j), (_.litHtmlVersions ??= []).push("3.3.3");
+var ke = (e, t, n) => {
 	let r = n?.renderBefore ?? t, i = r._$litPart$;
 	if (i === void 0) {
 		let e = n?.renderBefore ?? null;
-		r._$litPart$ = i = new N(t.insertBefore(x(), e), e, void 0, n ?? {});
+		r._$litPart$ = i = new j(t.insertBefore(x(), e), e, void 0, n ?? {});
 	}
 	return i._$AI(e), i;
-}, F = globalThis, I = class extends g {
+}, N = globalThis, P = class extends g {
 	constructor() {
 		super(...arguments), this.renderOptions = { host: this }, this._$Do = void 0;
 	}
@@ -493,7 +493,7 @@ var De = (e, t, n) => {
 	}
 	update(e) {
 		let t = this.render();
-		this.hasUpdated || (this.renderOptions.isConnected = this.isConnected), super.update(e), this._$Do = De(t, this.renderRoot, this.renderOptions);
+		this.hasUpdated || (this.renderOptions.isConnected = this.isConnected), super.update(e), this._$Do = ke(t, this.renderRoot, this.renderOptions);
 	}
 	connectedCallback() {
 		super.connectedCallback(), this._$Do?.setConnected(!0);
@@ -502,21 +502,21 @@ var De = (e, t, n) => {
 		super.disconnectedCallback(), this._$Do?.setConnected(!1);
 	}
 	render() {
-		return O;
+		return E;
 	}
 };
-I._$litElement$ = !0, I.finalized = !0, F.litElementHydrateSupport?.({ LitElement: I });
-var Oe = F.litElementPolyfillSupport;
-Oe?.({ LitElement: I }), (F.litElementVersions ??= []).push("4.2.2");
+P._$litElement$ = !0, P.finalized = !0, N.litElementHydrateSupport?.({ LitElement: P });
+var Ae = N.litElementPolyfillSupport;
+Ae?.({ LitElement: P }), (N.litElementVersions ??= []).push("4.2.2");
 //#endregion
 //#region node_modules/@lit/reactive-element/decorators/property.js
-var ke = {
+var je = {
 	attribute: !0,
 	type: String,
 	converter: m,
 	reflect: !1,
 	hasChanged: h
-}, Ae = (e = ke, t, n) => {
+}, Me = (e = je, t, n) => {
 	let { kind: r, metadata: i } = n, a = globalThis.litPropertyMetadata.get(i);
 	if (a === void 0 && globalThis.litPropertyMetadata.set(i, a = /* @__PURE__ */ new Map()), r === "setter" && ((e = Object.create(e)).wrapped = !0), a.set(n.name, e), r === "accessor") {
 		let { name: r } = n;
@@ -539,24 +539,54 @@ var ke = {
 	}
 	throw Error("Unsupported decorator location: " + r);
 };
-function L(e) {
-	return (t, n) => typeof n == "object" ? Ae(e, t, n) : ((e, t, n) => {
+function F(e) {
+	return (t, n) => typeof n == "object" ? Me(e, t, n) : ((e, t, n) => {
 		let r = t.hasOwnProperty(n);
 		return t.constructor.createProperty(n, e), r ? Object.getOwnPropertyDescriptor(t, n) : void 0;
 	})(e, t, n);
 }
 //#endregion
 //#region node_modules/@lit/reactive-element/decorators/state.js
-function R(e) {
-	return L({
+function I(e) {
+	return F({
 		...e,
 		state: !0,
 		attribute: !1
 	});
 }
 //#endregion
+//#region node_modules/@lit/reactive-element/decorators/base.js
+var Ne = (e, t, n) => (n.configurable = !0, n.enumerable = !0, Reflect.decorate && typeof t != "object" && Object.defineProperty(e, t, n), n);
+//#endregion
+//#region node_modules/@lit/reactive-element/decorators/query.js
+function Pe(e, t) {
+	return (n, r, i) => {
+		let a = (t) => t.renderRoot?.querySelector(e) ?? null;
+		if (t) {
+			let { get: e, set: t } = typeof r == "object" ? n : i ?? (() => {
+				let e = Symbol();
+				return {
+					get() {
+						return this[e];
+					},
+					set(t) {
+						this[e] = t;
+					}
+				};
+			})();
+			return Ne(n, r, { get() {
+				let n = e.call(this);
+				return n === void 0 && (n = a(this), (n !== null || this.hasUpdated) && t.call(this, n)), n;
+			} });
+		}
+		return Ne(n, r, { get() {
+			return a(this);
+		} });
+	};
+}
+//#endregion
 //#region src/assets.ts
-var je = import.meta.url.replace(/[^/]*$/, ""), z = (e) => `${je}${e}`, Me = {
+var Fe = import.meta.url.replace(/[^/]*$/, ""), L = (e) => `${Fe}${e}`, Ie = {
 	"tab.overview": "Übersicht",
 	"tab.plan": "Plan",
 	"tab.history": "Historie",
@@ -566,11 +596,18 @@ var je = import.meta.url.replace(/[^/]*$/, ""), z = (e) => `${je}${e}`, Me = {
 	"nav.label": "Bereiche",
 	"mode.simulation": "Simulation",
 	"mode.simulation.sub": "Joe schaut nur zu und lernt",
+	"mode.simulation.desc": "Ich plane und lerne, schalte aber nichts.",
 	"mode.live": "Live",
 	"mode.live.sub": "Joe steuert selbst",
+	"mode.live.desc": "Ich steuere selbst – und stelle am Ende jeder Nacht alles zurück.",
 	"mode.off": "Aus",
 	"mode.off.sub": "Joe macht Pause",
+	"mode.off.desc": "Ich mache Pause, bis du mich wieder startest.",
 	"mode.switch.label": "Betriebsart ändern",
+	"mode.dialog.title": "Wie soll Joe |arbeiten?",
+	"mode.current": "läuft",
+	"mode.soon": "kommt bald",
+	"mode.close": "Fertig",
 	"step.welcome": "Hallo",
 	"step.scan": "Umschauen",
 	"step.questions": "Fragen",
@@ -707,17 +744,26 @@ var je = import.meta.url.replace(/[^/]*$/, ""), z = (e) => `${je}${e}`, Me = {
 	"settings.ha": "Home Assistant",
 	"settings.energy": "Energie-Dashboard",
 	"settings.energy.none": "nicht eingerichtet",
-	"live.title": "Live |schalten?",
-	"live.text": "Dann steuert Joe deine Speicher und Geräte selbst – mit garantiertem Zurücksetzen am Ende jeder Nacht.",
-	"live.unavailable": "Noch nicht verfügbar: Steuern lernt Joe gerade. Bis dahin simuliert er.",
-	"live.go": "Live schalten",
-	"live.pause": "Joe pausieren",
-	"live.stay": "In Simulation bleiben",
+	"tip.label": "Erklärung",
+	"tip.hint": "Tipp",
+	"tip.source": "Woher",
+	"tip.mode.title": "Was soll Joe tun?",
+	"tip.mode.text": "**Simulation** – Ich plane und lerne wie im Ernstfall, schalte aber nichts. Du siehst, was ich getan hätte und was es gebracht hätte.\n**Live** – Ich steuere Speicher und Geräte selbst und stelle am Ende jeder Nacht alles zurück. Kommt, sobald ich steuern kann.\n**Aus** – Ich mache Pause: kein Planen, kein Lernen, kein Schalten. Was ich schon weiß, bleibt.",
+	"tip.mode.hint": "Lass mich ein paar Wochen simulieren. Dann siehst du schwarz auf weiß, ob sich Live lohnt.",
+	"tip.restart.title": "Was passiert beim Neustart?",
+	"tip.restart.text": "Wir gehen die Einrichtung noch einmal zusammen durch, und ich schaue mich dabei neu um. Was du selbst eingestellt hast, bleibt – ich schlage nur Neues vor.",
+	"tip.scan_start.title": "Was passiert jetzt?",
+	"tip.scan_start.text": "Ich schaue nach, welche Speicher, Zähler, Tarife und Prognosen es in deinem Home Assistant gibt. Ich lese nur – ändern tue ich dort nichts.",
+	"tip.rescan.title": "Warum nochmal suchen?",
+	"tip.rescan.text": "Ich schaue mich noch einmal um – praktisch, wenn du gerade etwas in Home Assistant eingerichtet hast. Auch dabei lese ich nur.",
+	"tip.start.title": "Was passiert, wenn ich Joe starte?",
+	"tip.start.text": "Ich plane ab heute jede Nacht – als Simulation, also ohne etwas zu schalten. Alles, was du eingegeben hast, kannst du jederzeit in den Einstellungen ändern.",
+	"tip.start.hint": "Live schaltest du später selbst, wenn du gesehen hast, was ich kann.",
 	"error.title": "Joe antwortet |nicht",
 	"error.text": "Ich erreiche die Integration nicht. Lade die Seite neu – hilft das nicht, schau unter Einstellungen → System → Protokolle nach.",
 	"error.action": "Fehler beim Speichern",
 	loading: "Joe sattelt auf …"
-}, B = {
+}, Le = {
 	"tab.overview": "Overview",
 	"tab.plan": "Plan",
 	"tab.history": "History",
@@ -727,11 +773,18 @@ var je = import.meta.url.replace(/[^/]*$/, ""), z = (e) => `${je}${e}`, Me = {
 	"nav.label": "Sections",
 	"mode.simulation": "Simulation",
 	"mode.simulation.sub": "Joe only watches and learns",
+	"mode.simulation.desc": "I plan and learn, but don't switch anything.",
 	"mode.live": "Live",
 	"mode.live.sub": "Joe is in control",
+	"mode.live.desc": "I'm in control – and put everything back at the end of every night.",
 	"mode.off": "Off",
 	"mode.off.sub": "Joe takes a break",
+	"mode.off.desc": "I take a break until you start me again.",
 	"mode.switch.label": "Change operating mode",
+	"mode.dialog.title": "How should Joe |work?",
+	"mode.current": "running",
+	"mode.soon": "coming soon",
+	"mode.close": "Done",
 	"step.welcome": "Hello",
 	"step.scan": "Look around",
 	"step.questions": "Questions",
@@ -868,30 +921,44 @@ var je = import.meta.url.replace(/[^/]*$/, ""), z = (e) => `${je}${e}`, Me = {
 	"settings.ha": "Home Assistant",
 	"settings.energy": "Energy dashboard",
 	"settings.energy.none": "not set up",
-	"live.title": "Go |live?",
-	"live.text": "Then Joe controls your batteries and devices himself – with a guaranteed reset at the end of every night.",
-	"live.unavailable": "Not available yet: Joe is still learning to control devices. Until then he simulates.",
-	"live.go": "Go live",
-	"live.pause": "Pause Joe",
-	"live.stay": "Stay in simulation",
+	"tip.label": "Explanation",
+	"tip.hint": "Tip",
+	"tip.source": "Source",
+	"tip.mode.title": "What should Joe do?",
+	"tip.mode.text": "**Simulation** – I plan and learn as if for real, but don't switch anything. You see what I would have done and what it would have saved.\n**Live** – I control batteries and devices myself and put everything back at the end of every night. Coming once I can control devices.\n**Off** – I take a break: no planning, no learning, no switching. What I already know stays.",
+	"tip.mode.hint": "Let me simulate for a few weeks. Then you'll see in black and white whether going live pays off.",
+	"tip.restart.title": "What happens when I start over?",
+	"tip.restart.text": "We go through the setup together once more and I look around again. Whatever you set yourself stays – I only suggest new things.",
+	"tip.scan_start.title": "What happens now?",
+	"tip.scan_start.text": "I check which batteries, meters, tariffs and forecasts your Home Assistant has. I only read – I don't change anything there.",
+	"tip.rescan.title": "Why look again?",
+	"tip.rescan.text": "I look around once more – handy if you just set something up in Home Assistant. Again, I only read.",
+	"tip.start.title": "What happens when I start Joe?",
+	"tip.start.text": "From tonight I plan every night – as a simulation, so without switching anything. You can change everything you entered in the settings at any time.",
+	"tip.start.hint": "You switch to live yourself later, once you've seen what I can do.",
 	"error.title": "Joe isn't |answering",
 	"error.text": "I can't reach the integration. Reload the page – if that doesn't help, check Settings → System → Logs.",
 	"error.action": "Saving failed",
 	loading: "Joe is saddling up …"
-};
-function Ne(e) {
-	let t = e?.startsWith("de") ? Me : B;
-	return (e, n) => t[e].replace(/\{(\w+)\}/g, (e, t) => String(n?.[t] ?? ""));
+}, Re = /* @__PURE__ */ new Map();
+function ze(e, t) {
+	return e.replace(/\{(\w+)\}/g, (e, n) => String(t?.[n] ?? ""));
 }
-function V(e, t, n) {
-	return (e?.startsWith("de") ? Me : B)[t]?.replace(/\{(\w+)\}/g, (e, t) => String(n?.[t] ?? ""));
+function Be(e) {
+	let t = e || "en", n = Re.get(t);
+	if (n) return n;
+	let r = t.startsWith("de") ? Ie : Le, i = ((e, t) => ze(r[e], t));
+	return i.optional = (e, t) => e in r ? ze(r[e], t) : void 0, Object.defineProperty(i, "lang", { value: t }), Re.set(t, i), i;
 }
-function Pe(e) {
+function R(e, t, n) {
+	return Be(e).optional(t, n);
+}
+function Ve(e) {
 	return e.split("|");
 }
 //#endregion
 //#region src/components/bits.ts
-var H = D`<svg
+var z = T`<svg
   class="swoosh"
   viewBox="0 0 300 16"
   preserveAspectRatio="none"
@@ -899,18 +966,18 @@ var H = D`<svg
 >
   <path d="M2 13 C 70 5, 190 1, 298 3 L 298 6 C 190 5, 80 9, 4 15 Z" fill="currentColor" />
 </svg>`;
-function U(e, t = "h2") {
-	let n = Pe(e), r = n.length - 1, i = n.map((e, t) => t === r && n.length > 1 ? D`<span class="hl">${e}</span>` : e.endsWith("!") ? D`${e}<br />` : D`${e}`);
-	return t === "h1" ? D`<h1 class="display">${i}</h1>` : D`<h2 class="display">${i}</h2>`;
+function B(e, t = "h2") {
+	let n = Ve(e), r = n.length - 1, i = n.map((e, t) => t === r && n.length > 1 ? T`<span class="hl">${e}</span>` : e.endsWith("!") ? T`${e}<br />` : T`${e}`);
+	return t === "h1" ? T`<h1 class="display">${i}</h1>` : T`<h2 class="display">${i}</h2>`;
 }
 //#endregion
 //#region src/define.ts
-function W(e, t) {
+function V(e, t) {
 	customElements.get(e) || customElements.define(e, t);
 }
 //#endregion
 //#region src/styles/shared.ts
-var G = o`
+var H = o`
   :host {
     font-family: var(--joe-ui);
   }
@@ -1131,7 +1198,7 @@ var G = o`
 `;
 //#endregion
 //#region \0@oxc-project+runtime@0.152.0/helpers/esm/decorate.js
-function K(e, t, n, r) {
+function U(e, t, n, r) {
 	var i = arguments.length, a = i < 3 ? t : r === null ? r = Object.getOwnPropertyDescriptor(t, n) : r, o;
 	if (typeof Reflect == "object" && typeof Reflect.decorate == "function") a = Reflect.decorate(e, t, n, r);
 	else for (var s = e.length - 1; s >= 0; s--) (o = e[s]) && (a = (i < 3 ? o(a) : i > 3 ? o(t, n, a) : o(t, n)) || a);
@@ -1139,11 +1206,11 @@ function K(e, t, n, r) {
 }
 //#endregion
 //#region src/components/pose.ts
-var Fe = /* @__PURE__ */ new Set(["welcome"]), Ie = /* @__PURE__ */ new Set([
+var He = /* @__PURE__ */ new Set(["welcome"]), Ue = /* @__PURE__ */ new Set([
 	"night-charge",
 	"sleep",
 	"learn"
-]), Le = "thumbs", q = class extends I {
+]), We = "thumbs", W = class extends P {
 	constructor(...e) {
 		super(...e), this.name = "", this.alt = "";
 	}
@@ -1170,32 +1237,32 @@ var Fe = /* @__PURE__ */ new Set(["welcome"]), Ie = /* @__PURE__ */ new Set([
   `;
 	}
 	render() {
-		let e = Ie.has(this.name) ? "scene" : "";
-		if (this.name === Le) return D`<img class="light" src=${z("logo.webp")} alt=${this.alt} decoding="async" /><img
+		let e = Ue.has(this.name) ? "scene" : "";
+		if (this.name === We) return T`<img class="light" src=${L("logo.webp")} alt=${this.alt} decoding="async" /><img
           class="dark"
-          src=${z("logo-dark.webp")}
+          src=${L("logo-dark.webp")}
           alt=${this.alt}
           decoding="async"
         />`;
-		let t = z(`poses/${this.name}.webp`);
-		return Fe.has(this.name) ? D`<img class="light" src=${t} alt=${this.alt} decoding="async" /><img
+		let t = L(`poses/${this.name}.webp`);
+		return He.has(this.name) ? T`<img class="light" src=${t} alt=${this.alt} decoding="async" /><img
         class="dark"
-        src=${z(`poses/${this.name}-dark.webp`)}
+        src=${L(`poses/${this.name}-dark.webp`)}
         alt=${this.alt}
        
         decoding="async"
-      />` : D`<img class=${e} src=${t} alt=${this.alt} decoding="async" />`;
+      />` : T`<img class=${e} src=${t} alt=${this.alt} decoding="async" />`;
 	}
 };
-K([L()], q.prototype, "name", void 0), K([L()], q.prototype, "alt", void 0), W("joe-pose", q);
+U([F()], W.prototype, "name", void 0), U([F()], W.prototype, "alt", void 0), V("joe-pose", W);
 //#endregion
 //#region src/components/empty-state.ts
-var J = class extends I {
+var G = class extends P {
 	constructor(...e) {
 		super(...e), this.pose = "", this.heading = "", this.text = "", this.note = "";
 	}
 	static {
-		this.styles = [G, o`
+		this.styles = [H, o`
       :host {
         display: block;
       }
@@ -1231,25 +1298,25 @@ var J = class extends I {
     `];
 	}
 	render() {
-		return D`<div class="wrap">
+		return T`<div class="wrap">
       <joe-pose name=${this.pose}></joe-pose>
       <div>
-        ${U(this.heading)} ${H}
+        ${B(this.heading)} ${z}
         <p class="lead">${this.text}</p>
-        ${this.note ? D`<div class="note"><span class="chip soon">${this.note}</span></div>` : k}
+        ${this.note ? T`<div class="note"><span class="chip soon">${this.note}</span></div>` : D}
         <slot></slot>
       </div>
     </div>`;
 	}
 };
-K([L()], J.prototype, "pose", void 0), K([L()], J.prototype, "heading", void 0), K([L()], J.prototype, "text", void 0), K([L()], J.prototype, "note", void 0), W("joe-empty-state", J);
+U([F()], G.prototype, "pose", void 0), U([F()], G.prototype, "heading", void 0), U([F()], G.prototype, "text", void 0), U([F()], G.prototype, "note", void 0), V("joe-empty-state", G);
 //#endregion
 //#region src/components/sim-switch.ts
-var Re = {
+var Ge = {
 	simulation: "mdi:pause",
 	live: "mdi:play",
 	off: "mdi:power"
-}, Y = class extends I {
+}, K = class extends P {
 	constructor(...e) {
 		super(...e), this.mode = "simulation", this.compact = !1;
 	}
@@ -1349,18 +1416,18 @@ var Re = {
 	}
 	render() {
 		let e = this.t;
-		return e ? D`<button
+		return e ? T`<button
       type="button"
       class=${this.mode}
       aria-label=${e("mode.switch.label")}
       @click=${this.toggle}
     >
-      <span class="knob"><ha-icon icon=${Re[this.mode]}></ha-icon></span>
+      <span class="knob"><ha-icon icon=${Ge[this.mode]}></ha-icon></span>
       <span>
         <b>${e(`mode.${this.mode}`)}</b>
-        ${this.compact ? k : D`<small>${e(`mode.${this.mode}.sub`)}</small>`}
+        ${this.compact ? D : T`<small>${e(`mode.${this.mode}.sub`)}</small>`}
       </span>
-    </button>` : k;
+    </button>` : D;
 	}
 	toggle() {
 		this.dispatchEvent(new CustomEvent("joe-mode-switch", {
@@ -1369,10 +1436,274 @@ var Re = {
 		}));
 	}
 };
-K([L()], Y.prototype, "mode", void 0), K([L({ type: Boolean })], Y.prototype, "compact", void 0), K([L({ attribute: !1 })], Y.prototype, "t", void 0), W("joe-sim-switch", Y);
+U([F()], K.prototype, "mode", void 0), U([F({ type: Boolean })], K.prototype, "compact", void 0), U([F({ attribute: !1 })], K.prototype, "t", void 0), V("joe-sim-switch", K);
+//#endregion
+//#region src/components/tip.ts
+var Ke = 120, qe = 220, Je = 8, Ye = 10, q, J = class extends P {
+	constructor(...e) {
+		super(...e), this.label = "", this.open = !1, this.pinned = !1, this.keepOnBlur = !1, this.onOutside = (e) => {
+			e.composedPath().includes(this) || this.close();
+		}, this.onKey = (e) => {
+			e.key === "Escape" && (e.stopPropagation(), e.preventDefault(), this.close());
+		}, this.follow = () => {
+			this.open && (this.place(), this.frame = requestAnimationFrame(this.follow));
+		};
+	}
+	static {
+		this.styles = o`
+    :host {
+      display: inline-flex;
+      vertical-align: middle;
+      flex: none;
+    }
+    button {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      cursor: pointer;
+      background: var(--joe-surface-2);
+      color: var(--joe-ink-2);
+      transition: background 0.12s, color 0.12s, transform 0.12s;
+    }
+    button::after {
+      content: "";
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+    }
+    button:hover {
+      background: var(--joe-line);
+      color: var(--joe-ink);
+    }
+    button:active {
+      transform: scale(0.94);
+    }
+    button.open,
+    button.open:hover {
+      background: var(--joe-amber);
+      color: var(--joe-amber-ink);
+    }
+    button:focus-visible {
+      outline: 3px solid var(--joe-amber);
+      outline-offset: 2px;
+    }
+    svg {
+      width: 16px;
+      height: 16px;
+      transform: skewX(-8deg);
+    }
+    @media (pointer: coarse) {
+      button::after {
+        inset: -8px;
+      }
+    }
+    .bubble {
+      display: none;
+      position: fixed;
+      inset: auto;
+      left: 0;
+      top: 0;
+      z-index: 1000;
+      margin: 0;
+      border: 0;
+      overflow: visible;
+      box-sizing: border-box;
+      width: max-content;
+      max-width: min(320px, calc(100vw - 16px));
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: var(--joe-tip-bg);
+      color: var(--joe-tip-ink);
+      font-family: var(--joe-ui);
+      font-size: 13.5px;
+      font-weight: 400;
+      line-height: 1.45;
+      text-align: left;
+      text-transform: none;
+      letter-spacing: normal;
+      white-space: normal;
+      box-shadow: 0 14px 32px -12px rgba(7, 17, 24, 0.55);
+    }
+    .bubble.open {
+      display: block;
+      animation: tip-in 0.12s ease-out;
+    }
+    @keyframes tip-in {
+      from {
+        opacity: 0;
+        translate: 0 4px;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .bubble.open {
+        animation: none;
+      }
+    }
+    .h {
+      display: block;
+      font-weight: 700;
+      font-size: 14px;
+      line-height: 1.35;
+      margin-bottom: 4px;
+      color: var(--joe-tip-accent);
+    }
+    p {
+      margin: 0;
+    }
+    p + p {
+      margin-top: 6px;
+    }
+    strong {
+      font-weight: 700;
+    }
+    dl {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 3px 10px;
+      margin: 9px 0 0;
+      padding-top: 8px;
+      border-top: 1px solid var(--joe-tip-line);
+    }
+    dt {
+      color: var(--joe-tip-accent);
+      font-weight: 700;
+    }
+    dd {
+      margin: 0;
+    }
+    .arrow {
+      position: absolute;
+      left: calc(var(--arrow, 50%) - 6px);
+      width: 12px;
+      height: 12px;
+      background: inherit;
+      border-radius: 2px;
+      transform: rotate(45deg);
+    }
+    .bubble[data-place="top"] .arrow {
+      bottom: -5px;
+    }
+    .bubble[data-place="bottom"] .arrow {
+      top: -5px;
+    }
+  `;
+	}
+	disconnectedCallback() {
+		super.disconnectedCallback(), this.close();
+	}
+	render() {
+		let e = this.tip;
+		return e ? T`<button
+        type="button"
+        class=${this.open ? "open" : ""}
+        aria-label=${this.label}
+        aria-expanded=${String(this.open)}
+        aria-describedby="bubble"
+        @click=${this.onClick}
+        @pointerenter=${this.onEnter}
+        @pointerleave=${this.onLeave}
+        @focus=${this.onFocus}
+        @blur=${this.onBlur}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+          <circle cx="12" cy="6.4" r="2" />
+          <rect x="10.3" y="9.8" width="3.4" height="9.6" rx="1.7" />
+        </svg>
+      </button>
+      <div
+        id="bubble"
+        class="bubble ${this.open ? "open" : ""}"
+        role="tooltip"
+        popover="manual"
+        data-place="top"
+        @pointerenter=${this.onEnter}
+        @pointerleave=${this.onLeave}
+        @pointerdown=${this.onBubbleDown}
+      >
+        <span class="h">${e.heading}</span>
+        ${Xe(e.text)}
+        ${e.facts?.length ? T`<dl>${e.facts.map(([e, t]) => T`<dt>${e}</dt><dd>${t}</dd>`)}</dl>` : D}
+        <span class="arrow"></span>
+      </div>` : D;
+	}
+	show(e = !1) {
+		this.cancelTimer(), this.pinned = this.pinned || e, !this.open && (q && q !== this && q.close(), q = this, this.open = !0, window.addEventListener("pointerdown", this.onOutside, !0), window.addEventListener("keydown", this.onKey, !0), this.updateComplete.then(() => {
+			let e = this.bubble;
+			this.open && e && (typeof e.showPopover == "function" && !e.matches(":popover-open") && e.showPopover(), this.follow());
+		}));
+	}
+	close() {
+		this.cancelTimer(), this.pinned = !1, this.frame !== void 0 && (cancelAnimationFrame(this.frame), this.frame = void 0), window.removeEventListener("pointerdown", this.onOutside, !0), window.removeEventListener("keydown", this.onKey, !0);
+		let e = this.bubble;
+		e && typeof e.hidePopover == "function" && e.matches(":popover-open") && e.hidePopover(), q === this && (q = void 0), this.open = !1;
+	}
+	onClick() {
+		this.open && this.pinned ? this.close() : this.show(!0);
+	}
+	onEnter(e) {
+		e.pointerType === "mouse" && (this.cancelTimer(), this.open || (this.timer = window.setTimeout(() => this.show(), Ke)));
+	}
+	onLeave(e) {
+		e.pointerType === "mouse" && (this.cancelTimer(), this.open && !this.pinned && (this.timer = window.setTimeout(() => this.close(), qe)));
+	}
+	onFocus() {
+		this.button?.matches(":focus-visible") && this.show();
+	}
+	onBlur() {
+		if (this.keepOnBlur) {
+			this.keepOnBlur = !1;
+			return;
+		}
+		this.open && this.close();
+	}
+	onBubbleDown() {
+		this.keepOnBlur = !0, window.setTimeout(() => {
+			this.keepOnBlur = !1;
+		}, 400);
+	}
+	cancelTimer() {
+		this.timer !== void 0 && (clearTimeout(this.timer), this.timer = void 0);
+	}
+	place() {
+		let e = this.button, t = this.bubble;
+		if (!e || !t) return;
+		let n = e.getBoundingClientRect();
+		if (!n.width && !n.height) {
+			this.close();
+			return;
+		}
+		let r = t.getBoundingClientRect(), i = document.documentElement.clientWidth, a = n.top - r.height - Ye, o = "top";
+		a < Je && (a = n.bottom + Ye, o = "bottom");
+		let s = n.left + n.width / 2, c = Math.max(Je, Math.min(s - r.width / 2, i - r.width - Je)), l = Math.max(14, Math.min(s - c, r.width - 14));
+		t.style.left = `${Math.round(c)}px`, t.style.top = `${Math.round(a)}px`, t.style.setProperty("--arrow", `${Math.round(l)}px`), t.dataset.place = o;
+	}
+};
+U([F({ attribute: !1 })], J.prototype, "tip", void 0), U([F()], J.prototype, "label", void 0), U([I()], J.prototype, "open", void 0), U([Pe("button")], J.prototype, "button", void 0), U([Pe(".bubble")], J.prototype, "bubble", void 0);
+function Xe(e) {
+	return e.split("\n").map((e) => T`<p>
+        ${e.split(/\*\*(.+?)\*\*/).map((e, t) => t % 2 ? T`<strong>${e}</strong>` : e)}
+      </p>`);
+}
+function Ze(e, t, n, r = []) {
+	let i = e.optional(`tip.${t}.hint`, n);
+	return {
+		heading: e(`tip.${t}.title`, n),
+		text: e(`tip.${t}.text`, n),
+		facts: i ? [...r, [e("tip.hint"), i]] : r
+	};
+}
+function Y(e, t, n, r) {
+	return T`<joe-tip .tip=${Ze(e, t, n, r)} label=${e("tip.label")}></joe-tip>`;
+}
+V("joe-tip", J);
 //#endregion
 //#region src/fonts.ts
-var ze = [
+var Qe = [
 	[
 		"Energy Joe Barlow",
 		400,
@@ -1416,24 +1747,24 @@ var ze = [
 		"barlow-condensed-latin-800-italic"
 	]
 ];
-function Be() {
+function $e() {
 	if (document.getElementById("energy-joe-fonts")) return;
 	let e = document.createElement("style");
-	e.id = "energy-joe-fonts", e.textContent = ze.map(([e, t, n, r]) => `@font-face{font-family:"${e}";font-style:${n};font-weight:${t};font-display:swap;src:url("${z(`fonts/${r}.woff2`)}") format("woff2")}`).join("\n"), document.head.appendChild(e);
+	e.id = "energy-joe-fonts", e.textContent = Qe.map(([e, t, n, r]) => `@font-face{font-family:"${e}";font-style:${n};font-weight:${t};font-display:swap;src:url("${L(`fonts/${r}.woff2`)}") format("woff2")}`).join("\n"), document.head.appendChild(e);
 }
 //#endregion
 //#region src/components/found-list.ts
-var Ve = /* @__PURE__ */ new Set([
+var et = /* @__PURE__ */ new Set([
 	"climate",
 	"heat_pump",
 	"electric_heating",
 	"hot_water"
-]), X = class extends I {
+]), X = class extends P {
 	constructor(...e) {
 		super(...e), this.language = "de";
 	}
 	static {
-		this.styles = [G, o`
+		this.styles = [H, o`
       :host {
         display: block;
       }
@@ -1569,15 +1900,15 @@ var Ve = /* @__PURE__ */ new Set([
 	}
 	render() {
 		let e = this.discovery, t = this.t;
-		if (!e || !t) return k;
+		if (!e || !t) return D;
 		let n = e.checks;
-		return D`<ul class="found">
+		return T`<ul class="found">
         ${this.rows(e, t).map((e) => this.renderRow(e, t))}
       </ul>
-      ${n.length ? D`<div class="notes">
+      ${n.length ? T`<div class="notes">
             <h3>${t("scan.notes")}</h3>
             ${n.map((e) => this.renderCheck(e, t))}
-          </div>` : k}`;
+          </div>` : D}`;
 	}
 	rows(e, t) {
 		let n = [], r = e.energy_dashboard;
@@ -1689,7 +2020,7 @@ var Ve = /* @__PURE__ */ new Set([
 			title: t("find.devices"),
 			detail: t("find.devices.detail", {
 				count: this.count(e.consumers.filter((e) => e.kind !== "submeter").length, "word.device"),
-				heating: e.consumers.filter((e) => Ve.has(e.kind)).length
+				heating: e.consumers.filter((e) => et.has(e.kind)).length
 			}),
 			read: !0
 		}), n;
@@ -1709,54 +2040,54 @@ var Ve = /* @__PURE__ */ new Set([
 		};
 	}
 	renderRow(e, t) {
-		return D`<li class="item ${e.missing ? "missing" : ""}">
+		return T`<li class="item ${e.missing ? "missing" : ""}">
       <span class="ico-box"><ha-icon icon=${e.icon}></ha-icon></span>
       <div class="text">
         <div class="t">${e.title}</div>
         <div class="d">${e.detail}</div>
-        ${e.reasons?.length ? D`<details>
+        ${e.reasons?.length ? T`<details data-notip>
               <summary>${t("scan.why")}</summary>
               <ul>
-                ${e.reasons.map((e) => D`<li>${this.reasonText(e)}</li>`)}
+                ${e.reasons.map((e) => T`<li>${this.reasonText(e)}</li>`)}
               </ul>
-            </details>` : k}
+            </details>` : D}
       </div>
       <div class="end">
-        ${e.read ? D`<span class="chip read"><ha-icon icon="mdi:eye-outline"></ha-icon>${t("energy.read")}</span>` : k}
-        ${e.confidence == null ? k : this.dots(e.confidence, t)}
+        ${e.read ? T`<span class="chip read"><ha-icon icon="mdi:eye-outline"></ha-icon>${t("energy.read")}</span>` : D}
+        ${e.confidence == null ? D : this.dots(e.confidence, t)}
       </div>
     </li>`;
 	}
 	dots(e, t) {
 		let n = e >= .85 ? 4 : e >= .65 ? 3 : e >= .45 ? 2 : 1, r = t(`conf.${n}`);
-		return D`<span class="conf" role="img" aria-label=${r} title=${r}>
+		return T`<span class="conf" role="img" aria-label=${r} title=${r}>
       ${[
 			1,
 			2,
 			3,
 			4
-		].map((e) => D`<i class=${e <= n ? "on" : ""}></i>`)}
+		].map((e) => T`<i class=${e <= n ? "on" : ""}></i>`)}
     </span>`;
 	}
 	reasonText(e) {
 		let t = {};
 		for (let [n, r] of Object.entries(e)) (typeof r == "string" || typeof r == "number") && (t[n] = r);
-		return V(this.language, `reason.${e.code}`, t) ?? e.code;
+		return R(this.language, `reason.${e.code}`, t) ?? e.code;
 	}
 	renderCheck(e, t) {
 		let n = {};
 		for (let [t, r] of Object.entries(e)) typeof r == "number" ? n[t] = this.num(r, 2) : typeof r == "string" && (n[t] = r);
-		typeof e.role == "string" && (n.role = V(this.language, `role.${e.role}`) ?? e.role);
+		typeof e.role == "string" && (n.role = R(this.language, `role.${e.role}`) ?? e.role);
 		let r = `check.${e.code}`;
 		e.code === "grid_sign" && typeof e.expected == "number" && typeof e.actual == "number" && (r = e.expected < 0 ? "check.grid_sign.export" : "check.grid_sign.import", n.expected = this.num(Math.abs(e.expected), 1), n.actual = this.num(Math.abs(e.actual), 1));
-		let i = V(this.language, r, n) ?? e.code;
-		return D`<div class="note ${e.level}">
+		let i = R(this.language, r, n) ?? e.code;
+		return T`<div class="note ${e.level}">
       <ha-icon icon=${e.level === "warn" ? "mdi:alert-outline" : "mdi:information-outline"}></ha-icon>
       <span>${i}</span>
     </div>`;
 	}
 	count(e, t) {
-		let [n, r] = (V(this.language, t) ?? "|").split("|");
+		let [n, r] = (R(this.language, t) ?? "|").split("|");
 		return `${this.num(e, 0)} ${e === 1 ? n : r}`;
 	}
 	value(e) {
@@ -1766,15 +2097,15 @@ var Ve = /* @__PURE__ */ new Set([
 		return new Intl.NumberFormat(this.language, { maximumFractionDigits: t }).format(e);
 	}
 };
-K([L({ attribute: !1 })], X.prototype, "discovery", void 0), K([L({ attribute: !1 })], X.prototype, "t", void 0), K([L()], X.prototype, "language", void 0), W("joe-found-list", X);
+U([F({ attribute: !1 })], X.prototype, "discovery", void 0), U([F({ attribute: !1 })], X.prototype, "t", void 0), U([F()], X.prototype, "language", void 0), V("joe-found-list", X);
 //#endregion
 //#region src/pages/onboarding.ts
-var Z = class extends I {
+var Z = class extends P {
 	constructor(...e) {
 		super(...e), this.step = "welcome", this.discovering = !1, this.discoveryFailed = !1, this.language = "de";
 	}
 	static {
-		this.styles = [G, o`
+		this.styles = [H, o`
       :host {
         display: block;
       }
@@ -1825,6 +2156,11 @@ var Z = class extends I {
       .note {
         margin-top: 14px;
       }
+      .with-tip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
       .wrap.wide {
         grid-template-columns: minmax(0, 0.55fr) minmax(0, 1.45fr);
         align-items: start;
@@ -1870,25 +2206,26 @@ var Z = class extends I {
 	}
 	render() {
 		let e = this.t;
-		if (!e) return k;
+		if (!e) return D;
 		switch (this.step) {
-			case "welcome": return this.layout("welcome", D`${U(e("onb.welcome.title"), "h1")} ${H}
+			case "welcome": return this.layout("welcome", T`${B(e("onb.welcome.title"), "h1")} ${z}
             <p class="lead">${e("onb.welcome.lead")}</p>
             <div class="calm"><span class="pill-sim">${e("mode.simulation")}</span>${e("onb.calm")}</div>
-            <details>
+            <details data-notip>
               <summary>${e("onb.welcome.more")}</summary>
               <p>${e("onb.welcome.more.text")}</p>
             </details>
-            <div class="actions">
+            <div class="actions" data-tipped>
               <button type="button" class="btn btn-primary" @click=${() => this.go("scan")}>
                 ${e("onb.welcome.go")}
               </button>
+              ${Y(e, "scan_start")}
             </div>`);
 			case "scan": return this.renderScan(e);
-			case "questions": return this.layout("ask", D`${U(e("onb.questions.title"))} ${H}
+			case "questions": return this.layout("ask", T`${B(e("onb.questions.title"))} ${z}
             <p class="lead">${e("onb.questions.lead")}</p>
             <div class="note"><span class="chip soon">${e("soon")}</span></div>
-            <div class="actions">
+            <div class="actions" data-notip>
               <button type="button" class="btn btn-primary" @click=${() => this.go("done")}>
                 ${e("onb.next")}
               </button>
@@ -1896,35 +2233,41 @@ var Z = class extends I {
                 ${e("onb.back")}
               </button>
             </div>`);
-			case "done": return this.layout("thumbs", D`${U(e("onb.done.title"))} ${H}
+			case "done": return this.layout("thumbs", T`${B(e("onb.done.title"))} ${z}
             <div class="calm"><span class="pill-sim">${e("mode.simulation")}</span>${e("onb.done.lead")}</div>
             <div class="actions">
-              <button type="button" class="btn btn-primary" @click=${this.complete}>
-                ${e("onb.done.go")}
-              </button>
-              <button type="button" class="btn btn-ghost" @click=${() => this.go("questions")}>
+              <span class="with-tip" data-tipped>
+                <button type="button" class="btn btn-primary" @click=${this.complete}>
+                  ${e("onb.done.go")}
+                </button>
+                ${Y(e, "start")}
+              </span>
+              <button type="button" class="btn btn-ghost" data-notip @click=${() => this.go("questions")}>
                 ${e("onb.back")}
               </button>
             </div>`);
 		}
 	}
 	renderScan(e) {
-		return this.discovering || !this.discovery && !this.discoveryFailed ? this.layout("scout", D`${U(e("onb.scan.title"))} ${H}
+		return this.discovering || !this.discovery && !this.discoveryFailed ? this.layout("scout", T`${B(e("onb.scan.title"))} ${z}
           <p class="lead">${e("onb.scan.lead")}</p>
           ${this.renderEnergy(e)}
-          <div class="looking" role="status">${e("scan.looking")}</div>`) : D`<div class="wrap wide">
+          <div class="looking" role="status">${e("scan.looking")}</div>`) : T`<div class="wrap wide">
       <joe-pose name="scout"></joe-pose>
       <div>
-        ${U(e("scan.title"))} ${H}
+        ${B(e("scan.title"))} ${z}
         <p class="lead">${e("scan.lead")}</p>
-        ${this.discoveryFailed ? D`<p class="failed">${e("scan.failed")}</p>` : D`<joe-found-list .discovery=${this.discovery} .t=${e} language=${this.language}></joe-found-list>`}
+        ${this.discoveryFailed ? T`<p class="failed">${e("scan.failed")}</p>` : T`<joe-found-list .discovery=${this.discovery} .t=${e} language=${this.language}></joe-found-list>`}
         <div class="note"><span class="chip soon">${e("scan.confirm.soon")}</span></div>
         <div class="actions">
-          <button type="button" class="btn btn-primary" @click=${() => this.go("questions")}>
+          <button type="button" class="btn btn-primary" data-notip @click=${() => this.go("questions")}>
             ${e("onb.next")}
           </button>
-          <button type="button" class="btn btn-secondary" @click=${this.rediscover}>${e("scan.again")}</button>
-          <button type="button" class="btn btn-ghost" @click=${() => this.go("welcome")}>
+          <span class="with-tip" data-tipped>
+            <button type="button" class="btn btn-secondary" @click=${this.rediscover}>${e("scan.again")}</button>
+            ${Y(e, "rescan")}
+          </span>
+          <button type="button" class="btn btn-ghost" data-notip @click=${() => this.go("welcome")}>
             ${e("onb.back")}
           </button>
         </div>
@@ -1938,24 +2281,24 @@ var Z = class extends I {
 		}));
 	}
 	layout(e, t) {
-		return D`<div class="wrap">
+		return T`<div class="wrap">
       <joe-pose name=${e}></joe-pose>
       <div>${t}</div>
     </div>`;
 	}
 	renderEnergy(e) {
 		let t = this.info?.energy;
-		if (!t?.configured || !t.sources) return D`<div class="found"><p>${e("onb.scan.energy.none")}</p></div>`;
+		if (!t?.configured || !t.sources) return T`<div class="found"><p>${e("onb.scan.energy.none")}</p></div>`;
 		let n = [
 			[t.sources.grid ?? 0, e("energy.grid")],
 			[t.sources.solar ?? 0, e("energy.solar")],
 			[t.sources.battery ?? 0, e("energy.battery")],
 			[t.devices ?? 0, e("energy.devices")]
 		];
-		return D`<div class="found">
+		return T`<div class="found">
       <p>${e("onb.scan.energy")}</p>
       <div class="chips">
-        ${n.map(([e, t]) => D`<span class="chip read"><ha-icon icon="mdi:eye-outline"></ha-icon>${e} ${t}</span>`)}
+        ${n.map(([e, t]) => T`<span class="chip read"><ha-icon icon="mdi:eye-outline"></ha-icon>${e} ${t}</span>`)}
       </div>
     </div>`;
 	}
@@ -1977,12 +2320,12 @@ var Z = class extends I {
 		}));
 	}
 };
-K([L()], Z.prototype, "step", void 0), K([L({ attribute: !1 })], Z.prototype, "t", void 0), K([L({ attribute: !1 })], Z.prototype, "info", void 0), K([L({ attribute: !1 })], Z.prototype, "discovery", void 0), K([L({ type: Boolean })], Z.prototype, "discovering", void 0), K([L({ type: Boolean })], Z.prototype, "discoveryFailed", void 0), K([L()], Z.prototype, "language", void 0), W("joe-onboarding", Z);
+U([F()], Z.prototype, "step", void 0), U([F({ attribute: !1 })], Z.prototype, "t", void 0), U([F({ attribute: !1 })], Z.prototype, "info", void 0), U([F({ attribute: !1 })], Z.prototype, "discovery", void 0), U([F({ type: Boolean })], Z.prototype, "discovering", void 0), U([F({ type: Boolean })], Z.prototype, "discoveryFailed", void 0), U([F()], Z.prototype, "language", void 0), V("joe-onboarding", Z);
 //#endregion
 //#region src/pages/overview.ts
-var He = class extends I {
+var tt = class extends P {
 	static {
-		this.styles = [G, o`
+		this.styles = [H, o`
       :host {
         display: block;
       }
@@ -2091,17 +2434,17 @@ var He = class extends I {
 	}
 	render() {
 		let e = this.t;
-		return e ? D`<div class="grid">
+		return e ? T`<div class="grid">
       <section class="card">
         <joe-pose name="relax"></joe-pose>
         <div class="eyebrow"><ha-icon icon="mdi:weather-night"></ha-icon>${e("overview.night")}</div>
-        ${U(e("overview.night.empty.title"))} ${H}
+        ${B(e("overview.night.empty.title"))} ${z}
         <p class="lead">${e("overview.night.empty.text")}</p>
       </section>
       <section class="card">
         <joe-pose name="plan"></joe-pose>
         <div class="eyebrow"><ha-icon icon="mdi:calculator-variant-outline"></ha-icon>${e("overview.sim")}</div>
-        ${U(e("overview.sim.empty.title"))} ${H}
+        ${B(e("overview.sim.empty.title"))} ${z}
         <p class="lead">${e("overview.sim.empty.text")}</p>
       </section>
       <section class="card wide">
@@ -2119,19 +2462,19 @@ var He = class extends I {
           <li><b>${e("overview.next.4.title")}</b><span>${e("overview.next.4.text")}</span></li>
         </ol>
       </section>
-    </div>` : k;
+    </div>` : D;
 	}
 };
-K([L({ attribute: !1 })], He.prototype, "t", void 0), W("joe-overview", He);
+U([F({ attribute: !1 })], tt.prototype, "t", void 0), V("joe-overview", tt);
 //#endregion
 //#region src/pages/settings.ts
-var Ue = [
+var nt = [
 	"simulation",
 	"off",
 	"live"
-], Q = class extends I {
+], Q = class extends P {
 	static {
-		this.styles = [G, o`
+		this.styles = [H, o`
       :host {
         display: block;
       }
@@ -2168,6 +2511,11 @@ var Ue = [
       .row b {
         display: block;
         font-weight: 700;
+      }
+      .name {
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
       .row small {
         display: block;
@@ -2224,18 +2572,18 @@ var Ue = [
 	}
 	render() {
 		let e = this.t, t = this.state;
-		if (!e || !t) return k;
+		if (!e || !t) return D;
 		let n = this.info?.energy, r = n?.configured && n.sources ? `${n.sources.solar ?? 0} ${e("energy.solar")} · ${n.sources.battery ?? 0} ${e("energy.battery")} · ${n.devices ?? 0} ${e("energy.devices")}` : e("settings.energy.none");
-		return D`<div class="list">
+		return T`<div class="list">
       <section class="group">
         <h2>${e("settings.operation")}</h2>
-        <div class="row">
+        <div class="row" data-tipped>
           <div>
-            <b>${e("settings.mode")}</b>
+            <div class="name"><b>${e("settings.mode")}</b>${Y(e, "mode")}</div>
             <small>${e("settings.mode.hint")} ${e("settings.live.unavailable")}</small>
           </div>
           <div class="seg" role="group" aria-label=${e("settings.mode")}>
-            ${Ue.map((n) => D`<button
+            ${nt.map((n) => T`<button
                   type="button"
                   aria-pressed=${String(t.mode === n)}
                   ?disabled=${n === "live"}
@@ -2245,9 +2593,9 @@ var Ue = [
                 </button>`)}
           </div>
         </div>
-        <div class="row">
+        <div class="row" data-tipped>
           <div>
-            <b>${e("settings.setup")}</b>
+            <div class="name"><b>${e("settings.setup")}</b>${Y(e, "restart")}</div>
             <small>${e("settings.setup.hint")}</small>
           </div>
           <button type="button" class="btn btn-secondary" @click=${() => this.emit("joe-onboarding", {
@@ -2274,10 +2622,10 @@ var Ue = [
 		}));
 	}
 };
-K([L({ attribute: !1 })], Q.prototype, "t", void 0), K([L({ attribute: !1 })], Q.prototype, "state", void 0), K([L({ attribute: !1 })], Q.prototype, "info", void 0), W("joe-settings", Q);
+U([F({ attribute: !1 })], Q.prototype, "t", void 0), U([F({ attribute: !1 })], Q.prototype, "state", void 0), U([F({ attribute: !1 })], Q.prototype, "info", void 0), V("joe-settings", Q);
 //#endregion
 //#region src/styles/tokens.ts
-var We = o`
+var rt = o`
   :host {
     --joe-bg: #fbf6ec;
     --joe-surface: #ffffff;
@@ -2306,6 +2654,10 @@ var We = o`
     --joe-stripe-a: #fea707;
     --joe-stripe-b: #ffc649;
     --joe-shadow: 0 1px 0 rgba(7, 17, 24, 0.04), 0 10px 24px -16px rgba(7, 17, 24, 0.35);
+    --joe-tip-bg: #071118;
+    --joe-tip-ink: #f7efe1;
+    --joe-tip-accent: #fea707;
+    --joe-tip-line: rgba(247, 239, 225, 0.18);
     --joe-show-light: block;
     --joe-show-dark: none;
     --joe-display: "Energy Joe Barlow Condensed", "Barlow Condensed", "Arial Narrow", sans-serif;
@@ -2336,23 +2688,35 @@ var We = o`
     --joe-info: #6ea9d8;
     --joe-info-soft: rgba(110, 169, 216, 0.14);
     --joe-shadow: 0 1px 0 rgba(0, 0, 0, 0.35), 0 14px 30px -18px rgba(0, 0, 0, 0.8);
+    --joe-tip-bg: #f7efe1;
+    --joe-tip-ink: #071118;
+    --joe-tip-accent: #975a00;
+    --joe-tip-line: rgba(7, 17, 24, 0.14);
     --joe-show-light: none;
     --joe-show-dark: block;
     color-scheme: dark;
   }
-`, Ge = [
+`, it = [
 	"welcome",
 	"scan",
 	"questions",
 	"done"
-], Ke = [
+], at = [
 	"overview",
 	"plan",
 	"history",
 	"learn",
 	"devices",
 	"settings"
-], qe = {
+], ot = [
+	"simulation",
+	"live",
+	"off"
+], st = {
+	simulation: "mdi:pause",
+	live: "mdi:play",
+	off: "mdi:power"
+}, ct = ["simulation", "off"], lt = {
 	plan: {
 		pose: "plan",
 		title: "plan.title",
@@ -2373,19 +2737,19 @@ var We = o`
 		title: "devices.title",
 		text: "devices.text"
 	}
-}, $ = class extends I {
+}, $ = class extends P {
 	constructor(...e) {
-		super(...e), this.narrow = !1, this.failed = !1, this.liveDialog = !1, this.notice = "", this.discovering = !1, this.discoveryFailed = !1, this.infoRequested = !1;
+		super(...e), this.narrow = !1, this.failed = !1, this.modeDialog = !1, this.notice = "", this.discovering = !1, this.discoveryFailed = !1, this.infoRequested = !1;
 	}
 	get t() {
-		return Ne(this.hass?.language);
+		return Be(this.hass?.language);
 	}
 	get page() {
 		let e = (this.route?.path ?? "").split("/")[1] ?? "";
-		return Ke.includes(e) ? e : "overview";
+		return at.includes(e) ? e : "overview";
 	}
 	connectedCallback() {
-		super.connectedCallback(), Be(), this.subscribe();
+		super.connectedCallback(), $e(), this.subscribe();
 	}
 	disconnectedCallback() {
 		super.disconnectedCallback(), this.unsubscribe?.then((e) => e()).catch(() => void 0), this.unsubscribe = void 0;
@@ -2419,21 +2783,22 @@ var We = o`
 	}
 	render() {
 		let e = this.t;
-		if (this.failed) return D`<main><joe-empty-state pose="puzzled" heading=${e("error.title")} text=${e("error.text")}></joe-empty-state></main>`;
-		if (!this.joe) return D`<div class="loading">${e("loading")}</div>`;
+		if (this.failed) return T`<main><joe-empty-state pose="puzzled" heading=${e("error.title")} text=${e("error.text")}></joe-empty-state></main>`;
+		if (!this.joe) return T`<div class="loading">${e("loading")}</div>`;
 		let t = !this.joe.onboarding.completed;
-		return D`
+		return T`
       <header>
-        ${this.joe.mode === "simulation" ? D`<div class="simband" aria-hidden="true"></div>` : k}
+        ${this.joe.mode === "simulation" ? T`<div class="simband" aria-hidden="true"></div>` : D}
         <div class="bar">
-          ${this.narrow ? D`<ha-menu-button .hass=${this.hass} .narrow=${this.narrow}></ha-menu-button>` : k}
+          ${this.narrow ? T`<ha-menu-button .hass=${this.hass} .narrow=${this.narrow}></ha-menu-button>` : D}
           <div class="brand">
-            <img class="light" src=${z("joe-head.webp")} alt="" width="36" height="36" />
-            <img class="dark" src=${z("joe-head-dark.webp")} alt="" width="36" height="36" />
+            <img class="light" src=${L("joe-head.webp")} alt="" width="36" height="36" />
+            <img class="dark" src=${L("joe-head-dark.webp")} alt="" width="36" height="36" />
             <span class="wordmark">ENERGY <b>JOE</b></span>
           </div>
           ${t ? this.renderSteps(e) : this.renderTabs(e)}
           <joe-sim-switch
+            data-notip
             .mode=${this.joe.mode}
             .t=${e}
             ?compact=${this.narrow}
@@ -2441,13 +2806,13 @@ var We = o`
           ></joe-sim-switch>
         </div>
       </header>
-      ${this.notice ? D`<div class="notice" role="alert">${this.notice}</div>` : k}
+      ${this.notice ? T`<div class="notice" role="alert">${this.notice}</div>` : D}
       <main
         @joe-onboarding=${this.onOnboarding}
         @joe-rediscover=${() => this.discover(!0)}
         @joe-set-mode=${(e) => this.setMode(e.detail.mode)}
       >
-        ${t ? D`<joe-onboarding
+        ${t ? T`<joe-onboarding
               .step=${this.joe.onboarding.step}
               .t=${e}
               .info=${this.info}
@@ -2457,12 +2822,12 @@ var We = o`
               language=${this.hass?.language ?? "de"}
             ></joe-onboarding>` : this.renderPage(e)}
       </main>
-      ${this.liveDialog ? this.renderLiveDialog(e) : k}
+      ${this.modeDialog ? this.renderModeDialog(e) : D}
     `;
 	}
 	renderTabs(e) {
-		return D`<nav class="tabs" aria-label=${e("nav.label")}>
-      ${Ke.map((t) => D`<a
+		return T`<nav class="tabs" aria-label=${e("nav.label")}>
+      ${at.map((t) => T`<a
             href=${this.href(t)}
             class=${t === this.page ? "on" : ""}
             aria-current=${t === this.page ? "page" : "false"}
@@ -2472,60 +2837,81 @@ var We = o`
     </nav>`;
 	}
 	renderSteps(e) {
-		let t = Ge.indexOf(this.joe?.onboarding.step ?? "welcome");
-		return D`<ol class="steps" aria-label=${e("steps.label")}>
-      ${Ge.map((n, r) => D`<li class=${r < t ? "done" : r === t ? "on" : ""} aria-current=${r === t ? "step" : "false"}>
+		let t = it.indexOf(this.joe?.onboarding.step ?? "welcome");
+		return T`<ol class="steps" aria-label=${e("steps.label")}>
+      ${it.map((n, r) => T`<li class=${r < t ? "done" : r === t ? "on" : ""} aria-current=${r === t ? "step" : "false"}>
             ${r + 1} ${e(`step.${n}`)}
           </li>`)}
     </ol>`;
 	}
 	renderPage(e) {
 		let t = this.page;
-		if (t === "overview") return D`<joe-overview .t=${e}></joe-overview>`;
-		if (t === "settings") return D`<joe-settings .t=${e} .state=${this.joe} .info=${this.info}></joe-settings>`;
-		let n = qe[t];
-		return n ? D`<joe-empty-state
+		if (t === "overview") return T`<joe-overview .t=${e}></joe-overview>`;
+		if (t === "settings") return T`<joe-settings .t=${e} .state=${this.joe} .info=${this.info}></joe-settings>`;
+		let n = lt[t];
+		return n ? T`<joe-empty-state
           pose=${n.pose}
           heading=${e(n.title)}
           text=${e(n.text)}
           note=${e("soon")}
-        ></joe-empty-state>` : D``;
+        ></joe-empty-state>` : T``;
 	}
-	renderLiveDialog(e) {
-		return D`<div class="scrim" @click=${this.closeDialog}>
+	renderModeDialog(e) {
+		let t = this.joe?.mode ?? "simulation";
+		return T`<div class="scrim" @click=${this.closeDialog}>
       <div
         class="sheet"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="live-title"
+        aria-labelledby="mode-title"
         @click=${(e) => e.stopPropagation()}
         @keydown=${(e) => e.key === "Escape" && this.closeDialog()}
       >
         <joe-pose name="lever"></joe-pose>
-        <div id="live-title">${U(e("live.title"))}</div>
-        ${H}
-        <p class="lead">${e("live.text")}</p>
-        <p class="unavailable">${e("live.unavailable")}</p>
+        <div data-tipped>
+          <div class="title-row">
+            <div id="mode-title">${B(e("mode.dialog.title"))}</div>
+            ${Y(e, "mode")}
+          </div>
+          ${z}
+          <div class="modes" role="group" aria-labelledby="mode-title">
+            ${ot.map((n) => {
+			let r = ct.includes(n);
+			return T`<button
+                type="button"
+                class="mode ${n}"
+                aria-pressed=${String(n === t)}
+                ?disabled=${!r}
+                @click=${() => this.chooseMode(n)}
+              >
+                <span class="knob"><ha-icon icon=${st[n]}></ha-icon></span>
+                <span class="label">
+                  <b>${e(`mode.${n}`)}</b>
+                  <small>${e(`mode.${n}.desc`)}</small>
+                </span>
+                ${n === t ? T`<span class="chip ok"><ha-icon icon="mdi:check"></ha-icon>${e("mode.current")}</span>` : r ? D : T`<span class="chip soon">${e("mode.soon")}</span>`}
+              </button>`;
+		})}
+          </div>
+        </div>
         <div class="actions">
-          <button type="button" class="btn btn-primary" disabled>${e("live.go")}</button>
-          <button type="button" class="btn btn-secondary" @click=${this.closeDialog} autofocus>
-            ${e("live.stay")}
-          </button>
-          <button type="button" class="btn btn-ghost" @click=${() => this.setMode("off", !0)}>
-            ${e("live.pause")}
+          <button type="button" class="btn btn-secondary" data-notip @click=${this.closeDialog} autofocus>
+            ${e("mode.close")}
           </button>
         </div>
       </div>
     </div>`;
 	}
 	onModeSwitch() {
-		this.joe?.mode === "off" ? this.setMode("simulation") : this.liveDialog = !0;
+		this.modeDialog = !0;
+	}
+	chooseMode(e) {
+		this.modeDialog = !1, e !== this.joe?.mode && this.setMode(e);
 	}
 	closeDialog() {
-		this.liveDialog = !1;
+		this.modeDialog = !1;
 	}
-	async setMode(e, t = !1) {
-		t && (this.liveDialog = !1);
+	async setMode(e) {
 		try {
 			await this.hass?.callWS({
 				type: "energy_joe/set_mode",
@@ -2562,8 +2948,8 @@ var We = o`
 	}
 	static {
 		this.styles = [
-			We,
-			G,
+			rt,
+			H,
 			o`
       :host {
         display: block;
@@ -2752,13 +3138,90 @@ var We = o`
       .sheet .display {
         font-size: 40px;
       }
-      .unavailable {
-        margin: 14px 0 0;
-        padding: 10px 12px;
-        border-radius: 10px;
+      .title-row {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .modes {
+        display: grid;
+        gap: 8px;
+        margin-top: 16px;
+      }
+      .mode {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        min-height: 60px;
+        padding: 8px 12px 8px 8px;
+        border: 0;
+        border-radius: 14px;
+        cursor: pointer;
+        text-align: left;
         background: var(--joe-surface-2);
+        color: var(--joe-ink);
+        transition: background 0.12s, box-shadow 0.12s, transform 0.12s;
+      }
+      .mode:hover:not([disabled]) {
+        background: var(--joe-line);
+      }
+      .mode:active:not([disabled]) {
+        transform: scale(0.98);
+      }
+      .mode[aria-pressed="true"],
+      .mode[aria-pressed="true"]:hover {
+        background: var(--joe-amber-soft);
+        box-shadow: inset 0 0 0 2px var(--joe-amber);
+      }
+      .mode[disabled] {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+      .mode .knob {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        flex: none;
+        background: #071118;
+        color: #fea707;
+      }
+      .mode.simulation .knob {
+        background: repeating-linear-gradient(-45deg, var(--joe-stripe-a) 0 8px, var(--joe-stripe-b) 8px 16px);
+        color: #071118;
+        box-shadow: inset 0 0 0 2px #071118;
+      }
+      .mode.live .knob {
+        background: var(--joe-good);
+        color: #ffffff;
+      }
+      .mode.off .knob {
+        background: var(--joe-ink-2);
+        color: var(--joe-surface);
+      }
+      .mode .label {
+        flex: 1;
+        min-width: 0;
+      }
+      .mode b {
+        display: block;
+        font-family: var(--joe-display);
+        font-style: italic;
+        font-weight: 800;
+        font-size: 20px;
+        letter-spacing: 0.03em;
+        line-height: 1.05;
+        text-transform: uppercase;
+      }
+      .mode small {
+        display: block;
+        font-size: 13.5px;
         color: var(--joe-ink-2);
-        font-size: 14px;
+        line-height: 1.35;
+        margin-top: 2px;
       }
       @media (max-width: 760px) {
         .bar {
@@ -2783,9 +3246,9 @@ var We = o`
 		];
 	}
 };
-K([L({ attribute: !1 })], $.prototype, "hass", void 0), K([L({
+U([F({ attribute: !1 })], $.prototype, "hass", void 0), U([F({
 	type: Boolean,
 	reflect: !0
-})], $.prototype, "narrow", void 0), K([L({ attribute: !1 })], $.prototype, "route", void 0), K([R()], $.prototype, "joe", void 0), K([R()], $.prototype, "info", void 0), K([R()], $.prototype, "failed", void 0), K([R()], $.prototype, "liveDialog", void 0), K([R()], $.prototype, "notice", void 0), K([R()], $.prototype, "discovery", void 0), K([R()], $.prototype, "discovering", void 0), K([R()], $.prototype, "discoveryFailed", void 0), W("energy-joe-panel", $);
+})], $.prototype, "narrow", void 0), U([F({ attribute: !1 })], $.prototype, "route", void 0), U([I()], $.prototype, "joe", void 0), U([I()], $.prototype, "info", void 0), U([I()], $.prototype, "failed", void 0), U([I()], $.prototype, "modeDialog", void 0), U([I()], $.prototype, "notice", void 0), U([I()], $.prototype, "discovery", void 0), U([I()], $.prototype, "discovering", void 0), U([I()], $.prototype, "discoveryFailed", void 0), V("energy-joe-panel", $);
 //#endregion
 export { $ as EnergyJoePanel };

@@ -5,6 +5,7 @@ import { displayTitle, swoosh } from "./components/bits";
 import "./components/empty-state";
 import "./components/pose";
 import "./components/sim-switch";
+import { tip } from "./components/tip";
 import { define } from "./define";
 import { ensureFonts } from "./fonts";
 import { translator, type Translate, type TranslationKey } from "./i18n";
@@ -26,6 +27,15 @@ import {
   type PanelRoute,
 } from "./types";
 
+const MODES: JoeMode[] = ["simulation", "live", "off"];
+const MODE_ICONS: Record<JoeMode, string> = {
+  simulation: "mdi:pause",
+  live: "mdi:play",
+  off: "mdi:power",
+};
+// "live" becomes selectable once Joe can control devices.
+const AVAILABLE: JoeMode[] = ["simulation", "off"];
+
 // Pages that show Joe's empty state until their feature arrives.
 const COMING: Partial<Record<Page, { pose: string; title: TranslationKey; text: TranslationKey }>> = {
   plan: { pose: "plan", title: "plan.title", text: "plan.text" },
@@ -42,7 +52,7 @@ export class EnergyJoePanel extends LitElement {
   @state() private joe?: JoeState;
   @state() private info?: JoeInfo;
   @state() private failed = false;
-  @state() private liveDialog = false;
+  @state() private modeDialog = false;
   @state() private notice = "";
   @state() private discovery?: Discovery;
   @state() private discovering = false;
@@ -151,6 +161,7 @@ export class EnergyJoePanel extends LitElement {
           </div>
           ${onboarding ? this.renderSteps(t) : this.renderTabs(t)}
           <joe-sim-switch
+            data-notip
             .mode=${this.joe.mode}
             .t=${t}
             ?compact=${this.narrow}
@@ -176,7 +187,7 @@ export class EnergyJoePanel extends LitElement {
             ></joe-onboarding>`
           : this.renderPage(t)}
       </main>
-      ${this.liveDialog ? this.renderLiveDialog(t) : nothing}
+      ${this.modeDialog ? this.renderModeDialog(t) : nothing}
     `;
   }
 
@@ -226,28 +237,51 @@ export class EnergyJoePanel extends LitElement {
       : html``;
   }
 
-  private renderLiveDialog(t: Translate): TemplateResult {
+  private renderModeDialog(t: Translate): TemplateResult {
+    const current = this.joe?.mode ?? "simulation";
     return html`<div class="scrim" @click=${this.closeDialog}>
       <div
         class="sheet"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="live-title"
+        aria-labelledby="mode-title"
         @click=${(ev: Event) => ev.stopPropagation()}
         @keydown=${(ev: KeyboardEvent) => ev.key === "Escape" && this.closeDialog()}
       >
         <joe-pose name="lever"></joe-pose>
-        <div id="live-title">${displayTitle(t("live.title"))}</div>
-        ${swoosh}
-        <p class="lead">${t("live.text")}</p>
-        <p class="unavailable">${t("live.unavailable")}</p>
+        <div data-tipped>
+          <div class="title-row">
+            <div id="mode-title">${displayTitle(t("mode.dialog.title"))}</div>
+            ${tip(t, "mode")}
+          </div>
+          ${swoosh}
+          <div class="modes" role="group" aria-labelledby="mode-title">
+            ${MODES.map((mode) => {
+              const available = AVAILABLE.includes(mode);
+              return html`<button
+                type="button"
+                class="mode ${mode}"
+                aria-pressed=${String(mode === current)}
+                ?disabled=${!available}
+                @click=${() => this.chooseMode(mode)}
+              >
+                <span class="knob"><ha-icon icon=${MODE_ICONS[mode]}></ha-icon></span>
+                <span class="label">
+                  <b>${t(`mode.${mode}`)}</b>
+                  <small>${t(`mode.${mode}.desc`)}</small>
+                </span>
+                ${mode === current
+                  ? html`<span class="chip ok"><ha-icon icon="mdi:check"></ha-icon>${t("mode.current")}</span>`
+                  : available
+                    ? nothing
+                    : html`<span class="chip soon">${t("mode.soon")}</span>`}
+              </button>`;
+            })}
+          </div>
+        </div>
         <div class="actions">
-          <button type="button" class="btn btn-primary" disabled>${t("live.go")}</button>
-          <button type="button" class="btn btn-secondary" @click=${this.closeDialog} autofocus>
-            ${t("live.stay")}
-          </button>
-          <button type="button" class="btn btn-ghost" @click=${() => this.setMode("off", true)}>
-            ${t("live.pause")}
+          <button type="button" class="btn btn-secondary" data-notip @click=${this.closeDialog} autofocus>
+            ${t("mode.close")}
           </button>
         </div>
       </div>
@@ -255,21 +289,21 @@ export class EnergyJoePanel extends LitElement {
   }
 
   private onModeSwitch(): void {
-    if (this.joe?.mode === "off") {
-      this.setMode("simulation");
-    } else {
-      this.liveDialog = true;
+    this.modeDialog = true;
+  }
+
+  private chooseMode(mode: JoeMode): void {
+    this.modeDialog = false;
+    if (mode !== this.joe?.mode) {
+      this.setMode(mode);
     }
   }
 
   private closeDialog(): void {
-    this.liveDialog = false;
+    this.modeDialog = false;
   }
 
-  private async setMode(mode: JoeMode, closeDialog = false): Promise<void> {
-    if (closeDialog) {
-      this.liveDialog = false;
-    }
+  private async setMode(mode: JoeMode): Promise<void> {
     try {
       await this.hass?.callWS({ type: "energy_joe/set_mode", mode });
     } catch {
@@ -504,13 +538,90 @@ export class EnergyJoePanel extends LitElement {
       .sheet .display {
         font-size: 40px;
       }
-      .unavailable {
-        margin: 14px 0 0;
-        padding: 10px 12px;
-        border-radius: 10px;
+      .title-row {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .modes {
+        display: grid;
+        gap: 8px;
+        margin-top: 16px;
+      }
+      .mode {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        min-height: 60px;
+        padding: 8px 12px 8px 8px;
+        border: 0;
+        border-radius: 14px;
+        cursor: pointer;
+        text-align: left;
         background: var(--joe-surface-2);
+        color: var(--joe-ink);
+        transition: background 0.12s, box-shadow 0.12s, transform 0.12s;
+      }
+      .mode:hover:not([disabled]) {
+        background: var(--joe-line);
+      }
+      .mode:active:not([disabled]) {
+        transform: scale(0.98);
+      }
+      .mode[aria-pressed="true"],
+      .mode[aria-pressed="true"]:hover {
+        background: var(--joe-amber-soft);
+        box-shadow: inset 0 0 0 2px var(--joe-amber);
+      }
+      .mode[disabled] {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+      .mode .knob {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        flex: none;
+        background: #071118;
+        color: #fea707;
+      }
+      .mode.simulation .knob {
+        background: repeating-linear-gradient(-45deg, var(--joe-stripe-a) 0 8px, var(--joe-stripe-b) 8px 16px);
+        color: #071118;
+        box-shadow: inset 0 0 0 2px #071118;
+      }
+      .mode.live .knob {
+        background: var(--joe-good);
+        color: #ffffff;
+      }
+      .mode.off .knob {
+        background: var(--joe-ink-2);
+        color: var(--joe-surface);
+      }
+      .mode .label {
+        flex: 1;
+        min-width: 0;
+      }
+      .mode b {
+        display: block;
+        font-family: var(--joe-display);
+        font-style: italic;
+        font-weight: 800;
+        font-size: 20px;
+        letter-spacing: 0.03em;
+        line-height: 1.05;
+        text-transform: uppercase;
+      }
+      .mode small {
+        display: block;
+        font-size: 13.5px;
         color: var(--joe-ink-2);
-        font-size: 14px;
+        line-height: 1.35;
+        margin-top: 2px;
       }
       @media (max-width: 760px) {
         .bar {
