@@ -6605,6 +6605,7 @@ var pn = class extends S {
               .labels=${a}
               .ticks=${o}
               .series=${i}
+              centerTicks
               unit="kWh"
               height="190"
               lang=${e.lang}

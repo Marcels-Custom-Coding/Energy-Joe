@@ -416,6 +416,7 @@ export class JoeOverview extends LitElement {
               .labels=${labels}
               .ticks=${ticks}
               .series=${series}
+              centerTicks
               unit="kWh"
               height="190"
               lang=${t.lang}
