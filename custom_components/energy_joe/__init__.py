@@ -18,6 +18,7 @@ from . import api
 from .const import (
     DOMAIN,
     FRONTEND_DIR,
+    ICONS_BUNDLE,
     PANEL_BUNDLE,
     PANEL_ICON,
     PANEL_TITLE,
@@ -32,6 +33,7 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 # Static routes cannot be removed again, so they are registered once per run.
 _DATA_STATIC_REGISTERED = f"{DOMAIN}_static_registered"
+_DATA_ICONS_URL = f"{DOMAIN}_icons_url"
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -50,9 +52,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.data[_DATA_STATIC_REGISTERED] = True
 
     integration = await async_get_integration(hass, DOMAIN)
-    bundle_hash = await hass.async_add_executor_job(
-        _file_hash, frontend_path / PANEL_BUNDLE
+    bundle_hash, icons_hash = await hass.async_add_executor_job(
+        _file_hashes, frontend_path / PANEL_BUNDLE, frontend_path / ICONS_BUNDLE
     )
+
+    # The icon set must be available before the panel is opened, because the
+    # sidebar entry uses it. Extra modules reach already open browsers, too.
+    icons_url = f"{STATIC_URL}/{ICONS_BUNDLE}?v={integration.version}-{icons_hash}"
+    frontend.add_extra_js_url(hass, icons_url)
+    hass.data[_DATA_ICONS_URL] = icons_url
 
     if PANEL_URL_PATH in hass.data.get(frontend.DATA_PANELS, {}):
         frontend.async_remove_panel(hass, PANEL_URL_PATH)
@@ -74,13 +82,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Remove the panel from the sidebar."""
     frontend.async_remove_panel(hass, PANEL_URL_PATH)
+    if icons_url := hass.data.pop(_DATA_ICONS_URL, None):
+        frontend.remove_extra_js_url(hass, icons_url)
     return True
 
 
-def _file_hash(path: Path) -> str:
-    """Return a short content hash used to bust the browser cache."""
-    try:
-        return hashlib.sha256(path.read_bytes()).hexdigest()[:10]
-    except FileNotFoundError:
-        _LOGGER.error("Panel bundle is missing: %s", path)
-        return "missing"
+def _file_hashes(*paths: Path) -> tuple[str, ...]:
+    """Return short content hashes used to bust the browser cache."""
+    hashes = []
+    for path in paths:
+        try:
+            hashes.append(hashlib.sha256(path.read_bytes()).hexdigest()[:10])
+        except FileNotFoundError:
+            _LOGGER.error("Frontend file is missing: %s", path)
+            hashes.append("missing")
+    return tuple(hashes)

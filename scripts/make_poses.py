@@ -32,7 +32,18 @@ POSES: dict[str, tuple[str, tuple[int, int, int, int] | None]] = {
     "Lichtschalter.png": ("switch", None),
     "Schalter.png": ("lever", None),
     "readme.png": ("welcome", (0, 0, 1536, 712)),
+    "typ2 stecker.png": ("ev", None),
+    "energy_joe_fernglas.png": ("scout", None),
+    "energy_joe_lupe.png": ("inspect", None),
+    "fuesse hoch.png": ("relax", None),
 }
+# Ganze Szenen ohne weißen Hintergrund: nur verkleinern, nicht freistellen.
+SCENES: dict[str, str] = {
+    "akku nacht.png": "night-charge",
+    "schlafen.png": "sleep",
+    "brille buch.png": "learn",
+}
+SCENE_WIDTH = 960
 DARK_VARIANTS = {"welcome"}
 MAX_WIDTH = 720
 WHITE_MIN = 226  # ab hier gilt ein Pixel als Hintergrundweiß
@@ -125,6 +136,12 @@ def main() -> None:
             padded.alpha_composite(pose, (8, 8))
             sticker(padded, 6).save(TARGET / f"{name}-dark.webp", quality=88, method=6)
         print(f"{source:24s} → poses/{name}.webp  {pose.width}×{pose.height}")
+    for source, name in SCENES.items():
+        scene = Image.open(SOURCE / source).convert("RGB")
+        height = round(scene.height * SCENE_WIDTH / scene.width)
+        scene = scene.resize((SCENE_WIDTH, height), Image.LANCZOS)
+        scene.save(TARGET / f"{name}.webp", quality=86, method=6)
+        print(f"{source:24s} → poses/{name}.webp  {scene.width}×{scene.height}")
 
 
 if __name__ == "__main__":

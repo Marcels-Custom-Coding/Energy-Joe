@@ -5,9 +5,12 @@ import { defineConfig } from "vite";
 export default defineConfig({
   build: {
     lib: {
-      entry: "src/energy-joe-panel.ts",
+      entry: {
+        "energy-joe-panel": "src/energy-joe-panel.ts",
+        "energy-joe-icons": "src/energy-joe-icons.ts",
+      },
       formats: ["es"],
-      fileName: () => "energy-joe-panel.js",
+      fileName: (_format, name) => `${name}.js`,
     },
     outDir: "../custom_components/energy_joe/frontend",
     emptyOutDir: true,

@@ -6,6 +6,7 @@ from collections.abc import Generator
 
 import pytest
 
+from homeassistant.components.frontend import DATA_EXTRA_MODULE_URL, UrlManager
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
 
@@ -30,4 +31,5 @@ async def ready_hass(hass: HomeAssistant) -> HomeAssistant:
     assert await async_setup_component(hass, "http", {})
     assert await async_setup_component(hass, "websocket_api", {})
     hass.config.components.update({"frontend", "panel_custom"})
+    hass.data[DATA_EXTRA_MODULE_URL] = UrlManager(lambda *_: None, [])
     return hass
