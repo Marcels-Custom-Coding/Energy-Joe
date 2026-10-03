@@ -598,6 +598,29 @@
      "priority": 2
     }
    ],
+   "actions": [
+    {
+     "id": "ev_carport",
+     "name": "Carport",
+     "kind": "switch",
+     "entity_id": "select.evcc_carport_mode",
+     "on_value": "now",
+     "reset": "previous",
+     "lead_min": 3,
+     "auto": true,
+     "forecast_below_kwh": 15.0,
+     "conditions": [
+      {
+       "entity_id": "binary_sensor.evcc_carport_connected",
+       "op": "eq",
+       "value": true
+      }
+     ],
+     "power_kw": 11.0,
+     "power_entity": "sensor.evcc_carport_charge_power",
+     "priority": 1
+    }
+   ],
    "tariff": {
     "kind": "fixed_window",
     "price_entity": "sensor.octopus_price",
@@ -978,7 +1001,36 @@
     "source": "energy_dashboard"
    }
   ],
-  "actions": [],
+  "actions": [
+   {
+    "id": "ev_carport",
+    "name": "Carport",
+    "kind": "switch",
+    "entity_id": "select.evcc_carport_mode",
+    "on_value": "now",
+    "reset": "previous",
+    "lead_min": 3,
+    "auto": true,
+    "forecast_below_kwh": 15.0,
+    "conditions": [
+     {
+      "entity_id": "binary_sensor.evcc_carport_connected",
+      "op": "eq",
+      "value": true
+     }
+    ],
+    "power_kw": 11.0,
+    "power_entity": "sensor.evcc_carport_charge_power",
+    "priority": 1,
+    "enabled": true,
+    "reset_value": null,
+    "consumer_id": null,
+    "sensor_entity": null,
+    "comfort": 45.0,
+    "maximum": 62.0,
+    "buffer": 3.0
+   }
+  ],
   "rules": {
    "reserve_soc": 10.0,
    "max_target_soc": 100.0,
@@ -1019,375 +1071,423 @@
   "provenance": {
    "measurements.grid_power": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "measurements.home_power": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "measurements.solar_power": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "tariff.kind": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "tariff.price_entity": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "tariff.window": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "tariff.night_price": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "tariff.day_price": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "tariff.feed_in_price": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "tariff.feed_in_entity": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "forecast.provider": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "forecast.config_entries": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "forecast.today": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "forecast.tomorrow": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "forecast.remaining_today": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "context.weather_entity": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "context.holiday_entity": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[storage].name": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[storage].adapter": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[storage].soc_entity": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[storage].power": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[storage].capacity_kwh": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[storage].capacity_entity": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[storage].max_charge_w": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[storage].max_discharge_w": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[storage].device_id": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[storage].controls": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[storage].mode_options": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[storage].prepare": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[storage].steps": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[storage].priority": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[venus].name": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[venus].adapter": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[venus].soc_entity": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[venus].power": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[venus].capacity_kwh": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[venus].capacity_entity": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[venus].max_charge_w": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[venus].max_discharge_w": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[venus].device_id": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[venus].controls": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[venus].mode_options": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[venus].prepare": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[venus].steps": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "batteries[venus].priority": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "persons[person.alex].name": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "persons[person.alex].person_entity": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "persons[person.alex].calendars": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "persons[person.sam].name": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "persons[person.sam].person_entity": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "persons[person.sam].calendars": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.house_energy].name": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.house_energy].kind": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.house_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.house_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.house_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.house_energy].source": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.ac_office_energy].name": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.ac_office_energy].kind": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.ac_office_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.ac_office_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.ac_office_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.ac_office_energy].source": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.basement_energy].name": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.basement_energy].kind": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.basement_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.basement_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.basement_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.basement_energy].source": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.hot_water_energy].name": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.hot_water_energy].kind": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.hot_water_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.hot_water_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.hot_water_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.hot_water_energy].source": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.floor_heating_energy].name": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.floor_heating_energy].kind": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.floor_heating_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.floor_heating_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.floor_heating_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.floor_heating_energy].source": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.fridge_energy].name": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.fridge_energy].kind": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.fridge_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.fridge_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.fridge_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.fridge_energy].source": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.wallbox_energy].name": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.wallbox_energy].kind": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.wallbox_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.wallbox_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.wallbox_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
    },
    "consumers[sensor.wallbox_energy].source": {
     "source": "read",
-    "updated": "2026-10-03T21:04:21+00:00"
+    "updated": "2026-10-03T21:19:34+00:00"
+   },
+   "actions[ev_carport].name": {
+    "source": "read",
+    "updated": "2026-10-03T21:19:34+00:00"
+   },
+   "actions[ev_carport].kind": {
+    "source": "read",
+    "updated": "2026-10-03T21:19:34+00:00"
+   },
+   "actions[ev_carport].entity_id": {
+    "source": "read",
+    "updated": "2026-10-03T21:19:34+00:00"
+   },
+   "actions[ev_carport].on_value": {
+    "source": "read",
+    "updated": "2026-10-03T21:19:34+00:00"
+   },
+   "actions[ev_carport].reset": {
+    "source": "read",
+    "updated": "2026-10-03T21:19:34+00:00"
+   },
+   "actions[ev_carport].lead_min": {
+    "source": "read",
+    "updated": "2026-10-03T21:19:34+00:00"
+   },
+   "actions[ev_carport].auto": {
+    "source": "read",
+    "updated": "2026-10-03T21:19:34+00:00"
+   },
+   "actions[ev_carport].forecast_below_kwh": {
+    "source": "read",
+    "updated": "2026-10-03T21:19:34+00:00"
+   },
+   "actions[ev_carport].conditions": {
+    "source": "read",
+    "updated": "2026-10-03T21:19:34+00:00"
+   },
+   "actions[ev_carport].power_kw": {
+    "source": "read",
+    "updated": "2026-10-03T21:19:34+00:00"
+   },
+   "actions[ev_carport].power_entity": {
+    "source": "read",
+    "updated": "2026-10-03T21:19:34+00:00"
+   },
+   "actions[ev_carport].priority": {
+    "source": "read",
+    "updated": "2026-10-03T21:19:34+00:00"
    }
   }
  },
@@ -3600,6 +3700,7 @@
       "hold"
      ],
      "notes": [],
+     "actions": [],
      "fixed": true
     },
     "plan_soc_slots": [
@@ -4515,6 +4616,7 @@
       "bridge"
      ],
      "notes": [],
+     "actions": [],
      "fixed": true
     },
     "plan_soc_slots": [
@@ -5430,6 +5532,7 @@
       "enough"
      ],
      "notes": [],
+     "actions": [],
      "fixed": true
     },
     "plan_soc_slots": [
@@ -6345,6 +6448,7 @@
       "bridge"
      ],
      "notes": [],
+     "actions": [],
      "fixed": true
     },
     "plan_soc_slots": [
@@ -7260,6 +7364,7 @@
       "enough"
      ],
      "notes": [],
+     "actions": [],
      "fixed": true
     },
     "plan_soc_slots": [
@@ -8175,6 +8280,7 @@
       "enough"
      ],
      "notes": [],
+     "actions": [],
      "fixed": true
     },
     "plan_soc_slots": [
@@ -9090,6 +9196,7 @@
       "bridge"
      ],
      "notes": [],
+     "actions": [],
      "fixed": true
     },
     "plan_soc_slots": [
@@ -10005,6 +10112,7 @@
       "bridge"
      ],
      "notes": [],
+     "actions": [],
      "fixed": true
     },
     "plan_soc_slots": [
@@ -10920,6 +11028,7 @@
       "bridge"
      ],
      "notes": [],
+     "actions": [],
      "fixed": true
     },
     "plan_soc_slots": [
@@ -11835,6 +11944,7 @@
       "hold"
      ],
      "notes": [],
+     "actions": [],
      "fixed": true
     },
     "plan_soc_slots": [
@@ -12750,6 +12860,7 @@
       "bridge"
      ],
      "notes": [],
+     "actions": [],
      "fixed": true
     },
     "plan_soc_slots": [
@@ -13794,6 +13905,7 @@
       "enough"
      ],
      "notes": [],
+     "actions": [],
      "fixed": true
     },
     "plan_soc_slots": [
@@ -14838,6 +14950,7 @@
       "bridge"
      ],
      "notes": [],
+     "actions": [],
      "fixed": true
     },
     "plan_soc_slots": [
@@ -15535,8 +15648,27 @@
      "totals": {}
     },
     "solar_factor": 1.0,
-    "workday": false
+    "workday": false,
+    "tomorrow_kwh": 5.5
    },
+   "actions": [
+    {
+     "id": "ev_carport",
+     "name": "Carport",
+     "kind": "switch",
+     "priority": 1,
+     "manual": false,
+     "power_kw": 11.0,
+     "run": true,
+     "reasons": [
+      "little_sun"
+     ],
+     "start": "2026-10-04T00:00+02:00",
+     "end": "2026-10-04T04:57+02:00",
+     "energy_kwh": 54.45,
+     "cost": 10.11
+    }
+   ],
    "hours": [
     {
      "start": "2026-10-03T14:00:00+02:00",

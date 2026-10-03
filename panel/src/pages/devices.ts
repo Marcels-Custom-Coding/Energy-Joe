@@ -11,6 +11,7 @@ import { entityName, formatNumber, measurementKw, numberState } from "../entitie
 import type { Translate } from "../i18n";
 import { shared } from "../styles/shared";
 import type {
+  ActionConfig,
   BatteryConfig,
   ControlLogEntry,
   ControlView,
@@ -18,6 +19,7 @@ import type {
   HomeAssistant,
   JoeInfo,
   JoeState,
+  PlanAction,
   TestResult,
   TestStep,
 } from "../types";
@@ -164,6 +166,13 @@ export class JoeDevicesPage extends LitElement {
       .setup {
         margin-top: 12px;
       }
+      .toggle-label {
+        margin-right: auto;
+        font-weight: 600;
+      }
+      .card.add .actions {
+        margin-top: 12px;
+      }
       .log {
         list-style: none;
         margin: 10px 0 0;
@@ -238,6 +247,10 @@ export class JoeDevicesPage extends LitElement {
         ${joe.config.batteries.length
           ? html`<div class="grid">${joe.config.batteries.map((battery) => this.renderBattery(t, battery, control))}</div>`
           : html`<p class="empty">${t("devices.batteries.none")}</p>`}
+        <div class="group-label">${t("devices.actions")}</div>
+        <div class="grid">
+          ${joe.config.actions.map((action) => this.renderAction(t, joe, action))} ${this.renderAddAction(t)}
+        </div>
         ${control ? this.renderLog(t, control) : nothing}
       </div>
       ${this.confirm ? this.renderConfirm(t, this.confirm) : nothing}`;
@@ -336,6 +349,107 @@ export class JoeDevicesPage extends LitElement {
         ${tip(t, "devices_setup")}
       </div>
     </section>`;
+  }
+
+  private renderAction(t: Translate, joe: JoeState, action: ActionConfig): TemplateResult {
+    const plan = joe.plan;
+    const planned = plan?.actions?.find((a) => a.id === action.id);
+    const live = joe.control?.actions?.[action.id];
+    const night = plan?.window?.start;
+    const tonight = Boolean(night) && joe.control?.tonight?.[action.id] === night;
+    const icon = action.kind === "target" ? "mdi:water-boiler" : /ev|car|auto|wallbox/i.test(action.id + action.name) ? "mdi:car-electric" : "mdi:flash-outline";
+    return html`<section class="card action" data-tipped>
+      <div class="head">
+        <div class="eyebrow"><ha-icon icon=${icon}></ha-icon>${action.name}</div>
+        ${action.enabled ? nothing : html`<span class="chip">${t("devices.action.off")}</span>`}
+      </div>
+      <p class="now">${this.actionText(t, joe, action, planned, live)}</p>
+      <div class="test">
+        <span class="toggle-label" id="tonight-${action.id}">${t("devices.action.tonight")}</span>
+        <button
+          type="button"
+          class="switch"
+          role="switch"
+          aria-checked=${String(tonight)}
+          aria-labelledby="tonight-${action.id}"
+          ?disabled=${!night || !action.enabled}
+          @click=${() => this.toggleTonight(action.id, !tonight)}
+        ></button>
+        ${tip(t, "action_tonight")}
+      </div>
+      <div class="setup">
+        <button type="button" class="mini-btn" @click=${() => this.editAction(action.id)}>
+          <ha-icon icon="mdi:pencil-outline"></ha-icon>${t("devices.action.edit")}
+        </button>
+      </div>
+    </section>`;
+  }
+
+  private actionText(
+    t: Translate,
+    joe: JoeState,
+    action: ActionConfig,
+    planned: PlanAction | undefined,
+    live: ControlView["actions"][string] | undefined,
+  ): string {
+    const target = planned?.target != null ? formatNumber(t.lang, planned.target, 0) : "";
+    if (!action.enabled) {
+      return t("devices.action.disabled");
+    }
+    if (live?.on) {
+      return action.kind === "target"
+        ? t("devices.action.heating", { target, end: timeOf(live.end) })
+        : t("devices.action.running", { end: timeOf(live.end) });
+    }
+    if (live?.reason === "reached") {
+      return t("devices.action.reached", { target });
+    }
+    if (!planned) {
+      return t("devices.action.no_plan");
+    }
+    const prefix = joe.mode === "simulation" ? t("devices.action.would") : "";
+    if (planned.run) {
+      const text =
+        action.kind === "target"
+          ? t("devices.action.plan_target", { start: timeOf(planned.start), target })
+          : t("devices.action.plan_run", { start: timeOf(planned.start), end: timeOf(planned.end) });
+      return `${prefix}${text}`;
+    }
+    const reason = planned.reasons[planned.reasons.length - 1] ?? "manual_only";
+    return t.optional(`devices.action.why.${reason}`, {
+      kwh: formatNumber(t.lang, joe.plan?.meta?.tomorrow_kwh ?? 0, 0),
+      temperature: formatNumber(t.lang, planned.temperature ?? 0, 0),
+    }) ?? reason;
+  }
+
+  private renderAddAction(t: Translate): TemplateResult {
+    return html`<section class="card add" data-tipped>
+      <div class="head">
+        <div class="eyebrow"><ha-icon icon="mdi:plus-circle-outline"></ha-icon>${t("devices.action.add")}</div>
+        ${tip(t, "devices_actions")}
+      </div>
+      <p class="now">${t("devices.action.add.text")}</p>
+      <div class="actions">
+        ${(["ev", "hot_water", "custom"] as const).map(
+          (template) =>
+            html`<button type="button" class="mini-btn" @click=${() => this.editAction(`new:${template}`)}>
+              ${t(`action.template.${template}`)}
+            </button>`,
+        )}
+      </div>
+    </section>`;
+  }
+
+  private async toggleTonight(actionId: string, on: boolean): Promise<void> {
+    try {
+      await this.hass?.callWS({ type: "energy_joe/control/action_tonight", action_id: actionId, on });
+    } catch {
+      this.notice = this.t!("error.action");
+    }
+  }
+
+  private editAction(id: string): void {
+    this.dispatchEvent(new CustomEvent("joe-edit", { detail: { editor: "action", id }, bubbles: true, composed: true }));
   }
 
   /** Joe found levers that may steer a battery he only watches. */

@@ -58,6 +58,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_control_release)
     websocket_api.async_register_command(hass, ws_control_skip)
     websocket_api.async_register_command(hass, ws_control_answer)
+    websocket_api.async_register_command(hass, ws_control_action_tonight)
 
 
 def _runtime(
@@ -496,6 +497,27 @@ async def ws_control_answer(
     if (runtime := _runtime(hass, connection, msg)) is None:
         return
     await runtime.executor.async_answer(msg["night"], msg["yes"])
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/control/action_tonight",
+        vol.Required("action_id"): str,
+        vol.Required("on"): bool,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_control_action_tonight(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """The switch "tonight" of a night action."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    await runtime.async_action_tonight(msg["action_id"], msg["on"])
     connection.send_result(msg["id"])
 
 

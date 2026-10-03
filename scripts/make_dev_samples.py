@@ -44,6 +44,7 @@ from custom_components.energy_joe.observe.records import (
     local_hour,
     summarize,
 )
+from custom_components.energy_joe.plan.actions import plan_actions
 from custom_components.energy_joe.plan.inputs import consumption_profiles, next_window
 from custom_components.energy_joe.plan.planner import (
     Battery,
@@ -348,7 +349,20 @@ def look_back(days: dict[str, dict]) -> tuple[dict, dict, dict]:
     return learned, learning, results(days, None)
 
 
-def history_sample(config: dict) -> dict:
+def _state_getter(snap_hass: dict):
+    """hass.states.get for the made-up states (for night action conditions)."""
+    from homeassistant.core import State
+
+    states = snap_hass["states"]
+
+    def get(entity_id: str):
+        item = states.get(entity_id)
+        return State(entity_id, item["state"], item["attributes"]) if item else None
+
+    return get
+
+
+def history_sample(config: dict, snap_hass: dict | None = None) -> dict:
     """What the history commands answer for the made-up days."""
     tariff = config["tariff"]
     window = tariff["window"] if tariff["kind"] == "fixed_window" else None
@@ -399,6 +413,16 @@ def history_sample(config: dict) -> dict:
             "created": now.isoformat(timespec="seconds"),
         }
     )
+    if window and config["actions"] and snap_hass:
+        start, end = next_window(now, tariff["window"])
+        actions = plan_actions(
+            config["actions"], _state_getter(snap_hass), start, end, 5.5, {}
+        )
+        tonight["actions"] = [
+            {**a, "cost": round(a["energy_kwh"] * tariff["night_price"], 2)}
+            for a in actions
+        ]
+        tonight["meta"]["tomorrow_kwh"] = 5.5
     return {
         "days": [summarize(day, data, window) for day, data in reversed(days.items())],
         "views": views,
@@ -421,7 +445,7 @@ def write(name: str, snap: Snapshot) -> None:
         "adopted_config": adopted,
         "checks": run_config_checks(snap, adopted),
         "hass": hass_data(snap),
-        "history": history_sample(adopted),
+        "history": history_sample(adopted, hass_data(snap)),
         "profiles": {key: profile.name for key, profile in PROFILES.items()},
     }
     path = OUT / f"sample-{name}.json"

@@ -40,8 +40,11 @@ CONSUMER_KINDS = (
 DISCHARGE_MODES = ("until_target", "block", "free")
 PRIORITY_ITEMS = ("ev", "hot_water", "battery")
 
+ACTION_KINDS = ("switch", "target")
+CONDITION_OPS = ("eq", "ne", "lt", "le", "gt", "ge")
+
 # Lists whose items have an "id"; a patch may address single items by id.
-KEYED_LISTS = ("batteries", "persons", "consumers")
+KEYED_LISTS = ("batteries", "persons", "consumers", "actions")
 # Values that are replaced as a whole instead of merged key by key.
 REPLACED = frozenset(
     {
@@ -177,6 +180,52 @@ CONSUMER = vol.Schema(
     }
 )
 
+# A condition of a night action: an entity compared with a value.
+CONDITION = vol.Schema(
+    {
+        vol.Required("entity_id"): cv.entity_id,
+        vol.Optional("op", default="eq"): vol.In(CONDITION_OPS),
+        vol.Required("value"): vol.Any(str, int, float, bool),
+    }
+)
+
+# A night action: something besides the batteries that should run in the cheap
+# window when tomorrow brings too little sun (the car, the hot water heat pump).
+ACTION = vol.Schema(
+    {
+        vol.Required("id"): str,
+        vol.Required("name"): str,
+        vol.Required("kind"): vol.In(ACTION_KINDS),
+        vol.Optional("enabled", default=True): bool,
+        # What Joe switches, to which value, and how he puts it back.
+        vol.Required("entity_id"): cv.entity_id,
+        vol.Optional("on_value", default="on"): vol.Any(str, int, float, bool),
+        vol.Optional("reset", default="previous"): vol.In(("previous", "fixed")),
+        vol.Optional("reset_value", default=None): vol.Any(None, str, int, float, bool),
+        vol.Optional("lead_min", default=0): vol.All(int, vol.Range(min=0, max=120)),
+        # When: tomorrow's sun below a threshold (None: every night) and conditions.
+        vol.Optional("auto", default=True): bool,
+        vol.Optional("forecast_below_kwh", default=None): _POSITIVE,
+        vol.Optional("conditions", default=list): [CONDITION],
+        # How much it draws, for the grid limit, and its meter for the history.
+        vol.Optional("power_kw", default=None): _POSITIVE,
+        vol.Optional("power_entity", default=None): _ENTITY,
+        vol.Optional("consumer_id", default=None): vol.Any(None, str),
+        vol.Optional("priority", default=1): vol.All(int, vol.Range(min=1, max=9)),
+        # "target": on until a sensor reaches a level (e.g. hot water in °C).
+        vol.Optional("sensor_entity", default=None): _ENTITY,
+        vol.Optional("comfort", default=45.0): vol.All(
+            vol.Coerce(float), vol.Range(min=0, max=100)
+        ),
+        vol.Optional("maximum", default=62.0): vol.All(
+            vol.Coerce(float), vol.Range(min=0, max=100)
+        ),
+        vol.Optional("buffer", default=3.0): vol.All(
+            vol.Coerce(float), vol.Range(min=0, max=30)
+        ),
+    }
+)
+
 RULES = vol.Schema(
     {
         vol.Optional("reserve_soc", default=10): _PERCENT,
@@ -274,7 +323,7 @@ CONFIG = vol.Schema(
         ),
         vol.Optional("persons", default=list): [PERSON],
         vol.Optional("consumers", default=list): [CONSUMER],
-        vol.Optional("actions", default=list): [dict],
+        vol.Optional("actions", default=list): [ACTION],
         vol.Optional("rules", default=dict): RULES,
         vol.Optional("notify", default=dict): NOTIFY,
         vol.Optional("answers", default=dict): ANSWERS,
@@ -292,9 +341,10 @@ def default_config() -> dict[str, Any]:
 def validate(config: dict[str, Any]) -> dict[str, Any]:
     """Validate a configuration and fill in defaults (raises vol.Invalid)."""
     data = CONFIG(deepcopy(config))
-    ids = [battery["id"] for battery in data["batteries"]]
-    if len(ids) != len(set(ids)):
-        raise vol.Invalid("battery ids must be unique", path=["batteries"])
+    for key in ("batteries", "actions"):
+        ids = [item["id"] for item in data[key]]
+        if len(ids) != len(set(ids)):
+            raise vol.Invalid(f"{key} ids must be unique", path=[key])
     return data
 
 
@@ -406,6 +456,7 @@ def adopt_proposal(
         ("batteries", "battery"),
         ("persons", "person"),
         ("consumers", "consumer"),
+        ("actions", "action"),
     ):
         known = {item["id"] for item in config.get(key) or []}
         items: dict[str, Any] = {}

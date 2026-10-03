@@ -11,6 +11,7 @@ export type FilterName =
   | "person"
   | "energy"
   | "level"
+  | "temperature"
   | "setpoint"
   | "toggle"
   | "option"
@@ -32,6 +33,7 @@ const FILTERS: Record<FilterName, (entity: HassEntity) => boolean> = {
   calendar: (e) => domain(e) === "calendar",
   person: (e) => domain(e) === "person",
   level: (e) => ["number", "input_number"].includes(domain(e)) && unit(e) === "%",
+  temperature: (e) => ["sensor", "number", "input_number"].includes(domain(e)) && ["°C", "°F"].includes(unit(e)),
   setpoint: (e) => ["number", "input_number"].includes(domain(e)),
   toggle: (e) => ["switch", "input_boolean"].includes(domain(e)),
   option: (e) => ["select", "input_select"].includes(domain(e)),

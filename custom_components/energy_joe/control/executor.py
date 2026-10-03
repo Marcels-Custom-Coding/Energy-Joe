@@ -33,6 +33,8 @@ from homeassistant.util import dt as dt_util
 
 from ..const import DOMAIN
 from ..observe.readings import measurement_kw, number
+from ..plan.actions import condition_met
+from .actions import ActionAdapter
 from .adapters import Adapter, Desired, RoleAdapter, make_adapter
 from .writes import Write, WriteError, async_apply, fit, matches, read
 
@@ -68,6 +70,9 @@ DEFAULT_DATA: dict[str, Any] = {
     "first": {},
     "steered": False,
     "night": None,
+    # Night actions: switched on "tonight" by hand (action id -> night), finished.
+    "tonight": {},
+    "done": [],
     "skip": None,
     "answer": None,
     "tests": {},
@@ -111,6 +116,7 @@ class JoeExecutor:
             "reason": "simulation",
             "night": None,
             "batteries": {},
+            "actions": {},
             "pending": False,
         }
 
@@ -226,7 +232,7 @@ class JoeExecutor:
                 await self._async_release(reason, now)
             if self.data["night"] and self.data["night"] != night:
                 self._end_night()
-            self._set_status(reason, night, {})
+            self._set_status(reason, night, {}, {})
             self._watch([])
             return
         assert plan is not None and night is not None
@@ -260,9 +266,83 @@ class JoeExecutor:
                 problem = await self._async_steer(adapter, want, soc, now)
                 entry["problem"] = problem
             batteries[battery["id"]] = entry
-        self._set_status("steering", night, batteries)
+        actions = await self._async_actions(config, plan, night, now)
+        self._set_status("steering", night, batteries, actions)
         self._watch([b["soc_entity"] for b, _, a in items if a is not None])
         await self._async_save()
+
+    async def _async_actions(
+        self, config: dict[str, Any], plan: dict[str, Any], night: str, now: datetime
+    ) -> dict[str, Any]:
+        """Switch night actions on in their time and back when done."""
+        by_id = {a["id"]: a for a in config["actions"]}
+        result: dict[str, Any] = {}
+        for entry in plan.get("actions") or []:
+            action = by_id.get(entry["id"])
+            if action is None or not action.get("enabled", True):
+                continue
+            adapter = ActionAdapter(action)
+            manual = self.data["tonight"].get(action["id"]) == night
+            run = entry["run"] or manual
+            start = datetime.fromisoformat(entry["start"])
+            end = datetime.fromisoformat(entry["end"])
+            reason: str | None = None
+            on = False
+            if action["id"] in self.data["done"]:
+                reason = "reached"
+            elif not run:
+                reason = "not_tonight"
+            elif now < start:
+                reason = "later"
+            elif now >= end:
+                reason = "over"
+            elif (
+                not manual
+                and adapter.entity_id not in self.data["saved"]
+                and not all(
+                    condition_met(
+                        self._hass.states.get(c["entity_id"]), c["op"], c["value"]
+                    )
+                    for c in action.get("conditions") or []
+                )
+            ):
+                reason = "conditions"
+            elif action["kind"] == "target" and self._target_reached(action, entry):
+                reason = "reached"
+                self.data["done"].append(action["id"])
+                self._log(
+                    "action_done",
+                    battery=adapter.battery["id"],
+                    target=entry.get("target"),
+                )
+            else:
+                on = True
+            writes = adapter.on() if on else adapter.release(self.data["saved"])
+            problem = None
+            if writes:
+                problem = await self._async_write(
+                    adapter, writes, now, "action_on" if on else "action_off"
+                )
+                if not on and all(
+                    matches(self._hass, fit(self._hass, w)) for w in writes
+                ):
+                    # Back as it should be: nothing left to restore for this action.
+                    self.data["saved"].pop(adapter.entity_id, None)
+                    self.data["written"].pop(adapter.entity_id, None)
+            result[action["id"]] = {
+                "on": on,
+                "reason": reason,
+                "start": entry["start"],
+                "end": entry["end"],
+                "target": entry.get("target"),
+                "problem": problem,
+            }
+        return result
+
+    def _target_reached(self, action: dict[str, Any], entry: dict[str, Any]) -> bool:
+        temperature = number(self._hass.states.get(action.get("sensor_entity") or ""))
+        target = entry.get("target")
+        return temperature is not None and target is not None and temperature >= target
 
     def _why(
         self,
@@ -284,7 +364,10 @@ class JoeExecutor:
             return ("waiting" if now < start else "no_plan"), night
         if not start <= now < end - lead:
             return ("waiting" if now < start else "done"), night
-        if plan.get("kind") == "none":
+        if plan.get("kind") == "none" and not any(
+            a.get("run") or self.data["tonight"].get(a["id"]) == night
+            for a in plan.get("actions") or []
+        ):
             return "nothing", night
         if self.data["skip"] == night:
             return "skipped", night
@@ -340,6 +423,8 @@ class JoeExecutor:
         now: datetime,
     ) -> dict[str, Desired]:
         """What each battery should do: charge, hold at a floor, or nothing."""
+        if plan.get("kind") == "none":
+            return {}
         mode = (plan.get("rules") or {}).get("discharge_mode", "until_target")
         window = plan.get("window") or {}
         span = (
@@ -392,13 +477,30 @@ class JoeExecutor:
         self, adapter: Adapter, want: Desired, soc: float, now: datetime
     ) -> str | None:
         """Write what differs; note originals first. Returns a problem, if any."""
+        writes = adapter.writes(
+            self._hass, self._floored(adapter, want), soc, self.data["saved"]
+        )
+        problem = await self._async_write(adapter, writes, now, _action(want))
+        if (
+            want.charge_to is not None
+            and self.status["batteries"].get(adapter.battery["id"], {}).get("action")
+            != "charge"
+        ):
+            self._fire(
+                "charge_started", battery=adapter.battery["id"], target=want.charge_to
+            )
+        return problem
+
+    async def _async_write(
+        self, adapter: Adapter, writes: list[Write], now: datetime, label: str | None
+    ) -> str | None:
+        """Apply writes that differ (calls once per state); note originals first."""
         saved: dict[str, Any] = self.data["saved"]
         written: dict[str, Any] = self.data["written"]
         external: list[str] = self.data["external"]
         key = adapter.battery["id"]
         self._notice_external(adapter, now)
         problem = None
-        writes = adapter.writes(self._hass, self._floored(adapter, want), soc, saved)
         # Service calls are made once per state, not every minute.
         calls = [[w.entity_id, w.value] for w in writes if w.is_call]
         last = self.data["calls"].get(key) or {}
@@ -425,9 +527,7 @@ class JoeExecutor:
                     calls_ok = False
                     continue
                 self._mark_active(key)
-                self._log(
-                    "call", battery=key, entity=write.entity_id, action=_action(want)
-                )
+                self._log("call", battery=key, entity=write.entity_id, action=label)
                 continue
             if write.entity_id in external:
                 continue
@@ -474,28 +574,26 @@ class JoeExecutor:
                 "confirmed": False,
                 "battery": adapter.battery["id"],
             }
-            if first:
+            if first or label in ("action_on", "action_off"):
                 self._log(
-                    "set",
-                    battery=adapter.battery["id"],
+                    label if label in ("action_on", "action_off") else "set",
+                    battery=key,
                     entity=write.entity_id,
                     value=write.value,
-                    action=_action(want),
+                    action=label,
                 )
+                if label in ("action_on", "action_off"):
+                    self._fire(
+                        "action_activated" if label == "action_on" else "action_reset",
+                        action=key.removeprefix("action:"),
+                        entity_id=write.entity_id,
+                    )
         if new_calls:
             self.data["calls"][key] = {
                 "sig": calls,
                 "at": now.isoformat(timespec="seconds"),
                 "ok": calls_ok,
             }
-        if (
-            want.charge_to is not None
-            and self.status["batteries"].get(adapter.battery["id"], {}).get("action")
-            != "charge"
-        ):
-            self._fire(
-                "charge_started", battery=adapter.battery["id"], target=want.charge_to
-            )
         return problem
 
     def _floored(self, adapter: Adapter, want: Desired) -> Desired:
@@ -560,7 +658,7 @@ class JoeExecutor:
                 self.data["skip"] = plan["window"]["start"]
             self._log("emergency")
             await self._async_release("emergency")
-            self._set_status("skipped", self.status.get("night"), {})
+            self._set_status("skipped", self.status.get("night"), {}, {})
             await self._async_save()
 
     async def _async_release(self, reason: str, now: datetime | None = None) -> None:
@@ -590,6 +688,11 @@ class JoeExecutor:
                     if battery["id"] in active:
                         writes.append(write)
                 elif write.entity_id in saved and write.entity_id not in covered:
+                    writes.append(write)
+                    covered.add(write.entity_id)
+        for action in self._config()["actions"]:
+            for write in ActionAdapter(action).release(saved):
+                if write.entity_id not in covered:
                     writes.append(write)
                     covered.add(write.entity_id)
         # Entities of batteries that are gone or steered differently now.
@@ -658,16 +761,45 @@ class JoeExecutor:
 
     def _start_night(self, night: str) -> None:
         self.data.update(
-            night=night, floors={}, reached=[], external=[], first={}, steered=False
+            night=night,
+            floors={},
+            reached=[],
+            external=[],
+            first={},
+            steered=False,
+            done=[],
         )
         self._log("start", night=night)
         if self.notifier:
             self.notifier.clear_ask()
 
     def _end_night(self) -> None:
+        night = self.data["night"]
         self.data.update(
-            night=None, floors={}, reached=[], external=[], first={}, steered=False
+            night=None,
+            floors={},
+            reached=[],
+            external=[],
+            first={},
+            steered=False,
+            done=[],
         )
+        # A switch "tonight" is for one night only.
+        self.data["tonight"] = {
+            key: value for key, value in self.data["tonight"].items() if value != night
+        }
+
+    async def async_action_tonight(self, action_id: str, on: bool) -> None:
+        """Run a night action in the coming night regardless of the forecast (or not)."""
+        plan = self._plan()
+        night = plan["window"]["start"] if plan and plan.get("window") else None
+        if on and night:
+            self.data["tonight"][action_id] = night
+        else:
+            self.data["tonight"].pop(action_id, None)
+        self._log("tonight", battery=f"action:{action_id}", on=on)
+        await self._async_save()
+        self._changed()
 
     async def async_skip(self, skip: bool) -> None:
         """Skip tonight (or not); releases right away if Joe is steering."""
@@ -849,13 +981,18 @@ class JoeExecutor:
             self._hass.async_create_task(self.async_check(), eager_start=False)
 
     def _set_status(
-        self, reason: str, night: str | None, batteries: dict[str, Any]
+        self,
+        reason: str,
+        night: str | None,
+        batteries: dict[str, Any],
+        actions: dict[str, Any],
     ) -> None:
         status = {
             "steering": reason == "steering",
             "reason": reason,
             "night": night,
             "batteries": batteries,
+            "actions": actions,
             "pending": self._dirty,
         }
         if status != self.status:
@@ -907,6 +1044,7 @@ class JoeExecutor:
             "log": self.data["log"][-30:],
             "skip": self.data["skip"],
             "answer": self.data["answer"],
+            "tonight": self.data["tonight"],
         }
 
     async def async_forget(self) -> None:

@@ -49,7 +49,7 @@
       customElements.define("ha-menu-button", class extends HTMLElement {});
 
       // The same merge rules as custom_components/energy_joe/model.py (simplified).
-      const KEYED = ["batteries", "persons", "consumers"];
+      const KEYED = ["batteries", "persons", "consumers", "actions"];
       const REPLACED = new Set(["grid_power", "home_power", "power", "controls", "window"]);
       const ITEM_DEFAULTS = {
         batteries: {
@@ -64,6 +64,7 @@
         },
         persons: { person_entity: null, calendars: [] },
         consumers: { energy_entity: null, power_entity: null, included_in: null, source: "manual" },
+        actions: { enabled: true, reset: "previous", reset_value: null, lead_min: 0, auto: true, conditions: [], priority: 1 },
       };
       const isDict = (v) => v && typeof v === "object" && !Array.isArray(v);
       const below = (other, path) => other.startsWith(`${path}.`) || other.startsWith(`${path}[`);
@@ -140,7 +141,7 @@
       }
       state.results = done ? history.results : null;
       // Steering: test runs, log and why Joe steers or not (control/executor.py).
-      const control = { tests: {}, log: [], skip: null, answer: null, testing: null };
+      const control = { tests: {}, log: [], skip: null, answer: null, testing: null, tonight: {} };
       const controlView = () => {
         const night = state.plan?.window?.start ?? null;
         const reason =
@@ -161,7 +162,7 @@
             b.adapter === "none" ? "not_controllable" : control.tests[b.id]?.ok ? "ready" : "not_tested",
           ]),
         );
-        return { steering: false, reason, night, batteries: {}, pending: false, ready, ...control };
+        return { steering: false, reason, night, batteries: {}, actions: {}, pending: false, ready, ...control };
       };
       const log = (kind, detail = {}) => {
         control.log.push({ at: stamp(), kind, ...detail });
@@ -311,6 +312,12 @@
             case "energy_joe/control/skip":
               control.skip = msg.skip ? (state.plan?.window?.start ?? null) : null;
               log(msg.skip ? "skip" : "unskip");
+              push();
+              return null;
+            case "energy_joe/control/action_tonight":
+              if (msg.on && state.plan?.window) control.tonight[msg.action_id] = state.plan.window.start;
+              else delete control.tonight[msg.action_id];
+              log("tonight", { battery: `action:${msg.action_id}`, on: msg.on });
               push();
               return null;
             case "energy_joe/control/answer":

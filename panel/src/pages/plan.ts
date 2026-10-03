@@ -222,7 +222,8 @@ export class JoePlanPage extends LitElement {
         ${lines.length ? html`<div class="lines">${lines.map((line) => html`<div>${line}</div>`)}</div>` : nothing}
         ${cost ? html`<p class="cost">${cost}</p>` : nothing}
       </section>
-      ${this.renderSteer(t, plan)} ${this.renderEnergy(t, plan, plan.hours)} ${this.renderSoc(t, plan, plan.hours)}
+      ${this.renderSteer(t, plan)} ${this.renderActions(t, plan)} ${this.renderEnergy(t, plan, plan.hours)}
+      ${this.renderSoc(t, plan, plan.hours)}
       ${this.renderMath(t, plan)}
     </div>`;
   }
@@ -264,6 +265,38 @@ export class JoePlanPage extends LitElement {
           </div>`
         : nothing}
       <div class="actions">${buttons}</div>
+    </section>`;
+  }
+
+  /** The night actions tonight: what runs, when, and why the others don't. */
+  private renderActions(t: Translate, plan: Plan): TemplateResult | typeof nothing {
+    const actions = plan.actions ?? [];
+    if (!actions.length) {
+      return nothing;
+    }
+    const currency = this.hass?.config?.currency ?? "EUR";
+    const money = (value: number) => new Intl.NumberFormat(t.lang, { style: "currency", currency }).format(value);
+    return html`<section class="chart-card" data-tipped>
+      <div class="chart-head">${t("plan.actions")} ${tip(t, "plan_actions")}</div>
+      <dl>
+        ${actions.map((action) => {
+          const target = action.target != null ? formatNumber(t.lang, action.target, 0) : "";
+          const text = action.run
+            ? action.kind === "target"
+              ? t("plan.actions.target", { start: timeOf(action.start), end: timeOf(action.end), target })
+              : t("plan.actions.run", { start: timeOf(action.start), end: timeOf(action.end) })
+            : (t.optional(`devices.action.why.${action.reasons[action.reasons.length - 1] ?? "manual_only"}`, {
+                kwh: formatNumber(t.lang, plan.meta?.tomorrow_kwh ?? 0, 0),
+                temperature: formatNumber(t.lang, action.temperature ?? 0, 0),
+              }) ?? "");
+          const extra =
+            action.run && action.energy_kwh
+              ? t("plan.actions.energy", { kwh: formatNumber(t.lang, action.energy_kwh, 1), cost: money(action.cost ?? 0) })
+              : "";
+          return html`<dt>${action.name}</dt>
+            <dd>${text}${extra ? html`<small>${extra}</small>` : nothing}</dd>`;
+        })}
+      </dl>
     </section>`;
   }
 

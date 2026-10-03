@@ -15,6 +15,7 @@ from ..control.adapters import make_adapter
 from ..observe.readings import energy_kwh, number, sum_kwh
 from ..observe.records import hour_starts, local_hour
 from ..observe.store import HistoryStore
+from .actions import plan_actions, reserved_kw
 from .planner import Battery, Hour, PlanInput, Prices
 
 _LOGGER = logging.getLogger(__name__)
@@ -192,11 +193,38 @@ async def async_solar(
     return values, {"sources": sources, "totals": totals}
 
 
+async def async_consumer_profiles(
+    history: HistoryStore, today: date
+) -> dict[str, list[float]]:
+    """Average energy per hour of the day of each tracked consumer (kWh)."""
+    days = await history.async_days(
+        (today - timedelta(days=PROFILE_DAYS)).isoformat(),
+        (today - timedelta(days=1)).isoformat(),
+    )
+    sums: dict[str, list[float]] = {}
+    counts: dict[str, int] = {}
+    for data in days.values():
+        seen: set[str] = set()
+        for record in data.get("hours") or []:
+            hour = datetime.fromisoformat(record["start"]).hour
+            for consumer, kwh in (record.get("use") or {}).items():
+                sums.setdefault(consumer, [0.0] * 24)[hour] += kwh
+                seen.add(consumer)
+        for consumer in seen:
+            counts[consumer] = counts.get(consumer, 0) + 1
+    return {
+        consumer: [value / counts[consumer] for value in values]
+        for consumer, values in sums.items()
+        if counts.get(consumer)
+    }
+
+
 async def async_build_input(
     hass: HomeAssistant,
     config: dict[str, Any],
     history: HistoryStore,
     now: datetime,
+    manual: dict[str, str] | None = None,
 ) -> tuple[PlanInput | None, list[str]]:
     """Gather everything for tonight's plan; None with reasons if there is nothing to plan."""
     tariff = config["tariff"]
@@ -274,6 +302,51 @@ async def async_build_input(
             )
         )
 
+    # Night actions: tomorrow's sun decides, running ones take grid power and
+    # move their consumer's daytime energy into the night.
+    tomorrow = dt_util.as_local(window_end).date()
+    tomorrow_kwh = round(
+        sum(
+            h.solar
+            for h in hours
+            if h.start >= window_end and dt_util.as_local(h.start).date() == tomorrow
+        ),
+        2,
+    )
+    actions = plan_actions(
+        config["actions"],
+        hass.states.get,
+        window_start,
+        window_end,
+        tomorrow_kwh if "no_forecast" not in notes else None,
+        manual or {},
+        (config["learned"].get("actions") or {}),
+    )
+    reserved = [
+        reserved_kw(actions, h.start, h.start + timedelta(hours=1)) for h in hours
+    ]
+    linked = {
+        a["consumer_id"]: a
+        for a in config["actions"]
+        if a.get("consumer_id")
+        and any(p["id"] == a["id"] and p["run"] for p in actions)
+    }
+    if linked:
+        profiles_use = await async_consumer_profiles(history, today)
+        for consumer in linked:
+            profile = profiles_use.get(consumer)
+            if not profile:
+                continue
+            for hour in hours:
+                if hour.start >= window_end and hour.start < window_end + timedelta(
+                    hours=20
+                ):
+                    local = dt_util.as_local(hour.start)
+                    hour.home = max(
+                        0.05, hour.home - profile[local.hour] * hour.fraction
+                    )
+        notes.append("shifted")
+
     night, day, feed_in = (
         tariff["night_price"],
         tariff["day_price"],
@@ -304,6 +377,8 @@ async def async_build_input(
             discharge_mode=rules["discharge_in_window"],
             buffer=rules["buffer_factor"],
             notes=notes,
+            actions=actions,
+            reserved=reserved,
             meta={
                 "consumption": consumption,
                 "solar": sun_meta,
@@ -311,6 +386,7 @@ async def async_build_input(
                 "solar_days": learned["solar_days"],
                 "solar_shift": learned["solar_shift"] or 0,
                 "workday": workdays.get(dt_util.as_local(window_start).date()),
+                "tomorrow_kwh": tomorrow_kwh,
             },
         ),
         notes,

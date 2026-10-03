@@ -243,6 +243,38 @@ export interface Learned {
   updated: string | null;
 }
 
+export type ConditionOp = "eq" | "ne" | "lt" | "le" | "gt" | "ge";
+
+export interface ActionCondition {
+  entity_id: string;
+  op: ConditionOp;
+  value: string | number | boolean;
+}
+
+/** A night action: something besides the batteries that runs in the cheap window. */
+export interface ActionConfig {
+  id: string;
+  name: string;
+  kind: "switch" | "target";
+  enabled: boolean;
+  entity_id: string;
+  on_value: string | number | boolean;
+  reset: "previous" | "fixed";
+  reset_value: string | number | boolean | null;
+  lead_min: number;
+  auto: boolean;
+  forecast_below_kwh: number | null;
+  conditions: ActionCondition[];
+  power_kw: number | null;
+  power_entity: string | null;
+  consumer_id: string | null;
+  priority: number;
+  sensor_entity: string | null;
+  comfort: number;
+  maximum: number;
+  buffer: number;
+}
+
 export interface JoeConfig {
   version: number;
   measurements: {
@@ -256,7 +288,7 @@ export interface JoeConfig {
   context: { weather_entity: string | null; holiday_entity: string | null };
   persons: PersonConfig[];
   consumers: ConsumerConfig[];
-  actions: unknown[];
+  actions: ActionConfig[];
   rules: Rules;
   notify: NotifyConfig;
   answers: Answers;
@@ -328,8 +360,28 @@ export interface Plan {
     solar: { sources: Record<string, "hours" | "sum" | "none">; totals: Record<string, number> };
     solar_factor: number;
     workday?: boolean | null;
+    tomorrow_kwh?: number;
   };
   hours?: PlanHour[];
+  actions?: PlanAction[];
+}
+
+/** A night action in tonight's plan (see plan/actions.py). */
+export interface PlanAction {
+  id: string;
+  name: string;
+  kind: "switch" | "target";
+  run: boolean;
+  manual: boolean;
+  reasons: string[];
+  start: string;
+  end: string;
+  power_kw: number | null;
+  energy_kwh: number;
+  cost?: number;
+  priority: number;
+  target?: number;
+  temperature?: number | null;
 }
 
 export interface JoeState {
@@ -397,12 +449,15 @@ export interface ControlView {
   reason: ControlReason;
   night: string | null;
   batteries: Record<string, ControlBattery>;
+  actions: Record<string, { on: boolean; reason: string | null; start: string; end: string; target?: number; problem: string | null }>;
   pending: boolean;
   testing: { battery: string; step: string; steps: TestStep[]; started: string } | null;
   tests: Record<string, TestResult>;
   log: ControlLogEntry[];
   skip: string | null;
   answer: { night: string; yes: boolean; at: string } | null;
+  /** Night actions switched on "tonight" by hand: action id -> night. */
+  tonight: Record<string, string>;
   /** Per battery: ready to steer, or why not. */
   ready: Record<string, "ready" | "not_tested" | "outdated" | "not_controllable" | "controls_missing">;
 }
@@ -667,6 +722,11 @@ export interface ForecastFinding {
 export interface WallboxFinding {
   name: string;
   integration: string;
+  device_id?: string;
+  mode_entity?: string;
+  mode_options?: string[];
+  mode?: string;
+  entities?: Record<string, string>;
   is_car: boolean;
   confidence: number;
   reasons: Reason[];

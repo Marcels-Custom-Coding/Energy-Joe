@@ -25,6 +25,9 @@
     "switch": {
       "skip_tonight": {
         "name": "Skip tonight"
+      },
+      "action_tonight": {
+        "name": "Tonight: {action}"
       }
     },
     "button": {
@@ -98,6 +101,20 @@
         "accept": {
           "name": "Yes",
           "description": "On: yes, steer."
+        }
+      }
+    },
+    "trigger_action": {
+      "name": "Night action tonight",
+      "description": "Runs a night action in the coming night, whatever the forecast says.",
+      "fields": {
+        "action_id": {
+          "name": "Action",
+          "description": "The id of the night action (shown in the panel)."
+        },
+        "tonight": {
+          "name": "Tonight",
+          "description": "Off: not after all."
         }
       }
     }

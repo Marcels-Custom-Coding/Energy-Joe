@@ -25,6 +25,9 @@
     "switch": {
       "skip_tonight": {
         "name": "Heute Nacht aussetzen"
+      },
+      "action_tonight": {
+        "name": "Heute Nacht: {action}"
       }
     },
     "button": {
@@ -98,6 +101,20 @@
         "accept": {
           "name": "Ja",
           "description": "An: ja, steuern."
+        }
+      }
+    },
+    "trigger_action": {
+      "name": "Nacht-Aktion heute Nacht",
+      "description": "Lässt eine Nacht-Aktion in der kommenden Nacht laufen, egal was die Prognose sagt.",
+      "fields": {
+        "action_id": {
+          "name": "Aktion",
+          "description": "Die Kennung der Nacht-Aktion (steht im Panel)."
+        },
+        "tonight": {
+          "name": "Heute Nacht",
+          "description": "Aus: doch nicht."
         }
       }
     }

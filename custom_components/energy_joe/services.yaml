@@ -24,3 +24,13 @@ answer:
       required: true
       selector:
         boolean:
+trigger_action:
+  fields:
+    action_id:
+      required: true
+      selector:
+        text:
+    tonight:
+      default: true
+      selector:
+        boolean:

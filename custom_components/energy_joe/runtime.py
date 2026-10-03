@@ -70,7 +70,12 @@ class JoeRuntime:
         self._listeners: set[StateListener] = set()
         self.history = HistoryStore(hass)
         self.observer = JoeObserver(hass, self.history, self._changed)
-        self.planner = JoePlanner(hass, self.history, self._changed)
+        self.planner = JoePlanner(
+            hass,
+            self.history,
+            self._changed,
+            lambda: self.executor.data["tonight"],
+        )
         self.learner = JoeLearner(
             hass,
             self.history,
@@ -144,6 +149,12 @@ class JoeRuntime:
         if not self.planner.active:
             return None
         return await self.planner.async_refresh()
+
+    async def async_action_tonight(self, action_id: str, on: bool) -> None:
+        """Run a night action tonight regardless of the forecast (or not), and plan again."""
+        await self.executor.async_action_tonight(action_id, on)
+        if self.planner.active:
+            await self.planner.async_refresh()
 
     async def async_reset_learning(self) -> bool:
         """Forget what Joe learned (the panel's reset button)."""

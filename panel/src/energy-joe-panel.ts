@@ -10,6 +10,7 @@ import "./components/sim-switch";
 import { tip } from "./components/tip";
 import type { ConfigChange, PickEvent, PickResult } from "./config";
 import { define } from "./define";
+import "./editors/action-editor";
 import "./editors/battery-editor";
 import "./editors/consumers";
 import "./editors/household";
@@ -448,6 +449,16 @@ export class EnergyJoePanel extends LitElement {
           <div class="actions">
             <button type="button" class="btn btn-secondary" data-notip @click=${close}>${t("mode.close")}</button>
           </div>`;
+        break;
+      case "action":
+        label = t("action.label");
+        content = html`<joe-action-editor
+          .hass=${this.hass}
+          .t=${t}
+          .config=${config}
+          .discovery=${this.discovery}
+          actionId=${editor.id ?? ""}
+        ></joe-action-editor>`;
         break;
       case "consumers":
         label = t("edit.consumers.label");

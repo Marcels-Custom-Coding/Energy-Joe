@@ -42,6 +42,7 @@ def build_proposal(result: dict[str, Any]) -> dict[str, Any]:
             }
             for index, b in enumerate(batteries)
         ],
+        "actions": _night_actions(result.get("wallboxes") or []),
         "tariff": {
             "kind": tariff["kind"],
             "price_entity": tariff["price_entity"],
@@ -96,3 +97,36 @@ def build_proposal(result: dict[str, Any]) -> dict[str, Any]:
 
 def _measurement(found: dict[str, Any] | None) -> dict[str, Any] | None:
     return found["measurement"] if found else None
+
+
+def _night_actions(wallboxes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The car charges at night when tomorrow brings little sun (if it is plugged in)."""
+    actions = []
+    for wallbox in wallboxes:
+        options = wallbox.get("mode_options") or []
+        if not wallbox.get("is_car") or "now" not in options:
+            continue
+        entities = wallbox.get("entities") or {}
+        conditions = (
+            [{"entity_id": entities["connected"], "op": "eq", "value": True}]
+            if entities.get("connected")
+            else []
+        )
+        actions.append(
+            {
+                "id": f"ev_{wallbox['device_id']}",
+                "name": wallbox["name"],
+                "kind": "switch",
+                "entity_id": wallbox["mode_entity"],
+                "on_value": "now",
+                "reset": "previous",
+                "lead_min": 3,
+                "auto": True,
+                "forecast_below_kwh": 15.0,
+                "conditions": conditions,
+                "power_kw": 11.0,
+                "power_entity": entities.get("power"),
+                "priority": 1,
+            }
+        )
+    return actions

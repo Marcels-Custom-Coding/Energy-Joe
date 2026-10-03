@@ -35,6 +35,11 @@ def async_register(hass: HomeAssistant) -> None:
     async def set_mode(call: ServiceCall) -> None:
         _runtime(hass).async_set_mode(call.data["mode"])
 
+    async def trigger_action(call: ServiceCall) -> None:
+        await _runtime(hass).async_action_tonight(
+            call.data["action_id"], call.data["tonight"]
+        )
+
     async def answer(call: ServiceCall) -> None:
         await _runtime(hass).executor.async_answer_tonight(call.data["accept"])
 
@@ -51,4 +56,15 @@ def async_register(hass: HomeAssistant) -> None:
     )
     hass.services.async_register(
         DOMAIN, "answer", answer, vol.Schema({vol.Required("accept"): bool})
+    )
+    hass.services.async_register(
+        DOMAIN,
+        "trigger_action",
+        trigger_action,
+        vol.Schema(
+            {
+                vol.Required("action_id"): str,
+                vol.Optional("tonight", default=True): bool,
+            }
+        ),
     )

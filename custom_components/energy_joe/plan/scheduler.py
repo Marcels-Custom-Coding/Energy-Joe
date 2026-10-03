@@ -25,12 +25,17 @@ class JoePlanner:
     """Keeps tonight's plan up to date and fixes it shortly before the window."""
 
     def __init__(
-        self, hass: HomeAssistant, history: HistoryStore, changed: Callable[[], None]
+        self,
+        hass: HomeAssistant,
+        history: HistoryStore,
+        changed: Callable[[], None],
+        manual: Callable[[], dict[str, str]] | None = None,
     ) -> None:
         """Set up; call async_start with a configuration to begin."""
         self._hass = hass
         self._history = history
         self._changed = changed
+        self._manual = manual or dict
         self._config: dict[str, Any] = {}
         self._unsubs: list[CALLBACK_TYPE] = []
         self._commit: CALLBACK_TYPE | None = None
@@ -93,7 +98,7 @@ class JoePlanner:
 
     async def _async_compute(self, now: datetime) -> dict[str, Any]:
         inp, notes = await async_build_input(
-            self._hass, self._config, self._history, now
+            self._hass, self._config, self._history, now, self._manual()
         )
         if inp is None:
             return {

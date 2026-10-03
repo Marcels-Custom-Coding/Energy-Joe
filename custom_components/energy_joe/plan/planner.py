@@ -78,6 +78,9 @@ class PlanInput:
     efficiency: float = 0.9
     notes: list[str] = field(default_factory=list)
     meta: dict[str, Any] = field(default_factory=dict)
+    # Night actions (see actions.py) and the power they take per hour (kW).
+    actions: list[dict[str, Any]] = field(default_factory=list)
+    reserved: list[float] = field(default_factory=list)
 
     @property
     def capacity(self) -> float:
@@ -113,12 +116,17 @@ def simulate(inp: PlanInput, target: float | None) -> Run:
 
     # How much can still be charged from the grid in each window hour.
     limits = []
-    for hour in inp.hours:
+    for index, hour in enumerate(inp.hours):
         power = grid_kw
         if inp.grid_limit_kw is not None:
+            # The home and running night actions come first, the batteries take the rest.
+            taken = inp.reserved[index] if index < len(inp.reserved) else 0.0
             power = min(
                 power,
-                max(0.0, inp.grid_limit_kw - hour.home / max(hour.fraction, 0.01)),
+                max(
+                    0.0,
+                    inp.grid_limit_kw - hour.home / max(hour.fraction, 0.01) - taken,
+                ),
             )
         limits.append(power * hour.fraction if hour.window else 0.0)
     later = [sum(limits[i + 1 :]) for i in range(len(limits))]
@@ -400,6 +408,10 @@ def make_plan(inp: PlanInput) -> dict[str, Any]:
         "reasons": reasons,
         "notes": list(inp.notes),
         "meta": inp.meta,
+        "actions": [
+            {**action, "cost": round(action["energy_kwh"] * inp.prices.night, 2)}
+            for action in inp.actions
+        ],
         "hours": [
             {
                 "start": dt_util.as_local(hour.start).isoformat(),
