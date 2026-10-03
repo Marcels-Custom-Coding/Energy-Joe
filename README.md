@@ -1,5 +1,7 @@
 # Energy Joe
 
+![Energy Joe](docs/images/energy-joe.jpg)
+
 > **Work in progress.** Energy Joe ist noch in Entwicklung und nicht veröffentlicht.
 
 Energy Joe ist eine lernende Home-Assistant-Integration für Haushalte mit PV-Anlage und Speicher. Er verschiebt Verbräuche – Hausspeicher, E-Auto, Warmwasser – in günstige Tarifzeiten, wenn die Sonne am nächsten Tag nicht reicht, und lernt jeden Tag aus Prognose, Verbrauch, Wetter und Alltag dazu.

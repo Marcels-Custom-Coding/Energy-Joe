@@ -46,7 +46,7 @@ async def _async_energy_summary(hass: HomeAssistant) -> dict[str, Any]:
         return {"available": False}
 
     # Imported lazily: the energy integration is optional for Energy Joe.
-    from homeassistant.components.energy.data import async_get_manager  # noqa: PLC0415
+    from homeassistant.components.energy.data import async_get_manager
 
     manager = await async_get_manager(hass)
     prefs = manager.data

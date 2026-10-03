@@ -1,6 +1,6 @@
 # Branding
 
-Master-Dateien für Energy Joe. Hier ablegen:
+Ablage für die Original-Grafiken von Energy Joe. Die Originale bleiben lokal und werden nicht eingecheckt – ins Repository kommen nur die daraus erzeugten Dateien (siehe unten). Hier ablegen:
 
 - Icon als PNG, quadratisch (1250 × 1250), möglichst mit transparentem Hintergrund
 - Grafik für das README

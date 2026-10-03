@@ -7,4 +7,6 @@ __pycache__/
 htmlcov/
 node_modules/
 .DS_Store
-branding/_work/
+branding/*
+!branding/README.md
+.deploy.env
