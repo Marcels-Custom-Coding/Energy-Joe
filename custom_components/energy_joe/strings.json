@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Energy Joe",
+        "description": "Joe moves in. He will ask his questions himself – open **Energy Joe** in the sidebar after adding."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Energy Joe is already here. You will find him in the sidebar."
+    }
+  }
+}
