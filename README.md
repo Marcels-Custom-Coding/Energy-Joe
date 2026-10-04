@@ -54,6 +54,13 @@ Joe braucht kein Vorwissen. Er findet selbst, was er braucht, fragt in Alltagssp
 - Das Auto lädt Joe auf Wunsch nach Bedarf: Ladestand und Reichweite aus der Auto-Integration (rund 40 bekannt, dazu evcc), Termine mit Ort, Strecke über Waze, Google oder OpenStreetMap, Reserve (50 km, einstellbar) und Verbrauch bei der vorhergesagten Temperatur.
 - „Laden bis … % oder km“: sofort („Jetzt laden“) oder heute Nacht in der günstigen Zeit.
 
+### Heizung und Klima
+
+- Neuer Bereich „Klima“: Für jedes Thermostat und jede Klimaanlage einzeln wählst du, ob Joe es steuert.
+- Ist keiner zu Hause: absenken (beim Kühlen anheben), ganz aus oder ein Profil des Geräts – bei Homematic IP z. B. dein Heizprofil „Abwesend“. An freien Tagen auf Wunsch ein eigenes Profil.
+- Kommt jemand heim (Integration „Nähe“/Proximity), fährt Joe die Räume so rechtzeitig hoch, wie sie es laut Gelerntem brauchen, und stellt alles genau so zurück, wie es war.
+- Klimaanlagen auf Wunsch nachts aus und rechtzeitig vor dem Morgen wieder an.
+
 ### Termine des Autos
 
 Drei Wege, wie Termine zum Auto kommen:

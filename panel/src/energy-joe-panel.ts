@@ -17,6 +17,7 @@ import "./editors/household";
 import "./editors/tariff-editor";
 import { ensureFonts } from "./fonts";
 import { translator, type Translate } from "./i18n";
+import "./pages/climate";
 import "./pages/devices";
 import "./pages/history";
 import "./pages/learn";
@@ -331,6 +332,9 @@ export class EnergyJoePanel extends LitElement {
         .discovery=${this.discovery}
         .info=${this.info}
       ></joe-devices-page>`;
+    }
+    if (page === "climate") {
+      return html`<joe-climate-page .t=${t} .hass=${this.hass} .state=${this.joe}></joe-climate-page>`;
     }
     if (page === "settings") {
       return html`<joe-settings

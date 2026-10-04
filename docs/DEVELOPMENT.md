@@ -78,6 +78,13 @@ cd panel && npm install
 - Was Joe verändert hat, merkt er sich in `.storage/energy_joe.control` und stellt es zurück, bis alles wieder stimmt.
 - Sicherheit im Ausführer: Zieht das Haus mehr als das Netzlimit (`rules.guard_grid`), hält er statt zu laden, jeweils fünf Minuten; steigt ein ladender Speicher eine halbe Stunde lang nicht, meldet er das einmal pro Nacht (Reparaturhinweis `no_progress`).
 
+## Heizung und Klima
+
+- `control/climate.py` (`ClimateController`): jede Minute und bei Änderungen der Personen. Je Gerät in `climate.rooms` (Schlüssel: Entity-ID) gilt ein Zustand: `away` (keiner zu Hause, außer jemand kommt laut Proximity rechtzeitig heim), `free_day` (Arbeitstag-Sensor aus, Profil vorhanden), `night` (Klimaanlage nachts aus, rechtzeitig zurück) oder keiner. Vorher-Werte (HVAC-Modus, Temperatur, Profil) in `.storage/energy_joe.climate`; zurück nur, was sich geändert hat. Geschrieben wird nur im Modus „live“; wechselt Joe den Modus, stellt er alles zurück.
+- Annäherung über die Proximity-Integration (`entry.runtime_data.entity_mapping`: Person → Sensoren `dist_to_zone`, `dir_of_travel`), 40 km/h angenommen. Gelernt wird die Aufheizrate je Gerät (K/h, gleitend) beim Zurückstellen; Vorlauf = Abstand zur Zieltemperatur / Rate + 10 min.
+- Homematic IP zeigt seine Heizprofile als Presets (`preset_modes`), die Joe direkt wählt.
+- Panel: Seite `pages/climate.ts`, Befehl `energy_joe/climate/devices` (alle Klima-Entitäten mit Raum, Modi, Presets, Annäherungen).
+
 ## Panel nach einem Update
 
 Nach einem Update lädt Home Assistant das neue Panel in die offene Seite, behält aber die alten Klassen schon bekannter Elemente. `panel/src/define.ts` vergleicht deshalb die eingebaute Version (`__JOE_VERSION__` aus `panel/package.json`, gesetzt in `vite.config.ts`) und blendet sonst „Energy Joe wurde aktualisiert – Neu laden“ ein. Deshalb nach dem Versionssprung immer neu bauen.

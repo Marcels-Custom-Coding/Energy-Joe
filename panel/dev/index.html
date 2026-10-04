@@ -447,6 +447,15 @@
               };
               push();
               return state.mailbox[msg.car];
+            case "energy_joe/climate/devices":
+              return {
+                devices: [
+                  { entity_id: "climate.wohnzimmer", name: "Heizgruppe Wohnzimmer", area: "Wohnzimmer", state: "auto", hvac_modes: ["auto", "heat", "off"], preset_modes: ["boost", "eco", "Standard", "Abwesend", "Feiertag"], temperature: 21, current_temperature: 20.5, platform: "homematicip_cloud" },
+                  { entity_id: "climate.buero", name: "Klimaanlage Büro", area: "Büro", state: "cool", hvac_modes: ["off", "cool", "heat", "dry", "fan_only"], preset_modes: [], temperature: 23, current_temperature: 25.2, platform: "daikin" },
+                ],
+                arrivals: { "person.marcel": { km: 12.4, direction: "towards" } },
+                proximity: true,
+              };
             case "energy_joe/automations":
             case "energy_joe/automations/switch": {
               // Two automations in the style of a real setup (interlock and boost).

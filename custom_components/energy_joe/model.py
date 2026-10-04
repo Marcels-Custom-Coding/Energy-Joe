@@ -327,6 +327,34 @@ EV_NEED = vol.Schema(
     }
 )
 
+_CLOCK = vol.Match(r"^([01]?\d|2[0-3]):[0-5]\d$")
+
+# A thermostat or air conditioner Joe steers by presence (see control/climate.py).
+CLIMATE_ROOM = vol.Schema(
+    {
+        vol.Optional("enabled", default=False): bool,
+        # While nobody is home: lower (cooling: raise) by setback_k, switch
+        # "off", or a "preset" of the device (e.g. a Homematic IP profile).
+        vol.Optional("away", default="setback"): vol.In(("setback", "off", "preset")),
+        vol.Optional("setback_k", default=3.0): vol.All(
+            vol.Coerce(float), vol.Range(min=0.5, max=10)
+        ),
+        vol.Optional("away_preset", default=None): vol.Any(None, str),
+        # Days off (workday sensor off) while people are home.
+        vol.Optional("free_day_preset", default=None): vol.Any(None, str),
+        # Air conditioners: off at night, back in time before the morning.
+        vol.Optional("night_off", default=False): bool,
+        vol.Optional("night_from", default="23:00"): _CLOCK,
+        vol.Optional("night_until", default="06:30"): _CLOCK,
+    }
+)
+CLIMATE = vol.Schema(
+    {
+        vol.Optional("enabled", default=False): bool,
+        vol.Optional("rooms", default=dict): {cv.entity_id: CLIMATE_ROOM},
+    }
+)
+
 ROUTING_SERVICES = ("waze", "google", "osm")
 
 # How Joe works out the distance to an appointment's place (None: not at all).
@@ -553,6 +581,7 @@ CONFIG = vol.Schema(
         vol.Optional("notify", default=dict): NOTIFY,
         vol.Optional("calendar", default=dict): CALENDAR,
         vol.Optional("routing", default=dict): ROUTING,
+        vol.Optional("climate", default=dict): CLIMATE,
         vol.Optional("answers", default=dict): ANSWERS,
         vol.Optional("learned", default=dict): LEARNED,
         vol.Optional("provenance", default=dict): {str: PROVENANCE},

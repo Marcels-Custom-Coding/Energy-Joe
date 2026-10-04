@@ -3,6 +3,19 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.6.0
+
+- **Neuer Bereich „Klima“:** Joe steuert auf Wunsch Thermostate und
+  Klimaanlagen – jedes Gerät einzeln an- und abwählbar.
+  - Ist keiner zu Hause: absenken (Kühlen: anheben), ganz aus oder ein Profil
+    des Geräts, bei Homematic IP z. B. dein Heizprofil „Abwesend“.
+  - An freien Tagen (Wochenende, Feiertag) auf Wunsch ein eigenes Profil.
+  - Kommt jemand heim (Integration „Nähe“/Proximity), fährt Joe den Raum so
+    früh hoch, wie er es laut Gelerntem braucht.
+  - Klimaanlagen auf Wunsch nachts aus und rechtzeitig vor dem Morgen an.
+  - Joe stellt immer genau zurück, was vorher eingestellt war, und steuert
+    erst im Modus „Live“ – in der Simulation zeigt er nur, was er täte.
+
 ## 0.5.0
 
 - **Dashboard-Karten:** Joe bringt zwei Karten mit, die direkt in der

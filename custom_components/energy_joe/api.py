@@ -10,7 +10,12 @@ import voluptuous as vol
 from homeassistant.components import websocket_api
 from homeassistant.const import MAJOR_VERSION, MINOR_VERSION, __version__ as HA_VERSION
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import config_validation as cv, entity_registry as er
+from homeassistant.helpers import (
+    area_registry as ar,
+    config_validation as cv,
+    device_registry as dr,
+    entity_registry as er,
+)
 from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.helpers.sun import get_astral_event_date
 from homeassistant.loader import async_get_integration
@@ -21,6 +26,7 @@ from .accounts import AccountError
 from .calendar import unique_id as calendar_unique_id
 from .calendar_feed import feed_path
 from .const import DOMAIN
+from .control.climate import arrivals as climate_arrivals
 from .control.profiles import PROFILES
 from .discovery import async_check, async_collect, async_discover, discover
 from .discovery.checks import run_config_checks
@@ -70,6 +76,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_control_answer)
     websocket_api.async_register_command(hass, ws_control_action_tonight)
     websocket_api.async_register_command(hass, ws_automations)
+    websocket_api.async_register_command(hass, ws_climate_devices)
     websocket_api.async_register_command(hass, ws_automations_switch)
     websocket_api.async_register_command(hass, ws_control_boost)
     websocket_api.async_register_command(hass, ws_calendar_links)
@@ -868,6 +875,53 @@ async def ws_automations_switch(
     failed = await runtime.async_switch_automations(msg["on"], msg.get("entity_ids"))
     connection.send_result(
         msg["id"], {"failed": failed, "automations": runtime.automations()}
+    )
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/climate/devices"})
+@websocket_api.require_admin
+@callback
+def ws_climate_devices(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Every thermostat and air conditioner, by room, and who heads home."""
+    if _runtime(hass, connection, msg) is None:
+        return
+    entities = er.async_get(hass)
+    devices = dr.async_get(hass)
+    areas = ar.async_get(hass)
+    found = []
+    for state in hass.states.async_all("climate"):
+        item = entities.async_get(state.entity_id)
+        device = devices.async_get(item.device_id) if item and item.device_id else None
+        area_id = (item.area_id if item else None) or (
+            device.area_id if device else None
+        )
+        area = areas.async_get_area(area_id) if area_id else None
+        found.append(
+            {
+                "entity_id": state.entity_id,
+                "name": state.name,
+                "area": area.name if area else None,
+                "state": state.state,
+                "hvac_modes": state.attributes.get("hvac_modes") or [],
+                "preset_modes": state.attributes.get("preset_modes") or [],
+                "temperature": state.attributes.get("temperature"),
+                "current_temperature": state.attributes.get("current_temperature"),
+                "platform": item.platform if item else None,
+            }
+        )
+    connection.send_result(
+        msg["id"],
+        {
+            "devices": sorted(
+                found, key=lambda d: ((d["area"] or "~").lower(), d["name"].lower())
+            ),
+            "arrivals": climate_arrivals(hass),
+            "proximity": bool(hass.config_entries.async_entries("proximity")),
+        },
     )
 
 

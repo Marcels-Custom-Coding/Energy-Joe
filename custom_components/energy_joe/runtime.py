@@ -19,6 +19,7 @@ from . import model
 from .accounts import CarAccounts
 from .const import DOMAIN
 from .control import automations as battery_automations
+from .control.climate import ClimateController
 from .control.executor import JoeExecutor
 from .control.notify import JoeNotifier
 from .discovery import async_profile_updates
@@ -113,6 +114,10 @@ class JoeRuntime:
         # Each car's mailbox with a calendar (see accounts.py).
         self.accounts = CarAccounts(hass, lambda: self._config, self._changed)
         self.planner.accounts = self.accounts
+        # Heating and air conditioning by presence (the "Klima" page).
+        self.climate = ClimateController(
+            hass, lambda: self._config, lambda: self._state["mode"], self._changed
+        )
         self._started = False
         self._planned: dict[str, Any] | None = None
         self._observed: dict[str, Any] | None = None
@@ -136,6 +141,7 @@ class JoeRuntime:
         await self.calendars.async_load()
         await self.inbox.async_load()
         await self.accounts.async_load()
+        await self.climate.async_load()
 
     async def async_unload(self) -> None:
         """Stop watching and write pending changes immediately."""
@@ -143,6 +149,7 @@ class JoeRuntime:
         self.notifier.stop()
         self.inbox.async_stop()
         self.accounts.async_stop()
+        self.climate.async_stop()
         await self.executor.async_stop()
         async with self._observe_lock:
             await self.learner.async_stop()
@@ -186,6 +193,7 @@ class JoeRuntime:
         await self.calendars.async_remove()
         await self.inbox.async_remove()
         await self.accounts.async_remove()
+        await self.climate.async_remove()
         await self.executor.async_forget()
 
     @callback
@@ -196,6 +204,7 @@ class JoeRuntime:
         self._hass.async_create_task(self.executor.async_start(), eager_start=False)
         self._update_observer()
         self.inbox.async_apply()
+        self.climate.async_start()
         self._hass.async_create_task(self._async_profile_updates(), eager_start=False)
 
     async def _async_profile_updates(self) -> None:
@@ -330,6 +339,7 @@ class JoeRuntime:
                 "control": self.executor.view,
                 "mailbox": self.inbox.status,
                 "accounts": self.accounts.status,
+                "climate": self.climate.status,
                 # Energy Joe's own apps for signing in (else one's own is needed).
                 "apps": {
                     "microsoft": oauth.client_for(None) is not None,
@@ -384,6 +394,7 @@ class JoeRuntime:
         self._check_control()
         if self._started:
             self.inbox.async_apply()
+            self.climate.async_start()
 
     @callback
     def async_adopt(

@@ -435,6 +435,32 @@ export interface CarAccountStatus {
   oauth?: { state: "waiting" | "ok" | "error"; user_code?: string; uri?: string; error?: string } | null;
 }
 
+/** A thermostat or air conditioner Joe steers by presence (see control/climate.py). */
+export interface ClimateRoomConfig {
+  enabled: boolean;
+  away: "setback" | "off" | "preset";
+  setback_k: number;
+  away_preset: string | null;
+  free_day_preset: string | null;
+  night_off: boolean;
+  night_from: string;
+  night_until: string;
+}
+
+export interface ClimateConfig {
+  enabled: boolean;
+  rooms: Record<string, ClimateRoomConfig>;
+}
+
+export interface ClimateStatus {
+  home: string[];
+  arrivals: Record<string, { km?: number; direction?: string }>;
+  free_day: boolean;
+  rooms: Record<string, { want: string | null; why: string }>;
+  live: boolean;
+  rates: Record<string, number>;
+}
+
 export interface RoutingConfig {
   service: "waze" | "google" | "osm" | null;
   google_entry: string | null;
@@ -519,6 +545,7 @@ export interface JoeConfig {
   notify: NotifyConfig;
   calendar: CalendarConfig;
   routing: RoutingConfig;
+  climate?: ClimateConfig;
   answers: Answers;
   learned: Learned;
   provenance: Record<string, Provenance>;
@@ -666,6 +693,8 @@ export interface JoeState {
   accounts?: Record<string, CarAccountStatus>;
   /** Energy Joe's own apps for signing in (false: one's own app is needed). */
   apps?: { microsoft: boolean; google: boolean };
+  /** Heating and air conditioning by presence. */
+  climate?: ClimateStatus;
 }
 
 // --- Steering (see custom_components/energy_joe/control) ---
@@ -934,8 +963,8 @@ export interface JoeInfo {
   routing?: { waze: boolean; google: { entry_id: string; title: string }[] };
 }
 
-export type Page = "overview" | "plan" | "history" | "learn" | "devices" | "settings";
-export const PAGES: Page[] = ["overview", "plan", "history", "learn", "devices", "settings"];
+export type Page = "overview" | "plan" | "history" | "learn" | "devices" | "climate" | "settings";
+export const PAGES: Page[] = ["overview", "plan", "history", "learn", "devices", "climate", "settings"];
 
 // --- Discovery (what Joe found, see custom_components/energy_joe/discovery) ---
 
