@@ -1,6 +1,6 @@
 # Energy Joe
 
-![Energy Joe](docs/images/energy-joe.jpg)
+<img src="docs/images/energy-joe.jpg" alt="Energy Joe" width="50%">
 
 > **Noch in Entwicklung.** Energy Joe ist noch nicht offiziell veröffentlicht. Ausprobieren kannst du ihn schon – am besten erst eine Weile im Simulationsmodus.
 
