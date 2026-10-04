@@ -18,6 +18,7 @@ from custom_components.energy_joe.control.adapters import (
 from custom_components.energy_joe.control.executor import JoeExecutor
 from custom_components.energy_joe.control.writes import Write
 from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.util import dt as dt_util
 
 FRONIUS = {
@@ -464,6 +465,110 @@ async def test_test_run_holds_charges_and_releases(hass: HomeAssistant) -> None:
         config["batteries"][0], controls={**VENUS, "discharge_power": "number.x"}
     )
     assert not executor.tested(changed)
+
+
+async def test_omnibattery_takes_commands_only_in_manual_mode(
+    hass: HomeAssistant, command_pauses: list[float]
+) -> None:
+    """Omnibattery runs its own control loop: manual mode first, off again last."""
+    install_devices(hass, venus_soc=40)
+    hass.states.async_set("switch.venus_manual_mode", "off")
+    calls: list[tuple[str, Any]] = []
+
+    def keep(call: ServiceCall, value: str) -> None:
+        entity_id = call.data["entity_id"]
+        if isinstance(entity_id, list):
+            entity_id = entity_id[0]
+        calls.append((entity_id, value))
+        if (
+            entity_id in ("select.force_mode", "number.charge_power")
+            and hass.states.get("switch.venus_manual_mode").state != "on"
+        ):
+            raise HomeAssistantError("Venus is under automatic control")
+        state = hass.states.get(entity_id)
+        hass.states.async_set(entity_id, value, state.attributes if state else {})
+
+    hass.services.async_register(
+        "number", "set_value", lambda call: keep(call, str(float(call.data["value"])))
+    )
+    hass.services.async_register(
+        "select", "select_option", lambda call: keep(call, call.data["option"])
+    )
+    hass.services.async_register("switch", "turn_on", lambda call: keep(call, "on"))
+    hass.services.async_register("switch", "turn_off", lambda call: keep(call, "off"))
+    battery = {
+        **venus_battery(),
+        "prepare": [{"entity_id": "switch.venus_manual_mode", "value": True}],
+    }
+    config = configured(battery)
+    executor, _ = await make_executor(
+        hass, config, None, mode="simulation", tested=False
+    )
+    with (
+        patch.object(executor_module, "TEST_HOLD", 0),
+        patch.object(executor_module, "TEST_CHARGE", 0),
+        patch.object(executor_module, "TEST_RELEASE", 0),
+    ):
+        result = await executor.async_test("venus")
+    assert result["ok"] is True, result
+    # Manual mode before the first command, back off after the last one.
+    assert calls[0] == ("switch.venus_manual_mode", "on")
+    assert calls[-1] == ("switch.venus_manual_mode", "off")
+    assert calls[-3:-1] == [
+        ("select.force_mode", "None"),
+        ("number.charge_power", "0.0"),
+    ]
+    assert hass.states.get("switch.venus_manual_mode").state == "off"
+    # Time for the device: twice as long after switching to manual mode.
+    assert command_pauses[0] == 2.0
+    assert set(command_pauses) == {1.0, 2.0}
+
+
+async def test_a_battery_set_up_before_learns_its_manual_mode(
+    hass: HomeAssistant,
+) -> None:
+    """A newer profile adds the manual mode to a battery found by an older one."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    from custom_components.energy_joe.discovery import async_profile_updates
+    from homeassistant.helpers import device_registry as dr, entity_registry as er
+
+    entry = MockConfigEntry(domain="omnibattery")
+    entry.add_to_hass(hass)
+    device = dr.async_get(hass).async_get_or_create(
+        config_entry_id=entry.entry_id, identifiers={("omnibattery", "venus")}
+    )
+    registry = er.async_get(hass)
+    for domain, key in (
+        ("sensor", "battery_soc"),
+        ("switch", "battery_manual_mode"),
+        ("select", "force_mode"),
+    ):
+        item = registry.async_get_or_create(
+            domain,
+            "omnibattery",
+            f"10.0.0.1_502_{key}",
+            config_entry=entry,
+            device_id=device.id,
+        )
+        hass.states.async_set(item.entity_id, "off")
+    # The whole system's manual mode is on another device: not this battery's.
+    system = registry.async_get_or_create(
+        "switch", "omnibattery", "marstek_venus_system_manual_mode", config_entry=entry
+    )
+    hass.states.async_set(system.entity_id, "off")
+    battery = {**venus_battery(), "device_id": device.id}
+    config = configured(battery)
+    patch_ = await async_profile_updates(hass, config)
+    manual = registry.async_get_entity_id(
+        "switch", "omnibattery", "10.0.0.1_502_battery_manual_mode"
+    )
+    assert patch_ == {
+        "batteries": {"venus": {"prepare": [{"entity_id": manual, "value": True}]}}
+    }
+    # What the user set stays.
+    mine = model.apply_update(config, {"batteries": {"venus": {"prepare": []}}}, "user")
+    assert await async_profile_updates(hass, mine) is None
 
 
 async def test_entities_and_services(ready_hass: HomeAssistant) -> None:

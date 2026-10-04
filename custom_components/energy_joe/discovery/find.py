@@ -527,6 +527,23 @@ def suggest_controls(snap: Snapshot, soc: EntityInfo) -> dict[str, Any] | None:
     }
 
 
+def profile_prepare(snap: Snapshot, battery: dict[str, Any]) -> list[dict[str, Any]]:
+    """The prepare steps a battery's profile asks for, as found in Home Assistant."""
+    profile = PROFILES.get(battery.get("adapter") or "")
+    if not profile or not profile.prepare or profile.steps:
+        return []
+    if profile.scope == "entry":
+        soc = snap.get(battery.get("soc_entity"))
+        scope = snap.of_config_entry(soc.config_entry_id) if soc else []
+    else:
+        scope = snap.of_device(battery.get("device_id"))
+    found = []
+    for item in profile.prepare:
+        if entity := _find_key(scope, (), (item.key,)):
+            found.append({"entity_id": entity.entity_id, "value": item.value})
+    return found
+
+
 _SEPARATORS = ("-", "_", ".", " - ")
 
 

@@ -2105,12 +2105,17 @@ var $e = import.meta.url.replace(/[^/]*$/, ""), et = (e) => `${$e}${e}`, tt = {
 	"action.delete": "Aktion löschen",
 	"devices.actions": "Nacht-Aktionen",
 	"devices.action.off": "aus",
-	"devices.boost.label": "Einfach laden bis",
 	"devices.boost.unit": "Einheit",
-	"devices.boost.go": "Jetzt laden",
+	"devices.charge.label": "Laden bis",
+	"devices.charge.now": "Jetzt laden",
+	"devices.charge.tonight": "Heute Nacht laden",
+	"devices.charge.percent": "{target} %",
+	"devices.charge.km": "{target} km Reichweite plus {reserve} km Reserve",
+	"devices.charge.now_running": "Lädt jetzt bis {amount} – gerade {now}.",
+	"devices.charge.tonight_set": "Lädt heute Nacht in der günstigen Zeit bis {amount}.",
+	"devices.charge.tonight_window": "Lädt heute Nacht in der ganzen günstigen Zeit.",
+	"devices.charge.no_night": "„Heute Nacht“ geht, sobald ich die Nacht geplant habe.",
 	"devices.boost.stop": "Abbrechen",
-	"devices.boost.running": "Lädt jetzt bis {target} % – gerade {now} %.",
-	"devices.boost.running_km": "Lädt jetzt bis {target} km Reichweite plus {reserve} km Reserve – gerade {now} km.",
 	"devices.boost.reserve": "Dazu kommt deine Reserve von {reserve} km.",
 	"devices.action.boost": "Lädt jetzt, weil du es willst.",
 	"devices.action.tonight": "Heute Nacht",
@@ -2180,9 +2185,9 @@ var $e = import.meta.url.replace(/[^/]*$/, ""), et = (e) => `${$e}${e}`, tt = {
 	"tip.a_save.text": "Ich plane die Aktion ab sofort mit ein. Geschaltet wird nur in den Modi Vorschlagen und Live – in der Simulation zeige ich, was ich getan hätte.",
 	"tip.a_delete.title": "Was passiert beim Löschen?",
 	"tip.a_delete.text": "Die Aktion und ihr Schalter in Home Assistant verschwinden. Läuft sie gerade, stelle ich vorher zurück.",
-	"tip.boost.title": "Was macht „Einfach laden“?",
-	"tip.boost.text": "Ich schalte die Wallbox sofort ein – ohne auf die günstige Zeit oder die Sonne zu warten und auch in der Simulation, weil du es ausdrücklich willst. Sobald der Ladestand erreicht ist (oder die Reichweite plus deine Reserve), stelle ich die Wallbox zurück, wie sie vorher war.",
-	"tip.boost.hint": "Nach spätestens 24 Stunden höre ich von selbst auf. Mit „Abbrechen“ sofort.",
+	"tip.boost.title": "Jetzt oder heute Nacht?",
+	"tip.boost.text": "**Jetzt laden**: Ich schalte die Wallbox sofort ein – ohne auf die günstige Zeit oder die Sonne zu warten und auch in der Simulation, weil du es ausdrücklich willst.\n**Heute Nacht laden**: Ich lade in der kommenden Nacht in der günstigen Zeit, egal was die Prognose sagt.\nSobald der Ladestand erreicht ist (oder die Reichweite plus deine Reserve), stelle ich die Wallbox zurück, wie sie vorher war. Mit % und km wählst du, ob das Ziel ein Ladestand oder eine Reichweite ist.",
+	"tip.boost.hint": "„Jetzt laden“ hört nach spätestens 24 Stunden von selbst auf, „Heute Nacht“ mit dem Ende der Nacht. Mit „Abbrechen“ sofort.",
 	"tip.action_tonight.title": "Was macht „Heute Nacht“?",
 	"tip.action_tonight.text": "Die Aktion läuft in der kommenden Nacht, egal was die Prognose sagt – praktisch, wenn du weißt, dass du morgen früh losfährst. Nach der Nacht schaltet sich der Schalter von selbst wieder aus.",
 	"tip.devices_actions.title": "Was sind Nacht-Aktionen?",
@@ -3712,12 +3717,17 @@ var $e = import.meta.url.replace(/[^/]*$/, ""), et = (e) => `${$e}${e}`, tt = {
 	"action.delete": "Delete action",
 	"devices.actions": "Night actions",
 	"devices.action.off": "off",
-	"devices.boost.label": "Just charge to",
 	"devices.boost.unit": "Unit",
-	"devices.boost.go": "Charge now",
+	"devices.charge.label": "Charge to",
+	"devices.charge.now": "Charge now",
+	"devices.charge.tonight": "Charge tonight",
+	"devices.charge.percent": "{target} %",
+	"devices.charge.km": "{target} km range plus {reserve} km reserve",
+	"devices.charge.now_running": "Charging now to {amount} – {now} at the moment.",
+	"devices.charge.tonight_set": "Charges tonight in the cheap hours to {amount}.",
+	"devices.charge.tonight_window": "Charges tonight through all the cheap hours.",
+	"devices.charge.no_night": "“Tonight” works once I have planned the night.",
 	"devices.boost.stop": "Cancel",
-	"devices.boost.running": "Charging now to {target} % – {now} % so far.",
-	"devices.boost.running_km": "Charging now to {target} km of range plus {reserve} km reserve – {now} km so far.",
 	"devices.boost.reserve": "Your reserve of {reserve} km comes on top.",
 	"devices.action.boost": "Charging now because you asked.",
 	"devices.action.tonight": "Tonight",
@@ -3787,9 +3797,9 @@ var $e = import.meta.url.replace(/[^/]*$/, ""), et = (e) => `${$e}${e}`, tt = {
 	"tip.a_save.text": "I include the action in my plans from now on. I only switch in the suggest and live modes – in the simulation I show what I would have done.",
 	"tip.a_delete.title": "What happens when deleting?",
 	"tip.a_delete.text": "The action and its switch in Home Assistant disappear. If it is running, I put things back first.",
-	"tip.boost.title": "What does “Just charge” do?",
-	"tip.boost.text": "I switch the wallbox on right away – without waiting for the cheap hours or the sun, and also in simulation, because you asked for it. Once the level is reached (or the range plus your reserve), I put the wallbox back the way it was.",
-	"tip.boost.hint": "I stop by myself after 24 hours at the latest. “Cancel” stops right away.",
+	"tip.boost.title": "Now or tonight?",
+	"tip.boost.text": "**Charge now**: I switch the wallbox on right away – without waiting for the cheap hours or the sun, and also in the simulation, because you ask for it.\n**Charge tonight**: I charge in the coming night in the cheap hours, whatever the forecast says.\nAs soon as the level is reached (or the range plus your reserve) I put the wallbox back the way it was. With % and km you choose whether the target is a level or a range.",
+	"tip.boost.hint": "“Charge now” stops by itself after 24 hours at the latest, “tonight” with the end of the night. “Cancel” stops right away.",
 	"tip.action_tonight.title": "What does “Tonight” do?",
 	"tip.action_tonight.text": "The action runs in the coming night, whatever the forecast says – handy when you know you'll leave early tomorrow. After the night the switch turns itself off again.",
 	"tip.devices_actions.title": "What are night actions?",
@@ -9267,13 +9277,14 @@ var Gn = [
       .boost .unit {
         color: var(--joe-ink-2);
       }
-      .boost .unit-select {
-        min-height: 34px;
-        border: 0;
-        background: transparent;
-        font: inherit;
-        color: var(--joe-ink-2);
-        cursor: pointer;
+      .boost .unit-seg button {
+        min-width: 44px;
+      }
+      .boost .charge-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        flex-basis: 100%;
       }
       .boost .hint {
         flex-basis: 100%;
@@ -9462,20 +9473,19 @@ var Gn = [
       </div>
       <p class="now">${this.actionText(e, t, n, i, a)}</p>
       ${i?.need ? h`<joe-car-need .hass=${this.hass} .t=${e} .action=${i} .roundTrip=${n.need?.round_trip ?? !0}></joe-car-need>` : _}
-      ${n.kind === "switch" && (n.need?.soc_entity || n.need?.range_entity) ? this.renderBoost(e, t, n) : _}
-      <div class="test">
-        <span class="toggle-label" id="tonight-${n.id}">${e("devices.action.tonight")}</span>
-        <button
-          type="button"
-          class="switch"
-          role="switch"
-          aria-checked=${String(s)}
-          aria-labelledby="tonight-${n.id}"
-          ?disabled=${!o || !n.enabled}
-          @click=${() => this.toggleTonight(n.id, !s)}
-        ></button>
-        ${P(e, "action_tonight")}
-      </div>
+      ${n.kind === "switch" && (n.need?.soc_entity || n.need?.range_entity) ? this.renderCharge(e, t, n, o, s) : h`<div class="test">
+            <span class="toggle-label" id="tonight-${n.id}">${e("devices.action.tonight")}</span>
+            <button
+              type="button"
+              class="switch"
+              role="switch"
+              aria-checked=${String(s)}
+              aria-labelledby="tonight-${n.id}"
+              ?disabled=${!o || !n.enabled}
+              @click=${() => this.toggleTonight(n.id, !s)}
+            ></button>
+            ${P(e, "action_tonight")}
+          </div>`}
       <div class="setup">
         <button type="button" class="mini-btn" @click=${() => this.editAction(n.id)}>
           <ha-icon icon="mdi:pencil-outline"></ha-icon>${e("devices.action.edit")}
@@ -9483,71 +9493,105 @@ var Gn = [
       </div>
     </section>`;
 	}
-	renderBoost(e, t, n) {
-		let r = t.control?.boost?.[n.id], i = t.control?.actions?.[n.id], a = n.need;
-		if (r) {
-			let t = i?.value, a = r.unit;
+	renderCharge(e, t, n, r, i) {
+		let a = t.control?.boost?.[n.id], o = t.control?.actions?.[n.id], s = t.control?.tonight_target?.[n.id], c = n.need, l = (t, n, r) => r === "km" ? e("devices.charge.km", {
+			target: j(e.lang, t, 0),
+			reserve: j(e.lang, n - t, 0)
+		}) : e("devices.charge.percent", { target: j(e.lang, t, 0) });
+		if (a) {
+			let t = o?.value;
 			return h`<div class="boost on" data-tipped>
         <span>
-          ${e(a === "km" ? "devices.boost.running_km" : "devices.boost.running", {
-				target: j(e.lang, r.chosen, 0),
-				reserve: j(e.lang, r.target - r.chosen, 0),
-				now: t == null ? "–" : j(e.lang, t, 0)
+          ${e("devices.charge.now_running", {
+				amount: l(a.chosen, a.target, a.unit),
+				now: t == null ? "–" : `${j(e.lang, t, 0)} ${a.unit}`
 			})}
         </span>
         <button type="button" class="mini-btn quiet" @click=${() => this.boost(n.id, null)}>${e("devices.boost.stop")}</button>
         ${P(e, "boost")}
       </div>`;
 		}
-		let o = [...a.soc_entity ? ["%"] : [], ...a.range_entity ? ["km"] : []], s = this.boostUnit[n.id] && o.includes(this.boostUnit[n.id]) ? this.boostUnit[n.id] : o[0], c = this.boostValue[`${n.id}:${s}`] ?? (s === "%" ? 80 : 200), l = s === "%" ? 100 : 1500;
+		if (i) return h`<div class="boost on" data-tipped>
+        <span>
+          ${s && s.night === r ? e("devices.charge.tonight_set", { amount: l(s.chosen, s.target, s.unit) }) : e("devices.charge.tonight_window")}
+        </span>
+        <button type="button" class="mini-btn quiet" @click=${() => this.toggleTonight(n.id, !1)}>${e("devices.boost.stop")}</button>
+        ${P(e, "boost")}
+      </div>`;
+		let u = [...c.soc_entity ? ["%"] : [], ...c.range_entity ? ["km"] : []], d = this.boostUnit[n.id] && u.includes(this.boostUnit[n.id]) ? this.boostUnit[n.id] : u[0], f = this.boostValue[`${n.id}:${d}`] ?? (d === "%" ? 80 : 200), p = d === "%" ? 100 : 1500, m = (e) => {
+			let t = e?.querySelector("input"), n = Number.parseFloat((t?.value ?? "").replace(",", "."));
+			return Math.round(Math.min(p, Math.max(1, Number.isFinite(n) ? n : f)));
+		};
 		return h`<form
       class="boost"
       data-tipped
       novalidate
       @submit=${(e) => {
-			e.preventDefault();
-			let t = e.target.querySelector("input"), r = Number.parseFloat(t.value.replace(",", ".")), i = Number.isFinite(r) ? r : c;
-			this.boost(n.id, Math.round(Math.min(l, Math.max(1, i))), s);
+			e.preventDefault(), this.boost(n.id, m(e.target), d);
 		}}
     >
-      <label class="toggle-label" for="boost-${n.id}">${e("devices.boost.label")}</label>
+      <label class="toggle-label" for="boost-${n.id}">${e("devices.charge.label")}</label>
       <span class="amount">
         <input
           id="boost-${n.id}"
           class="input"
           type="number"
           inputmode="numeric"
-          min=${s === "%" ? 5 : 10}
-          max=${l}
-          step=${s === "%" ? 5 : 10}
-          .value=${String(c)}
+          min=${d === "%" ? 5 : 10}
+          max=${p}
+          step=${d === "%" ? 5 : 10}
+          .value=${String(f)}
           @change=${(e) => {
 			let t = Number.parseFloat(e.target.value.replace(",", "."));
 			Number.isFinite(t) && t >= 1 && (this.boostValue = {
 				...this.boostValue,
-				[`${n.id}:${s}`]: Math.min(t, s === "%" ? 100 : 1500)
+				[`${n.id}:${d}`]: Math.min(t, p)
 			});
 		}}
         />
-        ${o.length > 1 ? h`<select
-              class="unit-select"
-              aria-label=${e("devices.boost.unit")}
-              @change=${(e) => {
-			this.boostUnit = {
-				...this.boostUnit,
-				[n.id]: e.target.value
-			};
+        ${u.length > 1 ? h`<span class="seg unit-seg" role="group" aria-label=${e("devices.boost.unit")}>
+              ${u.map((e) => h`<button
+                  type="button"
+                  aria-pressed=${String(e === d)}
+                  @click=${() => this.boostUnit = {
+			...this.boostUnit,
+			[n.id]: e
 		}}
-            >
-              ${o.map((e) => h`<option value=${e} ?selected=${e === s}>${e}</option>`)}
-            </select>` : h`<span class="unit">${s}</span>`}
+                >
+                  ${e}
+                </button>`)}
+            </span>` : h`<span class="unit">${d}</span>`}
       </span>
-      <button type="submit" class="mini-btn go" ?disabled=${t.mode === "off" || !n.enabled}>
-        <ha-icon icon="mdi:ev-plug-type2"></ha-icon>${e("devices.boost.go")}
-      </button>
       ${P(e, "boost")}
-      ${s === "km" ? h`<small class="hint">${e("devices.boost.reserve", { reserve: j(e.lang, a.reserve_km ?? 50, 0) })}</small>` : _}
+      <span class="charge-buttons">
+        <button type="submit" class="mini-btn go" ?disabled=${t.mode === "off" || !n.enabled}>
+          <ha-icon icon="mdi:ev-plug-type2"></ha-icon>${e("devices.charge.now")}
+        </button>
+        <button
+          type="button"
+          class="mini-btn"
+          ?disabled=${!r || !n.enabled}
+          @click=${(e) => this.chargeTonight(n.id, m(e.target.closest("form")), d)}
+        >
+          <ha-icon icon="mdi:weather-night"></ha-icon>${e("devices.charge.tonight")}
+        </button>
+      </span>
+      ${d === "km" ? h`<small class="hint">${e("devices.boost.reserve", { reserve: j(e.lang, c.reserve_km ?? 50, 0) })}</small>` : _}
+      ${r ? _ : h`<small class="hint">${e("devices.charge.no_night")}</small>`}
     </form>`;
+	}
+	async chargeTonight(e, t, n) {
+		try {
+			await this.hass?.callWS({
+				type: "energy_joe/control/action_tonight",
+				action_id: e,
+				on: !0,
+				target: t,
+				unit: n
+			});
+		} catch {
+			this.notice = this.t("error.action");
+		}
 	}
 	async boost(e, t, n = "%") {
 		try {

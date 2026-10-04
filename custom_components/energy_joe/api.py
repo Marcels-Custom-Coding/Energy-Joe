@@ -618,6 +618,11 @@ async def ws_control_answer(
         vol.Required("type"): f"{DOMAIN}/control/action_tonight",
         vol.Required("action_id"): str,
         vol.Required("on"): bool,
+        # A car: charge up to this level (%) or range (km, plus the reserve).
+        vol.Optional("target"): vol.Any(
+            None, vol.All(vol.Coerce(float), vol.Range(min=1, max=1500))
+        ),
+        vol.Optional("unit", default="%"): vol.In(("%", "km")),
     }
 )
 @websocket_api.require_admin
@@ -627,10 +632,16 @@ async def ws_control_action_tonight(
     connection: websocket_api.ActiveConnection,
     msg: dict[str, Any],
 ) -> None:
-    """The switch "tonight" of a night action."""
+    """The switch "tonight" of a night action (a car with a level to reach)."""
     if (runtime := _runtime(hass, connection, msg)) is None:
         return
-    await runtime.async_action_tonight(msg["action_id"], msg["on"])
+    try:
+        await runtime.async_action_tonight(
+            msg["action_id"], msg["on"], msg.get("target"), msg["unit"]
+        )
+    except ValueError as err:
+        connection.send_error(msg["id"], str(err), str(err))
+        return
     connection.send_result(msg["id"])
 
 

@@ -22,7 +22,7 @@ of the night restores all of them, newest first.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import hashlib
 import json
 import math
@@ -197,7 +197,21 @@ class RoleAdapter(Adapter):
         if "charge_limit_enabled" in self.controls:
             writes.append(Write(self.controls["charge_limit_enabled"], True))
         writes.append(Write(self.controls["charge_limit"], 0))
-        return writes
+        return self._paced(writes)
+
+    def release(self, saved: dict[str, Any]) -> list[Write]:
+        return self._paced(super().release(saved))
+
+    def _paced(self, writes: list[Write]) -> list[Write]:
+        """Pauses between commands for devices that need them (Modbus)."""
+        pace = self.profile.pace
+        if not pace:
+            return writes
+        prepared = {step["entity_id"] for step in self.prepare}
+        return [
+            replace(w, pause=pace * 2 if w.entity_id in prepared else pace)
+            for w in writes
+        ]
 
     def missing(self, hass: HomeAssistant) -> list[str]:
         """What keeps Joe from steering: no way to hold, or entities gone.
@@ -216,6 +230,15 @@ class RoleAdapter(Adapter):
     # --- writes ---------------------------------------------------------------------------
 
     def writes(
+        self,
+        hass: HomeAssistant,
+        desired: Desired,
+        soc: float,
+        saved: dict[str, Any],
+    ) -> list[Write]:
+        return self._paced(self._writes(hass, desired, soc, saved))
+
+    def _writes(
         self,
         hass: HomeAssistant,
         desired: Desired,

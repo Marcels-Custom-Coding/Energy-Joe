@@ -360,12 +360,21 @@
               log(msg.skip ? "skip" : "unskip");
               push();
               return null;
-            case "energy_joe/control/action_tonight":
-              if (msg.on && state.plan?.window) control.tonight[msg.action_id] = state.plan.window.start;
+            case "energy_joe/control/action_tonight": {
+              control.tonight_target = control.tonight_target ?? {};
+              const night = state.plan?.window?.start;
+              if (msg.on && night) control.tonight[msg.action_id] = night;
               else delete control.tonight[msg.action_id];
+              if (msg.on && night && msg.target != null) {
+                const car = state.config.actions.find((a) => a.id === msg.action_id);
+                const reserve = msg.unit === "km" ? (car?.need?.reserve_km ?? 50) : 0;
+                const sensor = msg.unit === "km" ? car?.need?.range_entity : car?.need?.soc_entity;
+                control.tonight_target[msg.action_id] = { night, target: msg.target + reserve, chosen: msg.target, unit: msg.unit, sensor };
+              } else delete control.tonight_target[msg.action_id];
               log("tonight", { battery: `action:${msg.action_id}`, on: msg.on });
               push();
               return null;
+            }
             case "energy_joe/control/boost": {
               control.boost = control.boost ?? {};
               control.actions = control.actions ?? {};

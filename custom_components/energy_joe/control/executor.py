@@ -82,6 +82,8 @@ DEFAULT_DATA: dict[str, Any] = {
     "night": None,
     # Night actions: switched on "tonight" by hand (action id -> night), finished.
     "tonight": {},
+    # "Tonight up to …" for a car: action id -> night, target, chosen, unit, sensor.
+    "tonight_target": {},
     "done": [],
     "skip": None,
     "answer": None,
@@ -350,6 +352,16 @@ class JoeExecutor:
                 # the whole window and no target (not the charge shortened by need).
                 start = datetime.fromisoformat(plan["window"]["start"])
                 target = None
+            chosen = self.data["tonight_target"].get(action["id"])
+            if manual and chosen and chosen.get("night") == night:
+                # "Tonight up to …" by hand: the whole window, up to that level.
+                start = datetime.fromisoformat(plan["window"]["start"])
+                target = chosen["target"]
+                entry = {
+                    **entry,
+                    "sensor": chosen["sensor"],
+                    "need": {"target_unit": chosen["unit"], "sensor": chosen["sensor"]},
+                }
             reason: str | None = None
             on = False
             if action["id"] in self.data["done"]:
@@ -1122,18 +1134,61 @@ class JoeExecutor:
         self.data["tonight"] = {
             key: value for key, value in self.data["tonight"].items() if value != night
         }
+        self.data["tonight_target"] = {
+            key: value
+            for key, value in self.data["tonight_target"].items()
+            if value.get("night") != night
+        }
 
-    async def async_action_tonight(self, action_id: str, on: bool) -> None:
-        """Run a night action in the coming night regardless of the forecast (or not)."""
+    async def async_action_tonight(
+        self,
+        action_id: str,
+        on: bool,
+        target: float | None = None,
+        unit: str = "%",
+    ) -> None:
+        """Run a night action in the coming night regardless of the forecast (or not).
+
+        A car may get a level (%) or a range (km, plus the reserve) to charge
+        up to in the cheap window.
+        """
         plan = self._plan()
         night = plan["window"]["start"] if plan and plan.get("window") else None
+        chosen = None
+        if on and night and target is not None:
+            action = next(
+                (a for a in self._config()["actions"] if a["id"] == action_id), None
+            )
+            if action is None or action["kind"] != "switch":
+                raise ValueError("unknown_action")
+            need = action.get("need") or {}
+            sensor = need.get("soc_entity") if unit == "%" else need.get("range_entity")
+            if not sensor:
+                raise ValueError("no_sensor")
+            reserve = need.get("reserve_km", 50.0) if unit == "km" else 0.0
+            chosen = {
+                "night": night,
+                "target": round(float(target) + reserve, 1),
+                "chosen": float(target),
+                "unit": unit,
+                "sensor": sensor,
+            }
         if on and night:
             self.data["tonight"][action_id] = night
             # By hand: also when Joe's own charge reached its target before.
             self.data["done"] = [d for d in self.data["done"] if d != action_id]
         else:
             self.data["tonight"].pop(action_id, None)
-        self._log("tonight", battery=f"action:{action_id}", on=on)
+        if chosen:
+            self.data["tonight_target"][action_id] = chosen
+        else:
+            self.data["tonight_target"].pop(action_id, None)
+        self._log(
+            "tonight",
+            battery=f"action:{action_id}",
+            on=on,
+            **({"target": target, "unit": unit} if chosen else {}),
+        )
         await self._async_save()
         self._changed()
 
@@ -1392,6 +1447,7 @@ class JoeExecutor:
             "skip": self.data["skip"],
             "answer": self.data["answer"],
             "tonight": self.data["tonight"],
+            "tonight_target": self.data["tonight_target"],
             "boost": self.data["boost"],
         }
 

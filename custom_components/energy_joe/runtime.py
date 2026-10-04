@@ -19,6 +19,7 @@ from .accounts import CarAccounts
 from .const import DOMAIN
 from .control.executor import JoeExecutor
 from .control.notify import JoeNotifier
+from .discovery import async_profile_updates
 from .learn.learner import JoeLearner
 from .mail.inbox import CarInboxes
 from .observe.observer import BACKFILL_DAYS, JoeObserver
@@ -170,6 +171,18 @@ class JoeRuntime:
         self._hass.async_create_task(self.executor.async_start(), eager_start=False)
         self._update_observer()
         self.inbox.async_apply()
+        self._hass.async_create_task(self._async_profile_updates(), eager_start=False)
+
+    async def _async_profile_updates(self) -> None:
+        """Batteries set up before a profile learned more (e.g. a manual mode)."""
+        try:
+            patch = await async_profile_updates(self._hass, self._config)
+        except Exception:
+            _LOGGER.exception("Checking the battery profiles failed")
+            return
+        if patch:
+            _LOGGER.info("Battery profiles updated: %s", list(patch["batteries"]))
+            self.async_update_config(patch, "read", "profile")
 
     async def async_refresh_plan(self) -> dict[str, Any] | None:
         """Plan again now (the panel's "plan again")."""
@@ -177,9 +190,15 @@ class JoeRuntime:
             return None
         return await self.planner.async_refresh()
 
-    async def async_action_tonight(self, action_id: str, on: bool) -> None:
+    async def async_action_tonight(
+        self,
+        action_id: str,
+        on: bool,
+        target: float | None = None,
+        unit: str = "%",
+    ) -> None:
         """Run a night action tonight regardless of the forecast (or not), and plan again."""
-        await self.executor.async_action_tonight(action_id, on)
+        await self.executor.async_action_tonight(action_id, on, target, unit)
         if self.planner.active:
             await self.planner.async_refresh()
 

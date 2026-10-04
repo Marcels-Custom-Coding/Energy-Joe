@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Generator
+from unittest.mock import patch
 
 import pytest
 
@@ -19,6 +20,18 @@ def auto_enable_custom_integrations(
 ) -> Generator[None]:
     """Allow loading custom integrations in every test."""
     yield
+
+
+@pytest.fixture(autouse=True)
+def command_pauses() -> Generator[list[float]]:
+    """Pauses devices need between commands cost no time in tests (recorded)."""
+    pauses: list[float] = []
+
+    async def settle(seconds: float) -> None:
+        pauses.append(seconds)
+
+    with patch("custom_components.energy_joe.control.writes.settle", settle):
+        yield pauses
 
 
 @pytest.fixture

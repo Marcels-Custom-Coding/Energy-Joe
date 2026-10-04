@@ -8,7 +8,7 @@ entity; reading it back tells whether the device took it.
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 import logging
 import math
 from typing import Any
@@ -38,6 +38,8 @@ class Write:
 
     entity_id: str
     value: Any = None
+    # Seconds the device needs after this command before the next one.
+    pause: float = field(default=0.0, compare=False)
 
     @property
     def domain(self) -> str:
@@ -103,9 +105,9 @@ def fit(hass: HomeAssistant, write: Write) -> Write:
             value = base + round((value - base) / step) * step
             if isinstance(high, int | float) and value > high:
                 value -= step
-        return Write(write.entity_id, round(value, 4))
+        return replace(write, value=round(value, 4))
     if write.domain in TOGGLES and write.value is not None:
-        return Write(write.entity_id, _as_bool(write.value))
+        return replace(write, value=_as_bool(write.value))
     return write
 
 
@@ -172,6 +174,13 @@ async def async_apply(hass: HomeAssistant, write: Write) -> None:
             "Writing %s to %s failed: %s", write.value, write.entity_id, err
         )
         raise WriteError(write.entity_id, "failed") from err
+    if write.pause:
+        await settle(write.pause)
+
+
+async def settle(seconds: float) -> None:
+    """Give a device time between commands (tests replace this)."""
+    await asyncio.sleep(seconds)
 
 
 async def _async_call(hass: HomeAssistant, write: Write) -> None:

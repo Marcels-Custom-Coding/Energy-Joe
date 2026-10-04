@@ -389,3 +389,47 @@ async def test_charging_by_hand_wins_over_the_night_plan(
     hass.states.async_set("sensor.car_soc", "90", {"unit_of_measurement": "%"})
     await executor.async_check()
     assert hass.states.get("select.carport_mode").state == "smart"
+
+
+async def test_tonight_up_to_a_range(hass: HomeAssistant, freezer) -> None:
+    """ "Tonight up to 200 km": nothing before the window, then up to range + reserve."""
+    freezer.move_to("2026-10-03T20:00:00+02:00")
+    keep_values(hass)
+    hass.states.async_set(
+        "select.carport_mode", "smart", {"options": ["off", "smart", "now"]}
+    )
+    hass.states.async_set("binary_sensor.carport_connected", "on")
+    hass.states.async_set("sensor.car_range", "120", {"unit_of_measurement": "km"})
+    car = {
+        **EV,
+        "auto": False,
+        "need": {"range_entity": "sensor.car_range", "reserve_km": 40},
+    }
+    config = model.validate({"version": model.CONFIG_VERSION, "actions": [car]})
+    start, end = window(hass)
+    tonight: dict[str, str] = {}
+
+    def plan() -> dict[str, Any]:
+        planned = plan_actions(
+            config["actions"], hass.states.get, start, end, 30.0, tonight
+        )
+        return night_plan(start, planned)
+
+    executor = JoeExecutor(hass, lambda: config, plan, lambda: "live", lambda: None)
+    await executor.async_load()
+    with pytest.raises(ValueError):
+        await executor.async_action_tonight("ev", True, 80, "%")
+    await executor.async_action_tonight("ev", True, 200, "km")
+    tonight.update(executor.data["tonight"])
+    assert executor.data["tonight_target"]["ev"]["target"] == 240
+    await executor.async_check()
+    # Not now: tonight.
+    assert hass.states.get("select.carport_mode").state == "smart"
+    freezer.move_to("2026-10-04T00:10:00+02:00")
+    await executor.async_check()
+    assert hass.states.get("select.carport_mode").state == "now"
+    assert executor.status["actions"]["ev"]["target"] == 240
+    hass.states.async_set("sensor.car_range", "241", {"unit_of_measurement": "km"})
+    await executor.async_check()
+    assert hass.states.get("select.carport_mode").state == "smart"
+    assert executor.status["actions"]["ev"]["reason"] == "reached"

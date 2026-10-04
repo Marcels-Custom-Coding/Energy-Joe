@@ -159,13 +159,14 @@ export class JoeDevicesPage extends LitElement {
       .boost .unit {
         color: var(--joe-ink-2);
       }
-      .boost .unit-select {
-        min-height: 34px;
-        border: 0;
-        background: transparent;
-        font: inherit;
-        color: var(--joe-ink-2);
-        cursor: pointer;
+      .boost .unit-seg button {
+        min-width: 44px;
+      }
+      .boost .charge-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        flex-basis: 100%;
       }
       .boost .hint {
         flex-basis: 100%;
@@ -414,20 +415,21 @@ export class JoeDevicesPage extends LitElement {
       ${planned?.need
         ? html`<joe-car-need .hass=${this.hass} .t=${t} .action=${planned} .roundTrip=${action.need?.round_trip ?? true}></joe-car-need>`
         : nothing}
-      ${action.kind === "switch" && (action.need?.soc_entity || action.need?.range_entity) ? this.renderBoost(t, joe, action) : nothing}
-      <div class="test">
-        <span class="toggle-label" id="tonight-${action.id}">${t("devices.action.tonight")}</span>
-        <button
-          type="button"
-          class="switch"
-          role="switch"
-          aria-checked=${String(tonight)}
-          aria-labelledby="tonight-${action.id}"
-          ?disabled=${!night || !action.enabled}
-          @click=${() => this.toggleTonight(action.id, !tonight)}
-        ></button>
-        ${tip(t, "action_tonight")}
-      </div>
+      ${action.kind === "switch" && (action.need?.soc_entity || action.need?.range_entity)
+        ? this.renderCharge(t, joe, action, night, tonight)
+        : html`<div class="test">
+            <span class="toggle-label" id="tonight-${action.id}">${t("devices.action.tonight")}</span>
+            <button
+              type="button"
+              class="switch"
+              role="switch"
+              aria-checked=${String(tonight)}
+              aria-labelledby="tonight-${action.id}"
+              ?disabled=${!night || !action.enabled}
+              @click=${() => this.toggleTonight(action.id, !tonight)}
+            ></button>
+            ${tip(t, "action_tonight")}
+          </div>`}
       <div class="setup">
         <button type="button" class="mini-btn" @click=${() => this.editAction(action.id)}>
           <ha-icon icon="mdi:pencil-outline"></ha-icon>${t("devices.action.edit")}
@@ -436,23 +438,40 @@ export class JoeDevicesPage extends LitElement {
     </section>`;
   }
 
-  /** "Just charge to …": now, until a level or a range (plus the reserve). */
-  private renderBoost(t: Translate, joe: JoeState, action: ActionConfig): TemplateResult {
+  /**
+   * Charging a car by hand: one target (a level or a range plus the reserve),
+   * then "now" or "tonight" in the cheap window.
+   */
+  private renderCharge(t: Translate, joe: JoeState, action: ActionConfig, night: string | undefined, tonight: boolean): TemplateResult {
     const boost = joe.control?.boost?.[action.id];
     const live = joe.control?.actions?.[action.id];
+    const chosen = joe.control?.tonight_target?.[action.id];
     const need = action.need!;
+    const amount = (target: number, total: number, unit: "%" | "km") =>
+      unit === "km"
+        ? t("devices.charge.km", { target: formatNumber(t.lang, target, 0), reserve: formatNumber(t.lang, total - target, 0) })
+        : t("devices.charge.percent", { target: formatNumber(t.lang, target, 0) });
     if (boost) {
       const value = live?.value;
-      const unit = boost.unit;
       return html`<div class="boost on" data-tipped>
         <span>
-          ${t(unit === "km" ? "devices.boost.running_km" : "devices.boost.running", {
-            target: formatNumber(t.lang, boost.chosen, 0),
-            reserve: formatNumber(t.lang, boost.target - boost.chosen, 0),
-            now: value == null ? "–" : formatNumber(t.lang, value, 0),
+          ${t("devices.charge.now_running", {
+            amount: amount(boost.chosen, boost.target, boost.unit),
+            now: value == null ? "–" : `${formatNumber(t.lang, value, 0)} ${boost.unit}`,
           })}
         </span>
         <button type="button" class="mini-btn quiet" @click=${() => this.boost(action.id, null)}>${t("devices.boost.stop")}</button>
+        ${tip(t, "boost")}
+      </div>`;
+    }
+    if (tonight) {
+      return html`<div class="boost on" data-tipped>
+        <span>
+          ${chosen && chosen.night === night
+            ? t("devices.charge.tonight_set", { amount: amount(chosen.chosen, chosen.target, chosen.unit) })
+            : t("devices.charge.tonight_window")}
+        </span>
+        <button type="button" class="mini-btn quiet" @click=${() => this.toggleTonight(action.id, false)}>${t("devices.boost.stop")}</button>
         ${tip(t, "boost")}
       </div>`;
     }
@@ -460,19 +479,21 @@ export class JoeDevicesPage extends LitElement {
     const unit = this.boostUnit[action.id] && units.includes(this.boostUnit[action.id]) ? this.boostUnit[action.id] : units[0];
     const value = this.boostValue[`${action.id}:${unit}`] ?? (unit === "%" ? 80 : 200);
     const max = unit === "%" ? 100 : 1500;
+    const typed = (form: HTMLFormElement | null): number => {
+      const input = form?.querySelector("input") as HTMLInputElement | null;
+      const number = Number.parseFloat((input?.value ?? "").replace(",", "."));
+      return Math.round(Math.min(max, Math.max(1, Number.isFinite(number) ? number : value)));
+    };
     return html`<form
       class="boost"
       data-tipped
       novalidate
       @submit=${(ev: Event) => {
         ev.preventDefault();
-        const input = (ev.target as HTMLFormElement).querySelector("input") as HTMLInputElement;
-        const typed = Number.parseFloat(input.value.replace(",", "."));
-        const chosen = Number.isFinite(typed) ? typed : value;
-        this.boost(action.id, Math.round(Math.min(max, Math.max(1, chosen))), unit);
+        this.boost(action.id, typed(ev.target as HTMLFormElement), unit);
       }}
     >
-      <label class="toggle-label" for="boost-${action.id}">${t("devices.boost.label")}</label>
+      <label class="toggle-label" for="boost-${action.id}">${t("devices.charge.label")}</label>
       <span class="amount">
         <input
           id="boost-${action.id}"
@@ -486,28 +507,49 @@ export class JoeDevicesPage extends LitElement {
           @change=${(ev: Event) => {
             const number = Number.parseFloat((ev.target as HTMLInputElement).value.replace(",", "."));
             if (Number.isFinite(number) && number >= 1) {
-              this.boostValue = { ...this.boostValue, [`${action.id}:${unit}`]: Math.min(number, unit === "%" ? 100 : 1500) };
+              this.boostValue = { ...this.boostValue, [`${action.id}:${unit}`]: Math.min(number, max) };
             }
           }}
         />
         ${units.length > 1
-          ? html`<select
-              class="unit-select"
-              aria-label=${t("devices.boost.unit")}
-              @change=${(ev: Event) => {
-                this.boostUnit = { ...this.boostUnit, [action.id]: (ev.target as HTMLSelectElement).value as "%" | "km" };
-              }}
-            >
-              ${units.map((u) => html`<option value=${u} ?selected=${u === unit}>${u}</option>`)}
-            </select>`
+          ? html`<span class="seg unit-seg" role="group" aria-label=${t("devices.boost.unit")}>
+              ${units.map(
+                (u) => html`<button
+                  type="button"
+                  aria-pressed=${String(u === unit)}
+                  @click=${() => (this.boostUnit = { ...this.boostUnit, [action.id]: u })}
+                >
+                  ${u}
+                </button>`,
+              )}
+            </span>`
           : html`<span class="unit">${unit}</span>`}
       </span>
-      <button type="submit" class="mini-btn go" ?disabled=${joe.mode === "off" || !action.enabled}>
-        <ha-icon icon="mdi:ev-plug-type2"></ha-icon>${t("devices.boost.go")}
-      </button>
       ${tip(t, "boost")}
+      <span class="charge-buttons">
+        <button type="submit" class="mini-btn go" ?disabled=${joe.mode === "off" || !action.enabled}>
+          <ha-icon icon="mdi:ev-plug-type2"></ha-icon>${t("devices.charge.now")}
+        </button>
+        <button
+          type="button"
+          class="mini-btn"
+          ?disabled=${!night || !action.enabled}
+          @click=${(ev: Event) => this.chargeTonight(action.id, typed((ev.target as HTMLElement).closest("form")), unit)}
+        >
+          <ha-icon icon="mdi:weather-night"></ha-icon>${t("devices.charge.tonight")}
+        </button>
+      </span>
       ${unit === "km" ? html`<small class="hint">${t("devices.boost.reserve", { reserve: formatNumber(t.lang, need.reserve_km ?? 50, 0) })}</small>` : nothing}
+      ${night ? nothing : html`<small class="hint">${t("devices.charge.no_night")}</small>`}
     </form>`;
+  }
+
+  private async chargeTonight(actionId: string, target: number, unit: "%" | "km"): Promise<void> {
+    try {
+      await this.hass?.callWS({ type: "energy_joe/control/action_tonight", action_id: actionId, on: true, target, unit });
+    } catch {
+      this.notice = this.t!("error.action");
+    }
   }
 
   private async boost(actionId: string, target: number | null, unit: "%" | "km" = "%"): Promise<void> {

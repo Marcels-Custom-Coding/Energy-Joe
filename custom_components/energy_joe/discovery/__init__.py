@@ -6,6 +6,7 @@ from typing import Any
 
 from homeassistant.core import HomeAssistant
 
+from .. import model
 from .checks import run_checks, run_config_checks
 from .energy import parse_energy_prefs
 from .find import (
@@ -19,11 +20,18 @@ from .find import (
     find_tariff,
     find_wallboxes,
     find_weather,
+    profile_prepare,
 )
 from .proposal import build_proposal
 from .snapshot import Snapshot, async_collect
 
-__all__ = ["async_check", "async_collect", "async_discover", "discover"]
+__all__ = [
+    "async_check",
+    "async_collect",
+    "async_discover",
+    "async_profile_updates",
+    "discover",
+]
 
 
 async def async_discover(hass: HomeAssistant) -> dict[str, Any]:
@@ -36,6 +44,25 @@ async def async_check(
 ) -> list[dict[str, Any]]:
     """Check what Joe is configured to use against the current states."""
     return run_config_checks(await async_collect(hass), config)
+
+
+async def async_profile_updates(
+    hass: HomeAssistant, config: dict[str, Any]
+) -> dict[str, Any] | None:
+    """What newer profiles know about batteries set up before (a config patch).
+
+    So far the prepare steps (e.g. a battery's manual mode); what the user set
+    stays as it is.
+    """
+    snap = await async_collect(hass)
+    patch: dict[str, Any] = {}
+    for battery in config["batteries"]:
+        if model.source_of(config, f"batteries[{battery['id']}].prepare") == "user":
+            continue
+        found = profile_prepare(snap, battery)
+        if found and found != (battery.get("prepare") or []):
+            patch[battery["id"]] = {"prepare": found}
+    return {"batteries": patch} if patch else None
 
 
 def discover(snap: Snapshot) -> dict[str, Any]:

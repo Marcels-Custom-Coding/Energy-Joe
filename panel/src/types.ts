@@ -743,6 +743,8 @@ export interface ControlView {
   answer: { night: string; yes: boolean; at: string } | null;
   /** Night actions switched on "tonight" by hand: action id -> night. */
   tonight: Record<string, string>;
+  /** "Tonight up to …" for a car: the night and what the user chose, in % or km. */
+  tonight_target?: Record<string, { night: string; target: number; chosen: number; unit: "%" | "km"; sensor: string }>;
   /** Cars charging to a level by hand right now. */
   boost?: Record<string, { target: number; chosen: number; unit: "%" | "km"; sensor: string; since: string; until: string }>;
   /** Per battery: ready to steer, or why not. */

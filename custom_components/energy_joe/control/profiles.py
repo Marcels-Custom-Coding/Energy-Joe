@@ -116,6 +116,9 @@ class Profile:
     scope: str = "entry"
     # Checked on a real battery (all others rely on the integration's source).
     proven: bool = False
+    # Seconds to wait after each command, for devices that need time between
+    # them (Modbus); twice that after a prepare step.
+    pace: float = 0.0
 
 
 def _o(**options: str | tuple[str, ...]) -> dict[str, tuple[str, ...]]:
@@ -169,12 +172,16 @@ PROFILES: dict[str, Profile] = {
             charge=("mode",),
             hold=("min_soc", "standby"),
             block=("standby",),
+            # Omnibattery runs its own control loop and refuses force mode and
+            # power setpoints until the battery is switched to manual mode.
+            prepare=(Set("battery_manual_mode", True),),
             limits={
                 "max_charge_w": ("max_charge_power",),
                 "max_discharge_w": ("max_discharge_power",),
             },
             scope="device",
             proven=True,
+            pace=1.0,
         ),
         Profile(
             key="enphase_envoy",
