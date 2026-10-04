@@ -54,9 +54,10 @@ export class JoeOverview extends LitElement {
       }
       .card > joe-pose {
         position: absolute;
-        right: -6px;
-        top: 10px;
-        width: 170px;
+        /* Inside the card's padding: never cut off at the edge. */
+        right: 18px;
+        top: 16px;
+        width: 160px;
         pointer-events: none;
       }
       .figure-card .head .eyebrow {
@@ -276,7 +277,9 @@ export class JoeOverview extends LitElement {
           grid-template-columns: 1fr;
         }
         .card > joe-pose {
-          width: 120px;
+          right: 12px;
+          top: 12px;
+          width: 112px;
         }
         .card .display {
           max-width: 64%;

@@ -54,9 +54,10 @@ export class JoePlanPage extends LitElement {
       }
       .hero joe-pose {
         position: absolute;
-        right: 0;
-        top: 8px;
-        width: 180px;
+        /* Inside the card's padding: never cut off at the edge. */
+        right: 18px;
+        top: 16px;
+        width: 170px;
         pointer-events: none;
       }
       .big {
@@ -172,7 +173,9 @@ export class JoePlanPage extends LitElement {
       }
       @media (max-width: 760px) {
         .hero joe-pose {
-          width: 120px;
+          right: 12px;
+          top: 12px;
+          width: 112px;
         }
         dl {
           grid-template-columns: 1fr;

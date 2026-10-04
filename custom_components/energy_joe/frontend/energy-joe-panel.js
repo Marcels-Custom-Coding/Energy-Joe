@@ -12088,9 +12088,10 @@ var fr = class extends y {
       }
       .card > joe-pose {
         position: absolute;
-        right: -6px;
-        top: 10px;
-        width: 170px;
+        /* Inside the card's padding: never cut off at the edge. */
+        right: 18px;
+        top: 16px;
+        width: 160px;
         pointer-events: none;
       }
       .figure-card .head .eyebrow {
@@ -12310,7 +12311,9 @@ var fr = class extends y {
           grid-template-columns: 1fr;
         }
         .card > joe-pose {
-          width: 120px;
+          right: 12px;
+          top: 12px;
+          width: 112px;
         }
         .card .display {
           max-width: 64%;
@@ -12588,9 +12591,10 @@ var pr = 36e5, mr = class extends y {
       }
       .hero joe-pose {
         position: absolute;
-        right: 0;
-        top: 8px;
-        width: 180px;
+        /* Inside the card's padding: never cut off at the edge. */
+        right: 18px;
+        top: 16px;
+        width: 170px;
         pointer-events: none;
       }
       .big {
@@ -12706,7 +12710,9 @@ var pr = 36e5, mr = class extends y {
       }
       @media (max-width: 760px) {
         .hero joe-pose {
-          width: 120px;
+          right: 12px;
+          top: 12px;
+          width: 112px;
         }
         dl {
           grid-template-columns: 1fr;

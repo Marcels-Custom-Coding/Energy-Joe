@@ -3,6 +3,12 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.2.4
+
+- Neues Bild „Füße hoch“.
+- Joes Bilder in der Übersicht und im Plan stehen jetzt mit Abstand in der
+  Karte, statt am rechten Rand abgeschnitten zu werden.
+
 ## 0.2.3
 
 - **Postfach bei Microsoft** (Exchange Online und private Outlook-Konten):
