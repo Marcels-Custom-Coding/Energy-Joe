@@ -68,15 +68,3 @@ Voraussetzung: Home Assistant 2026.3 oder neuer.
 3. *Einstellungen → Geräte & Dienste → Integration hinzufügen → Energy Joe*
 
 **Von Hand:** Ordner `custom_components/energy_joe` nach `/config/custom_components/` kopieren, neu starten, Integration hinzufügen.
-
-## Entwicklung
-
-Das Panel liegt als Quellcode in `panel/` (Lit und TypeScript) und wird nach `custom_components/energy_joe/frontend/` gebaut. Der Build ist eingecheckt, weil HACS ohne Build-Schritt installiert.
-
-```bash
-cd panel
-npm install
-npm run build
-```
-
-Was vor der Veröffentlichung zu tun ist, steht in [PUBLISHING.md](PUBLISHING.md).
