@@ -1,20 +1,21 @@
 # Veröffentlichung
 
-Energy Joe wird aus diesem Repository veröffentlicht, sobald die Entwicklung abgeschlossen ist. Bis dahin bleibt es privat. Diese Liste hält fest, was dann zu tun ist.
+Energy Joe wird aus diesem Repository veröffentlicht. Das Repository ist öffentlich und lässt sich als benutzerdefiniertes Repository über HACS installieren; Versionen kommen als GitHub-Releases (siehe `docs/DEVELOPMENT.md`, Abschnitt Versionen). Diese Liste hält fest, was für die offizielle Veröffentlichung noch fehlt.
 
 ## Bleibt unverändert
 
 - **Domain `energy_joe`** – sie steckt in Entity-IDs, Service-Namen und den Speicherdateien der Nutzer. Nie ändern.
 - Ordnername `custom_components/energy_joe` und Panel-Pfad `energy-joe`
 
-## Vor der Veröffentlichung
+## Vor der offiziellen Veröffentlichung
 
-1. README: Work-in-progress-Hinweis entfernen, Installation über HACS beschreiben, Screenshots ergänzen
-2. `manifest.json`: `version` auf die erste Release-Version setzen
-3. Repository öffentlich stellen, Beschreibung und Topics setzen (`home-assistant`, `hacs`, `integration`)
-4. GitHub Actions `hassfest` und HACS-Validierung grün
-5. Erstes GitHub-Release, Tag gleich `version` aus `manifest.json`
-6. Antrag auf Aufnahme in die HACS-Standardliste – Voraussetzungen siehe [HACS-Dokumentation](https://www.hacs.xyz/docs/publish/include/)
+1. README: Hinweis „Noch in Entwicklung“ entfernen, Screenshots ergänzen
+2. Beschreibung und Topics des Repositorys setzen (`home-assistant`, `hacs`, `integration`)
+3. HACS-Validierung als GitHub Action ergänzen (hassfest läuft schon)
+4. Eigene Apps für die Anmeldung bei Microsoft und Google eintragen (`mail/oauth.py`)
+5. Antrag auf Aufnahme in die HACS-Standardliste – Voraussetzungen siehe [HACS-Dokumentation](https://www.hacs.xyz/docs/publish/include/)
+
+Erledigt: Repository öffentlich, Releases mit Versionsnummern, hassfest grün.
 
 ## Brand-Bilder
 

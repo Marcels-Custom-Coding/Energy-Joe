@@ -2,11 +2,18 @@
 
 ![Energy Joe](docs/images/energy-joe.jpg)
 
-> **Work in progress.** Energy Joe ist noch in Entwicklung und nicht veröffentlicht.
+> **Noch in Entwicklung.** Energy Joe ist noch nicht offiziell veröffentlicht. Ausprobieren kannst du ihn schon – am besten erst eine Weile im Simulationsmodus.
 
 Energy Joe ist eine lernende Home-Assistant-Integration für Haushalte mit PV-Anlage und Speicher. Er verschiebt Verbräuche – Hausspeicher, E-Auto, Warmwasser – in günstige Tarifzeiten, wenn die Sonne am nächsten Tag nicht reicht, und lernt jeden Tag aus Prognose, Verbrauch, Wetter und Alltag dazu.
 
-Joe braucht kein Vorwissen: Nach dem Hinzufügen der Integration findest du ihn in der Seitenleiste. Dort schaut er sich in deinem Home Assistant um, zeigt dir, was er gefunden hat, und fragt in Alltagssprache nach dem, was er nicht selbst herausfinden kann. Bis du es anders entscheidest, steuert er nichts, sondern simuliert nur.
+Joe braucht kein Vorwissen. Er findet selbst, was er braucht, fragt in Alltagssprache nach dem Rest und steuert nichts, bis du es erlaubst.
+
+## So arbeitet Joe
+
+1. **Umschauen:** Joe sucht in deinem Home Assistant nach Speicher, Tarif, Solarprognose, Messwerten, Wallbox und Auto und zeigt dir, was er gefunden hat.
+2. **Fragen:** Was er nicht selbst herausfinden kann, fragt er – zum Beispiel, wie ihr Warmwasser macht.
+3. **Zuschauen und lernen:** Im Simulationsmodus plant er jede Nacht, schaltet aber nichts, und rechnet jeden Morgen vor, was das Steuern gebracht hätte.
+4. **Steuern:** Wenn du willst, steuert er selbst – nach einem Testlauf je Speicher – und stellt am Ende immer alles zurück.
 
 ## Was Joe kann
 
@@ -55,16 +62,54 @@ Drei Wege, wie Termine zum Auto kommen:
 2. **Postfach ohne Kalender** (z. B. web.de, GMX, Gmail) – du lädst das Auto zu Terminen ein, Joe sagt zu und trägt sie in seinen eigenen Kalender ein, den du aufs Handy holen kannst.
 3. **Postfach mit Kalender** (Google, Microsoft 365, Outlook.com, iCloud, Infomaniak) – Joe liest den Kalender des Kontos und sagt dort zu.
 
-Betriebsart, Aussetzen, Freigeben und Status gibt es auch als Entitäten und Dienste für eigene Automationen.
+## Betriebsarten
+
+| Betriebsart | Was Joe tut |
+|---|---|
+| **Simulation** | plant und lernt, schaltet nichts (so startet Joe) |
+| **Vorschlagen** | fragt jeden Abend, ob er steuern darf |
+| **Live** | steuert jede Nacht selbst – nur Speicher mit bestandenem Testlauf |
+| **Aus** | macht Pause |
+
+Betriebsart, „Heute aussetzen“, Freigeben und Status gibt es auch als Entitäten und Dienste für eigene Automationen.
+
+## Was du brauchst
+
+- Home Assistant 2026.3 oder neuer
+- am besten ein eingerichtetes Energie-Dashboard mit Netz, PV und – wenn vorhanden – Speicher (daraus liest Joe die Messwerte am zuverlässigsten)
+- zum Steuern einen Hausspeicher, dessen Integration Regler anbietet (Mindest-Ladestand, Netzladen, Betriebsart oder Entladegrenze)
+- am besten eine Solarprognose (Forecast.Solar, Solcast oder Open-Meteo Solar Forecast) und, wenn du einen hast, deinen dynamischen Tarif
+
+Alles Weitere ist freiwillig: Wetter, Kalender und Personen, Auto-Integration oder evcc, Warmwasser.
 
 ## Installieren
 
-Voraussetzung: Home Assistant 2026.3 oder neuer.
+**Über HACS:**
 
-**Über HACS** (nach der Veröffentlichung):
-
-1. HACS → Menü → *Benutzerdefinierte Repositories* → URL dieses Repositories, Typ *Integration*
-2. *Energy Joe* herunterladen, Home Assistant neu starten
+1. HACS → Menü → *Benutzerdefinierte Repositories* → `https://github.com/Marcels-Custom-Coding/Energy-Joe`, Typ *Integration*
+2. *Energy Joe* herunterladen und Home Assistant neu starten
 3. *Einstellungen → Geräte & Dienste → Integration hinzufügen → Energy Joe*
 
 **Von Hand:** Ordner `custom_components/energy_joe` nach `/config/custom_components/` kopieren, neu starten, Integration hinzufügen.
+
+Updates kommen als Versionen über HACS. Nach einem Update lädst du die Seite einmal neu – Joe sagt dir Bescheid, wenn noch die alte Version im Browser hängt.
+
+## Erste Schritte
+
+1. Öffne **Energy Joe** in der Seitenleiste und lass ihn sich umschauen.
+2. Schau dir an, was er gefunden hat, und beantworte seine Fragen. „Weiß ich nicht“ ist immer eine gute Antwort.
+3. Lass ihn ein paar Tage im **Simulationsmodus** laufen. Auf der Übersicht siehst du jeden Morgen, was das Steuern gebracht hätte.
+4. Mach auf der Seite **Geräte** für jeden Speicher den **Testlauf**.
+5. Stell auf **Vorschlagen** oder **Live**, wenn du Joe steuern lassen willst.
+
+## Datenschutz
+
+- Joe rechnet und lernt in deinem Home Assistant. Eine eigene Cloud gibt es nicht.
+- Nach außen geht nur, was du einrichtest: der Ort eines Termins an den gewählten Entfernungsdienst (Waze, Google oder OpenStreetMap) und die Verbindung zum Postfach oder Kalender eines Autos.
+- Passwörter und Anmeldungen liegen in eigenen Speichern, nie in der Konfiguration oder in der Diagnose.
+
+## Hilfe
+
+Fragen und Fehler bitte als [Issue auf GitHub](https://github.com/Marcels-Custom-Coding/Energy-Joe/issues). Hilfreich ist die Diagnose: *Einstellungen → Geräte & Dienste → Energy Joe → ⋮ → Diagnose herunterladen* – Namen, Adressen und Termine sind darin geschwärzt.
+
+Joe spricht Deutsch und Englisch, je nach Sprache deines Home Assistant.
