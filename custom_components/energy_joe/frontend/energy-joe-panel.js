@@ -1,4 +1,4 @@
-import { A as e, C as t, D as n, E as r, O as i, S as a, T as o, _ as s, a as c, b as l, c as u, d, f, g as p, h as m, i as h, j as g, k as _, l as v, m as y, n as ee, o as te, p as ne, r as re, s as b, t as ie, u as ae, v as oe, w as se, x, y as S } from "./tokens-CRWjiNyJ.js";
+import { A as e, C as t, D as n, E as r, O as i, S as a, T as o, _ as s, a as c, b as l, c as u, d, f, g as p, h as m, i as h, j as g, k as _, l as v, m as y, n as ee, o as te, p as ne, r as re, s as b, t as ie, u as ae, v as oe, w as se, x, y as S } from "./tokens-C9c-gFNr.js";
 //#region src/assets.ts
 var ce = import.meta.url.replace(/[^/]*$/, ""), le = (e) => `${ce}${e}`, C = _`<svg
   class="swoosh"
@@ -8109,6 +8109,11 @@ var Gt = class extends n {
       .topic.done {
         color: var(--joe-ink);
       }
+      .topics .arrow {
+        --mdc-icon-size: 18px;
+        color: var(--joe-muted);
+        margin: 0 -2px;
+      }
       .topic ha-icon {
         --mdc-icon-size: 16px;
       }
@@ -8152,7 +8157,7 @@ var Gt = class extends n {
 			n: r + 1,
 			total: n.length
 		})}</span>
-            ${n.map((n, a) => _`<button
+            ${n.map((n, a) => _`${a ? _`<ha-icon class="arrow" icon="mdi:chevron-right" aria-hidden="true"></ha-icon>` : i}<button
                 type="button"
                 class="topic ${a < r ? "done" : ""}"
                 aria-current=${a === r ? "step" : "false"}

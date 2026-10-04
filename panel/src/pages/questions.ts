@@ -148,6 +148,11 @@ export class JoeQuestions extends LitElement {
       .topic.done {
         color: var(--joe-ink);
       }
+      .topics .arrow {
+        --mdc-icon-size: 18px;
+        color: var(--joe-muted);
+        margin: 0 -2px;
+      }
       .topic ha-icon {
         --mdc-icon-size: 16px;
       }
@@ -204,7 +209,7 @@ export class JoeQuestions extends LitElement {
           <nav class="topics" aria-label=${t("ask.topics")} data-notip>
             <span class="eyebrow">${t("ask.count", { n: index + 1, total: list.length })}</span>
             ${list.map(
-              (item, i) => html`<button
+              (item, i) => html`${i ? html`<ha-icon class="arrow" icon="mdi:chevron-right" aria-hidden="true"></ha-icon>` : nothing}<button
                 type="button"
                 class="topic ${i < index ? "done" : ""}"
                 aria-current=${i === index ? "step" : "false"}
