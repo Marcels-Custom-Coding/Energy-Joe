@@ -11,7 +11,8 @@ interface BatteryAutomation {
   entity_id: string;
   name: string;
   on: boolean;
-  writes: { entity_id: string; name: string; battery: string }[];
+  /** What it sets: an entity (or a whole device), of which battery, one of Joe's levers? */
+  writes: { entity_id: string | null; name: string; battery: string; battery_id: string; joe: boolean }[];
   switched_off: { at: string; reason: string } | null;
 }
 
@@ -25,6 +26,9 @@ export class JoeBatteryAutomations extends LitElement {
   @property({ attribute: false }) t?: Translate;
   /** The batteries as configured: a change looks again. */
   @property() batteries = "";
+  /** Joe's mode and which batteries he may steer: only then do the automations get in the way. */
+  @property() mode = "";
+  @property({ attribute: false }) ready: Record<string, string> = {};
 
   @state() private items: BatteryAutomation[] = [];
   @state() private busy = false;
@@ -35,6 +39,24 @@ export class JoeBatteryAutomations extends LitElement {
     css`
       :host {
         display: block;
+        margin-top: 12px;
+      }
+      .card {
+        padding: 18px 20px;
+      }
+      .head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .head .eyebrow {
+        flex: 1;
+        min-width: 0;
+      }
+      .now {
+        margin: 8px 0 0;
+        font-weight: 600;
       }
       ul {
         list-style: none;
@@ -105,12 +127,16 @@ export class JoeBatteryAutomations extends LitElement {
     }
     const on = this.items.filter((item) => this.on(item));
     const mine = this.items.filter((item) => item.switched_off && !this.on(item));
+    // They only get in the way where Joe may steer: a mode that steers and a tested battery.
+    const steers =
+      (this.mode === "advisory" || this.mode === "live") &&
+      on.some((item) => item.writes.some((w) => this.ready[w.battery_id] === "ready"));
     return html`<section class="card" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:robot-outline"></ha-icon>${t("automations.title")}</div>
         ${tip(t, "battery_automations")}
       </div>
-      <p class="now">${t(on.length ? "automations.lead" : "automations.lead_off")}</p>
+      <p class="now">${t(!on.length ? "automations.lead_off" : steers ? "automations.lead" : "automations.lead_idle")}</p>
       <ul>
         ${this.items.map((item) => {
           const active = this.on(item);
@@ -118,9 +144,12 @@ export class JoeBatteryAutomations extends LitElement {
           return html`<li>
             <div class="row">
               <b>${item.name}</b>
+              ${item.writes.some((w) => w.joe) ? html`<span class="chip">${t("automations.levers")}</span>` : nothing}
               <span class="chip ${active ? "warn" : "ok"}">${t(active ? "automations.on" : "automations.off")}</span>
             </div>
-            <small>${t("automations.writes", { what: item.writes.map((w) => w.name).join(", "), batteries })}</small>
+            ${item.writes.length
+              ? html`<small>${t("automations.writes", { what: item.writes.map((w) => w.name).join(", "), batteries })}</small>`
+              : html`<small>${t("automations.not_battery")}</small>`}
             ${item.switched_off && !active
               ? html`<small>
                   ${t("automations.switched_off", {
@@ -134,7 +163,7 @@ export class JoeBatteryAutomations extends LitElement {
       </ul>
       <div class="actions">
         ${on.length
-          ? html`<button type="button" class="mini-btn go" ?disabled=${this.busy} @click=${() => this.switch(false)}>
+          ? html`<button type="button" class="mini-btn ${steers ? "go" : ""}" ?disabled=${this.busy} @click=${() => this.switch(false)}>
               <ha-icon icon="mdi:pause-circle-outline"></ha-icon>${t("automations.all_off", { count: on.length })}
             </button>`
           : nothing}

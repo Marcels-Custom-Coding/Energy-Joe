@@ -18,7 +18,7 @@ from homeassistant.helpers import entity_registry as er
 
 from .calendar import unique_id
 from .const import DOMAIN
-from .plan.car_calendar import calendar_cars, to_ics
+from .plan.car_calendar import calendar_cars, own_events, to_ics
 from .runtime import DATA_RUNTIME
 
 FEED_URL = f"/api/{DOMAIN}/calendar"
@@ -62,7 +62,7 @@ class CarCalendarFeed(HomeAssistantView):
         )
         state = self.hass.states.get(entity_id) if entity_id else None
         name = state.name if state else action["name"]
-        body = to_ics(name, store.events(car))
+        body = to_ics(name, own_events(action["need"], store.events(car)))
         return web.Response(
             body=body.encode(),
             content_type="text/calendar",

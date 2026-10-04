@@ -73,6 +73,14 @@ class Adapter:
         """Every entity this adapter may change."""
         return list(self.controls.values())
 
+    def prepare_entities(self) -> list[str]:
+        """Entities switched before steering (e.g. a manual mode)."""
+        return []
+
+    def loop_owned(self) -> set[str]:
+        """Entities the device's own control takes back once prepare is undone."""
+        return set()
+
     def missing(self, hass: HomeAssistant) -> list[str]:
         raise NotImplementedError
 
@@ -145,7 +153,13 @@ class RoleAdapter(Adapter):
         self.prepare: list[dict[str, Any]] = list(battery.get("prepare") or [])
 
     def entities(self) -> list[str]:
-        return [*self.controls.values(), *(step["entity_id"] for step in self.prepare)]
+        return [*self.controls.values(), *self.prepare_entities()]
+
+    def prepare_entities(self) -> list[str]:
+        return [step["entity_id"] for step in self.prepare]
+
+    def loop_owned(self) -> set[str]:
+        return {self.controls[r] for r in self.profile.loop_owned if r in self.controls}
 
     # --- what the battery offers --------------------------------------------------
 

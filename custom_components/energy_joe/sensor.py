@@ -27,6 +27,8 @@ STATUSES = [
     "skipped",
     "nothing",
     "steering",
+    # The grid-friendly morning: charging held back for the midday sun.
+    "day",
     "done",
 ]
 

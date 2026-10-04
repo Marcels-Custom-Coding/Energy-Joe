@@ -295,7 +295,9 @@ export class JoeDevicesPage extends LitElement {
               <joe-battery-automations
                 .hass=${this.hass}
                 .t=${t}
-                batteries=${JSON.stringify(joe.config.batteries.map((b) => [b.id, b.device_id, b.controls]))}
+                batteries=${JSON.stringify(joe.config.batteries)}
+                mode=${joe.mode}
+                .ready=${control?.ready ?? {}}
               ></joe-battery-automations>`
           : html`<p class="empty">${t("devices.batteries.none")}</p>`}
         <div class="group-label">${t("devices.actions")}</div>
@@ -471,11 +473,16 @@ export class JoeDevicesPage extends LitElement {
       </div>`;
     }
     if (tonight) {
+      const mine = chosen && chosen.night === night ? chosen : null;
       return html`<div class="boost on" data-tipped>
         <span>
-          ${chosen && chosen.night === night
-            ? t("devices.charge.tonight_set", { amount: amount(chosen.chosen, chosen.target, chosen.unit) })
-            : t("devices.charge.tonight_window")}
+          ${live?.reason === "reached"
+            ? t(mine ? "devices.charge.tonight_done" : "devices.action.reached_plain", {
+                amount: mine ? amount(mine.chosen, mine.target, mine.unit) : "",
+              })
+            : mine
+              ? t("devices.charge.tonight_set", { amount: amount(mine.chosen, mine.target, mine.unit) })
+              : t("devices.charge.tonight_window")}
         </span>
         <button type="button" class="mini-btn quiet" @click=${() => this.toggleTonight(action.id, false)}>${t("devices.boost.stop")}</button>
         ${tip(t, "boost")}
@@ -587,9 +594,16 @@ export class JoeDevicesPage extends LitElement {
     }
     if (live?.reason === "reached") {
       // A car stops at a level (%) or range (km), hot water at a temperature.
-      return planned?.need
-        ? t("devices.action.reached_need", { target, unit: planned.need.target_unit === "km" ? "km" : "%" })
-        : t("devices.action.reached", { target });
+      const chosen = joe.control?.tonight_target?.[action.id];
+      if (action.kind === "switch" && chosen && chosen.night === joe.plan?.window?.start) {
+        return t("devices.action.reached_need", { target: formatNumber(t.lang, chosen.chosen, 0), unit: chosen.unit });
+      }
+      if (action.kind === "switch") {
+        return planned?.need && target
+          ? t("devices.action.reached_need", { target, unit: planned.need.target_unit === "km" ? "km" : "%" })
+          : t("devices.action.reached_plain");
+      }
+      return t("devices.action.reached", { target });
     }
     if (!planned) {
       return t("devices.action.no_plan");

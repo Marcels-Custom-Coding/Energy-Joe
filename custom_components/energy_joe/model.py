@@ -814,10 +814,13 @@ def _mailbox_to_cars(data: dict[str, Any]) -> None:
     for path in [p for p in provenance if p == "mailbox" or _is_below(p, "mailbox")]:
         del provenance[path]
     provider = old.get("provider") or "other"
-    mailbox_cars = [
+    # The cars that really read the mailbox (charging by need is on).
+    readers = [
         a
         for a in data.get("actions") or []
-        if (a.get("need") or {}).get("source") == "mailbox"
+        if a.get("kind") == "switch"
+        and (a.get("need") or {}).get("enabled")
+        and a["need"].get("source") == "mailbox"
     ]
     for action in data.get("actions") or []:
         need = action.get("need") or {}
@@ -826,7 +829,11 @@ def _mailbox_to_cars(data: dict[str, Any]) -> None:
         need.setdefault("allowed", list(old.get("allowed") or []))
         if need["source"] != "mailbox":
             continue
-        if provider in ("outlook", "microsoft") and len(mailbox_cars) == 1:
+        if (
+            provider in ("outlook", "microsoft")
+            and len(readers) == 1
+            and readers[0] is action
+        ):
             # Microsoft's mailbox has a calendar: the car's account now (a new
             # sign-in is needed, the old one was for mail only).
             need["source"] = "account"

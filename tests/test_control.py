@@ -524,6 +524,101 @@ async def test_omnibattery_takes_commands_only_in_manual_mode(
     assert set(command_pauses) == {1.0, 2.0}
 
 
+def omnibattery_loop(hass: HomeAssistant) -> list[tuple[str, str]]:
+    """Services like Omnibattery: commands only in manual mode; back in automatic
+    mode its own control loop sets force mode and power at once."""
+    calls: list[tuple[str, str]] = []
+    hass.states.async_set("switch.venus_manual_mode", "off")
+
+    def keep(call: ServiceCall, value: str) -> None:
+        entity_id = call.data["entity_id"]
+        if isinstance(entity_id, list):
+            entity_id = entity_id[0]
+        manual = hass.states.get("switch.venus_manual_mode").state == "on"
+        if entity_id in ("select.force_mode", "number.charge_power") and not manual:
+            raise HomeAssistantError("Venus is under automatic control")
+        calls.append((entity_id, value))
+        state = hass.states.get(entity_id)
+        hass.states.async_set(entity_id, value, state.attributes if state else {})
+        if entity_id == "switch.venus_manual_mode" and value == "off":
+            attrs = hass.states.get("select.force_mode").attributes
+            hass.states.async_set("select.force_mode", "Discharge", attrs)
+            attrs = hass.states.get("number.charge_power").attributes
+            hass.states.async_set("number.charge_power", "800", attrs)
+
+    hass.services.async_register(
+        "number", "set_value", lambda call: keep(call, str(float(call.data["value"])))
+    )
+    hass.services.async_register(
+        "select", "select_option", lambda call: keep(call, call.data["option"])
+    )
+    hass.services.async_register("switch", "turn_on", lambda call: keep(call, "on"))
+    hass.services.async_register("switch", "turn_off", lambda call: keep(call, "off"))
+    return calls
+
+
+def manual_venus() -> dict[str, Any]:
+    return {
+        **venus_battery(),
+        "prepare": [{"entity_id": "switch.venus_manual_mode", "value": True}],
+    }
+
+
+async def test_omnibattery_takes_mode_and_power_back(
+    hass: HomeAssistant, freezer
+) -> None:
+    """After manual mode Omnibattery's loop owns mode and power: no restore, no error."""
+    freezer.move_to("2026-10-04T01:00:00+02:00")
+    install_devices(hass, byd_soc=30.4, venus_soc=70)
+    calls = omnibattery_loop(hass)
+    config = configured(fronius_battery(), manual_venus())
+    executor, _ = await make_executor(hass, config, night_plan(dt_util.now()))
+    await executor.async_check()
+    freezer.move_to("2026-10-04T03:10:00+02:00")
+    await executor.async_check()
+    # The BYD charges, the Venus stands still in manual mode.
+    assert hass.states.get("switch.venus_manual_mode").state == "on"
+    assert hass.states.get("select.force_mode").state == "Charge"
+    hass.states.async_set("sensor.byd_soc", "60", {"unit_of_measurement": "%"})
+    await executor.async_check()
+    # Back to holding: manual mode off, the loop sets its own values.
+    assert hass.states.get("switch.venus_manual_mode").state == "off"
+    assert hass.states.get("select.force_mode").state == "Discharge"
+    before = len(calls)
+    for minute in (20, 40, 59):
+        freezer.move_to(f"2026-10-04T03:{minute:02d}:00+02:00")
+        await executor.async_check()
+    # Nothing written against the loop, nothing taken for someone else's change.
+    assert [
+        c
+        for c in calls[before:]
+        if c[0] in ("select.force_mode", "number.charge_power")
+    ] == []
+    assert executor.data["external"] == []
+    freezer.move_to("2026-10-04T04:58:00+02:00")
+    await executor.async_check()
+    assert executor.data["saved"] == {}
+    assert executor.data["failures"] == 0
+    assert executor.status["reason"] == "done"
+
+
+async def test_the_test_run_leaves_omnibattery_to_its_loop(hass: HomeAssistant) -> None:
+    install_devices(hass, venus_soc=40)
+    omnibattery_loop(hass)
+    config = configured(manual_venus())
+    executor, _ = await make_executor(
+        hass, config, None, mode="simulation", tested=False
+    )
+    with (
+        patch.object(executor_module, "TEST_HOLD", 0),
+        patch.object(executor_module, "TEST_CHARGE", 0),
+        patch.object(executor_module, "TEST_RELEASE", 0),
+    ):
+        result = await executor.async_test("venus")
+    assert result["ok"] is True, result
+    assert executor.data["saved"] == {}
+
+
 async def test_a_battery_set_up_before_learns_its_manual_mode(
     hass: HomeAssistant,
 ) -> None:

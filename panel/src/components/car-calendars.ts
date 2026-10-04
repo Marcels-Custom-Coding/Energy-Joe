@@ -240,19 +240,24 @@ export class JoeCarCalendars extends LitElement {
 
   // --- 1: a finished calendar in Home Assistant ---------------------------------
 
+  /** Up to 0.3 every car had Joe's calendar: one with trips entered by hand stays until they are over. */
+  private renderLegacy(t: Translate, hass: HomeAssistant): TemplateResult | typeof nothing {
+    const saved = this.savedSource && this.savedSource !== "mailbox" && this.savedSource === (this.need?.source ?? "ha");
+    const legacy = saved ? this.links?.entities[this.actionId] : null;
+    return legacy
+      ? html`<div class="own" data-tipped>
+          <div class="head-row"><ha-icon icon="mdi:calendar-clock"></ha-icon><b>${t("calendar.own.legacy")}</b> ${tip(t, "calendar_legacy")}</div>
+          <p class="hint">${t("calendar.own.legacy.hint", { name: entityName(hass, legacy) })}</p>
+        </div>`
+      : nothing;
+  }
+
   private renderCalendar(t: Translate, hass: HomeAssistant): TemplateResult {
     const calendars = this.need?.calendars ?? [];
-    // Up to 0.3 every car had Joe's calendar: one with trips entered by hand stays until they are over.
-    const legacy = this.saved("ha") ? this.links?.entities[this.actionId] : null;
     return html`<div class="part">
         <joe-calendar-flow .t=${t} variant="calendar"></joe-calendar-flow>
       </div>
-      ${legacy
-        ? html`<div class="own" data-tipped>
-            <div class="head-row"><ha-icon icon="mdi:calendar-clock"></ha-icon><b>${t("calendar.own.legacy")}</b> ${tip(t, "calendar_own")}</div>
-            <p class="hint">${t("calendar.own.legacy.hint", { name: entityName(hass, legacy) })}</p>
-          </div>`
-        : nothing}
+      ${this.renderLegacy(t, hass)}
       <div data-tipped>
         <div class="head-row"><b>${t("calendar.pick")}</b> ${tip(t, "calendar_more")}</div>
         <div class="chips">
@@ -414,7 +419,7 @@ export class JoeCarCalendars extends LitElement {
         .status=${this.account}
         .apps=${this.apps}
       ></joe-car-account>
-      ${this.renderAllowed(t, "account_allowed")}`;
+      ${this.renderAllowed(t, "account_allowed")} ${this.hass ? this.renderLegacy(t, this.hass) : nothing}`;
   }
 
   // --- who may invite the car (2 and 3) ----------------------------------------

@@ -1788,9 +1788,9 @@ export const en: Record<Key, string> = {
   "devices.charge.no_night": "“Tonight” works once I have planned the night.",
   "automations.title": "Automations on your batteries",
   "automations.lead":
-    "These automations write to the same controls as I do. While they run they can overwrite my steering – best switch them off so that I can work properly.",
+    "These automations set something on your batteries – partly the same controls I steer. While they run they can overwrite my steering. Best switch them off so that I can work properly.",
   "automations.lead_off":
-    "These automations write to the same controls as I do. They are off – so we do not get in each other's way.",
+    "These automations set something on your batteries. They are off – so we do not get in each other's way.",
   "automations.on": "on",
   "automations.off": "off",
   "automations.writes": "writes: {what} ({batteries})",
@@ -1799,11 +1799,23 @@ export const en: Record<Key, string> = {
   "automations.all_off": "Switch all off ({count})",
   "automations.back_on": "Switch on again ({count})",
   "automations.failed": "Not all of them could be switched – check Home Assistant's automations.",
+  "automations.lead_idle":
+    "These automations set something on your batteries. While I only watch they do no harm – switch them off before you set me to “Suggest” or “Live”.",
+  "automations.levers": "my controls too",
+  "automations.not_battery": "No longer sets anything on batteries I know.",
+  "tip.calendar_legacy.title": "Where does this calendar come from?",
+  "tip.calendar_legacy.text":
+    "Up to version 0.3 every car had a calendar from me. It still holds trips you entered by hand – they still count. New trips belong in the calendar you assign above; once no old trip is left, this calendar goes away.",
+  "devices.action.reached_plain": "Target reached – done for today.",
+  "devices.charge.tonight_done": "Charged to {amount} tonight – done.",
+  "calendar.account.oauth.no_client_secret":
+    "I still need your Google app's client secret – enter it above and press “Save”.",
+  "calendar.account.result.no_client_secret": "I still need your Google app's client secret.",
   "tip.battery_automations.title": "Why switch them off?",
   "tip.battery_automations.text":
-    "I steer the batteries through mode, power and limits. If an automation sets the same values, whoever writes last wins – and the battery no longer follows my plan. Listed here are all automations whose actions set something on your batteries; those that only read them are left out.\n“Switch all off” turns them off in Home Assistant and writes into each automation's logbook when and why. “Switch on again” turns on exactly the ones I switched off.",
+    "I steer the batteries through mode, power and limits. If an automation sets the same values, whoever writes last wins – and the battery no longer follows my plan. Listed here are all automations whose actions set something on your batteries (also through scripts); those that only read them are left out. “My controls too” means: exactly the values I set myself.\n“Switch all off” turns them off in Home Assistant and writes into each automation's logbook when and why. “Switch on again” turns on exactly the ones I switched off – if you remove Energy Joe, I do that myself.",
   "tip.battery_automations.hint":
-    "Rather keep one? Give it the condition “Energy Joe status is not Steering” – then it stays out of the way while I steer.",
+    "Rather keep one? Give it the condition: Energy Joe status is neither “Steering” nor “Holding back charging” – then it stays out of the way while I work on the batteries.",
   "devices.boost.stop": "Cancel",
   "devices.boost.reserve": "Your reserve of {reserve} km comes on top.",
   "devices.action.boost": "Charging now because you asked.",

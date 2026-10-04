@@ -1806,9 +1806,9 @@ export const de = {
   "devices.charge.no_night": "„Heute Nacht“ geht, sobald ich die Nacht geplant habe.",
   "automations.title": "Automationen an deinen Speichern",
   "automations.lead":
-    "Diese Automationen schreiben auf dieselben Regler wie ich. Solange sie laufen, können sie meine Steuerung überschreiben – schalte sie am besten aus, damit ich richtig arbeiten kann.",
+    "Diese Automationen setzen etwas an deinen Speichern – zum Teil an denselben Reglern, die ich steuere. Solange sie laufen, können sie meine Steuerung überschreiben. Schalte sie am besten aus, damit ich richtig arbeiten kann.",
   "automations.lead_off":
-    "Diese Automationen schreiben auf dieselben Regler wie ich. Sie sind aus – so kommen wir uns nicht in die Quere.",
+    "Diese Automationen setzen etwas an deinen Speichern. Sie sind aus – so kommen wir uns nicht in die Quere.",
   "automations.on": "an",
   "automations.off": "aus",
   "automations.writes": "schreibt: {what} ({batteries})",
@@ -1817,11 +1817,23 @@ export const de = {
   "automations.all_off": "Alle ausschalten ({count})",
   "automations.back_on": "Wieder einschalten ({count})",
   "automations.failed": "Nicht alle ließen sich umschalten – schau in Home Assistant unter Automationen nach.",
+  "automations.lead_idle":
+    "Diese Automationen setzen etwas an deinen Speichern. Solange ich nur zuschaue, stören sie nicht – schalte sie aus, bevor du mich auf „Vorschlagen“ oder „Live“ stellst.",
+  "automations.levers": "auch meine Regler",
+  "automations.not_battery": "Setzt nichts mehr an Speichern, die ich kenne.",
+  "tip.calendar_legacy.title": "Woher kommt dieser Kalender?",
+  "tip.calendar_legacy.text":
+    "Bis Version 0.3 hatte jedes Auto einen Kalender von mir. Darin stehen noch Fahrten, die du von Hand eingetragen hast – sie zählen weiter. Neue Fahrten gehören in den Kalender, den du oben zuordnest; wenn keine alte Fahrt mehr kommt, verschwindet dieser Kalender.",
+  "devices.action.reached_plain": "Ziel erreicht – für heute fertig.",
+  "devices.charge.tonight_done": "Heute Nacht bis {amount} geladen – fertig.",
+  "calendar.account.oauth.no_client_secret":
+    "Mir fehlt noch der Clientschlüssel deiner Google-App – trag ihn oben ein und drück „Speichern“.",
+  "calendar.account.result.no_client_secret": "Mir fehlt noch der Clientschlüssel deiner Google-App.",
   "tip.battery_automations.title": "Warum ausschalten?",
   "tip.battery_automations.text":
-    "Ich steuere die Speicher über Modus, Leistung und Grenzwerte. Setzt eine Automation dieselben Werte, gewinnt, wer zuletzt schreibt – dann hält sich der Speicher nicht an meinen Plan. Hier stehen alle Automationen, deren Aktionen etwas an deinen Speichern setzen; welche sie nur lesen, lasse ich weg.\n„Alle ausschalten“ schaltet sie in Home Assistant aus und schreibt ins Logbuch der Automation, wann und warum. „Wieder einschalten“ schaltet genau die wieder an, die ich ausgeschaltet habe.",
+    "Ich steuere die Speicher über Modus, Leistung und Grenzwerte. Setzt eine Automation dieselben Werte, gewinnt, wer zuletzt schreibt – dann hält sich der Speicher nicht an meinen Plan. Hier stehen alle Automationen, deren Aktionen etwas an deinen Speichern setzen (auch über Skripte); welche sie nur lesen, lasse ich weg. „Auch meine Regler“ heißt: genau die Werte, die ich selbst setze.\n„Alle ausschalten“ schaltet sie in Home Assistant aus und schreibt ins Logbuch der Automation, wann und warum. „Wieder einschalten“ schaltet genau die wieder an, die ich ausgeschaltet habe – entfernst du Energy Joe, mache ich das selbst.",
   "tip.battery_automations.hint":
-    "Lieber behalten? Gib der Automation die Bedingung „Energy Joe Status ist nicht Steuert“ – dann hält sie sich raus, solange ich steuere.",
+    "Lieber behalten? Gib der Automation die Bedingung: Status von Energy Joe ist weder „Steuert“ noch „Hält das Laden zurück“ – dann hält sie sich raus, solange ich an den Speichern arbeite.",
   "devices.boost.stop": "Abbrechen",
   "devices.boost.reserve": "Dazu kommt deine Reserve von {reserve} km.",
   "devices.action.boost": "Lädt jetzt, weil du es willst.",

@@ -119,6 +119,14 @@ class Profile:
     # Seconds to wait after each command, for devices that need time between
     # them (Modbus); twice that after a prepare step.
     pace: float = 0.0
+    # Roles the device's own control takes back once the prepare steps are
+    # undone (Omnibattery): Joe puts them back only while it still holds the
+    # prepare step, never afterwards, and does not read them back then.
+    loop_owned: tuple[str, ...] = ()
+    # Where automations that write to the battery are looked for: its "device"
+    # (and devices linked to it), or the whole integration "entry" (Omnibattery
+    # keeps settings of its control loop on a system device).
+    automation_scope: str = "device"
 
 
 def _o(**options: str | tuple[str, ...]) -> dict[str, tuple[str, ...]]:
@@ -182,6 +190,8 @@ PROFILES: dict[str, Profile] = {
             scope="device",
             proven=True,
             pace=1.0,
+            loop_owned=("mode", "charge_power", "discharge_power"),
+            automation_scope="entry",
         ),
         Profile(
             key="enphase_envoy",

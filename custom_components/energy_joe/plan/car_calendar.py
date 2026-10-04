@@ -55,6 +55,16 @@ def calendar_cars(
     ]
 
 
+def own_events(
+    need: dict[str, Any], events: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """What counts of Joe's calendar for a car: all of it with a mailbox, else
+    only trips entered there by hand (invitations belong to the mailbox)."""
+    if need.get("source") == "mailbox":
+        return events
+    return [e for e in events if e.get("source") == "manual"]
+
+
 def parse_when(value: str) -> datetime | date:
     """A stored time: a whole day as a date, else a time with its zone."""
     if "T" not in value:

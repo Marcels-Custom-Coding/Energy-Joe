@@ -19,7 +19,7 @@ from ..observe.readings import energy_kwh, number, sum_kwh
 from ..observe.records import base_home, hour_starts, local_hour
 from ..observe.store import HistoryStore
 from .actions import plan_actions, reserved_kw
-from .car_calendar import CarCalendarStore
+from .car_calendar import CarCalendarStore, own_events
 from .ev import car_need
 from .planner import Battery, Hour, PlanInput, Prices, best_window
 from .prices import async_price_slots, quarters
@@ -554,13 +554,9 @@ async def async_car_needs(
         if calendars is not None:
             # A mailbox without a calendar: Joe's calendar for the car. Other
             # cars: only trips entered there by hand (up to 0.3 every car had it).
-            own += [
-                e
-                for e in calendars.events(
-                    action["id"], start, start + timedelta(days=1)
-                )
-                if need.get("source") == "mailbox" or e.get("source") == "manual"
-            ]
+            own += own_events(
+                need, calendars.events(action["id"], start, start + timedelta(days=1))
+            )
         if accounts is not None and need.get("source") == "account":
             # A mailbox with a calendar: the invitations are in there.
             own += await accounts.async_events(

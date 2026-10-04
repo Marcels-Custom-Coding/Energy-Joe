@@ -280,7 +280,9 @@ class JoeExecutor:
                 await self._async_release("day_done" if was_day else reason, now, keep)
             if not day:
                 self.data["day"] = None
-            if self.data["night"] and self.data["night"] != night:
+            # No plan for a moment (a restart, the planner restarting) does not
+            # end the night: only a plan for another night does.
+            if self.data["night"] and night is not None and self.data["night"] != night:
                 self._end_night()
             self._set_status("day" if day else reason, night, day, boosts, keep)
             self._watch([])
@@ -679,6 +681,7 @@ class JoeExecutor:
                 "at": now.isoformat(timespec="seconds"),
                 "ok": calls_ok,
             }
+        self._settle_loop_owned(adapter)
         return problem
 
     def _floored(self, adapter: Adapter, want: Desired) -> Desired:
@@ -913,6 +916,28 @@ class JoeExecutor:
                 # What someone else set is theirs: Joe does not restore it.
                 self.data["saved"].pop(entity_id, None)
 
+    def _settle_loop_owned(self, adapter: Adapter) -> set[str]:
+        """Once Joe's prepare step is undone (e.g. manual mode off again), the
+        device's own control owns mode and power: nothing of them to restore
+        or watch any more. Returns those entities."""
+        owned = adapter.loop_owned()
+        # Without a prepare step (an older Omnibattery) Joe owns them throughout.
+        if not owned or not adapter.prepare_entities():
+            return set()
+        saved: dict[str, Any] = self.data["saved"]
+        held = any(
+            entity_id in saved
+            and not matches(self._hass, Write(entity_id, saved[entity_id]))
+            for entity_id in adapter.prepare_entities()
+        )
+        if held:
+            return set()
+        for entity_id in owned:
+            saved.pop(entity_id, None)
+            self.data["written"].pop(entity_id, None)
+        self.data["external"] = [e for e in self.data["external"] if e not in owned]
+        return owned
+
     # --- release ---------------------------------------------------------------
 
     async def async_release_now(self) -> None:
@@ -949,10 +974,13 @@ class JoeExecutor:
         writes: list[Write] = []
         covered: set[str] = set()
         active: list[str] = self.data["active"]
-        for battery in self._config()["batteries"]:
-            adapter = make_adapter(battery)
-            if adapter is None:
-                continue
+        adapters = [
+            a for a in (make_adapter(b) for b in self._config()["batteries"]) if a
+        ]
+        for adapter in adapters:
+            self._settle_loop_owned(adapter)
+        for adapter in adapters:
+            battery = adapter.battery
             for write in adapter.release(saved):
                 if write.is_call:
                     # Release calls (e.g. "stop forcible charge") for batteries Joe used.
@@ -1001,6 +1029,10 @@ class JoeExecutor:
                 written.pop(write.entity_id, None)
             else:
                 errors.append(write.entity_id)
+        # Manual mode undone: what the device's own control owns is no error.
+        for adapter in adapters:
+            owned = self._settle_loop_owned(adapter)
+            errors = [e for e in errors if e not in owned]
         if not errors:
             self.data["active"] = [
                 k for k in self.data["active"] if _kept(k, keep, self._config())
@@ -1183,7 +1215,12 @@ class JoeExecutor:
             self.data["tonight"].pop(action_id, None)
         if chosen:
             self.data["tonight_target"][action_id] = chosen
-        else:
+        elif (
+            not on
+            or (self.data["tonight_target"].get(action_id) or {}).get("night") != night
+        ):
+            # Switched on again without a level (the switch, a service): the
+            # level chosen for this night stays.
             self.data["tonight_target"].pop(action_id, None)
         self._log(
             "tonight",
@@ -1338,10 +1375,14 @@ class JoeExecutor:
             except WriteError as err:
                 errors.append({"entity_id": err.entity_id, "code": err.code})
         await asyncio.sleep(TEST_RELEASE)
+        # Manual mode back off: mode and power belong to the device's control again.
+        owned = self._settle_loop_owned(adapter)
         wrong = [
             w.entity_id
             for w in restore
-            if not w.is_call and not matches(hass, fit(hass, w))
+            if not w.is_call
+            and w.entity_id not in owned
+            and not matches(hass, fit(hass, w))
         ]
         for write in restore:
             if write.entity_id not in wrong:

@@ -30,7 +30,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
 from .entity import JoeEntity
-from .plan.car_calendar import as_text, calendar_cars, parse_when
+from .plan.car_calendar import as_text, calendar_cars, own_events, parse_when
 from .runtime import DATA_RUNTIME, JoeRuntime
 
 
@@ -162,20 +162,26 @@ class JoeCarCalendar(JoeEntity, CalendarEntity):
     def available(self) -> bool:
         return self._action() is not None
 
+    def _events(
+        self, start: datetime | None = None, end: datetime | None = None
+    ) -> list[dict[str, Any]]:
+        """The appointments that count for the car (see own_events)."""
+        action = self._action()
+        if action is None:
+            return []
+        stored = self.runtime.calendars.events(self.action_id, start, end)
+        return own_events(action["need"], stored)
+
     @property
     def event(self) -> CalendarEvent | None:
         """The current or next appointment."""
-        now = dt_util.now()
-        upcoming = self.runtime.calendars.events(self.action_id, now)
+        upcoming = self._events(dt_util.now())
         return _event(upcoming[0]) if upcoming else None
 
     async def async_get_events(
         self, hass: HomeAssistant, start_date: datetime, end_date: datetime
     ) -> list[CalendarEvent]:
-        return [
-            _event(e)
-            for e in self.runtime.calendars.events(self.action_id, start_date, end_date)
-        ]
+        return [_event(e) for e in self._events(start_date, end_date)]
 
     async def async_create_event(self, **kwargs: Any) -> None:
         self.runtime.calendars.add(self.action_id, _fields(kwargs))

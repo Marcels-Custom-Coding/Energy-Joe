@@ -290,7 +290,7 @@ export class JoeCarAccount extends LitElement {
         <ha-icon icon="mdi:calendar-check-outline"></ha-icon>${t("calendar.account.test")}
       </button>
       ${tip(t, "calendar_account_test")}
-      <span class=${status?.state === "error" ? "bad" : "hint"}>${text}</span>
+      <span class=${this.saved && status?.state === "error" ? "bad" : "hint"}>${text}</span>
       ${this.result
         ? html`<span class=${this.result === "ok" ? "ok" : "bad"}>
             ${t.optional(`calendar.account.result.${this.result}`) ?? t("calendar.account.result.other")}
@@ -325,10 +325,10 @@ export class JoeCarAccount extends LitElement {
         this.result = answer?.error ? answer.error : "ok";
       }
     } catch (err) {
-      const code = (err as { code?: string })?.code ?? "failed";
+      const { code = "failed", message } = (err as { code?: string; message?: string }) ?? {};
       if (what === "sign_in") {
-        // "oauth": Microsoft or Google refused; the reason is in the status.
-        this.signInError = code === "oauth" ? (this.status?.oauth?.error ?? code) : code;
+        // "oauth": Microsoft or Google refused; their reason comes as the message.
+        this.signInError = code === "oauth" ? message || code : code;
       } else {
         this.result = code;
       }

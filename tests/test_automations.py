@@ -149,10 +149,155 @@ async def test_battery_automations_are_found_and_switched(
 def test_only_action_targets_count() -> None:
     step = {
         "if": [{"condition": "state", "entity_id": "switch.read", "state": "on"}],
-        "then": [{"action": "switch.turn_on", "entity_id": "switch.written"}],
+        "then": [
+            {"action": "switch.turn_on", "entity_id": "switch.written"},
+            {"action": "number.set_value", "entity_id": "number.a, number.b"},
+            {"action": "switch.turn_on", "entity_id": "switch.off", "enabled": False},
+            {"action": "homeassistant.update_entity", "entity_id": "sensor.soc"},
+        ],
         "else": [
             {"device_id": "abc", "domain": "select", "entity_id": "select.device"},
+            {"action": "light.turn_on", "target": {"device_id": "dev1"}},
             {"action": "number.set_value", "target": {"entity_id": "{{ x }}"}},
+            {"condition": "device", "device_id": "dev2", "type": "is_on"},
         ],
     }
-    assert automations.targets([step]) == {"switch.written", "select.device"}
+    found = automations.targets(None, [step])
+    assert found.entities == {
+        "switch.written",
+        "number.a",
+        "number.b",
+        "select.device",
+    }
+    assert found.devices == {"abc", "dev1"}
+
+
+async def test_only_the_battery_itself_counts_and_scripts_are_followed(
+    hass: HomeAssistant,
+) -> None:
+    """A hub integration (one entry for the whole house) is not the battery."""
+    entry = MockConfigEntry(domain="tuya")
+    entry.add_to_hass(hass)
+    devices = dr.async_get(hass)
+    battery = devices.async_get_or_create(
+        config_entry_id=entry.entry_id, identifiers={("tuya", "battery")}
+    )
+    lamp = devices.async_get_or_create(
+        config_entry_id=entry.entry_id, identifiers={("tuya", "lamp")}
+    )
+    registry = er.async_get(hass)
+    soc = registry.async_get_or_create(
+        "sensor", "tuya", "b_soc", config_entry=entry, device_id=battery.id
+    )
+    mode = registry.async_get_or_create(
+        "select", "tuya", "b_mode", config_entry=entry, device_id=battery.id
+    )
+    light = registry.async_get_or_create(
+        "light", "tuya", "garden", config_entry=entry, device_id=lamp.id
+    )
+    for item in (soc, mode, light):
+        hass.states.async_set(item.entity_id, "0")
+    assert await async_setup_component(
+        hass,
+        "script",
+        {
+            "script": {
+                "boost": {
+                    "sequence": [
+                        {
+                            "action": "select.select_option",
+                            "target": {"entity_id": mode.entity_id},
+                            "data": {"option": "charge"},
+                        }
+                    ]
+                }
+            }
+        },
+    )
+    assert await async_setup_component(
+        hass,
+        "automation",
+        {
+            "automation": [
+                _automation(
+                    "Garden",
+                    [
+                        {
+                            "action": "light.turn_on",
+                            "target": {"entity_id": light.entity_id},
+                        }
+                    ],
+                ),
+                _automation("Via script", [{"action": "script.boost"}]),
+                _automation(
+                    "Device",
+                    [
+                        {
+                            "action": "select.select_option",
+                            "target": {"device_id": battery.id},
+                            "data": {"option": "x"},
+                        }
+                    ],
+                ),
+            ]
+        },
+    )
+    await hass.async_block_till_done()
+    config = model.apply_update(
+        model.default_config(),
+        {
+            "batteries": {
+                "b": {
+                    "id": "b",
+                    "name": "Tuya",
+                    "adapter": "tuya",
+                    "soc_entity": soc.entity_id,
+                    "device_id": battery.id,
+                    "controls": {"mode": mode.entity_id},
+                }
+            }
+        },
+        "user",
+    )
+    found = automations.find(hass, config, {})
+    assert [a["name"] for a in found] == ["Device", "Via script"]
+    via_script = found[1]["writes"][0]
+    assert via_script["entity_id"] == mode.entity_id and via_script["joe"] is True
+
+
+async def test_joe_keeps_and_restores_what_it_switched_off(
+    ready_hass: HomeAssistant,
+) -> None:
+    """Forgotten only when switched on by hand; switched on again when Joe is removed."""
+    from custom_components.energy_joe.const import DOMAIN
+
+    hass = ready_hass
+    hass.services.async_register("logbook", "log", lambda call: None)
+    assert await async_setup_component(
+        hass,
+        "automation",
+        {
+            "automation": [
+                _automation(
+                    "Old",
+                    [{"action": "light.turn_on", "target": {"entity_id": "light.x"}}],
+                )
+            ]
+        },
+    )
+    entry = MockConfigEntry(domain=DOMAIN, data={})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    runtime = hass.data[DOMAIN]
+    # Switched off by Joe for a battery that is gone now.
+    await runtime.async_switch_automations(False, ["automation.old"])
+    listed = runtime.automations()
+    assert [(a["entity_id"], a["on"], bool(a["switched_off"])) for a in listed] == [
+        ("automation.old", False, True)
+    ]
+    assert hass.states.get("automation.old").state == "off"
+    # Removing Joe switches it on again.
+    assert await hass.config_entries.async_remove(entry.entry_id)
+    await hass.async_block_till_done()
+    assert hass.states.get("automation.old").state == "on"

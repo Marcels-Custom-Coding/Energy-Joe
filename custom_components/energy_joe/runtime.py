@@ -11,6 +11,7 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.storage import Store
 from homeassistant.util.hass_dict import HassKey
 
@@ -154,7 +155,29 @@ class JoeRuntime:
         await self._config_store.async_save(self._config)
 
     async def async_remove(self) -> None:
-        """Delete all stored data (integration removed)."""
+        """Delete all stored data (integration removed).
+
+        Automations Joe switched off are switched on again first: without Joe
+        nobody would know why they are off.
+        """
+        await self.executor.async_load()
+        switched_off: dict[str, Any] = self.executor.data["automations_off"]
+        mine = [
+            entity_id
+            for entity_id in switched_off
+            if (state := self._hass.states.get(entity_id)) and state.state == "off"
+        ]
+        if mine:
+            german = (self._hass.config.language or "").startswith("de")
+            await battery_automations.async_switch(
+                self._hass,
+                mine,
+                True,
+                switched_off,
+                "wurde wieder eingeschaltet, weil Energy Joe entfernt wurde"
+                if german
+                else "was switched on again because Energy Joe was removed",
+            )
         await self._state_store.async_remove()
         await self._config_store.async_remove()
         await self._backup_store.async_remove()
@@ -189,11 +212,29 @@ class JoeRuntime:
     def automations(self) -> list[dict[str, Any]]:
         """Automations that write to the batteries (and which ones Joe switched off)."""
         switched_off: dict[str, Any] = self.executor.data["automations_off"]
+        registry = er.async_get(self._hass)
+        # Switched on again by hand, or deleted: Joe forgets it. Not just because
+        # it no longer writes to a battery Joe knows – it stays off until then.
+        for entity_id in list(switched_off):
+            state = self._hass.states.get(entity_id)
+            if (state and state.state == "on") or (
+                state is None and registry.async_get(entity_id) is None
+            ):
+                del switched_off[entity_id]
         found = battery_automations.find(self._hass, self._config, switched_off)
-        # Switched on again by hand, or gone: Joe forgets it.
-        off = {a["entity_id"] for a in found if not a["on"]}
-        for entity_id in [e for e in switched_off if e not in off]:
-            del switched_off[entity_id]
+        listed = {a["entity_id"] for a in found}
+        for entity_id, record in switched_off.items():
+            if entity_id not in listed:
+                state = self._hass.states.get(entity_id)
+                found.append(
+                    {
+                        "entity_id": entity_id,
+                        "name": state.name if state else entity_id,
+                        "on": False,
+                        "writes": [],
+                        "switched_off": record,
+                    }
+                )
         return found
 
     async def async_switch_automations(

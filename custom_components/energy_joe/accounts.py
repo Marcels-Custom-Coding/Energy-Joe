@@ -525,8 +525,11 @@ class CarAccounts:
                 if own and client == own
                 else oauth.JOE_GOOGLE_CLIENT_SECRET
             )
-            if not client or not secret:
+            if not client:
                 raise AccountError("no_client_id")
+            if not secret:
+                # One's own app needs its secret, too (saved next to its id).
+                raise AccountError("no_client_secret")
             return oauth.google(client, secret)
         client = tokens.get("client") or oauth.client_for(account.get("client_id"))
         if not client:
@@ -655,7 +658,12 @@ class CarAccounts:
     # --- appointments --------------------------------------------------------
 
     async def _async_fetch(
-        self, car: str, account: dict[str, Any], start: datetime, end: datetime
+        self,
+        car: str,
+        account: dict[str, Any],
+        start: datetime,
+        end: datetime,
+        persist: bool = True,
     ) -> list[dict[str, Any]]:
         session = async_get_clientsession(self._hass)
         if account["kind"] in MICROSOFT:
@@ -665,14 +673,24 @@ class CarAccounts:
             token = await self._async_token(car, account)
             return await google_events(session, token, start, end)
         auth = self._auth(car, account)
-        calendars = (self._data.get(car) or {}).get("calendars")
+        base = account.get("url") or CALDAV_SERVERS.get(account["kind"]) or ""
+        # The calendars found belong to one server and login.
+        found_for = f"{base}|{account.get('username') or account.get('address') or ''}"
+        stored = self._data.get(car) or {}
+        calendars = (
+            stored.get("calendars")
+            if stored.get("calendars_for") == found_for
+            else None
+        )
         if not calendars:
-            base = account.get("url") or CALDAV_SERVERS.get(account["kind"]) or ""
             if not base:
                 raise AccountError("no_server")
             calendars = await caldav_calendars(session, base, auth)
-            self._data.setdefault(car, {})["calendars"] = calendars
-            await self._async_save()
+            if persist:
+                self._data.setdefault(car, {}).update(
+                    calendars=calendars, calendars_for=found_for
+                )
+                await self._async_save()
         return await caldav_events(
             session, calendars, auth, account.get("address") or "", start, end
         )
@@ -743,20 +761,24 @@ class CarAccounts:
     ) -> str | None:
         """Read the next week once; None if that works, else the reason.
 
-        `account` are the settings in the editor, maybe not saved yet: the
-        calendars of the account are then looked up again.
+        `account` are the settings in the editor, maybe not saved yet: such a
+        test leaves the saved car's status and calendars as they are.
         """
-        if account is not None and account != self._account(car):
-            (self._data.get(car) or {}).pop("calendars", None)
+        draft = account is not None and account != self._account(car)
         account = account or self._account(car)
         if not account:
             return "no_account"
         now = dt_util.now()
         try:
-            await self._async_fetch(car, account, now, now + timedelta(days=7))
+            await self._async_fetch(
+                car, account, now, now + timedelta(days=7), persist=not draft
+            )
         except AccountError as err:
-            self._set(car, state="error", error=err.code)
+            if not draft:
+                self._set(car, state="error", error=err.code)
             return err.code
+        if draft:
+            return None
         self._set(
             car, state="ok", error=None, checked=now.isoformat(timespec="seconds")
         )
