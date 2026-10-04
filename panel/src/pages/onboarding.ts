@@ -3,6 +3,7 @@ import { property } from "lit/decorators.js";
 import { displayTitle, swoosh } from "../components/bits";
 import "../components/pose";
 import "../components/review";
+import { stepNav } from "../components/step-nav";
 import { cents, tariffText } from "../components/texts";
 import { tip } from "../components/tip";
 import { define } from "../define";
@@ -86,6 +87,12 @@ export class JoeOnboarding extends LitElement {
         display: flex;
         flex-wrap: wrap;
         gap: 6px;
+      }
+      .step-nav {
+        max-width: 1000px;
+      }
+      .step-nav.wide {
+        max-width: 1120px;
       }
       .wrap.wide {
         grid-template-columns: minmax(0, 0.55fr) minmax(0, 1.45fr);
@@ -206,37 +213,51 @@ export class JoeOnboarding extends LitElement {
           <div class="looking" role="status">${t("scan.looking")}</div>`,
       );
     }
-    return html`<div class="wrap wide">
-      <joe-pose name="scout"></joe-pose>
-      <div>
-        ${displayTitle(t("scan.title"))} ${swoosh}
-        <p class="lead">${t("scan.lead")}</p>
-        ${this.discoveryFailed ? html`<p class="failed">${t("scan.failed")}</p>` : nothing}
-        <joe-review
-          .hass=${this.hass}
-          .t=${t}
-          .config=${this.config}
-          .discovery=${this.discovery}
-          .checks=${this.checks}
-        ></joe-review>
-        <div class="actions">
-          <button type="button" class="btn btn-primary" data-notip @click=${() => this.go("questions")}>
-            ${t("onb.next")}
-          </button>
-          <span class="with-tip" data-tipped>
-            <button type="button" class="btn btn-secondary" @click=${this.rediscover}>${t("scan.again")}</button>
-            ${tip(t, "rescan")}
-          </span>
-          <button type="button" class="btn btn-ghost" data-notip @click=${() => this.go("welcome")}>
-            ${t("onb.back")}
-          </button>
+    const nav = stepNav(
+      t,
+      { back: () => this.go("welcome"), next: () => this.go("questions"), nextLabel: t("onb.next") },
+      true,
+    );
+    return html`${nav}
+      <div class="wrap wide">
+        <joe-pose name="scout"></joe-pose>
+        <div>
+          ${displayTitle(t("scan.title"))} ${swoosh}
+          <p class="lead">${t("scan.lead")}</p>
+          ${this.discoveryFailed ? html`<p class="failed">${t("scan.failed")}</p>` : nothing}
+          <joe-review
+            .hass=${this.hass}
+            .t=${t}
+            .config=${this.config}
+            .discovery=${this.discovery}
+            .checks=${this.checks}
+          ></joe-review>
+          <div class="actions">
+            <button type="button" class="btn btn-primary" data-notip @click=${() => this.go("questions")}>
+              ${t("onb.next")}
+            </button>
+            <span class="with-tip" data-tipped>
+              <button type="button" class="btn btn-secondary" @click=${this.rediscover}>${t("scan.again")}</button>
+              ${tip(t, "rescan")}
+            </span>
+            <button type="button" class="btn btn-ghost" data-notip @click=${() => this.go("welcome")}>
+              ${t("onb.back")}
+            </button>
+          </div>
         </div>
-      </div>
-    </div>`;
+      </div>`;
   }
 
   private renderDone(t: Translate): TemplateResult {
-    return this.layout(
+    const nav = stepNav(t, {
+      back: () => this.go("scan"),
+      backLabel: t("onb.done.change"),
+      next: () => this.complete(),
+      nextLabel: t("onb.done.go"),
+      nextTip: "start",
+    });
+    return html`${nav}
+    ${this.layout(
       "thumbs",
       html`${displayTitle(t("onb.done.title"))} ${swoosh}
         ${this.config ? this.renderSummary(t, this.config) : nothing}
@@ -250,7 +271,7 @@ export class JoeOnboarding extends LitElement {
             ${t("onb.done.change")}
           </button>
         </div>`,
-    );
+    )}`;
   }
 
   private renderSummary(t: Translate, config: JoeConfig): TemplateResult {

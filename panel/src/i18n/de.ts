@@ -130,6 +130,7 @@ export const de = {
     "Ich plane ab heute jede Nacht, steuere aber nichts. Nach einer Woche zeige ich dir, was es gebracht hätte.",
   "onb.done.go": "Joe starten",
   "onb.done.change": "Noch was ändern",
+  "onb.nav": "Einrichtung: zurück oder weiter",
   "onb.next": "Weiter",
   "onb.back": "Zurück",
   "soon": "Kommt im nächsten Update",

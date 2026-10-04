@@ -129,6 +129,7 @@ export const en: Record<Key, string> = {
     "From tonight I plan every night but don't switch anything. After a week I'll show you what it would have saved.",
   "onb.done.go": "Start Joe",
   "onb.done.change": "Change something",
+  "onb.nav": "Setup: back or next",
   "onb.next": "Next",
   "onb.back": "Back",
   "soon": "Coming in the next update",

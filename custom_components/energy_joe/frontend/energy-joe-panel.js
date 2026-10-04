@@ -702,6 +702,7 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"onb.done.lead": "Ich plane ab heute jede Nacht, steuere aber nichts. Nach einer Woche zeige ich dir, was es gebracht hätte.",
 	"onb.done.go": "Joe starten",
 	"onb.done.change": "Noch was ändern",
+	"onb.nav": "Einrichtung: zurück oder weiter",
 	"onb.next": "Weiter",
 	"onb.back": "Zurück",
 	soon: "Kommt im nächsten Update",
@@ -1942,6 +1943,7 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"onb.done.lead": "From tonight I plan every night but don't switch anything. After a week I'll show you what it would have saved.",
 	"onb.done.go": "Start Joe",
 	"onb.done.change": "Change something",
+	"onb.nav": "Setup: back or next",
 	"onb.next": "Next",
 	"onb.back": "Back",
 	soon: "Coming in the next update",
@@ -3374,6 +3376,20 @@ var E = o`
     display: inline-flex;
     align-items: center;
     gap: 8px;
+  }
+  /* Back and next at the top of a setup step (components/step-nav.ts) */
+  .step-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 12px auto 0;
+  }
+  .step-nav .btn ha-icon {
+    --mdc-icon-size: 20px;
+  }
+  .step-nav .btn-ghost {
+    padding-inline: 8px 14px;
   }
 
   /* How sure Joe is */
@@ -9895,8 +9911,21 @@ var Bn = /* @__PURE__ */ new Set([
 };
 D([b({ attribute: !1 })], Vn.prototype, "hass", void 0), D([b({ attribute: !1 })], Vn.prototype, "t", void 0), D([b({ attribute: !1 })], Vn.prototype, "config", void 0), D([b({ attribute: !1 })], Vn.prototype, "discovery", void 0), D([b({ attribute: !1 })], Vn.prototype, "checks", void 0), D([b()], Vn.prototype, "context", void 0), T("joe-review", Vn);
 //#endregion
+//#region src/components/step-nav.ts
+function Hn(e, t, n = !1) {
+	let r = g`<button type="button" class="btn btn-primary" ?data-notip=${!t.nextTip} @click=${t.next}>
+    ${t.nextLabel}<ha-icon icon="mdi:chevron-right"></ha-icon>
+  </button>`;
+	return g`<nav class="step-nav ${n ? "wide" : ""}" aria-label=${e("onb.nav")}>
+    ${t.back ? g`<button type="button" class="btn btn-ghost" data-notip @click=${t.back}>
+          <ha-icon icon="mdi:chevron-left"></ha-icon>${t.backLabel ?? e("onb.back")}
+        </button>` : g`<span></span>`}
+    ${t.nextTip ? g`<span class="with-tip" data-tipped>${r} ${P(e, t.nextTip)}</span>` : r}
+  </nav>`;
+}
+//#endregion
 //#region src/pages/questions.ts
-var Hn = {
+var Un = {
 	tariff: "plan",
 	feed_in: "plug",
 	capacity: "night-charge",
@@ -9904,12 +9933,12 @@ var Hn = {
 	hot_water: "hot-water",
 	ev: "ev",
 	household: "relax"
-}, Un = [
+}, Wn = [
 	"climate",
 	"heat_pump",
 	"electric_heating"
 ];
-function Wn(e) {
+function Gn(e) {
 	let t = [], n = (t) => I(e, t)?.source === "user", r = (t) => e.answers[t] !== void 0 && e.answers[t] !== null, i = e.tariff;
 	(i.kind === "unknown" || n("tariff.kind") || r("tariff")) && t.push("tariff"), (i.feed_in_price == null && !i.feed_in_entity || n("tariff.feed_in_price") || r("feed_in")) && t.push("feed_in");
 	for (let i of e.batteries) {
@@ -9918,7 +9947,7 @@ function Wn(e) {
 	}
 	return t.push("heating", "hot_water", "ev", "household"), t;
 }
-var Gn = class extends y {
+var Kn = class extends y {
 	constructor(...e) {
 		super(...e), this.single = "", this.index = 0;
 	}
@@ -9926,6 +9955,9 @@ var Gn = class extends y {
 		this.styles = [E, o`
       :host {
         display: block;
+      }
+      .step-nav {
+        max-width: 1060px;
       }
       .wrap {
         display: grid;
@@ -9989,25 +10021,30 @@ var Gn = class extends y {
 		let { t: e, config: t } = this;
 		if (!e || !t) return v;
 		if (this.single) return this.renderQuestion(e, t, this.single);
-		let n = Wn(t), r = Math.min(this.index, n.length - 1), i = n[r], a = r === n.length - 1;
-		return g`<div class="wrap">
-      <joe-pose name=${Hn[i.split(":")[0]] ?? "ask"}></joe-pose>
-      <div>
-        <div class="eyebrow">${e("ask.count", {
+		let n = Gn(t), r = Math.min(this.index, n.length - 1), i = n[r], a = r === n.length - 1;
+		return g`${Hn(e, {
+			back: () => this.move(-1, n.length),
+			next: () => this.move(1, n.length),
+			nextLabel: e(a ? "ask.finish" : "onb.next")
+		})}
+      <div class="wrap">
+        <joe-pose name=${Un[i.split(":")[0]] ?? "ask"}></joe-pose>
+        <div>
+          <div class="eyebrow">${e("ask.count", {
 			n: r + 1,
 			total: n.length
 		})}</div>
-        ${this.renderQuestion(e, t, i)}
-        <div class="actions" data-notip>
-          <button type="button" class="btn btn-primary" @click=${() => this.move(1, n.length)}>
-            ${e(a ? "ask.finish" : "onb.next")}
-          </button>
-          <button type="button" class="btn btn-ghost" @click=${() => this.move(-1, n.length)}>
-            ${e("onb.back")}
-          </button>
+          ${this.renderQuestion(e, t, i)}
+          <div class="actions" data-notip>
+            <button type="button" class="btn btn-primary" @click=${() => this.move(1, n.length)}>
+              ${e(a ? "ask.finish" : "onb.next")}
+            </button>
+            <button type="button" class="btn btn-ghost" @click=${() => this.move(-1, n.length)}>
+              ${e("onb.back")}
+            </button>
+          </div>
         </div>
-      </div>
-    </div>`;
+      </div>`;
 	}
 	renderQuestion(e, t, n) {
 		if (n.startsWith("capacity:")) return this.renderCapacity(e, t, n.slice(9));
@@ -10084,7 +10121,7 @@ var Gn = class extends y {
     ></joe-choice>`;
 	}
 	renderHeating(e, t) {
-		let n = t.answers.heating, r = Array.isArray(n) ? n : [], i = t.consumers.filter((e) => r.includes(e.kind)), a = r.some((e) => Un.includes(e));
+		let n = t.answers.heating, r = Array.isArray(n) ? n : [], i = t.consumers.filter((e) => r.includes(e.kind)), a = r.some((e) => Wn.includes(e));
 		return this.question(e("q.heating.title"), "q_heating", g`${this.choice(e, "heating", [
 			{
 				value: "climate",
@@ -10228,14 +10265,14 @@ var Gn = class extends y {
 		}));
 	}
 };
-D([b({ attribute: !1 })], Gn.prototype, "hass", void 0), D([b({ attribute: !1 })], Gn.prototype, "t", void 0), D([b({ attribute: !1 })], Gn.prototype, "config", void 0), D([b({ attribute: !1 })], Gn.prototype, "discovery", void 0), D([b()], Gn.prototype, "single", void 0), D([x()], Gn.prototype, "index", void 0), T("joe-questions", Gn);
+D([b({ attribute: !1 })], Kn.prototype, "hass", void 0), D([b({ attribute: !1 })], Kn.prototype, "t", void 0), D([b({ attribute: !1 })], Kn.prototype, "config", void 0), D([b({ attribute: !1 })], Kn.prototype, "discovery", void 0), D([b()], Kn.prototype, "single", void 0), D([x()], Kn.prototype, "index", void 0), T("joe-questions", Kn);
 //#endregion
 //#region src/pages/onboarding.ts
-function Kn(e, t, n) {
+function qn(e, t, n) {
 	let [r, i] = e(n).split("|");
 	return `${j(e.lang, t, 0)} ${t === 1 ? r : i}`;
 }
-var qn = {
+var Jn = {
 	climate: "q.heating.climate",
 	heat_pump: "q.heating.heat_pump",
 	electric_heating: "q.heating.electric",
@@ -10292,6 +10329,12 @@ var qn = {
         display: flex;
         flex-wrap: wrap;
         gap: 6px;
+      }
+      .step-nav {
+        max-width: 1000px;
+      }
+      .step-nav.wide {
+        max-width: 1120px;
       }
       .wrap.wide {
         grid-template-columns: minmax(0, 0.55fr) minmax(0, 1.45fr);
@@ -10393,36 +10436,48 @@ var qn = {
 		return this.discovering || !this.discovery && !this.discoveryFailed ? this.layout("scout", g`${C(e("onb.scan.title"))} ${S}
           <p class="lead">${e("onb.scan.lead")}</p>
           ${this.renderEnergy(e)}
-          <div class="looking" role="status">${e("scan.looking")}</div>`) : g`<div class="wrap wide">
-      <joe-pose name="scout"></joe-pose>
-      <div>
-        ${C(e("scan.title"))} ${S}
-        <p class="lead">${e("scan.lead")}</p>
-        ${this.discoveryFailed ? g`<p class="failed">${e("scan.failed")}</p>` : v}
-        <joe-review
-          .hass=${this.hass}
-          .t=${e}
-          .config=${this.config}
-          .discovery=${this.discovery}
-          .checks=${this.checks}
-        ></joe-review>
-        <div class="actions">
-          <button type="button" class="btn btn-primary" data-notip @click=${() => this.go("questions")}>
-            ${e("onb.next")}
-          </button>
-          <span class="with-tip" data-tipped>
-            <button type="button" class="btn btn-secondary" @click=${this.rediscover}>${e("scan.again")}</button>
-            ${P(e, "rescan")}
-          </span>
-          <button type="button" class="btn btn-ghost" data-notip @click=${() => this.go("welcome")}>
-            ${e("onb.back")}
-          </button>
+          <div class="looking" role="status">${e("scan.looking")}</div>`) : g`${Hn(e, {
+			back: () => this.go("welcome"),
+			next: () => this.go("questions"),
+			nextLabel: e("onb.next")
+		}, !0)}
+      <div class="wrap wide">
+        <joe-pose name="scout"></joe-pose>
+        <div>
+          ${C(e("scan.title"))} ${S}
+          <p class="lead">${e("scan.lead")}</p>
+          ${this.discoveryFailed ? g`<p class="failed">${e("scan.failed")}</p>` : v}
+          <joe-review
+            .hass=${this.hass}
+            .t=${e}
+            .config=${this.config}
+            .discovery=${this.discovery}
+            .checks=${this.checks}
+          ></joe-review>
+          <div class="actions">
+            <button type="button" class="btn btn-primary" data-notip @click=${() => this.go("questions")}>
+              ${e("onb.next")}
+            </button>
+            <span class="with-tip" data-tipped>
+              <button type="button" class="btn btn-secondary" @click=${this.rediscover}>${e("scan.again")}</button>
+              ${P(e, "rescan")}
+            </span>
+            <button type="button" class="btn btn-ghost" data-notip @click=${() => this.go("welcome")}>
+              ${e("onb.back")}
+            </button>
+          </div>
         </div>
-      </div>
-    </div>`;
+      </div>`;
 	}
 	renderDone(e) {
-		return this.layout("thumbs", g`${C(e("onb.done.title"))} ${S}
+		return g`${Hn(e, {
+			back: () => this.go("scan"),
+			backLabel: e("onb.done.change"),
+			next: () => this.complete(),
+			nextLabel: e("onb.done.go"),
+			nextTip: "start"
+		})}
+    ${this.layout("thumbs", g`${C(e("onb.done.title"))} ${S}
         ${this.config ? this.renderSummary(e, this.config) : v}
         <div class="calm"><span class="pill-sim">${e("mode.simulation")}</span>${e("onb.done.lead")}</div>
         <div class="actions">
@@ -10433,7 +10488,7 @@ var qn = {
           <button type="button" class="btn btn-ghost" data-notip @click=${() => this.go("scan")}>
             ${e("onb.done.change")}
           </button>
-        </div>`);
+        </div>`)}`;
 	}
 	renderSummary(e, t) {
 		let n = this.hass, r = t.batteries.reduce((e, t) => e + (t.capacity_kwh ?? (n ? xt(n, t.capacity_entity) : null) ?? 0), 0), i = (n, r) => {
@@ -10452,9 +10507,9 @@ var qn = {
 			[e("sum.feed_in"), t.tariff.feed_in_price == null ? t.tariff.feed_in_entity ? e("sum.from_sensor") : e("sum.unknown") : `${Ln(e, t.tariff.feed_in_price)} ct`],
 			[e("sum.forecast"), t.forecast.provider ? a ? e("sum.forecast.value", {
 				provider: a.provider_name,
-				planes: Kn(e, a.planes, "word.plane")
+				planes: qn(e, a.planes, "word.plane")
 			}) : t.forecast.provider : e("sum.none")],
-			[e("sum.heating"), i("heating", qn)],
+			[e("sum.heating"), i("heating", Jn)],
 			[e("sum.hot_water"), i("hot_water", {
 				hot_water_heat_pump: "q.hot_water.heat_pump",
 				electric: "q.hot_water.electric",
@@ -10466,8 +10521,8 @@ var qn = {
 				no: "q.ev.no"
 			})],
 			[e("sum.household"), e("sum.household.value", {
-				persons: Kn(e, t.persons.length, "word.person"),
-				calendars: Kn(e, t.persons.reduce((e, t) => e + t.calendars.length, 0), "word.calendar")
+				persons: qn(e, t.persons.length, "word.person"),
+				calendars: qn(e, t.persons.reduce((e, t) => e + t.calendars.length, 0), "word.calendar")
 			})]
 		].map(([e, t]) => g`<div><span>${e}</span><span>${t}</span></div>`)}
     </div>`;
@@ -10521,7 +10576,7 @@ var qn = {
 D([b()], Z.prototype, "step", void 0), D([b({ attribute: !1 })], Z.prototype, "t", void 0), D([b({ attribute: !1 })], Z.prototype, "info", void 0), D([b({ attribute: !1 })], Z.prototype, "hass", void 0), D([b({ attribute: !1 })], Z.prototype, "config", void 0), D([b({ attribute: !1 })], Z.prototype, "discovery", void 0), D([b({ attribute: !1 })], Z.prototype, "checks", void 0), D([b({ type: Boolean })], Z.prototype, "discovering", void 0), D([b({ type: Boolean })], Z.prototype, "discoveryFailed", void 0), T("joe-onboarding", Z);
 //#endregion
 //#region src/pages/overview.ts
-var Jn = class extends y {
+var Yn = class extends y {
 	constructor(...e) {
 		super(...e), this.prefix = "/energy-joe";
 	}
@@ -11015,10 +11070,10 @@ var Jn = class extends y {
 		})));
 	}
 };
-D([b({ attribute: !1 })], Jn.prototype, "t", void 0), D([b({ attribute: !1 })], Jn.prototype, "hass", void 0), D([b({ attribute: !1 })], Jn.prototype, "state", void 0), D([b()], Jn.prototype, "prefix", void 0), D([x()], Jn.prototype, "week", void 0), T("joe-overview", Jn);
+D([b({ attribute: !1 })], Yn.prototype, "t", void 0), D([b({ attribute: !1 })], Yn.prototype, "hass", void 0), D([b({ attribute: !1 })], Yn.prototype, "state", void 0), D([b()], Yn.prototype, "prefix", void 0), D([x()], Yn.prototype, "week", void 0), T("joe-overview", Yn);
 //#endregion
 //#region src/pages/plan.ts
-var Yn = 36e5, Xn = class extends y {
+var Xn = 36e5, Zn = class extends y {
 	constructor(...e) {
 		super(...e), this.refreshing = !1;
 	}
@@ -11321,7 +11376,7 @@ var Yn = 36e5, Xn = class extends y {
 				let t = Date.parse(e);
 				for (let e = 0; e < n.length; e++) {
 					let r = Date.parse(n[e].start);
-					if (t >= r && t < r + Yn) return e + (t - r) / Yn;
+					if (t >= r && t < r + Xn) return e + (t - r) / Xn;
 				}
 				return null;
 			}
@@ -11519,15 +11574,15 @@ var Yn = 36e5, Xn = class extends y {
 		}
 	}
 };
-D([b({ attribute: !1 })], Xn.prototype, "hass", void 0), D([b({ attribute: !1 })], Xn.prototype, "t", void 0), D([b({ attribute: !1 })], Xn.prototype, "state", void 0), D([x()], Xn.prototype, "refreshing", void 0), T("joe-plan-page", Xn);
+D([b({ attribute: !1 })], Zn.prototype, "hass", void 0), D([b({ attribute: !1 })], Zn.prototype, "t", void 0), D([b({ attribute: !1 })], Zn.prototype, "state", void 0), D([x()], Zn.prototype, "refreshing", void 0), T("joe-plan-page", Zn);
 //#endregion
 //#region src/pages/settings.ts
-var Zn = [
+var Qn = [
 	"simulation",
 	"advisory",
 	"live",
 	"off"
-], Qn = [
+], $n = [
 	{
 		key: "reserve_soc",
 		unit: "%",
@@ -11591,7 +11646,7 @@ var Zn = [
 		step: 1,
 		integer: !0
 	}
-], $n = [{
+], er = [{
 	key: "max_price",
 	unit: "ct/kWh",
 	min: 0,
@@ -11606,7 +11661,7 @@ var Zn = [
 	max: 500,
 	step: 1,
 	scale: 100
-}], er = {
+}], tr = {
 	key: "balance_days",
 	unit: "",
 	min: 3,
@@ -11614,7 +11669,7 @@ var Zn = [
 	step: 1,
 	optional: !0,
 	integer: !0
-}, tr = [
+}, nr = [
 	{
 		key: "heating",
 		tip: "q_heating"
@@ -11627,7 +11682,7 @@ var Zn = [
 		key: "ev",
 		tip: "q_ev"
 	}
-], nr = {
+], rr = {
 	heating: {
 		climate: "q.heating.climate",
 		heat_pump: "q.heating.heat_pump",
@@ -11829,7 +11884,7 @@ var Zn = [
               <small>${e("settings.mode.hint")}</small>
             </div>
             <div class="seg" role="group" aria-label=${e("settings.mode")}>
-              ${Zn.map((n) => g`<button
+              ${Qn.map((n) => g`<button
                     type="button"
                     aria-pressed=${String(t.mode === n)}
                     @click=${() => this.emit("joe-set-mode", { mode: n })}
@@ -11873,7 +11928,7 @@ var Zn = [
 
         <section class="group">
           <h2>${e("settings.answers")}</h2>
-          ${tr.map((t) => this.answerRow(e, t.key, t.tip))}
+          ${nr.map((t) => this.answerRow(e, t.key, t.tip))}
         </section>
 
         ${this.renderObserve(e)}
@@ -11900,11 +11955,11 @@ var Zn = [
             <h2>${e("settings.pro")}</h2>
           </button>
           ${this.pro ? g`<p class="intro">${e("settings.pro.intro")}</p>
-                ${Qn.slice(0, 5).map((t) => this.numberRow(e, n.rules, t))}
-                ${$n.map((t) => this.numberRow(e, n.rules, t))} ${this.guardRow(e, n.rules)}
-                ${this.numberRow(e, n.rules, er)}
+                ${$n.slice(0, 5).map((t) => this.numberRow(e, n.rules, t))}
+                ${er.map((t) => this.numberRow(e, n.rules, t))} ${this.guardRow(e, n.rules)}
+                ${this.numberRow(e, n.rules, tr)}
                 ${this.priorityRow(e, n.rules)} ${this.dischargeRow(e, n.rules)}
-                ${Qn.slice(5).map((t) => this.numberRow(e, n.rules, t))}` : v}
+                ${$n.slice(5).map((t) => this.numberRow(e, n.rules, t))}` : v}
         </section>
 
         <section class="group">
@@ -12017,7 +12072,7 @@ var Zn = [
 		} catch {}
 	}
 	answerRow(e, t, n) {
-		let r = this.state.config, i = r.answers[t], a = Array.isArray(i) ? i : typeof i == "string" ? [i] : [], o = i === "unknown" ? e("sum.unknown") : a.length ? a.map((n) => nr[t][n] ? e(nr[t][n]) : n).join(", ") : e("sum.open");
+		let r = this.state.config, i = r.answers[t], a = Array.isArray(i) ? i : typeof i == "string" ? [i] : [], o = i === "unknown" ? e("sum.unknown") : a.length ? a.map((n) => rr[t][n] ? e(rr[t][n]) : n).join(", ") : e("sum.open");
 		return g`<div class="row" data-tipped>
       <div>
         <div class="name"><b>${e(`settings.answer.${t}`)}</b>${P(e, n)}</div>
@@ -12208,7 +12263,7 @@ var Zn = [
 D([b({ attribute: !1 })], Q.prototype, "t", void 0), D([b({ attribute: !1 })], Q.prototype, "hass", void 0), D([b({ attribute: !1 })], Q.prototype, "state", void 0), D([b({ attribute: !1 })], Q.prototype, "info", void 0), D([b({ attribute: !1 })], Q.prototype, "discovery", void 0), D([b({ attribute: !1 })], Q.prototype, "checks", void 0), D([x()], Q.prototype, "pro", void 0), D([x()], Q.prototype, "question", void 0), T("joe-settings", Q);
 //#endregion
 //#region src/styles/tokens.ts
-var rr = o`
+var ir = o`
   :host {
     --joe-bg: #fbf6ec;
     --joe-surface: #ffffff;
@@ -12295,17 +12350,17 @@ var rr = o`
     --joe-show-dark: block;
     color-scheme: dark;
   }
-`, ir = [
+`, ar = [
 	"simulation",
 	"advisory",
 	"live",
 	"off"
-], ar = {
+], or = {
 	simulation: "mdi:pause",
 	advisory: "mdi:comment-question-outline",
 	live: "mdi:play",
 	off: "mdi:power"
-}, or = ir, $ = class extends y {
+}, sr = ar, $ = class extends y {
 	constructor() {
 		super(), this.narrow = !1, this.failed = !1, this.modeDialog = !1, this.notice = "", this.discovering = !1, this.discoveryFailed = !1, this.checks = [], this.infoRequested = !1, this.adopted = !1, this.addEventListener("joe-config", (e) => this.onConfig(e)), this.addEventListener("joe-pick", (e) => {
 			this.picker = e.detail;
@@ -12495,8 +12550,8 @@ var rr = o`
           ${S}
           ${this.renderReadiness(e)}
           <div class="modes" role="group" aria-labelledby="mode-title">
-            ${ir.map((n) => {
-			let r = or.includes(n);
+            ${ar.map((n) => {
+			let r = sr.includes(n);
 			return g`<button
                 type="button"
                 class="mode ${n}"
@@ -12504,7 +12559,7 @@ var rr = o`
                 ?disabled=${!r}
                 @click=${() => this.chooseMode(n)}
               >
-                <span class="knob"><ha-icon icon=${ar[n]}></ha-icon></span>
+                <span class="knob"><ha-icon icon=${or[n]}></ha-icon></span>
                 <span class="label">
                   <b>${e(`mode.${n}`)}</b>
                   <small>${e(`mode.${n}.desc`)}</small>
@@ -12637,7 +12692,7 @@ var rr = o`
 	}
 	static {
 		this.styles = [
-			rr,
+			ir,
 			E,
 			o`
       :host {

@@ -4,6 +4,7 @@ import { displayTitle, swoosh } from "../components/bits";
 import "../components/choice";
 import { UNKNOWN, type ChoiceOption } from "../components/choice";
 import "../components/pose";
+import { stepNav } from "../components/step-nav";
 import { tip } from "../components/tip";
 import { saveConfig, sourceOf } from "../config";
 import { define } from "../define";
@@ -68,6 +69,9 @@ export class JoeQuestions extends LitElement {
     css`
       :host {
         display: block;
+      }
+      .step-nav {
+        max-width: 1060px;
       }
       .wrap {
         display: grid;
@@ -140,21 +144,27 @@ export class JoeQuestions extends LitElement {
     const index = Math.min(this.index, list.length - 1);
     const id = list[index];
     const last = index === list.length - 1;
-    return html`<div class="wrap">
-      <joe-pose name=${POSES[id.split(":")[0]] ?? "ask"}></joe-pose>
-      <div>
-        <div class="eyebrow">${t("ask.count", { n: index + 1, total: list.length })}</div>
-        ${this.renderQuestion(t, config, id)}
-        <div class="actions" data-notip>
-          <button type="button" class="btn btn-primary" @click=${() => this.move(1, list.length)}>
-            ${t(last ? "ask.finish" : "onb.next")}
-          </button>
-          <button type="button" class="btn btn-ghost" @click=${() => this.move(-1, list.length)}>
-            ${t("onb.back")}
-          </button>
+    const nav = stepNav(t, {
+      back: () => this.move(-1, list.length),
+      next: () => this.move(1, list.length),
+      nextLabel: t(last ? "ask.finish" : "onb.next"),
+    });
+    return html`${nav}
+      <div class="wrap">
+        <joe-pose name=${POSES[id.split(":")[0]] ?? "ask"}></joe-pose>
+        <div>
+          <div class="eyebrow">${t("ask.count", { n: index + 1, total: list.length })}</div>
+          ${this.renderQuestion(t, config, id)}
+          <div class="actions" data-notip>
+            <button type="button" class="btn btn-primary" @click=${() => this.move(1, list.length)}>
+              ${t(last ? "ask.finish" : "onb.next")}
+            </button>
+            <button type="button" class="btn btn-ghost" @click=${() => this.move(-1, list.length)}>
+              ${t("onb.back")}
+            </button>
+          </div>
         </div>
-      </div>
-    </div>`;
+      </div>`;
   }
 
   private renderQuestion(t: Translate, config: JoeConfig, id: string): TemplateResult {

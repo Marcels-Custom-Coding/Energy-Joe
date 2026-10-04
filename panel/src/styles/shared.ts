@@ -248,6 +248,20 @@ export const shared = css`
     align-items: center;
     gap: 8px;
   }
+  /* Back and next at the top of a setup step (components/step-nav.ts) */
+  .step-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 12px auto 0;
+  }
+  .step-nav .btn ha-icon {
+    --mdc-icon-size: 20px;
+  }
+  .step-nav .btn-ghost {
+    padding-inline: 8px 14px;
+  }
 
   /* How sure Joe is */
   .conf {
