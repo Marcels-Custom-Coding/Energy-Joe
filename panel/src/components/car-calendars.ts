@@ -6,6 +6,7 @@ import { entityName } from "../entities";
 import type { Translate } from "../i18n";
 import { shared } from "../styles/shared";
 import type { CarAccountConfig, CarAccountStatus, CarNeedConfig, HomeAssistant, MailboxConfig } from "../types";
+import "./calendar-flow";
 import { timeOf } from "./plan-text";
 import { tip } from "./tip";
 
@@ -16,7 +17,6 @@ interface Links {
 }
 
 type Source = NonNullable<CarNeedConfig["source"]>;
-const SOURCES: Source[] = ["ha", "mailbox", "account"];
 const KINDS: CarAccountConfig["kind"][] = ["outlook", "microsoft", "icloud", "infomaniak", "caldav"];
 const MICROSOFT = new Set(["outlook", "microsoft"]);
 
@@ -161,24 +161,60 @@ export class JoeCarCalendars extends LitElement {
       return nothing;
     }
     const source = this.need?.source ?? "ha";
-    return html`${this.renderOwn(t, hass)}
-      <div data-tipped>
+    const invite = source !== "ha";
+    return html`<div data-tipped>
         <div class="head-row"><b>${t("calendar.source")}</b> ${tip(t, "calendar_source")}</div>
         <div class="seg" role="group" aria-label=${t("calendar.source")}>
-          ${SOURCES.map(
+          <button type="button" aria-pressed=${String(invite)} @click=${() => this.choose("invite")}>${t("calendar.way.invite")}</button>
+          <button type="button" aria-pressed=${String(!invite)} @click=${() => this.choose("calendar")}>${t("calendar.way.calendar")}</button>
+        </div>
+      </div>
+      ${invite ? this.renderInviteWay(t, source) : this.renderCalendarWay(t, hass)} ${this.renderOwn(t, hass)}
+      ${this.failed ? html`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon>${t("error.action")}</div>` : nothing}`;
+  }
+
+  /** Joe accepts invitations in the car's name: through his mailbox or the car's account. */
+  private renderInviteWay(t: Translate, source: Source): TemplateResult {
+    const address =
+      source === "mailbox" ? (this.mailbox?.cars[this.actionId] ?? "") : (this.need?.account?.address ?? "");
+    return html`<div class="part">
+        <p class="hint">${t("calendar.way.invite.hint")}</p>
+        <joe-calendar-flow .t=${t} variant="invite" address=${address}></joe-calendar-flow>
+      </div>
+      <div data-tipped>
+        <div class="head-row"><b>${t("calendar.mailbox")}</b> ${tip(t, "calendar_mailbox")}</div>
+        <div class="seg" role="group" aria-label=${t("calendar.mailbox")}>
+          ${(["mailbox", "account"] as Source[]).map(
             (item) =>
               html`<button type="button" aria-pressed=${String(source === item)} @click=${() => this.change({ source: item })}>
-                ${t(`calendar.source.${item}`)}
+                ${t(`calendar.mailbox.${item}` as "calendar.mailbox.mailbox")}
               </button>`,
           )}
         </div>
       </div>
-      ${source === "ha"
-        ? html`${this.renderMore(t, hass)} ${this.renderConnect(t)}`
-        : source === "mailbox"
-          ? this.renderInvite(t)
-          : this.renderAccount(t)}
-      ${this.failed ? html`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon>${t("error.action")}</div>` : nothing}`;
+      ${source === "mailbox" ? this.renderInvite(t) : this.renderAccount(t)}`;
+  }
+
+  /** A finished calendar of the car: invited and accepted elsewhere, Joe only reads it. */
+  private renderCalendarWay(t: Translate, hass: HomeAssistant): TemplateResult {
+    return html`<div class="part">
+        <p class="hint">${t("calendar.way.calendar.hint")}</p>
+        <joe-calendar-flow .t=${t} variant="calendar"></joe-calendar-flow>
+      </div>
+      ${this.renderMore(t, hass)} ${this.renderConnect(t)}`;
+  }
+
+  private choose(way: "invite" | "calendar"): void {
+    if (way === "calendar") {
+      this.change({ source: "ha" });
+      return;
+    }
+    const current = this.need?.source;
+    if (current === "mailbox" || current === "account") {
+      return;
+    }
+    // Joe's mailbox if it is set up, else the car's own account.
+    this.change({ source: this.mailbox?.enabled ? "mailbox" : "account" });
   }
 
   private renderOwn(t: Translate, hass: HomeAssistant): TemplateResult {
@@ -190,8 +226,8 @@ export class JoeCarCalendars extends LitElement {
     const base = this.links?.external_url;
     const url = path && base ? `${base.replace(/\/$/, "")}${path}` : null;
     return html`<div class="own" data-tipped>
-      <div class="head-row"><b>${entityName(hass, entity)}</b> ${tip(t, "calendar_own")}</div>
-      <p class="hint">${t("calendar.own.hint")}</p>
+      <div class="head-row"><b>${t("calendar.own")}</b> ${tip(t, "calendar_own")}</div>
+      <p class="hint">${t("calendar.own.hint", { name: entityName(hass, entity) })}</p>
       ${url
         ? html`<div class="link">
             <code>${url}</code>
@@ -212,7 +248,6 @@ export class JoeCarCalendars extends LitElement {
   private renderMore(t: Translate, hass: HomeAssistant): TemplateResult {
     const calendars = this.need?.calendars ?? [];
     return html`<div class="part" data-tipped>
-      <p class="hint">${t("calendar.source.ha.hint")}</p>
       <div class="chips">
         ${calendars.map(
           (id) => html`<span class="chip">
@@ -268,7 +303,7 @@ export class JoeCarCalendars extends LitElement {
     const suggestion = domain && slug ? `${local}+${slug}@${domain}` : mail.address;
     return html`<div class="part" data-tipped>
       <div class="head-row"><b>${t("calendar.invite")}</b> ${tip(t, "calendar_invite")}</div>
-      <p class="hint">${t("calendar.source.mailbox.hint")}</p>
+      <p class="hint">${t("calendar.mailbox.mailbox.hint")}</p>
       <div class="link">
         <input
           class="input"
@@ -297,7 +332,7 @@ export class JoeCarCalendars extends LitElement {
     const status = this.account;
     return html`<div class="part" data-tipped>
       <div class="head-row"><b>${t("calendar.account")}</b> ${tip(t, "calendar_account")}</div>
-      <p class="hint">${t("calendar.source.account.hint")}</p>
+      <p class="hint">${t("calendar.mailbox.account.hint")}</p>
       <div class="inline">
         <select
           class="input"

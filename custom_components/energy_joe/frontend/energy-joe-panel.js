@@ -1516,7 +1516,7 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"action.need.no_calendars": "Noch hat niemand einen Kalender. Unter Einstellungen → Haushalt ordnest du Kalender zu.",
 	"action.need.calendars": "Kalender dieses Autos",
 	"calendar.own.after_save": "Nach dem Speichern bekommt dieses Auto einen eigenen Kalender. Jeder Termin darin ist eine Fahrt mit genau diesem Auto.",
-	"calendar.own.hint": "Jeder Termin darin ist eine Fahrt mit genau diesem Auto. Trag Fahrten in Home Assistant unter Kalender ein – oder abonniere den Kalender auf dem Handy:",
+	"calendar.own.hint": "„{name}“ in Home Assistant: Fahrten, die du hier selbst einträgst, zählen immer mit. Nimmt Joe Einladungen über sein Postfach an, landen sie auch hier. Aufs Handy holen:",
 	"calendar.copy": "Link kopieren",
 	"calendar.copied": "Kopiert",
 	"calendar.renew": "Neuer Link",
@@ -1619,13 +1619,7 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"mail.error.no_server": "Server-Adresse fehlt",
 	"mail.error.send": "Senden fehlgeschlagen",
 	"mail.error.unknown": "unbekannter Fehler",
-	"calendar.source": "Woher kommen die Termine dieses Autos?",
-	"calendar.source.ha": "Kalender aus Home Assistant",
-	"calendar.source.mailbox": "Einladungen an Joes Postfach",
-	"calendar.source.account": "Konto des Autos",
-	"calendar.source.ha.hint": "Ein Kalender, den Home Assistant schon kennt – jeder Termin mit Ort darin ist eine Fahrt mit diesem Auto.",
-	"calendar.source.mailbox.hint": "Du lädst diese Adresse ein, ich fange die Einladung in Joes Postfach ab und trage sie in Joes Kalender für dieses Auto ein.",
-	"calendar.source.account.hint": "Das Auto hat ein eigenes Konto mit Postfach und Kalender (z. B. kona@outlook.com). Einladungen landen dort von selbst im Kalender – ich lese ihn und sage zu.",
+	"calendar.source": "Wie kommen Termine zum Auto?",
 	"calendar.account": "Konto des Autos",
 	"calendar.account.kind": "Art des Kontos",
 	"calendar.account.kind.outlook": "Microsoft privat (Outlook.com, Hotmail, Live)",
@@ -1651,6 +1645,28 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"calendar.account.error.connect": "Server nicht erreichbar",
 	"calendar.account.error.no_calendar": "kein Kalender gefunden",
 	"calendar.account.error.no_secret": "Anmeldung fehlt",
+	"calendar.way.invite": "Joe nimmt Einladungen an",
+	"calendar.way.calendar": "Fertiger Kalender des Autos",
+	"calendar.way.invite.hint": "Joe verwaltet das Postfach des Autos – so läuft's:",
+	"calendar.way.calendar.hint": "Joe liest einen Kalender, in dem die Termine des Autos schon stehen – so läuft's:",
+	"calendar.mailbox": "Welches Postfach hat das Auto?",
+	"calendar.mailbox.mailbox": "Adresse in Joes Postfach",
+	"calendar.mailbox.account": "Eigenes Konto des Autos",
+	"calendar.mailbox.mailbox.hint": "Eine Adresse in Joes Postfach (Einstellungen → Postfach für Auto-Termine), z. B. auto+kona@… – ein Postfach reicht für alle Autos.",
+	"calendar.mailbox.account.hint": "Das Auto hat ein eigenes Konto, z. B. kona@outlook.com oder bei iCloud. Joe meldet sich dort an, liest den Kalender des Kontos und sagt zu.",
+	"calendar.own": "Joes Kalender für dieses Auto",
+	"flow.invite.title": "So kommt ein Termin zum Auto",
+	"flow.invite.1": "Du legst einen Termin in **deinem Kalender** an – mit **Ort**.",
+	"flow.invite.2": "Du brauchst das Auto? **Lade es ein:** {address}",
+	"flow.invite.address": "die Adresse des Autos",
+	"flow.invite.3": "**Joe sagt im Namen des Autos zu.**",
+	"flow.invite.4": "Der Termin steht im **Kalender des Autos**.",
+	"flow.invite.5": "Joe rechnet die Strecke und **lädt rechtzeitig**.",
+	"flow.calendar.title": "So liest Joe einen fertigen Kalender",
+	"flow.calendar.1": "Die Termine des Autos stehen in **einem eigenen Kalender** – eingeladen und zugesagt.",
+	"flow.calendar.2": "Du **ordnest den Kalender** hier dem Auto zu.",
+	"flow.calendar.3": "**Joe liest** die Termine mit Ort.",
+	"flow.calendar.4": "Joe rechnet die Strecke und **lädt rechtzeitig**.",
 	"calendar.invite": "Einladen über",
 	"calendar.invite.no_mailbox": "Richte in den Einstellungen ein Postfach für Auto-Termine ein – dann lädst du das Auto zu Terminen ein wie eine Person.",
 	"calendar.invite.use": "Übernehmen",
@@ -1835,14 +1851,17 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"tip.mail_status.text": "**Verbindung testen** meldet sich einmal bei IMAP und SMTP an. **Jetzt abrufen** schaut sofort nach neuen Einladungen, statt auf die nächsten Minuten zu warten.",
 	"tip.mail_recent.title": "Was ist mit den Einladungen passiert?",
 	"tip.mail_recent.text": "Die letzten Einladungen und was ich damit gemacht habe: eingetragen, geändert, abgesagt – oder warum nicht.",
-	"tip.calendar_source.title": "Welcher Weg passt?",
-	"tip.calendar_source.text": "**Kalender aus Home Assistant**: Das Auto hat schon einen Kalender, den Home Assistant kennt (Google, iCloud, Microsoft 365, iCal-Link).\n**Einladungen an Joes Postfach**: Du lädst eine Adresse wie auto+kona@… ein, ich fange die Einladung ab und trage sie in Joes Kalender ein. Ein Postfach reicht für alle Autos.\n**Konto des Autos**: Das Auto hat ein eigenes Konto mit Postfach und Kalender. Einladungen landen dort von selbst – ich lese den Kalender direkt.\nJoes eigener Kalender für das Auto zählt immer mit, und die Kalender der Personen, die du oben wählst.",
 	"tip.calendar_account.title": "Was brauche ich dafür?",
 	"tip.calendar_account.text": "**Microsoft privat**: einfach mit Microsoft anmelden.\n**Microsoft 365 / Exchange**: anmelden mit Joes App, wenn deine Firma das zulässt – sonst mit einer eigenen App.\n**iCloud**: ein App-Passwort von appleid.apple.com.\n**Infomaniak**: das Passwort des Kontos oder ein Gerätepasswort.\n**Anderer CalDAV-Server**: Adresse, Benutzername und Passwort.",
 	"tip.calendar_account_accept.title": "Was heißt zusagen?",
 	"tip.calendar_account_accept.text": "Ich sage Einladungen im Kalender des Autos zu – aber nur von Absendern, die bei „Wer darf einladen?“ stehen (Einstellungen → Postfach für Auto-Termine). Alle Termine im Kalender zählen trotzdem als Fahrten.",
 	"tip.calendar_account_password.title": "Welches Passwort?",
 	"tip.calendar_account_password.text": "Für iCloud ein App-spezifisches Passwort (appleid.apple.com → Anmeldung und Sicherheit). Es liegt bei mir in einem eigenen Speicher, nicht in der Konfiguration.",
+	"tip.calendar_source.title": "Welcher Weg passt zu mir?",
+	"tip.calendar_source.text": "**Joe nimmt Einladungen an**: Du lädst das Auto zu deinen Terminen ein, wie eine Person. Joe verwaltet das Postfach des Autos, sagt zu und übernimmt den Termin. Praktisch, wenn du Termine sowieso in deinem eigenen Kalender pflegst.\n**Fertiger Kalender des Autos**: Das Auto hat schon einen Kalender, in dem seine Termine stehen (z. B. ein Google-Kalender, den die Familie teilt). Du ordnest ihn nur zu – Joe liest, sagt aber nichts zu.",
+	"tip.calendar_source.hint": "In beiden Fällen zählen auch die Fahrten in Joes Kalender für das Auto und die Kalender der Personen, die du oben auswählst.",
+	"tip.calendar_mailbox.title": "Welches Postfach?",
+	"tip.calendar_mailbox.text": "**Adresse in Joes Postfach**: Ein Postfach für alle Autos, das du in den Einstellungen einrichtest. Jedes Auto bekommt eine eigene Adresse, z. B. auto+kona@… und auto+eup@….\n**Eigenes Konto des Autos**: Das Auto hat sein eigenes Konto (Microsoft, iCloud, Infomaniak …). Einladungen landen dort von selbst im Kalender; Joe liest ihn und sagt zu.",
 	"tip.calendar_invite.title": "Welche Adresse lade ich ein?",
 	"tip.calendar_invite.text": "Diese Adresse lädst du zu Terminen ein, wenn du mit diesem Auto fährst. Mit einem Postfach für mehrere Autos geht das über Plus-Adressen (auto+kona@…). Hast du nur ein Auto, kommt jede erlaubte Einladung zu ihm.",
 	"tip.routing_service.title": "Welcher Dienst?",
@@ -3102,7 +3121,7 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"action.need.no_calendars": "Nobody has a calendar yet. You assign calendars under Settings → Household.",
 	"action.need.calendars": "Calendars of this car",
 	"calendar.own.after_save": "Once saved, this car gets a calendar of its own. Every appointment in it is a trip with exactly this car.",
-	"calendar.own.hint": "Every appointment in it is a trip with exactly this car. Add trips in Home Assistant under Calendar – or subscribe to the calendar on your phone:",
+	"calendar.own.hint": "“{name}” in Home Assistant: trips you add here yourself always count. When Joe accepts invitations through his mailbox, they land here too. Get it on your phone:",
 	"calendar.copy": "Copy link",
 	"calendar.copied": "Copied",
 	"calendar.renew": "New link",
@@ -3205,13 +3224,7 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"mail.error.no_server": "server address missing",
 	"mail.error.send": "sending failed",
 	"mail.error.unknown": "unknown error",
-	"calendar.source": "Where do this car's appointments come from?",
-	"calendar.source.ha": "Calendar in Home Assistant",
-	"calendar.source.mailbox": "Invitations to Joe's mailbox",
-	"calendar.source.account": "The car's account",
-	"calendar.source.ha.hint": "A calendar Home Assistant already knows – every appointment with a place in it is a trip with this car.",
-	"calendar.source.mailbox.hint": "You invite this address, I catch the invitation in Joe's mailbox and put it into Joe's calendar for this car.",
-	"calendar.source.account.hint": "The car has an account of its own with mailbox and calendar (e.g. kona@outlook.com). Invitations land in its calendar by themselves – I read it and accept.",
+	"calendar.source": "How do appointments get to the car?",
 	"calendar.account": "The car's account",
 	"calendar.account.kind": "Kind of account",
 	"calendar.account.kind.outlook": "Microsoft personal (Outlook.com, Hotmail, Live)",
@@ -3237,6 +3250,28 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"calendar.account.error.connect": "server not reachable",
 	"calendar.account.error.no_calendar": "no calendar found",
 	"calendar.account.error.no_secret": "sign-in missing",
+	"calendar.way.invite": "Joe accepts invitations",
+	"calendar.way.calendar": "Finished calendar of the car",
+	"calendar.way.invite.hint": "Joe runs the car's mailbox – this is how it works:",
+	"calendar.way.calendar.hint": "Joe reads a calendar that already holds the car's appointments – this is how it works:",
+	"calendar.mailbox": "Which mailbox does the car have?",
+	"calendar.mailbox.mailbox": "Address in Joe's mailbox",
+	"calendar.mailbox.account": "The car's own account",
+	"calendar.mailbox.mailbox.hint": "An address in Joe's mailbox (Settings → Mailbox for car appointments), e.g. auto+kona@… – one mailbox is enough for all cars.",
+	"calendar.mailbox.account.hint": "The car has an account of its own, e.g. kona@outlook.com or at iCloud. Joe signs in there, reads the account's calendar and accepts.",
+	"calendar.own": "Joe's calendar for this car",
+	"flow.invite.title": "How an appointment gets to the car",
+	"flow.invite.1": "You create an appointment in **your calendar** – with a **place**.",
+	"flow.invite.2": "You need the car? **Invite it:** {address}",
+	"flow.invite.address": "the car's address",
+	"flow.invite.3": "**Joe accepts in the car's name.**",
+	"flow.invite.4": "The appointment is in the **car's calendar**.",
+	"flow.invite.5": "Joe works out the distance and **charges in time**.",
+	"flow.calendar.title": "How Joe reads a finished calendar",
+	"flow.calendar.1": "The car's appointments are in **a calendar of its own** – invited and accepted.",
+	"flow.calendar.2": "You **assign the calendar** to the car here.",
+	"flow.calendar.3": "**Joe reads** the appointments with a place.",
+	"flow.calendar.4": "Joe works out the distance and **charges in time**.",
 	"calendar.invite": "Invite with",
 	"calendar.invite.no_mailbox": "Set up a mailbox for car appointments in the settings – then you invite the car to appointments like a person.",
 	"calendar.invite.use": "Use",
@@ -3421,14 +3456,17 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"tip.mail_status.text": "**Test connection** logs in once to IMAP and SMTP. **Look now** checks for new invitations right away instead of waiting for the next minutes.",
 	"tip.mail_recent.title": "What happened to the invitations?",
 	"tip.mail_recent.text": "The last invitations and what I did with them: added, changed, cancelled – or why not.",
-	"tip.calendar_source.title": "Which way fits?",
-	"tip.calendar_source.text": "**Calendar in Home Assistant**: the car already has a calendar Home Assistant knows (Google, iCloud, Microsoft 365, iCal link).\n**Invitations to Joe's mailbox**: you invite an address like auto+kona@…, I catch the invitation and put it into Joe's calendar. One mailbox is enough for all cars.\n**The car's account**: the car has an account of its own with mailbox and calendar. Invitations land there by themselves – I read the calendar directly.\nJoe's own calendar for the car always counts, and the calendars of the persons you choose above.",
 	"tip.calendar_account.title": "What do I need for it?",
 	"tip.calendar_account.text": "**Microsoft personal**: just sign in with Microsoft.\n**Microsoft 365 / Exchange**: sign in with Joe's app if your company allows it – otherwise with an app of your own.\n**iCloud**: an app password from appleid.apple.com.\n**Infomaniak**: the account's password or a device password.\n**Other CalDAV server**: address, user name and password.",
 	"tip.calendar_account_accept.title": "What does accepting mean?",
 	"tip.calendar_account_accept.text": "I accept invitations in the car's calendar – but only from senders listed under “Who may invite?” (Settings → Mailbox for car appointments). All appointments in the calendar count as trips anyway.",
 	"tip.calendar_account_password.title": "Which password?",
 	"tip.calendar_account_password.text": "For iCloud an app-specific password (appleid.apple.com → Sign-In and Security). It stays with me in a store of its own, not in the configuration.",
+	"tip.calendar_source.title": "Which way suits me?",
+	"tip.calendar_source.text": "**Joe accepts invitations**: you invite the car to your appointments like a person. Joe runs the car's mailbox, accepts and takes over the appointment. Handy when you keep your appointments in your own calendar anyway.\n**Finished calendar of the car**: the car already has a calendar with its appointments (e.g. a Google calendar the family shares). You only assign it – Joe reads, but accepts nothing.",
+	"tip.calendar_source.hint": "Either way, trips in Joe's calendar for the car and the calendars of the persons you choose above count too.",
+	"tip.calendar_mailbox.title": "Which mailbox?",
+	"tip.calendar_mailbox.text": "**Address in Joe's mailbox**: one mailbox for all cars that you set up in the settings. Each car gets an address of its own, e.g. auto+kona@… and auto+eup@….\n**The car's own account**: the car has an account of its own (Microsoft, iCloud, Infomaniak …). Invitations land in its calendar by themselves; Joe reads it and accepts.",
 	"tip.calendar_invite.title": "Which address do I invite?",
 	"tip.calendar_invite.text": "You invite this address to appointments when you drive with this car. With one mailbox for several cars this works with plus addresses (auto+kona@…). With only one car, every allowed invitation goes to it.",
 	"tip.routing_service.title": "Which service?",
@@ -5455,14 +5493,189 @@ function zt(e) {
 	};
 }
 //#endregion
+//#region src/components/calendar-flow.ts
+var Bt = class extends y {
+	constructor(...e) {
+		super(...e), this.variant = "invite", this.address = "";
+	}
+	static {
+		this.styles = o`
+    :host {
+      display: block;
+      container-type: inline-size;
+    }
+    ol {
+      list-style: none;
+      margin: 0;
+      padding: 4px 0;
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(0, 1fr);
+      gap: 8px;
+      counter-reset: step;
+    }
+    li {
+      position: relative;
+      display: grid;
+      justify-items: center;
+      align-content: start;
+      gap: 6px;
+      text-align: center;
+      font-size: 12.5px;
+      line-height: 1.35;
+      color: var(--joe-ink-2);
+    }
+    /* The line from one step to the next. */
+    li:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      top: 21px;
+      left: calc(50% + 26px);
+      right: calc(-50% + 26px);
+      height: 2px;
+      border-radius: 1px;
+      background: var(--joe-amber, #fea707);
+      opacity: 0.6;
+    }
+    .badge {
+      position: relative;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--joe-amber, #fea707);
+      color: #071118;
+      box-shadow: inset 0 0 0 2px #071118;
+    }
+    .badge ha-icon {
+      --mdc-icon-size: 22px;
+    }
+    .number {
+      position: absolute;
+      top: -4px;
+      right: -6px;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 4px;
+      border-radius: 9px;
+      background: #071118;
+      color: #fea707;
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 18px;
+      text-align: center;
+    }
+    li.joe .badge {
+      background: #071118;
+      color: #fea707;
+      box-shadow: none;
+    }
+    li.joe .number {
+      background: var(--joe-amber, #fea707);
+      color: #071118;
+    }
+    b {
+      color: var(--joe-ink);
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+    /* Too narrow for the steps side by side: one below the other. */
+    @container (max-width: 520px) {
+      ol {
+        grid-auto-flow: row;
+        grid-auto-columns: auto;
+        gap: 10px;
+      }
+      li {
+        grid-template-columns: 44px 1fr;
+        justify-items: start;
+        align-items: center;
+        text-align: left;
+        gap: 12px;
+      }
+      li:not(:last-child)::after {
+        top: 46px;
+        left: 21px;
+        right: auto;
+        width: 2px;
+        height: 12px;
+      }
+    }
+  `;
+	}
+	steps(e) {
+		return this.variant === "calendar" ? [
+			{
+				icon: "mdi:calendar-account",
+				text: e("flow.calendar.1")
+			},
+			{
+				icon: "mdi:link-variant",
+				text: e("flow.calendar.2")
+			},
+			{
+				icon: "mdi:calendar-search",
+				text: e("flow.calendar.3"),
+				joe: !0
+			},
+			{
+				icon: "mdi:ev-station",
+				text: e("flow.calendar.4"),
+				joe: !0
+			}
+		] : [
+			{
+				icon: "mdi:calendar-edit",
+				text: e("flow.invite.1")
+			},
+			{
+				icon: "mdi:car-arrow-right",
+				text: e("flow.invite.2", { address: this.address || e("flow.invite.address") })
+			},
+			{
+				icon: "mdi:email-check-outline",
+				text: e("flow.invite.3"),
+				joe: !0
+			},
+			{
+				icon: "mdi:calendar-check",
+				text: e("flow.invite.4"),
+				joe: !0
+			},
+			{
+				icon: "mdi:ev-station",
+				text: e("flow.invite.5"),
+				joe: !0
+			}
+		];
+	}
+	render() {
+		let e = this.t;
+		return e ? g`<ol aria-label=${e(this.variant === "calendar" ? "flow.calendar.title" : "flow.invite.title")}>
+      ${this.steps(e).map((e, t) => g`<li class=${e.joe ? "joe" : ""}>
+          <span class="badge" aria-hidden="true">
+            <ha-icon icon=${e.icon}></ha-icon>
+            <span class="number">${t + 1}</span>
+          </span>
+          <span .innerHTML=${this.bold(e.text)}></span>
+        </li>`)}
+    </ol>` : v;
+	}
+	bold(e) {
+		return e.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+	}
+};
+D([b({ attribute: !1 })], Bt.prototype, "t", void 0), D([b()], Bt.prototype, "variant", void 0), D([b()], Bt.prototype, "address", void 0), T("joe-calendar-flow", Bt);
+//#endregion
 //#region src/components/plan-text.ts
 function B(e) {
 	return e ? e.slice(11, 16) : "";
 }
-function Bt(e) {
+function Vt(e) {
 	return e.slice(0, 10);
 }
-function Vt(e) {
+function Ht(e) {
 	switch (e?.kind) {
 		case "charge": return "plug";
 		case "hold": return "switch";
@@ -5470,22 +5683,22 @@ function Vt(e) {
 		default: return "sleep";
 	}
 }
-function Ht(e) {
+function Ut(e) {
 	return (e.charge_slots ?? []).map((e) => `${B(e.start)}–${B(e.end)}`).join(", ");
 }
-function Ut(e, t) {
+function Wt(e, t) {
 	if (!t.window) return "";
 	let n = [`${B(t.window.start)}–${B(t.window.end)}`];
 	return t.prices && n.push(`${M(e.lang, t.prices.night * 100, 1)} ct/kWh`), n.join(" · ");
 }
-function Wt(e, t) {
+function Gt(e, t) {
 	if (t.kind === "unavailable") {
 		let n = t.reasons.find((t) => e.optional(`plan.why.${t}`)) ?? "failed";
 		return e.optional(`plan.why.${n}`) ?? "";
 	}
 	let n = [], r = M(e.lang, t.target ?? 0, 0), i = t.sun_takes_over;
 	return t.reasons.includes("balance") && n.push(e("plan.say.balance")), t.kind === "charge" && t.tariff === "dynamic" && t.charge_slots?.length ? n.push(e("plan.say.charge_slots", {
-		slots: Ht(t),
+		slots: Ut(t),
 		target: r
 	})) : t.kind === "charge" ? n.push(e("plan.say.charge", {
 		from: B(t.charge_from),
@@ -5493,18 +5706,18 @@ function Wt(e, t) {
 	})) : t.kind === "hold" ? (n.push(e("plan.say.hold", { target: r })), t.empty_without && n.push(e("plan.say.empty", { time: B(t.empty_without) }))) : t.reasons.includes("small_saving") ? n.push(e("plan.say.small_saving")) : n.push(i ? e("plan.say.none", { time: B(i) }) : e("plan.say.none_nosun")), t.reasons.includes("max_price") && t.kind !== "charge" && n.push(e("plan.say.max_price")), t.day && (n.push(e("plan.day", {
 		time: B(t.day.defer_until),
 		kwh: M(e.lang, t.day.held_kwh, 0)
-	})), t.day.cost && t.day.cost >= .01 && n.push(e("plan.day.cost", { cost: `${M(e.lang, t.day.cost * 100, 0)} ct` }))), t.kind !== "none" && (i && t.full_at && Bt(t.full_at) === Bt(i) ? n.push(e("plan.say.sun_full", {
+	})), t.day.cost && t.day.cost >= .01 && n.push(e("plan.day.cost", { cost: `${M(e.lang, t.day.cost * 100, 0)} ct` }))), t.kind !== "none" && (i && t.full_at && Vt(t.full_at) === Vt(i) ? n.push(e("plan.say.sun_full", {
 		sun: B(i),
 		full: B(t.full_at)
 	})) : i ? n.push(e("plan.say.sun", { sun: B(i) })) : n.push(e("plan.say.nosun"))), n.join(" ");
 }
-function Gt(e, t) {
+function Kt(e, t) {
 	return (t.batteries ?? []).map((n) => {
 		let r = [n.name];
 		return t.kind === "charge" ? r.push(`${M(e.lang, n.soc_start, 0)} → ${M(e.lang, n.target, 0)} %`, `${M(e.lang, n.charge_kwh, 1)} kWh`, `${M(e.lang, n.power_kw, 1)} kW`) : t.kind === "hold" ? r.push(e("plan.line.hold", { target: M(e.lang, n.target, 0) })) : r.push(e("plan.line.now", { soc: M(e.lang, n.soc, 0) })), n.controllable || r.push(e("plan.line.watch_only")), r.join(" · ");
 	});
 }
-function Kt(e, t, n = "EUR") {
+function qt(e, t, n = "EUR") {
 	if (!t.cost) return "";
 	let r = (t) => new Intl.NumberFormat(e.lang, {
 		style: "currency",
@@ -5514,11 +5727,7 @@ function Kt(e, t, n = "EUR") {
 }
 //#endregion
 //#region src/components/car-calendars.ts
-var qt = [
-	"ha",
-	"mailbox",
-	"account"
-], Jt = [
+var Jt = [
 	"outlook",
 	"microsoft",
 	"icloud",
@@ -5642,26 +5851,55 @@ var qt = [
 	render() {
 		let { t: e, hass: t } = this;
 		if (!e || !t) return v;
-		let n = this.need?.source ?? "ha";
-		return g`${this.renderOwn(e, t)}
-      <div data-tipped>
+		let n = this.need?.source ?? "ha", r = n !== "ha";
+		return g`<div data-tipped>
         <div class="head-row"><b>${e("calendar.source")}</b> ${N(e, "calendar_source")}</div>
         <div class="seg" role="group" aria-label=${e("calendar.source")}>
-          ${qt.map((t) => g`<button type="button" aria-pressed=${String(n === t)} @click=${() => this.change({ source: t })}>
-                ${e(`calendar.source.${t}`)}
+          <button type="button" aria-pressed=${String(r)} @click=${() => this.choose("invite")}>${e("calendar.way.invite")}</button>
+          <button type="button" aria-pressed=${String(!r)} @click=${() => this.choose("calendar")}>${e("calendar.way.calendar")}</button>
+        </div>
+      </div>
+      ${r ? this.renderInviteWay(e, n) : this.renderCalendarWay(e, t)} ${this.renderOwn(e, t)}
+      ${this.failed ? g`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon>${e("error.action")}</div>` : v}`;
+	}
+	renderInviteWay(e, t) {
+		let n = t === "mailbox" ? this.mailbox?.cars[this.actionId] ?? "" : this.need?.account?.address ?? "";
+		return g`<div class="part">
+        <p class="hint">${e("calendar.way.invite.hint")}</p>
+        <joe-calendar-flow .t=${e} variant="invite" address=${n}></joe-calendar-flow>
+      </div>
+      <div data-tipped>
+        <div class="head-row"><b>${e("calendar.mailbox")}</b> ${N(e, "calendar_mailbox")}</div>
+        <div class="seg" role="group" aria-label=${e("calendar.mailbox")}>
+          ${["mailbox", "account"].map((n) => g`<button type="button" aria-pressed=${String(t === n)} @click=${() => this.change({ source: n })}>
+                ${e(`calendar.mailbox.${n}`)}
               </button>`)}
         </div>
       </div>
-      ${n === "ha" ? g`${this.renderMore(e, t)} ${this.renderConnect(e)}` : n === "mailbox" ? this.renderInvite(e) : this.renderAccount(e)}
-      ${this.failed ? g`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon>${e("error.action")}</div>` : v}`;
+      ${t === "mailbox" ? this.renderInvite(e) : this.renderAccount(e)}`;
+	}
+	renderCalendarWay(e, t) {
+		return g`<div class="part">
+        <p class="hint">${e("calendar.way.calendar.hint")}</p>
+        <joe-calendar-flow .t=${e} variant="calendar"></joe-calendar-flow>
+      </div>
+      ${this.renderMore(e, t)} ${this.renderConnect(e)}`;
+	}
+	choose(e) {
+		if (e === "calendar") {
+			this.change({ source: "ha" });
+			return;
+		}
+		let t = this.need?.source;
+		t !== "mailbox" && t !== "account" && this.change({ source: this.mailbox?.enabled ? "mailbox" : "account" });
 	}
 	renderOwn(e, t) {
 		let n = this.links?.entities[this.actionId];
 		if (!this.saved || !n) return g`<p class="hint">${e("calendar.own.after_save")}</p>`;
 		let r = this.links?.links[this.actionId], i = this.links?.external_url, a = r && i ? `${i.replace(/\/$/, "")}${r}` : null;
 		return g`<div class="own" data-tipped>
-      <div class="head-row"><b>${A(t, n)}</b> ${N(e, "calendar_own")}</div>
-      <p class="hint">${e("calendar.own.hint")}</p>
+      <div class="head-row"><b>${e("calendar.own")}</b> ${N(e, "calendar_own")}</div>
+      <p class="hint">${e("calendar.own.hint", { name: A(t, n) })}</p>
       ${a ? g`<div class="link">
             <code>${a}</code>
             <button type="button" class="mini-btn" @click=${() => this.copy(a)}>
@@ -5677,7 +5915,6 @@ var qt = [
 	renderMore(e, t) {
 		let n = this.need?.calendars ?? [];
 		return g`<div class="part" data-tipped>
-      <p class="hint">${e("calendar.source.ha.hint")}</p>
       <div class="chips">
         ${n.map((r) => g`<span class="chip">
             ${A(t, r)}
@@ -5714,7 +5951,7 @@ var qt = [
 		let n = t.cars[this.actionId] ?? "", [r, i] = t.address.split("@"), a = this.carName.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "").slice(0, 20), o = i && a ? `${r}+${a}@${i}` : t.address;
 		return g`<div class="part" data-tipped>
       <div class="head-row"><b>${e("calendar.invite")}</b> ${N(e, "calendar_invite")}</div>
-      <p class="hint">${e("calendar.source.mailbox.hint")}</p>
+      <p class="hint">${e("calendar.mailbox.mailbox.hint")}</p>
       <div class="link">
         <input
           class="input"
@@ -5741,7 +5978,7 @@ var qt = [
 		}, n = Yt.has(t.kind), r = this.account;
 		return g`<div class="part" data-tipped>
       <div class="head-row"><b>${e("calendar.account")}</b> ${N(e, "calendar_account")}</div>
-      <p class="hint">${e("calendar.source.account.hint")}</p>
+      <p class="hint">${e("calendar.mailbox.account.hint")}</p>
       <div class="inline">
         <select
           class="input"
@@ -12680,18 +12917,18 @@ var gr = class extends y {
         ${C(e("overview.night.empty.title"))} ${S}
         <p class="lead">${e("overview.night.empty.text")}</p>
       </section>`;
-		let n = Gt(e, t), r = Kt(e, t, this.hass?.config?.currency), i = t.kind === "charge" || t.kind === "hold" ? g`${M(e.lang, t.target ?? 0, 0)}<small>%</small>` : g`${e(t.kind === "none" ? "plan.big.none" : "plan.big.unavailable")}`;
+		let n = Kt(e, t), r = qt(e, t, this.hass?.config?.currency), i = t.kind === "charge" || t.kind === "hold" ? g`${M(e.lang, t.target ?? 0, 0)}<small>%</small>` : g`${e(t.kind === "none" ? "plan.big.none" : "plan.big.unavailable")}`;
 		return g`<section class="card figure-card" data-tipped>
-      <joe-pose name=${Vt(t)}></joe-pose>
+      <joe-pose name=${Ht(t)}></joe-pose>
       <div class="head">
         <div class="eyebrow">
-          <ha-icon icon="mdi:weather-night"></ha-icon>${e("overview.night")}${t.window ? ` · ${Ut(e, t)}` : ""}
+          <ha-icon icon="mdi:weather-night"></ha-icon>${e("overview.night")}${t.window ? ` · ${Wt(e, t)}` : ""}
         </div>
         ${N(e, "plan_target")}
       </div>
       <div class="big">${i}</div>
       ${S}
-      <p class="say">${Wt(e, t)}</p>
+      <p class="say">${Gt(e, t)}</p>
       ${n.length ? g`<div class="lines">${n.map((e) => g`<div>${e}</div>`)}</div>` : v}
       ${r ? g`<p class="cost">${r}</p>` : v}
       <div class="bottom">
@@ -13020,9 +13257,9 @@ var _r = 36e5, vr = class extends y {
 		if (!e) return v;
 		let t = this.state?.plan;
 		if (!t || t.kind === "unavailable" || !t.hours) return this.renderEmpty(e, t);
-		let n = Gt(e, t), r = Kt(e, t, this.hass?.config?.currency);
+		let n = Kt(e, t), r = qt(e, t, this.hass?.config?.currency);
 		return g`<div class="wrap">
-      <div class="eyebrow"><ha-icon icon="mdi:weather-night"></ha-icon>${e("overview.night")} · ${Ut(e, t)}</div>
+      <div class="eyebrow"><ha-icon icon="mdi:weather-night"></ha-icon>${e("overview.night")} · ${Wt(e, t)}</div>
       ${C(e("plan.page.title"))} ${S}
       <div class="top" data-tipped>
         ${this.state?.mode === "simulation" ? g`<span class="pill-sim">${e("mode.simulation")}</span>` : g`<span class="chip ${this.state?.mode === "live" ? "ok" : "learned"}">${e(`mode.${this.state?.mode ?? "off"}`)}</span>`}
@@ -13035,11 +13272,11 @@ var _r = 36e5, vr = class extends y {
         ${N(e, "plan_refresh")}
       </div>
       <section class="hero" data-tipped>
-        <joe-pose name=${Vt(t)}></joe-pose>
+        <joe-pose name=${Ht(t)}></joe-pose>
         <div class="big">
           ${t.kind === "none" ? e("plan.big.none") : g`${M(e.lang, t.target ?? 0, 0)}<small>%</small>`}
         </div>
-        <p class="say">${Wt(e, t)} ${N(e, "plan_target")}</p>
+        <p class="say">${Gt(e, t)} ${N(e, "plan_target")}</p>
         ${n.length ? g`<div class="lines">${n.map((e) => g`<div>${e}</div>`)}</div>` : v}
         ${r ? g`<p class="cost">${r}</p>` : v}
       </section>
@@ -13115,9 +13352,9 @@ var _r = 36e5, vr = class extends y {
 		} catch {}
 	}
 	renderEmpty(e, t) {
-		let n = t ? Wt(e, t) : e(this.state?.mode === "off" ? "plan.empty.off" : "plan.empty.waiting");
+		let n = t ? Gt(e, t) : e(this.state?.mode === "off" ? "plan.empty.off" : "plan.empty.waiting");
 		return g`<div class="empty">
-      <joe-pose name=${t ? Vt(t) : "plan"}></joe-pose>
+      <joe-pose name=${t ? Ht(t) : "plan"}></joe-pose>
       <div>
         ${C(e("plan.title"))} ${S}
         <p class="lead">${n}</p>
@@ -13230,7 +13467,7 @@ var _r = 36e5, vr = class extends y {
         lang=${e.lang}
         label=${e("plan.chart.prices")}
       ></joe-chart>
-      ${t.charge_slots?.length ? g`<p class="slots">${e("plan.slots", { slots: Ht(t) })}</p>` : v}
+      ${t.charge_slots?.length ? g`<p class="slots">${e("plan.slots", { slots: Ut(t) })}</p>` : v}
     </div>`;
 	}
 	renderSoc(e, t, n) {

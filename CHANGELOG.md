@@ -3,6 +3,17 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.3.1
+
+- **Kalender des Autos verständlicher:** zwei klare Wege mit einer kleinen
+  Grafik der Schritte.
+  - **Joe nimmt Einladungen an:** Du legst einen Termin mit Ort an, lädst das
+    Auto ein, Joe sagt in seinem Namen zu, übernimmt den Termin und lädt
+    rechtzeitig. Ob über eine Adresse in Joes Postfach oder ein eigenes Konto
+    des Autos, ist nur noch eine Unterfrage.
+  - **Fertiger Kalender des Autos:** Die Termine stehen schon in einem
+    Kalender (eingeladen und zugesagt) – du ordnest ihn nur zu.
+
 ## 0.3.0
 
 - **Drei Wege, wie Termine zum Auto kommen** (beim Auto: „Woher kommen die
