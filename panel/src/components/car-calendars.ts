@@ -1,11 +1,11 @@
 import { LitElement, css, html, nothing, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
-import { pickEntity } from "../config";
+import { pickEntity, saveConfig } from "../config";
 import { define } from "../define";
 import { entityName } from "../entities";
 import type { Translate } from "../i18n";
 import { shared } from "../styles/shared";
-import type { HomeAssistant } from "../types";
+import type { HomeAssistant, MailboxConfig } from "../types";
 import { tip } from "./tip";
 
 interface Links {
@@ -33,6 +33,9 @@ export class JoeCarCalendars extends LitElement {
   /** Saved already: only then does Joe's own calendar exist. */
   @property({ type: Boolean }) saved = false;
   @property({ attribute: false }) calendars: string[] = [];
+  /** Joe's mailbox: invitations to the car's address land in its calendar. */
+  @property({ attribute: false }) mailbox?: MailboxConfig;
+  @property() carName = "";
 
   @state() private links?: Links;
   @state() private copied = false;
@@ -65,6 +68,11 @@ export class JoeCarCalendars extends LitElement {
         align-items: center;
         gap: 6px;
         flex-wrap: wrap;
+      }
+      .link .input {
+        flex: 1 1 220px;
+        min-width: 0;
+        width: auto;
       }
       .link code {
         flex: 1 1 220px;
@@ -112,7 +120,7 @@ export class JoeCarCalendars extends LitElement {
     if (!t || !hass) {
       return nothing;
     }
-    return html`${this.renderOwn(t, hass)} ${this.renderMore(t, hass)} ${this.renderConnect(t)}
+    return html`${this.renderOwn(t, hass)} ${this.renderInvite(t)} ${this.renderMore(t, hass)} ${this.renderConnect(t)}
     ${this.failed ? html`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon>${t("error.action")}</div>` : nothing}`;
   }
 
@@ -140,6 +148,42 @@ export class JoeCarCalendars extends LitElement {
           </div>`
         : html`<p class="hint">${t("calendar.no_external")}</p>`}
     </div>`;
+  }
+
+  /** The address to invite the car with (Joe's mailbox, e.g. "auto+kona@…"). */
+  private renderInvite(t: Translate): TemplateResult {
+    const mail = this.mailbox;
+    if (!mail?.enabled || !mail.address) {
+      return html`<p class="hint">${t("calendar.invite.no_mailbox")}</p>`;
+    }
+    const current = mail.cars[this.actionId] ?? "";
+    const [local, domain] = mail.address.split("@");
+    const slug = this.carName
+      .toLowerCase()
+      .normalize("NFKD")
+      .replace(/[^a-z0-9]+/g, "")
+      .slice(0, 20);
+    const suggestion = domain && slug ? `${local}+${slug}@${domain}` : mail.address;
+    return html`<div data-tipped>
+      <div class="head-row"><b>${t("calendar.invite")}</b> ${tip(t, "calendar_invite")}</div>
+      <div class="link">
+        <input
+          class="input"
+          type="email"
+          placeholder=${suggestion}
+          aria-label=${t("calendar.invite")}
+          .value=${current}
+          @change=${(ev: Event) => this.saveInvite((ev.target as HTMLInputElement).value.trim().toLowerCase())}
+        />
+        ${current
+          ? nothing
+          : html`<button type="button" class="mini-btn" @click=${() => this.saveInvite(suggestion)}>${t("calendar.invite.use")}</button>`}
+      </div>
+    </div>`;
+  }
+
+  private saveInvite(address: string): void {
+    saveConfig(this, { mailbox: { cars: { ...(this.mailbox?.cars ?? {}), [this.actionId]: address } } });
   }
 
   private renderMore(t: Translate, hass: HomeAssistant): TemplateResult {

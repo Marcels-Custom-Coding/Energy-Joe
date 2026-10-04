@@ -69,6 +69,9 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_control_action_tonight)
     websocket_api.async_register_command(hass, ws_control_boost)
     websocket_api.async_register_command(hass, ws_calendar_links)
+    websocket_api.async_register_command(hass, ws_mailbox_secret)
+    websocket_api.async_register_command(hass, ws_mailbox_test)
+    websocket_api.async_register_command(hass, ws_mailbox_check)
 
 
 def _runtime(
@@ -705,6 +708,56 @@ async def ws_calendar_links(
             "entities": entities,
         },
     )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/mailbox/secret",
+        # The (app) password; empty removes it. It is never sent back.
+        vol.Required("password"): vol.Any(None, vol.All(str, vol.Length(max=500))),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_mailbox_secret(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Store the mailbox's password where the configuration never sees it."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    await runtime.inbox.async_set_secret(password=msg["password"])
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/mailbox/test"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_mailbox_test(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Log in to the mailbox once: {"error": None} or the reason it failed."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    connection.send_result(msg["id"], {"error": await runtime.inbox.async_test()})
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/mailbox/check"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_mailbox_check(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Look for invitations now."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    await runtime.inbox.async_check()
+    connection.send_result(msg["id"], runtime.inbox.status)
 
 
 async def _async_energy_summary(hass: HomeAssistant) -> dict[str, Any]:

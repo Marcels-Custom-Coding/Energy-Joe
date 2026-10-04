@@ -137,6 +137,8 @@ class CarCalendarStore:
             "sequence": int(event.get("sequence") or 0),
             "organizer": event.get("organizer"),
             "status": event.get("status") or "confirmed",
+            # An invitation by mail that Joe accepted.
+            "accepted": bool(event.get("accepted")),
         }
         events = [e for e in self.cars.get(car, []) if e["uid"] != entry["uid"]]
         events.append(entry)

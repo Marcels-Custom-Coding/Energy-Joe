@@ -11,7 +11,18 @@ from homeassistant.core import HomeAssistant
 from .runtime import DATA_RUNTIME
 
 # Names of people and their calendars are personal; entity ids of meters are not.
-TO_REDACT = {"name", "person_entity", "calendars", "detail"}
+TO_REDACT = {
+    "name",
+    "person_entity",
+    "calendars",
+    "detail",
+    # The mailbox: addresses of the user and of who may invite.
+    "address",
+    "username",
+    "allowed",
+    "cars",
+    "recent",
+}
 REDACTED = "**REDACTED**"
 
 
@@ -68,6 +79,9 @@ async def async_get_config_entry_diagnostics(
         REDACTED if item.startswith("person:") else item
         for item in answers.get("ignored", [])
     ]
+    # The mailbox's last invitations: titles, times and senders.
+    if isinstance(state.get("mailbox"), dict):
+        state["mailbox"] = async_redact_data(state["mailbox"], TO_REDACT)
     observe = state.get("observe", {})
     return {
         "loaded": True,

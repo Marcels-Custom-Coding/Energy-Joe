@@ -51,6 +51,11 @@ cd panel && npm install
 - Kalender je Auto (`plan/car_calendar.py`, `calendar.py`): Termine in `.storage/energy_joe.calendar` je Aktions-Id, als Kalender-Entität in Home Assistant bearbeitbar. Fahrten kommen aus diesem Kalender, aus `need.calendars` und aus den Kalendern der gewählten Personen (`plan/trips.py`). Abo-Link `/api/energy_joe/calendar/<geheimnis>/<auto>.ics` (`calendar_feed.py`, ohne Anmeldung, Geheimnis im Kalender-Speicher); Befehl `energy_joe/calendar/links` liefert die Pfade und mit `renew` ein neues Geheimnis.
 - „Einfach laden bis …“ (`control/executor.py`, `async_boost`, Befehl `energy_joe/control/boost`): schaltet die Aktion sofort ein, in jedem Modus außer „Aus“, bis der Ladestand (`need.soc_entity`) oder die Reichweite plus Reserve (`need.range_entity`) erreicht ist, höchstens 24 Stunden. Steht in `data["boost"]`, schlägt den Nachtplan, und Freigaben lassen die Entität in Ruhe, solange es läuft.
 
+## Postfach für Auto-Termine
+
+- `mail/ical.py` liest Einladungen (iMIP: METHOD, UID, SEQUENCE, Zeiten mit UTC, TZID – auch Windows-Namen von Outlook –, ganzen Tagen und DURATION) und schreibt Zusagen (METHOD:REPLY). `mail/mailbox.py` holt neue Mails per IMAP (UIDVALIDITY und letzte UID, beim ersten Mal 30 Tage zurück) und sendet per SMTP; Anmeldung mit Passwort oder OAuth-Token (XOAUTH2). Beides blockiert und läuft im Executor.
+- `mail/inbox.py` (`JoeInbox`) schaut alle `mailbox.interval_min` Minuten nach. Eine Einladung zählt, wenn der Absender auf `mailbox.allowed` steht (oder der Organisator, aber nur aus derselben Domain wie der Absender). Das Auto kommt aus `mailbox.cars` (eingeladene Adresse → Aktion), mit nur einem Auto ist es dieses. REQUEST trägt ein oder ändert (höhere SEQUENCE gewinnt) und sagt zu, CANCEL entfernt. Passwort und Stand in `.storage/energy_joe.mailbox`, nicht in der Konfiguration; die Diagnose schwärzt Adressen und letzte Einladungen.
+
 ## Warmwasser
 
 - Gefunden wird Warmwasser als Verbraucher im Energie-Dashboard (Art `hot_water`). Die Frage „Wie wird euer Wasser warm?“ bietet dann eine Nacht-Aktion an; `panel/src/hot-water.ts` schlägt Fühler und Schalter nach Wörtern in Entity-ID, Name und Gerätename vor (Speicher vor Zirkulation und Ausgang).

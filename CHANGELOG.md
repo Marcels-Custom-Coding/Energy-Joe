@@ -3,6 +3,21 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.2.2
+
+- **Postfach für Auto-Termine** (Einstellungen): Lade das Auto zu Terminen
+  ein wie eine Person – aus jedem Kalender. Joe liest das Postfach per IMAP,
+  trägt Einladungen mit Ort in den Kalender des Autos ein, sagt per SMTP zu
+  und übernimmt Änderungen und Absagen.
+- Anbieter: iCloud, Google, Infomaniak (mit App-Passwort) und jeder andere
+  mit IMAP und SMTP. Microsoft folgt mit der Anmeldung über Microsoft.
+- **Wer darf einladen?** Nur Absender auf deiner Liste (Adressen oder
+  „@domain“); nicht erlaubte Einladungen zeigt Joe mit „Erlauben“-Knopf.
+- **Welches Auto?** Beim Auto stellst du seine Einladungs-Adresse ein, z. B.
+  auto+kona@… (mit nur einem Auto geht jede erlaubte Einladung an dieses).
+- Das Passwort liegt in einem eigenen Speicher, nie in der Konfiguration oder
+  der Diagnose.
+
 ## 0.2.1
 
 - **Kalender je Auto:** Jedes Auto, das nach Bedarf lädt, bekommt einen

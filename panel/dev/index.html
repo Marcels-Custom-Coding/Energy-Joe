@@ -395,6 +395,24 @@
                 entities: Object.fromEntries(cars.map((a) => [a.id, `calendar.energy_joe_kalender_${a.id}`])),
               };
             }
+            case "energy_joe/mailbox/secret":
+              state.mailbox = { ...(state.mailbox ?? { state: "waiting" }), has_secret: Boolean(msg.password), state: msg.password ? "ok" : "no_secret", checked: stamp() };
+              push();
+              return null;
+            case "energy_joe/mailbox/test":
+              return { error: state.mailbox?.has_secret ? null : "no_secret" };
+            case "energy_joe/mailbox/check":
+              state.mailbox = {
+                ...(state.mailbox ?? {}),
+                state: "ok",
+                checked: stamp(),
+                recent: [
+                  { at: stamp(), summary: "Kundentermin", start: "2026-10-06T14:00:00+02:00", from: "kim@firma.example", organizer: "kim@firma.example", method: "REQUEST", car: state.config.actions[0]?.id, result: "added_accepted" },
+                  { at: stamp(), summary: "Gewinnspiel", start: null, from: "fremd@spam.example", organizer: null, method: "REQUEST", result: "not_allowed" },
+                ],
+              };
+              push();
+              return state.mailbox;
             case "energy_joe/control/answer":
               control.answer = { night: msg.night, yes: msg.yes, at: stamp() };
               log("answer", { night: msg.night, yes: msg.yes });

@@ -529,6 +529,8 @@ export class JoeActionEditor extends LitElement {
               actionId=${draft.id}
               ?saved=${Boolean(this.existing?.need?.enabled)}
               .calendars=${need.calendars ?? []}
+              .mailbox=${this.config?.mailbox}
+              carName=${draft.name}
               @joe-calendars=${(ev: CustomEvent<{ calendars: string[] }>) => this.setNeed({ calendars: ev.detail.calendars })}
             ></joe-car-calendars>`,
           )}

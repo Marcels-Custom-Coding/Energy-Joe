@@ -1536,6 +1536,79 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"action.need.pick.capacity": "Welcher Sensor zeigt die Akkugröße?",
 	"action.need.pick.odometer": "Welcher Sensor zeigt den Kilometerstand?",
 	"action.need.pick.consumption": "Welcher Sensor zeigt den Durchschnittsverbrauch?",
+	"settings.mailbox": "Postfach für Auto-Termine",
+	"mail.intro": "Lade das Auto zu Terminen ein wie eine Person: Ich trage den Termin mit Ort in den Kalender des Autos ein und sage zu. Am besten nimmst du dafür ein eigenes Postfach.",
+	"mail.enabled": "Postfach nutzen",
+	"mail.enabled.hint": "Ich schaue alle paar Minuten nach neuen Einladungen.",
+	"mail.provider": "Anbieter",
+	"mail.provider.icloud": "iCloud",
+	"mail.provider.google": "Google (Gmail)",
+	"mail.provider.infomaniak": "Infomaniak",
+	"mail.provider.microsoft": "Microsoft (Outlook, Exchange)",
+	"mail.provider.other": "Anderer Anbieter",
+	"mail.provider.icloud.hint": "Mit einem App-Passwort von appleid.apple.com.",
+	"mail.provider.google.hint": "Mit einem App-Passwort (dafür muss die Bestätigung in zwei Schritten an sein).",
+	"mail.provider.infomaniak.hint": "Mit dem Passwort des Postfachs oder einem App-Passwort.",
+	"mail.provider.microsoft.hint": "Microsoft lässt Passwörter für Postfächer nicht mehr zu – die Anmeldung über Microsoft kommt im nächsten Schritt.",
+	"mail.provider.other.hint": "Mit Server-Adressen und Passwort deines Anbieters.",
+	"mail.address": "Adresse",
+	"mail.address.hint": "Das Postfach, an das Einladungen gehen.",
+	"mail.password": "App-Passwort",
+	"mail.password.saved": "Gespeichert – zum Ändern einfach ein neues eingeben.",
+	"mail.password.hint": "Bleibt bei mir, steht nie in der Konfiguration oder der Diagnose.",
+	"mail.servers": "Server",
+	"mail.servers.preset": "Ich kenne die Server deines Anbieters.",
+	"mail.servers.change": "Ändern",
+	"mail.servers.hint": "Benutzername (leer: die Adresse), IMAP und SMTP deines Anbieters.",
+	"mail.username": "Benutzername",
+	"mail.imap_host": "IMAP-Server",
+	"mail.imap_port": "IMAP-Port",
+	"mail.smtp_host": "SMTP-Server",
+	"mail.smtp_port": "SMTP-Port",
+	"mail.smtp_security": "Verschlüsselung",
+	"mail.smtp_security.auto": "Automatisch",
+	"mail.allowed": "Wer darf einladen?",
+	"mail.allowed.hint": "Nur Einladungen von diesen Absendern trage ich ein – Adressen oder „@domain“.",
+	"mail.allowed.add": "Hinzufügen",
+	"mail.allowed.remove": "{rule} entfernen",
+	"mail.accept": "Einladungen zusagen",
+	"mail.accept.hint": "Wer einlädt, sieht, dass das Auto dabei ist.",
+	"mail.status": "Zustand",
+	"mail.test": "Verbindung testen",
+	"mail.check": "Jetzt abrufen",
+	"mail.result.ok": "Anmeldung klappt – bei IMAP und SMTP.",
+	"mail.result.failed": "Das hat nicht geklappt.",
+	"mail.result.error_login": "Anmeldung abgelehnt – stimmen Adresse und App-Passwort?",
+	"mail.result.error_connect": "Server nicht erreichbar – stimmen die Server-Adressen?",
+	"mail.result.error_no_server": "Mir fehlt die Adresse des Servers.",
+	"mail.result.error_no_secret": "Mir fehlt noch das App-Passwort.",
+	"mail.result.error_inbox": "Der Posteingang ließ sich nicht lesen.",
+	"mail.result.error_send": "Die Zusage ließ sich nicht senden.",
+	"mail.recent": "Letzte Einladungen",
+	"mail.recent.added": "eingetragen",
+	"mail.recent.added_accepted": "eingetragen und zugesagt",
+	"mail.recent.added_not_accepted": "eingetragen, Zusage fehlgeschlagen",
+	"mail.recent.updated": "geändert",
+	"mail.recent.updated_accepted": "geändert und zugesagt",
+	"mail.recent.updated_not_accepted": "geändert, Zusage fehlgeschlagen",
+	"mail.recent.cancelled": "abgesagt – entfernt",
+	"mail.recent.not_allowed": "Absender nicht erlaubt",
+	"mail.recent.no_car": "kein Auto zugeordnet",
+	"mail.recent.no_time": "ohne Zeit",
+	"mail.allow": "Erlauben",
+	"mail.state.off": "Aus.",
+	"mail.state.no_secret": "Mir fehlt noch das App-Passwort.",
+	"mail.state.error": "Problem: {error}",
+	"mail.state.ok": "Zuletzt nachgeschaut um {time} Uhr.",
+	"mail.error.login": "Anmeldung abgelehnt",
+	"mail.error.connect": "Server nicht erreichbar",
+	"mail.error.inbox": "Posteingang nicht lesbar",
+	"mail.error.no_server": "Server-Adresse fehlt",
+	"mail.error.send": "Senden fehlgeschlagen",
+	"mail.error.unknown": "unbekannter Fehler",
+	"calendar.invite": "Einladen über",
+	"calendar.invite.no_mailbox": "Richte in den Einstellungen ein Postfach für Auto-Termine ein – dann lädst du das Auto zu Terminen ein wie eine Person.",
+	"calendar.invite.use": "Übernehmen",
 	"settings.routing": "Entfernungen zu Terminen",
 	"settings.routing.intro": "Für das Laden nach Bedarf rechne ich aus, wie weit die Orte eurer Termine weg sind. Dafür schicke ich den Ort eines Termins und euren Standort aus Home Assistant als Start der Strecke an den Dienst, den du hier wählst – nie Titel oder Beschreibung.",
 	"settings.routing.service": "Dienst",
@@ -1692,6 +1765,28 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"tip.calendar_connect.text": "**Google**: Google-Kalender-Integration.\n**iCloud, Infomaniak, Nextcloud**: CalDAV-Integration (bei iCloud mit App-Passwort).\n**iCal-Link**: Remote Calendar – jeder Kalender mit Abo-Link.\n**Microsoft 365 / Outlook**: über HACS die Integration „Microsoft 365 Calendar“ (Exchange Online und private Konten).\nDie Knöpfe öffnen die Einrichtung in Home Assistant.",
 	"tip.a_need_round_trip.title": "Hin und zurück?",
 	"tip.a_need_round_trip.text": "Meist fährt man zum Termin und wieder heim – dann zähle ich die Strecke doppelt.",
+	"tip.mail_enabled.title": "Wie kommt ein Termin ins Auto?",
+	"tip.mail_enabled.text": "Du lädst die Adresse des Autos zu einem Termin ein – aus jedem Kalender, wie eine Person. Ich lese das Postfach, trage den Termin mit Ort in den Kalender des Autos ein und sage zu. Ändert sich der Termin oder wird er abgesagt, ändere oder entferne ich ihn auch.",
+	"tip.mail_enabled.hint": "Nimm am besten ein eigenes Postfach nur für das Auto.",
+	"tip.mail_provider.title": "Wie bekomme ich ein App-Passwort?",
+	"tip.mail_provider.text": "**iCloud**: appleid.apple.com → Anmeldung und Sicherheit → App-spezifische Passwörter.\n**Google**: myaccount.google.com → Sicherheit → Bestätigung in zwei Schritten einschalten → App-Passwörter.\n**Infomaniak**: das Passwort des Postfachs, oder im Manager ein Gerätepasswort.\n**Microsoft**: lässt keine Passwörter mehr zu – die Anmeldung über Microsoft kommt bald.",
+	"tip.mail_address.title": "Welche Adresse?",
+	"tip.mail_address.text": "Die Adresse des Postfachs, das ich lese. Für mehrere Autos geht ein Postfach mit Plus-Adressen, z. B. auto+kona@… – die Zuordnung stellst du beim Auto ein.",
+	"tip.mail_password.title": "Ist das sicher?",
+	"tip.mail_password.text": "Das Passwort liegt in einem eigenen Speicher von Home Assistant, nicht in Joes Konfiguration und nicht in der Diagnose. Ein App-Passwort kannst du beim Anbieter jederzeit widerrufen.",
+	"tip.mail_servers.title": "Welche Server?",
+	"tip.mail_servers.text": "Für iCloud, Google, Infomaniak und Microsoft kenne ich sie. Bei anderen Anbietern stehen IMAP und SMTP in deren Hilfe – meist IMAP-Port 993 und SMTP-Port 587 (STARTTLS) oder 465 (SSL).",
+	"tip.mail_allowed.title": "Warum eine Liste?",
+	"tip.mail_allowed.text": "Sonst könnte jeder dem Auto Termine schicken. Ich nehme nur Einladungen, deren Absender hier steht – eine Adresse oder eine ganze Domain wie „@firma.de“.",
+	"tip.mail_allowed.hint": "Nicht erlaubte Einladungen siehst du unten und kannst den Absender mit einem Klick erlauben.",
+	"tip.mail_accept.title": "Was heißt zusagen?",
+	"tip.mail_accept.text": "Ich schicke eine Zusage zurück, wie ein Mensch es täte. Wer eingeladen hat, sieht dann, dass das Auto dabei ist.",
+	"tip.mail_status.title": "Was sehe ich hier?",
+	"tip.mail_status.text": "**Verbindung testen** meldet sich einmal bei IMAP und SMTP an. **Jetzt abrufen** schaut sofort nach neuen Einladungen, statt auf die nächsten Minuten zu warten.",
+	"tip.mail_recent.title": "Was ist mit den Einladungen passiert?",
+	"tip.mail_recent.text": "Die letzten Einladungen und was ich damit gemacht habe: eingetragen, geändert, abgesagt – oder warum nicht.",
+	"tip.calendar_invite.title": "Welche Adresse lade ich ein?",
+	"tip.calendar_invite.text": "Diese Adresse lädst du zu Terminen ein, wenn du mit diesem Auto fährst. Mit einem Postfach für mehrere Autos geht das über Plus-Adressen (auto+kona@…). Hast du nur ein Auto, kommt jede erlaubte Einladung zu ihm.",
 	"tip.routing_service.title": "Welcher Dienst?",
 	"tip.routing_service.text": "**Waze**: kostenlos, ohne Anmeldung, über Home Assistants eigene Waze-Aktion.\n**Google**: braucht eine eingerichtete „Google Maps Travel Time“-Integration mit API-Schlüssel; schalte dort das Abfragen alle 10 Minuten aus, sonst sind die Freiabfragen schnell weg.\n**OpenStreetMap**: kostenlos, freie Karte; dafür findet Photon den Ort und OSRM die Strecke.\nIch frage jeden Ort nur einmal und merke mir die Strecke. Liegt ein Termin an einer Zone aus Home Assistant, brauche ich keinen Dienst.",
 	"tip.routing_service.hint": "Geschickt werden nur der Ort eines Termins und euer Standort als Start der Strecke, nie Titel oder Beschreibung.",
@@ -2969,6 +3064,79 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"action.need.pick.capacity": "Which sensor shows the battery size?",
 	"action.need.pick.odometer": "Which sensor shows the odometer?",
 	"action.need.pick.consumption": "Which sensor shows the average consumption?",
+	"settings.mailbox": "Mailbox for car appointments",
+	"mail.intro": "Invite the car to appointments like a person: I put the appointment with its place into the car's calendar and accept it. Best use a mailbox of its own for this.",
+	"mail.enabled": "Use a mailbox",
+	"mail.enabled.hint": "I look for new invitations every few minutes.",
+	"mail.provider": "Provider",
+	"mail.provider.icloud": "iCloud",
+	"mail.provider.google": "Google (Gmail)",
+	"mail.provider.infomaniak": "Infomaniak",
+	"mail.provider.microsoft": "Microsoft (Outlook, Exchange)",
+	"mail.provider.other": "Other provider",
+	"mail.provider.icloud.hint": "With an app password from appleid.apple.com.",
+	"mail.provider.google.hint": "With an app password (2-step verification must be on).",
+	"mail.provider.infomaniak.hint": "With the mailbox password or an app password.",
+	"mail.provider.microsoft.hint": "Microsoft no longer allows passwords for mailboxes – signing in with Microsoft comes in the next step.",
+	"mail.provider.other.hint": "With your provider's server addresses and password.",
+	"mail.address": "Address",
+	"mail.address.hint": "The mailbox invitations go to.",
+	"mail.password": "App password",
+	"mail.password.saved": "Saved – just enter a new one to change it.",
+	"mail.password.hint": "Stays with me, never in the configuration or the diagnostics.",
+	"mail.servers": "Servers",
+	"mail.servers.preset": "I know your provider's servers.",
+	"mail.servers.change": "Change",
+	"mail.servers.hint": "User name (empty: the address), IMAP and SMTP of your provider.",
+	"mail.username": "User name",
+	"mail.imap_host": "IMAP server",
+	"mail.imap_port": "IMAP port",
+	"mail.smtp_host": "SMTP server",
+	"mail.smtp_port": "SMTP port",
+	"mail.smtp_security": "Encryption",
+	"mail.smtp_security.auto": "Automatic",
+	"mail.allowed": "Who may invite?",
+	"mail.allowed.hint": "I only take invitations from these senders – addresses or “@domain”.",
+	"mail.allowed.add": "Add",
+	"mail.allowed.remove": "Remove {rule}",
+	"mail.accept": "Accept invitations",
+	"mail.accept.hint": "Whoever invites sees that the car is coming.",
+	"mail.status": "State",
+	"mail.test": "Test connection",
+	"mail.check": "Look now",
+	"mail.result.ok": "Login works – for IMAP and SMTP.",
+	"mail.result.failed": "That did not work.",
+	"mail.result.error_login": "Login refused – are address and app password right?",
+	"mail.result.error_connect": "Server not reachable – are the server addresses right?",
+	"mail.result.error_no_server": "I am missing the server's address.",
+	"mail.result.error_no_secret": "I am still missing the app password.",
+	"mail.result.error_inbox": "The inbox could not be read.",
+	"mail.result.error_send": "The acceptance could not be sent.",
+	"mail.recent": "Last invitations",
+	"mail.recent.added": "added",
+	"mail.recent.added_accepted": "added and accepted",
+	"mail.recent.added_not_accepted": "added, accepting failed",
+	"mail.recent.updated": "changed",
+	"mail.recent.updated_accepted": "changed and accepted",
+	"mail.recent.updated_not_accepted": "changed, accepting failed",
+	"mail.recent.cancelled": "cancelled – removed",
+	"mail.recent.not_allowed": "sender not allowed",
+	"mail.recent.no_car": "no car assigned",
+	"mail.recent.no_time": "without a time",
+	"mail.allow": "Allow",
+	"mail.state.off": "Off.",
+	"mail.state.no_secret": "I am still missing the app password.",
+	"mail.state.error": "Problem: {error}",
+	"mail.state.ok": "Last looked at {time}.",
+	"mail.error.login": "login refused",
+	"mail.error.connect": "server not reachable",
+	"mail.error.inbox": "inbox not readable",
+	"mail.error.no_server": "server address missing",
+	"mail.error.send": "sending failed",
+	"mail.error.unknown": "unknown error",
+	"calendar.invite": "Invite with",
+	"calendar.invite.no_mailbox": "Set up a mailbox for car appointments in the settings – then you invite the car to appointments like a person.",
+	"calendar.invite.use": "Use",
 	"settings.routing": "Distances to appointments",
 	"settings.routing.intro": "To charge by need I work out how far the places of your appointments are. For that I send an appointment's place and your home location from Home Assistant as the route's start to the service you pick here – never its title or description.",
 	"settings.routing.service": "Service",
@@ -3125,6 +3293,28 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"tip.calendar_connect.text": "**Google**: the Google Calendar integration.\n**iCloud, Infomaniak, Nextcloud**: the CalDAV integration (iCloud with an app password).\n**iCal link**: Remote Calendar – any calendar with a subscription link.\n**Microsoft 365 / Outlook**: via HACS the “Microsoft 365 Calendar” integration (Exchange Online and personal accounts).\nThe buttons open the setup in Home Assistant.",
 	"tip.a_need_round_trip.title": "There and back?",
 	"tip.a_need_round_trip.text": "Usually you drive to the appointment and back home – then I count the distance twice.",
+	"tip.mail_enabled.title": "How does an appointment get to the car?",
+	"tip.mail_enabled.text": "You invite the car's address to an appointment – from any calendar, like a person. I read the mailbox, put the appointment with its place into the car's calendar and accept it. If it changes or is cancelled, I change or remove it too.",
+	"tip.mail_enabled.hint": "Best use a mailbox only for the car.",
+	"tip.mail_provider.title": "How do I get an app password?",
+	"tip.mail_provider.text": "**iCloud**: appleid.apple.com → Sign-In and Security → App-Specific Passwords.\n**Google**: myaccount.google.com → Security → turn on 2-Step Verification → App passwords.\n**Infomaniak**: the mailbox password, or a device password in the Manager.\n**Microsoft**: no longer allows passwords – signing in with Microsoft comes soon.",
+	"tip.mail_address.title": "Which address?",
+	"tip.mail_address.text": "The address of the mailbox I read. For several cars one mailbox with plus addresses works, e.g. auto+kona@… – you set the assignment with the car.",
+	"tip.mail_password.title": "Is that safe?",
+	"tip.mail_password.text": "The password lives in a store of its own in Home Assistant, not in Joe's configuration and not in the diagnostics. You can revoke an app password at the provider at any time.",
+	"tip.mail_servers.title": "Which servers?",
+	"tip.mail_servers.text": "For iCloud, Google, Infomaniak and Microsoft I know them. Other providers list IMAP and SMTP in their help – usually IMAP port 993 and SMTP port 587 (STARTTLS) or 465 (SSL).",
+	"tip.mail_allowed.title": "Why a list?",
+	"tip.mail_allowed.text": "Otherwise anyone could send the car appointments. I only take invitations whose sender is listed here – an address or a whole domain like “@company.com”.",
+	"tip.mail_allowed.hint": "Invitations that were not allowed show below, and you can allow the sender with one click.",
+	"tip.mail_accept.title": "What does accepting mean?",
+	"tip.mail_accept.text": "I send an acceptance back, as a person would. Whoever invited then sees that the car is coming.",
+	"tip.mail_status.title": "What do I see here?",
+	"tip.mail_status.text": "**Test connection** logs in once to IMAP and SMTP. **Look now** checks for new invitations right away instead of waiting for the next minutes.",
+	"tip.mail_recent.title": "What happened to the invitations?",
+	"tip.mail_recent.text": "The last invitations and what I did with them: added, changed, cancelled – or why not.",
+	"tip.calendar_invite.title": "Which address do I invite?",
+	"tip.calendar_invite.text": "You invite this address to appointments when you drive with this car. With one mailbox for several cars this works with plus addresses (auto+kona@…). With only one car, every allowed invitation goes to it.",
 	"tip.routing_service.title": "Which service?",
 	"tip.routing_service.text": "**Waze**: free, no sign-up, through Home Assistant's own Waze action.\n**Google**: needs a set-up “Google Maps Travel Time” integration with an API key; switch off its polling every 10 minutes there, or the free calls are gone quickly.\n**OpenStreetMap**: free, open map; Photon finds the place and OSRM the route.\nI ask about each place only once and remember the distance. If an appointment is at a Home Assistant zone, I need no service.",
 	"tip.routing_service.hint": "Only an appointment's place and your home location as the route's start are sent, never its title or description.",
@@ -3479,7 +3669,7 @@ function C(e, t = "h2", n) {
 	let r = at(e), i = r.length - 1, a = r.map((e, t) => t === i && r.length > 1 ? g`<span class="hl">${e}</span>` : e.endsWith("!") ? g`${e}<br />` : g`${e}`), o = n ? g`<span class="title-tip">${n}</span>` : "";
 	return t === "h1" ? g`<h1 class="display">${a}${o}</h1>` : g`<h2 class="display">${a}${o}</h2>`;
 }
-function w(e, t) {
+function ot(e, t) {
 	let n = t >= .85 ? 4 : t >= .65 ? 3 : t >= .45 ? 2 : 1, r = e(`conf.${n}`);
 	return g`<span class="conf" role="img" aria-label=${r} title=${r}>
     ${[
@@ -3490,31 +3680,31 @@ function w(e, t) {
 	].map((e) => g`<i class=${e <= n ? "on" : ""}></i>`)}
   </span>`;
 }
-var ot = {
+var st = {
 	read: "mdi:eye-outline",
 	learned: "mdi:auto-fix",
 	user: "mdi:account-edit-outline",
 	default: "mdi:tune-variant"
 };
-function T(e, t) {
+function w(e, t) {
 	let n = t?.source ?? "default";
 	return g`<span class="chip ${n}"
-    ><ha-icon icon=${ot[n]}></ha-icon>${e(`source.${n}`)}</span
+    ><ha-icon icon=${st[n]}></ha-icon>${e(`source.${n}`)}</span
   >`;
 }
-function st(e, t) {
+function ct(e, t) {
 	let n = {};
 	for (let [e, r] of Object.entries(t)) (typeof r == "string" || typeof r == "number") && (n[e] = r);
 	return e.optional(`reason.${t.code}`, n) ?? t.code;
 }
 //#endregion
 //#region src/define.ts
-function E(e, t) {
+function T(e, t) {
 	customElements.get(e) || customElements.define(e, t);
 }
 //#endregion
 //#region src/styles/shared.ts
-var D = o`
+var E = o`
   :host {
     font-family: var(--joe-ui);
   }
@@ -4026,7 +4216,7 @@ var D = o`
 `;
 //#endregion
 //#region \0@oxc-project+runtime@0.152.0/helpers/esm/decorate.js
-function O(e, t, n, r) {
+function D(e, t, n, r) {
 	var i = arguments.length, a = i < 3 ? t : r === null ? r = Object.getOwnPropertyDescriptor(t, n) : r, o;
 	if (typeof Reflect == "object" && typeof Reflect.decorate == "function") a = Reflect.decorate(e, t, n, r);
 	else for (var s = e.length - 1; s >= 0; s--) (o = e[s]) && (a = (i < 3 ? o(a) : i > 3 ? o(t, n, a) : o(t, n)) || a);
@@ -4034,11 +4224,11 @@ function O(e, t, n, r) {
 }
 //#endregion
 //#region src/components/pose.ts
-var ct = /* @__PURE__ */ new Set(["welcome"]), lt = /* @__PURE__ */ new Set([
+var lt = /* @__PURE__ */ new Set(["welcome"]), ut = /* @__PURE__ */ new Set([
 	"night-charge",
 	"sleep",
 	"learn"
-]), ut = "thumbs", dt = class extends y {
+]), dt = "thumbs", ft = class extends y {
 	constructor(...e) {
 		super(...e), this.name = "", this.alt = "";
 	}
@@ -4065,15 +4255,15 @@ var ct = /* @__PURE__ */ new Set(["welcome"]), lt = /* @__PURE__ */ new Set([
   `;
 	}
 	render() {
-		let e = lt.has(this.name) ? "scene" : "";
-		if (this.name === ut) return g`<img class="light" src=${$e("logo.webp")} alt=${this.alt} decoding="async" /><img
+		let e = ut.has(this.name) ? "scene" : "";
+		if (this.name === dt) return g`<img class="light" src=${$e("logo.webp")} alt=${this.alt} decoding="async" /><img
           class="dark"
           src=${$e("logo-dark.webp")}
           alt=${this.alt}
           decoding="async"
         />`;
 		let t = $e(`poses/${this.name}.webp`);
-		return ct.has(this.name) ? g`<img class="light" src=${t} alt=${this.alt} decoding="async" /><img
+		return lt.has(this.name) ? g`<img class="light" src=${t} alt=${this.alt} decoding="async" /><img
         class="dark"
         src=${$e(`poses/${this.name}-dark.webp`)}
         alt=${this.alt}
@@ -4082,15 +4272,15 @@ var ct = /* @__PURE__ */ new Set(["welcome"]), lt = /* @__PURE__ */ new Set([
       />` : g`<img class=${e} src=${t} alt=${this.alt} decoding="async" />`;
 	}
 };
-O([b()], dt.prototype, "name", void 0), O([b()], dt.prototype, "alt", void 0), E("joe-pose", dt);
+D([b()], ft.prototype, "name", void 0), D([b()], ft.prototype, "alt", void 0), T("joe-pose", ft);
 //#endregion
 //#region src/components/empty-state.ts
-var ft = class extends y {
+var pt = class extends y {
 	constructor(...e) {
 		super(...e), this.pose = "", this.heading = "", this.text = "", this.note = "";
 	}
 	static {
-		this.styles = [D, o`
+		this.styles = [E, o`
       :host {
         display: block;
       }
@@ -4137,39 +4327,39 @@ var ft = class extends y {
     </div>`;
 	}
 };
-O([b()], ft.prototype, "pose", void 0), O([b()], ft.prototype, "heading", void 0), O([b()], ft.prototype, "text", void 0), O([b()], ft.prototype, "note", void 0), E("joe-empty-state", ft);
+D([b()], pt.prototype, "pose", void 0), D([b()], pt.prototype, "heading", void 0), D([b()], pt.prototype, "text", void 0), D([b()], pt.prototype, "note", void 0), T("joe-empty-state", pt);
 //#endregion
 //#region src/entities.ts
-var pt = [
+var mt = [
 	"W",
 	"kW",
 	"MW"
-], mt = [
+], ht = [
 	"Wh",
 	"kWh",
 	"MWh"
-], ht = {
-	power: (e) => k(e) === "sensor" && pt.includes(A(e)),
-	soc: (e) => k(e) === "sensor" && A(e) === "%",
-	energy: (e) => k(e) === "sensor" && mt.includes(A(e)),
+], gt = {
+	power: (e) => O(e) === "sensor" && mt.includes(k(e)),
+	soc: (e) => O(e) === "sensor" && k(e) === "%",
+	energy: (e) => O(e) === "sensor" && ht.includes(k(e)),
 	price: (e) => [
 		"sensor",
 		"number",
 		"input_number"
-	].includes(k(e)) && (e.attributes.device_class === "monetary" || /\/\s*kwh/i.test(A(e))),
-	weather: (e) => k(e) === "weather",
-	workday: (e) => k(e) === "binary_sensor",
-	calendar: (e) => k(e) === "calendar",
-	person: (e) => k(e) === "person",
-	level: (e) => ["number", "input_number"].includes(k(e)) && A(e) === "%",
+	].includes(O(e)) && (e.attributes.device_class === "monetary" || /\/\s*kwh/i.test(k(e))),
+	weather: (e) => O(e) === "weather",
+	workday: (e) => O(e) === "binary_sensor",
+	calendar: (e) => O(e) === "calendar",
+	person: (e) => O(e) === "person",
+	level: (e) => ["number", "input_number"].includes(O(e)) && k(e) === "%",
 	temperature: (e) => [
 		"sensor",
 		"number",
 		"input_number"
-	].includes(k(e)) && ["°C", "°F"].includes(A(e)),
-	setpoint: (e) => ["number", "input_number"].includes(k(e)),
-	toggle: (e) => ["switch", "input_boolean"].includes(k(e)),
-	option: (e) => ["select", "input_select"].includes(k(e)),
+	].includes(O(e)) && ["°C", "°F"].includes(k(e)),
+	setpoint: (e) => ["number", "input_number"].includes(O(e)),
+	toggle: (e) => ["switch", "input_boolean"].includes(O(e)),
+	option: (e) => ["select", "input_select"].includes(O(e)),
 	writable: (e) => [
 		"number",
 		"input_number",
@@ -4180,84 +4370,84 @@ var pt = [
 		"script",
 		"button",
 		"input_button"
-	].includes(k(e)),
-	distance: (e) => k(e) === "sensor" && [
+	].includes(O(e)),
+	distance: (e) => O(e) === "sensor" && [
 		"km",
 		"mi",
 		"m"
-	].includes(A(e)),
-	consumption: (e) => k(e) === "sensor" && /kwh\/100|wh\/km|km\/kwh|mi\/kwh/i.test(A(e).replace(/\s/g, "")),
+	].includes(k(e)),
+	consumption: (e) => O(e) === "sensor" && /kwh\/100|wh\/km|km\/kwh|mi\/kwh/i.test(k(e).replace(/\s/g, "")),
 	car_energy: (e) => [
 		"sensor",
 		"number",
 		"input_number"
-	].includes(k(e)) && [
-		...mt,
+	].includes(O(e)) && [
+		...ht,
 		"kJ",
 		"MJ"
-	].includes(A(e)),
+	].includes(k(e)),
 	any: () => !0
 };
-function k(e) {
+function O(e) {
 	return e.entity_id.split(".", 1)[0];
 }
-function A(e) {
+function k(e) {
 	return String(e.attributes.unit_of_measurement ?? "");
 }
-function gt(e, t) {
-	return ht[t](e);
+function _t(e, t) {
+	return gt[t](e);
 }
-function j(e, t) {
+function A(e, t) {
 	let n = e.states[t]?.attributes.friendly_name;
 	return typeof n == "string" && n ? n : t.split(".", 2)[1]?.replace(/_/g, " ") ?? t;
 }
-function _t(e, t) {
+function vt(e, t) {
 	let n = e.entities?.[t], r = n?.device_id ? e.devices?.[n.device_id] : void 0, i = n?.area_id ?? r?.area_id, a = i ? e.areas?.[i]?.name : void 0, o = r?.name_by_user || r?.name || void 0;
-	return [o && j(e, t).toLowerCase().startsWith(o.toLowerCase()) ? void 0 : o, a].filter(Boolean).join(" · ");
+	return [o && A(e, t).toLowerCase().startsWith(o.toLowerCase()) ? void 0 : o, a].filter(Boolean).join(" · ");
 }
-function M(e, t) {
+function yt(e, t) {
 	if (!t) return null;
 	let n = Number.parseFloat(e.states[t]?.state ?? "");
 	return Number.isFinite(n) ? n : null;
 }
-function N(e, t, n) {
+function j(e, t, n) {
 	return new Intl.NumberFormat(e, { maximumFractionDigits: n }).format(t);
 }
-function vt(e, t, n) {
+function bt(e, t, n) {
 	let r = e.states[t];
 	if (!r) return "–";
 	if (e.formatEntityState) return e.formatEntityState(r);
-	let i = M(e, t);
-	return i === null ? r.state : `${N(n, i, Math.abs(i) >= 100 ? 0 : Math.abs(i) >= 10 ? 1 : 2)} ${A(r)}`.trim();
+	let i = yt(e, t);
+	return i === null ? r.state : `${j(n, i, Math.abs(i) >= 100 ? 0 : Math.abs(i) >= 10 ? 1 : 2)} ${k(r)}`.trim();
 }
-function yt(e, t) {
+function xt(e, t) {
 	return t === "W" ? e / 1e3 : t === "MW" ? e * 1e3 : e;
 }
-function bt(e, t) {
+function St(e, t) {
 	if (!t) return null;
-	let n = M(e, t.entity_id);
+	let n = yt(e, t.entity_id);
 	if (n === null) return null;
-	let r = yt(n, A(e.states[t.entity_id]));
+	let r = xt(n, k(e.states[t.entity_id]));
 	if (t.invert && (r = -r), t.minus_entity_id) {
-		let n = M(e, t.minus_entity_id);
+		let n = yt(e, t.minus_entity_id);
 		if (n === null) return null;
-		r -= yt(n, A(e.states[t.minus_entity_id]));
+		r -= xt(n, k(e.states[t.minus_entity_id]));
 	}
 	return r;
 }
-function xt(e, t) {
-	let n = M(e, t);
+function Ct(e, t) {
+	let n = yt(e, t);
 	if (n === null || !t) return null;
-	let r = A(e.states[t]);
+	let r = k(e.states[t]);
 	return r === "Wh" ? n / 1e3 : r === "MWh" ? n * 1e3 : n;
 }
-function St(e, t) {
-	let n = t.map((t) => bt(e, t)).filter((e) => e !== null);
+function wt(e, t) {
+	let n = t.map((t) => St(e, t)).filter((e) => e !== null);
 	return n.length ? n.reduce((e, t) => e + t, 0) : null;
 }
 //#endregion
 //#region src/components/tip.ts
-var Ct = 120, wt = 220, Tt = 8, Et = 10, Dt, Ot = class extends y {
+var Tt = 120, Et = 220, Dt = 8, Ot = 10, kt, At = class extends y {
 	constructor(...e) {
 		super(...e), this.label = "", this.open = !1, this.pinned = !1, this.keepOnBlur = !1, this.onOutside = (e) => {
 			e.composedPath().includes(this) || this.close();
@@ -4444,13 +4634,13 @@ var Ct = 120, wt = 220, Tt = 8, Et = 10, Dt, Ot = class extends y {
         @pointerdown=${this.onBubbleDown}
       >
         <span class="h">${e.heading}</span>
-        ${kt(e.text)}
+        ${jt(e.text)}
         ${e.facts?.length ? g`<dl>${e.facts.map(([e, t]) => g`<dt>${e}</dt><dd>${t}</dd>`)}</dl>` : v}
         <span class="arrow"></span>
       </div>` : v;
 	}
 	show(e = !1) {
-		this.cancelTimer(), this.pinned = this.pinned || e, !this.open && (Dt && Dt !== this && Dt.close(), Dt = this, this.open = !0, window.addEventListener("pointerdown", this.onOutside, !0), window.addEventListener("keydown", this.onKey, !0), this.updateComplete.then(() => {
+		this.cancelTimer(), this.pinned = this.pinned || e, !this.open && (kt && kt !== this && kt.close(), kt = this, this.open = !0, window.addEventListener("pointerdown", this.onOutside, !0), window.addEventListener("keydown", this.onKey, !0), this.updateComplete.then(() => {
 			let e = this.bubble;
 			this.open && e && (typeof e.showPopover == "function" && !e.matches(":popover-open") && e.showPopover(), this.follow());
 		}));
@@ -4458,16 +4648,16 @@ var Ct = 120, wt = 220, Tt = 8, Et = 10, Dt, Ot = class extends y {
 	close() {
 		this.cancelTimer(), this.pinned = !1, this.frame !== void 0 && (cancelAnimationFrame(this.frame), this.frame = void 0), window.removeEventListener("pointerdown", this.onOutside, !0), window.removeEventListener("keydown", this.onKey, !0);
 		let e = this.bubble;
-		e && typeof e.hidePopover == "function" && e.matches(":popover-open") && e.hidePopover(), Dt === this && (Dt = void 0), this.open = !1;
+		e && typeof e.hidePopover == "function" && e.matches(":popover-open") && e.hidePopover(), kt === this && (kt = void 0), this.open = !1;
 	}
 	onClick() {
 		this.open && this.pinned ? this.close() : this.show(!0);
 	}
 	onEnter(e) {
-		e.pointerType === "mouse" && (this.cancelTimer(), this.open || (this.timer = window.setTimeout(() => this.show(), Ct)));
+		e.pointerType === "mouse" && (this.cancelTimer(), this.open || (this.timer = window.setTimeout(() => this.show(), Tt)));
 	}
 	onLeave(e) {
-		e.pointerType === "mouse" && (this.cancelTimer(), this.open && !this.pinned && (this.timer = window.setTimeout(() => this.close(), wt)));
+		e.pointerType === "mouse" && (this.cancelTimer(), this.open && !this.pinned && (this.timer = window.setTimeout(() => this.close(), Et)));
 	}
 	onFocus() {
 		this.button?.matches(":focus-visible") && this.show();
@@ -4495,19 +4685,19 @@ var Ct = 120, wt = 220, Tt = 8, Et = 10, Dt, Ot = class extends y {
 			this.close();
 			return;
 		}
-		let r = t.getBoundingClientRect(), i = document.documentElement.clientWidth, a = n.top - r.height - Et, o = "top";
-		a < Tt && (a = n.bottom + Et, o = "bottom");
-		let s = n.left + n.width / 2, c = Math.max(Tt, Math.min(s - r.width / 2, i - r.width - Tt)), l = Math.max(14, Math.min(s - c, r.width - 14));
+		let r = t.getBoundingClientRect(), i = document.documentElement.clientWidth, a = n.top - r.height - Ot, o = "top";
+		a < Dt && (a = n.bottom + Ot, o = "bottom");
+		let s = n.left + n.width / 2, c = Math.max(Dt, Math.min(s - r.width / 2, i - r.width - Dt)), l = Math.max(14, Math.min(s - c, r.width - 14));
 		t.style.left = `${Math.round(c)}px`, t.style.top = `${Math.round(a)}px`, t.style.setProperty("--arrow", `${Math.round(l)}px`), t.dataset.place = o;
 	}
 };
-O([b({ attribute: !1 })], Ot.prototype, "tip", void 0), O([b()], Ot.prototype, "label", void 0), O([x()], Ot.prototype, "open", void 0), O([Ze("button")], Ot.prototype, "button", void 0), O([Ze(".bubble")], Ot.prototype, "bubble", void 0);
-function kt(e) {
+D([b({ attribute: !1 })], At.prototype, "tip", void 0), D([b()], At.prototype, "label", void 0), D([x()], At.prototype, "open", void 0), D([Ze("button")], At.prototype, "button", void 0), D([Ze(".bubble")], At.prototype, "bubble", void 0);
+function jt(e) {
 	return e.split("\n").map((e) => g`<p>
         ${e.split(/\*\*(.+?)\*\*/).map((e, t) => t % 2 ? g`<strong>${e}</strong>` : e)}
       </p>`);
 }
-function At(e, t, n, r = []) {
+function Mt(e, t, n, r = []) {
 	let i = e.optional(`tip.${t}.hint`, n);
 	return {
 		heading: e(`tip.${t}.title`, n),
@@ -4515,18 +4705,18 @@ function At(e, t, n, r = []) {
 		facts: i ? [...r, [e("tip.hint"), i]] : r
 	};
 }
-function P(e, t, n, r) {
-	return g`<joe-tip .tip=${At(e, t, n, r)} label=${e("tip.label")}></joe-tip>`;
+function M(e, t, n, r) {
+	return g`<joe-tip .tip=${Mt(e, t, n, r)} label=${e("tip.label")}></joe-tip>`;
 }
-E("joe-tip", Ot);
+T("joe-tip", At);
 //#endregion
 //#region src/components/entity-picker.ts
-var jt = 60, F = class extends y {
+var Nt = 60, N = class extends y {
 	constructor(...e) {
-		super(...e), this.selected = [], this.invert = !1, this.query = "", this.showAll = !1, this.limit = jt;
+		super(...e), this.selected = [], this.invert = !1, this.query = "", this.showAll = !1, this.limit = Nt;
 	}
 	static {
-		this.styles = [D, o`
+		this.styles = [E, o`
       :host {
         display: block;
       }
@@ -4661,14 +4851,14 @@ var jt = 60, F = class extends y {
     `];
 	}
 	willUpdate(e) {
-		e.has("request") && this.request && (this.selected = [...this.request.selected], this.invert = this.request.measurement?.invert ?? !1, this.query = "", this.showAll = !1, this.limit = jt);
+		e.has("request") && this.request && (this.selected = [...this.request.selected], this.invert = this.request.measurement?.invert ?? !1, this.query = "", this.showAll = !1, this.limit = Nt);
 	}
 	render() {
 		let { hass: e, t, request: n } = this;
 		if (!e || !t || !n) return v;
 		let r = this.candidates(e, n), i = r.slice(0, this.limit), a = this.query ? [] : (n.suggestions ?? []).filter((t) => e.states[t.entity_id]);
 		return g`<div data-tipped>
-      <div class="sheet-title">${C(n.heading, "h2", P(t, n.tip))}</div>
+      <div class="sheet-title">${C(n.heading, "h2", M(t, n.tip))}</div>
       <input
         class="input search"
         type="search"
@@ -4676,7 +4866,7 @@ var jt = 60, F = class extends y {
         placeholder=${t("pick.search")}
         aria-label=${t("pick.search")}
         @input=${(e) => {
-			this.query = e.target.value, this.limit = jt;
+			this.query = e.target.value, this.limit = Nt;
 		}}
       />
       ${a.length ? g`<div class="group-label">${t("pick.suggested")}</div>
@@ -4687,7 +4877,7 @@ var jt = 60, F = class extends y {
       ${r.length ? g`<ul>
             ${i.map((r) => this.renderRow(e, t, n, r))}
           </ul>` : g`<p class="empty">${t("pick.empty")}</p>`}
-      ${r.length > i.length ? g`<button type="button" class="mini-btn more" data-notip @click=${() => this.limit += jt}>
+      ${r.length > i.length ? g`<button type="button" class="mini-btn more" data-notip @click=${() => this.limit += Nt}>
             ${t("pick.more", { count: r.length - i.length })}
           </button>` : v}
       <div class="line">
@@ -4699,11 +4889,11 @@ var jt = 60, F = class extends y {
           aria-checked=${String(this.showAll)}
           aria-labelledby="all-label"
           @click=${() => {
-			this.showAll = !this.showAll, this.limit = jt;
+			this.showAll = !this.showAll, this.limit = Nt;
 		}}
         ></button>
         <label id="all-label" for="all">${t("pick.show_all")}</label>
-        ${P(t, "pick_all")}
+        ${M(t, "pick_all")}
       </div>
       ${n.measurement ? this.renderInvert(e, t, n) : v}
       <div class="sticky">
@@ -4724,10 +4914,10 @@ var jt = 60, F = class extends y {
 	candidates(e, t) {
 		let n = this.query.toLowerCase().split(/\s+/).filter(Boolean), r = new Set(t.exclude ?? []), i = [];
 		for (let [a, o] of Object.entries(e.states)) {
-			if (r.has(a) || !this.showAll && (!gt(o, t.filter) || e.entities?.[a]?.hidden)) continue;
-			let s = j(e, a);
+			if (r.has(a) || !this.showAll && (!_t(o, t.filter) || e.entities?.[a]?.hidden)) continue;
+			let s = A(e, a);
 			if (n.length) {
-				let t = `${s} ${a} ${_t(e, a)}`.toLowerCase();
+				let t = `${s} ${a} ${vt(e, a)}`.toLowerCase();
 				if (!n.every((e) => t.includes(e))) continue;
 			}
 			i.push({
@@ -4738,7 +4928,7 @@ var jt = 60, F = class extends y {
 		return i.sort((e, t) => e.name.localeCompare(t.name, this.t?.lang)), i.map((e) => e.id);
 	}
 	renderRow(e, t, n, r, i) {
-		let a = this.selected.includes(r), o = _t(e, r), s = i?.reasons?.[0];
+		let a = this.selected.includes(r), o = vt(e, r), s = i?.reasons?.[0];
 		return g`<li>
       <button type="button" class="row" aria-pressed=${String(a)} @click=${() => this.toggle(r)}>
         <span class="mark ${n.multiple ? "box" : ""}" aria-hidden="true">
@@ -4747,26 +4937,26 @@ var jt = 60, F = class extends y {
               </svg>` : v}
         </span>
         <span class="txt">
-          <b>${j(e, r)}</b>
+          <b>${A(e, r)}</b>
           <small>${o ? `${o} · ` : ""}${r}</small>
-          ${s ? g`<small class="why">${st(t, s)}</small>` : v}
+          ${s ? g`<small class="why">${ct(t, s)}</small>` : v}
         </span>
         <span class="end">
-          <span class="val">${vt(e, r, t.lang)}</span>
-          ${i?.confidence == null ? v : w(t, i.confidence)}
+          <span class="val">${bt(e, r, t.lang)}</span>
+          ${i?.confidence == null ? v : ot(t, i.confidence)}
         </span>
       </button>
     </li>`;
 	}
 	renderInvert(e, t, n) {
-		let r = n.measurement?.role ?? "grid", i = this.selected[0], a = i ? bt(e, {
+		let r = n.measurement?.role ?? "grid", i = this.selected[0], a = i ? St(e, {
 			entity_id: i,
 			invert: this.invert,
 			minus_entity_id: null
 		}) : null, o = "";
 		if (a !== null) {
-			let e = N(t.lang, Math.abs(a), 2);
-			o = r === "grid" ? t(a >= 0 ? "pick.preview.import" : "pick.preview.export", { value: e }) : r === "battery" ? t(a >= 0 ? "pick.preview.charge" : "pick.preview.discharge", { value: e }) : t(a >= -.05 ? `pick.preview.${r}` : "pick.preview.negative", { value: N(t.lang, a, 2) });
+			let e = j(t.lang, Math.abs(a), 2);
+			o = r === "grid" ? t(a >= 0 ? "pick.preview.import" : "pick.preview.export", { value: e }) : r === "battery" ? t(a >= 0 ? "pick.preview.charge" : "pick.preview.discharge", { value: e }) : t(a >= -.05 ? `pick.preview.${r}` : "pick.preview.negative", { value: j(t.lang, a, 2) });
 		}
 		return g`<div class="line">
         <button
@@ -4779,7 +4969,7 @@ var jt = 60, F = class extends y {
           @click=${() => this.invert = !this.invert}
         ></button>
         <label id="invert-label" for="invert">${t("pick.invert")}</label>
-        ${P(t, r === "battery" ? "pick_invert_battery" : "pick_invert")}
+        ${M(t, r === "battery" ? "pick_invert_battery" : "pick_invert")}
       </div>
       ${o ? g`<div class="note preview"><ha-icon icon="mdi:eye-outline"></ha-icon><span>${o}</span></div>` : v}`;
 	}
@@ -4804,10 +4994,10 @@ var jt = 60, F = class extends y {
 		}));
 	}
 };
-O([b({ attribute: !1 })], F.prototype, "hass", void 0), O([b({ attribute: !1 })], F.prototype, "t", void 0), O([b({ attribute: !1 })], F.prototype, "request", void 0), O([x()], F.prototype, "selected", void 0), O([x()], F.prototype, "invert", void 0), O([x()], F.prototype, "query", void 0), O([x()], F.prototype, "showAll", void 0), O([x()], F.prototype, "limit", void 0), E("joe-entity-picker", F);
+D([b({ attribute: !1 })], N.prototype, "hass", void 0), D([b({ attribute: !1 })], N.prototype, "t", void 0), D([b({ attribute: !1 })], N.prototype, "request", void 0), D([x()], N.prototype, "selected", void 0), D([x()], N.prototype, "invert", void 0), D([x()], N.prototype, "query", void 0), D([x()], N.prototype, "showAll", void 0), D([x()], N.prototype, "limit", void 0), T("joe-entity-picker", N);
 //#endregion
 //#region src/components/sheet.ts
-var Mt = class extends y {
+var Pt = class extends y {
 	constructor(...e) {
 		super(...e), this.label = "", this.closeLabel = "", this.wide = !1, this.onScrim = (e) => {
 			e.composedPath()[0] === this && this.close();
@@ -4941,18 +5131,18 @@ var Mt = class extends y {
 		}));
 	}
 };
-O([b()], Mt.prototype, "label", void 0), O([b()], Mt.prototype, "closeLabel", void 0), O([b({
+D([b()], Pt.prototype, "label", void 0), D([b()], Pt.prototype, "closeLabel", void 0), D([b({
 	type: Boolean,
 	reflect: !0
-})], Mt.prototype, "wide", void 0), O([Ze(".panel")], Mt.prototype, "panel", void 0), E("joe-sheet", Mt);
+})], Pt.prototype, "wide", void 0), D([Ze(".panel")], Pt.prototype, "panel", void 0), T("joe-sheet", Pt);
 //#endregion
 //#region src/components/sim-switch.ts
-var Nt = {
+var Ft = {
 	simulation: "mdi:pause",
 	advisory: "mdi:comment-question-outline",
 	live: "mdi:play",
 	off: "mdi:power"
-}, Pt = class extends y {
+}, It = class extends y {
 	constructor(...e) {
 		super(...e), this.mode = "simulation", this.compact = !1, this.running = !1;
 	}
@@ -5077,7 +5267,7 @@ var Nt = {
       aria-label=${e("mode.switch.label")}
       @click=${this.toggle}
     >
-      <span class="knob"><ha-icon icon=${Nt[this.mode]}></ha-icon></span>
+      <span class="knob"><ha-icon icon=${Ft[this.mode]}></ha-icon></span>
       <span>
         <b>${e(`mode.${this.mode}`)}</b>
         ${this.compact ? v : g`<small>${e(`mode.${this.mode}.sub`)}</small>`}
@@ -5091,29 +5281,29 @@ var Nt = {
 		}));
 	}
 };
-O([b()], Pt.prototype, "mode", void 0), O([b({ type: Boolean })], Pt.prototype, "compact", void 0), O([b({ type: Boolean })], Pt.prototype, "running", void 0), O([b({ attribute: !1 })], Pt.prototype, "t", void 0), E("joe-sim-switch", Pt);
+D([b()], It.prototype, "mode", void 0), D([b({ type: Boolean })], It.prototype, "compact", void 0), D([b({ type: Boolean })], It.prototype, "running", void 0), D([b({ attribute: !1 })], It.prototype, "t", void 0), T("joe-sim-switch", It);
 //#endregion
 //#region src/config.ts
-var Ft = /\[[^\]]*\]|[^.[]+/g;
-function It(e) {
+var Lt = /\[[^\]]*\]|[^.[]+/g;
+function Rt(e) {
 	let t = [], n = "";
-	for (let r of e.match(Ft) ?? []) n = !n || r.startsWith("[") ? n + r : `${n}.${r}`, t.push(n);
+	for (let r of e.match(Lt) ?? []) n = !n || r.startsWith("[") ? n + r : `${n}.${r}`, t.push(n);
 	return t.reverse();
 }
-function I(e, t) {
-	for (let n of It(t)) {
+function P(e, t) {
+	for (let n of Rt(t)) {
 		let t = e.provenance[n];
 		if (t) return t;
 	}
 }
-function L(e, t) {
+function F(e, t) {
 	return e.answers.ignored.includes(t);
 }
-function R(e, t, n) {
+function I(e, t, n) {
 	let r = e.answers.ignored.filter((e) => e !== t);
 	return n ? [...r, t] : r;
 }
-function z(e, t, n = "user") {
+function L(e, t, n = "user") {
 	let r = {
 		patch: t,
 		source: n
@@ -5124,7 +5314,7 @@ function z(e, t, n = "user") {
 		composed: !0
 	})), r.result ?? Promise.resolve(!1);
 }
-function B(e, t) {
+function R(e, t) {
 	return new Promise((n) => {
 		e.dispatchEvent(new CustomEvent("joe-pick", {
 			detail: {
@@ -5136,12 +5326,12 @@ function B(e, t) {
 		}));
 	});
 }
-function Lt(e, t = []) {
+function zt(e, t = []) {
 	let n = /* @__PURE__ */ new Set(), r = [];
 	for (let i of [...e, ...t.map((e) => ({ entity_id: e.entity_id }))]) n.has(i.entity_id) || (n.add(i.entity_id), r.push(i));
 	return r;
 }
-function Rt(e) {
+function Bt(e) {
 	return {
 		entity_id: e.entity.entity_id,
 		confidence: e.confidence,
@@ -5150,7 +5340,7 @@ function Rt(e) {
 }
 //#endregion
 //#region src/components/car-calendars.ts
-var zt = [
+var Vt = [
 	{
 		key: "google",
 		url: "https://my.home-assistant.io/redirect/config_flow_start/?domain=google"
@@ -5167,12 +5357,12 @@ var zt = [
 		key: "microsoft",
 		url: "https://my.home-assistant.io/redirect/hacs_repository/?owner=RogerSelwyn&repository=MS365-Calendar&category=integration"
 	}
-], V = class extends y {
+], z = class extends y {
 	constructor(...e) {
-		super(...e), this.actionId = "", this.saved = !1, this.calendars = [], this.copied = !1, this.failed = !1;
+		super(...e), this.actionId = "", this.saved = !1, this.calendars = [], this.carName = "", this.copied = !1, this.failed = !1;
 	}
 	static {
-		this.styles = [D, o`
+		this.styles = [E, o`
       :host {
         display: grid;
         gap: 10px;
@@ -5197,6 +5387,11 @@ var zt = [
         align-items: center;
         gap: 6px;
         flex-wrap: wrap;
+      }
+      .link .input {
+        flex: 1 1 220px;
+        min-width: 0;
+        width: auto;
       }
       .link code {
         flex: 1 1 220px;
@@ -5236,7 +5431,7 @@ var zt = [
 	}
 	render() {
 		let { t: e, hass: t } = this;
-		return !e || !t ? v : g`${this.renderOwn(e, t)} ${this.renderMore(e, t)} ${this.renderConnect(e)}
+		return !e || !t ? v : g`${this.renderOwn(e, t)} ${this.renderInvite(e)} ${this.renderMore(e, t)} ${this.renderConnect(e)}
     ${this.failed ? g`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon>${e("error.action")}</div>` : v}`;
 	}
 	renderOwn(e, t) {
@@ -5244,7 +5439,7 @@ var zt = [
 		if (!this.saved || !n) return g`<p class="hint">${e("calendar.own.after_save")}</p>`;
 		let r = this.links?.links[this.actionId], i = this.links?.external_url, a = r && i ? `${i.replace(/\/$/, "")}${r}` : null;
 		return g`<div class="own" data-tipped>
-      <div class="head-row"><b>${j(t, n)}</b> ${P(e, "calendar_own")}</div>
+      <div class="head-row"><b>${A(t, n)}</b> ${M(e, "calendar_own")}</div>
       <p class="hint">${e("calendar.own.hint")}</p>
       ${a ? g`<div class="link">
             <code>${a}</code>
@@ -5254,19 +5449,44 @@ var zt = [
             <button type="button" class="mini-btn quiet" @click=${() => this.load(!0)}>
               <ha-icon icon="mdi:refresh"></ha-icon>${e("calendar.renew")}
             </button>
-            ${P(e, "calendar_link")}
+            ${M(e, "calendar_link")}
           </div>` : g`<p class="hint">${e("calendar.no_external")}</p>`}
     </div>`;
+	}
+	renderInvite(e) {
+		let t = this.mailbox;
+		if (!t?.enabled || !t.address) return g`<p class="hint">${e("calendar.invite.no_mailbox")}</p>`;
+		let n = t.cars[this.actionId] ?? "", [r, i] = t.address.split("@"), a = this.carName.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "").slice(0, 20), o = i && a ? `${r}+${a}@${i}` : t.address;
+		return g`<div data-tipped>
+      <div class="head-row"><b>${e("calendar.invite")}</b> ${M(e, "calendar_invite")}</div>
+      <div class="link">
+        <input
+          class="input"
+          type="email"
+          placeholder=${o}
+          aria-label=${e("calendar.invite")}
+          .value=${n}
+          @change=${(e) => this.saveInvite(e.target.value.trim().toLowerCase())}
+        />
+        ${n ? v : g`<button type="button" class="mini-btn" @click=${() => this.saveInvite(o)}>${e("calendar.invite.use")}</button>`}
+      </div>
+    </div>`;
+	}
+	saveInvite(e) {
+		L(this, { mailbox: { cars: {
+			...this.mailbox?.cars ?? {},
+			[this.actionId]: e
+		} } });
 	}
 	renderMore(e, t) {
 		return g`<div data-tipped>
       <div class="chips">
         ${this.calendars.map((n) => g`<span class="chip">
-            ${j(t, n)}
+            ${A(t, n)}
             <button
               type="button"
               class="mini-btn quiet"
-              aria-label=${e("calendar.remove", { name: j(t, n) })}
+              aria-label=${e("calendar.remove", { name: A(t, n) })}
               @click=${() => this.emit(this.calendars.filter((e) => e !== n))}
             >
               <ha-icon icon="mdi:close"></ha-icon>
@@ -5275,7 +5495,7 @@ var zt = [
         <button type="button" class="mini-btn" @click=${() => this.pick()}>
           <ha-icon icon="mdi:calendar-plus"></ha-icon>${e("calendar.add")}
         </button>
-        ${P(e, "calendar_more")}
+        ${M(e, "calendar_more")}
       </div>
     </div>`;
 	}
@@ -5283,15 +5503,15 @@ var zt = [
 		return g`<div data-tipped>
       <p class="hint">${e("calendar.connect")}</p>
       <div class="chips">
-        ${zt.map((t) => g`<a class="mini-btn" href=${t.url} target="_blank" rel="noreferrer noopener">
+        ${Vt.map((t) => g`<a class="mini-btn" href=${t.url} target="_blank" rel="noreferrer noopener">
               <ha-icon icon="mdi:open-in-new"></ha-icon>${e(`calendar.connect.${t.key}`)}
             </a>`)}
-        ${P(e, "calendar_connect")}
+        ${M(e, "calendar_connect")}
       </div>
     </div>`;
 	}
 	async pick() {
-		let e = this.t, t = this.links?.entities[this.actionId], n = await B(this, {
+		let e = this.t, t = this.links?.entities[this.actionId], n = await R(this, {
 			heading: e("calendar.pick"),
 			tip: "calendar_more",
 			filter: "calendar",
@@ -5316,10 +5536,10 @@ var zt = [
 		}
 	}
 };
-O([b({ attribute: !1 })], V.prototype, "hass", void 0), O([b({ attribute: !1 })], V.prototype, "t", void 0), O([b()], V.prototype, "actionId", void 0), O([b({ type: Boolean })], V.prototype, "saved", void 0), O([b({ attribute: !1 })], V.prototype, "calendars", void 0), O([x()], V.prototype, "links", void 0), O([x()], V.prototype, "copied", void 0), O([x()], V.prototype, "failed", void 0), E("joe-car-calendars", V);
+D([b({ attribute: !1 })], z.prototype, "hass", void 0), D([b({ attribute: !1 })], z.prototype, "t", void 0), D([b()], z.prototype, "actionId", void 0), D([b({ type: Boolean })], z.prototype, "saved", void 0), D([b({ attribute: !1 })], z.prototype, "calendars", void 0), D([b({ attribute: !1 })], z.prototype, "mailbox", void 0), D([b()], z.prototype, "carName", void 0), D([x()], z.prototype, "links", void 0), D([x()], z.prototype, "copied", void 0), D([x()], z.prototype, "failed", void 0), T("joe-car-calendars", z);
 //#endregion
 //#region src/hot-water.ts
-var Bt = [
+var Ht = [
 	"warmwasser",
 	"brauchwasser",
 	"trinkwasser",
@@ -5329,7 +5549,7 @@ var Bt = [
 	"dhw",
 	"water_heater",
 	"water heater"
-], Vt = [
+], Ut = [
 	"ausgang",
 	"zirkulation",
 	"rücklauf",
@@ -5340,7 +5560,7 @@ var Bt = [
 	"return",
 	"flow",
 	"inlet"
-], Ht = [
+], Wt = [
 	"switch",
 	"input_boolean",
 	"select",
@@ -5350,29 +5570,29 @@ var Bt = [
 	"button",
 	"script"
 ];
-function Ut(e, t) {
+function Gt(e, t) {
 	let n = e.states[t], r = String(n?.attributes.friendly_name ?? ""), i = e.entities?.[t]?.device_id, a = i ? e.devices?.[i] : void 0;
 	return `${t} ${r} ${a?.name_by_user ?? a?.name ?? ""}`.toLowerCase().replaceAll("-", " ");
 }
-function Wt(e, t) {
-	return [...Bt, ...t].some((t) => e.includes(t));
+function Kt(e, t) {
+	return [...Ht, ...t].some((t) => e.includes(t));
 }
-function Gt(e) {
+function qt(e) {
 	return (e ?? "").toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((e) => e.length >= 5);
 }
-function Kt(e, t) {
-	let n = Gt(t), r = [], i = [];
+function Jt(e, t) {
+	let n = qt(t), r = [], i = [];
 	for (let [t, a] of Object.entries(e.states)) {
-		let o = t.split(".")[0], s = Ut(e, t);
-		if (!Wt(s, n)) continue;
+		let o = t.split(".")[0], s = Gt(e, t);
+		if (!Kt(s, n)) continue;
 		let c = t.toLowerCase(), l = String(a.attributes.unit_of_measurement ?? "");
 		if ((o === "sensor" || o === "number") && (l === "°C" || l === "°F")) {
-			let e = (Bt.some((e) => c.includes(e.replace(" ", "_"))) ? 2 : 1) - (Vt.some((e) => s.includes(e)) ? 2 : 0);
+			let e = (Ht.some((e) => c.includes(e.replace(" ", "_"))) ? 2 : 1) - (Ut.some((e) => s.includes(e)) ? 2 : 0);
 			r.push({
 				entity_id: t,
 				score: e
 			});
-		} else Ht.includes(o) && i.push({
+		} else Wt.includes(o) && i.push({
 			entity_id: t,
 			score: +(o === "switch" || o === "input_boolean")
 		});
@@ -5388,14 +5608,14 @@ function Kt(e, t) {
 }
 //#endregion
 //#region src/editors/action-editor.ts
-var qt = [
+var Yt = [
 	"eq",
 	"ne",
 	"lt",
 	"le",
 	"gt",
 	"ge"
-], Jt = {
+], Xt = {
 	enabled: !1,
 	soc_entity: null,
 	range_entity: null,
@@ -5409,12 +5629,12 @@ var qt = [
 	persons: null,
 	round_trip: !0,
 	calendars: []
-}, Yt = {
+}, Zt = {
 	reserve_km: [0, 1e3],
 	consumption: [5, 60],
 	daily_km: [0, 2e3],
 	capacity_kwh: [.1, 300]
-}, Xt = {
+}, Qt = {
 	soc_entity: {
 		filter: "soc",
 		role: "soc",
@@ -5441,7 +5661,7 @@ var qt = [
 		tip: "a_need_consumption"
 	}
 };
-function Zt(e, t) {
+function $t(e, t) {
 	let n = {
 		id: `${e}_${Date.now().toString(36)}`,
 		name: t(`action.template.${e}`),
@@ -5479,12 +5699,12 @@ function Zt(e, t) {
 		priority: 2
 	} : n;
 }
-var H = class extends y {
+var B = class extends y {
 	constructor(...e) {
 		super(...e), this.actionId = "", this.saving = !1, this.problem = "";
 	}
 	static {
-		this.styles = [D, o`
+		this.styles = [E, o`
       :host {
         display: block;
       }
@@ -5585,7 +5805,7 @@ var H = class extends y {
 	willUpdate(e) {
 		if (!this.draft && this.t && (e.has("actionId") || e.has("config"))) {
 			if (this.actionId.startsWith("new:")) {
-				let e = Zt(this.actionId.slice(4), this.t), t = this.discovery?.wallboxes.find((e) => e.is_car);
+				let e = $t(this.actionId.slice(4), this.t), t = this.discovery?.wallboxes.find((e) => e.is_car);
 				this.actionId === "new:ev" && t && Object.assign(e, this.fromWallbox(t));
 				let n = this.config?.consumers.filter((e) => e.kind === "hot_water") ?? [];
 				this.actionId === "new:hot_water" && n.length === 1 && (e.consumer_id = n[0].id), this.draft = e;
@@ -5719,13 +5939,13 @@ var H = class extends y {
       <div class="actions">
         <span data-tipped class="row">
           <button type="button" class="btn btn-primary" ?disabled=${this.saving} @click=${this.save}>${e("common.save")}</button>
-          ${P(e, "a_save")}
+          ${M(e, "a_save")}
         </span>
         <button type="button" class="btn btn-ghost" data-notip @click=${this.close}>${e("common.cancel")}</button>
       </div>
       ${r ? v : g`<div class="danger-zone" data-tipped>
             <button type="button" class="btn btn-danger" @click=${this.deleteAction}>${e("action.delete")}</button>
-            ${P(e, "a_delete")}
+            ${M(e, "a_delete")}
           </div>`}`;
 	}
 	renderTarget(e, t) {
@@ -5751,20 +5971,20 @@ var H = class extends y {
       ${this.field(e("action.f.temps"), "a_temps", g`<div class="temps">${n("comfort", "°C")} ${n("maximum", "°C")} ${n("buffer", "K")}</div>`)}`;
 	}
 	renderNeed(e, t) {
-		let n = t.need ?? Jt, r = (this.config?.persons ?? []).filter((e) => e.calendars.length), i = (e, t, r, i = "") => g`<span
+		let n = t.need ?? Xt, r = (this.config?.persons ?? []).filter((e) => e.calendars.length), i = (e, t, r, i = "") => g`<span
       class="unit-input"
     >
       <input
         class="input"
         type="number"
         inputmode="decimal"
-        min=${Yt[e][0]}
-        max=${Math.min(r, Yt[e][1])}
+        min=${Zt[e][0]}
+        max=${Math.min(r, Zt[e][1])}
         step=${e === "consumption" || e === "capacity_kwh" ? "0.1" : "1"}
         placeholder=${i}
         .value=${n[e] == null ? "" : String(n[e])}
         @change=${(t) => {
-			let n = t.target, r = Number.parseFloat(n.value.replace(",", ".")), [i, a] = Yt[e], o = Number.isFinite(r) && r >= i && r <= a, s = e === "reserve_km" ? 50 : null;
+			let n = t.target, r = Number.parseFloat(n.value.replace(",", ".")), [i, a] = Zt[e], o = Number.isFinite(r) && r >= i && r <= a, s = e === "reserve_km" ? 50 : null;
 			o || (n.value = s == null ? "" : String(s)), this.setNeed({ [e]: o ? r : s });
 		}}
       />
@@ -5810,6 +6030,8 @@ var H = class extends y {
               actionId=${t.id}
               ?saved=${!!this.existing?.need?.enabled}
               .calendars=${n.calendars ?? []}
+              .mailbox=${this.config?.mailbox}
+              carName=${t.name}
               @joe-calendars=${(e) => this.setNeed({ calendars: e.detail.calendars })}
             ></joe-car-calendars>`)}
           ${this.field(e("action.need.round_trip"), "a_need_round_trip", g`<button
@@ -5824,48 +6046,48 @@ var H = class extends y {
 	}
 	setNeed(e) {
 		this.set({ need: {
-			...this.draft?.need ?? Jt,
+			...this.draft?.need ?? Xt,
 			...e
 		} });
 	}
 	toggleNeed() {
-		let e = this.draft?.need ?? Jt;
+		let e = this.draft?.need ?? Xt;
 		if (e.enabled) {
 			this.setNeed({ enabled: !1 });
 			return;
 		}
 		let t = this.discovery?.cars ?? [], n = (this.discovery?.wallboxes ?? []).filter((e) => e.is_car), r = t.length === 1 && n.length <= 1 ? t[0].entities : {}, i = { enabled: !0 };
-		for (let [t, n] of Object.entries(Xt)) !e[t] && r[n.role] && (i[t] = r[n.role] ?? null);
+		for (let [t, n] of Object.entries(Qt)) !e[t] && r[n.role] && (i[t] = r[n.role] ?? null);
 		this.setNeed(i);
 	}
 	togglePerson(e, t) {
-		let n = (this.draft?.need ?? Jt).persons ?? t, r = n.includes(e) ? n.filter((t) => t !== e) : [...n, e];
+		let n = (this.draft?.need ?? Xt).persons ?? t, r = n.includes(e) ? n.filter((t) => t !== e) : [...n, e];
 		this.setNeed({ persons: t.every((e) => r.includes(e)) ? null : r });
 	}
 	async pickNeed(e) {
-		let t = this.t, n = Xt[e], r = (this.discovery?.cars ?? []).map((e) => ({
+		let t = this.t, n = Qt[e], r = (this.discovery?.cars ?? []).map((e) => ({
 			entity_id: e.entities[n.role] ?? "",
 			confidence: e.confidence,
 			reasons: e.reasons
-		})).filter((e) => e.entity_id), i = await B(this, {
+		})).filter((e) => e.entity_id), i = await R(this, {
 			heading: t(`action.need.pick.${n.role}`),
 			tip: n.tip,
 			filter: n.filter,
 			selected: this.draft?.need?.[e] ? [this.draft.need[e]] : [],
-			suggestions: Lt(r)
+			suggestions: zt(r)
 		});
 		i && this.setNeed({ [e]: i.selected[0] ?? null });
 	}
 	renderConditions(e, t) {
 		let n = this.hass;
 		return this.field(e("action.f.conditions"), "a_conditions", g`${t.conditions.map((t, r) => g`<div class="condition">
-            <span><b>${j(n, t.entity_id)}</b></span>
+            <span><b>${A(n, t.entity_id)}</b></span>
             <select
               class="input"
               aria-label=${e("action.f.op")}
               @change=${(e) => this.setCondition(r, { op: e.target.value })}
             >
-              ${qt.map((n) => g`<option value=${n} ?selected=${t.op === n}>${e(`action.op.${n}`)}</option>`)}
+              ${Yt.map((n) => g`<option value=${n} ?selected=${t.op === n}>${e(`action.op.${n}`)}</option>`)}
             </select>
             <input
               class="input"
@@ -5884,7 +6106,7 @@ var H = class extends y {
 	}
 	field(e, t, n) {
 		return g`<div class="field" data-tipped>
-      <div class="field-label">${e} ${P(this.t, t)}</div>
+      <div class="field-label">${e} ${M(this.t, t)}</div>
       ${n}
     </div>`;
 	}
@@ -5892,7 +6114,7 @@ var H = class extends y {
 		let r = this.hass;
 		return g`<div class="entity">
       <span>
-        ${t ? g`<b>${j(r, t)}</b><small>${vt(r, t, e.lang)}</small>` : g`<small>${e("find.none")}</small>`}
+        ${t ? g`<b>${A(r, t)}</b><small>${bt(r, t, e.lang)}</small>` : g`<small>${e("find.none")}</small>`}
       </span>
       <button type="button" class="mini-btn" @click=${n}>
         <ha-icon icon="mdi:magnify"></ha-icon>${e(t ? "review.change" : "review.choose")}
@@ -5938,10 +6160,10 @@ var H = class extends y {
 	hotWater() {
 		if (this.draft?.kind !== "target" || !this.hass) return;
 		let e = this.config?.consumers.find((e) => e.id === this.draft?.consumer_id);
-		return Kt(this.hass, e?.name);
+		return Jt(this.hass, e?.name);
 	}
 	async pickTarget() {
-		let e = this.t, t = (await B(this, {
+		let e = this.t, t = (await R(this, {
 			heading: e("action.pick.entity"),
 			tip: "a_entity",
 			filter: "writable",
@@ -5957,7 +6179,7 @@ var H = class extends y {
 		}
 	}
 	async pickSensor() {
-		let e = this.t, t = await B(this, {
+		let e = this.t, t = await R(this, {
 			heading: e("action.pick.sensor"),
 			tip: "a_sensor",
 			filter: "temperature",
@@ -5967,7 +6189,7 @@ var H = class extends y {
 		t?.selected[0] && this.set({ sensor_entity: t.selected[0] });
 	}
 	async addCondition() {
-		let e = this.t, t = (await B(this, {
+		let e = this.t, t = (await R(this, {
 			heading: e("action.pick.condition"),
 			tip: "a_conditions",
 			filter: "any",
@@ -6012,11 +6234,11 @@ var H = class extends y {
 		}
 		let { id: n, ...r } = e;
 		this.saving = !0;
-		let i = await z(this, { actions: { [n]: r } });
+		let i = await L(this, { actions: { [n]: r } });
 		this.saving = !1, i && this.close();
 	}
 	async deleteAction() {
-		this.existing && await z(this, { actions: { [this.existing.id]: null } }) && this.close();
+		this.existing && await L(this, { actions: { [this.existing.id]: null } }) && this.close();
 	}
 	close() {
 		this.dispatchEvent(new CustomEvent("joe-close", {
@@ -6025,15 +6247,15 @@ var H = class extends y {
 		}));
 	}
 };
-O([b({ attribute: !1 })], H.prototype, "hass", void 0), O([b({ attribute: !1 })], H.prototype, "t", void 0), O([b({ attribute: !1 })], H.prototype, "config", void 0), O([b({ attribute: !1 })], H.prototype, "discovery", void 0), O([b()], H.prototype, "actionId", void 0), O([x()], H.prototype, "draft", void 0), O([x()], H.prototype, "saving", void 0), O([x()], H.prototype, "problem", void 0), E("joe-action-editor", H);
+D([b({ attribute: !1 })], B.prototype, "hass", void 0), D([b({ attribute: !1 })], B.prototype, "t", void 0), D([b({ attribute: !1 })], B.prototype, "config", void 0), D([b({ attribute: !1 })], B.prototype, "discovery", void 0), D([b()], B.prototype, "actionId", void 0), D([x()], B.prototype, "draft", void 0), D([x()], B.prototype, "saving", void 0), D([x()], B.prototype, "problem", void 0), T("joe-action-editor", B);
 //#endregion
 //#region src/types.ts
-var Qt = [
+var en = [
 	"welcome",
 	"scan",
 	"questions",
 	"done"
-], $t = [
+], tn = [
 	"min_soc",
 	"grid_charge",
 	"charge_target",
@@ -6042,19 +6264,19 @@ var Qt = [
 	"discharge_power",
 	"discharge_limit",
 	"discharge_limit_enabled"
-], en = [
+], nn = [
 	"normal",
 	"force_charge",
 	"hold",
 	"force_discharge"
-], tn = [
+], rn = [
 	"home_office",
 	"office",
 	"travel",
 	"vacation",
 	"guests",
 	"home"
-], nn = [
+], an = [
 	"climate",
 	"heat_pump",
 	"electric_heating",
@@ -6065,24 +6287,24 @@ var Qt = [
 	"submeter",
 	"other"
 ];
-function rn(e) {
+function on(e) {
 	let t = e.filter((e) => e.kind !== "submeter" && (e.kind === "ev" && (e.runs ?? "auto") !== "always" || e.runs === "surplus" || e.runs === "cheap")), n = new Set(t.map((e) => e.energy_entity).filter(Boolean));
 	return t.filter((e) => !e.included_in || !n.has(e.included_in));
 }
-var an = [
+var sn = [
 	"forecast",
 	"consumption",
 	"battery",
 	"hot_water",
 	"car"
-], on = [
+], cn = [
 	"overview",
 	"plan",
 	"history",
 	"learn",
 	"devices",
 	"settings"
-], sn = {
+], ln = {
 	min_soc: "level",
 	charge_target: "level",
 	grid_charge: "toggle",
@@ -6093,12 +6315,12 @@ var an = [
 	discharge_limit_enabled: "toggle",
 	charge_limit: "setpoint",
 	charge_limit_enabled: "toggle"
-}, cn = [
+}, un = [
 	"charge",
 	"hold",
 	"release"
 ];
-function ln(e) {
+function dn(e) {
 	let t = (...t) => t.every((t) => !!e.controls[t]), n = (t) => !!e.mode_options[t], r = [];
 	t("mode") && n("force_charge") && r.push("mode"), t("grid_charge", "charge_target") && r.push("target"), t("grid_charge", "min_soc") && r.push("min_soc");
 	let i = [];
@@ -6107,9 +6329,9 @@ function ln(e) {
 		hold: i
 	};
 }
-var un = class extends y {
+var fn = class extends y {
 	static {
-		this.styles = [D, o`
+		this.styles = [E, o`
       :host {
         display: block;
       }
@@ -6235,7 +6457,7 @@ var un = class extends y {
               >${e("f.battery.control.suggested")}
               <div class="note-actions">
                 <button type="button" class="mini-btn go" @click=${this.takeSuggestion}>${e("f.battery.control.take")}</button>
-                ${P(e, "control_roles")}
+                ${M(e, "control_roles")}
               </div></span
             >
           </div>` : v}
@@ -6244,16 +6466,16 @@ var un = class extends y {
       ${this.choice === "watch" ? v : g`<p class="field-hint">${e("f.battery.control.retest")}</p>`}`;
 	}
 	renderRoles(e, t) {
-		let n = this.hass, r = ln(t), i = r.charge.length && r.hold.length, a = t.controls.mode, o = a ? n.states[a]?.attributes.options ?? [] : [];
+		let n = this.hass, r = dn(t), i = r.charge.length && r.hold.length, a = t.controls.mode, o = a ? n.states[a]?.attributes.options ?? [] : [];
 		return g`<div data-tipped>
-      <div class="sub">${e("f.battery.control.levers")} ${P(e, "control_roles")}</div>
+      <div class="sub">${e("f.battery.control.levers")} ${M(e, "control_roles")}</div>
       <div class="rows">
-        ${$t.map((r) => {
+        ${tn.map((r) => {
 			let i = t.controls[r];
 			return g`<div class="row">
             <span class="label">${e(`role.${r}`)}</span>
             <span class="entity">
-              ${i ? g`<b>${j(n, i)}</b><small>${vt(n, i, e.lang)}</small>` : g`<small>${e("find.none")}</small>`}
+              ${i ? g`<b>${A(n, i)}</b><small>${bt(n, i, e.lang)}</small>` : g`<small>${e("find.none")}</small>`}
             </span>
             <span class="buttons">
               <button type="button" class="mini-btn" @click=${() => this.pickRole(r)}>
@@ -6274,9 +6496,9 @@ var un = class extends y {
       </div>
       </div>
       ${a ? g`<div data-tipped>
-            <div class="sub">${e("f.battery.mode_options")} ${P(e, "mode_options")}</div>
+            <div class="sub">${e("f.battery.mode_options")} ${M(e, "mode_options")}</div>
             <div class="rows">
-              ${en.map((n) => g`<div class="row">
+              ${nn.map((n) => g`<div class="row">
                   <label for="opt-${n}">${e(`meaning.${n}`)}</label>
                   <select
                     id="opt-${n}"
@@ -6303,12 +6525,12 @@ var un = class extends y {
 	renderServiceSteps(e, t) {
 		let n = this.hass;
 		return g`<div data-tipped>
-      <div class="sub">${e("f.battery.control.services")} ${P(e, "control_steps")}</div>
+      <div class="sub">${e("f.battery.control.services")} ${M(e, "control_steps")}</div>
       <div class="rows">
-        ${cn.flatMap((r) => (t.steps[r] ?? []).map((t) => g`<div class="row">
+        ${un.flatMap((r) => (t.steps[r] ?? []).map((t) => g`<div class="row">
               <span class="label">${e(`f.battery.steps.${r}`)}</span>
               <span class="entity">
-                ${t.service ? g`<b>${t.service}</b>` : g`<b>${j(n, t.entity_id ?? "")}</b><small>${String(t.value ?? "")}</small>`}
+                ${t.service ? g`<b>${t.service}</b>` : g`<b>${A(n, t.entity_id ?? "")}</b><small>${String(t.value ?? "")}</small>`}
               </span>
               <span></span>
             </div>`))}
@@ -6317,15 +6539,15 @@ var un = class extends y {
 	}
 	renderSteps(e, t) {
 		let n = this.hass;
-		return g`<div class="sub" data-tipped>${e("f.battery.control.steps")} ${P(e, "control_steps")}</div>
+		return g`<div class="sub" data-tipped>${e("f.battery.control.steps")} ${M(e, "control_steps")}</div>
       <p class="field-hint">${e("f.battery.steps.hint")}</p>
-      ${cn.map((r) => {
+      ${un.map((r) => {
 			let i = t.steps[r] ?? [];
 			return g`<div class="sub">${e(`f.battery.steps.${r}`)}</div>
           <div class="rows" data-tipped>
             ${i.map((t, i) => g`<div class="row">
                 <span class="entity"
-                  ><b>${t.service ?? j(n, t.entity_id ?? "")}</b><small>${t.entity_id ?? ""}</small></span
+                  ><b>${t.service ?? A(n, t.entity_id ?? "")}</b><small>${t.entity_id ?? ""}</small></span
                 >
                 <input
                   class="input step-value"
@@ -6353,7 +6575,7 @@ var un = class extends y {
               <button type="button" class="mini-btn" @click=${() => this.addStep(r)}>
                 <ha-icon icon="mdi:plus"></ha-icon>${e("f.battery.steps.add")}
               </button>
-              ${P(e, "control_steps")}
+              ${M(e, "control_steps")}
             </div>
           </div>`;
 		})}`;
@@ -6399,12 +6621,12 @@ var un = class extends y {
 		});
 	}
 	async pickRole(e) {
-		let t = this.t, n = this.value.controls[e], r = await B(this, {
+		let t = this.t, n = this.value.controls[e], r = await R(this, {
 			heading: t("pick.role.title", { role: t(`role.${e}`) }),
 			tip: "control_roles",
-			filter: sn[e],
+			filter: ln[e],
 			selected: n ? [n] : [],
-			suggestions: this.nearby(sn[e]).map((e) => ({ entity_id: e }))
+			suggestions: this.nearby(ln[e]).map((e) => ({ entity_id: e }))
 		});
 		r?.selected[0] && this.setRole(e, r.selected[0]);
 	}
@@ -6445,7 +6667,7 @@ var un = class extends y {
 		});
 	}
 	async addStep(e) {
-		let t = this.t, n = (await B(this, {
+		let t = this.t, n = (await R(this, {
 			heading: t("pick.step.title"),
 			tip: "control_steps",
 			filter: "writable",
@@ -6491,10 +6713,10 @@ var un = class extends y {
 		this.dispatchEvent(new CustomEvent("joe-control-change", { detail: e }));
 	}
 };
-O([b({ attribute: !1 })], un.prototype, "hass", void 0), O([b({ attribute: !1 })], un.prototype, "t", void 0), O([b({ attribute: !1 })], un.prototype, "battery", void 0), O([b({ attribute: !1 })], un.prototype, "found", void 0), O([b({ attribute: !1 })], un.prototype, "value", void 0), O([b({ attribute: !1 })], un.prototype, "profiles", void 0), E("joe-battery-control", un);
+D([b({ attribute: !1 })], fn.prototype, "hass", void 0), D([b({ attribute: !1 })], fn.prototype, "t", void 0), D([b({ attribute: !1 })], fn.prototype, "battery", void 0), D([b({ attribute: !1 })], fn.prototype, "found", void 0), D([b({ attribute: !1 })], fn.prototype, "value", void 0), D([b({ attribute: !1 })], fn.prototype, "profiles", void 0), T("joe-battery-control", fn);
 //#endregion
 //#region src/editors/battery-editor.ts
-var dn = [
+var pn = [
 	"name",
 	"capacity_kwh",
 	"soc_entity",
@@ -6507,12 +6729,12 @@ var dn = [
 	"mode_options",
 	"prepare",
 	"steps"
-], U = class extends y {
+], V = class extends y {
 	constructor(...e) {
 		super(...e), this.batteryId = "", this.capacityUnknown = !1, this.saving = !1;
 	}
 	static {
-		this.styles = [D, o`
+		this.styles = [E, o`
       :host {
         display: block;
       }
@@ -6573,12 +6795,12 @@ var dn = [
 	}
 	willUpdate(e) {
 		let t = this.battery;
-		(e.has("config") || e.has("batteryId")) && t && !this.draft && (this.draft = Object.fromEntries(dn.map((e) => [e, structuredClone(t[e])])), this.capacityUnknown = this.config?.answers[`capacity:${t.id}`] === "unknown");
+		(e.has("config") || e.has("batteryId")) && t && !this.draft && (this.draft = Object.fromEntries(pn.map((e) => [e, structuredClone(t[e])])), this.capacityUnknown = this.config?.answers[`capacity:${t.id}`] === "unknown");
 	}
 	render() {
 		let { t: e, hass: t, config: n, draft: r } = this, i = this.battery;
 		if (!e || !t || !n || !r || !i) return v;
-		let a = this.discovery?.batteries.find((e) => e.id === i.id), o = xt(t, i.capacity_entity);
+		let a = this.discovery?.batteries.find((e) => e.id === i.id), o = Ct(t, i.capacity_entity);
 		return g`<div class="sheet-title">${C(e("edit.battery.title", { name: i.name }))}</div>
       ${this.field(e("f.battery.name"), "f_battery_name", g`<input
           class="input"
@@ -6597,7 +6819,7 @@ var dn = [
                 max="1000"
                 step="0.01"
                 .value=${r.capacity_kwh == null ? "" : String(r.capacity_kwh)}
-                placeholder=${o == null ? e("f.unknown") : N(e.lang, o, 2)}
+                placeholder=${o == null ? e("f.unknown") : j(e.lang, o, 2)}
                 @change=${(e) => {
 			let t = Number.parseFloat(e.target.value);
 			this.capacityUnknown = !1, this.set({ capacity_kwh: Number.isFinite(t) && t > 0 ? t : null });
@@ -6616,9 +6838,9 @@ var dn = [
               ${e("ask.idk_learn")}
             </button>
           </div>
-          ${o == null ? v : g`<p class="field-hint">${e("f.battery.capacity.read", { value: N(e.lang, o, 2) })}</p>`}`, T(e, I(n, `batteries[${i.id}].capacity_kwh`)))}
-      ${this.field(e("f.battery.soc"), "f_battery_soc", this.entityBox(e, r.soc_entity, `${vt(t, r.soc_entity, e.lang)}`, () => this.pickSoc()), T(e, I(n, `batteries[${i.id}].soc_entity`)))}
-      ${this.field(e("f.battery.power"), "f_battery_power", this.entityBox(e, r.power?.entity_id ?? null, this.powerText(e, r.power), () => this.pickPower()), T(e, I(n, `batteries[${i.id}].power`)))}
+          ${o == null ? v : g`<p class="field-hint">${e("f.battery.capacity.read", { value: j(e.lang, o, 2) })}</p>`}`, w(e, P(n, `batteries[${i.id}].capacity_kwh`)))}
+      ${this.field(e("f.battery.soc"), "f_battery_soc", this.entityBox(e, r.soc_entity, `${bt(t, r.soc_entity, e.lang)}`, () => this.pickSoc()), w(e, P(n, `batteries[${i.id}].soc_entity`)))}
+      ${this.field(e("f.battery.power"), "f_battery_power", this.entityBox(e, r.power?.entity_id ?? null, this.powerText(e, r.power), () => this.pickPower()), w(e, P(n, `batteries[${i.id}].power`)))}
       ${this.field(e("f.battery.limits"), "f_battery_limits", g`<div class="limits">
           <label>${e("f.battery.max_charge")} ${this.kwInput(e, r.max_charge_w, "max_charge_w")}</label>
           <label>${e("f.battery.max_discharge")} ${this.kwInput(e, r.max_discharge_w, "max_discharge_w")}</label>
@@ -6638,7 +6860,7 @@ var dn = [
               />
             </span>`) : v}
       <div class="field" data-tipped>
-        <div class="field-label">${e("f.battery.control")} ${P(e, "control_choice")}</div>
+        <div class="field-label">${e("f.battery.control")} ${M(e, "control_choice")}</div>
         <joe-battery-control
           .hass=${t}
           .t=${e}
@@ -6662,7 +6884,7 @@ var dn = [
 	field(e, t, n, r) {
 		let i = this.t;
 		return g`<div class="field" data-tipped>
-      <div class="field-label">${e} ${P(i, t)} ${r ?? v}</div>
+      <div class="field-label">${e} ${M(i, t)} ${r ?? v}</div>
       ${n}
     </div>`;
 	}
@@ -6670,7 +6892,7 @@ var dn = [
 		let i = this.hass;
 		return g`<div class="entity">
       <span>
-        ${t ? g`<b>${j(i, t)}</b><small>${n}</small>` : g`<small>${e("find.none")}</small>`}
+        ${t ? g`<b>${A(i, t)}</b><small>${n}</small>` : g`<small>${e("find.none")}</small>`}
       </span>
       <button type="button" class="mini-btn" @click=${r}>
         <ha-icon icon="mdi:magnify"></ha-icon>${e(t ? "review.change" : "review.choose")}
@@ -6697,15 +6919,15 @@ var dn = [
     </span>`;
 	}
 	powerText(e, t) {
-		let n = this.hass, r = bt(n, t);
-		if (!t || r === null) return t ? vt(n, t.entity_id, e.lang) : "";
-		let i = N(e.lang, Math.abs(r), 2);
+		let n = this.hass, r = St(n, t);
+		if (!t || r === null) return t ? bt(n, t.entity_id, e.lang) : "";
+		let i = j(e.lang, Math.abs(r), 2);
 		return e(r >= 0 ? "pick.preview.charge" : "pick.preview.discharge", { value: i });
 	}
 	async pickSoc() {
 		let { t: e, draft: t } = this;
 		if (!e || !t) return;
-		let n = await B(this, {
+		let n = await R(this, {
 			heading: e("pick.battery.title"),
 			tip: "pick_battery",
 			filter: "soc",
@@ -6716,7 +6938,7 @@ var dn = [
 	async pickPower() {
 		let { t: e, draft: t } = this;
 		if (!e || !t) return;
-		let n = await B(this, {
+		let n = await R(this, {
 			heading: e("pick.battery_power.title"),
 			tip: "pick_battery_power",
 			filter: "power",
@@ -6754,11 +6976,11 @@ var dn = [
 		let e = this.battery, t = this.draft;
 		if (!e || !t || !this.config) return;
 		let n = {};
-		for (let r of dn) JSON.stringify(e[r]) !== JSON.stringify(t[r]) && (n[r] = t[r]);
+		for (let r of pn) JSON.stringify(e[r]) !== JSON.stringify(t[r]) && (n[r] = t[r]);
 		let r = `capacity:${e.id}`, i = this.config.answers[r] === "unknown", a = {};
 		if (Object.keys(n).length && (a.batteries = { [e.id]: n }), i !== this.capacityUnknown && (a.answers = { [r]: this.capacityUnknown ? "unknown" : null }), Object.keys(a).length) {
 			this.saving = !0;
-			let e = await z(this, a);
+			let e = await L(this, a);
 			if (this.saving = !1, !e) return;
 		}
 		this.close();
@@ -6770,16 +6992,16 @@ var dn = [
 		}));
 	}
 };
-O([b({ attribute: !1 })], U.prototype, "hass", void 0), O([b({ attribute: !1 })], U.prototype, "t", void 0), O([b({ attribute: !1 })], U.prototype, "config", void 0), O([b({ attribute: !1 })], U.prototype, "discovery", void 0), O([b({ attribute: !1 })], U.prototype, "info", void 0), O([b()], U.prototype, "batteryId", void 0), O([x()], U.prototype, "draft", void 0), O([x()], U.prototype, "capacityUnknown", void 0), O([x()], U.prototype, "saving", void 0), E("joe-battery-editor", U);
+D([b({ attribute: !1 })], V.prototype, "hass", void 0), D([b({ attribute: !1 })], V.prototype, "t", void 0), D([b({ attribute: !1 })], V.prototype, "config", void 0), D([b({ attribute: !1 })], V.prototype, "discovery", void 0), D([b({ attribute: !1 })], V.prototype, "info", void 0), D([b()], V.prototype, "batteryId", void 0), D([x()], V.prototype, "draft", void 0), D([x()], V.prototype, "capacityUnknown", void 0), D([x()], V.prototype, "saving", void 0), T("joe-battery-editor", V);
 //#endregion
 //#region src/editors/consumers.ts
-var fn = ["auto", "always"], pn = [
+var mn = ["auto", "always"], hn = [
 	"auto",
 	"surplus",
 	"cheap"
-], mn = class extends y {
+], gn = class extends y {
 	static {
-		this.styles = [D, o`
+		this.styles = [E, o`
       :host {
         display: block;
       }
@@ -6844,19 +7066,19 @@ var fn = ["auto", "always"], pn = [
 		if (!e || !t || !n) return v;
 		let r = [...n.consumers].sort((t, n) => Number(t.kind === "submeter") - Number(n.kind === "submeter") || t.name.localeCompare(n.name, e.lang));
 		return g`<div data-tipped>
-      <div class="head">${e("consumers.kind")} ${P(e, "f_consumer_kind")}</div>
-      <div class="head sub">${e("consumers.runs")} ${P(e, "f_consumer_runs")}</div>
+      <div class="head">${e("consumers.kind")} ${M(e, "f_consumer_kind")}</div>
+      <div class="head sub">${e("consumers.runs")} ${M(e, "f_consumer_runs")}</div>
       ${r.length ? g`<ul>
             ${r.map((r) => this.renderConsumer(e, t, n, r))}
           </ul>` : g`<p class="empty">${e("consumers.empty")}</p>`}
     </div>`;
 	}
 	renderConsumer(e, t, n, r) {
-		let i = r.power_entity ? vt(t, r.power_entity, e.lang) : "";
+		let i = r.power_entity ? bt(t, r.power_entity, e.lang) : "";
 		return g`<li>
       <div>
         <b>${r.name}</b>
-        <small>${T(e, I(n, `consumers[${r.id}].kind`))}${i}</small>
+        <small>${w(e, P(n, `consumers[${r.id}].kind`))}${i}</small>
       </div>
       <div class="selects">
         <select
@@ -6865,7 +7087,7 @@ var fn = ["auto", "always"], pn = [
           .value=${r.kind}
           @change=${(e) => this.setKind(r, e.target.value)}
         >
-          ${nn.map((t) => g`<option value=${t} ?selected=${t === r.kind}>${e(`kind.${t}`)}</option>`)}
+          ${an.map((t) => g`<option value=${t} ?selected=${t === r.kind}>${e(`kind.${t}`)}</option>`)}
         </select>
         ${r.kind === "submeter" ? v : g`<select
               class="input"
@@ -6873,24 +7095,24 @@ var fn = ["auto", "always"], pn = [
               .value=${r.runs ?? "auto"}
               @change=${(e) => this.setRuns(r, e.target.value)}
             >
-              ${r.kind === "ev" ? fn.map((t) => g`<option value=${t} ?selected=${t === (r.runs ?? "auto")}>${e(`runs.ev.${t}`)}</option>`) : pn.map((t) => g`<option value=${t} ?selected=${t === (r.runs ?? "auto")}>${e(`runs.${t}`)}</option>`)}
+              ${r.kind === "ev" ? mn.map((t) => g`<option value=${t} ?selected=${t === (r.runs ?? "auto")}>${e(`runs.ev.${t}`)}</option>`) : hn.map((t) => g`<option value=${t} ?selected=${t === (r.runs ?? "auto")}>${e(`runs.${t}`)}</option>`)}
             </select>`}
       </div>
     </li>`;
 	}
 	setRuns(e, t) {
-		t !== (e.runs ?? "auto") && z(this, { consumers: { [e.id]: { runs: t } } });
+		t !== (e.runs ?? "auto") && L(this, { consumers: { [e.id]: { runs: t } } });
 	}
 	setKind(e, t) {
-		t !== e.kind && z(this, { consumers: { [e.id]: { kind: t } } });
+		t !== e.kind && L(this, { consumers: { [e.id]: { kind: t } } });
 	}
 };
-O([b({ attribute: !1 })], mn.prototype, "hass", void 0), O([b({ attribute: !1 })], mn.prototype, "t", void 0), O([b({ attribute: !1 })], mn.prototype, "config", void 0), E("joe-consumers", mn);
+D([b({ attribute: !1 })], gn.prototype, "hass", void 0), D([b({ attribute: !1 })], gn.prototype, "t", void 0), D([b({ attribute: !1 })], gn.prototype, "config", void 0), T("joe-consumers", gn);
 //#endregion
 //#region src/editors/household.ts
-var hn = class extends y {
+var _n = class extends y {
 	static {
-		this.styles = [D, o`
+		this.styles = [E, o`
       :host {
         display: block;
       }
@@ -7008,7 +7230,7 @@ var hn = class extends y {
 	render() {
 		let { t: e, hass: t, config: n } = this;
 		if (!e || !t || !n) return v;
-		let r = (this.discovery?.persons ?? []).filter((e) => L(n, `person:${e.entity_id}`) && !n.persons.some((t) => t.id === e.entity_id));
+		let r = (this.discovery?.persons ?? []).filter((e) => F(n, `person:${e.entity_id}`) && !n.persons.some((t) => t.id === e.entity_id));
 		return g`<div data-tipped>
       ${n.persons.length ? g`<ul>
             ${n.persons.map((n) => this.renderPerson(e, t, n))}
@@ -7017,7 +7239,7 @@ var hn = class extends y {
         <button type="button" class="mini-btn" @click=${this.addPerson}>
           <ha-icon icon="mdi:account-plus-outline"></ha-icon>${e("household.add")}
         </button>
-        ${P(e, "f_person_add")}
+        ${M(e, "f_person_add")}
       </div>
       ${r.length ? g`<div class="others">
             <span>${e("household.left_out")}</span>
@@ -7040,10 +7262,10 @@ var hn = class extends y {
       <div class="cals">
         <span class="cals-label">${e("household.calendars")}</span>
         ${n.calendars.map((r) => g`<span class="cal">
-            ${j(t, r)}
+            ${A(t, r)}
             <button
               type="button"
-              aria-label=${e("household.calendar_remove", { name: j(t, r) })}
+              aria-label=${e("household.calendar_remove", { name: A(t, r) })}
               @click=${() => this.setCalendars(n, n.calendars.filter((e) => e !== r))}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round">
@@ -7054,14 +7276,14 @@ var hn = class extends y {
         <button type="button" class="mini-btn" @click=${() => this.addCalendars(n)}>
           <ha-icon icon="mdi:calendar-plus"></ha-icon>${e("household.calendar_add")}
         </button>
-        ${P(e, "f_calendars")}
+        ${M(e, "f_calendars")}
       </div>
     </li>`;
 	}
 	async addPerson() {
 		let { t: e, config: t } = this;
 		if (!e || !t) return;
-		let n = (await B(this, {
+		let n = (await R(this, {
 			heading: e("pick.person.title"),
 			tip: "pick_person",
 			filter: "person",
@@ -7070,35 +7292,35 @@ var hn = class extends y {
 		}))?.selected[0];
 		if (!n || !this.hass) return;
 		let r = this.discovery?.persons.find((e) => e.entity_id === n);
-		z(this, {
+		L(this, {
 			persons: { [n]: {
-				name: j(this.hass, n),
+				name: A(this.hass, n),
 				person_entity: n,
 				calendars: r?.calendars ?? []
 			} },
-			answers: { ignored: R(t, `person:${n}`, !1) }
+			answers: { ignored: I(t, `person:${n}`, !1) }
 		});
 	}
 	bringBack(e) {
-		z(this, {
+		L(this, {
 			persons: { [e.entity_id]: {
 				name: e.name,
 				person_entity: e.entity_id,
 				calendars: e.calendars
 			} },
-			answers: { ignored: R(this.config, `person:${e.entity_id}`, !1) }
+			answers: { ignored: I(this.config, `person:${e.entity_id}`, !1) }
 		});
 	}
 	removePerson(e) {
-		z(this, {
+		L(this, {
 			persons: { [e.id]: null },
-			answers: { ignored: R(this.config, `person:${e.id}`, !0) }
+			answers: { ignored: I(this.config, `person:${e.id}`, !0) }
 		});
 	}
 	async addCalendars(e) {
 		let t = this.t;
 		if (!t) return;
-		let n = await B(this, {
+		let n = await R(this, {
 			heading: t("pick.calendar.title", { name: e.name }),
 			tip: "pick_calendar",
 			filter: "calendar",
@@ -7108,13 +7330,13 @@ var hn = class extends y {
 		n && this.setCalendars(e, n.selected);
 	}
 	setCalendars(e, t) {
-		z(this, { persons: { [e.id]: { calendars: t } } });
+		L(this, { persons: { [e.id]: { calendars: t } } });
 	}
 };
-O([b({ attribute: !1 })], hn.prototype, "hass", void 0), O([b({ attribute: !1 })], hn.prototype, "t", void 0), O([b({ attribute: !1 })], hn.prototype, "config", void 0), O([b({ attribute: !1 })], hn.prototype, "discovery", void 0), E("joe-household", hn);
+D([b({ attribute: !1 })], _n.prototype, "hass", void 0), D([b({ attribute: !1 })], _n.prototype, "t", void 0), D([b({ attribute: !1 })], _n.prototype, "config", void 0), D([b({ attribute: !1 })], _n.prototype, "discovery", void 0), T("joe-household", _n);
 //#endregion
 //#region src/components/choice.ts
-var gn = "unknown", _n = class extends y {
+var vn = "unknown", H = class extends y {
 	constructor(...e) {
 		super(...e), this.options = [], this.value = [], this.multiple = !1, this.exclusive = [], this.idk = "", this.label = "", this.compact = !1;
 	}
@@ -7219,7 +7441,7 @@ var gn = "unknown", _n = class extends y {
 		return g`<div class="opts" role="group" aria-label=${this.label}>
       ${this.options.map((e) => this.renderOption(e))}
       ${this.idk ? this.renderOption({
-			value: gn,
+			value: vn,
 			label: this.idk
 		}, "idk") : v}
     </div>`;
@@ -7250,18 +7472,18 @@ var gn = "unknown", _n = class extends y {
 		}));
 	}
 };
-O([b({ attribute: !1 })], _n.prototype, "options", void 0), O([b({ attribute: !1 })], _n.prototype, "value", void 0), O([b({ type: Boolean })], _n.prototype, "multiple", void 0), O([b({ attribute: !1 })], _n.prototype, "exclusive", void 0), O([b()], _n.prototype, "idk", void 0), O([b()], _n.prototype, "label", void 0), O([b({
+D([b({ attribute: !1 })], H.prototype, "options", void 0), D([b({ attribute: !1 })], H.prototype, "value", void 0), D([b({ type: Boolean })], H.prototype, "multiple", void 0), D([b({ attribute: !1 })], H.prototype, "exclusive", void 0), D([b()], H.prototype, "idk", void 0), D([b()], H.prototype, "label", void 0), D([b({
 	type: Boolean,
 	reflect: !0
-})], _n.prototype, "compact", void 0), E("joe-choice", _n);
+})], H.prototype, "compact", void 0), T("joe-choice", H);
 //#endregion
 //#region src/editors/tariff-form.ts
-var vn = class extends y {
+var yn = class extends y {
 	constructor(...e) {
 		super(...e), this.feedIn = !1, this.asQuestion = !1;
 	}
 	static {
-		this.styles = [D, o`
+		this.styles = [E, o`
       :host {
         display: block;
       }
@@ -7322,7 +7544,7 @@ var vn = class extends y {
       @joe-choice=${(e) => this.emit({ kind: e.detail.value[0] ?? "unknown" })}
     ></joe-choice>`;
 		return g`${this.asQuestion ? n : g`<div class="field" data-tipped>
-            <div class="field-label">${e("f.tariff.kind")} ${P(e, "q_tariff")}</div>
+            <div class="field-label">${e("f.tariff.kind")} ${M(e, "q_tariff")}</div>
             ${n}
           </div>`}
       ${t.kind === "fixed_window" ? this.renderWindow(e, t) : v}
@@ -7342,7 +7564,7 @@ var vn = class extends y {
 			this.emit({ window: r.start && r.end ? r : null });
 		};
 		return g`<div class="field" data-tipped>
-        <div class="field-label">${e("f.window")} ${P(e, "f_window")}</div>
+        <div class="field-label">${e("f.window")} ${M(e, "f_window")}</div>
         <div class="field-row">
           <input
             class="input time"
@@ -7362,7 +7584,7 @@ var vn = class extends y {
         </div>
       </div>
       <div class="field" data-tipped>
-        <div class="field-label">${e("f.prices")} ${P(e, "f_prices")}</div>
+        <div class="field-label">${e("f.prices")} ${M(e, "f_prices")}</div>
         <div class="field-row">
           <label class="price">${e("f.price.night")} ${this.centInput(e, t.night_price, "night_price")}</label>
           <label class="price">${e("f.price.day")} ${this.centInput(e, t.day_price, "day_price")}</label>
@@ -7371,7 +7593,7 @@ var vn = class extends y {
 	}
 	renderFlat(e, t) {
 		return g`<div class="field" data-tipped>
-      <div class="field-label">${e("f.price")} ${P(e, "f_prices")}</div>
+      <div class="field-label">${e("f.price")} ${M(e, "f_prices")}</div>
       ${this.centInput(e, t.day_price, "day_price")}
     </div>`;
 	}
@@ -7387,16 +7609,16 @@ var vn = class extends y {
 			this.emit({ window: n.start && n.end ? n : null });
 		};
 		return g`<div class="field" data-tipped>
-        <div class="field-label">${e("f.price_entity")} ${P(e, "f_price_entity")}</div>
+        <div class="field-label">${e("f.price_entity")} ${M(e, "f_price_entity")}</div>
         <div class="entity">
-          ${r && n ? g`<span><b>${j(n, r)}</b> <small>${vt(n, r, e.lang)}</small></span>` : g`<small>${e("f.price_entity.none")}</small>`}
+          ${r && n ? g`<span><b>${A(n, r)}</b> <small>${bt(n, r, e.lang)}</small></span>` : g`<small>${e("f.price_entity.none")}</small>`}
           <button type="button" class="mini-btn" @click=${this.pickPrice}>
             <ha-icon icon="mdi:magnify"></ha-icon>${e(r ? "review.change" : "review.choose")}
           </button>
         </div>
       </div>
       <div class="field" data-tipped>
-        <div class="field-label">${e("f.search")} ${P(e, "f_search")}</div>
+        <div class="field-label">${e("f.search")} ${M(e, "f_search")}</div>
         <div class="field-row">
           <input
             class="input time"
@@ -7416,16 +7638,16 @@ var vn = class extends y {
         </div>
       </div>
       <div class="field" data-tipped>
-        <div class="field-label">${e("f.surcharge")} ${P(e, "f_surcharge")}</div>
+        <div class="field-label">${e("f.surcharge")} ${M(e, "f_surcharge")}</div>
         ${this.centInput(e, t.surcharge, "surcharge")}
       </div>`;
 	}
 	renderFeedIn(e, t) {
 		let n = this.hass;
 		return g`<div class="field" data-tipped>
-      <div class="field-label">${e("f.feed_in")} ${P(e, "q_feed_in")}</div>
+      <div class="field-label">${e("f.feed_in")} ${M(e, "q_feed_in")}</div>
       ${t.feed_in_entity && n ? g`<p class="field-hint">
-            ${e("f.feed_in.entity", { name: j(n, t.feed_in_entity) })}
+            ${e("f.feed_in.entity", { name: A(n, t.feed_in_entity) })}
           </p>` : this.centInput(e, t.feed_in_price, "feed_in_price")}
     </div>`;
 	}
@@ -7451,12 +7673,12 @@ var vn = class extends y {
 	async pickPrice() {
 		let { t: e, tariff: t } = this;
 		if (!e || !t) return;
-		let n = this.discovery?.tariff, r = (await B(this, {
+		let n = this.discovery?.tariff, r = (await R(this, {
 			heading: e("pick.price.title"),
 			tip: "pick_price",
 			filter: "price",
 			selected: t.price_entity ? [t.price_entity] : [],
-			suggestions: Lt(n?.price_entity ? [{
+			suggestions: zt(n?.price_entity ? [{
 				entity_id: n.price_entity,
 				confidence: n.confidence,
 				reasons: n.reasons
@@ -7472,10 +7694,10 @@ var vn = class extends y {
 		}));
 	}
 };
-O([b({ attribute: !1 })], vn.prototype, "hass", void 0), O([b({ attribute: !1 })], vn.prototype, "t", void 0), O([b({ attribute: !1 })], vn.prototype, "tariff", void 0), O([b({ attribute: !1 })], vn.prototype, "discovery", void 0), O([b({ type: Boolean })], vn.prototype, "feedIn", void 0), O([b({ type: Boolean })], vn.prototype, "asQuestion", void 0), E("joe-tariff-form", vn);
+D([b({ attribute: !1 })], yn.prototype, "hass", void 0), D([b({ attribute: !1 })], yn.prototype, "t", void 0), D([b({ attribute: !1 })], yn.prototype, "tariff", void 0), D([b({ attribute: !1 })], yn.prototype, "discovery", void 0), D([b({ type: Boolean })], yn.prototype, "feedIn", void 0), D([b({ type: Boolean })], yn.prototype, "asQuestion", void 0), T("joe-tariff-form", yn);
 //#endregion
 //#region src/editors/tariff-editor.ts
-var yn = [
+var bn = [
 	"kind",
 	"price_entity",
 	"window",
@@ -7484,17 +7706,17 @@ var yn = [
 	"feed_in_price",
 	"feed_in_entity"
 ];
-function bn(e, t) {
+function xn(e, t) {
 	let n = {};
-	for (let r of yn) JSON.stringify(e[r]) !== JSON.stringify(t[r]) && (n[r] = t[r]);
+	for (let r of bn) JSON.stringify(e[r]) !== JSON.stringify(t[r]) && (n[r] = t[r]);
 	return n;
 }
-var xn = class extends y {
+var Sn = class extends y {
 	constructor(...e) {
 		super(...e), this.saving = !1;
 	}
 	static {
-		this.styles = [D, o`
+		this.styles = [E, o`
       :host {
         display: block;
       }
@@ -7532,12 +7754,12 @@ var xn = class extends y {
 	async save() {
 		let { config: e, draft: t } = this;
 		if (!e || !t) return;
-		let n = bn(e.tariff, t);
+		let n = xn(e.tariff, t);
 		if (Object.keys(n).length) {
 			this.saving = !0;
 			let e = { tariff: n };
 			"kind" in n && (e.answers = { tariff: t.kind });
-			let r = await z(this, e);
+			let r = await L(this, e);
 			if (this.saving = !1, !r) return;
 		}
 		this.close();
@@ -7549,10 +7771,10 @@ var xn = class extends y {
 		}));
 	}
 };
-O([b({ attribute: !1 })], xn.prototype, "hass", void 0), O([b({ attribute: !1 })], xn.prototype, "t", void 0), O([b({ attribute: !1 })], xn.prototype, "config", void 0), O([b({ attribute: !1 })], xn.prototype, "discovery", void 0), O([x()], xn.prototype, "draft", void 0), O([x()], xn.prototype, "saving", void 0), E("joe-tariff-editor", xn);
+D([b({ attribute: !1 })], Sn.prototype, "hass", void 0), D([b({ attribute: !1 })], Sn.prototype, "t", void 0), D([b({ attribute: !1 })], Sn.prototype, "config", void 0), D([b({ attribute: !1 })], Sn.prototype, "discovery", void 0), D([x()], Sn.prototype, "draft", void 0), D([x()], Sn.prototype, "saving", void 0), T("joe-tariff-editor", Sn);
 //#endregion
 //#region src/fonts.ts
-var Sn = [
+var Cn = [
 	[
 		"Energy Joe Barlow",
 		400,
@@ -7596,33 +7818,33 @@ var Sn = [
 		"barlow-condensed-latin-800-italic"
 	]
 ];
-function Cn() {
+function wn() {
 	if (document.getElementById("energy-joe-fonts")) return;
 	let e = document.createElement("style");
-	e.id = "energy-joe-fonts", e.textContent = Sn.map(([e, t, n, r]) => `@font-face{font-family:"${e}";font-style:${n};font-weight:${t};font-display:swap;src:url("${$e(`fonts/${r}.woff2`)}") format("woff2")}`).join("\n"), document.head.appendChild(e);
+	e.id = "energy-joe-fonts", e.textContent = Cn.map(([e, t, n, r]) => `@font-face{font-family:"${e}";font-style:${n};font-weight:${t};font-display:swap;src:url("${$e(`fonts/${r}.woff2`)}") format("woff2")}`).join("\n"), document.head.appendChild(e);
 }
 //#endregion
 //#region src/components/look-back.ts
-function W(e, t, n = "EUR", r = !1) {
+function U(e, t, n = "EUR", r = !1) {
 	return new Intl.NumberFormat(e.lang, {
 		style: "currency",
 		currency: n,
 		signDisplay: r ? "exceptZero" : "auto"
 	}).format(Math.abs(t) < .005 ? 0 : t);
 }
-function G(e, t, n = 1) {
+function W(e, t, n = 1) {
 	return new Intl.NumberFormat(e, {
 		minimumFractionDigits: n,
 		maximumFractionDigits: n
 	}).format(t);
 }
-function wn(e, t = "EUR") {
+function Tn(e, t = "EUR") {
 	return new Intl.NumberFormat(e, {
 		style: "currency",
 		currency: t
 	}).formatToParts(0).find((e) => e.type === "currency")?.value ?? t;
 }
-function Tn(e) {
+function En(e) {
 	try {
 		return new Intl.DateTimeFormat("en-CA", {
 			timeZone: e,
@@ -7634,7 +7856,7 @@ function Tn(e) {
 		return (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
 	}
 }
-function K(e, t, n = "long") {
+function G(e, t, n = "long") {
 	let r = /* @__PURE__ */ new Date(`${t.slice(0, 10)}T12:00:00Z`), i = n === "long" ? {
 		day: "numeric",
 		month: "long"
@@ -7651,18 +7873,18 @@ function K(e, t, n = "long") {
 		timeZone: "UTC"
 	}).format(r);
 }
-function En(e, t) {
+function Dn(e, t) {
 	return t === 1 ? e("learn.nights.one") : e("learn.nights.many", { count: t });
 }
 //#endregion
 //#region src/components/plan-text.ts
-function q(e) {
+function K(e) {
 	return e ? e.slice(11, 16) : "";
 }
-function Dn(e) {
+function On(e) {
 	return e.slice(0, 10);
 }
-function On(e) {
+function kn(e) {
 	switch (e?.kind) {
 		case "charge": return "plug";
 		case "hold": return "switch";
@@ -7670,41 +7892,41 @@ function On(e) {
 		default: return "sleep";
 	}
 }
-function kn(e) {
-	return (e.charge_slots ?? []).map((e) => `${q(e.start)}–${q(e.end)}`).join(", ");
-}
-function An(e, t) {
-	if (!t.window) return "";
-	let n = [`${q(t.window.start)}–${q(t.window.end)}`];
-	return t.prices && n.push(`${N(e.lang, t.prices.night * 100, 1)} ct/kWh`), n.join(" · ");
+function An(e) {
+	return (e.charge_slots ?? []).map((e) => `${K(e.start)}–${K(e.end)}`).join(", ");
 }
 function jn(e, t) {
+	if (!t.window) return "";
+	let n = [`${K(t.window.start)}–${K(t.window.end)}`];
+	return t.prices && n.push(`${j(e.lang, t.prices.night * 100, 1)} ct/kWh`), n.join(" · ");
+}
+function Mn(e, t) {
 	if (t.kind === "unavailable") {
 		let n = t.reasons.find((t) => e.optional(`plan.why.${t}`)) ?? "failed";
 		return e.optional(`plan.why.${n}`) ?? "";
 	}
-	let n = [], r = N(e.lang, t.target ?? 0, 0), i = t.sun_takes_over;
+	let n = [], r = j(e.lang, t.target ?? 0, 0), i = t.sun_takes_over;
 	return t.reasons.includes("balance") && n.push(e("plan.say.balance")), t.kind === "charge" && t.tariff === "dynamic" && t.charge_slots?.length ? n.push(e("plan.say.charge_slots", {
-		slots: kn(t),
+		slots: An(t),
 		target: r
 	})) : t.kind === "charge" ? n.push(e("plan.say.charge", {
-		from: q(t.charge_from),
+		from: K(t.charge_from),
 		target: r
-	})) : t.kind === "hold" ? (n.push(e("plan.say.hold", { target: r })), t.empty_without && n.push(e("plan.say.empty", { time: q(t.empty_without) }))) : t.reasons.includes("small_saving") ? n.push(e("plan.say.small_saving")) : n.push(i ? e("plan.say.none", { time: q(i) }) : e("plan.say.none_nosun")), t.reasons.includes("max_price") && t.kind !== "charge" && n.push(e("plan.say.max_price")), t.day && (n.push(e("plan.day", {
-		time: q(t.day.defer_until),
-		kwh: N(e.lang, t.day.held_kwh, 0)
-	})), t.day.cost && t.day.cost >= .01 && n.push(e("plan.day.cost", { cost: `${N(e.lang, t.day.cost * 100, 0)} ct` }))), t.kind !== "none" && (i && t.full_at && Dn(t.full_at) === Dn(i) ? n.push(e("plan.say.sun_full", {
-		sun: q(i),
-		full: q(t.full_at)
-	})) : i ? n.push(e("plan.say.sun", { sun: q(i) })) : n.push(e("plan.say.nosun"))), n.join(" ");
+	})) : t.kind === "hold" ? (n.push(e("plan.say.hold", { target: r })), t.empty_without && n.push(e("plan.say.empty", { time: K(t.empty_without) }))) : t.reasons.includes("small_saving") ? n.push(e("plan.say.small_saving")) : n.push(i ? e("plan.say.none", { time: K(i) }) : e("plan.say.none_nosun")), t.reasons.includes("max_price") && t.kind !== "charge" && n.push(e("plan.say.max_price")), t.day && (n.push(e("plan.day", {
+		time: K(t.day.defer_until),
+		kwh: j(e.lang, t.day.held_kwh, 0)
+	})), t.day.cost && t.day.cost >= .01 && n.push(e("plan.day.cost", { cost: `${j(e.lang, t.day.cost * 100, 0)} ct` }))), t.kind !== "none" && (i && t.full_at && On(t.full_at) === On(i) ? n.push(e("plan.say.sun_full", {
+		sun: K(i),
+		full: K(t.full_at)
+	})) : i ? n.push(e("plan.say.sun", { sun: K(i) })) : n.push(e("plan.say.nosun"))), n.join(" ");
 }
-function Mn(e, t) {
+function Nn(e, t) {
 	return (t.batteries ?? []).map((n) => {
 		let r = [n.name];
-		return t.kind === "charge" ? r.push(`${N(e.lang, n.soc_start, 0)} → ${N(e.lang, n.target, 0)} %`, `${N(e.lang, n.charge_kwh, 1)} kWh`, `${N(e.lang, n.power_kw, 1)} kW`) : t.kind === "hold" ? r.push(e("plan.line.hold", { target: N(e.lang, n.target, 0) })) : r.push(e("plan.line.now", { soc: N(e.lang, n.soc, 0) })), n.controllable || r.push(e("plan.line.watch_only")), r.join(" · ");
+		return t.kind === "charge" ? r.push(`${j(e.lang, n.soc_start, 0)} → ${j(e.lang, n.target, 0)} %`, `${j(e.lang, n.charge_kwh, 1)} kWh`, `${j(e.lang, n.power_kw, 1)} kW`) : t.kind === "hold" ? r.push(e("plan.line.hold", { target: j(e.lang, n.target, 0) })) : r.push(e("plan.line.now", { soc: j(e.lang, n.soc, 0) })), n.controllable || r.push(e("plan.line.watch_only")), r.join(" · ");
 	});
 }
-function Nn(e, t, n = "EUR") {
+function Pn(e, t, n = "EUR") {
 	if (!t.cost) return "";
 	let r = (t) => new Intl.NumberFormat(e.lang, {
 		style: "currency",
@@ -7714,12 +7936,12 @@ function Nn(e, t, n = "EUR") {
 }
 //#endregion
 //#region src/components/car-need.ts
-var Pn = class extends y {
+var Fn = class extends y {
 	constructor(...e) {
 		super(...e), this.roundTrip = !0, this.failed = !1;
 	}
 	static {
-		this.styles = [D, o`
+		this.styles = [E, o`
       :host {
         display: block;
       }
@@ -7789,7 +8011,7 @@ var Pn = class extends y {
 	render() {
 		let { t: e, action: t } = this, n = t?.need;
 		if (!e || !t || !n) return v;
-		let r = (t, n = 0) => N(e.lang, t ?? 0, n);
+		let r = (t, n = 0) => j(e.lang, t ?? 0, n);
 		if (!n.known) return g`<p>${e(n.soc != null && !n.capacity_kwh ? "need.unknown_capacity" : "need.unknown")}</p>`;
 		let i = [];
 		i.push(g`<p>
@@ -7818,19 +8040,19 @@ var Pn = class extends y {
 		return i.push(g`<p class="result">
         ${a >= .2 ? t.run && !t.manual ? e("need.charges", {
 			kwh: r(a, 1),
-			start: q(t.start)
+			start: K(t.start)
 		}) : e("need.missing", { kwh: r(a, 1) }) : e("need.enough")}
       </p>`), n.fits === !1 && i.push(g`<p>${e("need.too_far")}</p>`), g`${i} ${n.trips.length ? this.renderTrips(e, n.trips) : v}`;
 	}
 	renderTrips(e, t) {
 		return g`<div data-tipped>
-      <div class="head">${e("need.trips.title")} ${P(e, "need_trips")}</div>
+      <div class="head">${e("need.trips.title")} ${M(e, "need_trips")}</div>
       <ul>
         ${t.map((t) => g`<li>
-            <span>${t.start.includes("T") ? q(t.start) : e("need.all_day")}</span>
+            <span>${t.start.includes("T") ? K(t.start) : e("need.all_day")}</span>
             <span class="where">${t.location}</span>
             ${this.editing === t.location ? this.renderEdit(e, t) : g`<span class=${t.km == null ? "km unknown" : "km"}>
-                    ${t.km == null ? e("need.km_unknown") : e(`need.km.${t.source ?? "zone"}`, { km: N(e.lang, t.km, 0) })}
+                    ${t.km == null ? e("need.km_unknown") : e(`need.km.${t.source ?? "zone"}`, { km: j(e.lang, t.km, 0) })}
                   </span>
                   <button
                     type="button"
@@ -7873,19 +8095,19 @@ var Pn = class extends y {
 		}
 	}
 };
-O([b({ attribute: !1 })], Pn.prototype, "hass", void 0), O([b({ attribute: !1 })], Pn.prototype, "t", void 0), O([b({ attribute: !1 })], Pn.prototype, "action", void 0), O([b({ attribute: !1 })], Pn.prototype, "roundTrip", void 0), O([x()], Pn.prototype, "editing", void 0), O([x()], Pn.prototype, "failed", void 0), E("joe-car-need", Pn);
+D([b({ attribute: !1 })], Fn.prototype, "hass", void 0), D([b({ attribute: !1 })], Fn.prototype, "t", void 0), D([b({ attribute: !1 })], Fn.prototype, "action", void 0), D([b({ attribute: !1 })], Fn.prototype, "roundTrip", void 0), D([x()], Fn.prototype, "editing", void 0), D([x()], Fn.prototype, "failed", void 0), T("joe-car-need", Fn);
 //#endregion
 //#region src/pages/devices.ts
-var Fn = [
+var In = [
 	"hold",
 	"charge",
 	"release"
-], J = class extends y {
+], q = class extends y {
 	constructor(...e) {
 		super(...e), this.notice = "", this.boostValue = {}, this.boostUnit = {};
 	}
 	static {
-		this.styles = [D, o`
+		this.styles = [E, o`
       :host {
         display: block;
       }
@@ -8136,13 +8358,13 @@ var Fn = [
       ${this.confirm ? this.renderConfirm(e, this.confirm) : v}`;
 	}
 	renderStatus(e, t, n) {
-		let r = t.plan, i = n.reason, a = i === "waiting" && r?.window ? e("devices.status.waiting", { time: q(r.window.start) }) : i === "day" ? e("devices.status.day", { time: r?.day ? q(r.day.defer_until) : "–" }) : e(`devices.status.${i}`), o = t.mode === "simulation" ? g`<span class="pill-sim">${e("mode.simulation")}</span>` : g`<span class="chip ${t.mode === "live" ? "ok" : t.mode === "advisory" ? "learned" : ""}"
+		let r = t.plan, i = n.reason, a = i === "waiting" && r?.window ? e("devices.status.waiting", { time: K(r.window.start) }) : i === "day" ? e("devices.status.day", { time: r?.day ? K(r.day.defer_until) : "–" }) : e(`devices.status.${i}`), o = t.mode === "simulation" ? g`<span class="pill-sim">${e("mode.simulation")}</span>` : g`<span class="chip ${t.mode === "live" ? "ok" : t.mode === "advisory" ? "learned" : ""}"
             >${e(`mode.${t.mode}`)}</span
           >`, s = n.steering || n.pending;
 		return g`<section class="card status" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:pulse"></ha-icon>${e("devices.now")}</div>
-        ${o} ${P(e, "plan_steer")}
+        ${o} ${M(e, "plan_steer")}
       </div>
       <p class="status-text">${a}</p>
       ${n.pending ? g`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${e("devices.pending")}</span></div>` : v}
@@ -8150,16 +8372,16 @@ var Fn = [
             <button type="button" class="btn btn-danger" @click=${this.release}>
               <ha-icon icon="mdi:hand-back-left-outline"></ha-icon>${e("devices.release")}
             </button>
-            ${P(e, "devices_release")}
+            ${M(e, "devices_release")}
           </div>` : v}
       ${this.notice ? g`<div class="note" role="status"><ha-icon icon="mdi:check"></ha-icon>${this.notice}</div>` : v}
     </section>`;
 	}
 	renderBattery(e, t, n) {
-		let r = this.hass, i = M(r, t.soc_entity), a = bt(r, t.power), o = n?.ready[t.id] ?? "not_controllable", s = n?.batteries[t.id], c = n?.testing?.battery === t.id ? n.testing : null, l = n?.tests[t.id], u = t.adapter === "generic" ? e("devices.battery.generic") : t.adapter === "steps" ? e("devices.battery.steps") : t.adapter === "none" ? e("devices.battery.watch") : e("devices.battery.profile", { name: this.info?.profiles?.[t.adapter] ?? t.adapter }), d = s?.action ? e(`devices.action.${s.action}`, {
-			target: N(e.lang, s.target ?? 0, 0),
-			floor: N(e.lang, s.floor ?? 0, 0),
-			until: s.until ? q(s.until) : ""
+		let r = this.hass, i = yt(r, t.soc_entity), a = St(r, t.power), o = n?.ready[t.id] ?? "not_controllable", s = n?.batteries[t.id], c = n?.testing?.battery === t.id ? n.testing : null, l = n?.tests[t.id], u = t.adapter === "generic" ? e("devices.battery.generic") : t.adapter === "steps" ? e("devices.battery.steps") : t.adapter === "none" ? e("devices.battery.watch") : e("devices.battery.profile", { name: this.info?.profiles?.[t.adapter] ?? t.adapter }), d = s?.action ? e(`devices.action.${s.action}`, {
+			target: j(e.lang, s.target ?? 0, 0),
+			floor: j(e.lang, s.floor ?? 0, 0),
+			until: s.until ? K(s.until) : ""
 		}) : e("devices.action.idle"), f = s?.problem ?? (o !== "ready" && o !== "not_controllable" ? o : null);
 		return g`<section class="card battery" data-tipped>
       <div class="head">
@@ -8167,9 +8389,9 @@ var Fn = [
         <span class="chip ${t.adapter === "none" ? "" : "read"}">${u}</span>
       </div>
       <div class="figures">
-        <b>${i == null ? "–" : N(e.lang, i, 0)}<small>%</small></b>
+        <b>${i == null ? "–" : j(e.lang, i, 0)}<small>%</small></b>
         ${a == null ? v : g`<span
-              >${Math.abs(a) < .05 ? e("devices.power.idle") : e(a > 0 ? "devices.power.charge" : "devices.power.discharge", { value: N(e.lang, Math.abs(a), 2) })}</span
+              >${Math.abs(a) < .05 ? e("devices.power.idle") : e(a > 0 ? "devices.power.charge" : "devices.power.discharge", { value: j(e.lang, Math.abs(a), 2) })}</span
             >`}
       </div>
       <p class="now">${t.adapter === "none" ? e("devices.action.watch") : d}</p>
@@ -8183,7 +8405,7 @@ var Fn = [
         <button type="button" class="mini-btn" @click=${() => this.edit(t)}>
           <ha-icon icon="mdi:tune-variant"></ha-icon>${e("devices.setup")}
         </button>
-        ${P(e, "devices_setup")}
+        ${M(e, "devices_setup")}
       </div>
     </section>`;
 	}
@@ -8208,7 +8430,7 @@ var Fn = [
           ?disabled=${!o || !n.enabled}
           @click=${() => this.toggleTonight(n.id, !s)}
         ></button>
-        ${P(e, "action_tonight")}
+        ${M(e, "action_tonight")}
       </div>
       <div class="setup">
         <button type="button" class="mini-btn" @click=${() => this.editAction(n.id)}>
@@ -8224,13 +8446,13 @@ var Fn = [
 			return g`<div class="boost on" data-tipped>
         <span>
           ${e(a === "km" ? "devices.boost.running_km" : "devices.boost.running", {
-				target: N(e.lang, r.chosen, 0),
-				reserve: N(e.lang, r.target - r.chosen, 0),
-				now: t == null ? "–" : N(e.lang, t, 0)
+				target: j(e.lang, r.chosen, 0),
+				reserve: j(e.lang, r.target - r.chosen, 0),
+				now: t == null ? "–" : j(e.lang, t, 0)
 			})}
         </span>
         <button type="button" class="mini-btn quiet" @click=${() => this.boost(n.id, null)}>${e("devices.boost.stop")}</button>
-        ${P(e, "boost")}
+        ${M(e, "boost")}
       </div>`;
 		}
 		let o = [...a.soc_entity ? ["%"] : [], ...a.range_entity ? ["km"] : []], s = this.boostUnit[n.id] && o.includes(this.boostUnit[n.id]) ? this.boostUnit[n.id] : o[0], c = this.boostValue[`${n.id}:${s}`] ?? (s === "%" ? 80 : 200), l = s === "%" ? 100 : 1500;
@@ -8279,8 +8501,8 @@ var Fn = [
       <button type="submit" class="mini-btn go" ?disabled=${t.mode === "off" || !n.enabled}>
         <ha-icon icon="mdi:ev-plug-type2"></ha-icon>${e("devices.boost.go")}
       </button>
-      ${P(e, "boost")}
-      ${s === "km" ? g`<small class="hint">${e("devices.boost.reserve", { reserve: N(e.lang, a.reserve_km ?? 50, 0) })}</small>` : v}
+      ${M(e, "boost")}
+      ${s === "km" ? g`<small class="hint">${e("devices.boost.reserve", { reserve: j(e.lang, a.reserve_km ?? 50, 0) })}</small>` : v}
     </form>`;
 	}
 	async boost(e, t, n = "%") {
@@ -8296,13 +8518,13 @@ var Fn = [
 		}
 	}
 	actionText(e, t, n, r, i) {
-		let a = r?.target == null ? "" : N(e.lang, r.target, 0);
+		let a = r?.target == null ? "" : j(e.lang, r.target, 0);
 		if (!n.enabled) return e("devices.action.disabled");
 		if (i?.reason === "boost") return e("devices.action.boost");
 		if (i?.on) return n.kind === "target" ? e("devices.action.heating", {
 			target: a,
-			end: q(i.end)
-		}) : e("devices.action.running", { end: q(i.end) });
+			end: K(i.end)
+		}) : e("devices.action.running", { end: K(i.end) });
 		if (i?.reason === "reached") return r?.need ? e("devices.action.reached_need", {
 			target: a,
 			unit: r.need.target_unit === "km" ? "km" : "%"
@@ -8310,23 +8532,23 @@ var Fn = [
 		if (!r) return e("devices.action.no_plan");
 		let o = t.mode === "simulation" ? e("devices.action.would") : "";
 		if (r.run) return `${o}${n.kind === "target" ? e("devices.action.plan_target", {
-			start: q(r.start),
+			start: K(r.start),
 			target: a
 		}) : e("devices.action.plan_run", {
-			start: q(r.start),
-			end: q(r.end)
+			start: K(r.start),
+			end: K(r.end)
 		})}`;
 		let s = r.reasons[r.reasons.length - 1] ?? "manual_only";
 		return e.optional(`devices.action.why.${s}`, {
-			kwh: N(e.lang, t.plan?.meta?.tomorrow_kwh ?? 0, 0),
-			temperature: N(e.lang, r.temperature ?? 0, 0)
+			kwh: j(e.lang, t.plan?.meta?.tomorrow_kwh ?? 0, 0),
+			temperature: j(e.lang, r.temperature ?? 0, 0)
 		}) ?? s;
 	}
 	renderAddAction(e) {
 		return g`<section class="card add" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:plus-circle-outline"></ha-icon>${e("devices.action.add")}</div>
-        ${P(e, "devices_actions")}
+        ${M(e, "devices_actions")}
       </div>
       <p class="now">${e("devices.action.add.text")}</p>
       <div class="actions">
@@ -8366,7 +8588,7 @@ var Fn = [
 	}
 	renderTest(e, t, n, r, i) {
 		let a = !!this.state?.control?.testing, o = !!this.state?.control?.steering, s = i ? g`<span class="chip">${e("devices.test.running")}</span>` : n === "outdated" ? g`<span class="chip warn">${e("devices.test.outdated")}</span>` : r ? g`<span class="chip ${r.ok ? "ok" : "warn"}"
-              >${e(r.ok ? "devices.test.ok" : "devices.test.failed", { day: K(e.lang, r.at, "short") })}</span
+              >${e(r.ok ? "devices.test.ok" : "devices.test.failed", { day: G(e.lang, r.at, "short") })}</span
             >` : g`<span class="chip">${e("devices.test.none")}</span>`, c = i?.steps ?? r?.steps ?? [];
 		return g`<div class="test">
         ${s}
@@ -8378,7 +8600,7 @@ var Fn = [
         >
           <ha-icon icon="mdi:play-circle-outline"></ha-icon>${e(r ? "devices.test.again" : "devices.test.start")}
         </button>
-        ${P(e, "devices_test")}
+        ${M(e, "devices_test")}
       </div>
       ${i || r ? this.renderSteps(e, c, i?.step ?? null, r) : v}`;
 	}
@@ -8386,7 +8608,7 @@ var Fn = [
 		let i = new Map(t.map((e) => [e.step, e])), a = !n && r?.problem ? e.optional(`devices.test.problem.${r.problem}`, { missing: (r.missing ?? []).map((t) => e.optional(`role.${t}`) ?? t).join(", ") }) : null;
 		return g`<ul class="steps">
       ${a ? g`<li class="bad"><ha-icon icon="mdi:close-circle"></ha-icon><b>${e("devices.test.step.check")}</b><small>${a}</small></li>` : v}
-      ${a ? v : Fn.map((t) => {
+      ${a ? v : In.map((t) => {
 			let r = i.get(t);
 			return g`<li class=${r ? r.ok ? "ok" : "bad" : "wait"}>
               <ha-icon icon=${r ? r.ok ? "mdi:check-circle" : "mdi:close-circle" : n === t ? "mdi:progress-clock" : "mdi:circle-outline"}></ha-icon>
@@ -8398,7 +8620,7 @@ var Fn = [
 	}
 	stepText(e, t) {
 		let n = this.hass, r = [];
-		return t.power != null && r.push(Math.abs(t.power) >= .05 ? e("devices.test.power", { value: N(e.lang, t.power, 2) }) : e("devices.test.no_power")), t.wrong.length && r.push(e("devices.test.wrong", { entities: t.wrong.map((e) => j(n, e)).join(", ") })), t.errors.length && r.push(e("devices.test.error", { entities: t.errors.map((e) => j(n, e.entity_id)).join(", ") })), r.join(" · ");
+		return t.power != null && r.push(Math.abs(t.power) >= .05 ? e("devices.test.power", { value: j(e.lang, t.power, 2) }) : e("devices.test.no_power")), t.wrong.length && r.push(e("devices.test.wrong", { entities: t.wrong.map((e) => A(n, e)).join(", ") })), t.errors.length && r.push(e("devices.test.error", { entities: t.errors.map((e) => A(n, e.entity_id)).join(", ") })), r.join(" · ");
 	}
 	renderLog(e, t) {
 		let n = [...t.log].reverse().slice(0, 30);
@@ -8406,7 +8628,7 @@ var Fn = [
       <div class="eyebrow"><ha-icon icon="mdi:clipboard-text-clock-outline"></ha-icon>${e("devices.log")}</div>
       ${n.length ? g`<ul class="log">
             ${n.map((t) => g`<li>
-                <time>${K(e.lang, t.at, "short")} ${t.at.slice(11, 16)}</time>
+                <time>${G(e.lang, t.at, "short")} ${t.at.slice(11, 16)}</time>
                 <span>${this.logText(e, t)}</span>
               </li>`)}
           </ul>` : g`<p class="empty">${e("devices.log.empty")}</p>`}
@@ -8415,11 +8637,11 @@ var Fn = [
 	logText(e, t) {
 		let n = this.hass, r = this.state?.config, i = {
 			battery: r?.batteries.find((e) => e.id === t.battery)?.name ?? r?.actions.find((e) => `action:${e.id}` === t.battery)?.name ?? t.battery ?? "",
-			entity: t.entity ? j(n, t.entity) : "",
+			entity: t.entity ? A(n, t.entity) : "",
 			value: t.value == null ? "–" : String(t.value),
 			target: String(t.target ?? ""),
-			power: typeof t.power == "number" ? N(e.lang, t.power, 1) : "–",
-			soc: typeof t.soc == "number" ? N(e.lang, t.soc, 0) : "–",
+			power: typeof t.power == "number" ? j(e.lang, t.power, 1) : "–",
+			soc: typeof t.soc == "number" ? j(e.lang, t.soc, 0) : "–",
 			unit: typeof t.unit == "string" ? t.unit : "%"
 		};
 		return t.kind === "boost_end" ? e.optional(`log.boost_end.${String(t.reason)}`, i) ?? e("log.boost_end.stopped", i) : t.kind === "answer" ? e(t.yes ? "log.answer.yes" : "log.answer.no") : t.kind === "test" ? e(t.ok ? "log.test.ok" : "log.test.failed", i) : e.optional(`log.${t.kind}`, i) ?? t.kind;
@@ -8431,7 +8653,7 @@ var Fn = [
 		return g`<joe-sheet label=${e("devices.test.start")} closeLabel=${e("common.close")} @joe-close=${n}>
       <div data-tipped>
         <div class="sheet-title">
-          ${C(e("devices.test.confirm.title", { name: t.name }), "h2", P(e, "devices_test"))}
+          ${C(e("devices.test.confirm.title", { name: t.name }), "h2", M(e, "devices_test"))}
         </div>
         <p class="sheet-text">${e("devices.test.confirm.text")}</p>
         <div class="actions">
@@ -8472,11 +8694,11 @@ var Fn = [
 		}));
 	}
 };
-O([b({ attribute: !1 })], J.prototype, "hass", void 0), O([b({ attribute: !1 })], J.prototype, "t", void 0), O([b({ attribute: !1 })], J.prototype, "state", void 0), O([b({ attribute: !1 })], J.prototype, "discovery", void 0), O([b({ attribute: !1 })], J.prototype, "info", void 0), O([x()], J.prototype, "confirm", void 0), O([x()], J.prototype, "notice", void 0), O([x()], J.prototype, "boostValue", void 0), O([x()], J.prototype, "boostUnit", void 0), E("joe-devices-page", J);
+D([b({ attribute: !1 })], q.prototype, "hass", void 0), D([b({ attribute: !1 })], q.prototype, "t", void 0), D([b({ attribute: !1 })], q.prototype, "state", void 0), D([b({ attribute: !1 })], q.prototype, "discovery", void 0), D([b({ attribute: !1 })], q.prototype, "info", void 0), D([x()], q.prototype, "confirm", void 0), D([x()], q.prototype, "notice", void 0), D([x()], q.prototype, "boostValue", void 0), D([x()], q.prototype, "boostUnit", void 0), T("joe-devices-page", q);
 //#endregion
 //#region src/components/chart.ts
-var In = 40, Ln = 10, Rn = 16, zn = 24;
-function Bn(e) {
+var Ln = 40, Rn = 10, zn = 16, Bn = 24;
+function Vn(e) {
 	let t = 10 ** Math.floor(Math.log10(e));
 	for (let n of [
 		1,
@@ -8487,13 +8709,13 @@ function Bn(e) {
 	]) if (n * t >= e) return n * t;
 	return 10 * t;
 }
-function Vn(e) {
+function Hn(e) {
 	let t = [], n = [];
 	return e.forEach((e, r) => {
 		e == null ? (n.length && t.push(n), n = []) : n.push([r, e]);
 	}), n.length && t.push(n), t;
 }
-var Y = class extends y {
+var J = class extends y {
 	constructor(...e) {
 		super(...e), this.labels = [], this.ticks = /* @__PURE__ */ new Map(), this.series = [], this.bands = [], this.markers = [], this.unit = "kWh", this.max = 0, this.height = 220, this.label = "", this.lang = "de", this.centerTicks = !1, this.width = 640, this.hover = null;
 	}
@@ -8592,8 +8814,8 @@ var Y = class extends y {
 	render() {
 		let e = this.labels.length;
 		if (!e) return v;
-		let t = Math.max(260, this.width), n = this.height, r = t - In - Ln, i = n - Rn - zn, a = r / e, o = this.series.flatMap((e) => e.values.filter((e) => e != null)), s = this.max || Bn(Math.max(.1, ...o)), c = Math.min(0, ...o), l = c < 0 ? -Math.max(Bn(-c), s / 4) : 0, u = (e) => Rn + i - (Math.max(l, Math.min(e, s)) - l) / (s - l) * i, d = (e) => In + e * a, f = (e) => In + (e + .5) * a, p = (e, t = 2) => new Intl.NumberFormat(this.lang, { maximumFractionDigits: t }).format(e), m = [];
-		for (let e of this.bands) m.push(_`<rect class="band" x=${d(e.from)} y=${Rn} width=${Math.max(0, d(e.to) - d(e.from))} height=${i}></rect>
+		let t = Math.max(260, this.width), n = this.height, r = t - Ln - Rn, i = n - zn - Bn, a = r / e, o = this.series.flatMap((e) => e.values.filter((e) => e != null)), s = this.max || Vn(Math.max(.1, ...o)), c = Math.min(0, ...o), l = c < 0 ? -Math.max(Vn(-c), s / 4) : 0, u = (e) => zn + i - (Math.max(l, Math.min(e, s)) - l) / (s - l) * i, d = (e) => Ln + e * a, f = (e) => Ln + (e + .5) * a, p = (e, t = 2) => new Intl.NumberFormat(this.lang, { maximumFractionDigits: t }).format(e), m = [];
+		for (let e of this.bands) m.push(_`<rect class="band" x=${d(e.from)} y=${zn} width=${Math.max(0, d(e.to) - d(e.from))} height=${i}></rect>
         <text class="note" x=${(d(e.from) + d(e.to)) / 2} y=${28} text-anchor="middle">${e.label}</text>`);
 		for (let e of l < 0 ? [
 			l,
@@ -8603,7 +8825,7 @@ var Y = class extends y {
 			0,
 			s / 2,
 			s
-		]) m.push(_`<line class="grid" x1=${In} x2=${t - Ln} y1=${u(e)} y2=${u(e)}></line>
+		]) m.push(_`<line class="grid" x1=${Ln} x2=${t - Rn} y1=${u(e)} y2=${u(e)}></line>
         <text class="tick" x=${34} y=${u(e) + 4} text-anchor="end">${p(e, 2)}</text>`);
 		m.push(_`<text class="tick" x=${34} y=${11} text-anchor="end">${this.unit}</text>`);
 		for (let [e, t] of this.ticks) m.push(_`<text class="tick" x=${this.centerTicks ? f(e) : d(e)} y=${n - 6}
@@ -8622,7 +8844,7 @@ var Y = class extends y {
 				});
 				continue;
 			}
-			for (let t of Vn(e.values)) {
+			for (let t of Hn(e.values)) {
 				let n = t.map(([e, t]) => `${f(e).toFixed(1)},${u(t).toFixed(1)}`).join(" ");
 				if (e.kind === "area" && t.length > 1) {
 					let r = u(0).toFixed(1);
@@ -8634,14 +8856,14 @@ var Y = class extends y {
 			}
 		}
 		for (let e of this.markers) {
-			let n = In + e.at * a, o = n < In + r * .75;
-			m.push(_`<line class="marker" x1=${n} x2=${n} y1=${Rn} y2=${Rn + i}></line>
+			let n = Ln + e.at * a, o = n < Ln + r * .75;
+			m.push(_`<line class="marker" x1=${n} x2=${n} y1=${zn} y2=${zn + i}></line>
         <text class="note" x=${o ? n + 4 : n - 4} y=${28} text-anchor=${o ? "start" : "end"}>
           ${t < 520 ? e.short ?? e.label : e.label}
         </text>`);
 		}
-		this.hover != null && m.push(_`<line class="guide" x1=${f(this.hover)} x2=${f(this.hover)} y1=${Rn} y2=${Rn + i}></line>`);
-		for (let t = 0; t < e; t++) m.push(_`<rect class="slot" x=${d(t)} y=${Rn} width=${a} height=${i}
+		this.hover != null && m.push(_`<line class="guide" x1=${f(this.hover)} x2=${f(this.hover)} y1=${zn} y2=${zn + i}></line>`);
+		for (let t = 0; t < e; t++) m.push(_`<rect class="slot" x=${d(t)} y=${zn} width=${a} height=${i}
         @pointerenter=${() => this.hover = t} @click=${() => this.hover = t}></rect>`);
 		return g`<svg
         viewBox="0 0 ${t} ${n}"
@@ -8667,16 +8889,16 @@ var Y = class extends y {
     </div>`;
 	}
 };
-O([b({ attribute: !1 })], Y.prototype, "labels", void 0), O([b({ attribute: !1 })], Y.prototype, "ticks", void 0), O([b({ attribute: !1 })], Y.prototype, "series", void 0), O([b({ attribute: !1 })], Y.prototype, "bands", void 0), O([b({ attribute: !1 })], Y.prototype, "markers", void 0), O([b()], Y.prototype, "unit", void 0), O([b({ type: Number })], Y.prototype, "max", void 0), O([b({ type: Number })], Y.prototype, "height", void 0), O([b()], Y.prototype, "label", void 0), O([b()], Y.prototype, "lang", void 0), O([b({ type: Boolean })], Y.prototype, "centerTicks", void 0), O([x()], Y.prototype, "width", void 0), O([x()], Y.prototype, "hover", void 0), E("joe-chart", Y);
+D([b({ attribute: !1 })], J.prototype, "labels", void 0), D([b({ attribute: !1 })], J.prototype, "ticks", void 0), D([b({ attribute: !1 })], J.prototype, "series", void 0), D([b({ attribute: !1 })], J.prototype, "bands", void 0), D([b({ attribute: !1 })], J.prototype, "markers", void 0), D([b()], J.prototype, "unit", void 0), D([b({ type: Number })], J.prototype, "max", void 0), D([b({ type: Number })], J.prototype, "height", void 0), D([b()], J.prototype, "label", void 0), D([b()], J.prototype, "lang", void 0), D([b({ type: Boolean })], J.prototype, "centerTicks", void 0), D([x()], J.prototype, "width", void 0), D([x()], J.prototype, "hover", void 0), T("joe-chart", J);
 //#endregion
 //#region src/pages/history.ts
-var Hn = 14, Un = [
+var Un = 14, Wn = [
 	"var(--joe-c-soc)",
 	"var(--joe-c-soc-2)",
 	"var(--joe-c-grid)",
 	"var(--joe-c-ist)"
 ];
-function Wn(e, t, n) {
+function Gn(e, t, n) {
 	let r = /* @__PURE__ */ new Date(`${t}T12:00:00Z`);
 	return n === "long" ? new Intl.DateTimeFormat(e, {
 		weekday: "long",
@@ -8688,12 +8910,12 @@ function Wn(e, t, n) {
 		timeZone: "UTC"
 	}).format(r);
 }
-var Gn = class extends y {
+var Kn = class extends y {
 	constructor(...e) {
 		super(...e), this.failed = !1;
 	}
 	static {
-		this.styles = [D, o`
+		this.styles = [E, o`
       :host {
         display: block;
       }
@@ -8949,7 +9171,7 @@ var Gn = class extends y {
 		if (this.hass) try {
 			this.days = await this.hass.callWS({
 				type: "energy_joe/history/days",
-				days: Hn
+				days: Un
 			}), this.failed = !1;
 			let e = this.days.days.map((e) => e.date), t = this.selected && e.includes(this.selected) ? this.selected : e[0];
 			t && await this.select(t);
@@ -9026,10 +9248,10 @@ var Gn = class extends y {
           type="button"
           aria-pressed=${String(t === this.selected)}
           ?disabled=${!n}
-          aria-label=${Wn(e.lang, t, "long")}
+          aria-label=${Gn(e.lang, t, "long")}
           @click=${() => this.select(t)}
         >
-          <small>${Wn(e.lang, t, "short")}</small>
+          <small>${Gn(e.lang, t, "short")}</small>
           <b>${Number(t.slice(8))}</b>
           <span class="mini" aria-hidden="true">
             <i style="height:${(n?.home ?? 0) / a * 26}px;background:var(--joe-c-load)"></i>
@@ -9042,7 +9264,7 @@ var Gn = class extends y {
 	renderDay(e, t) {
 		let n = t.summary, r = Math.max(0, n.expected - t.hours.filter((e) => e.cov >= .9).length), i = n.sources.live ?? 0, a = (n.sources.stats ?? 0) + (n.sources.history ?? 0);
 		return g`<div class="day-head">
-        <h3>${Wn(e.lang, t.date, "long")}</h3>
+        <h3>${Gn(e.lang, t.date, "long")}</h3>
         ${t.workday === !0 ? g`<span class="chip">${e("history.workday")}</span>` : t.workday === !1 ? g`<span class="chip">${e("history.day_off")}</span>` : v}
         ${i ? g`<span class="chip ok"><ha-icon icon="mdi:eye-outline"></ha-icon>${e("history.live")}</span>` : v}
         ${a ? g`<span class="chip read"><ha-icon icon="mdi:database-outline"></ha-icon>${e("history.read")}</span>` : v}
@@ -9054,24 +9276,24 @@ var Gn = class extends y {
           </div>` : v}`;
 	}
 	renderTiles(e, t) {
-		let n = (t) => t == null ? "–" : N(e.lang, t, 1), r = [], i = (e, t, n, r) => g`<div class="tile">
+		let n = (t) => t == null ? "–" : j(e.lang, t, 1), r = [], i = (e, t, n, r) => g`<div class="tile">
         <div class="eyebrow">${e}</div>
         <div class="value">${t}<small>${n}</small></div>
         ${r ? g`<div class="sub">${r}</div>` : v}
       </div>`;
-		if (t.home != null && r.push(i(e("history.tile.home"), n(t.home), "kWh", t.self_sufficiency == null ? "" : e("history.tile.home.self", { value: N(e.lang, t.self_sufficiency * 100, 0) }))), t.solar != null && r.push(i(e("history.tile.solar"), n(t.solar), "kWh", t.fc_ahead == null ? e("history.tile.solar.nofc") : e("history.tile.solar.fc", {
+		if (t.home != null && r.push(i(e("history.tile.home"), n(t.home), "kWh", t.self_sufficiency == null ? "" : e("history.tile.home.self", { value: j(e.lang, t.self_sufficiency * 100, 0) }))), t.solar != null && r.push(i(e("history.tile.solar"), n(t.solar), "kWh", t.fc_ahead == null ? e("history.tile.solar.nofc") : e("history.tile.solar.fc", {
 			value: n(t.fc_ahead),
-			ratio: t.solar_vs_fc == null ? "–" : N(e.lang, t.solar_vs_fc * 100, 0)
+			ratio: t.solar_vs_fc == null ? "–" : j(e.lang, t.solar_vs_fc * 100, 0)
 		}))), t.grid_in != null) {
 			let a = [];
 			t.grid_in_cheap != null && a.push(e("history.tile.grid.cheap", { value: n(t.grid_in_cheap) })), t.grid_out != null && a.push(e("history.tile.grid.out", { value: n(t.grid_out) })), r.push(i(e("history.tile.grid"), n(t.grid_in), "kWh", a.join(" · ")));
 		}
-		if (t.bat_in != null && r.push(i(e("history.tile.battery"), n(t.bat_in), "kWh", e("history.tile.battery.out", { value: n(t.bat_out) }))), t.temp && r.push(i(e("history.tile.temp"), N(e.lang, t.temp.mean, 1), "°C", e("history.tile.temp.range", {
-			min: N(e.lang, t.temp.min, 0),
-			max: N(e.lang, t.temp.max, 0)
+		if (t.bat_in != null && r.push(i(e("history.tile.battery"), n(t.bat_in), "kWh", e("history.tile.battery.out", { value: n(t.bat_out) }))), t.temp && r.push(i(e("history.tile.temp"), j(e.lang, t.temp.mean, 1), "°C", e("history.tile.temp.range", {
+			min: j(e.lang, t.temp.min, 0),
+			max: j(e.lang, t.temp.max, 0)
 		}))), t.present) {
 			let n = new Map((this.state?.config.persons ?? []).map((e) => [e.id, e.name])), a = Object.entries(t.present), o = Math.max(...a.map(([, e]) => e));
-			r.push(i(e("history.tile.present"), N(e.lang, o, 0), "h", a.map(([t, r]) => `${n.get(t) ?? t} ${N(e.lang, r, 0)} h`).join(" · ")));
+			r.push(i(e("history.tile.present"), j(e.lang, o, 0), "h", a.map(([t, r]) => `${n.get(t) ?? t} ${j(e.lang, r, 0)} h`).join(" · ")));
 		}
 		return g`<div class="tiles">${r}</div>`;
 	}
@@ -9134,7 +9356,7 @@ var Gn = class extends y {
 		});
 		let a = this.chartFrame(t);
 		return g`<div class="chart-card" data-tipped>
-      <div class="chart-head">${e("history.chart.energy")} ${P(e, "chart_energy")}</div>
+      <div class="chart-head">${e("history.chart.energy")} ${M(e, "chart_energy")}</div>
       <joe-chart
         .labels=${a.labels}
         .ticks=${a.ticks}
@@ -9161,7 +9383,7 @@ var Gn = class extends y {
 				label: e.name,
 				kind: "line",
 				values: r,
-				color: Un[n % Un.length],
+				color: Wn[n % Wn.length],
 				digits: 0
 			};
 		});
@@ -9176,7 +9398,7 @@ var Gn = class extends y {
 		});
 		let r = this.chartFrame(t);
 		return g`<div class="chart-card" data-tipped>
-      <div class="chart-head">${e("history.chart.soc")} ${P(e, "chart_soc")}</div>
+      <div class="chart-head">${e("history.chart.soc")} ${M(e, "chart_soc")}</div>
       <joe-chart
         .labels=${r.labels}
         .ticks=${r.ticks}
@@ -9200,7 +9422,7 @@ var Gn = class extends y {
 		if (!n.complete) return g`<div class="note warn">
         <ha-icon icon="mdi:alert-outline"></ha-icon><span>${e("history.eval.incomplete")}</span>
       </div>`;
-		let r = this.hass?.config?.currency, i = n.saving ?? 0, a = i > .005 ? "good" : i < -.005 ? "bad" : "", o = (t) => G(e.lang, t ?? 0, 1), s = (t) => t ? e("history.eval.clock", { time: this.time(t) }) : e("history.eval.never"), c = !n.final, l = [[e("history.eval.day"), e("history.eval.instead", {
+		let r = this.hass?.config?.currency, i = n.saving ?? 0, a = i > .005 ? "good" : i < -.005 ? "bad" : "", o = (t) => W(e.lang, t ?? 0, 1), s = (t) => t ? e("history.eval.clock", { time: this.time(t) }) : e("history.eval.never"), c = !n.final, l = [[e("history.eval.day"), e("history.eval.instead", {
 			with: o(n.with_plan?.day_kwh),
 			without: o(n.without?.day_kwh)
 		})], [e("history.eval.night"), e("history.eval.instead", {
@@ -9233,12 +9455,12 @@ var Gn = class extends y {
 		}], d = this.chartFrame(t);
 		return g`<div class="chart-card" data-tipped>
       <div class="chart-head">
-        ${e("history.eval")} ${P(e, "chart_replay")}
+        ${e("history.eval")} ${M(e, "chart_replay")}
         ${c && n.until ? g`<span class="chip warn">${e("history.eval.provisional", { time: this.time(n.until) })}</span>` : v}
       </div>
       <div class="eval-top">
         <div class="eval-big ${a}">
-          ${a === "bad" ? W(e, -i, r) : W(e, i, r)}
+          ${a === "bad" ? U(e, -i, r) : U(e, i, r)}
           <small>${e(a === "good" ? "history.eval.saved" : a === "bad" ? "history.eval.cost" : "history.eval.same")}</small>
         </div>
         <dl>${l.map(([e, t]) => g`<dt>${e}</dt><dd>${t}</dd>`)}</dl>
@@ -9267,10 +9489,10 @@ var Gn = class extends y {
 		return e.slice(11, 16);
 	}
 };
-O([b({ attribute: !1 })], Gn.prototype, "hass", void 0), O([b({ attribute: !1 })], Gn.prototype, "t", void 0), O([b({ attribute: !1 })], Gn.prototype, "state", void 0), O([x()], Gn.prototype, "days", void 0), O([x()], Gn.prototype, "selected", void 0), O([x()], Gn.prototype, "detail", void 0), O([x()], Gn.prototype, "failed", void 0), E("joe-history", Gn);
+D([b({ attribute: !1 })], Kn.prototype, "hass", void 0), D([b({ attribute: !1 })], Kn.prototype, "t", void 0), D([b({ attribute: !1 })], Kn.prototype, "state", void 0), D([x()], Kn.prototype, "days", void 0), D([x()], Kn.prototype, "selected", void 0), D([x()], Kn.prototype, "detail", void 0), D([x()], Kn.prototype, "failed", void 0), T("joe-history", Kn);
 //#endregion
 //#region src/components/day-questions.ts
-var Kn = {
+var qn = {
 	more: [
 		"guests",
 		"special",
@@ -9281,12 +9503,12 @@ var Kn = {
 		"special",
 		"normal"
 	]
-}, qn = class extends y {
+}, Jn = class extends y {
 	constructor(...e) {
 		super(...e), this.questions = [], this.failed = !1, this.answered = /* @__PURE__ */ new Set();
 	}
 	static {
-		this.styles = [D, o`
+		this.styles = [E, o`
       :host {
         display: block;
       }
@@ -9333,19 +9555,19 @@ var Kn = {
 		return !e || !t.length ? v : g`<section class="card" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:chat-question-outline"></ha-icon>${e("ask.title")}</div>
-        ${P(e, "ask_day")}
+        ${M(e, "ask_day")}
       </div>
       <p class="lead">${e("ask.lead")}</p>
       ${t.map((t) => g`<div class="question">
           <p>
             ${e(`ask.${t.kind}`, {
-			day: K(e.lang, t.date, "weekday"),
-			actual: G(e.lang, t.actual, 1),
-			expected: G(e.lang, t.expected, 1)
+			day: G(e.lang, t.date, "weekday"),
+			actual: W(e.lang, t.actual, 1),
+			expected: W(e.lang, t.expected, 1)
 		})}
           </p>
           <div class="answers" role="group" aria-label=${e("ask.answers")}>
-            ${Kn[t.kind].map((n) => g`<button
+            ${qn[t.kind].map((n) => g`<button
                   type="button"
                   class="mini-btn ${n === "normal" ? "quiet" : ""}"
                   ?disabled=${this.busy === t.date}
@@ -9380,41 +9602,41 @@ var Kn = {
 		}
 	}
 };
-O([b({ attribute: !1 })], qn.prototype, "hass", void 0), O([b({ attribute: !1 })], qn.prototype, "t", void 0), O([b({ attribute: !1 })], qn.prototype, "questions", void 0), O([x()], qn.prototype, "busy", void 0), O([x()], qn.prototype, "failed", void 0), O([x()], qn.prototype, "answered", void 0), E("joe-day-questions", qn);
+D([b({ attribute: !1 })], Jn.prototype, "hass", void 0), D([b({ attribute: !1 })], Jn.prototype, "t", void 0), D([b({ attribute: !1 })], Jn.prototype, "questions", void 0), D([x()], Jn.prototype, "busy", void 0), D([x()], Jn.prototype, "failed", void 0), D([x()], Jn.prototype, "answered", void 0), T("joe-day-questions", Jn);
 //#endregion
 //#region src/pages/learn.ts
-var Jn = [
+var Yn = [
 	"clear",
 	"mixed",
 	"overcast"
-], Yn = [
+], Xn = [
 	"vacation",
 	"travel",
 	"home_office",
 	"office",
 	"guests",
 	"home"
-], Xn = {
+], Zn = {
 	forecast_solar: "Forecast.Solar",
 	open_meteo_solar_forecast: "Open-Meteo Solar Forecast",
 	solcast_solar: "Solcast"
 };
-function Zn(e, t, n) {
+function Qn(e, t, n) {
 	let r = e.base + (t ? e.workday : 0) + e.heat * Math.max(0, 15 - n) + e.cool * Math.max(0, n - 22);
 	return e.presence != null && (r += e.presence * (e.presence_mean ?? 0)), Math.max(0, r);
 }
-function Qn(e, t) {
+function $n(e, t) {
 	let n = Math.max(1, Math.ceil(t.length / 7)), r = /* @__PURE__ */ new Map();
 	return t.forEach((i, a) => {
-		(t.length - 1 - a) % n == 0 && r.set(a, K(e, i, "short"));
+		(t.length - 1 - a) % n == 0 && r.set(a, G(e, i, "short"));
 	}), r;
 }
-var X = class extends y {
+var Y = class extends y {
 	constructor(...e) {
 		super(...e), this.failed = !1, this.confirming = !1, this.resetting = !1, this.scope = "all", this.keyword = {};
 	}
 	static {
-		this.styles = [D, o`
+		this.styles = [E, o`
       :host {
         display: block;
       }
@@ -9834,8 +10056,8 @@ var X = class extends y {
 		if (this.state?.mode === "off") return e("learn.paused");
 		if (!t?.active) return e("learn.waiting");
 		let r = [];
-		return n?.since ? r.push(e("learn.since", { day: K(e.lang, n.since) })) : t.first_day && r.push(e("learn.since_start", { day: K(e.lang, t.first_day) })), n?.updated && r.push(e("learn.updated", {
-			day: K(e.lang, n.updated, "short"),
+		return n?.since ? r.push(e("learn.since", { day: G(e.lang, n.since) })) : t.first_day && r.push(e("learn.since_start", { day: G(e.lang, t.first_day) })), n?.updated && r.push(e("learn.updated", {
+			day: G(e.lang, n.updated, "short"),
 			time: n.updated.slice(11, 16)
 		})), r.join(" · ");
 	}
@@ -9843,7 +10065,7 @@ var X = class extends y {
 		let n = t.results, r = g`<div class="head">
       <div class="eyebrow"><ha-icon icon="mdi:cash-check"></ha-icon>${e("learn.results")}</div>
       <span class="pill-sim">${e("mode.simulation")}</span>
-      ${P(e, "sim_result")}
+      ${M(e, "sim_result")}
     </div>`;
 		if (!n?.days) return g`<section class="card hero" data-tipped>${r}
         <p class="say">${e("learn.results.none")}</p>
@@ -9860,13 +10082,13 @@ var X = class extends y {
       ${r}
       <div class="figure">
         <div class="big ${n.saving > .005 ? "good" : n.saving < -.005 ? "bad" : ""}">
-          ${W(e, n.saving, this.currency, !0)}
+          ${U(e, n.saving, this.currency, !0)}
         </div>
       </div>
       <p class="say">
         ${e("learn.results.say", {
-			since: o ? K(e.lang, o) : "–",
-			nights: En(e, n.days)
+			since: o ? G(e.lang, o) : "–",
+			nights: Dn(e, n.days)
 		})}
       </p>
       <p class="split">
@@ -9877,11 +10099,11 @@ var X = class extends y {
 		})}
       </p>
       ${i.length > 1 ? g`<joe-chart
-            .labels=${i.map((t) => K(e.lang, t.date, "weekday"))}
-            .ticks=${Qn(e.lang, i.map((e) => e.date))}
+            .labels=${i.map((t) => G(e.lang, t.date, "weekday"))}
+            .ticks=${$n(e.lang, i.map((e) => e.date))}
             .series=${a}
             centerTicks
-            unit=${wn(e.lang, this.currency)}
+            unit=${Tn(e.lang, this.currency)}
             height="160"
             lang=${e.lang}
             label=${e("learn.results.chart")}
@@ -9894,11 +10116,11 @@ var X = class extends y {
 			need: t.needs.solar,
 			have: n.solar_days
 		}) : r < .95 ? e("learn.solar.less", {
-			value: N(e.lang, (1 - r) * 100, 0),
-			share: N(e.lang, r * 100, 0)
+			value: j(e.lang, (1 - r) * 100, 0),
+			share: j(e.lang, r * 100, 0)
 		}) : r > 1.05 ? e("learn.solar.more", {
-			value: N(e.lang, (r - 1) * 100, 0),
-			share: N(e.lang, r * 100, 0)
+			value: j(e.lang, (r - 1) * 100, 0),
+			share: j(e.lang, r * 100, 0)
 		}) : e("learn.solar.fits");
 		let a = t.solar.slice(-28), o = [{
 			label: e("learn.solar.chart.actual"),
@@ -9917,13 +10139,13 @@ var X = class extends y {
 		return g`<section class="card" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:weather-sunny"></ha-icon>${e("learn.solar")}</div>
-        ${P(e, "learn_solar")}
+        ${M(e, "learn_solar")}
       </div>
       <div class="figure">
         <div class="big ${r == null ? "small" : ""}">
-          ${r == null ? e("learn.still") : `× ${N(e.lang, r, 2)}`}
+          ${r == null ? e("learn.still") : `× ${j(e.lang, r, 2)}`}
         </div>
-        ${r == null ? v : g`${T(e, { source: "learned" })}<span class="chip">${e("learn.days", { days: n.solar_days })}</span>`}
+        ${r == null ? v : g`${w(e, { source: "learned" })}<span class="chip">${e("learn.days", { days: n.solar_days })}</span>`}
       </div>
       <p class="say">${i}</p>
       ${a.length > 1 ? this.chartWithLegend(e, a.map((e) => e.date), o, "kWh", e("learn.solar.chart")) : v}
@@ -9934,11 +10156,11 @@ var X = class extends y {
 		return g`<section class="card" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:clock-time-four-outline"></ha-icon>${e("learn.shift")}</div>
-        ${P(e, "learn_shift")}
+        ${M(e, "learn_shift")}
       </div>
       <div class="figure">
         <div class="big ${r == null ? "small" : ""}">${e(r == null ? "learn.still" : `learn.shift.big.${r}`)}</div>
-        ${r == null ? v : g`${T(e, { source: "learned" })}<span class="chip">${e("learn.days", { days: n.shift_days })}</span>`}
+        ${r == null ? v : g`${w(e, { source: "learned" })}<span class="chip">${e("learn.days", { days: n.shift_days })}</span>`}
       </div>
       <p class="say">
         ${r == null ? e("learn.shift.learning", {
@@ -9981,7 +10203,7 @@ var X = class extends y {
       </div>`;
 	}
 	renderBuffer(e, t) {
-		let { value: n, source: r } = t.buffer, i = t.learned, a = (t) => N(e.lang, t * 100, 0), o;
+		let { value: n, source: r } = t.buffer, i = t.learned, a = (t) => j(e.lang, t * 100, 0), o;
 		o = r === "user" ? i.buffer == null ? e("learn.buffer.user") : e("learn.buffer.user_learned", { value: a(i.buffer) }) : r === "learned" ? e("learn.buffer.learned") : e("learn.buffer.default", {
 			need: t.needs.buffer,
 			have: i.buffer_days
@@ -10002,11 +10224,11 @@ var X = class extends y {
 		return g`<section class="card" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:shield-half-full"></ha-icon>${e("learn.buffer")}</div>
-        ${P(e, "learn_buffer")}
+        ${M(e, "learn_buffer")}
       </div>
       <div class="figure">
         <div class="big">${a(n)}<small> %</small></div>
-        ${T(e, { source: r })}
+        ${w(e, { source: r })}
         ${r === "learned" ? g`<span class="chip">${e("learn.mornings", { count: i.buffer_days })}</span>` : v}
       </div>
       <p class="say">${o}</p>
@@ -10014,17 +10236,17 @@ var X = class extends y {
             <button
               type="button"
               class="mini-btn"
-              @click=${() => z(this, { rules: { buffer_factor: t.buffer.default } }, "default")}
+              @click=${() => L(this, { rules: { buffer_factor: t.buffer.default } }, "default")}
             >
               <ha-icon icon="mdi:auto-fix"></ha-icon>${e("learn.buffer.own")}
             </button>
-            ${P(e, "learn_buffer_own")}
+            ${M(e, "learn_buffer_own")}
           </div>` : v}
       ${s.length > 1 ? this.chartWithLegend(e, s.map((e) => e.date), c, "kWh", e("learn.buffer.chart")) : v}
     </section>`;
 	}
 	renderHome(e, t) {
-		let n = t.consumption, r = (t) => G(e.lang, t.reduce((e, t) => e + t, 0), 1), i = [{
+		let n = t.consumption, r = (t) => W(e.lang, t.reduce((e, t) => e + t, 0), 1), i = [{
 			label: e("learn.home.chart.workday"),
 			kind: "line",
 			values: n.workday,
@@ -10039,7 +10261,7 @@ var X = class extends y {
 		return g`<section class="card" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:home-lightning-bolt-outline"></ha-icon>${e("learn.home")}</div>
-        ${P(e, "learn_home")}
+        ${M(e, "learn_home")}
       </div>
       <p class="say">
         ${n.source === "history" ? e("learn.home.history", { days: n.days }) : e("learn.home.default")}
@@ -10053,8 +10275,8 @@ var X = class extends y {
 	}
 	chartWithLegend(e, t, n, r, i) {
 		return g`<joe-chart
-        .labels=${t.map((t) => K(e.lang, t, "weekday"))}
-        .ticks=${Qn(e.lang, t)}
+        .labels=${t.map((t) => G(e.lang, t, "weekday"))}
+        .ticks=${$n(e.lang, t)}
         .series=${n}
         centerTicks
         unit=${r}
@@ -10086,20 +10308,20 @@ var X = class extends y {
 			have: a
 		});
 		else {
-			let t = [e("learn.model.base", { value: G(n, r.base + (r.presence ?? 0) * (r.presence_mean ?? 0), 1) })];
-			Math.abs(r.workday) >= .3 && t.push(e(r.workday > 0 ? "learn.model.workday_more" : "learn.model.workday_less", { value: G(n, Math.abs(r.workday), 1) })), r.heat >= .05 && t.push(e("learn.model.heat", { value: G(n, r.heat, 2) })), r.cool >= .05 && t.push(e("learn.model.cool", { value: G(n, r.cool, 2) })), r.presence != null && Math.abs(r.presence) >= .05 && t.push(e("learn.model.presence", { value: G(n, r.presence, 2) })), t.push(e("learn.model.fit", { share: N(n, r.r2 * 100, 0) })), s = t.join(" ");
+			let t = [e("learn.model.base", { value: W(n, r.base + (r.presence ?? 0) * (r.presence_mean ?? 0), 1) })];
+			Math.abs(r.workday) >= .3 && t.push(e(r.workday > 0 ? "learn.model.workday_more" : "learn.model.workday_less", { value: W(n, Math.abs(r.workday), 1) })), r.heat >= .05 && t.push(e("learn.model.heat", { value: W(n, r.heat, 2) })), r.cool >= .05 && t.push(e("learn.model.cool", { value: W(n, r.cool, 2) })), r.presence != null && Math.abs(r.presence) >= .05 && t.push(e("learn.model.presence", { value: W(n, r.presence, 2) })), t.push(e("learn.model.fit", { share: j(n, r.r2 * 100, 0) })), s = t.join(" ");
 		}
 		let c = r != null && r.heat >= .05;
 		return g`<section class="card" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:thermometer"></ha-icon>${e("learn.model")}</div>
-        ${P(e, "learn_model")}
+        ${M(e, "learn_model")}
       </div>
       <div class="figure">
         <div class="big ${r ? "" : "small"}">
-          ${r ? c ? g`+${G(n, r.heat, 2)}<small> kWh/°C</small>` : g`${G(n, r.base + (r.presence ?? 0) * (r.presence_mean ?? 0), 1)}<small> kWh</small>` : e("learn.still")}
+          ${r ? c ? g`+${W(n, r.heat, 2)}<small> kWh/°C</small>` : g`${W(n, r.base + (r.presence ?? 0) * (r.presence_mean ?? 0), 1)}<small> kWh</small>` : e("learn.still")}
         </div>
-        ${r ? g`${T(e, { source: "learned" })}<span class="chip">${e("learn.days", { days: r.days })}</span>` : v}
+        ${r ? g`${w(e, { source: "learned" })}<span class="chip">${e("learn.days", { days: r.days })}</span>` : v}
       </div>
       <p class="say">${s}</p>
       ${i.length > 2 ? this.temperatureChart(e, t, r) : v}
@@ -10108,7 +10330,7 @@ var X = class extends y {
 	temperatureChart(e, t, n) {
 		let r = t.days.filter((e) => e.temp != null && !e.excluded), i = r.map((e) => e.temp), a = Math.floor(Math.min(...i) / 2) * 2, o = Math.floor(Math.max(...i) / 2) * 2 + 2, s = [];
 		for (let e = a; e < o; e += 2) s.push(e);
-		let c = (t) => N(e.lang, t, 0), l = [{
+		let c = (t) => j(e.lang, t, 0), l = [{
 			label: e("learn.model.chart.actual"),
 			kind: "bar",
 			values: s.map((e) => {
@@ -10121,13 +10343,13 @@ var X = class extends y {
 		n && l.push({
 			label: e("learn.model.chart.workday"),
 			kind: "line",
-			values: s.map((e) => Zn(n, !0, e + 1)),
+			values: s.map((e) => Qn(n, !0, e + 1)),
 			color: "var(--joe-c-soc)",
 			digits: 1
 		}, {
 			label: e("learn.model.chart.day_off"),
 			kind: "line",
-			values: s.map((e) => Zn(n, !1, e + 1)),
+			values: s.map((e) => Qn(n, !1, e + 1)),
 			color: "var(--joe-c-soc-2)",
 			dashed: !0,
 			digits: 1
@@ -10152,20 +10374,20 @@ var X = class extends y {
       </div>`;
 	}
 	renderSources(e, t) {
-		let n = e.lang, r = this.state.config, i = t.learned.solar_classes ?? {}, a = i.classes ?? {}, o = r.forecast, s = t.learned.sources ?? {}, c = Jn.filter((e) => a[e]), l = (e) => N(n, e * 100, 0), u = [["main", o.provider ? Xn[o.provider] ?? o.provider : e("learn.sources.main")], ...o.alternatives.map((e) => [e.id, e.name])], d = Object.fromEntries(u.map(([e]) => [e, s[e] ? 1 / Math.max(s[e].error, .05) ** 2 : 0])), f = Object.values(d).reduce((e, t) => e + t, 0);
+		let n = e.lang, r = this.state.config, i = t.learned.solar_classes ?? {}, a = i.classes ?? {}, o = r.forecast, s = t.learned.sources ?? {}, c = Yn.filter((e) => a[e]), l = (e) => j(n, e * 100, 0), u = [["main", o.provider ? Zn[o.provider] ?? o.provider : e("learn.sources.main")], ...o.alternatives.map((e) => [e.id, e.name])], d = Object.fromEntries(u.map(([e]) => [e, s[e] ? 1 / Math.max(s[e].error, .05) ** 2 : 0])), f = Object.values(d).reduce((e, t) => e + t, 0);
 		return g`<section class="card" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:weather-partly-cloudy"></ha-icon>${e("learn.weather")}</div>
-        ${P(e, "learn_weather")}
+        ${M(e, "learn_weather")}
       </div>
       <p class="say">
-        ${c.length ? e("learn.weather.say", { top: G(n, i.top ?? 0, 1) }) : e("learn.weather.learning", { have: i.days ?? 0 })}
+        ${c.length ? e("learn.weather.say", { top: W(n, i.top ?? 0, 1) }) : e("learn.weather.learning", { have: i.days ?? 0 })}
       </p>
-      ${c.length ? this.rows(Jn.map((t) => {
+      ${c.length ? this.rows(Yn.map((t) => {
 			let r = a[t];
 			return {
 				name: e(`learn.weather.${t}`),
-				values: r ? [`× ${N(n, r.factor, 2)}`, e("learn.days", { days: r.days })] : [e("learn.still")]
+				values: r ? [`× ${j(n, r.factor, 2)}`, e("learn.days", { days: r.days })] : [e("learn.still")]
 			};
 		})) : v}
       <div class="sub-head">
@@ -10176,21 +10398,21 @@ var X = class extends y {
 			return {
 				name: i,
 				values: a ? [
-					`× ${N(n, a.factor, 2)}`,
+					`× ${j(n, a.factor, 2)}`,
 					e("learn.sources.error", { value: l(a.error) }),
 					o.combine && f ? e("learn.sources.weight", { value: l(d[r] / f) }) : ""
 				] : [e("learn.sources.learning", { need: t.needs.sources })]
 			};
 		}))}
             <div class="toggle-row">
-              <span class="with-tip"><span id="combine-label">${e("learn.sources.combine")}</span>${P(e, "learn_combine")}</span>
+              <span class="with-tip"><span id="combine-label">${e("learn.sources.combine")}</span>${M(e, "learn_combine")}</span>
               <button
                 type="button"
                 class="switch"
                 role="switch"
                 aria-checked=${String(o.combine)}
                 aria-labelledby="combine-label"
-                @click=${() => z(this, { forecast: { combine: !o.combine } })}
+                @click=${() => L(this, { forecast: { combine: !o.combine } })}
               ></button>
             </div>` : g`<p class="say">${e("learn.sources.single")}</p>`}
     </section>`;
@@ -10200,13 +10422,13 @@ var X = class extends y {
 		return g`<section class="card" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:battery-heart-variant"></ha-icon>${e("learn.battery")}</div>
-        ${P(e, "learn_battery")}
+        ${M(e, "learn_battery")}
       </div>
       ${r.batteries.length ? this.rows(r.batteries.map((a) => {
 			let o = i[a.id], s = a.capacity_kwh, c = r.provenance[`batteries[${a.id}].capacity_kwh`]?.source === "user", l;
-			return l = o ? c && s ? e("learn.battery.user", { value: G(n, s, 1) }) : s && (o.capacity_kwh / s < .5 || o.capacity_kwh / s > 1.15) ? e("learn.battery.odd", { value: G(n, s, 1) }) : s ? e("learn.battery.uses_nominal", { value: G(n, s, 1) }) : e("learn.battery.uses") : a.power ? e("learn.battery.learning", { need: t.needs.models }) : e("learn.battery.no_power"), {
+			return l = o ? c && s ? e("learn.battery.user", { value: W(n, s, 1) }) : s && (o.capacity_kwh / s < .5 || o.capacity_kwh / s > 1.15) ? e("learn.battery.odd", { value: W(n, s, 1) }) : s ? e("learn.battery.uses_nominal", { value: W(n, s, 1) }) : e("learn.battery.uses") : a.power ? e("learn.battery.learning", { need: t.needs.models }) : e("learn.battery.no_power"), {
 				name: a.name,
-				values: o ? [e("learn.battery.capacity", { value: G(n, o.capacity_kwh, 1) }), e("learn.battery.efficiency", { value: N(n, o.efficiency * 100, 0) })] : [e("learn.still")],
+				values: o ? [e("learn.battery.capacity", { value: W(n, o.capacity_kwh, 1) }), e("learn.battery.efficiency", { value: j(n, o.efficiency * 100, 0) })] : [e("learn.still")],
 				note: l
 			};
 		})) : g`<p class="say">${e("learn.battery.none")}</p>`}
@@ -10217,13 +10439,13 @@ var X = class extends y {
 		return g`<section class="card" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:chart-donut"></ha-icon>${e("learn.groups")}</div>
-        ${P(e, "learn_groups")}
+        ${M(e, "learn_groups")}
       </div>
       ${a.length ? this.rows(a.map((t) => {
 			let r = i[t.id];
 			return {
 				name: t.name,
-				values: r ? [e("learn.groups.average", { value: G(n, r.average, 1) }), r.heat >= .05 ? e("learn.groups.heat", { value: G(n, r.heat, 2) }) : e("learn.groups.steady")] : [e("learn.still")]
+				values: r ? [e("learn.groups.average", { value: W(n, r.average, 1) }), r.heat >= .05 ? e("learn.groups.heat", { value: W(n, r.heat, 2) }) : e("learn.groups.steady")] : [e("learn.still")]
 			};
 		})) : g`<p class="say">${e("learn.groups.none")}</p>`}
     </section>`;
@@ -10233,16 +10455,16 @@ var X = class extends y {
 		return g`<section class="card" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:water-boiler"></ha-icon>${e("learn.hot_water")}</div>
-        ${P(e, "learn_hot_water")}
+        ${M(e, "learn_hot_water")}
       </div>
       ${a.length ? this.rows(a.map((t) => {
 			let r = i[t.id];
 			return {
 				name: t.name,
 				values: r ? [
-					e("learn.hot_water.rate", { value: G(n, r.rate_k_per_h, 1) }),
-					e("learn.hot_water.loss", { value: G(n, r.loss_k_per_h, 1) }),
-					e("learn.hot_water.demand", { value: G(n, r.demand_k, 0) })
+					e("learn.hot_water.rate", { value: W(n, r.rate_k_per_h, 1) }),
+					e("learn.hot_water.loss", { value: W(n, r.loss_k_per_h, 1) }),
+					e("learn.hot_water.demand", { value: W(n, r.demand_k, 0) })
 				] : [e("learn.still")],
 				note: r ? void 0 : e("learn.hot_water.learning")
 			};
@@ -10254,13 +10476,13 @@ var X = class extends y {
 		return g`<section class="card" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:car-electric"></ha-icon>${e("learn.car")}</div>
-        ${P(e, "learn_car")}
+        ${M(e, "learn_car")}
       </div>
       ${a.length ? this.rows(a.map((t) => {
 			let r = i[t.id], a = [];
-			return r?.consumption != null && (a.push(e("learn.car.consumption", { value: G(n, r.consumption, 1) })), r.cold && a.push(e("learn.car.cold", { value: G(n, r.cold, 2) }))), (r?.workday_km != null || r?.day_off_km != null) && a.push(e("learn.car.km", {
-				workday: r.workday_km == null ? "–" : G(n, r.workday_km, 0),
-				day_off: r.day_off_km == null ? "–" : G(n, r.day_off_km, 0)
+			return r?.consumption != null && (a.push(e("learn.car.consumption", { value: W(n, r.consumption, 1) })), r.cold && a.push(e("learn.car.cold", { value: W(n, r.cold, 2) }))), (r?.workday_km != null || r?.day_off_km != null) && a.push(e("learn.car.km", {
+				workday: r.workday_km == null ? "–" : W(n, r.workday_km, 0),
+				day_off: r.day_off_km == null ? "–" : W(n, r.day_off_km, 0)
 			})), {
 				name: t.name,
 				values: a.length ? a : [e("learn.still")],
@@ -10274,15 +10496,15 @@ var X = class extends y {
 		return g`<section class="card" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:account-clock-outline"></ha-icon>${e("learn.presence")}</div>
-        ${P(e, "learn_presence")}
+        ${M(e, "learn_presence")}
       </div>
       ${a.length ? this.rows(a.map((t) => {
-			let r = tn.filter((e) => i[t.id]?.[e]);
+			let r = rn.filter((e) => i[t.id]?.[e]);
 			return {
 				name: t.name,
 				values: r.length ? r.map((r) => e("learn.presence.value", {
 					label: e(`label.${r}`),
-					hours: G(n, i[t.id][r].hours, 0)
+					hours: W(n, i[t.id][r].hours, 0)
 				})) : [e("learn.still")],
 				note: t.person_entity ? void 0 : e("learn.presence.no_person")
 			};
@@ -10299,11 +10521,11 @@ var X = class extends y {
 		return g`<section class="card wide" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:calendar-text-outline"></ha-icon>${e("learn.calendar")}</div>
-        ${P(e, "learn_calendar")}
+        ${M(e, "learn_calendar")}
       </div>
       <p class="say">${e("learn.calendar.say")}</p>
       <div class="rules">
-        ${Yn.map((r) => g`<div class="rule">
+        ${Xn.map((r) => g`<div class="rule">
             <b>${e(`label.${r}`)}</b>
             <div class="keywords">
               ${n(r).map((n) => g`<span class="keyword"
@@ -10338,15 +10560,15 @@ var X = class extends y {
             </div>
           </div>`)}
       </div>
-      <div class="sub-head with-tip"><b>${e("learn.calendar.defaults")}</b>${P(e, "cal_defaults")}</div>
+      <div class="sub-head with-tip"><b>${e("learn.calendar.defaults")}</b>${M(e, "cal_defaults")}</div>
       <div class="defaults">
         ${["default_workday", "default_day_off"].map((n) => g`<label class="field">
             <span class="field-label">${e(`learn.calendar.${n}`)}</span>
             <select
               class="input"
-              @change=${(e) => z(this, { calendar: { [n]: e.target.value } })}
+              @change=${(e) => L(this, { calendar: { [n]: e.target.value } })}
             >
-              ${tn.map((r) => g`<option value=${r} ?selected=${t[n] === r}>${e(`label.${r}`)}</option>`)}
+              ${rn.map((r) => g`<option value=${r} ?selected=${t[n] === r}>${e(`label.${r}`)}</option>`)}
             </select>
           </label>`)}
       </div>
@@ -10363,8 +10585,8 @@ var X = class extends y {
 		}]));
 	}
 	saveRules(e) {
-		let t = Yn.flatMap((t) => e.filter((e) => e.label === t));
-		z(this, { calendar: { rules: t } });
+		let t = Xn.flatMap((t) => e.filter((e) => e.label === t));
+		L(this, { calendar: { rules: t } });
 	}
 	edit(e) {
 		this.dispatchEvent(new CustomEvent("joe-edit", {
@@ -10374,18 +10596,18 @@ var X = class extends y {
 		}));
 	}
 	renderAccuracy(e, t) {
-		let n = t.accuracy.slice(-14).reverse(), r = (t) => t == null ? "–" : G(e.lang, t, 1);
+		let n = t.accuracy.slice(-14).reverse(), r = (t) => t == null ? "–" : W(e.lang, t, 1);
 		return g`<section class="card wide" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:target"></ha-icon>${e("learn.accuracy")}</div>
-        ${P(e, "learn_accuracy")}
+        ${M(e, "learn_accuracy")}
       </div>
       ${n.length ? g`<div class="table" role="table" aria-label=${e("learn.accuracy")}>
             <span class="th" role="columnheader">${e("learn.accuracy.night")}</span>
             <span class="th" role="columnheader">${e("learn.accuracy.solar")}<span class="unit">kWh</span></span>
             <span class="th" role="columnheader">${e("learn.accuracy.morning")}<span class="unit">kWh</span></span>
             <span class="th" role="columnheader">${e("learn.accuracy.result")}</span>
-            ${n.map((t) => g`<span role="cell">${K(e.lang, t.date, "weekday")}</span>
+            ${n.map((t) => g`<span role="cell">${G(e.lang, t.date, "weekday")}</span>
                 <span role="cell">${e("learn.accuracy.value", {
 			expected: r(t.solar.forecast),
 			actual: r(t.solar.actual)
@@ -10395,7 +10617,7 @@ var X = class extends y {
 			actual: r(t.bridge.actual)
 		})}</span>
                 <span role="cell" class=${t.saving > .005 ? "good" : t.saving < -.005 ? "bad" : ""}
-                  >${W(e, t.saving, this.currency, !0)}</span
+                  >${U(e, t.saving, this.currency, !0)}</span
                 >`)}
           </div>` : g`<p class="say">${e("learn.accuracy.none")}</p>`}
     </section>`;
@@ -10405,12 +10627,12 @@ var X = class extends y {
 		return g`<section class="card danger wide" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:restore"></ha-icon>${e("learn.reset")}</div>
-        ${P(e, "learn_reset")}
+        ${M(e, "learn_reset")}
       </div>
       <p>${e("learn.reset.text")}</p>
-      <div class="sub-head with-tip"><b>${e("learn.reset.scope")}</b>${P(e, "learn_reset_scope")}</div>
+      <div class="sub-head with-tip"><b>${e("learn.reset.scope")}</b>${M(e, "learn_reset_scope")}</div>
       <div class="seg scopes" role="group" aria-label=${e("learn.reset.scope")}>
-        ${["all", ...an].map((t) => g`<button type="button" aria-pressed=${String(this.scope === t)} @click=${() => this.scope = t}>
+        ${["all", ...sn].map((t) => g`<button type="button" aria-pressed=${String(this.scope === t)} @click=${() => this.scope = t}>
               ${e(`learn.reset.scope.${t}`)}
             </button>`)}
       </div>
@@ -10431,7 +10653,7 @@ var X = class extends y {
 		}, n = this.scope;
 		return g`<joe-sheet label=${e("learn.reset.label")} closeLabel=${e("common.close")} @joe-close=${t}>
       <div data-tipped>
-        <div class="sheet-title">${C(e("learn.reset.confirm.title"), "h2", P(e, "learn_reset"))}</div>
+        <div class="sheet-title">${C(e("learn.reset.confirm.title"), "h2", M(e, "learn_reset"))}</div>
         <dl class="forget">
           <dt>${e("learn.reset.confirm.forget")}</dt>
           <dd>${e(`learn.reset.forget.${n}`)}</dd>
@@ -10468,13 +10690,13 @@ var X = class extends y {
 		}
 	}
 };
-O([b({ attribute: !1 })], X.prototype, "hass", void 0), O([b({ attribute: !1 })], X.prototype, "t", void 0), O([b({ attribute: !1 })], X.prototype, "state", void 0), O([x()], X.prototype, "data", void 0), O([x()], X.prototype, "failed", void 0), O([x()], X.prototype, "confirming", void 0), O([x()], X.prototype, "resetting", void 0), O([x()], X.prototype, "scope", void 0), O([x()], X.prototype, "keyword", void 0), O([x()], X.prototype, "notice", void 0), E("joe-learn-page", X);
+D([b({ attribute: !1 })], Y.prototype, "hass", void 0), D([b({ attribute: !1 })], Y.prototype, "t", void 0), D([b({ attribute: !1 })], Y.prototype, "state", void 0), D([x()], Y.prototype, "data", void 0), D([x()], Y.prototype, "failed", void 0), D([x()], Y.prototype, "confirming", void 0), D([x()], Y.prototype, "resetting", void 0), D([x()], Y.prototype, "scope", void 0), D([x()], Y.prototype, "keyword", void 0), D([x()], Y.prototype, "notice", void 0), T("joe-learn-page", Y);
 //#endregion
 //#region src/components/texts.ts
-function $n(e, t) {
-	return t == null ? "–" : N(e.lang, t * 100, 2);
+function er(e, t) {
+	return t == null ? "–" : j(e.lang, t * 100, 2);
 }
-function er(e, t, n = !0) {
+function tr(e, t, n = !0) {
 	let r;
 	return r = t.kind === "fixed_window" && t.window ? t.night_price == null && t.day_price == null ? e("tariff.window_only", {
 		start: t.window.start,
@@ -10482,33 +10704,33 @@ function er(e, t, n = !0) {
 	}) : e("find.tariff.window", {
 		start: t.window.start,
 		end: t.window.end,
-		night: $n(e, t.night_price),
-		day: $n(e, t.day_price)
+		night: er(e, t.night_price),
+		day: er(e, t.day_price)
 	}) : t.kind === "dynamic" ? t.night_price != null && t.day_price != null ? e("find.tariff.dynamic", {
-		night: $n(e, t.night_price),
-		day: $n(e, t.day_price)
-	}) : e("tariff.dynamic") : t.kind === "flat" ? t.day_price == null ? e("tariff.flat") : e("find.tariff.flat", { day: $n(e, t.day_price) }) : e("find.tariff.unknown"), n && t.feed_in_price != null && (r += ` · ${e("find.tariff.feedin", { price: $n(e, t.feed_in_price) })}`), r;
+		night: er(e, t.night_price),
+		day: er(e, t.day_price)
+	}) : e("tariff.dynamic") : t.kind === "flat" ? t.day_price == null ? e("tariff.flat") : e("find.tariff.flat", { day: er(e, t.day_price) }) : e("find.tariff.unknown"), n && t.feed_in_price != null && (r += ` · ${e("find.tariff.feedin", { price: er(e, t.feed_in_price) })}`), r;
 }
-function tr(e, t) {
+function nr(e, t) {
 	let n = {};
-	for (let [r, i] of Object.entries(t)) typeof i == "number" ? n[r] = N(e.lang, i, 2) : typeof i == "string" && (n[r] = i);
+	for (let [r, i] of Object.entries(t)) typeof i == "number" ? n[r] = j(e.lang, i, 2) : typeof i == "string" && (n[r] = i);
 	typeof t.role == "string" && (n.role = e.optional(`role.${t.role}`) ?? t.role);
 	let r = `check.${t.code}`;
-	return t.code === "grid_sign" && typeof t.expected == "number" && typeof t.actual == "number" && (r = t.expected < 0 ? "check.grid_sign.export" : "check.grid_sign.import", n.expected = N(e.lang, Math.abs(t.expected), 1), n.actual = N(e.lang, Math.abs(t.actual), 1)), e.optional(r, n) ?? t.code;
+	return t.code === "grid_sign" && typeof t.expected == "number" && typeof t.actual == "number" && (r = t.expected < 0 ? "check.grid_sign.export" : "check.grid_sign.import", n.expected = j(e.lang, Math.abs(t.expected), 1), n.actual = j(e.lang, Math.abs(t.actual), 1)), e.optional(r, n) ?? t.code;
 }
 //#endregion
 //#region src/components/review.ts
-var nr = /* @__PURE__ */ new Set([
+var rr = /* @__PURE__ */ new Set([
 	"climate",
 	"heat_pump",
 	"electric_heating",
 	"hot_water"
-]), rr = class extends y {
+]), ir = class extends y {
 	constructor(...e) {
 		super(...e), this.checks = [], this.context = "setup";
 	}
 	static {
-		this.styles = [D, o`
+		this.styles = [E, o`
       :host {
         display: block;
       }
@@ -10632,7 +10854,7 @@ var nr = /* @__PURE__ */ new Set([
 				battery: this.count(t, a.battery ?? 0, "word.battery"),
 				devices: this.count(t, a.devices ?? 0, "word.device")
 			}),
-			chips: [T(t, { source: "read" })]
+			chips: [w(t, { source: "read" })]
 		}), i.push(...this.batteryRows(e, t, n)), i.push(this.tariffRow(t, n)), i.push(this.forecastRow(t, n)), i.push(this.powerRow(e, t, n, "grid_power")), i.push(this.powerRow(e, t, n, "home_power")), i.push(this.solarRow(e, t, n));
 		for (let e of r?.wallboxes.filter((e) => e.is_car) ?? []) i.push({
 			key: `wallbox:${e.name}`,
@@ -10642,10 +10864,10 @@ var nr = /* @__PURE__ */ new Set([
 			chips: [g`<span class="chip soon">${t("review.later")}</span>`]
 		});
 		for (let n of r?.cars ?? []) {
-			let r = n.entities.soc ? M(e, n.entities.soc) : null, a = [
+			let r = n.entities.soc ? yt(e, n.entities.soc) : null, a = [
 				n.name,
-				r === null ? null : `${N(t.lang, r, 0)} %`,
-				n.range_km === null ? null : `${N(t.lang, n.range_km, 0)} km`,
+				r === null ? null : `${j(t.lang, r, 0)} %`,
+				n.range_km === null ? null : `${j(t.lang, n.range_km, 0)} km`,
 				t("review.car.later")
 			];
 			i.push({
@@ -10653,7 +10875,7 @@ var nr = /* @__PURE__ */ new Set([
 				icon: "mdi:car-electric",
 				title: t("find.car"),
 				detail: a.filter(Boolean).join(" · "),
-				chips: [w(t, n.confidence), g`<span class="chip soon">${t("review.later")}</span>`]
+				chips: [ot(t, n.confidence), g`<span class="chip soon">${t("review.later")}</span>`]
 			});
 		}
 		i.push(this.contextRow(e, t, n, "weather")), i.push(this.contextRow(e, t, n, "holiday"));
@@ -10680,7 +10902,7 @@ var nr = /* @__PURE__ */ new Set([
 			title: t("find.devices"),
 			detail: t("find.devices.detail", {
 				count: this.count(t, c.length, "word.device"),
-				heating: c.filter((e) => nr.has(e.kind)).length
+				heating: c.filter((e) => rr.has(e.kind)).length
 			}),
 			chips: o ? [] : s,
 			tip: o ? "f_consumer_kind" : void 0,
@@ -10690,9 +10912,9 @@ var nr = /* @__PURE__ */ new Set([
 	batteryRows(e, t, n) {
 		let r = [];
 		for (let i of n.batteries) {
-			let a = this.discovery?.batteries.find((e) => e.id === i.id), o = M(e, i.soc_entity), s = i.capacity_kwh ?? xt(e, i.capacity_entity), c = [
-				s ? `${N(t.lang, s, 2)} kWh` : t("review.capacity_unknown"),
-				o === null ? null : `${N(t.lang, o, 0)} %`,
+			let a = this.discovery?.batteries.find((e) => e.id === i.id), o = yt(e, i.soc_entity), s = i.capacity_kwh ?? Ct(e, i.capacity_entity), c = [
+				s ? `${j(t.lang, s, 2)} kWh` : t("review.capacity_unknown"),
+				o === null ? null : `${j(t.lang, o, 0)} %`,
 				i.adapter === "none" ? t("find.battery.read") : t("find.battery.control")
 			], l = this.checks.filter((e) => e.battery_id === i.id).map((e) => this.note(t, e));
 			r.push({
@@ -10700,7 +10922,7 @@ var nr = /* @__PURE__ */ new Set([
 				icon: "mdi:home-battery-outline",
 				title: i.name,
 				detail: c.filter(Boolean).join(" · "),
-				chips: [T(t, I(n, `batteries[${i.id}].soc_entity`)), ...a ? [w(t, a.confidence)] : []],
+				chips: [w(t, P(n, `batteries[${i.id}].soc_entity`)), ...a ? [ot(t, a.confidence)] : []],
 				reasons: a?.reasons,
 				notes: l,
 				state: this.checks.some((e) => e.battery_id === i.id && e.level === "warn") ? "flag" : void 0,
@@ -10708,7 +10930,7 @@ var nr = /* @__PURE__ */ new Set([
 				actions: [this.button(t("review.change"), "mdi:pencil-outline", () => this.edit("battery", i.id)), this.button(t("review.ignore"), "", () => this.ignoreBattery(i.id), !0)]
 			});
 		}
-		for (let e of this.discovery?.batteries ?? []) L(n, `battery:${e.id}`) && !n.batteries.some((t) => t.id === e.id) && r.push({
+		for (let e of this.discovery?.batteries ?? []) F(n, `battery:${e.id}`) && !n.batteries.some((t) => t.id === e.id) && r.push({
 			key: `battery:${e.id}`,
 			icon: "mdi:home-battery-outline",
 			title: e.name,
@@ -10729,14 +10951,14 @@ var nr = /* @__PURE__ */ new Set([
 		}), r;
 	}
 	ignoreBattery(e) {
-		z(this, {
+		L(this, {
 			batteries: { [e]: null },
-			answers: { ignored: R(this.config, `battery:${e}`, !0) }
+			answers: { ignored: I(this.config, `battery:${e}`, !0) }
 		});
 	}
 	useBattery(e) {
 		let t = this.config;
-		z(this, {
+		L(this, {
 			batteries: { [e.id]: {
 				name: e.name,
 				adapter: e.adapter,
@@ -10750,13 +10972,13 @@ var nr = /* @__PURE__ */ new Set([
 				controls: e.controls,
 				priority: Math.min(t.batteries.length + 1, 9)
 			} },
-			answers: { ignored: R(t, `battery:${e.id}`, !1) }
+			answers: { ignored: I(t, `battery:${e.id}`, !1) }
 		}, "read");
 	}
 	async addBattery() {
 		let { t: e, hass: t, config: n } = this;
 		if (!e || !t || !n) return;
-		let r = (await B(this, {
+		let r = (await R(this, {
 			heading: e("pick.battery.title"),
 			tip: "pick_battery",
 			filter: "soc",
@@ -10765,8 +10987,8 @@ var nr = /* @__PURE__ */ new Set([
 		}))?.selected[0];
 		if (!r) return;
 		let i = t.entities?.[r]?.device_id, a = i && !n.batteries.some((e) => e.id === i) ? i : r;
-		z(this, { batteries: { [a]: {
-			name: i && (t.devices?.[i]?.name_by_user || t.devices?.[i]?.name) || j(t, r),
+		L(this, { batteries: { [a]: {
+			name: i && (t.devices?.[i]?.name_by_user || t.devices?.[i]?.name) || A(t, r),
 			adapter: "none",
 			soc_entity: r,
 			device_id: i ?? null,
@@ -10779,8 +11001,8 @@ var nr = /* @__PURE__ */ new Set([
 			key: "tariff",
 			icon: "mdi:cash-clock",
 			title: this.discovery?.tariff.provider ?? e("find.tariff"),
-			detail: er(e, n),
-			chips: r ? [] : [T(e, I(t, "tariff.kind")), ...this.discovery && this.discovery.tariff.kind !== "unknown" ? [w(e, this.discovery.tariff.confidence)] : []],
+			detail: tr(e, n),
+			chips: r ? [] : [w(e, P(t, "tariff.kind")), ...this.discovery && this.discovery.tariff.kind !== "unknown" ? [ot(e, this.discovery.tariff.confidence)] : []],
 			reasons: this.discovery?.tariff.reasons,
 			notes: r ? [this.info(e("review.tariff.ask"))] : [],
 			state: r ? "missing" : void 0,
@@ -10789,7 +11011,7 @@ var nr = /* @__PURE__ */ new Set([
 		};
 	}
 	forecastRow(e, t) {
-		let n = this.discovery?.forecast, r = L(t, "forecast"), i = {
+		let n = this.discovery?.forecast, r = F(t, "forecast"), i = {
 			key: "forecast",
 			icon: "mdi:weather-sunny",
 			title: e("find.forecast"),
@@ -10800,10 +11022,10 @@ var nr = /* @__PURE__ */ new Set([
 			detail: n ? e("find.forecast.detail", {
 				provider: n.provider_name,
 				planes: this.count(e, n.planes, "word.plane"),
-				today: n.today_kwh == null ? "–" : N(e.lang, n.today_kwh, 1),
-				tomorrow: n.tomorrow_kwh == null ? "–" : N(e.lang, n.tomorrow_kwh, 1)
+				today: n.today_kwh == null ? "–" : j(e.lang, n.today_kwh, 1),
+				tomorrow: n.tomorrow_kwh == null ? "–" : j(e.lang, n.tomorrow_kwh, 1)
 			}) : t.forecast.provider,
-			chips: [T(e, I(t, "forecast.provider")), ...n ? [w(e, n.confidence)] : []],
+			chips: [w(e, P(t, "forecast.provider")), ...n ? [ot(e, n.confidence)] : []],
 			reasons: n?.reasons,
 			actions: [this.button(e("review.ignore"), "", () => this.ignoreForecast(), !0)]
 		} : r && n ? {
@@ -10820,7 +11042,7 @@ var nr = /* @__PURE__ */ new Set([
 		};
 	}
 	ignoreForecast() {
-		z(this, {
+		L(this, {
 			forecast: {
 				provider: null,
 				config_entries: [],
@@ -10829,12 +11051,12 @@ var nr = /* @__PURE__ */ new Set([
 				remaining_today: [],
 				alternatives: []
 			},
-			answers: { ignored: R(this.config, "forecast", !0) }
+			answers: { ignored: I(this.config, "forecast", !0) }
 		});
 	}
 	useForecast() {
 		let e = this.discovery?.forecast;
-		e && z(this, {
+		e && L(this, {
 			forecast: {
 				provider: e.provider,
 				config_entries: e.config_entries ?? [],
@@ -10848,11 +11070,11 @@ var nr = /* @__PURE__ */ new Set([
 					tomorrow: e.tomorrow
 				}))
 			},
-			answers: { ignored: R(this.config, "forecast", !1) }
+			answers: { ignored: I(this.config, "forecast", !1) }
 		}, "read");
 	}
 	powerRow(e, t, n, r) {
-		let i = n.measurements[r], a = this.discovery?.measurements[r] ?? null, o = r === "grid_power", s = L(n, r), c = {
+		let i = n.measurements[r], a = this.discovery?.measurements[r] ?? null, o = r === "grid_power", s = F(n, r), c = {
 			key: r,
 			icon: o ? "mdi:transmission-tower" : "mdi:home-lightning-bolt-outline",
 			title: t(o ? "find.grid" : "find.home"),
@@ -10876,10 +11098,10 @@ var nr = /* @__PURE__ */ new Set([
 			notes: [this.info(t(o ? "review.grid.none" : "review.home.none"))],
 			actions: o ? [l] : [l, this.button(t("review.home.without"), "", () => this.ignore("home_power", { measurements: { home_power: null } }), !0)]
 		};
-		let u = bt(e, i), d = vt(e, i.entity_id, t.lang);
+		let u = St(e, i), d = bt(e, i.entity_id, t.lang);
 		if (u !== null) {
-			let e = N(t.lang, Math.abs(u), 2);
-			d = o ? t(u >= 0 ? "live.import" : "live.export", { value: e }) : t("live.kw", { value: N(t.lang, u, 2) });
+			let e = j(t.lang, Math.abs(u), 2);
+			d = o ? t(u >= 0 ? "live.import" : "live.export", { value: e }) : t("live.kw", { value: j(t.lang, u, 2) });
 		}
 		let f = this.checks.filter((e) => e.code !== "missing" && (e.role === r || o && e.code === "grid_sign" || !o && e.code === "home_negative")), p = f.map((e) => e.code === "grid_sign" ? this.note(t, e, [this.button(t("review.invert"), "mdi:swap-vertical", () => this.setPower(r, {
 			...i,
@@ -10891,17 +11113,17 @@ var nr = /* @__PURE__ */ new Set([
 		return !o && n.measurements.grid_power ? {
 			...c,
 			detail: `${t("review.home.balance")} · ${t("review.home.compare", {
-				name: j(e, i.entity_id),
+				name: A(e, i.entity_id),
 				live: d
 			})}`,
-			chips: [T(t, I(n, `measurements.${r}`))],
+			chips: [w(t, P(n, `measurements.${r}`))],
 			notes: [...this.homeNotes(t, n), ...p],
 			state: f.some((e) => e.level === "warn") ? "flag" : void 0,
 			actions: [l, this.button(t("review.home.devices"), "mdi:devices", () => this.edit("consumers"))]
 		} : {
 			...c,
-			detail: `${j(e, i.entity_id)} · ${d}`,
-			chips: [T(t, I(n, `measurements.${r}`)), ...a && m ? [w(t, a.confidence)] : []],
+			detail: `${A(e, i.entity_id)} · ${d}`,
+			chips: [w(t, P(n, `measurements.${r}`)), ...a && m ? [ot(t, a.confidence)] : []],
 			reasons: m ? a?.reasons : void 0,
 			notes: p,
 			state: f.some((e) => e.level === "warn") ? "flag" : void 0,
@@ -10909,7 +11131,7 @@ var nr = /* @__PURE__ */ new Set([
 		};
 	}
 	homeNotes(e, t) {
-		let n = [], r = rn(t.consumers);
+		let n = [], r = on(t.consumers);
 		if (r.length) {
 			let t = r.map((t) => t.kind === "ev" || t.runs === "always" || !t.runs ? t.name : `${t.name} (${e(`runs.${t.runs}`)})`).join(", ");
 			n.push(this.info(e(r.some((e) => e.kind === "ev") ? "review.home.flexible" : "review.home.flexible_some", { names: t })));
@@ -10919,7 +11141,7 @@ var nr = /* @__PURE__ */ new Set([
 			let t = (i.sensor_kwh - i.calc_kwh) / i.calc_kwh;
 			Math.abs(t) >= .1 && n.push(this.info(e("review.home.off", {
 				days: i.days,
-				pct: N(e.lang, Math.abs(t) * 100, 0),
+				pct: j(e.lang, Math.abs(t) * 100, 0),
 				direction: e(t < 0 ? "review.home.less" : "review.home.more")
 			})));
 		}
@@ -10928,12 +11150,12 @@ var nr = /* @__PURE__ */ new Set([
 	async pickPower(e) {
 		let { t, config: n } = this;
 		if (!t || !n) return;
-		let r = n.measurements[e], i = this.discovery?.measurements[e], a = e === "grid_power", o = await B(this, {
+		let r = n.measurements[e], i = this.discovery?.measurements[e], a = e === "grid_power", o = await R(this, {
 			heading: t(a ? "pick.grid.title" : "pick.home.title"),
 			tip: a ? "pick_grid" : "pick_home",
 			filter: "power",
 			selected: r ? [r.entity_id] : [],
-			suggestions: Lt(i ? [Rt(i)] : [], i?.alternatives),
+			suggestions: zt(i ? [Bt(i)] : [], i?.alternatives),
 			measurement: {
 				invert: r?.invert ?? i?.measurement.invert ?? !1,
 				role: a ? "grid" : "home"
@@ -10945,10 +11167,10 @@ var nr = /* @__PURE__ */ new Set([
 			invert: o.invert,
 			minus_entity_id: null
 		} } };
-		L(n, e) && (c.answers = { ignored: R(n, e, !1) }), z(this, c);
+		F(n, e) && (c.answers = { ignored: I(n, e, !1) }), L(this, c);
 	}
 	setPower(e, t) {
-		z(this, { measurements: { [e]: t } });
+		L(this, { measurements: { [e]: t } });
 	}
 	solarRow(e, t, n) {
 		let r = n.measurements.solar_power, i = this.discovery?.measurements.solar_power ?? null, a = {
@@ -10957,7 +11179,7 @@ var nr = /* @__PURE__ */ new Set([
 			title: t("find.solar"),
 			tip: "review_solar"
 		};
-		if (!r.length) return L(n, "solar_power") ? {
+		if (!r.length) return F(n, "solar_power") ? {
 			...a,
 			detail: t("review.solar.without"),
 			state: "ignored",
@@ -10968,14 +11190,14 @@ var nr = /* @__PURE__ */ new Set([
 			state: "missing",
 			actions: [this.button(t("review.choose"), "mdi:magnify", () => this.pickSolar()), this.button(t("review.solar.none"), "", () => this.ignore("solar_power", { measurements: { solar_power: [] } }), !0)]
 		};
-		let o = St(e, r), s = this.checks.filter((e) => e.role === "solar_power" && e.code !== "missing").map((e) => this.note(t, e));
+		let o = wt(e, r), s = this.checks.filter((e) => e.role === "solar_power" && e.code !== "missing").map((e) => this.note(t, e));
 		return {
 			...a,
 			detail: t("find.solar.detail", {
 				count: this.count(t, r.length, "word.sensor"),
-				total: o === null ? "–" : N(t.lang, o, 2)
+				total: o === null ? "–" : j(t.lang, o, 2)
 			}),
-			chips: [T(t, I(n, "measurements.solar_power")), ...i ? [w(t, i.confidence)] : []],
+			chips: [w(t, P(n, "measurements.solar_power")), ...i ? [ot(t, i.confidence)] : []],
 			reasons: i?.reasons,
 			notes: s,
 			state: s.length && this.checks.some((e) => e.role === "solar_power" && e.level === "warn") ? "flag" : void 0,
@@ -10985,13 +11207,13 @@ var nr = /* @__PURE__ */ new Set([
 	async pickSolar() {
 		let { t: e, config: t } = this;
 		if (!e || !t) return;
-		let n = t.measurements.solar_power, r = this.discovery?.measurements.solar_power, i = await B(this, {
+		let n = t.measurements.solar_power, r = this.discovery?.measurements.solar_power, i = await R(this, {
 			heading: e("pick.solar.title"),
 			tip: "pick_solar",
 			filter: "power",
 			multiple: !0,
 			selected: n.map((e) => e.entity_id),
-			suggestions: Lt((r?.entities ?? []).map((e) => ({
+			suggestions: zt((r?.entities ?? []).map((e) => ({
 				entity_id: e.entity_id,
 				confidence: r?.confidence,
 				reasons: r?.reasons
@@ -11003,7 +11225,7 @@ var nr = /* @__PURE__ */ new Set([
 			invert: !1,
 			minus_entity_id: null
 		}) } };
-		L(t, "solar_power") && (a.answers = { ignored: R(t, "solar_power", !1) }), z(this, a);
+		F(t, "solar_power") && (a.answers = { ignored: I(t, "solar_power", !1) }), L(this, a);
 	}
 	contextRow(e, t, n, r) {
 		let i = r === "weather" ? "weather_entity" : "holiday_entity", a = n.context[i], o = this.discovery?.[r] ?? null, s = {
@@ -11016,13 +11238,13 @@ var nr = /* @__PURE__ */ new Set([
 			let l = o?.entity.entity_id === a;
 			return {
 				...s,
-				detail: j(e, a),
-				chips: [T(t, I(n, `context.${i}`)), ...o && l ? [w(t, o.confidence)] : []],
+				detail: A(e, a),
+				chips: [w(t, P(n, `context.${i}`)), ...o && l ? [ot(t, o.confidence)] : []],
 				reasons: l ? o?.reasons : void 0,
 				actions: [this.button(t("review.change"), "mdi:magnify", c), this.button(t("review.ignore"), "", () => this.ignore(r, { context: { [i]: null } }), !0)]
 			};
 		}
-		return L(n, r) ? {
+		return F(n, r) ? {
 			...s,
 			detail: t("review.ignored"),
 			state: "ignored",
@@ -11038,27 +11260,27 @@ var nr = /* @__PURE__ */ new Set([
 	async pickContext(e) {
 		let { t, config: n } = this;
 		if (!t || !n) return;
-		let r = e === "weather" ? "weather_entity" : "holiday_entity", i = this.discovery?.[e], a = n.context[r], o = (await B(this, {
+		let r = e === "weather" ? "weather_entity" : "holiday_entity", i = this.discovery?.[e], a = n.context[r], o = (await R(this, {
 			heading: t(e === "weather" ? "pick.weather.title" : "pick.holiday.title"),
 			tip: e === "weather" ? "pick_weather" : "pick_holiday",
 			filter: e === "weather" ? "weather" : "workday",
 			selected: a ? [a] : i ? [i.entity.entity_id] : [],
-			suggestions: Lt(i ? [Rt(i)] : [], i?.alternatives)
+			suggestions: zt(i ? [Bt(i)] : [], i?.alternatives)
 		}))?.selected[0];
-		o && z(this, {
+		o && L(this, {
 			context: { [r]: o },
-			answers: { ignored: R(n, e, !1) }
+			answers: { ignored: I(n, e, !1) }
 		});
 	}
 	ignore(e, t) {
-		z(this, {
+		L(this, {
 			...t,
-			answers: { ignored: R(this.config, e, !0) }
+			answers: { ignored: I(this.config, e, !0) }
 		});
 	}
 	confirm(e) {
 		let t = this.config.answers.confirmed.filter((t) => t !== e);
-		z(this, { answers: { confirmed: [...t, e] } });
+		L(this, { answers: { confirmed: [...t, e] } });
 	}
 	edit(e, t) {
 		this.dispatchEvent(new CustomEvent("joe-edit", {
@@ -11082,14 +11304,14 @@ var nr = /* @__PURE__ */ new Set([
 		return g`<div class="note ${t.level}">
       <ha-icon icon=${t.level === "warn" ? "mdi:alert-outline" : "mdi:information-outline"}></ha-icon>
       <div>
-        <span>${tr(e, t)}</span>
+        <span>${nr(e, t)}</span>
         ${n.length ? g`<div class="note-actions">${n}</div>` : v}
       </div>
     </div>`;
 	}
 	count(e, t, n) {
 		let [r, i] = e(n).split("|");
-		return `${N(e.lang, t, 0)} ${t === 1 ? r : i}`;
+		return `${j(e.lang, t, 0)} ${t === 1 ? r : i}`;
 	}
 	renderRow(e, t) {
 		return g`<li class="item ${t.state ?? ""}" ?data-tipped=${!!(t.actions?.length && t.tip)}>
@@ -11103,19 +11325,19 @@ var nr = /* @__PURE__ */ new Set([
         ${t.reasons?.length ? g`<details data-notip>
               <summary>${e("scan.why")}</summary>
               <ul>
-                ${t.reasons.map((t) => g`<li>${st(e, t)}</li>`)}
+                ${t.reasons.map((t) => g`<li>${ct(e, t)}</li>`)}
               </ul>
             </details>` : v}
         ${t.notes ?? v}
-        ${t.actions?.length ? g`<div class="row-actions">${t.actions}${t.tip ? P(e, t.tip) : v}</div>` : v}
+        ${t.actions?.length ? g`<div class="row-actions">${t.actions}${t.tip ? M(e, t.tip) : v}</div>` : v}
       </div>
     </li>`;
 	}
 };
-O([b({ attribute: !1 })], rr.prototype, "hass", void 0), O([b({ attribute: !1 })], rr.prototype, "t", void 0), O([b({ attribute: !1 })], rr.prototype, "config", void 0), O([b({ attribute: !1 })], rr.prototype, "discovery", void 0), O([b({ attribute: !1 })], rr.prototype, "checks", void 0), O([b()], rr.prototype, "context", void 0), E("joe-review", rr);
+D([b({ attribute: !1 })], ir.prototype, "hass", void 0), D([b({ attribute: !1 })], ir.prototype, "t", void 0), D([b({ attribute: !1 })], ir.prototype, "config", void 0), D([b({ attribute: !1 })], ir.prototype, "discovery", void 0), D([b({ attribute: !1 })], ir.prototype, "checks", void 0), D([b()], ir.prototype, "context", void 0), T("joe-review", ir);
 //#endregion
 //#region src/components/step-nav.ts
-function ir(e, t, n = !1) {
+function ar(e, t, n = !1) {
 	let r = g`<button type="button" class="btn btn-primary" ?data-notip=${!t.nextTip} @click=${t.next}>
     ${t.nextLabel}<ha-icon icon="mdi:chevron-right"></ha-icon>
   </button>`;
@@ -11123,12 +11345,12 @@ function ir(e, t, n = !1) {
     ${t.back ? g`<button type="button" class="btn btn-ghost" data-notip @click=${t.back}>
           <ha-icon icon="mdi:chevron-left"></ha-icon>${t.backLabel ?? e("onb.back")}
         </button>` : g`<span></span>`}
-    ${t.nextTip ? g`<span class="with-tip" data-tipped>${r} ${P(e, t.nextTip)}</span>` : r}
+    ${t.nextTip ? g`<span class="with-tip" data-tipped>${r} ${M(e, t.nextTip)}</span>` : r}
   </nav>`;
 }
 //#endregion
 //#region src/pages/questions.ts
-var ar = {
+var or = {
 	tariff: "plan",
 	feed_in: "plug",
 	capacity: "night-charge",
@@ -11136,13 +11358,13 @@ var ar = {
 	hot_water: "hot-water",
 	ev: "ev",
 	household: "relax"
-}, or = [
+}, sr = [
 	"climate",
 	"heat_pump",
 	"electric_heating"
 ];
-function sr(e) {
-	let t = [], n = (t) => I(e, t)?.source === "user", r = (t) => e.answers[t] !== void 0 && e.answers[t] !== null, i = e.tariff;
+function cr(e) {
+	let t = [], n = (t) => P(e, t)?.source === "user", r = (t) => e.answers[t] !== void 0 && e.answers[t] !== null, i = e.tariff;
 	(i.kind === "unknown" || n("tariff.kind") || r("tariff")) && t.push("tariff"), (i.feed_in_price == null && !i.feed_in_entity || n("tariff.feed_in_price") || r("feed_in")) && t.push("feed_in");
 	for (let i of e.batteries) {
 		let e = `capacity:${i.id}`;
@@ -11150,12 +11372,12 @@ function sr(e) {
 	}
 	return t.push("heating", "hot_water", "ev", "household"), t;
 }
-var cr = class extends y {
+var lr = class extends y {
 	constructor(...e) {
 		super(...e), this.single = "", this.index = 0;
 	}
 	static {
-		this.styles = [D, o`
+		this.styles = [E, o`
       :host {
         display: block;
       }
@@ -11224,14 +11446,14 @@ var cr = class extends y {
 		let { t: e, config: t } = this;
 		if (!e || !t) return v;
 		if (this.single) return this.renderQuestion(e, t, this.single);
-		let n = sr(t), r = Math.min(this.index, n.length - 1), i = n[r], a = r === n.length - 1;
-		return g`${ir(e, {
+		let n = cr(t), r = Math.min(this.index, n.length - 1), i = n[r], a = r === n.length - 1;
+		return g`${ar(e, {
 			back: () => this.move(-1, n.length),
 			next: () => this.move(1, n.length),
 			nextLabel: e(a ? "ask.finish" : "onb.next")
 		})}
       <div class="wrap">
-        <joe-pose name=${ar[i.split(":")[0]] ?? "ask"}></joe-pose>
+        <joe-pose name=${or[i.split(":")[0]] ?? "ask"}></joe-pose>
         <div>
           <div class="eyebrow">${e("ask.count", {
 			n: r + 1,
@@ -11286,7 +11508,7 @@ var cr = class extends y {
 	question(e, t, n) {
 		let r = this.t;
 		return g`<div data-tipped>
-      <div class="title-row">${C(e, "h2", P(r, t))}</div>
+      <div class="title-row">${C(e, "h2", M(r, t))}</div>
       ${S}
       <div class="content">${n}</div>
     </div>`;
@@ -11299,7 +11521,7 @@ var cr = class extends y {
       ?multiple=${r}
       .exclusive=${["none"]}
       idk=${e("ask.idk")}
-      @joe-choice=${(e) => z(this, { answers: { [t]: r ? e.detail.value : e.detail.value[0] ?? null } })}
+      @joe-choice=${(e) => L(this, { answers: { [t]: r ? e.detail.value : e.detail.value[0] ?? null } })}
     ></joe-choice>`;
 	}
 	renderHotWater(e, t) {
@@ -11345,12 +11567,12 @@ var cr = class extends y {
               >
                 <ha-icon icon=${a ? "mdi:pencil-outline" : "mdi:water-boiler"}></ha-icon>${e(a ? "q.hot_water.edit" : "q.hot_water.set_up")}
               </button>
-              ${P(e, "q_hot_water_action")}
+              ${M(e, "q_hot_water_action")}
             </div>
           </div>` : v}`);
 	}
 	renderHeating(e, t) {
-		let n = t.answers.heating, r = Array.isArray(n) ? n : [], i = t.consumers.filter((e) => r.includes(e.kind)), a = r.some((e) => or.includes(e));
+		let n = t.answers.heating, r = Array.isArray(n) ? n : [], i = t.consumers.filter((e) => r.includes(e.kind)), a = r.some((e) => sr.includes(e));
 		return this.question(e("q.heating.title"), "q_heating", g`${this.choice(e, "heating", [
 			{
 				value: "climate",
@@ -11381,12 +11603,12 @@ var cr = class extends y {
                 <button type="button" class="mini-btn" @click=${() => this.edit("consumers")}>
                   <ha-icon icon="mdi:devices"></ha-icon>${e("q.heating.assign")}
                 </button>
-                ${P(e, "f_consumer_kind")}
+                ${M(e, "f_consumer_kind")}
               </div>
             </div>` : v}`);
 	}
 	renderFeedIn(e, t) {
-		let n = t.tariff.feed_in_price, r = t.answers.feed_in === gn;
+		let n = t.tariff.feed_in_price, r = t.answers.feed_in === vn;
 		return this.question(e("q.feed_in.title"), "q_feed_in", g`<div class="inline">
         <span class="unit-input">
           <input
@@ -11401,7 +11623,7 @@ var cr = class extends y {
             .value=${n == null ? "" : String(Math.round(n * 1e6) / 1e4)}
             @change=${(e) => {
 			let t = Number.parseFloat(e.target.value), n = Number.isFinite(t) && t >= 0;
-			z(this, {
+			L(this, {
 				tariff: { feed_in_price: n ? Math.round(t * 100) / 1e4 : null },
 				answers: { feed_in: n ? "known" : null }
 			});
@@ -11412,7 +11634,7 @@ var cr = class extends y {
         <button
           type="button"
           class="mini-btn ${n === 0 ? "go" : ""}"
-          @click=${() => z(this, {
+          @click=${() => L(this, {
 			tariff: { feed_in_price: 0 },
 			answers: { feed_in: "none" }
 		})}
@@ -11422,9 +11644,9 @@ var cr = class extends y {
         <button
           type="button"
           class="mini-btn ${r ? "go" : ""}"
-          @click=${() => z(this, {
+          @click=${() => L(this, {
 			tariff: { feed_in_price: null },
-			answers: { feed_in: gn }
+			answers: { feed_in: vn }
 		})}
         >
           ${e("ask.idk")}
@@ -11434,7 +11656,7 @@ var cr = class extends y {
 	renderCapacity(e, t, n) {
 		let r = t.batteries.find((e) => e.id === n);
 		if (!r) return g``;
-		let i = `capacity:${n}`, a = t.answers[i] === gn;
+		let i = `capacity:${n}`, a = t.answers[i] === vn;
 		return this.question(e("q.capacity.title", { name: r.name }), "q_capacity", g`<div class="inline">
         <span class="unit-input">
           <input
@@ -11448,7 +11670,7 @@ var cr = class extends y {
             .value=${r.capacity_kwh == null ? "" : String(r.capacity_kwh)}
             @change=${(e) => {
 			let t = Number.parseFloat(e.target.value), r = Number.isFinite(t) && t > 0;
-			z(this, {
+			L(this, {
 				batteries: { [n]: { capacity_kwh: r ? t : null } },
 				answers: { [i]: r ? "known" : null }
 			});
@@ -11459,9 +11681,9 @@ var cr = class extends y {
         <button
           type="button"
           class="mini-btn ${a ? "go" : ""}"
-          @click=${() => z(this, {
+          @click=${() => L(this, {
 			batteries: { [n]: { capacity_kwh: null } },
-			answers: { [i]: gn }
+			answers: { [i]: vn }
 		})}
         >
           ${e("ask.idk_learn")}
@@ -11470,7 +11692,7 @@ var cr = class extends y {
 	}
 	saveTariff(e) {
 		let t = { tariff: e };
-		e.kind && (t.answers = { tariff: e.kind }), z(this, t);
+		e.kind && (t.answers = { tariff: e.kind }), L(this, t);
 	}
 	edit(e) {
 		this.dispatchEvent(new CustomEvent("joe-edit", {
@@ -11494,24 +11716,24 @@ var cr = class extends y {
 		}));
 	}
 };
-O([b({ attribute: !1 })], cr.prototype, "hass", void 0), O([b({ attribute: !1 })], cr.prototype, "t", void 0), O([b({ attribute: !1 })], cr.prototype, "config", void 0), O([b({ attribute: !1 })], cr.prototype, "discovery", void 0), O([b()], cr.prototype, "single", void 0), O([x()], cr.prototype, "index", void 0), E("joe-questions", cr);
+D([b({ attribute: !1 })], lr.prototype, "hass", void 0), D([b({ attribute: !1 })], lr.prototype, "t", void 0), D([b({ attribute: !1 })], lr.prototype, "config", void 0), D([b({ attribute: !1 })], lr.prototype, "discovery", void 0), D([b()], lr.prototype, "single", void 0), D([x()], lr.prototype, "index", void 0), T("joe-questions", lr);
 //#endregion
 //#region src/pages/onboarding.ts
-function lr(e, t, n) {
+function ur(e, t, n) {
 	let [r, i] = e(n).split("|");
-	return `${N(e.lang, t, 0)} ${t === 1 ? r : i}`;
+	return `${j(e.lang, t, 0)} ${t === 1 ? r : i}`;
 }
-var ur = {
+var dr = {
 	climate: "q.heating.climate",
 	heat_pump: "q.heating.heat_pump",
 	electric_heating: "q.heating.electric",
 	none: "q.heating.none"
-}, Z = class extends y {
+}, X = class extends y {
 	constructor(...e) {
 		super(...e), this.step = "welcome", this.checks = [], this.discovering = !1, this.discoveryFailed = !1;
 	}
 	static {
-		this.styles = [D, o`
+		this.styles = [E, o`
       :host {
         display: block;
       }
@@ -11649,7 +11871,7 @@ var ur = {
               <button type="button" class="btn btn-primary" @click=${() => this.go("scan")}>
                 ${e("onb.welcome.go")}
               </button>
-              ${P(e, "scan_start")}
+              ${M(e, "scan_start")}
             </div>`);
 			case "scan": return this.renderScan(e);
 			case "questions": return g`<joe-questions
@@ -11665,7 +11887,7 @@ var ur = {
 		return this.discovering || !this.discovery && !this.discoveryFailed ? this.layout("scout", g`${C(e("onb.scan.title"))} ${S}
           <p class="lead">${e("onb.scan.lead")}</p>
           ${this.renderEnergy(e)}
-          <div class="looking" role="status">${e("scan.looking")}</div>`) : g`${ir(e, {
+          <div class="looking" role="status">${e("scan.looking")}</div>`) : g`${ar(e, {
 			back: () => this.go("welcome"),
 			next: () => this.go("questions"),
 			nextLabel: e("onb.next")
@@ -11689,7 +11911,7 @@ var ur = {
             </button>
             <span class="with-tip" data-tipped>
               <button type="button" class="btn btn-secondary" @click=${this.rediscover}>${e("scan.again")}</button>
-              ${P(e, "rescan")}
+              ${M(e, "rescan")}
             </span>
             <button type="button" class="btn btn-ghost" data-notip @click=${() => this.go("welcome")}>
               ${e("onb.back")}
@@ -11699,7 +11921,7 @@ var ur = {
       </div>`;
 	}
 	renderDone(e) {
-		return g`${ir(e, {
+		return g`${ar(e, {
 			back: () => this.go("scan"),
 			backLabel: e("onb.done.change"),
 			next: () => this.complete(),
@@ -11712,7 +11934,7 @@ var ur = {
         <div class="actions">
           <span class="with-tip" data-tipped>
             <button type="button" class="btn btn-primary" @click=${this.complete}>${e("onb.done.go")}</button>
-            ${P(e, "start")}
+            ${M(e, "start")}
           </span>
           <button type="button" class="btn btn-ghost" data-notip @click=${() => this.go("scan")}>
             ${e("onb.done.change")}
@@ -11720,7 +11942,7 @@ var ur = {
         </div>`)}`;
 	}
 	renderSummary(e, t) {
-		let n = this.hass, r = t.batteries.reduce((e, t) => e + (t.capacity_kwh ?? (n ? xt(n, t.capacity_entity) : null) ?? 0), 0), i = (n, r) => {
+		let n = this.hass, r = t.batteries.reduce((e, t) => e + (t.capacity_kwh ?? (n ? Ct(n, t.capacity_entity) : null) ?? 0), 0), i = (n, r) => {
 			let i = t.answers[n];
 			if (i === "unknown") return e("sum.unknown");
 			let a = Array.isArray(i) ? i : typeof i == "string" ? [i] : [];
@@ -11730,15 +11952,15 @@ var ur = {
       ${[
 			[e("sum.batteries"), t.batteries.length ? e("sum.batteries.value", {
 				count: t.batteries.length,
-				kwh: r ? N(e.lang, r, 1) : "?"
+				kwh: r ? j(e.lang, r, 1) : "?"
 			}) : e("sum.none")],
-			[e("sum.tariff"), t.tariff.kind === "unknown" ? e("sum.unknown") : er(e, t.tariff, !1)],
-			[e("sum.feed_in"), t.tariff.feed_in_price == null ? t.tariff.feed_in_entity ? e("sum.from_sensor") : e("sum.unknown") : `${$n(e, t.tariff.feed_in_price)} ct`],
+			[e("sum.tariff"), t.tariff.kind === "unknown" ? e("sum.unknown") : tr(e, t.tariff, !1)],
+			[e("sum.feed_in"), t.tariff.feed_in_price == null ? t.tariff.feed_in_entity ? e("sum.from_sensor") : e("sum.unknown") : `${er(e, t.tariff.feed_in_price)} ct`],
 			[e("sum.forecast"), t.forecast.provider ? a ? e("sum.forecast.value", {
 				provider: a.provider_name,
-				planes: lr(e, a.planes, "word.plane")
+				planes: ur(e, a.planes, "word.plane")
 			}) : t.forecast.provider : e("sum.none")],
-			[e("sum.heating"), i("heating", ur)],
+			[e("sum.heating"), i("heating", dr)],
 			[e("sum.hot_water"), i("hot_water", {
 				hot_water_heat_pump: "q.hot_water.heat_pump",
 				electric: "q.hot_water.electric",
@@ -11750,8 +11972,8 @@ var ur = {
 				no: "q.ev.no"
 			})],
 			[e("sum.household"), e("sum.household.value", {
-				persons: lr(e, t.persons.length, "word.person"),
-				calendars: lr(e, t.persons.reduce((e, t) => e + t.calendars.length, 0), "word.calendar")
+				persons: ur(e, t.persons.length, "word.person"),
+				calendars: ur(e, t.persons.reduce((e, t) => e + t.calendars.length, 0), "word.calendar")
 			})]
 		].map(([e, t]) => g`<div><span>${e}</span><span>${t}</span></div>`)}
     </div>`;
@@ -11802,15 +12024,15 @@ var ur = {
 		}));
 	}
 };
-O([b()], Z.prototype, "step", void 0), O([b({ attribute: !1 })], Z.prototype, "t", void 0), O([b({ attribute: !1 })], Z.prototype, "info", void 0), O([b({ attribute: !1 })], Z.prototype, "hass", void 0), O([b({ attribute: !1 })], Z.prototype, "config", void 0), O([b({ attribute: !1 })], Z.prototype, "discovery", void 0), O([b({ attribute: !1 })], Z.prototype, "checks", void 0), O([b({ type: Boolean })], Z.prototype, "discovering", void 0), O([b({ type: Boolean })], Z.prototype, "discoveryFailed", void 0), E("joe-onboarding", Z);
+D([b()], X.prototype, "step", void 0), D([b({ attribute: !1 })], X.prototype, "t", void 0), D([b({ attribute: !1 })], X.prototype, "info", void 0), D([b({ attribute: !1 })], X.prototype, "hass", void 0), D([b({ attribute: !1 })], X.prototype, "config", void 0), D([b({ attribute: !1 })], X.prototype, "discovery", void 0), D([b({ attribute: !1 })], X.prototype, "checks", void 0), D([b({ type: Boolean })], X.prototype, "discovering", void 0), D([b({ type: Boolean })], X.prototype, "discoveryFailed", void 0), T("joe-onboarding", X);
 //#endregion
 //#region src/pages/overview.ts
-var dr = class extends y {
+var fr = class extends y {
 	constructor(...e) {
 		super(...e), this.prefix = "/energy-joe";
 	}
 	static {
-		this.styles = [D, o`
+		this.styles = [E, o`
       :host {
         display: block;
       }
@@ -12140,18 +12362,18 @@ var dr = class extends y {
         ${C(e("overview.night.empty.title"))} ${S}
         <p class="lead">${e("overview.night.empty.text")}</p>
       </section>`;
-		let n = Mn(e, t), r = Nn(e, t, this.hass?.config?.currency), i = t.kind === "charge" || t.kind === "hold" ? g`${N(e.lang, t.target ?? 0, 0)}<small>%</small>` : g`${e(t.kind === "none" ? "plan.big.none" : "plan.big.unavailable")}`;
+		let n = Nn(e, t), r = Pn(e, t, this.hass?.config?.currency), i = t.kind === "charge" || t.kind === "hold" ? g`${j(e.lang, t.target ?? 0, 0)}<small>%</small>` : g`${e(t.kind === "none" ? "plan.big.none" : "plan.big.unavailable")}`;
 		return g`<section class="card figure-card" data-tipped>
-      <joe-pose name=${On(t)}></joe-pose>
+      <joe-pose name=${kn(t)}></joe-pose>
       <div class="head">
         <div class="eyebrow">
-          <ha-icon icon="mdi:weather-night"></ha-icon>${e("overview.night")}${t.window ? ` · ${An(e, t)}` : ""}
+          <ha-icon icon="mdi:weather-night"></ha-icon>${e("overview.night")}${t.window ? ` · ${jn(e, t)}` : ""}
         </div>
-        ${P(e, "plan_target")}
+        ${M(e, "plan_target")}
       </div>
       <div class="big">${i}</div>
       ${S}
-      <p class="say">${jn(e, t)}</p>
+      <p class="say">${Mn(e, t)}</p>
       ${n.length ? g`<div class="lines">${n.map((e) => g`<div>${e}</div>`)}</div>` : v}
       ${r ? g`<p class="cost">${r}</p>` : v}
       <div class="bottom">
@@ -12172,25 +12394,25 @@ var dr = class extends y {
         ${C(e("overview.sim.empty.title"))} ${S}
         <p class="lead">${e("overview.sim.empty.text")}</p>
       </section>`;
-		let r = this.hass?.config?.currency, i = n.window?.end.slice(0, 10) ?? n.date, a = i === Tn(this.hass?.config?.time_zone) ? e("overview.sim.last") : e("overview.sim.night", { day: K(e.lang, i, "weekday") }), o = n.saving, s = o > .005 ? "good" : o < -.005 ? "bad" : "", c = s === "good" ? e("overview.sim.saved", {
-			value: W(e, o, r),
-			day: N(e.lang, Math.max(0, n.day_kwh_without - n.day_kwh), 1),
-			night: N(e.lang, Math.max(0, n.night_kwh - n.night_kwh_without), 1)
-		}) : s === "bad" ? e("overview.sim.cost", { value: W(e, -o, r) }) : e("overview.sim.same"), l = t.since ?? t.first;
+		let r = this.hass?.config?.currency, i = n.window?.end.slice(0, 10) ?? n.date, a = i === En(this.hass?.config?.time_zone) ? e("overview.sim.last") : e("overview.sim.night", { day: G(e.lang, i, "weekday") }), o = n.saving, s = o > .005 ? "good" : o < -.005 ? "bad" : "", c = s === "good" ? e("overview.sim.saved", {
+			value: U(e, o, r),
+			day: j(e.lang, Math.max(0, n.day_kwh_without - n.day_kwh), 1),
+			night: j(e.lang, Math.max(0, n.night_kwh - n.night_kwh_without), 1)
+		}) : s === "bad" ? e("overview.sim.cost", { value: U(e, -o, r) }) : e("overview.sim.same"), l = t.since ?? t.first;
 		return g`<section class="card figure-card" data-tipped>
       <joe-pose name=${s === "good" ? "relax" : "inspect"}></joe-pose>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:calculator-variant-outline"></ha-icon>${e("overview.sim")} · ${a}</div>
-        ${P(e, "sim_result")}
+        ${M(e, "sim_result")}
       </div>
-      <div class="big ${s}">${W(e, o, r, !0)}</div>
+      <div class="big ${s}">${U(e, o, r, !0)}</div>
       ${S}
       <p class="say">${c}</p>
       <p class="cost">
         ${e("overview.sim.total", {
-			since: l ? K(e.lang, l) : "–",
-			value: W(e, t.saving, r, !0),
-			nights: En(e, t.days)
+			since: l ? G(e.lang, l) : "–",
+			value: U(e, t.saving, r, !0),
+			nights: Dn(e, t.days)
 		})}
       </p>
       <div class="bottom">
@@ -12210,12 +12432,12 @@ var dr = class extends y {
 	renderNow(e) {
 		let t = this.hass, n = this.state?.config;
 		if (!t || !n) return g``;
-		let r = n.measurements, i = r.solar_power.length ? St(t, r.solar_power) : null, a = bt(t, r.grid_power), o = n.batteries.map((e) => ({
-			power: bt(t, e.power),
-			soc: M(t, e.soc_entity)
-		})), s = o.filter((e) => e.power != null), c = s.length ? s.reduce((e, t) => e + (t.power ?? 0), 0) : null, l = bt(t, r.home_power), u = l == null && a != null;
+		let r = n.measurements, i = r.solar_power.length ? wt(t, r.solar_power) : null, a = St(t, r.grid_power), o = n.batteries.map((e) => ({
+			power: St(t, e.power),
+			soc: yt(t, e.soc_entity)
+		})), s = o.filter((e) => e.power != null), c = s.length ? s.reduce((e, t) => e + (t.power ?? 0), 0) : null, l = St(t, r.home_power), u = l == null && a != null;
 		u && (l = (a ?? 0) + (i ?? 0) - (c ?? 0));
-		let d = o.map((e) => e.soc).filter((e) => e != null), f = (t) => t == null ? "–" : N(e.lang, Math.abs(t), 2), p = (e, t, n, r, i) => g`<div class="flow ${e}">
+		let d = o.map((e) => e.soc).filter((e) => e != null), f = (t) => t == null ? "–" : j(e.lang, Math.abs(t), 2), p = (e, t, n, r, i) => g`<div class="flow ${e}">
         <span class="icon"><ha-icon icon=${t}></ha-icon></span>
         <small>${n}</small>
         <b>${f(r)}<span>kW</span></b>
@@ -12224,13 +12446,13 @@ var dr = class extends y {
 		return g`<section class="card wide" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:pulse"></ha-icon>${e("overview.now")}</div>
-        ${P(e, "now")}
+        ${M(e, "now")}
       </div>
       <div class="now">
         ${p("sun", "mdi:solar-power", e("overview.now.solar"), i, e(i == null ? "overview.now.none" : "overview.now.solar.sub"))}
         ${p("home", "mdi:home-lightning-bolt-outline", e("overview.now.home"), l, e(l == null ? "overview.now.none" : u ? "overview.now.home.calc" : "overview.now.home.sub"))}
-        ${p("battery", "mdi:home-battery-outline", m(c) ? e("overview.now.battery") : e(c > 0 ? "overview.now.battery.charge" : "overview.now.battery.discharge"), c, d.length ? d.length === 1 ? e("overview.now.soc", { value: N(e.lang, d[0], 0) }) : e("overview.now.soc_avg", {
-			value: N(e.lang, d.reduce((e, t) => e + t, 0) / d.length, 0),
+        ${p("battery", "mdi:home-battery-outline", m(c) ? e("overview.now.battery") : e(c > 0 ? "overview.now.battery.charge" : "overview.now.battery.discharge"), c, d.length ? d.length === 1 ? e("overview.now.soc", { value: j(e.lang, d[0], 0) }) : e("overview.now.soc_avg", {
+			value: j(e.lang, d.reduce((e, t) => e + t, 0) / d.length, 0),
 			count: d.length
 		}) : n.batteries.length ? e("overview.now.none") : e("overview.now.no_battery"))}
         ${p("net", "mdi:transmission-tower", m(a) ? e("overview.now.grid") : e(a > 0 ? "overview.now.grid.in" : "overview.now.grid.out"), a, a == null ? e("overview.now.none") : m(a) ? e("overview.now.grid.idle") : e(a > 0 ? "overview.now.grid.in.sub" : "overview.now.grid.out.sub"))}
@@ -12262,7 +12484,7 @@ var dr = class extends y {
 		return g`<section class="card wide" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:chart-bar"></ha-icon>${e("overview.week")}</div>
-        ${P(e, "week")}
+        ${M(e, "week")}
       </div>
       <p class="status">${r}</p>
       ${t.length ? g`<joe-chart
@@ -12299,15 +12521,15 @@ var dr = class extends y {
 		})));
 	}
 };
-O([b({ attribute: !1 })], dr.prototype, "t", void 0), O([b({ attribute: !1 })], dr.prototype, "hass", void 0), O([b({ attribute: !1 })], dr.prototype, "state", void 0), O([b()], dr.prototype, "prefix", void 0), O([x()], dr.prototype, "week", void 0), E("joe-overview", dr);
+D([b({ attribute: !1 })], fr.prototype, "t", void 0), D([b({ attribute: !1 })], fr.prototype, "hass", void 0), D([b({ attribute: !1 })], fr.prototype, "state", void 0), D([b()], fr.prototype, "prefix", void 0), D([x()], fr.prototype, "week", void 0), T("joe-overview", fr);
 //#endregion
 //#region src/pages/plan.ts
-var fr = 36e5, pr = class extends y {
+var pr = 36e5, mr = class extends y {
 	constructor(...e) {
 		super(...e), this.refreshing = !1;
 	}
 	static {
-		this.styles = [D, o`
+		this.styles = [E, o`
       :host {
         display: block;
       }
@@ -12477,9 +12699,9 @@ var fr = 36e5, pr = class extends y {
 		if (!e) return v;
 		let t = this.state?.plan;
 		if (!t || t.kind === "unavailable" || !t.hours) return this.renderEmpty(e, t);
-		let n = Mn(e, t), r = Nn(e, t, this.hass?.config?.currency);
+		let n = Nn(e, t), r = Pn(e, t, this.hass?.config?.currency);
 		return g`<div class="wrap">
-      <div class="eyebrow"><ha-icon icon="mdi:weather-night"></ha-icon>${e("overview.night")} · ${An(e, t)}</div>
+      <div class="eyebrow"><ha-icon icon="mdi:weather-night"></ha-icon>${e("overview.night")} · ${jn(e, t)}</div>
       ${C(e("plan.page.title"))} ${S}
       <div class="top" data-tipped>
         ${this.state?.mode === "simulation" ? g`<span class="pill-sim">${e("mode.simulation")}</span>` : g`<span class="chip ${this.state?.mode === "live" ? "ok" : "learned"}">${e(`mode.${this.state?.mode ?? "off"}`)}</span>`}
@@ -12489,14 +12711,14 @@ var fr = 36e5, pr = class extends y {
         <button type="button" class="mini-btn" ?disabled=${this.refreshing || t.fixed} @click=${this.refresh}>
           <ha-icon icon="mdi:refresh"></ha-icon>${e("plan.refresh")}
         </button>
-        ${P(e, "plan_refresh")}
+        ${M(e, "plan_refresh")}
       </div>
       <section class="hero" data-tipped>
-        <joe-pose name=${On(t)}></joe-pose>
+        <joe-pose name=${kn(t)}></joe-pose>
         <div class="big">
-          ${t.kind === "none" ? e("plan.big.none") : g`${N(e.lang, t.target ?? 0, 0)}<small>%</small>`}
+          ${t.kind === "none" ? e("plan.big.none") : g`${j(e.lang, t.target ?? 0, 0)}<small>%</small>`}
         </div>
-        <p class="say">${jn(e, t)} ${P(e, "plan_target")}</p>
+        <p class="say">${Mn(e, t)} ${M(e, "plan_target")}</p>
         ${n.length ? g`<div class="lines">${n.map((e) => g`<div>${e}</div>`)}</div>` : v}
         ${r ? g`<p class="cost">${r}</p>` : v}
       </section>
@@ -12513,7 +12735,7 @@ var fr = 36e5, pr = class extends y {
       ${o === !1 ? v : g`<button type="button" class="btn btn-secondary" @click=${() => this.answer(i, !1)}>${e("plan.steer.no")}</button>`}`) : (c = e(a ? "plan.steer.skipped" : "plan.steer.live"), l = g`<button type="button" class="btn btn-secondary" @click=${() => this.skip(!a)}>
         ${e(a ? "plan.steer.unskip" : "plan.steer.skip")}
       </button>`), g`<section class="chart-card steer" data-tipped>
-      <div class="chart-head">${c} ${P(e, "plan_steer")}</div>
+      <div class="chart-head">${c} ${M(e, "plan_steer")}</div>
       ${s.length ? g`<div class="note warn">
             <ha-icon icon="mdi:alert-outline"></ha-icon><span>${e("plan.steer.untested", { names: s.map((e) => e.name).join(", ") })}</span>
           </div>` : v}
@@ -12528,21 +12750,21 @@ var fr = 36e5, pr = class extends y {
 			currency: r
 		}).format(t);
 		return g`<section class="chart-card" data-tipped>
-      <div class="chart-head">${e("plan.actions")} ${P(e, "plan_actions")}</div>
+      <div class="chart-head">${e("plan.actions")} ${M(e, "plan_actions")}</div>
       <dl>
         ${n.map((n) => {
-			let r = n.target == null ? "" : N(e.lang, n.target, 0), a = n.run ? n.kind === "target" ? e("plan.actions.target", {
-				start: q(n.start),
-				end: q(n.end),
+			let r = n.target == null ? "" : j(e.lang, n.target, 0), a = n.run ? n.kind === "target" ? e("plan.actions.target", {
+				start: K(n.start),
+				end: K(n.end),
 				target: r
 			}) : e("plan.actions.run", {
-				start: q(n.start),
-				end: q(n.end)
+				start: K(n.start),
+				end: K(n.end)
 			}) : e.optional(`devices.action.why.${n.reasons[n.reasons.length - 1] ?? "manual_only"}`, {
-				kwh: N(e.lang, t.meta?.tomorrow_kwh ?? 0, 0),
-				temperature: N(e.lang, n.temperature ?? 0, 0)
+				kwh: j(e.lang, t.meta?.tomorrow_kwh ?? 0, 0),
+				temperature: j(e.lang, n.temperature ?? 0, 0)
 			}) ?? "", o = n.run && n.energy_kwh ? e("plan.actions.energy", {
-				kwh: N(e.lang, n.energy_kwh, 1),
+				kwh: j(e.lang, n.energy_kwh, 1),
 				cost: i(n.cost ?? 0)
 			}) : "", s = this.state?.config.actions.find((e) => e.id === n.id);
 			return g`<dt>${n.name}</dt>
@@ -12572,9 +12794,9 @@ var fr = 36e5, pr = class extends y {
 		} catch {}
 	}
 	renderEmpty(e, t) {
-		let n = t ? jn(e, t) : e(this.state?.mode === "off" ? "plan.empty.off" : "plan.empty.waiting");
+		let n = t ? Mn(e, t) : e(this.state?.mode === "off" ? "plan.empty.off" : "plan.empty.waiting");
 		return g`<div class="empty">
-      <joe-pose name=${t ? On(t) : "plan"}></joe-pose>
+      <joe-pose name=${t ? kn(t) : "plan"}></joe-pose>
       <div>
         ${C(e("plan.title"))} ${S}
         <p class="lead">${n}</p>
@@ -12582,9 +12804,9 @@ var fr = 36e5, pr = class extends y {
     </div>`;
 	}
 	frame(e, t, n) {
-		let r = (e) => `${String((Number(e.slice(0, 2)) + 1) % 24).padStart(2, "0")}:00`, i = n.map((e, t) => `${q(e.start)}–${q(n[t + 1]?.start) || r(q(e.start))}`), a = /* @__PURE__ */ new Map();
+		let r = (e) => `${String((Number(e.slice(0, 2)) + 1) % 24).padStart(2, "0")}:00`, i = n.map((e, t) => `${K(e.start)}–${K(n[t + 1]?.start) || r(K(e.start))}`), a = /* @__PURE__ */ new Map();
 		n.forEach((t, n) => {
-			let r = q(t.start);
+			let r = K(t.start);
 			r === "00:00" && n > 0 ? a.set(n, new Intl.DateTimeFormat(e.lang, {
 				weekday: "short",
 				timeZone: "UTC"
@@ -12608,7 +12830,7 @@ var fr = 36e5, pr = class extends y {
 				let t = Date.parse(e);
 				for (let e = 0; e < n.length; e++) {
 					let r = Date.parse(n[e].start);
-					if (t >= r && t < r + fr) return e + (t - r) / fr;
+					if (t >= r && t < r + pr) return e + (t - r) / pr;
 				}
 				return null;
 			}
@@ -12635,7 +12857,7 @@ var fr = 36e5, pr = class extends y {
 		});
 		let a = [], o = r.at(t.sun_takes_over);
 		if (o != null) {
-			let n = q(t.sun_takes_over);
+			let n = K(t.sun_takes_over);
 			a.push({
 				at: o,
 				label: e("plan.chart.sun", { time: n }),
@@ -12643,7 +12865,7 @@ var fr = 36e5, pr = class extends y {
 			});
 		}
 		return g`<div class="chart-card" data-tipped>
-      <div class="chart-head">${e("plan.chart.energy")} ${P(e, "chart_plan_energy")}</div>
+      <div class="chart-head">${e("plan.chart.energy")} ${M(e, "chart_plan_energy")}</div>
       <joe-chart
         .labels=${r.labels}
         .ticks=${r.ticks}
@@ -12671,12 +12893,12 @@ var fr = 36e5, pr = class extends y {
 			let n = r.at(t.start);
 			return n == null ? [] : [{
 				at: n,
-				label: e("plan.chart.charge_at", { time: q(t.start) }),
-				short: q(t.start)
+				label: e("plan.chart.charge_at", { time: K(t.start) }),
+				short: K(t.start)
 			}];
 		});
 		return g`<div class="chart-card" data-tipped>
-      <div class="chart-head">${e("plan.chart.prices")} ${P(e, "chart_plan_prices")}</div>
+      <div class="chart-head">${e("plan.chart.prices")} ${M(e, "chart_plan_prices")}</div>
       <joe-chart
         .labels=${r.labels}
         .ticks=${r.ticks}
@@ -12687,7 +12909,7 @@ var fr = 36e5, pr = class extends y {
         lang=${e.lang}
         label=${e("plan.chart.prices")}
       ></joe-chart>
-      ${t.charge_slots?.length ? g`<p class="slots">${e("plan.slots", { slots: kn(t) })}</p>` : v}
+      ${t.charge_slots?.length ? g`<p class="slots">${e("plan.slots", { slots: An(t) })}</p>` : v}
     </div>`;
 	}
 	renderSoc(e, t, n) {
@@ -12708,7 +12930,7 @@ var fr = 36e5, pr = class extends y {
 				digits: 0
 			},
 			{
-				label: e("plan.chart.reserve", { value: N(e.lang, i, 0) }),
+				label: e("plan.chart.reserve", { value: j(e.lang, i, 0) }),
 				kind: "line",
 				values: n.map(() => i),
 				color: "var(--joe-crit)",
@@ -12718,15 +12940,15 @@ var fr = 36e5, pr = class extends y {
 		], o = [], s = r.at(t.window?.end);
 		s != null && t.kind !== "none" && o.push({
 			at: s,
-			label: e("plan.chart.target", { value: N(e.lang, t.target ?? 0, 0) })
+			label: e("plan.chart.target", { value: j(e.lang, t.target ?? 0, 0) })
 		});
 		let c = r.at(t.full_at);
 		return c != null && o.push({
 			at: c,
-			label: e("plan.chart.full", { time: q(t.full_at) }),
-			short: `${q(t.full_at)}`
+			label: e("plan.chart.full", { time: K(t.full_at) }),
+			short: `${K(t.full_at)}`
 		}), g`<div class="chart-card" data-tipped>
-      <div class="chart-head">${e("plan.chart.soc")} ${P(e, "chart_plan_soc")}</div>
+      <div class="chart-head">${e("plan.chart.soc")} ${M(e, "chart_plan_soc")}</div>
       <joe-chart
         .labels=${r.labels}
         .ticks=${r.ticks}
@@ -12745,17 +12967,17 @@ var fr = 36e5, pr = class extends y {
     </div>`;
 	}
 	renderMath(e, t) {
-		let n = (t, n = 1) => t == null ? "–" : `${N(e.lang, t, n)} kWh`, r = (t) => t == null ? "–" : `${N(e.lang, t * 100, 1)} ct`, i = t.window?.start.slice(0, 10) ?? "", a = t.meta?.solar.sources[i] ?? "none", o = t.meta?.tomorrow, s = o?.solar_factor ?? t.meta?.solar_factor ?? 1, c = t.meta?.consumption, l = this.state?.config.persons ?? [], u = [
-			[e("plan.math.battery_now"), g`${N(e.lang, t.soc_now ?? 0, 0)} %<small
+		let n = (t, n = 1) => t == null ? "–" : `${j(e.lang, t, n)} kWh`, r = (t) => t == null ? "–" : `${j(e.lang, t * 100, 1)} ct`, i = t.window?.start.slice(0, 10) ?? "", a = t.meta?.solar.sources[i] ?? "none", o = t.meta?.tomorrow, s = o?.solar_factor ?? t.meta?.solar_factor ?? 1, c = t.meta?.consumption, l = this.state?.config.persons ?? [], u = [
+			[e("plan.math.battery_now"), g`${j(e.lang, t.soc_now ?? 0, 0)} %<small
             >${e("plan.math.battery_now.sub", {
-				stored: N(e.lang, (t.soc_now ?? 0) / 100 * (t.capacity_kwh ?? 0), 1),
-				capacity: N(e.lang, t.capacity_kwh ?? 0, 1)
+				stored: j(e.lang, (t.soc_now ?? 0) / 100 * (t.capacity_kwh ?? 0), 1),
+				capacity: j(e.lang, t.capacity_kwh ?? 0, 1)
 			})}</small
           >`],
-			[e("plan.math.battery_start"), `${N(e.lang, t.soc_start ?? 0, 0)} %`],
+			[e("plan.math.battery_start"), `${j(e.lang, t.soc_start ?? 0, 0)} %`],
 			[e("plan.math.solar"), g`${n(t.solar_kwh)}<small
             >${e(`plan.math.solar.${a}`)}${s === 1 ? "" : ` · ${e(o?.solar_source === "combined" ? "plan.math.solar.combined" : o?.solar_source === "weather" && o.weather ? "plan.math.solar.weather" : "plan.math.solar.factor", {
-				value: N(e.lang, s, 2),
+				value: j(e.lang, s, 2),
 				weather: o?.weather ? e(`learn.weather.${o.weather}`) : ""
 			})}`}</small
           >`],
@@ -12765,19 +12987,19 @@ var fr = 36e5, pr = class extends y {
 				kind: e(t.meta?.workday === !1 ? "plan.math.day_off" : "plan.math.workday")
 			}) : e("plan.math.home.default")}</small
           >`],
-			...o && (o.temp != null || Object.keys(o.labels).length) ? [[e("plan.math.tomorrow"), g`${[o.temp == null ? "" : `${N(e.lang, o.temp, 0)} °C`, ...Object.entries(o.labels).map(([t, n]) => e("plan.math.tomorrow.person", {
+			...o && (o.temp != null || Object.keys(o.labels).length) ? [[e("plan.math.tomorrow"), g`${[o.temp == null ? "" : `${j(e.lang, o.temp, 0)} °C`, ...Object.entries(o.labels).map(([t, n]) => e("plan.math.tomorrow.person", {
 				name: l.find((e) => e.id === t)?.name ?? t,
 				label: e(`label.${n}`)
 			}))].filter(Boolean).join(" · ")}<small
                   >${o.expected_kwh == null ? e("plan.math.tomorrow.usual") : e("plan.math.tomorrow.scaled", {
-				expected: N(e.lang, o.expected_kwh, 1),
-				usual: N(e.lang, o.profile_kwh, 1)
+				expected: j(e.lang, o.expected_kwh, 1),
+				usual: j(e.lang, o.profile_kwh, 1)
 			})}</small
                 >`]] : [],
-			[e("plan.math.target"), g`${N(e.lang, t.target ?? 0, 0)} %<small
+			[e("plan.math.target"), g`${j(e.lang, t.target ?? 0, 0)} %<small
             >${e("plan.math.target.sub", {
-				optimum: N(e.lang, t.optimum ?? 0, 0),
-				buffer: N(e.lang, (t.rules?.buffer ?? 0) * 100, 0)
+				optimum: j(e.lang, t.optimum ?? 0, 0),
+				buffer: j(e.lang, (t.rules?.buffer ?? 0) * 100, 0)
 			})}</small
           >`],
 			[e("plan.math.prices"), g`${e("plan.math.prices.value", {
@@ -12786,13 +13008,13 @@ var fr = 36e5, pr = class extends y {
 				feed: r(t.prices?.feed_in)
 			})}${t.prices?.assumed ? g`<small>${e("plan.math.prices.assumed")}</small>` : v}`],
 			[e("plan.math.rules"), e("plan.math.rules.value", {
-				reserve: N(e.lang, t.rules?.reserve ?? 0, 0),
-				max: N(e.lang, t.rules?.max_target ?? 100, 0),
+				reserve: j(e.lang, t.rules?.reserve ?? 0, 0),
+				max: j(e.lang, t.rules?.max_target ?? 100, 0),
 				mode: e.optional(`rule.discharge.${t.rules?.discharge_mode}`) ?? ""
 			})]
 		], d = [...new Set(t.notes ?? [])].map((t) => e.optional(`plan.note.${t}`)).filter(Boolean);
 		return g`<div class="chart-card" data-tipped>
-      <div class="chart-head">${e("plan.math")} ${P(e, "plan_math")}</div>
+      <div class="chart-head">${e("plan.math")} ${M(e, "plan_math")}</div>
       <dl>${u.map(([e, t]) => g`<dt>${e}</dt><dd>${t}</dd>`)}</dl>
       ${d.map((e) => g`<div class="note"><ha-icon icon="mdi:information-outline"></ha-icon><span>${e}</span></div>`)}
     </div>`;
@@ -12806,15 +13028,373 @@ var fr = 36e5, pr = class extends y {
 		}
 	}
 };
-O([b({ attribute: !1 })], pr.prototype, "hass", void 0), O([b({ attribute: !1 })], pr.prototype, "t", void 0), O([b({ attribute: !1 })], pr.prototype, "state", void 0), O([x()], pr.prototype, "refreshing", void 0), E("joe-plan-page", pr);
+D([b({ attribute: !1 })], mr.prototype, "hass", void 0), D([b({ attribute: !1 })], mr.prototype, "t", void 0), D([b({ attribute: !1 })], mr.prototype, "state", void 0), D([x()], mr.prototype, "refreshing", void 0), T("joe-plan-page", mr);
+//#endregion
+//#region src/components/mailbox-settings.ts
+var hr = [
+	"icloud",
+	"google",
+	"infomaniak",
+	"microsoft",
+	"other"
+], Z = class extends y {
+	constructor(...e) {
+		super(...e), this.password = "", this.sender = "", this.busy = !1, this.servers = !1;
+	}
+	static {
+		this.styles = [E, o`
+      :host {
+        display: block;
+      }
+      /* The same rows as on the settings page. */
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px 16px;
+        flex-wrap: wrap;
+        padding: 14px 0;
+        border-top: 1px solid var(--joe-line);
+      }
+      .row > div:first-child {
+        flex: 1 1 260px;
+        min-width: 0;
+      }
+      .row b {
+        display: block;
+        font-weight: 700;
+      }
+      .name {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .row small {
+        display: block;
+        color: var(--joe-muted);
+        font-size: 13px;
+        margin-top: 2px;
+        max-width: 52ch;
+      }
+      .row > .input,
+      .row > select {
+        width: auto;
+        flex: 0 1 300px;
+        min-width: 0;
+      }
+      .row > .inline,
+      .row > .chips {
+        flex: 1 1 300px;
+        justify-content: flex-end;
+      }
+      .intro {
+        margin: 0 0 6px;
+        color: var(--joe-ink-2);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+      }
+      .inline {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+      }
+      .inline .input {
+        width: auto;
+        flex: 1 1 200px;
+        min-width: 0;
+      }
+      ul {
+        list-style: none;
+        margin: 6px 0 0;
+        padding: 0;
+        display: grid;
+        gap: 4px;
+      }
+      li {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px 10px;
+        padding: 6px 10px;
+        border-radius: 9px;
+        background: var(--joe-surface-2);
+        font-size: 13.5px;
+      }
+      li .what {
+        flex: 1 1 200px;
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      li .bad {
+        color: var(--joe-warn, var(--joe-crit));
+      }
+      .ok {
+        color: var(--joe-good);
+      }
+    `];
+	}
+	render() {
+		let { t: e, config: t } = this;
+		if (!e || !t) return v;
+		let n = t.mailbox;
+		return g`<p class="intro">${e("mail.intro")}</p>
+      <div class="row" data-tipped>
+        <div>
+          <div class="name"><b id="mail-on">${e("mail.enabled")}</b>${M(e, "mail_enabled")}</div>
+          <small>${e("mail.enabled.hint")}</small>
+        </div>
+        <button
+          type="button"
+          class="switch"
+          role="switch"
+          aria-checked=${String(n.enabled)}
+          aria-labelledby="mail-on"
+          @click=${() => this.save({ enabled: !n.enabled })}
+        ></button>
+      </div>
+      ${n.enabled ? this.renderSettings(e, n) : v}`;
+	}
+	renderSettings(e, t) {
+		let n = this.status;
+		return g`<div class="row" data-tipped>
+        <div>
+          <div class="name"><label for="mail-provider"><b>${e("mail.provider")}</b></label>${M(e, "mail_provider")}</div>
+          <small>${e(`mail.provider.${t.provider}.hint`)}</small>
+        </div>
+        <select id="mail-provider" class="input" @change=${(e) => this.save({ provider: e.target.value })}>
+          ${hr.map((n) => g`<option value=${n} ?selected=${n === t.provider}>${e(`mail.provider.${n}`)}</option>`)}
+        </select>
+      </div>
+      <div class="row" data-tipped>
+        <div>
+          <div class="name"><label for="mail-address"><b>${e("mail.address")}</b></label>${M(e, "mail_address")}</div>
+          <small>${e("mail.address.hint")}</small>
+        </div>
+        <input
+          id="mail-address"
+          class="input"
+          type="email"
+          autocomplete="off"
+          .value=${t.address}
+          @change=${(e) => this.save({ address: e.target.value.trim() })}
+        />
+      </div>
+      <div class="row" data-tipped>
+        <div>
+          <div class="name"><label for="mail-password"><b>${e("mail.password")}</b></label>${M(e, "mail_password")}</div>
+          <small>${n?.has_secret ? g`<span class="ok">${e("mail.password.saved")}</span>` : e("mail.password.hint")}</small>
+        </div>
+        <form
+          class="inline"
+          @submit=${(e) => {
+			e.preventDefault(), this.savePassword();
+		}}
+        >
+          <input
+            id="mail-password"
+            class="input"
+            type="password"
+            autocomplete="new-password"
+            .value=${this.password}
+            @input=${(e) => this.password = e.target.value}
+          />
+          <button type="submit" class="mini-btn go" ?disabled=${!this.password || this.busy}>${e("common.save")}</button>
+        </form>
+      </div>
+      ${t.provider === "other" || this.servers ? this.renderServers(e, t) : g`<div class="row" data-tipped>
+            <div>
+              <div class="name"><b>${e("mail.servers")}</b>${M(e, "mail_servers")}</div>
+              <small>${e("mail.servers.preset")}</small>
+            </div>
+            <button type="button" class="mini-btn quiet" @click=${() => this.servers = !0}>${e("mail.servers.change")}</button>
+          </div>`}
+      <div class="row" data-tipped>
+        <div>
+          <div class="name"><b>${e("mail.allowed")}</b>${M(e, "mail_allowed")}</div>
+          <small>${e("mail.allowed.hint")}</small>
+        </div>
+        <div class="chips">
+          ${t.allowed.map((n) => g`<span class="chip">
+              ${n}
+              <button type="button" class="mini-btn quiet" aria-label=${e("mail.allowed.remove", { rule: n })} @click=${() => this.save({ allowed: t.allowed.filter((e) => e !== n) })}>
+                <ha-icon icon="mdi:close"></ha-icon>
+              </button>
+            </span>`)}
+          <form
+            class="inline"
+            @submit=${(e) => {
+			e.preventDefault(), this.allow(this.sender);
+		}}
+          >
+            <input
+              class="input"
+              type="text"
+              placeholder="name@example.org, @firma.de"
+              aria-label=${e("mail.allowed.add")}
+              .value=${this.sender}
+              @input=${(e) => this.sender = e.target.value}
+            />
+            <button type="submit" class="mini-btn" ?disabled=${!this.sender.trim()}>${e("mail.allowed.add")}</button>
+          </form>
+        </div>
+      </div>
+      <div class="row" data-tipped>
+        <div>
+          <div class="name"><b id="mail-accept">${e("mail.accept")}</b>${M(e, "mail_accept")}</div>
+          <small>${e("mail.accept.hint")}</small>
+        </div>
+        <button
+          type="button"
+          class="switch"
+          role="switch"
+          aria-checked=${String(t.accept)}
+          aria-labelledby="mail-accept"
+          @click=${() => this.save({ accept: !t.accept })}
+        ></button>
+      </div>
+      <div class="row" data-tipped>
+        <div>
+          <div class="name"><b>${e("mail.status")}</b>${M(e, "mail_status")}</div>
+          <small>${this.statusText(e)}</small>
+        </div>
+        <div class="inline">
+          <button type="button" class="mini-btn" ?disabled=${this.busy} @click=${() => this.test()}>
+            <ha-icon icon="mdi:connection"></ha-icon>${e("mail.test")}
+          </button>
+          <button type="button" class="mini-btn" ?disabled=${this.busy || !n?.has_secret} @click=${() => this.check()}>
+            <ha-icon icon="mdi:email-sync-outline"></ha-icon>${e("mail.check")}
+          </button>
+        </div>
+      </div>
+      ${this.result ? g`<div class="note ${this.result === "ok" ? "" : "warn"}" role="status">${e(`mail.result.${this.result}`)}</div>` : v}
+      ${this.renderRecent(e)}`;
+	}
+	renderServers(e, t) {
+		let n = (n, r = "text") => g`<input
+      class="input"
+      type=${r}
+      aria-label=${e(`mail.${n}`)}
+      placeholder=${e(`mail.${n}`)}
+      .value=${t[n] ?? ""}
+      @change=${(e) => this.save({ [n]: e.target.value.trim() || null })}
+    />`, r = (n) => g`<input
+      class="input"
+      type="number"
+      min="1"
+      max="65535"
+      aria-label=${e(`mail.${n}`)}
+      placeholder=${e(`mail.${n}`)}
+      .value=${t[n] == null ? "" : String(t[n])}
+      @change=${(e) => {
+			let t = Number.parseInt(e.target.value, 10);
+			this.save({ [n]: Number.isFinite(t) && t > 0 && t < 65536 ? t : null });
+		}}
+    />`;
+		return g`<div class="row" data-tipped>
+      <div>
+        <div class="name"><b>${e("mail.servers")}</b>${M(e, "mail_servers")}</div>
+        <small>${e("mail.servers.hint")}</small>
+      </div>
+      <div class="inline">
+        ${n("username")} ${n("imap_host")} ${r("imap_port")} ${n("smtp_host")} ${r("smtp_port")}
+        <select
+          class="input"
+          aria-label=${e("mail.smtp_security")}
+          @change=${(e) => this.save({ smtp_security: e.target.value || null })}
+        >
+          <option value="" ?selected=${!t.smtp_security}>${e("mail.smtp_security.auto")}</option>
+          <option value="starttls" ?selected=${t.smtp_security === "starttls"}>STARTTLS</option>
+          <option value="ssl" ?selected=${t.smtp_security === "ssl"}>SSL/TLS</option>
+        </select>
+      </div>
+    </div>`;
+	}
+	renderRecent(e) {
+		let t = this.status?.recent ?? [];
+		if (!t.length) return v;
+		let n = Object.fromEntries((this.config?.actions ?? []).map((e) => [e.id, e.name]));
+		return g`<div data-tipped>
+      <div class="name"><b>${e("mail.recent")}</b>${M(e, "mail_recent")}</div>
+      <ul>
+        ${t.slice(0, 8).map((t) => g`<li>
+            <span class="what">
+              ${t.summary || "–"} ${t.start && t.start.includes("T") ? `· ${t.start.slice(8, 10)}.${t.start.slice(5, 7)}. ${K(t.start)}` : ""}
+              · ${t.from}${t.car ? ` → ${n[t.car] ?? t.car}` : ""}
+            </span>
+            <span class=${t.result.startsWith("not") || t.result.endsWith("not_accepted") || t.result.startsWith("no_") ? "bad" : ""}>
+              ${e.optional(`mail.recent.${t.result}`) ?? t.result}
+            </span>
+            ${t.result === "not_allowed" ? g`<button type="button" class="mini-btn" @click=${() => this.allow(t.from)}>${e("mail.allow")}</button>` : v}
+          </li>`)}
+      </ul>
+    </div>`;
+	}
+	statusText(e) {
+		let t = this.status;
+		if (!t || t.state === "off") return e("mail.state.off");
+		if (t.state === "no_secret") return e("mail.state.no_secret");
+		let n = t.checked ? K(t.checked) : "–";
+		return t.state === "error" ? e("mail.state.error", { error: e.optional(`mail.error.${t.error}`) ?? String(t.error) }) : e("mail.state.ok", { time: n });
+	}
+	save(e) {
+		L(this, { mailbox: e });
+	}
+	allow(e) {
+		let t = e.trim().toLowerCase(), n = this.config?.mailbox.allowed ?? [];
+		t && !n.includes(t) && this.save({ allowed: [...n, t] }), this.sender = "";
+	}
+	async savePassword() {
+		this.busy = !0;
+		try {
+			await this.hass?.callWS({
+				type: "energy_joe/mailbox/secret",
+				password: this.password
+			}), this.password = "", this.result = void 0;
+		} catch {
+			this.result = "failed";
+		} finally {
+			this.busy = !1;
+		}
+	}
+	async test() {
+		this.busy = !0;
+		try {
+			let e = await this.hass?.callWS({ type: "energy_joe/mailbox/test" });
+			this.result = e?.error ? `error_${e.error}` : "ok";
+		} catch {
+			this.result = "failed";
+		} finally {
+			this.busy = !1;
+		}
+	}
+	async check() {
+		this.busy = !0;
+		try {
+			await this.hass?.callWS({ type: "energy_joe/mailbox/check" }), this.result = void 0;
+		} catch {
+			this.result = "failed";
+		} finally {
+			this.busy = !1;
+		}
+	}
+};
+D([b({ attribute: !1 })], Z.prototype, "hass", void 0), D([b({ attribute: !1 })], Z.prototype, "t", void 0), D([b({ attribute: !1 })], Z.prototype, "config", void 0), D([b({ attribute: !1 })], Z.prototype, "status", void 0), D([x()], Z.prototype, "password", void 0), D([x()], Z.prototype, "sender", void 0), D([x()], Z.prototype, "busy", void 0), D([x()], Z.prototype, "result", void 0), D([x()], Z.prototype, "servers", void 0), T("joe-mailbox-settings", Z);
 //#endregion
 //#region src/pages/settings.ts
-var mr = [
+var gr = [
 	"simulation",
 	"advisory",
 	"live",
 	"off"
-], hr = [
+], _r = [
 	{
 		key: "reserve_soc",
 		unit: "%",
@@ -12878,7 +13458,7 @@ var mr = [
 		step: 1,
 		integer: !0
 	}
-], gr = [{
+], vr = [{
 	key: "max_price",
 	unit: "ct/kWh",
 	min: 0,
@@ -12893,7 +13473,7 @@ var mr = [
 	max: 500,
 	step: 1,
 	scale: 100
-}], _r = {
+}], yr = {
 	key: "balance_days",
 	unit: "",
 	min: 3,
@@ -12901,7 +13481,7 @@ var mr = [
 	step: 1,
 	optional: !0,
 	integer: !0
-}, vr = [
+}, br = [
 	{
 		key: "heating",
 		tip: "q_heating"
@@ -12914,7 +13494,7 @@ var mr = [
 		key: "ev",
 		tip: "q_ev"
 	}
-], yr = {
+], xr = {
 	heating: {
 		climate: "q.heating.climate",
 		heat_pump: "q.heating.heat_pump",
@@ -12936,7 +13516,7 @@ var mr = [
 		super(...e), this.checks = [], this.pro = !1, this.question = "";
 	}
 	static {
-		this.styles = [D, o`
+		this.styles = [E, o`
       :host {
         display: block;
       }
@@ -13112,11 +13692,11 @@ var mr = [
           <h2>${e("settings.operation")}</h2>
           <div class="row" data-tipped>
             <div>
-              <div class="name"><b>${e("settings.mode")}</b>${P(e, "mode")}</div>
+              <div class="name"><b>${e("settings.mode")}</b>${M(e, "mode")}</div>
               <small>${e("settings.mode.hint")}</small>
             </div>
             <div class="seg" role="group" aria-label=${e("settings.mode")}>
-              ${mr.map((n) => g`<button
+              ${gr.map((n) => g`<button
                     type="button"
                     aria-pressed=${String(t.mode === n)}
                     @click=${() => this.emit("joe-set-mode", { mode: n })}
@@ -13128,7 +13708,7 @@ var mr = [
           ${this.gridFriendlyRows(e, n.rules)}
           <div class="row" data-tipped>
             <div>
-              <div class="name"><b>${e("settings.setup")}</b>${P(e, "restart")}</div>
+              <div class="name"><b>${e("settings.setup")}</b>${M(e, "restart")}</div>
               <small>${e("settings.setup.hint")}</small>
             </div>
             <button
@@ -13146,6 +13726,16 @@ var mr = [
 
         ${this.renderNotify(e)} ${this.renderRouting(e)}
 
+        <section class="group">
+          <h2>${e("settings.mailbox")}</h2>
+          <joe-mailbox-settings
+            .hass=${this.hass}
+            .t=${e}
+            .config=${n}
+            .status=${t.mailbox}
+          ></joe-mailbox-settings>
+        </section>
+
         <section class="group plain">
           <h2>${e("settings.uses")}</h2>
           <p class="intro">${e("settings.uses.intro")}</p>
@@ -13161,7 +13751,7 @@ var mr = [
 
         <section class="group">
           <h2>${e("settings.answers")}</h2>
-          ${vr.map((t) => this.answerRow(e, t.key, t.tip))}
+          ${br.map((t) => this.answerRow(e, t.key, t.tip))}
         </section>
 
         ${this.renderObserve(e)}
@@ -13188,11 +13778,11 @@ var mr = [
             <h2>${e("settings.pro")}</h2>
           </button>
           ${this.pro ? g`<p class="intro">${e("settings.pro.intro")}</p>
-                ${hr.slice(0, 5).map((t) => this.numberRow(e, n.rules, t))}
-                ${gr.map((t) => this.numberRow(e, n.rules, t))} ${this.guardRow(e, n.rules)}
-                ${this.numberRow(e, n.rules, _r)}
+                ${_r.slice(0, 5).map((t) => this.numberRow(e, n.rules, t))}
+                ${vr.map((t) => this.numberRow(e, n.rules, t))} ${this.guardRow(e, n.rules)}
+                ${this.numberRow(e, n.rules, yr)}
                 ${this.priorityRow(e, n.rules)} ${this.dischargeRow(e, n.rules)}
-                ${hr.slice(5).map((t) => this.numberRow(e, n.rules, t))}` : v}
+                ${_r.slice(5).map((t) => this.numberRow(e, n.rules, t))}` : v}
         </section>
 
         <section class="group">
@@ -13206,16 +13796,16 @@ var mr = [
 	}
 	renderRouting(e) {
 		let t = this.state.config.routing, n = this.info?.routing, r = t.service === "google" ? `google:${t.google_entry ?? ""}` : t.service ?? "", i = (e) => {
-			e.startsWith("google:") ? z(this, { routing: {
+			e.startsWith("google:") ? L(this, { routing: {
 				service: "google",
 				google_entry: e.slice(7) || null
-			} }) : z(this, { routing: {
+			} }) : L(this, { routing: {
 				service: e || null,
 				google_entry: null
 			} });
 		}, a = (n) => g`<div class="row" data-tipped>
       <div>
-        <div class="name"><label for="routing-${n}"><b>${e(`settings.routing.${n}`)}</b></label>${P(e, "routing_osm")}</div>
+        <div class="name"><label for="routing-${n}"><b>${e(`settings.routing.${n}`)}</b></label>${M(e, "routing_osm")}</div>
         <small>${e(`settings.routing.${n}.hint`)}</small>
       </div>
       <input
@@ -13225,7 +13815,7 @@ var mr = [
         .value=${t[n]}
         @change=${(e) => {
 			let t = e.target.value.trim();
-			t.startsWith("http") && z(this, { routing: { [n]: t } });
+			t.startsWith("http") && L(this, { routing: { [n]: t } });
 		}}
       />
     </div>`;
@@ -13234,7 +13824,7 @@ var mr = [
       <p class="intro">${e("settings.routing.intro")}</p>
       <div class="row" data-tipped>
         <div>
-          <div class="name"><label for="routing-service"><b>${e("settings.routing.service")}</b></label>${P(e, "routing_service")}</div>
+          <div class="name"><label for="routing-service"><b>${e("settings.routing.service")}</b></label>${M(e, "routing_service")}</div>
           <small>${e("settings.routing.service.hint")}</small>
         </div>
         <select id="routing-service" class="input" @change=${(e) => i(e.target.value)}>
@@ -13256,7 +13846,7 @@ var mr = [
 			"notify"
 		].includes(e)).sort(), i = (t, r) => g`<div class="row" data-tipped>
         <div>
-          <div class="name"><b id="notify-${t}">${e(`settings.notify.${t}`)}</b>${P(e, r)}</div>
+          <div class="name"><b id="notify-${t}">${e(`settings.notify.${t}`)}</b>${M(e, r)}</div>
           <small>${e(`settings.notify.${t}.hint`)}</small>
         </div>
         <button
@@ -13266,7 +13856,7 @@ var mr = [
           aria-checked=${String(n[t])}
           aria-labelledby="notify-${t}"
           ?disabled=${!n.service}
-          @click=${() => z(this, { notify: { [t]: !n[t] } })}
+          @click=${() => L(this, { notify: { [t]: !n[t] } })}
         ></button>
       </div>`;
 		return g`<section class="group">
@@ -13274,7 +13864,7 @@ var mr = [
       <p class="intro">${e("settings.notify.intro")}</p>
       <div class="row" data-tipped>
         <div>
-          <div class="name"><label for="notify-service"><b>${e("settings.notify.service")}</b></label>${P(e, "notify_service")}</div>
+          <div class="name"><label for="notify-service"><b>${e("settings.notify.service")}</b></label>${M(e, "notify_service")}</div>
           <small>${e("settings.notify.service.hint")}</small>
         </div>
         <select
@@ -13282,7 +13872,7 @@ var mr = [
           class="input"
           @change=${(e) => {
 			let t = e.target.value;
-			z(this, { notify: { service: t ? `notify.${t}` : null } });
+			L(this, { notify: { service: t ? `notify.${t}` : null } });
 		}}
         >
           <option value="" ?selected=${!n.service}>${e("settings.notify.none")}</option>
@@ -13292,7 +13882,7 @@ var mr = [
       ${i("ask", "notify_ask")} ${i("problems", "notify_problems")} ${i("morning", "notify_morning")}
       <div class="row" data-tipped>
         <div>
-          <div class="name"><label for="ask-time"><b>${e("settings.ask_time")}</b></label>${P(e, "ask_time")}</div>
+          <div class="name"><label for="ask-time"><b>${e("settings.ask_time")}</b></label>${M(e, "ask_time")}</div>
           <small>${e("settings.ask_time.hint")}</small>
         </div>
         <input
@@ -13302,7 +13892,7 @@ var mr = [
           .value=${t.rules.ask_time}
           @change=${(e) => {
 			let t = e.target.value;
-			/^\d{2}:\d{2}$/.test(t) && z(this, { rules: { ask_time: t } });
+			/^\d{2}:\d{2}$/.test(t) && L(this, { rules: { ask_time: t } });
 		}}
         />
       </div>
@@ -13326,7 +13916,7 @@ var mr = [
       <h2>${e("settings.observe")}</h2>
       <div class="row" data-tipped>
         <div>
-          <div class="name"><b>${e("settings.observe.recording")}</b>${P(e, "observe")}</div>
+          <div class="name"><b>${e("settings.observe.recording")}</b>${M(e, "observe")}</div>
           <small>${o}</small>
         </div>
         <span class="chip ${r ? "ok" : ""}">
@@ -13335,7 +13925,7 @@ var mr = [
       </div>
       <div class="row" data-tipped>
         <div>
-          <div class="name"><b>${e("settings.observe.history")}</b>${P(e, "rebuild")}</div>
+          <div class="name"><b>${e("settings.observe.history")}</b>${M(e, "rebuild")}</div>
           <small>${s.join(" · ")}</small>
         </div>
         <button type="button" class="btn btn-secondary" ?disabled=${!r || i} @click=${this.rebuild}>
@@ -13350,14 +13940,14 @@ var mr = [
 		} catch {}
 	}
 	answerRow(e, t, n) {
-		let r = this.state.config, i = r.answers[t], a = Array.isArray(i) ? i : typeof i == "string" ? [i] : [], o = i === "unknown" ? e("sum.unknown") : a.length ? a.map((n) => yr[t][n] ? e(yr[t][n]) : n).join(", ") : e("sum.open");
+		let r = this.state.config, i = r.answers[t], a = Array.isArray(i) ? i : typeof i == "string" ? [i] : [], o = i === "unknown" ? e("sum.unknown") : a.length ? a.map((n) => xr[t][n] ? e(xr[t][n]) : n).join(", ") : e("sum.open");
 		return g`<div class="row" data-tipped>
       <div>
-        <div class="name"><b>${e(`settings.answer.${t}`)}</b>${P(e, n)}</div>
+        <div class="name"><b>${e(`settings.answer.${t}`)}</b>${M(e, n)}</div>
         <small>${o}</small>
       </div>
       <div class="control">
-        ${i == null ? v : T(e, I(r, `answers.${t}`))}
+        ${i == null ? v : w(e, P(r, `answers.${t}`))}
         <button type="button" class="mini-btn" @click=${() => this.question = t}>
           <ha-icon icon="mdi:pencil-outline"></ha-icon>${e("review.change")}
         </button>
@@ -13382,14 +13972,14 @@ var mr = [
     </joe-sheet>`;
 	}
 	numberRow(e, t, n) {
-		let r = this.state.config, i = t[n.key], a = n.scale ?? 1, o = i == null ? "" : String(Math.round(i * a * 100) / 100), s = this.info?.defaults?.rules[n.key], c = I(r, `rules.${n.key}`), l = c?.source === "user";
+		let r = this.state.config, i = t[n.key], a = n.scale ?? 1, o = i == null ? "" : String(Math.round(i * a * 100) / 100), s = this.info?.defaults?.rules[n.key], c = P(r, `rules.${n.key}`), l = c?.source === "user";
 		return g`<div class="row" data-tipped>
       <div>
-        <div class="name"><b>${e(`rule.${n.key}`)}</b>${P(e, `r_${n.key}`)}</div>
+        <div class="name"><b>${e(`rule.${n.key}`)}</b>${M(e, `r_${n.key}`)}</div>
         <small>${e(`rule.${n.key}.hint`)}</small>
       </div>
       <div class="control">
-        ${T(e, c)}
+        ${w(e, c)}
         <span class="unit-input">
           <input
             class="input"
@@ -13408,7 +13998,7 @@ var mr = [
         ${l && s !== void 0 ? g`<button
               type="button"
               class="mini-btn quiet"
-              @click=${() => z(this, { rules: { [n.key]: s } }, "default")}
+              @click=${() => L(this, { rules: { [n.key]: s } }, "default")}
             >
               <ha-icon icon="mdi:restore"></ha-icon>${e("rule.reset")}
             </button>` : v}
@@ -13418,7 +14008,7 @@ var mr = [
 	setNumber(e, t) {
 		let n = t.value.trim(), r = e.scale ?? 1;
 		if (n === "") {
-			e.optional && z(this, { rules: { [e.key]: null } });
+			e.optional && L(this, { rules: { [e.key]: null } });
 			return;
 		}
 		let i = Number.parseFloat(n);
@@ -13427,37 +14017,37 @@ var mr = [
 			return;
 		}
 		let a = e.integer ? Math.round(i) : Math.round(i / r * 1e4) / 1e4;
-		z(this, { rules: { [e.key]: a } });
+		L(this, { rules: { [e.key]: a } });
 	}
 	gridFriendlyRows(e, t) {
 		let n = this.state.config;
 		return g`<div class="row" data-tipped>
         <div>
-          <div class="name"><b id="grid-friendly">${e("rule.grid_friendly")}</b>${P(e, "r_grid_friendly")}</div>
+          <div class="name"><b id="grid-friendly">${e("rule.grid_friendly")}</b>${M(e, "r_grid_friendly")}</div>
           <small>${e("rule.grid_friendly.hint")}</small>
         </div>
         <div class="control">
-          ${T(e, I(n, "rules.grid_friendly"))}
+          ${w(e, P(n, "rules.grid_friendly"))}
           <button
             type="button"
             class="switch"
             role="switch"
             aria-checked=${String(t.grid_friendly)}
             aria-labelledby="grid-friendly"
-            @click=${() => z(this, { rules: { grid_friendly: !t.grid_friendly } })}
+            @click=${() => L(this, { rules: { grid_friendly: !t.grid_friendly } })}
           ></button>
         </div>
       </div>
       ${t.grid_friendly ? g`<div class="row" data-tipped>
             <div>
-              <div class="name"><b>${e("rule.grid_first")}</b>${P(e, "r_grid_first")}</div>
+              <div class="name"><b>${e("rule.grid_first")}</b>${M(e, "r_grid_first")}</div>
               <small>${e(t.grid_first ? "rule.grid_first.grid.hint" : "rule.grid_first.saving.hint")}</small>
             </div>
             <div class="seg" role="group" aria-label=${e("rule.grid_first")}>
               ${[!1, !0].map((n) => g`<button
                     type="button"
                     aria-pressed=${String(t.grid_first === n)}
-                    @click=${() => z(this, { rules: { grid_first: n } })}
+                    @click=${() => L(this, { rules: { grid_first: n } })}
                   >
                     ${e(n ? "rule.grid_first.grid" : "rule.grid_first.saving")}
                   </button>`)}
@@ -13468,11 +14058,11 @@ var mr = [
 		let n = this.state.config, r = t.grid_limit_w;
 		return g`<div class="row" data-tipped>
       <div>
-        <div class="name"><b id="guard-grid">${e("rule.guard_grid")}</b>${P(e, "r_guard_grid")}</div>
+        <div class="name"><b id="guard-grid">${e("rule.guard_grid")}</b>${M(e, "r_guard_grid")}</div>
         <small>${e(r ? "rule.guard_grid.hint" : "rule.guard_grid.no_limit")}</small>
       </div>
       <div class="control">
-        ${T(e, I(n, "rules.guard_grid"))}
+        ${w(e, P(n, "rules.guard_grid"))}
         <button
           type="button"
           class="switch"
@@ -13480,7 +14070,7 @@ var mr = [
           aria-checked=${String(t.guard_grid)}
           aria-labelledby="guard-grid"
           ?disabled=${!r}
-          @click=${() => z(this, { rules: { guard_grid: !t.guard_grid } })}
+          @click=${() => L(this, { rules: { guard_grid: !t.guard_grid } })}
         ></button>
       </div>
     </div>`;
@@ -13488,7 +14078,7 @@ var mr = [
 	priorityRow(e, t) {
 		let n = this.state.config, r = t.priority, i = (e, t) => {
 			let n = [...r];
-			[n[e], n[e + t]] = [n[e + t], n[e]], z(this, { rules: { priority: n } });
+			[n[e], n[e + t]] = [n[e + t], n[e]], L(this, { rules: { priority: n } });
 		}, a = (e) => g`<svg
         viewBox="0 0 24 24"
         fill="none"
@@ -13502,11 +14092,11 @@ var mr = [
       </svg>`;
 		return g`<div class="row" data-tipped>
       <div>
-        <div class="name"><b>${e("rule.priority")}</b>${P(e, "r_priority")}</div>
+        <div class="name"><b>${e("rule.priority")}</b>${M(e, "r_priority")}</div>
         <small>${e("rule.priority.hint")}</small>
       </div>
       <div class="control">
-        ${T(e, I(n, "rules.priority"))}
+        ${w(e, P(n, "rules.priority"))}
         <div class="order">
           ${r.map((t, n) => g`<div>
               <span>${n + 1}. ${e(`rule.priority.${t}`)}</span>
@@ -13536,8 +14126,8 @@ var mr = [
 		return g`<div class="row stacked" data-tipped>
       <div>
         <div class="name">
-          <b>${e("rule.discharge_in_window")}</b>${P(e, "r_discharge_in_window")}
-          ${T(e, I(n, "rules.discharge_in_window"))}
+          <b>${e("rule.discharge_in_window")}</b>${M(e, "r_discharge_in_window")}
+          ${w(e, P(n, "rules.discharge_in_window"))}
         </div>
         <small>${e("rule.discharge_in_window.hint")}</small>
       </div>
@@ -13555,7 +14145,7 @@ var mr = [
 		}))}
           .value=${[t.discharge_in_window]}
           @joe-choice=${(e) => {
-			e.detail.value[0] && z(this, { rules: { discharge_in_window: e.detail.value[0] } });
+			e.detail.value[0] && L(this, { rules: { discharge_in_window: e.detail.value[0] } });
 		}}
         ></joe-choice>
       </div>
@@ -13573,10 +14163,10 @@ var mr = [
 		}));
 	}
 };
-O([b({ attribute: !1 })], Q.prototype, "t", void 0), O([b({ attribute: !1 })], Q.prototype, "hass", void 0), O([b({ attribute: !1 })], Q.prototype, "state", void 0), O([b({ attribute: !1 })], Q.prototype, "info", void 0), O([b({ attribute: !1 })], Q.prototype, "discovery", void 0), O([b({ attribute: !1 })], Q.prototype, "checks", void 0), O([x()], Q.prototype, "pro", void 0), O([x()], Q.prototype, "question", void 0), E("joe-settings", Q);
+D([b({ attribute: !1 })], Q.prototype, "t", void 0), D([b({ attribute: !1 })], Q.prototype, "hass", void 0), D([b({ attribute: !1 })], Q.prototype, "state", void 0), D([b({ attribute: !1 })], Q.prototype, "info", void 0), D([b({ attribute: !1 })], Q.prototype, "discovery", void 0), D([b({ attribute: !1 })], Q.prototype, "checks", void 0), D([x()], Q.prototype, "pro", void 0), D([x()], Q.prototype, "question", void 0), T("joe-settings", Q);
 //#endregion
 //#region src/styles/tokens.ts
-var br = o`
+var Sr = o`
   :host {
     --joe-bg: #fbf6ec;
     --joe-surface: #ffffff;
@@ -13663,17 +14253,17 @@ var br = o`
     --joe-show-dark: block;
     color-scheme: dark;
   }
-`, xr = [
+`, Cr = [
 	"simulation",
 	"advisory",
 	"live",
 	"off"
-], Sr = {
+], wr = {
 	simulation: "mdi:pause",
 	advisory: "mdi:comment-question-outline",
 	live: "mdi:play",
 	off: "mdi:power"
-}, Cr = xr, $ = class extends y {
+}, Tr = Cr, $ = class extends y {
 	constructor() {
 		super(), this.narrow = !1, this.failed = !1, this.modeDialog = !1, this.notice = "", this.discovering = !1, this.discoveryFailed = !1, this.checks = [], this.infoRequested = !1, this.adopted = !1, this.addEventListener("joe-config", (e) => this.onConfig(e)), this.addEventListener("joe-pick", (e) => {
 			this.picker = e.detail;
@@ -13686,10 +14276,10 @@ var br = o`
 	}
 	get page() {
 		let e = (this.route?.path ?? "").split("/")[1] ?? "";
-		return on.includes(e) ? e : "overview";
+		return cn.includes(e) ? e : "overview";
 	}
 	connectedCallback() {
-		super.connectedCallback(), Cn(), this.subscribe();
+		super.connectedCallback(), wn(), this.subscribe();
 	}
 	disconnectedCallback() {
 		super.disconnectedCallback(), this.unsubscribe?.then((e) => e()).catch(() => void 0), this.unsubscribe = void 0;
@@ -13808,7 +14398,7 @@ var br = o`
 	}
 	renderTabs(e) {
 		return g`<nav class="tabs" aria-label=${e("nav.label")}>
-      ${on.map((t) => g`<a
+      ${cn.map((t) => g`<a
             href=${this.href(t)}
             class=${t === this.page ? "on" : ""}
             aria-current=${t === this.page ? "page" : "false"}
@@ -13818,9 +14408,9 @@ var br = o`
     </nav>`;
 	}
 	renderSteps(e) {
-		let t = Qt.indexOf(this.joe?.onboarding.step ?? "welcome");
+		let t = en.indexOf(this.joe?.onboarding.step ?? "welcome");
 		return g`<ol class="steps" aria-label=${e("steps.label")}>
-      ${Qt.map((n, r) => g`<li class=${r < t ? "done" : r === t ? "on" : ""} aria-current=${r === t ? "step" : "false"}>
+      ${en.map((n, r) => g`<li class=${r < t ? "done" : r === t ? "on" : ""} aria-current=${r === t ? "step" : "false"}>
             ${r + 1} ${e(`step.${n}`)}
           </li>`)}
     </ol>`;
@@ -13860,12 +14450,12 @@ var br = o`
       >
         <joe-pose name="lever"></joe-pose>
         <div data-tipped>
-          <div id="mode-title">${C(e("mode.dialog.title"), "h2", P(e, "mode"))}</div>
+          <div id="mode-title">${C(e("mode.dialog.title"), "h2", M(e, "mode"))}</div>
           ${S}
           ${this.renderReadiness(e)}
           <div class="modes" role="group" aria-labelledby="mode-title">
-            ${xr.map((n) => {
-			let r = Cr.includes(n);
+            ${Cr.map((n) => {
+			let r = Tr.includes(n);
 			return g`<button
                 type="button"
                 class="mode ${n}"
@@ -13873,7 +14463,7 @@ var br = o`
                 ?disabled=${!r}
                 @click=${() => this.chooseMode(n)}
               >
-                <span class="knob"><ha-icon icon=${Sr[n]}></ha-icon></span>
+                <span class="knob"><ha-icon icon=${wr[n]}></ha-icon></span>
                 <span class="label">
                   <b>${e(`mode.${n}`)}</b>
                   <small>${e(`mode.${n}.desc`)}</small>
@@ -13921,7 +14511,7 @@ var br = o`
         ></joe-tariff-editor>`;
 				break;
 			case "household":
-				a = e("edit.household.label"), i = g`<div class="sheet-title">${C(e("edit.household.title"), "h2", P(e, "q_household"))}</div>
+				a = e("edit.household.label"), i = g`<div class="sheet-title">${C(e("edit.household.title"), "h2", M(e, "q_household"))}</div>
           <joe-household .hass=${this.hass} .t=${e} .config=${n} .discovery=${this.discovery}></joe-household>
           <div class="actions">
             <button type="button" class="btn btn-secondary" data-notip @click=${r}>${e("mode.close")}</button>
@@ -14006,8 +14596,8 @@ var br = o`
 	}
 	static {
 		this.styles = [
-			br,
-			D,
+			Sr,
+			E,
 			o`
       :host {
         display: block;
@@ -14306,9 +14896,9 @@ var br = o`
 		];
 	}
 };
-O([b({ attribute: !1 })], $.prototype, "hass", void 0), O([b({
+D([b({ attribute: !1 })], $.prototype, "hass", void 0), D([b({
 	type: Boolean,
 	reflect: !0
-})], $.prototype, "narrow", void 0), O([b({ attribute: !1 })], $.prototype, "route", void 0), O([x()], $.prototype, "joe", void 0), O([x()], $.prototype, "info", void 0), O([x()], $.prototype, "failed", void 0), O([x()], $.prototype, "modeDialog", void 0), O([x()], $.prototype, "notice", void 0), O([x()], $.prototype, "discovery", void 0), O([x()], $.prototype, "discovering", void 0), O([x()], $.prototype, "discoveryFailed", void 0), O([x()], $.prototype, "checks", void 0), O([x()], $.prototype, "picker", void 0), O([x()], $.prototype, "editor", void 0), E("energy-joe-panel", $);
+})], $.prototype, "narrow", void 0), D([b({ attribute: !1 })], $.prototype, "route", void 0), D([x()], $.prototype, "joe", void 0), D([x()], $.prototype, "info", void 0), D([x()], $.prototype, "failed", void 0), D([x()], $.prototype, "modeDialog", void 0), D([x()], $.prototype, "notice", void 0), D([x()], $.prototype, "discovery", void 0), D([x()], $.prototype, "discovering", void 0), D([x()], $.prototype, "discoveryFailed", void 0), D([x()], $.prototype, "checks", void 0), D([x()], $.prototype, "picker", void 0), D([x()], $.prototype, "editor", void 0), T("energy-joe-panel", $);
 //#endregion
 export { $ as EnergyJoePanel };

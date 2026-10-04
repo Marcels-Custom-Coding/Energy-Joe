@@ -371,6 +371,43 @@ export interface CarNeedConfig {
   calendars?: string[];
 }
 
+export type MailProvider = "icloud" | "google" | "infomaniak" | "microsoft" | "other";
+
+/** Joe's mailbox for car appointments (the password is stored elsewhere). */
+export interface MailboxConfig {
+  enabled: boolean;
+  provider: MailProvider;
+  address: string;
+  username: string | null;
+  imap_host: string | null;
+  imap_port: number | null;
+  smtp_host: string | null;
+  smtp_port: number | null;
+  smtp_security: "starttls" | "ssl" | null;
+  allowed: string[];
+  accept: boolean;
+  /** Which invited address means which car (action id -> address). */
+  cars: Record<string, string>;
+  interval_min: number;
+}
+
+export interface MailboxStatus {
+  state: "off" | "no_secret" | "waiting" | "ok" | "error";
+  has_secret?: boolean;
+  checked?: string | null;
+  error?: string | null;
+  recent?: {
+    at: string;
+    summary: string;
+    start: string | null;
+    from: string;
+    organizer: string | null;
+    method: string;
+    car?: string;
+    result: string;
+  }[];
+}
+
 export interface RoutingConfig {
   service: "waze" | "google" | "osm" | null;
   google_entry: string | null;
@@ -455,6 +492,7 @@ export interface JoeConfig {
   notify: NotifyConfig;
   calendar: CalendarConfig;
   routing: RoutingConfig;
+  mailbox: MailboxConfig;
   answers: Answers;
   learned: Learned;
   provenance: Record<string, Provenance>;
@@ -596,6 +634,7 @@ export interface JoeState {
   results?: Results | null;
   questions?: DayQuestion[];
   control?: ControlView;
+  mailbox?: MailboxStatus;
 }
 
 // --- Steering (see custom_components/energy_joe/control) ---

@@ -277,6 +277,36 @@ EV_NEED = vol.Schema(
     }
 )
 
+MAIL_PROVIDERS = ("icloud", "google", "infomaniak", "microsoft", "other")
+
+# Joe's mailbox for car appointments (see mail/): invitations from these
+# senders to a car's address become trips. The password lives elsewhere.
+MAILBOX = vol.Schema(
+    {
+        vol.Optional("enabled", default=False): bool,
+        vol.Optional("provider", default="other"): vol.In(MAIL_PROVIDERS),
+        vol.Optional("address", default=""): str,
+        vol.Optional("username", default=None): vol.Any(None, str),
+        vol.Optional("imap_host", default=None): vol.Any(None, str),
+        vol.Optional("imap_port", default=None): vol.Any(
+            None, vol.All(int, vol.Range(min=1, max=65535))
+        ),
+        vol.Optional("smtp_host", default=None): vol.Any(None, str),
+        vol.Optional("smtp_port", default=None): vol.Any(
+            None, vol.All(int, vol.Range(min=1, max=65535))
+        ),
+        vol.Optional("smtp_security", default=None): vol.Any(
+            None, vol.In(("starttls", "ssl"))
+        ),
+        # Who may invite: addresses or "@domain".
+        vol.Optional("allowed", default=list): [str],
+        vol.Optional("accept", default=True): bool,
+        # Which invited address means which car (action id -> address).
+        vol.Optional("cars", default=dict): {str: str},
+        vol.Optional("interval_min", default=5): vol.All(int, vol.Range(min=2, max=60)),
+    }
+)
+
 ROUTING_SERVICES = ("waze", "google", "osm")
 
 # How Joe works out the distance to an appointment's place (None: not at all).
@@ -503,6 +533,7 @@ CONFIG = vol.Schema(
         vol.Optional("notify", default=dict): NOTIFY,
         vol.Optional("calendar", default=dict): CALENDAR,
         vol.Optional("routing", default=dict): ROUTING,
+        vol.Optional("mailbox", default=dict): MAILBOX,
         vol.Optional("answers", default=dict): ANSWERS,
         vol.Optional("learned", default=dict): LEARNED,
         vol.Optional("provenance", default=dict): {str: PROVENANCE},

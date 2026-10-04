@@ -19,6 +19,7 @@ from .const import DOMAIN
 from .control.executor import JoeExecutor
 from .control.notify import JoeNotifier
 from .learn.learner import JoeLearner
+from .mail.inbox import JoeInbox
 from .observe.observer import BACKFILL_DAYS, JoeObserver
 from .observe.store import HistoryStore
 from .plan.car_calendar import CarCalendarStore
@@ -100,6 +101,8 @@ class JoeRuntime:
         # Joe's own calendar per car (trips, by hand or later by mail).
         self.calendars = CarCalendarStore(hass)
         self.planner.calendars = self.calendars
+        # Invitations by mail to a car's address (see mail/).
+        self.inbox = JoeInbox(hass, lambda: self._config, self.calendars, self._changed)
         self._started = False
         self._planned: dict[str, Any] | None = None
         self._observed: dict[str, Any] | None = None
@@ -121,11 +124,13 @@ class JoeRuntime:
         await self.history.async_load()
         await self.executor.async_load()
         await self.calendars.async_load()
+        await self.inbox.async_load()
 
     async def async_unload(self) -> None:
         """Stop watching and write pending changes immediately."""
         self._started = False
         self.notifier.stop()
+        self.inbox.async_stop()
         await self.executor.async_stop()
         async with self._observe_lock:
             await self.learner.async_stop()
@@ -145,6 +150,7 @@ class JoeRuntime:
         await self.history.async_remove()
         await self.planner.places.async_remove()
         await self.calendars.async_remove()
+        await self.inbox.async_remove()
         await self.executor.async_forget()
 
     @callback
@@ -154,6 +160,7 @@ class JoeRuntime:
         self.notifier.start()
         self._hass.async_create_task(self.executor.async_start(), eager_start=False)
         self._update_observer()
+        self.inbox.async_apply()
 
     async def async_refresh_plan(self) -> dict[str, Any] | None:
         """Plan again now (the panel's "plan again")."""
@@ -209,6 +216,7 @@ class JoeRuntime:
                 "results": self.learner.results,
                 "questions": self.learner.questions,
                 "control": self.executor.view,
+                "mailbox": self.inbox.status,
             }
         )
 
@@ -253,6 +261,8 @@ class JoeRuntime:
         self._changed(config=True)
         self._update_observer()
         self._check_control()
+        if self._started:
+            self.inbox.async_apply()
 
     @callback
     def async_adopt(
