@@ -403,3 +403,36 @@ async def test_counters_survive_resets_and_naps(
     assert len((await store.async_day("2026-10-03"))["hours"]) == 1
     await observer.async_stop()
     await store.async_unload()
+
+
+async def test_learning_follows_the_history(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Once the history brought in past hours, Joe learns from them right away."""
+    from custom_components.energy_joe.observe import observer as observer_module
+
+    await hass.config.async_set_time_zone("Europe/Berlin")
+    freezer.move_to("2026-10-03T12:00:00+02:00")
+    hass.states.async_set("sensor.grid", "1000", POWER_W)
+    record = {"start": "2026-10-02T12:00:00+02:00", "home": 1.0, "src": "history"}
+
+    async def history(*args: Any, **kwargs: Any) -> list[dict[str, Any]]:
+        return [record]
+
+    monkeypatch.setattr(observer_module, "async_backfill", history)
+    store = HistoryStore(hass)
+    await store.async_load()
+    filled: list[bool] = []
+    observer = JoeObserver(hass, store, lambda: None, lambda: filled.append(True))
+    config = config_with(
+        measurements={"grid_power": {"entity_id": "sensor.grid"}},
+        batteries=[],
+        persons=[],
+        context={"weather_entity": None},
+    )
+    await observer.async_start(config)
+    await hass.async_block_till_done()
+    assert observer.status["backfill"]["hours"] == 1
+    assert filled == [True]
+    await observer.async_stop()
+    await store.async_unload()

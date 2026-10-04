@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.typing import WebSocketGenerator
 
@@ -25,6 +28,9 @@ async def test_info_without_energy_dashboard(
 
     assert msg["success"]
     assert msg["result"]["ha_version"] == HA_VERSION
-    assert msg["result"]["version"] == "0.1.0"
+    manifest = (
+        Path(__file__).parent.parent / "custom_components/energy_joe/manifest.json"
+    )
+    assert msg["result"]["version"] == json.loads(manifest.read_text())["version"]
     assert msg["result"]["energy"] == {"available": False}
     assert msg["result"]["defaults"]["rules"]["reserve_soc"] == 10

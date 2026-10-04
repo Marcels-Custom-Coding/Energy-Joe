@@ -64,6 +64,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_control_skip)
     websocket_api.async_register_command(hass, ws_control_answer)
     websocket_api.async_register_command(hass, ws_control_action_tonight)
+    websocket_api.async_register_command(hass, ws_control_boost)
 
 
 def _runtime(
@@ -619,6 +620,39 @@ async def ws_control_action_tonight(
     if (runtime := _runtime(hass, connection, msg)) is None:
         return
     await runtime.async_action_tonight(msg["action_id"], msg["on"])
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/control/boost",
+        vol.Required("action_id"): str,
+        # None stops it.
+        vol.Required("target"): vol.Any(
+            None, vol.All(vol.Coerce(float), vol.Range(min=1, max=1500))
+        ),
+        vol.Optional("unit", default="%"): vol.In(("%", "km")),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_control_boost(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """ "Just charge to …": a car charges now until a level or a range."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    target = msg["target"]
+    if target is not None and msg["unit"] == "%" and target > 100:
+        connection.send_error(msg["id"], "invalid", "A level is at most 100 %.")
+        return
+    try:
+        await runtime.executor.async_boost(msg["action_id"], target, msg["unit"])
+    except ValueError as err:
+        connection.send_error(msg["id"], str(err), str(err))
+        return
     connection.send_result(msg["id"])
 
 

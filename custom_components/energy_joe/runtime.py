@@ -69,7 +69,9 @@ class JoeRuntime:
         self._config: dict[str, Any] = model.default_config()
         self._listeners: set[StateListener] = set()
         self.history = HistoryStore(hass)
-        self.observer = JoeObserver(hass, self.history, self._changed)
+        self.observer = JoeObserver(
+            hass, self.history, self._changed, self._history_filled
+        )
         self.planner = JoePlanner(
             hass,
             self.history,
@@ -171,6 +173,14 @@ class JoeRuntime:
             return False
         await self.learner.async_answer(day, answer)
         return True
+
+    @callback
+    def _history_filled(self) -> None:
+        """The history brought in past days: learn from them now, not tomorrow."""
+        if self.learner.active:
+            self._hass.async_create_task(
+                self.learner.async_relearn(), eager_start=False
+            )
 
     @callback
     def async_rebuild_history(self) -> bool:

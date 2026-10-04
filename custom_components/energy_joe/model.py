@@ -22,7 +22,7 @@ from homeassistant.helpers import config_validation as cv
 
 from .control.profiles import ADAPTERS, MODE_OPTIONS, ROLES
 
-CONFIG_VERSION = 2
+CONFIG_VERSION = 3
 
 SOURCES = ("read", "learned", "default", "user")
 TARIFF_KINDS = ("fixed_window", "dynamic", "flat", "unknown")
@@ -252,11 +252,12 @@ EV_NEED = vol.Schema(
 
 ROUTING_SERVICES = ("waze", "google", "osm")
 
-# How Joe works out the distance to an appointment's place. None: not at all
-# (the place text only leaves Home Assistant once the user picks a service).
+# How Joe works out the distance to an appointment's place (None: not at all).
+# OpenStreetMap works without an account; it is only asked once a car charges
+# by need, which the user switches on.
 ROUTING = vol.Schema(
     {
-        vol.Optional("service", default=None): vol.Any(None, vol.In(ROUTING_SERVICES)),
+        vol.Optional("service", default="osm"): vol.Any(None, vol.In(ROUTING_SERVICES)),
         # The Google travel time entry (it holds the API key).
         vol.Optional("google_entry", default=None): vol.Any(None, str),
         # OpenStreetMap services: geocoding (Photon) and car routing (OSRM).
@@ -700,6 +701,14 @@ def migrate(data: dict[str, Any]) -> dict[str, Any]:
             }
             if battery.get("adapter") == "generic":
                 battery["adapter"] = "none"
+    if data.get("version", 1) < 3:
+        # Version 2 calculated no distances until a service was picked.
+        routing = data.get("routing") or {}
+        if (
+            routing.get("service") is None
+            and source_of(data, "routing.service") != "user"
+        ):
+            data["routing"] = {**routing, "service": "osm"}
     data["version"] = CONFIG_VERSION
     return validate(data)
 

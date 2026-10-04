@@ -52,12 +52,20 @@ class JoeObserver:
     """Adds up what the configured sensors report and stores one record per hour."""
 
     def __init__(
-        self, hass: HomeAssistant, store: HistoryStore, changed: Callable[[], None]
+        self,
+        hass: HomeAssistant,
+        store: HistoryStore,
+        changed: Callable[[], None],
+        filled: Callable[[], None] | None = None,
     ) -> None:
-        """Set up; call async_start with a configuration to begin."""
+        """Set up; call async_start with a configuration to begin.
+
+        `filled` is called after the history brought in hours (learn again).
+        """
         self._hass = hass
         self._store = store
         self._changed = changed
+        self._filled = filled
         self._config: dict[str, Any] = {}
         self._prefs: dict[str, Any] | None = None
         self._unsubs: list[CALLBACK_TYPE] = []
@@ -423,6 +431,8 @@ class JoeObserver:
             }
         self.status.update(self._store.overview())
         self._changed()
+        if self.status["backfill"].get("hours") and self._filled:
+            self._filled()
         if (again := self._backfill_again) is not None:
             self._backfill_again = None
             self._hass.loop.call_soon(self.start_backfill, again)

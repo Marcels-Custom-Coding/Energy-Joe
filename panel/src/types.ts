@@ -628,7 +628,21 @@ export interface ControlView {
   reason: ControlReason;
   night: string | null;
   batteries: Record<string, ControlBattery>;
-  actions: Record<string, { on: boolean; reason: string | null; start: string; end: string; target?: number; problem: string | null }>;
+  actions: Record<
+    string,
+    {
+      on: boolean;
+      reason: string | null;
+      start: string;
+      end: string;
+      target?: number;
+      problem: string | null;
+      /** Charging to a level by hand ("boost"): what the user chose, in % or km. */
+      chosen?: number;
+      unit?: "%" | "km";
+      value?: number | null;
+    }
+  >;
   pending: boolean;
   testing: { battery: string; step: string; steps: TestStep[]; started: string } | null;
   tests: Record<string, TestResult>;
@@ -637,6 +651,8 @@ export interface ControlView {
   answer: { night: string; yes: boolean; at: string } | null;
   /** Night actions switched on "tonight" by hand: action id -> night. */
   tonight: Record<string, string>;
+  /** Cars charging to a level by hand right now. */
+  boost?: Record<string, { target: number; chosen: number; unit: "%" | "km"; sensor: string; since: string; until: string }>;
   /** Per battery: ready to steer, or why not. */
   ready: Record<string, "ready" | "not_tested" | "outdated" | "not_controllable" | "controls_missing">;
 }

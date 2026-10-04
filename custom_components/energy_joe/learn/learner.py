@@ -427,6 +427,12 @@ class JoeLearner:
             self._update({"learned": {"models_day": None}}, "learned")
         self._changed()
 
+    async def async_relearn(self) -> None:
+        """Learn the models again today (new days arrived from the history)."""
+        if self._config()["learned"].get("models_day") is not None:
+            self._update({"learned": {"models_day": None}}, "learned")
+        await self.async_run()
+
     async def async_reset(self, scope: str = "all") -> None:
         """Forget what Joe learned (everything or one area) and count again from now."""
         config = self._config()

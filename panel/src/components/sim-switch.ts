@@ -15,6 +15,8 @@ const ICONS: Record<JoeMode, string> = {
 export class JoeSimSwitch extends LitElement {
   @property() mode: JoeMode = "simulation";
   @property({ type: Boolean }) compact = false;
+  /** Joe is set up and simulating: the stripes run to the right. */
+  @property({ type: Boolean }) running = false;
   @property({ attribute: false }) t?: Translate;
 
   static styles = css`
@@ -37,6 +39,20 @@ export class JoeSimSwitch extends LitElement {
       );
       box-shadow: inset 0 0 0 2px #071118;
       transition: transform 0.12s, filter 0.12s;
+    }
+    button.simulation.running {
+      animation: joe-stripes 1.6s linear infinite;
+    }
+    /* One stripe pair across: 24px along the -45° gradient is 24·√2 wide. */
+    @keyframes joe-stripes {
+      to {
+        background-position: 33.94px 0;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      button.simulation.running {
+        animation: none;
+      }
     }
     button:hover {
       filter: brightness(1.05);
@@ -122,7 +138,7 @@ export class JoeSimSwitch extends LitElement {
     }
     return html`<button
       type="button"
-      class=${this.mode}
+      class="${this.mode}${this.running ? " running" : ""}"
       aria-label=${t("mode.switch.label")}
       @click=${this.toggle}
     >

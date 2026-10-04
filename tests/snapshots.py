@@ -373,6 +373,24 @@ def fronius_household() -> Snapshot:
             device_id="floor",
             **ev,
         ),
+        # A hot water tank: its temperature, the circulation's and a boost switch.
+        entity(
+            "sensor.ww_speicher_temperatur",
+            "Warmwasserspeicher Temperatur",
+            52.5,
+            unit="°C",
+            device_class="temperature",
+            platform="shelly",
+        ),
+        entity(
+            "sensor.ww_zirkulation_temperatur",
+            "Warmwasser Zirkulation Temperatur",
+            47.0,
+            unit="°C",
+            device_class="temperature",
+            platform="shelly",
+        ),
+        entity("switch.ww_boost", "Warmwasser Boost", "off", platform="shelly"),
         entity(
             "weather.home",
             "Home",

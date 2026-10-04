@@ -246,6 +246,7 @@ export class EnergyJoePanel extends LitElement {
             .mode=${this.joe.mode}
             .t=${t}
             ?compact=${this.narrow}
+            ?running=${!onboarding}
             @joe-mode-switch=${this.onModeSwitch}
           ></joe-sim-switch>
         </div>

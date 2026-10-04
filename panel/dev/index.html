@@ -366,6 +366,26 @@
               log("tonight", { battery: `action:${msg.action_id}`, on: msg.on });
               push();
               return null;
+            case "energy_joe/control/boost": {
+              control.boost = control.boost ?? {};
+              control.actions = control.actions ?? {};
+              if (msg.target == null) {
+                delete control.boost[msg.action_id];
+                delete control.actions[msg.action_id];
+                log("boost_end", { battery: `action:${msg.action_id}`, reason: "stopped" });
+              } else {
+                const action = state.config.actions.find((a) => a.id === msg.action_id);
+                const reserve = msg.unit === "km" ? (action?.need?.reserve_km ?? 50) : 0;
+                const sensor = msg.unit === "km" ? action?.need?.range_entity : action?.need?.soc_entity;
+                const until = new Date(Date.now() + 86400000).toISOString();
+                control.boost[msg.action_id] = { target: msg.target + reserve, chosen: msg.target, unit: msg.unit, sensor, since: stamp(), until };
+                const value = Number.parseFloat(hass.states[sensor]?.state);
+                control.actions[msg.action_id] = { on: true, reason: "boost", start: stamp(), end: until, target: msg.target + reserve, chosen: msg.target, unit: msg.unit, value: Number.isFinite(value) ? value : null, problem: null };
+                log("boost", { battery: `action:${msg.action_id}`, target: msg.target, unit: msg.unit });
+              }
+              push();
+              return null;
+            }
             case "energy_joe/control/answer":
               control.answer = { night: msg.night, yes: msg.yes, at: stamp() };
               log("answer", { night: msg.night, yes: msg.yes });

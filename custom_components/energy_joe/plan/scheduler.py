@@ -91,17 +91,22 @@ class JoePlanner:
                 self._changed()
                 return self.plan
             self._fixed = None
+        plan = await self._async_plan(now)
+        # The plan may have been fixed while this one was worked out: it stays.
+        self.plan = self._fixed if self._fixed is not None else plan
+        self._changed()
+        return self.plan
+
+    async def _async_plan(self, now: datetime) -> dict[str, Any]:
         try:
-            self.plan = await self._async_compute(now)
+            return await self._async_compute(now)
         except Exception:
             _LOGGER.exception("Planning failed")
-            self.plan = {
+            return {
                 "kind": "unavailable",
                 "reasons": ["failed"],
                 "created": now.isoformat(timespec="seconds"),
             }
-        self._changed()
-        return self.plan
 
     async def async_correct_needs(self, location: str) -> list[str]:
         """A place's distance was corrected: tonight's car needs follow at once.
@@ -242,14 +247,16 @@ class JoePlanner:
     async def _async_fix(self) -> None:
         """Fix tonight's plan and keep it for the evaluation."""
         self._fixed = None
-        plan = await self.async_refresh()
-        if plan and plan.get("kind") != "unavailable":
+        plan = await self._async_plan(dt_util.now())
+        # Another run may have finished in between: this one is the plan.
+        self.plan = plan
+        if plan.get("kind") != "unavailable":
             plan["fixed"] = True
             self._fixed = plan
             self._fixed_span = (plan.get("search") or plan["window"])["start"]
             night = datetime.fromisoformat(plan["window"]["start"]).date().isoformat()
             await self._history.async_update_day(night, plan=plan)
-            self._changed()
+        self._changed()
         self._schedule_commit()
 
 

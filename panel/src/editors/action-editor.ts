@@ -3,6 +3,7 @@ import { property, state } from "lit/decorators.js";
 import { displayTitle } from "../components/bits";
 import { tip } from "../components/tip";
 import { pickEntity, saveConfig, suggestions } from "../config";
+import { hotWaterSuggestions } from "../hot-water";
 import { define } from "../define";
 import { entityName, formatState, type FilterName } from "../entities";
 import type { TipName, Translate } from "../i18n";
@@ -70,7 +71,8 @@ export function newAction(template: ActionTemplate, t: Translate): ActionConfig 
     return { ...base, on_value: "now", lead_min: 3, forecast_below_kwh: 15, power_kw: 11, priority: 1 };
   }
   if (template === "hot_water") {
-    return { ...base, kind: "target", reset: "fixed", reset_value: "off", forecast_below_kwh: 20, power_kw: 0.5, priority: 2 };
+    // Back as it was: a switch that is normally on (highest set point) stays on.
+    return { ...base, kind: "target", forecast_below_kwh: 20, power_kw: 0.5, priority: 2 };
   }
   return base;
 }
@@ -197,6 +199,11 @@ export class JoeActionEditor extends LitElement {
         const wallbox = this.discovery?.wallboxes.find((w) => w.is_car);
         if (this.actionId === "new:ev" && wallbox) {
           Object.assign(draft, this.fromWallbox(wallbox));
+        }
+        const hotWater = this.config?.consumers.filter((c) => c.kind === "hot_water") ?? [];
+        if (this.actionId === "new:hot_water" && hotWater.length === 1) {
+          // The one hot water meter found: its energy moves into the night.
+          draft.consumer_id = hotWater[0].id;
         }
         this.draft = draft;
       } else if (this.existing) {
@@ -672,6 +679,15 @@ export class JoeActionEditor extends LitElement {
     return Math.min(high, Math.max(low, Number.isFinite(value) ? value : low));
   }
 
+  /** Hot water: Joe's guesses for the switch and the tank's temperature. */
+  private hotWater(): ReturnType<typeof hotWaterSuggestions> | undefined {
+    if (this.draft?.kind !== "target" || !this.hass) {
+      return undefined;
+    }
+    const consumer = this.config?.consumers.find((c) => c.id === this.draft?.consumer_id);
+    return hotWaterSuggestions(this.hass, consumer?.name);
+  }
+
   private async pickTarget(): Promise<void> {
     const t = this.t!;
     const filter: FilterName = "writable";
@@ -680,6 +696,7 @@ export class JoeActionEditor extends LitElement {
       tip: "a_entity",
       filter,
       selected: this.draft?.entity_id ? [this.draft.entity_id] : [],
+      suggestions: this.hotWater()?.switches,
     });
     const entityId = picked?.selected[0];
     if (entityId) {
@@ -699,6 +716,7 @@ export class JoeActionEditor extends LitElement {
       tip: "a_sensor",
       filter: "temperature",
       selected: this.draft?.sensor_entity ? [this.draft.sensor_entity] : [],
+      suggestions: this.hotWater()?.sensors,
     });
     if (picked?.selected[0]) {
       this.set({ sensor_entity: picked.selected[0] });

@@ -61,6 +61,8 @@ TEST_VALID = timedelta(days=180)
 GRID_PAUSE = timedelta(minutes=5)
 GRID_MARGIN = 1.02
 NO_PROGRESS = timedelta(minutes=30)
+# Charging to a level by hand ends after this at the latest.
+BOOST_LIMIT = timedelta(hours=24)
 
 DEFAULT_DATA: dict[str, Any] = {
     "saved": {},
@@ -87,6 +89,8 @@ DEFAULT_DATA: dict[str, Any] = {
     "paused": None,
     # Per charging battery: since when and from which level it should rise.
     "progress": {},
+    # "Just charge to …" by hand: action id -> target, unit, sensor, since, until.
+    "boost": {},
 }
 
 type Changed = Callable[[], None]
@@ -255,13 +259,16 @@ class JoeExecutor:
     async def _async_check(self, now: datetime) -> None:
         config, plan, mode = self._config(), self._plan(), self._mode()
         reason, night = self._why(now, config, plan, mode)
+        boosts, keep, ended = await self._async_boosts(config, mode, now)
         if reason != "steering":
-            if self._dirty:
-                await self._async_release(reason, now)
+            if self._dirty_except(keep):
+                await self._async_release(reason, now, keep)
             if self.data["night"] and self.data["night"] != night:
                 self._end_night()
-            self._set_status(reason, night, {}, {})
+            self._set_status(reason, night, {}, boosts)
             self._watch([])
+            if boosts or ended:
+                await self._async_save()
             return
         assert plan is not None and night is not None
         if self.data["night"] != night:
@@ -296,13 +303,18 @@ class JoeExecutor:
                 problem = await self._async_steer(adapter, want, soc, now)
                 entry["problem"] = problem
             batteries[battery["id"]] = entry
-        actions = await self._async_actions(config, plan, night, now)
-        self._set_status("steering", night, batteries, actions)
+        actions = await self._async_actions(config, plan, night, now, set(boosts))
+        self._set_status("steering", night, batteries, {**actions, **boosts})
         self._watch([b["soc_entity"] for b, _, a in items if a is not None])
         await self._async_save()
 
     async def _async_actions(
-        self, config: dict[str, Any], plan: dict[str, Any], night: str, now: datetime
+        self,
+        config: dict[str, Any],
+        plan: dict[str, Any],
+        night: str,
+        now: datetime,
+        boosted: set[str] | None = None,
     ) -> dict[str, Any]:
         """Switch night actions on in their time and back when done."""
         by_id = {a["id"]: a for a in config["actions"]}
@@ -310,6 +322,9 @@ class JoeExecutor:
         for entry in plan.get("actions") or []:
             action = by_id.get(entry["id"])
             if action is None or not action.get("enabled", True):
+                continue
+            if action["id"] in (boosted or set()):
+                # Charging to a level by hand: that wins over the plan.
                 continue
             adapter = ActionAdapter(action)
             manual = self.data["tonight"].get(action["id"]) == night
@@ -668,6 +683,97 @@ class JoeExecutor:
         """Something is still set or running that the release has to undo."""
         return bool(self.data["saved"] or self.data["active"])
 
+    def _dirty_except(self, keep: set[str]) -> bool:
+        """Like _dirty, apart from the entities of cars charging by hand."""
+        config = self._config()
+        return any(e not in keep for e in self.data["saved"]) or any(
+            not _kept(k, keep, config) for k in self.data["active"]
+        )
+
+    # --- charging to a level by hand ----------------------------------------
+
+    async def async_boost(
+        self, action_id: str, target: float | None, unit: str = "%"
+    ) -> None:
+        """Charge the car now until a level (%) or a range (km, plus the reserve).
+
+        It does not wait for the cheap window, and it also switches in the
+        simulation: the user asked for it. Stops at the target, after a day,
+        or with async_boost_stop.
+        """
+        action = next(
+            (a for a in self._config()["actions"] if a["id"] == action_id), None
+        )
+        if action is None or action["kind"] != "switch":
+            raise ValueError("unknown_action")
+        if target is None:
+            async with self._lock:
+                self.data["boost"].pop(action_id, None)
+            await self.async_check()
+            return
+        need = action.get("need") or {}
+        sensor = need.get("soc_entity") if unit == "%" else need.get("range_entity")
+        if not sensor:
+            raise ValueError("no_sensor")
+        reserve = need.get("reserve_km", 50.0) if unit == "km" else 0.0
+        now = dt_util.now()
+        async with self._lock:
+            self.data["boost"][action_id] = {
+                "target": round(float(target) + reserve, 1),
+                "chosen": float(target),
+                "unit": unit,
+                "sensor": sensor,
+                "since": now.isoformat(timespec="seconds"),
+                "until": (now + BOOST_LIMIT).isoformat(timespec="seconds"),
+            }
+            self._log("boost", battery=f"action:{action_id}", target=target, unit=unit)
+            await self._async_save()
+        await self.async_check()
+
+    async def _async_boosts(
+        self, config: dict[str, Any], mode: str, now: datetime
+    ) -> tuple[dict[str, Any], set[str], bool]:
+        """Keep cars that charge to a level by hand switched on; end finished ones."""
+        result: dict[str, Any] = {}
+        keep: set[str] = set()
+        ended = False
+        boosts: dict[str, Any] = self.data["boost"]
+        by_id = {a["id"]: a for a in config["actions"]}
+        for action_id, boost in list(boosts.items()):
+            action = by_id.get(action_id)
+            state = self._hass.states.get(boost["sensor"])
+            value = distance_km(state) if boost["unit"] == "km" else number(state)
+            end = None
+            if action is None or mode == "off":
+                end = "stopped"
+            elif value is not None and value >= boost["target"]:
+                end = "reached"
+            elif now >= datetime.fromisoformat(boost["until"]):
+                end = "expired"
+            if end:
+                ended = True
+                del boosts[action_id]
+                self._log("boost_end", battery=f"action:{action_id}", reason=end)
+                if end == "reached":
+                    self._fire("action_reset", action=action_id, reason="boost_reached")
+                continue
+            assert action is not None
+            adapter = ActionAdapter(action)
+            problem = await self._async_write(adapter, adapter.on(), now, "action_on")
+            keep.add(adapter.entity_id)
+            result[action_id] = {
+                "on": problem is None,
+                "reason": "boost",
+                "start": boost["since"],
+                "end": boost["until"],
+                "target": boost["target"],
+                "chosen": boost["chosen"],
+                "unit": boost["unit"],
+                "value": value,
+                "problem": problem,
+            }
+        return result, keep, ended
+
     def _notice_external(self, adapter: Adapter, now: datetime) -> None:
         """Values Joe set that someone else changed: leave them alone tonight."""
         written: dict[str, Any] = self.data["written"]
@@ -704,12 +810,18 @@ class JoeExecutor:
             self._set_status("skipped", self.status.get("night"), {}, {})
             await self._async_save()
 
-    async def _async_release(self, reason: str, now: datetime | None = None) -> None:
-        """Put back every value Joe noted; keep what fails for the next try."""
+    async def _async_release(
+        self, reason: str, now: datetime | None = None, keep: set[str] | None = None
+    ) -> None:
+        """Put back every value Joe noted; keep what fails for the next try.
+
+        Entities in `keep` (a car charging to a level by hand) stay as they are.
+        """
         now = now or dt_util.now()
+        keep = keep or set()
         saved: dict[str, Any] = self.data["saved"]
         written: dict[str, Any] = self.data["written"]
-        if not self._dirty:
+        if not self._dirty_except(keep):
             return
         if (
             self.data["failures"]
@@ -742,6 +854,7 @@ class JoeExecutor:
         for entity_id in reversed(list(saved)):
             if entity_id not in covered:
                 writes.append(Write(entity_id, saved[entity_id]))
+        writes = [w for w in writes if w.entity_id not in keep]
         errors: list[str] = []
         for write in writes:
             if write.is_call:
@@ -773,7 +886,9 @@ class JoeExecutor:
             else:
                 errors.append(write.entity_id)
         if not errors:
-            self.data["active"] = []
+            self.data["active"] = [
+                k for k in self.data["active"] if _kept(k, keep, self._config())
+            ]
             self.data["calls"] = {}
         if errors:
             self.data["failures"] += 1
@@ -1172,10 +1287,21 @@ class JoeExecutor:
             "skip": self.data["skip"],
             "answer": self.data["answer"],
             "tonight": self.data["tonight"],
+            "boost": self.data["boost"],
         }
 
     async def async_forget(self) -> None:
         await self._store.async_remove()
+
+
+def _kept(key: str, keep: set[str], config: dict[str, Any]) -> bool:
+    """Whether an "active" key belongs to an action whose entity is kept."""
+    if not key.startswith("action:"):
+        return False
+    action_id = key.removeprefix("action:")
+    return any(
+        a["id"] == action_id and a["entity_id"] in keep for a in config["actions"]
+    )
 
 
 def _fresh() -> dict[str, Any]:

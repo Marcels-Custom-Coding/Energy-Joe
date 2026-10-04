@@ -288,3 +288,104 @@ def test_discovery_proposes_the_car() -> None:
     ]
     config = model.adopt_proposal(model.default_config(), proposal)
     assert config["actions"][0]["lead_min"] == 3
+
+
+async def test_just_charge_to_a_level(hass: HomeAssistant, freezer) -> None:
+    """ "Just charge to 80 %": now, also in the simulation, and back once there."""
+    freezer.move_to("2026-10-04T15:00:00+02:00")
+    keep_values(hass)
+    hass.states.async_set(
+        "select.carport_mode", "smart", {"options": ["off", "smart", "now"]}
+    )
+    hass.states.async_set("sensor.car_soc", "41", {"unit_of_measurement": "%"})
+    car = {**EV, "need": {"soc_entity": "sensor.car_soc"}}
+    config = model.validate({"version": model.CONFIG_VERSION, "actions": [car]})
+    executor = JoeExecutor(
+        hass, lambda: config, lambda: None, lambda: "simulation", lambda: None
+    )
+    await executor.async_load()
+    await executor.async_boost("ev", 80, "%")
+    assert hass.states.get("select.carport_mode").state == "now"
+    status = executor.status["actions"]["ev"]
+    assert status["reason"] == "boost" and status["on"] is True
+    assert executor.view["boost"]["ev"]["target"] == 80
+    # Still charging a while later.
+    hass.states.async_set("sensor.car_soc", "60", {"unit_of_measurement": "%"})
+    await executor.async_check()
+    assert hass.states.get("select.carport_mode").state == "now"
+    hass.states.async_set("sensor.car_soc", "80", {"unit_of_measurement": "%"})
+    await executor.async_check()
+    assert hass.states.get("select.carport_mode").state == "smart"
+    assert executor.data["boost"] == {} and executor.data["saved"] == {}
+    kinds = [entry["kind"] for entry in executor.data["log"]]
+    assert "boost" in kinds and "boost_end" in kinds
+
+
+async def test_just_charge_to_a_range_with_reserve(
+    hass: HomeAssistant, freezer
+) -> None:
+    """A range target adds the reserve; stopping by hand puts the mode back."""
+    freezer.move_to("2026-10-04T15:00:00+02:00")
+    keep_values(hass)
+    hass.states.async_set(
+        "select.carport_mode", "smart", {"options": ["off", "smart", "now"]}
+    )
+    hass.states.async_set("sensor.car_range", "120", {"unit_of_measurement": "km"})
+    car = {**EV, "need": {"range_entity": "sensor.car_range", "reserve_km": 40}}
+    config = model.validate({"version": model.CONFIG_VERSION, "actions": [car]})
+    executor = JoeExecutor(
+        hass, lambda: config, lambda: None, lambda: "live", lambda: None
+    )
+    await executor.async_load()
+    with pytest.raises(ValueError):
+        await executor.async_boost("ev", 80, "%")
+    await executor.async_boost("ev", 200, "km")
+    assert executor.data["boost"]["ev"]["target"] == 240
+    assert hass.states.get("select.carport_mode").state == "now"
+    await executor.async_boost("ev", None)
+    assert hass.states.get("select.carport_mode").state == "smart"
+    assert executor.data["saved"] == {}
+    # A boost ends after a day at the latest.
+    await executor.async_boost("ev", 200, "km")
+    freezer.move_to("2026-10-05T15:01:00+02:00")
+    await executor.async_check()
+    assert executor.data["boost"] == {}
+    assert hass.states.get("select.carport_mode").state == "smart"
+
+
+async def test_charging_by_hand_wins_over_the_night_plan(
+    hass: HomeAssistant, freezer
+) -> None:
+    """The plan's own charge ends with the window: the car charges on to its level."""
+    freezer.move_to("2026-10-04T00:10:00+02:00")
+    keep_values(hass)
+    hass.states.async_set(
+        "select.carport_mode", "smart", {"options": ["off", "smart", "now"]}
+    )
+    hass.states.async_set("binary_sensor.carport_connected", "on")
+    hass.states.async_set("sensor.car_soc", "41", {"unit_of_measurement": "%"})
+    car = {**EV, "need": {"soc_entity": "sensor.car_soc"}}
+    config = model.validate({"version": model.CONFIG_VERSION, "actions": [car]})
+    start, end = window(hass)
+    planned = plan_actions(config["actions"], hass.states.get, start, end, 8.0, {})
+    assert planned[0]["run"] is True
+    executor = JoeExecutor(
+        hass,
+        lambda: config,
+        lambda: night_plan(start, planned),
+        lambda: "live",
+        lambda: None,
+    )
+    await executor.async_load()
+    await executor.async_boost("ev", 90, "%")
+    await executor.async_check()
+    assert hass.states.get("select.carport_mode").state == "now"
+    assert executor.status["steering"] is True
+    assert executor.status["actions"]["ev"]["reason"] == "boost"
+    # After the window it still charges until the level is there.
+    freezer.move_to("2026-10-04T06:00:00+02:00")
+    await executor.async_check()
+    assert hass.states.get("select.carport_mode").state == "now"
+    hass.states.async_set("sensor.car_soc", "90", {"unit_of_measurement": "%"})
+    await executor.async_check()
+    assert hass.states.get("select.carport_mode").state == "smart"

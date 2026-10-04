@@ -190,16 +190,7 @@ export class JoeQuestions extends LitElement {
       case "heating":
         return this.renderHeating(t, config);
       case "hot_water":
-        return this.question(
-          t("q.hot_water.title"),
-          "q_hot_water",
-          this.choice(t, "hot_water", [
-            { value: "hot_water_heat_pump", label: t("q.hot_water.heat_pump"), icon: "mdi:water-boiler" },
-            { value: "electric", label: t("q.hot_water.electric"), icon: "mdi:flash" },
-            { value: "heating", label: t("q.hot_water.heating"), icon: "mdi:radiator" },
-            { value: "other", label: t("q.hot_water.other"), icon: "mdi:fire" },
-          ]),
-        );
+        return this.renderHotWater(t, config);
       case "ev": {
         const wallbox = this.discovery?.wallboxes.find((w) => w.is_car);
         return this.question(
@@ -250,6 +241,43 @@ export class JoeQuestions extends LitElement {
       @joe-choice=${(ev: CustomEvent<{ value: string[] }>) =>
         saveConfig(this, { answers: { [key]: multiple ? ev.detail.value : (ev.detail.value[0] ?? null) } })}
     ></joe-choice>`;
+  }
+
+  /** Hot water: the meter Joe found and, if it is electric, a night action for it. */
+  private renderHotWater(t: Translate, config: JoeConfig): TemplateResult {
+    const answer = config.answers.hot_water;
+    const electric = answer === "hot_water_heat_pump" || answer === "electric";
+    const devices = config.consumers.filter((c) => c.kind === "hot_water");
+    const action = config.actions.find((a) => a.kind === "target");
+    return this.question(
+      t("q.hot_water.title"),
+      "q_hot_water",
+      html`${this.choice(t, "hot_water", [
+        { value: "hot_water_heat_pump", label: t("q.hot_water.heat_pump"), icon: "mdi:water-boiler" },
+        { value: "electric", label: t("q.hot_water.electric"), icon: "mdi:flash" },
+        { value: "heating", label: t("q.hot_water.heating"), icon: "mdi:radiator" },
+        { value: "other", label: t("q.hot_water.other"), icon: "mdi:fire" },
+      ])}
+      ${electric
+        ? html`<div class="follow">
+            <p class="hint">${devices.length ? t("q.hot_water.devices") : t("q.hot_water.no_devices")}</p>
+            ${devices.length
+              ? html`<div class="chips">${devices.map((d) => html`<span class="chip learned">${d.name}</span>`)}</div>`
+              : nothing}
+            <p class="hint">${action ? t("q.hot_water.has_action", { name: action.name }) : t("q.hot_water.offer")}</p>
+            <div class="with-tip" data-tipped style="margin-top:10px">
+              <button
+                type="button"
+                class="mini-btn ${action ? "" : "go"}"
+                @click=${() => this.dispatchEvent(new CustomEvent("joe-edit", { detail: { editor: "action", id: action ? action.id : "new:hot_water" }, bubbles: true, composed: true }))}
+              >
+                <ha-icon icon=${action ? "mdi:pencil-outline" : "mdi:water-boiler"}></ha-icon>${t(action ? "q.hot_water.edit" : "q.hot_water.set_up")}
+              </button>
+              ${tip(t, "q_hot_water_action")}
+            </div>
+          </div>`
+        : nothing}`,
+    );
   }
 
   private renderHeating(t: Translate, config: JoeConfig): TemplateResult {

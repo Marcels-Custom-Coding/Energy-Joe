@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 import math
+from typing import Any
 
 import pytest
 
+from custom_components.energy_joe import model
 from custom_components.energy_joe.plan.planner import (
     Battery,
     Hour,
@@ -283,3 +285,38 @@ async def test_plan_is_fixed_before_the_window(
     day = await runtime.history.async_day("2026-10-04")
     assert day["plan"]["target"] == fixed["target"]
     assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_a_slow_run_does_not_undo_the_fixed_plan(hass: HomeAssistant) -> None:
+    """A plan run that ends after tonight's plan was fixed leaves it fixed."""
+    import asyncio
+
+    from custom_components.energy_joe.observe.store import HistoryStore
+    from custom_components.energy_joe.plan.scheduler import JoePlanner
+
+    store = HistoryStore(hass)
+    await store.async_load()
+    planner = JoePlanner(hass, store, lambda: None)
+    planner._config = model.default_config()
+    release = asyncio.Event()
+    window = {"start": "2026-10-04T00:00:00+02:00", "end": "2099-10-04T05:00:00+02:00"}
+
+    async def compute(now: Any) -> dict[str, Any]:
+        if not release.is_set():
+            release.set()
+            await asyncio.sleep(0)
+            # The slow run: it finishes only after the plan was fixed.
+            await asyncio.sleep(0.05)
+            return {"kind": "none", "window": window, "slow": True}
+        return {"kind": "charge", "window": window}
+
+    planner._async_compute = compute  # type: ignore[method-assign]
+    slow = hass.async_create_task(planner.async_refresh())
+    await release.wait()
+    await planner._async_fix()
+    await slow
+    assert planner.plan["fixed"] is True
+    assert planner.plan["kind"] == "charge"
+    if planner._commit:
+        planner._commit()
+    await store.async_unload()

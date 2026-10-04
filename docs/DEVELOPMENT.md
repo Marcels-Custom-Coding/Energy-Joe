@@ -38,6 +38,11 @@ cd panel && npm install
 - Termine und Entfernungen (`plan/trips.py`): `calendar.get_events`, Ort aus `location`; Entfernung über Waze (`waze_travel_time.get_travel_times`, ab HA 2026.8 ohne Eintrag), Google (`google_travel_time.get_travel_times` mit Eintrag) oder OpenStreetMap (Photon und OSRM, Adressen in `routing` einstellbar); Zonen ohne Dienst über Luftlinie × 1,3. Gespeichert in `.storage/energy_joe.places`, Korrekturen des Nutzers gewinnen.
 - Gelernt (`learn/models.py`, `car_days`/`car_model`): Verbrauch aus fallendem Ladestand bei steigendem Kilometerstand, mit Aufschlag je Grad unter 15 °C, und die übliche Strecke (80. Perzentil) für Werktage und freie Tage.
 - Testseite: `?need=1` zeigt die Nacht mit Laden nach Bedarf.
+- „Einfach laden bis …“ (`control/executor.py`, `async_boost`, Befehl `energy_joe/control/boost`): schaltet die Aktion sofort ein, in jedem Modus außer „Aus“, bis der Ladestand (`need.soc_entity`) oder die Reichweite plus Reserve (`need.range_entity`) erreicht ist, höchstens 24 Stunden. Steht in `data["boost"]`, schlägt den Nachtplan, und Freigaben lassen die Entität in Ruhe, solange es läuft.
+
+## Warmwasser
+
+- Gefunden wird Warmwasser als Verbraucher im Energie-Dashboard (Art `hot_water`). Die Frage „Wie wird euer Wasser warm?“ bietet dann eine Nacht-Aktion an; `panel/src/hot-water.ts` schlägt Fühler und Schalter nach Wörtern in Entity-ID, Name und Gerätename vor (Speicher vor Zirkulation und Ausgang).
 
 ## Speicher steuern
 
@@ -63,3 +68,11 @@ Danach `npm --prefix panel run build`.
 ## Auf Home Assistant testen
 
 Installiert wird ausschließlich über HACS aus diesem Repository (benutzerdefiniertes Repository, Typ Integration). HACS lädt nur öffentliche Repositories.
+
+## Versionen
+
+Kleine Schritte zählen hinten hoch (0.1.0 → 0.1.1), größere vorne (0.2.0) – nie „0.12“ für 0.1.2, HACS zählt das höher als 0.2. HACS bietet nur GitHub-Releases an:
+
+1. `.venv/bin/python scripts/bump_version.py patch` (oder `minor`) – setzt die Version in `manifest.json` und `panel/package*.json` und legt einen Eintrag in `CHANGELOG.md` an
+2. Änderungen in `CHANGELOG.md` eintragen, committen, pushen, CI abwarten
+3. Release mit dem Tag gleich der Version (ohne „v“) und dem Abschnitt aus `CHANGELOG.md` als Text; Releases immer aufsteigend

@@ -92,6 +92,18 @@ def test_migrate_keeps_values() -> None:
     assert model.migrate(stored)["rules"]["reserve_soc"] == 20
 
 
+def test_distances_come_from_openstreetmap_unless_switched_off() -> None:
+    assert model.default_config()["routing"]["service"] == "osm"
+    stored = {**model.default_config(), "version": 2}
+    stored["routing"] = {**stored["routing"], "service": None}
+    assert model.migrate(stored)["routing"]["service"] == "osm"
+    # Switched off by the user: stays off.
+    off = model.apply_update(
+        model.default_config(), {"routing": {"service": None}}, "user"
+    )
+    assert model.migrate({**off, "version": 2})["routing"]["service"] is None
+
+
 BATTERY = {
     "id": "b1",
     "name": "Garage",

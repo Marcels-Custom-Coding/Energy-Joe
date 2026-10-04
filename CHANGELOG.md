@@ -3,6 +3,28 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.1.1
+
+- **Einfach laden bis …:** Bei jedem Auto ein Knopf, der sofort lädt, bis
+  der gewählte Ladestand oder die Reichweite (plus Reserve) erreicht ist –
+  ohne auf die günstige Zeit zu warten, auch in der Simulation. Danach stellt
+  Joe die Wallbox zurück, nach spätestens 24 Stunden hört er von selbst auf.
+- **Warmwasser:** Die Frage nach dem Warmwasser zeigt den gefundenen Zähler
+  und bietet „Warmwasser-Steuerung einrichten“ an; Joe schlägt Schalter und
+  Temperaturfühler vor. Neue Warmwasser-Aktionen stellen den Schalter danach
+  zurück, wie er war.
+- **Umschauen:** Gefundene Autos stehen in der Liste. evcc-Ladepunkte für
+  Heizungen und Whirlpool gelten nicht mehr als Wallbox; früher so angelegte
+  Aktionen nimmt Joe beim nächsten Umschauen zurück, wenn niemand sie
+  geändert hat.
+- **Lernen sofort:** Sobald Joe die letzten Wochen aus dem Verlauf gelesen
+  hat, lernt er daraus – nicht erst am nächsten Tag.
+- **Entfernungen:** OpenStreetMap ist vorausgewählt (gefragt wird erst, wenn
+  ein Auto nach Bedarf lädt).
+- **Simulation:** Die Streifen am Knopf laufen, solange Joe simuliert.
+- Behoben: Ein Plan, der gleichzeitig mit dem Festlegen fertig wurde, konnte
+  den festgelegten Plan überschreiben.
+
 ## 0.1.0
 
 Die erste Version mit Nummer.

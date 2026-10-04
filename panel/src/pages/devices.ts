@@ -37,6 +37,9 @@ export class JoeDevicesPage extends LitElement {
 
   @state() private confirm?: BatteryConfig;
   @state() private notice = "";
+  /** "Just charge to …": the value and unit chosen per car (before sending). */
+  @state() private boostValue: Record<string, number> = {};
+  @state() private boostUnit: Record<string, "%" | "km"> = {};
 
   static styles = [
     shared,
@@ -133,6 +136,46 @@ export class JoeDevicesPage extends LitElement {
       }
       .test .chip {
         margin-right: auto;
+      }
+      .boost {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid var(--joe-line);
+      }
+      .boost .amount {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .boost .input {
+        width: 78px;
+        min-height: 34px;
+        padding: 4px 8px;
+      }
+      .boost .unit {
+        color: var(--joe-ink-2);
+      }
+      .boost .unit-select {
+        min-height: 34px;
+        border: 0;
+        background: transparent;
+        font: inherit;
+        color: var(--joe-ink-2);
+        cursor: pointer;
+      }
+      .boost .hint {
+        flex-basis: 100%;
+        color: var(--joe-muted);
+        font-size: 12.5px;
+      }
+      .boost.on span {
+        flex: 1 1 200px;
+        font-weight: 600;
+        color: var(--joe-ink);
       }
       .steps {
         list-style: none;
@@ -368,6 +411,7 @@ export class JoeDevicesPage extends LitElement {
       ${planned?.need
         ? html`<joe-car-need .hass=${this.hass} .t=${t} .action=${planned} .roundTrip=${action.need?.round_trip ?? true}></joe-car-need>`
         : nothing}
+      ${action.kind === "switch" && (action.need?.soc_entity || action.need?.range_entity) ? this.renderBoost(t, joe, action) : nothing}
       <div class="test">
         <span class="toggle-label" id="tonight-${action.id}">${t("devices.action.tonight")}</span>
         <button
@@ -389,6 +433,88 @@ export class JoeDevicesPage extends LitElement {
     </section>`;
   }
 
+  /** "Just charge to …": now, until a level or a range (plus the reserve). */
+  private renderBoost(t: Translate, joe: JoeState, action: ActionConfig): TemplateResult {
+    const boost = joe.control?.boost?.[action.id];
+    const live = joe.control?.actions?.[action.id];
+    const need = action.need!;
+    if (boost) {
+      const value = live?.value;
+      const unit = boost.unit;
+      return html`<div class="boost on" data-tipped>
+        <span>
+          ${t(unit === "km" ? "devices.boost.running_km" : "devices.boost.running", {
+            target: formatNumber(t.lang, boost.chosen, 0),
+            reserve: formatNumber(t.lang, boost.target - boost.chosen, 0),
+            now: value == null ? "–" : formatNumber(t.lang, value, 0),
+          })}
+        </span>
+        <button type="button" class="mini-btn quiet" @click=${() => this.boost(action.id, null)}>${t("devices.boost.stop")}</button>
+        ${tip(t, "boost")}
+      </div>`;
+    }
+    const units: ("%" | "km")[] = [...(need.soc_entity ? ["%" as const] : []), ...(need.range_entity ? ["km" as const] : [])];
+    const unit = this.boostUnit[action.id] && units.includes(this.boostUnit[action.id]) ? this.boostUnit[action.id] : units[0];
+    const value = this.boostValue[`${action.id}:${unit}`] ?? (unit === "%" ? 80 : 200);
+    const max = unit === "%" ? 100 : 1500;
+    return html`<form
+      class="boost"
+      data-tipped
+      novalidate
+      @submit=${(ev: Event) => {
+        ev.preventDefault();
+        const input = (ev.target as HTMLFormElement).querySelector("input") as HTMLInputElement;
+        const typed = Number.parseFloat(input.value.replace(",", "."));
+        const chosen = Number.isFinite(typed) ? typed : value;
+        this.boost(action.id, Math.round(Math.min(max, Math.max(1, chosen))), unit);
+      }}
+    >
+      <label class="toggle-label" for="boost-${action.id}">${t("devices.boost.label")}</label>
+      <span class="amount">
+        <input
+          id="boost-${action.id}"
+          class="input"
+          type="number"
+          inputmode="numeric"
+          min=${unit === "%" ? 5 : 10}
+          max=${max}
+          step=${unit === "%" ? 5 : 10}
+          .value=${String(value)}
+          @change=${(ev: Event) => {
+            const number = Number.parseFloat((ev.target as HTMLInputElement).value.replace(",", "."));
+            if (Number.isFinite(number) && number >= 1) {
+              this.boostValue = { ...this.boostValue, [`${action.id}:${unit}`]: Math.min(number, unit === "%" ? 100 : 1500) };
+            }
+          }}
+        />
+        ${units.length > 1
+          ? html`<select
+              class="unit-select"
+              aria-label=${t("devices.boost.unit")}
+              @change=${(ev: Event) => {
+                this.boostUnit = { ...this.boostUnit, [action.id]: (ev.target as HTMLSelectElement).value as "%" | "km" };
+              }}
+            >
+              ${units.map((u) => html`<option value=${u} ?selected=${u === unit}>${u}</option>`)}
+            </select>`
+          : html`<span class="unit">${unit}</span>`}
+      </span>
+      <button type="submit" class="mini-btn go" ?disabled=${joe.mode === "off" || !action.enabled}>
+        <ha-icon icon="mdi:ev-plug-type2"></ha-icon>${t("devices.boost.go")}
+      </button>
+      ${tip(t, "boost")}
+      ${unit === "km" ? html`<small class="hint">${t("devices.boost.reserve", { reserve: formatNumber(t.lang, need.reserve_km ?? 50, 0) })}</small>` : nothing}
+    </form>`;
+  }
+
+  private async boost(actionId: string, target: number | null, unit: "%" | "km" = "%"): Promise<void> {
+    try {
+      await this.hass?.callWS({ type: "energy_joe/control/boost", action_id: actionId, target, unit });
+    } catch {
+      this.notice = this.t!("error.action");
+    }
+  }
+
   private actionText(
     t: Translate,
     joe: JoeState,
@@ -399,6 +525,9 @@ export class JoeDevicesPage extends LitElement {
     const target = planned?.target != null ? formatNumber(t.lang, planned.target, 0) : "";
     if (!action.enabled) {
       return t("devices.action.disabled");
+    }
+    if (live?.reason === "boost") {
+      return t("devices.action.boost");
     }
     if (live?.on) {
       return action.kind === "target"
@@ -566,7 +695,12 @@ export class JoeDevicesPage extends LitElement {
 
   private logText(t: Translate, entry: ControlLogEntry): string {
     const hass = this.hass!;
-    const battery = this.state?.config.batteries.find((b) => b.id === entry.battery)?.name ?? entry.battery ?? "";
+    const config = this.state?.config;
+    const battery =
+      config?.batteries.find((b) => b.id === entry.battery)?.name ??
+      config?.actions.find((a) => `action:${a.id}` === entry.battery)?.name ??
+      entry.battery ??
+      "";
     const entity = entry.entity ? entityName(hass, entry.entity) : "";
     const vars: Record<string, string | number> = {
       battery,
@@ -575,7 +709,11 @@ export class JoeDevicesPage extends LitElement {
       target: String(entry.target ?? ""),
       power: typeof entry.power === "number" ? formatNumber(t.lang, entry.power, 1) : "–",
       soc: typeof entry.soc === "number" ? formatNumber(t.lang, entry.soc, 0) : "–",
+      unit: typeof entry.unit === "string" ? entry.unit : "%",
     };
+    if (entry.kind === "boost_end") {
+      return t.optional(`log.boost_end.${String(entry.reason)}`, vars) ?? t("log.boost_end.stopped", vars);
+    }
     if (entry.kind === "answer") {
       return t(entry.yes ? "log.answer.yes" : "log.answer.no");
     }
