@@ -3,6 +3,10 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.7.1
+
+- Klima: Die Messgeräte stehen jetzt in einer eigenen Liste „Messgeräte“ – eine Zeile pro Klimagerät mit Auswahl, gruppiert nach „verbunden über …“. Joes Vorschlag ist vorgewählt („Bestätigen“ übernimmt ihn). Hängen mehrere Klimageräte am selben Messgerät, steht das direkt darunter.
+
 ## 0.7.0
 
 - Klima: Messgerät koppeln. Zu jedem Thermostat und jeder Klimaanlage zeigt Joe, welches Gerät Leistung und Energie misst – z. B. den Kanal „Schlafzimmer Klimaanlage“, verbunden über „Shelly Pro 3EM HV Gerätemessungen“. Passen Name oder Raum, schlägt er es vor: „Passt“, „Anderes Messgerät“ oder „Hat keins“. Gekoppelt siehst du Leistung und Zählerstand live.
