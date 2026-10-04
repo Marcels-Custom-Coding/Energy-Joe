@@ -3,6 +3,10 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.6.5
+
+- 
+
 ## 0.6.4
 
 - Pfeile zwischen den Themen über Joes Fragen zeigen die Reihenfolge.

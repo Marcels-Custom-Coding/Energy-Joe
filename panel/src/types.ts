@@ -186,6 +186,8 @@ export interface PersonConfig {
   name: string;
   person_entity: string | null;
   calendars: string[];
+  /** Own calendar rules; null follows the ones for everyone. */
+  calendar?: CalendarConfig | null;
 }
 
 export type ConsumerKind =

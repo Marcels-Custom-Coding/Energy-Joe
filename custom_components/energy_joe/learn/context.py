@@ -97,15 +97,15 @@ async def async_day_labels(
 ) -> dict[str, str]:
     """A label per person for a day, from their calendars and the rules."""
     calendar = config["calendar"]
-    default = calendar["default_workday"] if workday else calendar["default_day_off"]
     result: dict[str, str] = {}
-    if not hass.services.has_service("calendar", "get_events"):
-        return {p["id"]: default for p in config["persons"]}
     start = dt_util.start_of_local_day(day)
     end = start + timedelta(days=1)
     for person in config["persons"]:
+        # A person may have rules of their own; else the ones for everyone.
+        mine = person.get("calendar") or calendar
+        default = mine["default_workday"] if workday else mine["default_day_off"]
         label = None
-        if person["calendars"]:
+        if person["calendars"] and hass.services.has_service("calendar", "get_events"):
             try:
                 response = await hass.services.async_call(
                     "calendar",
@@ -130,7 +130,7 @@ async def async_day_labels(
             ]
             # All-day events first: "vacation" beats a meeting.
             events.sort(key=lambda e: "T" in str(e.get("start", "")))
-            label = _label(events, calendar["rules"])
+            label = _label(events, mine["rules"])
         result[person["id"]] = label or default
     return result
 

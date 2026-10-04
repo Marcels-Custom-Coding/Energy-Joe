@@ -195,6 +195,10 @@ PERSON = vol.Schema(
         vol.Required("name"): str,
         vol.Optional("person_entity", default=None): _ENTITY,
         vol.Optional("calendars", default=list): [cv.entity_id],
+        # Own calendar rules and defaults (None: those that apply to everyone).
+        vol.Optional("calendar", default=None): vol.Any(
+            None, lambda value: CALENDAR(value)
+        ),
     }
 )
 

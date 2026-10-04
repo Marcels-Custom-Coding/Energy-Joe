@@ -1097,6 +1097,18 @@ export const en: Record<Key, string> = {
   "learn.calendar.defaults": "Without a matching event",
   "learn.calendar.default_workday": "On working days",
   "learn.calendar.default_day_off": "On days off",
+  "learn.calendar.for": "Rules for",
+  "learn.calendar.everyone": "Everyone",
+  "learn.calendar.shared": "Applies to everyone",
+  "learn.calendar.shared.say":
+    "{name} follows the rules for everyone. Turn off “Applies to everyone” to set own keywords – Joe starts from the current ones.",
+  "tip.cal_person.title": "Whom do the rules apply to?",
+  "tip.cal_person.text":
+    "“Everyone” holds the shared rules. Pick a person to see their rules – their own or the shared ones. A small icon next to a name shows that person has rules of their own.",
+  "tip.cal_shared.title": "Shared or own rules?",
+  "tip.cal_shared.text":
+    "On: the rules for everyone apply to this person. Off: they get their own keywords and their own defaults without a matching event – starting as a copy of the shared ones.",
+  "tip.cal_shared.hint": "Turning it back on discards this person's own rules.",
   "label.home_office": "Home office",
   "label.office": "Office",
   "label.travel": "Business trip",

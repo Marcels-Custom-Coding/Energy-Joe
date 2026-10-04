@@ -319,3 +319,46 @@ async def test_calendar_rules_pick_the_kind_of_day(hass: HomeAssistant) -> None:
     found["anna"] = [{"summary": "Zahnarzt", "start": "2026-10-06T08:00:00+02:00"}]
     assert await async_day_labels(hass, config, day, True) == {"anna": "home_office"}
     assert await async_day_labels(hass, config, day, False) == {"anna": "home"}
+
+
+async def test_a_person_may_have_calendar_rules_of_their_own(
+    hass: HomeAssistant,
+) -> None:
+    """Own rules and defaults replace the shared ones for that person only."""
+    from custom_components.energy_joe import model
+    from custom_components.energy_joe.learn.context import async_day_labels
+
+    def events(call: ServiceCall) -> dict[str, Any]:
+        return {
+            entity: {"events": [{"summary": "Schicht", "start": "2026-10-06"}]}
+            for entity in call.data["entity_id"]
+        }
+
+    hass.services.async_register(
+        "calendar", "get_events", events, supports_response=SupportsResponse.ONLY
+    )
+    config = household()
+    config["persons"].append(
+        model.PERSON({"id": "ben", "name": "Ben", "calendars": ["calendar.ben"]})
+    )
+    day = date(2026, 10, 6)
+    assert await async_day_labels(hass, config, day, True) == {
+        "anna": "home_office",
+        "ben": "home_office",
+    }
+    config["persons"][1] = model.PERSON(
+        {
+            **config["persons"][1],
+            "calendar": {
+                "rules": [{"keyword": "schicht", "label": "office"}],
+                "default_day_off": "travel",
+            },
+        }
+    )
+    assert config["persons"][0]["calendar"] is None
+    assert await async_day_labels(hass, config, day, True) == {
+        "anna": "home_office",
+        "ben": "office",
+    }
+    config["persons"][1]["calendars"] = []
+    assert (await async_day_labels(hass, config, day, False))["ben"] == "travel"

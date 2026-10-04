@@ -1534,6 +1534,15 @@ var Me = {
 	"learn.calendar.defaults": "Ohne passenden Termin",
 	"learn.calendar.default_workday": "An Arbeitstagen",
 	"learn.calendar.default_day_off": "An freien Tagen",
+	"learn.calendar.for": "Regeln für",
+	"learn.calendar.everyone": "Alle",
+	"learn.calendar.shared": "Gilt für alle",
+	"learn.calendar.shared.say": "{name} folgt den Regeln für alle. Schalte „Gilt für alle“ aus, um eigene Stichworte festzulegen – Joe übernimmt dann die bisherigen als Start.",
+	"tip.cal_person.title": "Für wen gelten die Regeln?",
+	"tip.cal_person.text": "„Alle“ sind die gemeinsamen Regeln. Wählst du eine Person, siehst du ihre Regeln – eigene oder die gemeinsamen. Ein kleines Symbol am Namen zeigt: Diese Person hat eigene Regeln.",
+	"tip.cal_shared.title": "Gemeinsame oder eigene Regeln?",
+	"tip.cal_shared.text": "An: Für diese Person gelten die Regeln für alle. Aus: Sie bekommt eigene Stichworte und eigene Vorgaben ohne passenden Termin – zum Start eine Kopie der gemeinsamen.",
+	"tip.cal_shared.hint": "Wieder einschalten verwirft die eigenen Regeln dieser Person.",
 	"label.home_office": "Homeoffice",
 	"label.office": "Büro",
 	"label.travel": "Dienstreise",
@@ -3273,6 +3282,15 @@ var Me = {
 	"learn.calendar.defaults": "Without a matching event",
 	"learn.calendar.default_workday": "On working days",
 	"learn.calendar.default_day_off": "On days off",
+	"learn.calendar.for": "Rules for",
+	"learn.calendar.everyone": "Everyone",
+	"learn.calendar.shared": "Applies to everyone",
+	"learn.calendar.shared.say": "{name} follows the rules for everyone. Turn off “Applies to everyone” to set own keywords – Joe starts from the current ones.",
+	"tip.cal_person.title": "Whom do the rules apply to?",
+	"tip.cal_person.text": "“Everyone” holds the shared rules. Pick a person to see their rules – their own or the shared ones. A small icon next to a name shows that person has rules of their own.",
+	"tip.cal_shared.title": "Shared or own rules?",
+	"tip.cal_shared.text": "On: the rules for everyone apply to this person. Off: they get their own keywords and their own defaults without a matching event – starting as a copy of the shared ones.",
+	"tip.cal_shared.hint": "Turning it back on discards this person's own rules.",
 	"label.home_office": "Home office",
 	"label.office": "Office",
 	"label.travel": "Business trip",
@@ -4079,14 +4097,14 @@ function Le(e) {
 }
 //#endregion
 //#region src/define.ts
-var Re = "0.6.4";
+var Re = "0.6.5";
 function H(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Re, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.6.4" && Be();
+	n.joeVersion !== "0.6.5" && Be();
 }
 var ze = !1;
 function Be() {

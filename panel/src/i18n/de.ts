@@ -1109,6 +1109,18 @@ export const de = {
   "learn.calendar.defaults": "Ohne passenden Termin",
   "learn.calendar.default_workday": "An Arbeitstagen",
   "learn.calendar.default_day_off": "An freien Tagen",
+  "learn.calendar.for": "Regeln für",
+  "learn.calendar.everyone": "Alle",
+  "learn.calendar.shared": "Gilt für alle",
+  "learn.calendar.shared.say":
+    "{name} folgt den Regeln für alle. Schalte „Gilt für alle“ aus, um eigene Stichworte festzulegen – Joe übernimmt dann die bisherigen als Start.",
+  "tip.cal_person.title": "Für wen gelten die Regeln?",
+  "tip.cal_person.text":
+    "„Alle“ sind die gemeinsamen Regeln. Wählst du eine Person, siehst du ihre Regeln – eigene oder die gemeinsamen. Ein kleines Symbol am Namen zeigt: Diese Person hat eigene Regeln.",
+  "tip.cal_shared.title": "Gemeinsame oder eigene Regeln?",
+  "tip.cal_shared.text":
+    "An: Für diese Person gelten die Regeln für alle. Aus: Sie bekommt eigene Stichworte und eigene Vorgaben ohne passenden Termin – zum Start eine Kopie der gemeinsamen.",
+  "tip.cal_shared.hint": "Wieder einschalten verwirft die eigenen Regeln dieser Person.",
   "label.home_office": "Homeoffice",
   "label.office": "Büro",
   "label.travel": "Dienstreise",

@@ -22,6 +22,7 @@ import {
   type HomeAssistant,
   type JoeState,
   type LearnScope,
+  type PersonConfig,
   type Learning,
   type WeatherClass,
 } from "../types";
@@ -71,6 +72,8 @@ export class JoeLearnPage extends LitElement {
   @state() private resetting = false;
   @state() private scope: LearnScope | "all" = "all";
   @state() private keyword: Partial<Record<DayLabel, string>> = {};
+  /** Whose calendar rules are shown: "" for the ones that apply to everyone. */
+  @state() private calendarFor = "";
   @state() private notice?: { text: string; ok: boolean };
 
   private marker?: string;
@@ -247,6 +250,10 @@ export class JoeLearnPage extends LitElement {
         margin: 10px 0 0;
         color: var(--joe-ink-2);
         max-width: 56ch;
+      }
+      .own-rules {
+        --mdc-icon-size: 16px;
+        margin-left: 4px;
       }
       .scopes {
         margin-top: 12px;
@@ -1178,7 +1185,11 @@ export class JoeLearnPage extends LitElement {
 
   /** The rules that turn calendar events into day labels, grouped by label. */
   private renderCalendar(t: Translate): TemplateResult {
-    const calendar = this.state!.config.calendar;
+    const config = this.state!.config;
+    const person = config.persons.find((p) => p.id === this.calendarFor);
+    // A person without rules of their own follows the ones for everyone.
+    const shared = !!person && !person.calendar;
+    const calendar = person?.calendar ?? config.calendar;
     const byLabel = (label: DayLabel) => calendar.rules.filter((rule) => rule.label === label);
     return html`<section class="card wide" data-tipped>
       <div class="head">
@@ -1186,60 +1197,89 @@ export class JoeLearnPage extends LitElement {
         ${tip(t, "learn_calendar")}
       </div>
       <p class="say">${t("learn.calendar.say")}</p>
-      <div class="rules">
-        ${RULE_ORDER.map(
-          (label) => html`<div class="rule">
-            <b>${t(`label.${label}`)}</b>
-            <div class="keywords">
-              ${byLabel(label).map(
-                (rule) =>
-                  html`<span class="keyword"
-                    >${rule.keyword}<button
-                      type="button"
-                      aria-label=${t("learn.calendar.remove", { keyword: rule.keyword })}
-                      @click=${() => this.saveRules(calendar.rules.filter((r) => r !== rule))}
-                    >
-                      <ha-icon icon="mdi:close"></ha-icon></button
-                  ></span>`,
+      ${config.persons.length
+        ? html`<div class="sub-head with-tip"><b>${t("learn.calendar.for")}</b>${tip(t, "cal_person")}</div>
+            <div class="seg scopes" role="group" aria-label=${t("learn.calendar.for")}>
+              <button type="button" aria-pressed=${String(!person)} @click=${() => (this.calendarFor = "")}>
+                ${t("learn.calendar.everyone")}
+              </button>
+              ${config.persons.map(
+                (p) =>
+                  html`<button type="button" aria-pressed=${String(p.id === person?.id)} @click=${() => (this.calendarFor = p.id)}>
+                    ${p.name}${p.calendar ? html`<ha-icon class="own-rules" icon="mdi:account-cog-outline"></ha-icon>` : nothing}
+                  </button>`,
               )}
-              <form
-                class="add"
-                @submit=${(ev: Event) => {
-                  ev.preventDefault();
-                  this.addKeyword(calendar, label);
-                }}
-              >
-                <input
-                  class="input"
-                  .value=${this.keyword[label] ?? ""}
-                  maxlength="40"
-                  placeholder=${t("learn.calendar.keyword")}
-                  aria-label=${t("learn.calendar.add_to", { label: t(`label.${label}`) })}
-                  @input=${(ev: Event) => (this.keyword = { ...this.keyword, [label]: (ev.target as HTMLInputElement).value })}
-                />
-                <button type="submit" class="mini-btn" ?disabled=${!(this.keyword[label] ?? "").trim()}>
-                  <ha-icon icon="mdi:plus"></ha-icon>${t("learn.calendar.add")}
-                </button>
-              </form>
+            </div>`
+        : nothing}
+      ${person
+        ? html`<div class="toggle-row">
+            <span class="with-tip"><span id="cal-shared-label">${t("learn.calendar.shared")}</span>${tip(t, "cal_shared")}</span>
+            <button
+              type="button"
+              class="switch"
+              role="switch"
+              aria-checked=${String(shared)}
+              aria-labelledby="cal-shared-label"
+              @click=${() => this.saveCalendar(person, shared ? structuredClone(config.calendar) : null)}
+            ></button>
+          </div>`
+        : nothing}
+      ${shared
+        ? html`<p class="say">${t("learn.calendar.shared.say", { name: person!.name })}</p>`
+        : html`<div class="rules">
+              ${RULE_ORDER.map(
+                (label) => html`<div class="rule">
+                  <b>${t(`label.${label}`)}</b>
+                  <div class="keywords">
+                    ${byLabel(label).map(
+                      (rule) =>
+                        html`<span class="keyword"
+                          >${rule.keyword}<button
+                            type="button"
+                            aria-label=${t("learn.calendar.remove", { keyword: rule.keyword })}
+                            @click=${() => this.saveRules(calendar.rules.filter((r) => r !== rule))}
+                          >
+                            <ha-icon icon="mdi:close"></ha-icon></button
+                        ></span>`,
+                    )}
+                    <form
+                      class="add"
+                      @submit=${(ev: Event) => {
+                        ev.preventDefault();
+                        this.addKeyword(calendar, label);
+                      }}
+                    >
+                      <input
+                        class="input"
+                        .value=${this.keyword[label] ?? ""}
+                        maxlength="40"
+                        placeholder=${t("learn.calendar.keyword")}
+                        aria-label=${t("learn.calendar.add_to", { label: t(`label.${label}`) })}
+                        @input=${(ev: Event) => (this.keyword = { ...this.keyword, [label]: (ev.target as HTMLInputElement).value })}
+                      />
+                      <button type="submit" class="mini-btn" ?disabled=${!(this.keyword[label] ?? "").trim()}>
+                        <ha-icon icon="mdi:plus"></ha-icon>${t("learn.calendar.add")}
+                      </button>
+                    </form>
+                  </div>
+                </div>`,
+              )}
             </div>
-          </div>`,
-        )}
-      </div>
-      <div class="sub-head with-tip"><b>${t("learn.calendar.defaults")}</b>${tip(t, "cal_defaults")}</div>
-      <div class="defaults">
-        ${(["default_workday", "default_day_off"] as const).map(
-          (key) => html`<label class="field">
-            <span class="field-label">${t(`learn.calendar.${key}`)}</span>
-            <select
-              class="input"
-              @change=${(ev: Event) =>
-                saveConfig(this, { calendar: { [key]: (ev.target as HTMLSelectElement).value as DayLabel } })}
-            >
-              ${DAY_LABELS.map((label) => html`<option value=${label} ?selected=${calendar[key] === label}>${t(`label.${label}`)}</option>`)}
-            </select>
-          </label>`,
-        )}
-      </div>
+            <div class="sub-head with-tip"><b>${t("learn.calendar.defaults")}</b>${tip(t, "cal_defaults")}</div>
+            <div class="defaults">
+              ${(["default_workday", "default_day_off"] as const).map(
+                (key) => html`<label class="field">
+                  <span class="field-label">${t(`learn.calendar.${key}`)}</span>
+                  <select
+                    class="input"
+                    @change=${(ev: Event) =>
+                      this.saveCalendarPart({ [key]: (ev.target as HTMLSelectElement).value as DayLabel })}
+                  >
+                    ${DAY_LABELS.map((label) => html`<option value=${label} ?selected=${calendar[key] === label}>${t(`label.${label}`)}</option>`)}
+                  </select>
+                </label>`,
+              )}
+            </div>`}
     </section>`;
   }
 
@@ -1255,7 +1295,22 @@ export class JoeLearnPage extends LitElement {
   /** Saves the rules in the order they are checked: by label, as shown. */
   private saveRules(rules: CalendarConfig["rules"]): void {
     const ordered = RULE_ORDER.flatMap((label) => rules.filter((rule) => rule.label === label));
-    saveConfig(this, { calendar: { rules: ordered } });
+    this.saveCalendarPart({ rules: ordered });
+  }
+
+  /** Changes the rules shown: those of the chosen person, or those for everyone. */
+  private saveCalendarPart(part: Partial<CalendarConfig>): void {
+    const person = this.state!.config.persons.find((p) => p.id === this.calendarFor);
+    if (person?.calendar) {
+      this.saveCalendar(person, { ...person.calendar, ...part });
+    } else {
+      saveConfig(this, { calendar: part });
+    }
+  }
+
+  /** Gives a person rules of their own, or (null) lets them follow the ones for everyone. */
+  private saveCalendar(person: PersonConfig, calendar: CalendarConfig | null): void {
+    saveConfig(this, { persons: { [person.id]: { calendar } } });
   }
 
   private edit(editor: "household"): void {
