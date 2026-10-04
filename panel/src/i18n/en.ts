@@ -1799,6 +1799,13 @@ export const en: Record<Key, string> = {
   "automations.all_off": "Switch all off ({count})",
   "automations.back_on": "Switch on again ({count})",
   "automations.failed": "Not all of them could be switched – check Home Assistant's automations.",
+  "cards.loading": "Looking it up …",
+  "cards.no_access": "Energy Joe cannot be reached – the card needs a user with administrator rights.",
+  "cards.night.title": "Joe tonight",
+  "cards.night.skip": "Skip tonight",
+  "cards.car.none": "No car I can charge yet – set it up in the Energy Joe panel under “Devices”.",
+  "cards.car.charging": "charging",
+  "devices.charge.failed": "That did not work – try again.",
   "automations.lead_idle":
     "These automations set something on your batteries. While I only watch they do no harm – switch them off before you set me to “Suggest” or “Live”.",
   "automations.levers": "my controls too",

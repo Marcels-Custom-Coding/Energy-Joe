@@ -11,6 +11,7 @@ export default defineConfig({
       entry: {
         "energy-joe-panel": "src/energy-joe-panel.ts",
         "energy-joe-icons": "src/energy-joe-icons.ts",
+        "energy-joe-cards": "src/energy-joe-cards.ts",
       },
       formats: ["es"],
       fileName: (_format, name) => `${name}.js`,

@@ -16,3 +16,5 @@ STATIC_URL: Final = "/energy_joe_static"
 FRONTEND_DIR: Final = "frontend"
 PANEL_BUNDLE: Final = "energy-joe-panel.js"
 ICONS_BUNDLE: Final = "energy-joe-icons.js"
+# Dashboard cards ("Joe heute Nacht", "Auto laden"), loaded on every page.
+CARDS_BUNDLE: Final = "energy-joe-cards.js"

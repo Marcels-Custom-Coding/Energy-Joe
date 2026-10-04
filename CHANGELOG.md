@@ -3,6 +3,14 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.5.0
+
+- **Dashboard-Karten:** Joe bringt zwei Karten mit, die direkt in der
+  Kartenauswahl stehen – ohne Ressource von Hand:
+  - **Joe heute Nacht:** Plan, Kosten, Status und „Heute aussetzen“.
+  - **Auto laden:** Ladestand und Reichweite, „Laden bis … % oder km“ mit
+    „Jetzt laden“ und „Heute Nacht laden“.
+
 ## 0.4.3
 
 - **Marstek sicherer:** War die „Manuelle Batteriesteuerung“ schon an, bevor

@@ -62,6 +62,15 @@ Drei Wege, wie Termine zum Auto kommen:
 2. **Postfach ohne Kalender** (z. B. web.de, GMX, Gmail) – du lädst das Auto zu Terminen ein, Joe sagt zu und trägt sie in seinen eigenen Kalender ein, den du aufs Handy holen kannst.
 3. **Postfach mit Kalender** (Google, Microsoft 365, Outlook.com, iCloud, Infomaniak) – Joe liest den Kalender des Kontos und sagt dort zu.
 
+### Dashboard-Karten
+
+Joe bringt zwei Karten mit, die nach dem Installieren direkt in der Kartenauswahl stehen („Energy Joe …“):
+
+- **Joe heute Nacht** – was Joe plant, was es kostet, Status und „Heute aussetzen“.
+- **Auto laden** – Ladestand und Reichweite, „Laden bis … % oder km“ mit „Jetzt laden“ und „Heute Nacht laden“. Mit mehreren Autos wählst du eins mit `action: <id>`.
+
+Die Karten brauchen einen Benutzer mit Administratorrechten.
+
 ## Betriebsarten
 
 | Betriebsart | Was Joe tut |

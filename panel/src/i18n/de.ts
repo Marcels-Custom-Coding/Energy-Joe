@@ -1817,6 +1817,13 @@ export const de = {
   "automations.all_off": "Alle ausschalten ({count})",
   "automations.back_on": "Wieder einschalten ({count})",
   "automations.failed": "Nicht alle ließen sich umschalten – schau in Home Assistant unter Automationen nach.",
+  "cards.loading": "Ich schaue gerade nach …",
+  "cards.no_access": "Energy Joe ist nicht erreichbar – die Karte braucht einen Benutzer mit Administratorrechten.",
+  "cards.night.title": "Joe heute Nacht",
+  "cards.night.skip": "Heute aussetzen",
+  "cards.car.none": "Noch kein Auto, das ich laden kann – richte es im Energy-Joe-Panel unter „Geräte“ ein.",
+  "cards.car.charging": "lädt",
+  "devices.charge.failed": "Das hat nicht geklappt – versuch es nochmal.",
   "automations.lead_idle":
     "Diese Automationen setzen etwas an deinen Speichern. Solange ich nur zuschaue, stören sie nicht – schalte sie aus, bevor du mich auf „Vorschlagen“ oder „Live“ stellst.",
   "automations.levers": "auch meine Regler",

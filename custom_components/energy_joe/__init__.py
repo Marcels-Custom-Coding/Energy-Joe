@@ -19,6 +19,7 @@ from homeassistant.loader import async_get_integration
 from . import api, services
 from .calendar_feed import CarCalendarFeed
 from .const import (
+    CARDS_BUNDLE,
     DOMAIN,
     FRONTEND_DIR,
     ICONS_BUNDLE,
@@ -45,6 +46,7 @@ PLATFORMS = [
 # Static routes cannot be removed again, so they are registered once per run.
 _DATA_STATIC_REGISTERED = f"{DOMAIN}_static_registered"
 _DATA_ICONS_URL = f"{DOMAIN}_icons_url"
+_DATA_CARDS_URL = f"{DOMAIN}_cards_url"
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -69,8 +71,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.data[_DATA_STATIC_REGISTERED] = True
 
     integration = await async_get_integration(hass, DOMAIN)
-    bundle_hash, icons_hash = await hass.async_add_executor_job(
-        _file_hashes, frontend_path / PANEL_BUNDLE, frontend_path / ICONS_BUNDLE
+    bundle_hash, icons_hash, cards_hash = await hass.async_add_executor_job(
+        _file_hashes,
+        frontend_path / PANEL_BUNDLE,
+        frontend_path / ICONS_BUNDLE,
+        frontend_path / CARDS_BUNDLE,
     )
 
     # The icon set must be available before the panel is opened, because the
@@ -78,6 +83,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     icons_url = f"{STATIC_URL}/{ICONS_BUNDLE}?v={integration.version}-{icons_hash}"
     frontend.add_extra_js_url(hass, icons_url)
     hass.data[_DATA_ICONS_URL] = icons_url
+    # Joe's dashboard cards: in the card picker without adding a resource.
+    cards_url = f"{STATIC_URL}/{CARDS_BUNDLE}?v={integration.version}-{cards_hash}"
+    frontend.add_extra_js_url(hass, cards_url)
+    hass.data[_DATA_CARDS_URL] = cards_url
 
     if PANEL_URL_PATH in hass.data.get(frontend.DATA_PANELS, {}):
         frontend.async_remove_panel(hass, PANEL_URL_PATH)
@@ -111,6 +120,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     frontend.async_remove_panel(hass, PANEL_URL_PATH)
     if icons_url := hass.data.pop(_DATA_ICONS_URL, None):
         frontend.remove_extra_js_url(hass, icons_url)
+    if cards_url := hass.data.pop(_DATA_CARDS_URL, None):
+        frontend.remove_extra_js_url(hass, cards_url)
     if runtime := hass.data.pop(DATA_RUNTIME, None):
         await runtime.async_unload()
     return True
