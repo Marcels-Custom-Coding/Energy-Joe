@@ -1,4 +1,4 @@
-"""Invitations by mail: read Google, Apple and Outlook, sort by car, accept."""
+"""A car's mailbox: read Google, Apple and Outlook invitations, accept them."""
 
 from __future__ import annotations
 
@@ -10,15 +10,14 @@ from custom_components.energy_joe import model
 from custom_components.energy_joe.mail import inbox as inbox_module
 from custom_components.energy_joe.mail.ical import parse, reply
 from custom_components.energy_joe.mail.inbox import (
-    JoeInbox,
+    CarInboxes,
     allowed,
+    invited_as,
     trusted,
-    which_car,
 )
 from custom_components.energy_joe.mail.mailbox import Fetched, _calendars
 from custom_components.energy_joe.plan.car_calendar import CarCalendarStore
 from homeassistant.core import HomeAssistant
-from homeassistant.util import dt as dt_util
 
 GOOGLE = """BEGIN:VCALENDAR
 PRODID:-//Google Inc//Google Calendar 70.9054//EN
@@ -117,7 +116,7 @@ def test_the_answer_accepts_for_the_car() -> None:
     assert "ORGANIZER:mailto:robin@example.org" in text
 
 
-def test_who_may_invite_and_for_which_car() -> None:
+def test_who_may_invite_and_as_which_address() -> None:
     rules = ["robin@example.org", "@firma.example"]
     assert allowed(rules, "robin@example.org")
     assert allowed(rules, None, "kim@firma.example")
@@ -127,11 +126,10 @@ def test_who_may_invite_and_for_which_car() -> None:
     assert not trusted(rules, "fremd@spam.example", "robin@example.org")
     # A colleague of the allowed organizer, from the same domain: yes.
     assert trusted(["robin@example.org"], "assistenz@example.org", "robin@example.org")
-    cars = {"kona": "auto+kona@example.org", "eup": "auto+eup@example.org"}
-    assert which_car(cars, ["kona", "eup"], ["auto+eup@example.org"]) == "eup"
-    assert which_car(cars, ["kona", "eup"], ["auto@example.org"]) is None
-    # Only one car: every allowed invitation is for it.
-    assert which_car({}, ["kona"], ["auto@example.org"]) == "kona"
+    # The answer names the address that was invited, a plus address too.
+    invited = ["robin@example.org", "auto+kona@example.org"]
+    assert invited_as("auto@example.org", invited) == "auto+kona@example.org"
+    assert invited_as("Kona@Example.org", ["kona@example.org"]) == "kona@example.org"
 
 
 def test_calendar_parts_of_a_mail() -> None:
@@ -148,17 +146,21 @@ def test_calendar_parts_of_a_mail() -> None:
     assert "abc123@google.com" in found[0]
 
 
-CARS = [
-    {
+def _car(car: str, address: str, **extra: Any) -> dict[str, Any]:
+    return {
         "id": car,
         "name": car.upper(),
         "kind": "switch",
         "entity_id": f"select.{car}_mode",
         "on_value": "now",
-        "need": {"enabled": True, "source": "mailbox"},
+        "need": {
+            "enabled": True,
+            "source": "mailbox",
+            "mailbox": {"provider": "webde", "address": address},
+            "allowed": ["robin@example.org", "@firma.example"],
+            **extra,
+        },
     }
-    for car in ("kona", "eup")
-]
 
 
 @pytest.fixture
@@ -166,17 +168,10 @@ def config() -> dict[str, Any]:
     return model.apply_update(
         model.default_config(),
         {
-            "actions": {c["id"]: c for c in CARS},
-            "mailbox": {
-                "enabled": True,
-                "provider": "google",
-                "address": "auto@example.org",
-                "allowed": ["robin@example.org", "@firma.example"],
-                "cars": {
-                    "kona": "auto+kona@example.org",
-                    "eup": "auto+eup@example.org",
-                },
-            },
+            "actions": {
+                "kona": _car("kona", "kona@example.org"),
+                "eup": _car("eup", "eup@example.org"),
+            }
         },
         "user",
     )
@@ -185,35 +180,43 @@ def config() -> dict[str, Any]:
 async def test_invitations_become_trips_and_are_accepted(
     hass: HomeAssistant, config: dict[str, Any], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    messages: list[Fetched] = [
-        Fetched(1, "robin@example.org", ["auto+kona@example.org"], [GOOGLE]),
-        Fetched(2, "kim@firma.example", ["auto+eup@example.org"], [OUTLOOK]),
-        Fetched(
-            3,
-            "fremd@spam.example",
-            ["auto+kona@example.org"],
-            [GOOGLE.replace("abc123", "spam")],
-        ),
-    ]
-    sent: list[tuple[str, str]] = []
+    """Each car reads its own mailbox; trips land in Joe's calendar for it."""
+    mailboxes: dict[str, list[Fetched]] = {
+        "kona@example.org": [
+            Fetched(1, "robin@example.org", ["kona@example.org"], [GOOGLE]),
+            Fetched(
+                2,
+                "fremd@spam.example",
+                ["kona@example.org"],
+                [GOOGLE.replace("abc123", "spam")],
+            ),
+        ],
+        "eup@example.org": [
+            Fetched(7, "kim@firma.example", ["eup@example.org"], [OUTLOOK]),
+        ],
+    }
+    sent: list[tuple[str, str, str]] = []
 
-    def fake_fetch(settings: Any, secret: Any, after: Any, validity: Any) -> Any:
-        assert secret["password"] == "app-password"
+    def fake_fetch(settings: Any, password: str, after: Any, validity: Any) -> Any:
+        assert settings["provider"] == "webde"
+        assert password == f"pw-{settings['address']}"
+        messages = mailboxes[settings["address"]]
         new = [m for m in messages if after is None or m.uid > after]
-        return new, "77", max([m.uid for m in messages])
+        return new, "77", max(m.uid for m in messages)
 
     def fake_send(
-        settings: Any, secret: Any, to: str, subject: str, calendar: str
+        settings: Any, password: str, to: str, subject: str, calendar: str
     ) -> None:
-        sent.append((to, calendar))
+        sent.append((settings["address"], to, calendar))
 
     monkeypatch.setattr(inbox_module, "fetch", fake_fetch)
     monkeypatch.setattr(inbox_module, "send_reply", fake_send)
     calendars = CarCalendarStore(hass)
     await calendars.async_load()
-    inbox = JoeInbox(hass, lambda: config, calendars, lambda: None)
+    inbox = CarInboxes(hass, lambda: config, calendars, lambda: None)
     await inbox.async_load()
-    await inbox.async_set_secret(password="app-password")
+    await inbox.async_set_password("kona", "pw-kona@example.org")
+    await inbox.async_set_password("eup", "pw-eup@example.org")
     await hass.async_block_till_done()
 
     (kona,) = calendars.events("kona")
@@ -221,21 +224,27 @@ async def test_invitations_become_trips_and_are_accepted(
     assert kona["source"] == "mail" and kona["accepted"] is True
     (eup,) = calendars.events("eup")
     assert eup["location"] == "Messe Hannover"
-    # Both organizers got an answer, the stranger nothing.
-    assert sorted(to for to, _ in sent) == ["kim@firma.example", "robin@example.org"]
-    assert inbox.status["state"] == "ok"
-    results = {entry["from"]: entry["result"] for entry in inbox.status["recent"]}
-    assert results["fremd@spam.example"] == "not_allowed"
-    assert results["robin@example.org"] == "added_accepted"
+    # Each car answered its own organizer, in its own name; the stranger got nothing.
+    assert sorted((box, to) for box, to, _ in sent) == [
+        ("eup@example.org", "kim@firma.example"),
+        ("kona@example.org", "robin@example.org"),
+    ]
+    assert inbox.status["kona"]["state"] == "ok"
+    results = {e["from"]: e["result"] for e in inbox.status["kona"]["recent"]}
+    assert results == {
+        "fremd@spam.example": "not_allowed",
+        "robin@example.org": "added_accepted",
+    }
 
     # The next look finds only the cancellation: the trip goes, no new answer.
-    messages.append(
-        Fetched(4, "robin@example.org", ["auto+kona@example.org"], [APPLE_CANCEL])
+    mailboxes["kona@example.org"].append(
+        Fetched(4, "robin@example.org", ["kona@example.org"], [APPLE_CANCEL])
     )
-    await inbox.async_check()
+    await inbox.async_check("kona")
     assert calendars.events("kona") == []
+    assert len(calendars.events("eup")) == 1
     assert len(sent) == 2
-    assert inbox._data["last_uid"] == 4
+    assert inbox._data["kona"]["last_uid"] == 4
     await calendars.async_remove()
     await inbox.async_remove()
 
@@ -249,88 +258,71 @@ async def test_the_mailbox_stays_quiet_without_a_password(
     monkeypatch.setattr(inbox_module, "fetch", fail)
     calendars = CarCalendarStore(hass)
     await calendars.async_load()
-    inbox = JoeInbox(hass, lambda: config, calendars, lambda: None)
+    inbox = CarInboxes(hass, lambda: config, calendars, lambda: None)
     await inbox.async_load()
+    inbox.async_apply()
     await inbox.async_check()
-    assert inbox.status["state"] == "no_secret"
-    assert dt_util.now() is not None
+    assert inbox.status["kona"]["state"] == "no_secret"
+    assert await inbox.async_test("kona") == "no_secret"
+    # A car that reads a finished calendar has no mailbox.
+    assert await inbox.async_test("nobody") == "no_mailbox"
+    inbox.async_stop()
     await calendars.async_remove()
 
 
-async def test_signing_in_with_microsoft(
-    hass: HomeAssistant,
-    config: dict[str, Any],
-    aioclient_mock: Any,
-    monkeypatch: pytest.MonkeyPatch,
+async def test_a_newly_allowed_sender_is_read_again(
+    hass: HomeAssistant, config: dict[str, Any], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A code to enter at Microsoft; Joe waits, keeps the tokens and renews them."""
-    from custom_components.energy_joe.mail import oauth
+    """Allowing a refused sender reads the mailbox again from the start."""
+    spam = Fetched(3, "kim@example.net", ["kona@example.org"], [GOOGLE])
+    calls: list[Any] = []
 
-    config = model.apply_update(
-        config,
-        {
-            "mailbox": {
-                "provider": "microsoft",
-                "client_id": "app-id",
-                "tenant": "common",
-            }
-        },
-        "user",
-    )
-    # A work account: its tenant ("common" means any work or school account).
-    base = "https://login.microsoftonline.com/organizations/oauth2/v2.0"
-    aioclient_mock.post(
-        f"{base}/devicecode",
-        json={
-            "user_code": "ABCD-EFGH",
-            "device_code": "dev",
-            "verification_uri": "https://microsoft.com/devicelogin",
-            "interval": 0,
-            "expires_in": 900,
-        },
-    )
-    aioclient_mock.post(
-        f"{base}/token",
-        json={
-            "access_token": "access-1",
-            "refresh_token": "refresh-1",
-            "expires_in": 3600,
-        },
-    )
-    seen: list[dict[str, Any]] = []
-
-    def fake_fetch(settings: Any, secret: Any, after: Any, validity: Any) -> Any:
-        seen.append(secret)
-        return [], "1", 0
+    def fake_fetch(settings: Any, password: str, after: Any, validity: Any) -> Any:
+        calls.append(after)
+        if settings["address"] != "kona@example.org":
+            return [], "1", 0
+        return ([spam] if after is None else []), "1", 3
 
     monkeypatch.setattr(inbox_module, "fetch", fake_fetch)
+    monkeypatch.setattr(inbox_module, "send_reply", lambda *args: None)
     calendars = CarCalendarStore(hass)
     await calendars.async_load()
-    inbox = JoeInbox(hass, lambda: config, calendars, lambda: None)
+    current = {"config": config}
+    inbox = CarInboxes(hass, lambda: current["config"], calendars, lambda: None)
     await inbox.async_load()
-    assert not inbox.has_secret
-    info = await inbox.async_oauth_start()
-    assert info["user_code"] == "ABCD-EFGH"
-    await hass.async_block_till_done(wait_background_tasks=True)
-    assert inbox.has_secret
-    assert inbox.status["oauth"] == {"state": "ok"}
-    # The look after signing in used the access token.
-    assert seen[-1]["token"] == "access-1"
-    # Run out: Joe renews it before the next look.
-    inbox._data["oauth"]["expires"] = "2000-01-01T00:00:00+00:00"
-    aioclient_mock.clear_requests()
-    aioclient_mock.post(
-        f"{base}/token", json={"access_token": "access-2", "expires_in": 3600}
+    await inbox.async_set_password("kona", "pw")
+    inbox.async_apply()
+    await hass.async_block_till_done()
+    assert inbox.status["kona"]["recent"][0]["result"] == "not_allowed"
+    assert calendars.events("kona") == []
+
+    allowed = [*config["actions"][0]["need"]["allowed"], "kim@example.net"]
+    current["config"] = model.apply_update(
+        config, {"actions": {"kona": {"need": {"allowed": allowed}}}}, "user"
     )
-    await inbox.async_check()
-    assert seen[-1]["token"] == "access-2"
-    # Microsoft kept the refresh token: so does Joe.
-    assert inbox._data["oauth"]["refresh_token"] == "refresh-1"
-    assert oauth.fresh(inbox._data["oauth"])
-    await inbox.async_sign_out()
-    assert not inbox.has_secret
+    inbox.async_apply()
+    await hass.async_block_till_done()
+    assert calls[-1] is None
+    assert [e["summary"] for e in calendars.events("kona")] == ["Zahnarzt, Kontrolle"]
+    inbox.async_stop()
     await calendars.async_remove()
     await inbox.async_remove()
+
+
+async def test_the_password_of_the_one_mailbox_goes_to_the_first_car(
+    hass: HomeAssistant, config: dict[str, Any], hass_storage: dict[str, Any]
+) -> None:
+    """Up to 0.3 one mailbox served all cars."""
+    hass_storage[inbox_module.STORE_KEY] = {
+        "version": 1,
+        "key": inbox_module.STORE_KEY,
+        "data": {"password": "old", "validity": "5", "last_uid": 9},
+    }
+    calendars = CarCalendarStore(hass)
+    inbox = CarInboxes(hass, lambda: config, calendars, lambda: None)
+    await inbox.async_load()
+    assert inbox.has_secret("kona")
+    assert not inbox.has_secret("eup")
 
 
 def test_personal_and_work_accounts(monkeypatch: pytest.MonkeyPatch) -> None:

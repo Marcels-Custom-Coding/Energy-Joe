@@ -22,7 +22,7 @@ from homeassistant.helpers import config_validation as cv
 
 from .control.profiles import ADAPTERS, MODE_OPTIONS, ROLES
 
-CONFIG_VERSION = 3
+CONFIG_VERSION = 4
 
 SOURCES = ("read", "learned", "default", "user")
 TARIFF_KINDS = ("fixed_window", "dynamic", "flat", "unknown")
@@ -247,7 +247,7 @@ CONDITION = vol.Schema(
 # window when tomorrow brings too little sun (the car, the hot water heat pump).
 # Charging a car by need: only what tomorrow's driving (calendar trips or the
 # usual distance) plus a reserve needs, from the car's level or range.
-# A car's own account with mailbox and calendar (see accounts.py).
+# A car's mailbox with a calendar (see accounts.py): Joe reads that calendar.
 CAR_ACCOUNT_KINDS = ("outlook", "microsoft", "icloud", "infomaniak", "caldav")
 CAR_ACCOUNT = vol.Schema(
     {
@@ -263,8 +263,32 @@ CAR_ACCOUNT = vol.Schema(
         vol.Optional("accept", default=True): bool,
     }
 )
-# Where a car's appointments come from (besides Joe's own calendar for it):
-# calendars in Home Assistant, invitations to Joe's mailbox, or the car's account.
+# A car's mailbox without a calendar (see mail/): Joe reads invitations by
+# IMAP, answers by SMTP and keeps the appointments in his own calendar for the
+# car. The password lives elsewhere.
+MAIL_PROVIDERS = ("webde", "gmx", "google", "tonline", "other")
+CAR_MAILBOX = vol.Schema(
+    {
+        vol.Optional("provider", default="other"): vol.In(MAIL_PROVIDERS),
+        vol.Optional("address", default=""): str,
+        vol.Optional("username", default=None): vol.Any(None, str),
+        vol.Optional("imap_host", default=None): vol.Any(None, str),
+        vol.Optional("imap_port", default=None): vol.Any(
+            None, vol.All(int, vol.Range(min=1, max=65535))
+        ),
+        vol.Optional("smtp_host", default=None): vol.Any(None, str),
+        vol.Optional("smtp_port", default=None): vol.Any(
+            None, vol.All(int, vol.Range(min=1, max=65535))
+        ),
+        vol.Optional("smtp_security", default=None): vol.Any(
+            None, vol.In(("starttls", "ssl"))
+        ),
+        vol.Optional("accept", default=True): bool,
+    }
+)
+# Where a car's appointments come from: a finished calendar in Home Assistant,
+# the car's mailbox without a calendar (into Joe's calendar for the car), or
+# the car's mailbox with a calendar.
 CAR_SOURCES = ("ha", "mailbox", "account")
 
 EV_NEED = vol.Schema(
@@ -291,47 +315,14 @@ EV_NEED = vol.Schema(
         ),
         # Whose calendars count (person ids); None: everyone with a calendar.
         vol.Optional("persons", default=None): vol.Any(None, [str]),
-        # Further calendars of this car (besides Joe's own one for it).
+        # The car's finished calendars in Home Assistant (source "ha").
         vol.Optional("calendars", default=list): [cv.entity_id],
         vol.Optional("source", default="ha"): vol.In(CAR_SOURCES),
+        vol.Optional("mailbox", default=dict): CAR_MAILBOX,
         vol.Optional("account", default=dict): CAR_ACCOUNT,
-        vol.Optional("round_trip", default=True): bool,
-    }
-)
-
-# "outlook": personal Microsoft accounts, "microsoft": Microsoft 365 / Exchange.
-MAIL_PROVIDERS = ("icloud", "google", "infomaniak", "outlook", "microsoft", "other")
-
-# Joe's mailbox for car appointments (see mail/): invitations from these
-# senders to a car's address become trips. The password lives elsewhere.
-MAILBOX = vol.Schema(
-    {
-        vol.Optional("enabled", default=False): bool,
-        vol.Optional("provider", default="other"): vol.In(MAIL_PROVIDERS),
-        vol.Optional("address", default=""): str,
-        vol.Optional("username", default=None): vol.Any(None, str),
-        vol.Optional("imap_host", default=None): vol.Any(None, str),
-        vol.Optional("imap_port", default=None): vol.Any(
-            None, vol.All(int, vol.Range(min=1, max=65535))
-        ),
-        vol.Optional("smtp_host", default=None): vol.Any(None, str),
-        vol.Optional("smtp_port", default=None): vol.Any(
-            None, vol.All(int, vol.Range(min=1, max=65535))
-        ),
-        vol.Optional("smtp_security", default=None): vol.Any(
-            None, vol.In(("starttls", "ssl"))
-        ),
-        # Signing in with Microsoft: the app registration and its tenant.
-        vol.Optional("client_id", default=None): vol.Any(None, str),
-        vol.Optional("tenant", default="common"): vol.All(
-            str, vol.Length(min=1, max=100)
-        ),
-        # Who may invite: addresses or "@domain".
+        # Who may invite the car (mailbox and account): addresses or "@domain".
         vol.Optional("allowed", default=list): [str],
-        vol.Optional("accept", default=True): bool,
-        # Which invited address means which car (action id -> address).
-        vol.Optional("cars", default=dict): {str: str},
-        vol.Optional("interval_min", default=5): vol.All(int, vol.Range(min=2, max=60)),
+        vol.Optional("round_trip", default=True): bool,
     }
 )
 
@@ -561,7 +552,6 @@ CONFIG = vol.Schema(
         vol.Optional("notify", default=dict): NOTIFY,
         vol.Optional("calendar", default=dict): CALENDAR,
         vol.Optional("routing", default=dict): ROUTING,
-        vol.Optional("mailbox", default=dict): MAILBOX,
         vol.Optional("answers", default=dict): ANSWERS,
         vol.Optional("learned", default=dict): LEARNED,
         vol.Optional("provenance", default=dict): {str: PROVENANCE},
@@ -803,8 +793,48 @@ def migrate(data: dict[str, Any]) -> dict[str, Any]:
             and source_of(data, "routing.service") != "user"
         ):
             data["routing"] = {**routing, "service": "osm"}
+    if data.get("version", 1) < 4:
+        _mailbox_to_cars(data)
     data["version"] = CONFIG_VERSION
     return validate(data)
+
+
+# Servers of the providers version 3 knew and version 4 has no preset for.
+_V3_SERVERS = {
+    "icloud": ("imap.mail.me.com", "smtp.mail.me.com"),
+    "infomaniak": ("mail.infomaniak.com", "mail.infomaniak.com"),
+}
+
+
+def _mailbox_to_cars(data: dict[str, Any]) -> None:
+    """Version 3 had one mailbox for all cars; now each car has its own."""
+    old = data.pop("mailbox", None) or {}
+    provenance = data.get("provenance") or {}
+    for path in [p for p in provenance if p == "mailbox" or _is_below(p, "mailbox")]:
+        del provenance[path]
+    for action in data.get("actions") or []:
+        need = action.get("need") or {}
+        if need.get("source") not in ("mailbox", "account"):
+            continue
+        need.setdefault("allowed", list(old.get("allowed") or []))
+        if need["source"] != "mailbox":
+            continue
+        provider = old.get("provider") or "other"
+        imap, smtp = _V3_SERVERS.get(provider, (None, None))
+        address = (old.get("cars") or {}).get(action["id"]) or old.get("address") or ""
+        login = old.get("username") or old.get("address") or None
+        need["mailbox"] = {
+            "provider": provider if provider in ("google", "other") else "other",
+            "address": address,
+            # A plus address ("auto+kona@…") logs in as the mailbox it belongs to.
+            "username": login if login and login != address else None,
+            "imap_host": old.get("imap_host") or imap,
+            "imap_port": old.get("imap_port"),
+            "smtp_host": old.get("smtp_host") or smtp,
+            "smtp_port": old.get("smtp_port"),
+            "smtp_security": old.get("smtp_security"),
+            "accept": old.get("accept", True),
+        }
 
 
 _TOKEN = re.compile(r"\[[^\]]*\]|[^.\[]+")

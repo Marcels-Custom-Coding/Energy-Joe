@@ -20,7 +20,7 @@ from .const import DOMAIN
 from .control.executor import JoeExecutor
 from .control.notify import JoeNotifier
 from .learn.learner import JoeLearner
-from .mail.inbox import JoeInbox
+from .mail.inbox import CarInboxes
 from .observe.observer import BACKFILL_DAYS, JoeObserver
 from .observe.store import HistoryStore
 from .plan.car_calendar import CarCalendarStore
@@ -99,12 +99,14 @@ class JoeRuntime:
             hass, lambda: self._config, self.executor.async_answer_tonight
         )
         self.executor.notifier = self.notifier
-        # Joe's own calendar per car (trips, by hand or later by mail).
+        # Joe's calendar for each car whose mailbox has none.
         self.calendars = CarCalendarStore(hass)
         self.planner.calendars = self.calendars
-        # Invitations by mail to a car's address (see mail/).
-        self.inbox = JoeInbox(hass, lambda: self._config, self.calendars, self._changed)
-        # Each car's own account (mailbox and calendar in one).
+        # Invitations to those mailboxes (see mail/).
+        self.inbox = CarInboxes(
+            hass, lambda: self._config, self.calendars, self._changed
+        )
+        # Each car's mailbox with a calendar (see accounts.py).
         self.accounts = CarAccounts(hass, lambda: self._config, self._changed)
         self.planner.accounts = self.accounts
         self._started = False

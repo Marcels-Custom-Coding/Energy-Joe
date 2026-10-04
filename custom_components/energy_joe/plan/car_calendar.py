@@ -1,8 +1,8 @@
-"""Joe's own calendar per car: trips that belong to exactly this car.
+"""Joe's own calendar for a car whose mailbox has no calendar.
 
-Appointments come in by hand (Home Assistant's calendar), later also as
-invitations from Joe's mailbox. Each car's calendar can be subscribed to on
-a phone as an iCalendar link with a secret token. Times are stored as ISO
+Invitations to the car's address land here (see mail/), and appointments can
+be added by hand in Home Assistant's calendar. Each car's calendar can be
+subscribed to on a phone as an iCalendar link with a secret token. Times are stored as ISO
 text: "2026-10-05T09:00:00+02:00" for a time, "2026-10-05" for a whole day
 (the end of a whole day is exclusive, as in iCalendar).
 """
@@ -24,6 +24,17 @@ STORE_KEY = f"{DOMAIN}.calendar"
 STORE_VERSION = 1
 # Past appointments are kept this long (the history shows what was driven).
 KEEP = timedelta(days=60)
+
+
+def mailbox_cars(config: dict[str, Any]) -> list[dict[str, Any]]:
+    """Cars charged by need whose mailbox has no calendar: each gets Joe's."""
+    return [
+        a
+        for a in config["actions"]
+        if a["kind"] == "switch"
+        and (a.get("need") or {}).get("enabled")
+        and a["need"].get("source") == "mailbox"
+    ]
 
 
 def parse_when(value: str) -> datetime | date:
@@ -167,13 +178,9 @@ class CarCalendarStore:
         self._save()
         return True
 
-    def find(self, uid: str) -> tuple[str, dict[str, Any]] | None:
-        """Which car an appointment belongs to (an update may come by mail)."""
-        for car, events in self.cars.items():
-            for event in events:
-                if event["uid"] == uid:
-                    return car, event
-        return None
+    def get(self, car: str, uid: str) -> dict[str, Any] | None:
+        """One of a car's appointments (an update may come by mail)."""
+        return next((e for e in self.cars.get(car, []) if e["uid"] == uid), None)
 
     def forget_car(self, car: str) -> None:
         if self.cars.pop(car, None) is not None:

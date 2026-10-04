@@ -1,4 +1,4 @@
-"""Joe's own calendar per car: by hand in Home Assistant, as trips, as a link."""
+"""Joe's calendar for a car whose mailbox has none: by hand, as trips, as a link."""
 
 from __future__ import annotations
 
@@ -23,7 +23,13 @@ CAR = {
     "kind": "switch",
     "entity_id": "select.carport_mode",
     "on_value": "now",
-    "need": {"enabled": True, "soc_entity": "sensor.kona_soc", "capacity_kwh": 64},
+    "need": {
+        "enabled": True,
+        "soc_entity": "sensor.kona_soc",
+        "capacity_kwh": 64,
+        "source": "mailbox",
+        "mailbox": {"provider": "webde", "address": "kona@example.org"},
+    },
 }
 
 
@@ -138,6 +144,28 @@ async def test_the_subscription_link(
     assert (await client.get(renewed)).status == 200
 
 
+async def test_only_a_mailbox_without_calendar_gets_joes_calendar(
+    ready_hass: HomeAssistant,
+) -> None:
+    hass = ready_hass
+    runtime = await _setup(hass)
+    calendar = _calendar_id(hass)
+    runtime.calendars.add(
+        "kona", {"start": "2026-10-05", "end": "2026-10-06", "summary": "Messe"}
+    )
+    # A finished calendar of the car: Joe's calendar goes away …
+    runtime.async_update_config(
+        {"actions": [{**CAR, "need": {**CAR["need"], "source": "ha"}}]}, "user"
+    )
+    await hass.async_block_till_done()
+    assert hass.states.async_all("calendar") == []
+    # … and comes back with its appointments when the car reads its mailbox again.
+    runtime.async_update_config({"actions": [CAR]}, "user")
+    await hass.async_block_till_done()
+    assert _calendar_id(hass) == calendar
+    assert [e["summary"] for e in runtime.calendars.events("kona")] == ["Messe"]
+
+
 def test_ics_folds_long_lines_and_whole_days() -> None:
     text = to_ics(
         "KONA",
@@ -164,7 +192,7 @@ async def test_store_keeps_cars_apart(hass: HomeAssistant) -> None:
     )
     store.add("eup", {"start": "2026-10-05", "end": "2026-10-06", "summary": "B"})
     assert [e["summary"] for e in store.events("kona")] == ["A"]
-    assert store.find(first["uid"])[0] == "kona"
+    assert store.get("kona", first["uid"]) is not None
     assert (
         store.update("kona", first["uid"], {"location": "Berlin"})["location"]
         == "Berlin"

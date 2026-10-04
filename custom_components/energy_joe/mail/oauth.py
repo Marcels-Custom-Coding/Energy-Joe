@@ -1,10 +1,9 @@
 """Signing in with Microsoft (personal accounts and Microsoft 365 / Exchange).
 
-Microsoft no longer accepts passwords for IMAP and SMTP, and its calendar is
-only reachable with a sign-in. Joe uses the device code flow: the panel
-shows a short code and a link, the user signs in on any device, and Joe gets
-a refresh token it renews itself. No address of Home Assistant has to be
-reachable from outside.
+A car's Microsoft calendar is only reachable with a sign-in. Joe uses the
+device code flow: the panel shows a short code and a link, the user signs in
+on any device, and Joe gets a refresh token it renews itself. No address of
+Home Assistant has to be reachable from outside.
 
 Every sign-in needs an app registration. Energy Joe brings its own
 (JOE_CLIENT_ID: personal accounts work without any setup, work and school
@@ -25,12 +24,6 @@ AUTHORITY = "https://login.microsoftonline.com"
 # public client flows). None until it is registered: then a client id has
 # to be entered.
 JOE_CLIENT_ID: str | None = None
-# Reading the mailbox (IMAP) and answering (SMTP).
-SCOPES = (
-    "https://outlook.office.com/IMAP.AccessAsUser.All "
-    "https://outlook.office.com/SMTP.Send offline_access"
-)
-MAIL_SCOPES = SCOPES
 # Reading a car's calendar and accepting its invitations (Microsoft Graph).
 CALENDAR_SCOPES = (
     "https://graph.microsoft.com/Calendars.ReadWrite "
@@ -82,7 +75,7 @@ async def _post(
 
 
 async def start(
-    session: ClientSession, tenant: str, client_id: str, scopes: str = MAIL_SCOPES
+    session: ClientSession, tenant: str, client_id: str, scopes: str = CALENDAR_SCOPES
 ) -> dict[str, Any]:
     """Ask for a sign-in code: user_code, verification_uri, device_code, interval."""
     return await _post(
@@ -135,7 +128,7 @@ async def refresh(
     tenant: str,
     client_id: str,
     tokens: dict[str, Any],
-    scopes: str = MAIL_SCOPES,
+    scopes: str = CALENDAR_SCOPES,
 ) -> dict[str, Any]:
     """New tokens from the refresh token."""
     if not tokens.get("refresh_token"):

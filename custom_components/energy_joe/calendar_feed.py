@@ -15,9 +15,8 @@ from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant
 
-from .calendar import car_actions
 from .const import DOMAIN
-from .plan.car_calendar import to_ics
+from .plan.car_calendar import mailbox_cars, to_ics
 from .runtime import DATA_RUNTIME
 
 FEED_URL = f"/api/{DOMAIN}/calendar"
@@ -45,7 +44,7 @@ class CarCalendarFeed(HomeAssistantView):
         await store.async_load()
         if not store.token or not hmac.compare_digest(token, store.token):
             return web.Response(status=404)
-        action = next((a for a in car_actions(runtime.config) if a["id"] == car), None)
+        action = next((a for a in mailbox_cars(runtime.config) if a["id"] == car), None)
         if action is None:
             return web.Response(status=404)
         body = to_ics(action["name"], store.events(car))

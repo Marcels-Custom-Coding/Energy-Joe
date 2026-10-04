@@ -367,16 +367,52 @@ export interface CarNeedConfig {
   /** Whose calendars count; null: everyone with a calendar, []: nobody. */
   persons: string[] | null;
   round_trip: boolean;
-  /** Further calendars of this car (besides Joe's own one). */
+  /** The car's finished calendars in Home Assistant (source "ha"). */
   calendars?: string[];
-  /** Where the car's appointments come from (besides Joe's own calendar). */
+  /**
+   * Where the car's appointments come from: a finished calendar ("ha"), its
+   * mailbox without a calendar ("mailbox": into Joe's calendar for the car)
+   * or its mailbox with a calendar ("account").
+   */
   source?: "ha" | "mailbox" | "account";
+  mailbox?: CarMailboxConfig;
   account?: CarAccountConfig;
+  /** Who may invite the car: addresses or "@domain". */
+  allowed?: string[];
 }
 
-export type MailProvider = "icloud" | "google" | "infomaniak" | "outlook" | "microsoft" | "other";
+export type MailProvider = "webde" | "gmx" | "google" | "tonline" | "other";
 
-/** A car's own account with mailbox and calendar (Microsoft, iCloud, Infomaniak, CalDAV). */
+/** A car's mailbox without a calendar (the password is stored elsewhere). */
+export interface CarMailboxConfig {
+  provider: MailProvider;
+  address: string;
+  username: string | null;
+  imap_host: string | null;
+  imap_port: number | null;
+  smtp_host: string | null;
+  smtp_port: number | null;
+  smtp_security: "starttls" | "ssl" | null;
+  accept: boolean;
+}
+
+export interface CarMailboxStatus {
+  state: "off" | "no_secret" | "waiting" | "ok" | "error";
+  has_secret?: boolean;
+  checked?: string | null;
+  error?: string | null;
+  recent?: {
+    at: string;
+    summary: string;
+    start: string | null;
+    from: string;
+    organizer: string | null;
+    method: string;
+    result: string;
+  }[];
+}
+
+/** A car's mailbox with a calendar (Microsoft, iCloud, Infomaniak, CalDAV). */
 export interface CarAccountConfig {
   kind: "outlook" | "microsoft" | "icloud" | "infomaniak" | "caldav";
   address: string;
@@ -393,46 +429,6 @@ export interface CarAccountStatus {
   error?: string | null;
   checked?: string;
   oauth?: { state: "waiting" | "ok" | "error"; user_code?: string; uri?: string; error?: string } | null;
-}
-
-/** Joe's mailbox for car appointments (the password is stored elsewhere). */
-export interface MailboxConfig {
-  enabled: boolean;
-  provider: MailProvider;
-  address: string;
-  username: string | null;
-  imap_host: string | null;
-  imap_port: number | null;
-  smtp_host: string | null;
-  smtp_port: number | null;
-  smtp_security: "starttls" | "ssl" | null;
-  /** Signing in with Microsoft: the app registration and its tenant. */
-  client_id: string | null;
-  tenant: string;
-  allowed: string[];
-  accept: boolean;
-  /** Which invited address means which car (action id -> address). */
-  cars: Record<string, string>;
-  interval_min: number;
-}
-
-export interface MailboxStatus {
-  state: "off" | "no_secret" | "waiting" | "ok" | "error";
-  has_secret?: boolean;
-  checked?: string | null;
-  error?: string | null;
-  /** Signing in with Microsoft: a code to enter, done, or failed. */
-  oauth?: { state: "waiting" | "ok" | "error"; user_code?: string; uri?: string; expires?: string; error?: string } | null;
-  recent?: {
-    at: string;
-    summary: string;
-    start: string | null;
-    from: string;
-    organizer: string | null;
-    method: string;
-    car?: string;
-    result: string;
-  }[];
 }
 
 export interface RoutingConfig {
@@ -519,7 +515,6 @@ export interface JoeConfig {
   notify: NotifyConfig;
   calendar: CalendarConfig;
   routing: RoutingConfig;
-  mailbox: MailboxConfig;
   answers: Answers;
   learned: Learned;
   provenance: Record<string, Provenance>;
@@ -661,8 +656,9 @@ export interface JoeState {
   results?: Results | null;
   questions?: DayQuestion[];
   control?: ControlView;
-  mailbox?: MailboxStatus;
-  /** Each car's own account: sign-in and last read. */
+  /** Each car's mailbox without a calendar: last look and invitations. */
+  mailbox?: Record<string, CarMailboxStatus>;
+  /** Each car's mailbox with a calendar: sign-in and last read. */
   accounts?: Record<string, CarAccountStatus>;
 }
 

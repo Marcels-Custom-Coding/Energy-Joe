@@ -308,7 +308,7 @@
   "not_car_actions": []
  },
  "default_config": {
-  "version": 3,
+  "version": 4,
   "measurements": {
    "grid_power": null,
    "home_power": null,
@@ -466,23 +466,6 @@
    "geocoder_url": "https://photon.komoot.io/api/",
    "router_url": "https://routing.openstreetmap.de/routed-car/route/v1/driving/"
   },
-  "mailbox": {
-   "enabled": false,
-   "provider": "other",
-   "address": "",
-   "username": null,
-   "imap_host": null,
-   "imap_port": null,
-   "smtp_host": null,
-   "smtp_port": null,
-   "smtp_security": null,
-   "client_id": null,
-   "tenant": "common",
-   "allowed": [],
-   "accept": true,
-   "cars": {},
-   "interval_min": 5
-  },
   "answers": {
    "ignored": [],
    "confirmed": []
@@ -511,7 +494,7 @@
   "provenance": {}
  },
  "adopted_config": {
-  "version": 3,
+  "version": 4,
   "measurements": {
    "grid_power": {
     "entity_id": "sensor.acme_grid_power",
@@ -711,23 +694,6 @@
    "geocoder_url": "https://photon.komoot.io/api/",
    "router_url": "https://routing.openstreetmap.de/routed-car/route/v1/driving/"
   },
-  "mailbox": {
-   "enabled": false,
-   "provider": "other",
-   "address": "",
-   "username": null,
-   "imap_host": null,
-   "imap_port": null,
-   "smtp_host": null,
-   "smtp_port": null,
-   "smtp_security": null,
-   "client_id": null,
-   "tenant": "common",
-   "allowed": [],
-   "accept": true,
-   "cars": {},
-   "interval_min": 5
-  },
   "answers": {
    "ignored": [],
    "confirmed": []
@@ -756,115 +722,115 @@
   "provenance": {
    "measurements.grid_power": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "measurements.home_power": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "measurements.solar_power": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "tariff.kind": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "tariff.price_entity": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "tariff.window": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "tariff.night_price": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "tariff.day_price": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "forecast.provider": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "forecast.config_entries": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "forecast.today": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "forecast.tomorrow": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "forecast.remaining_today": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "forecast.alternatives": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "batteries[flow800].name": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "batteries[flow800].adapter": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "batteries[flow800].soc_entity": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "batteries[flow800].power": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "batteries[flow800].capacity_kwh": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "batteries[flow800].capacity_entity": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "batteries[flow800].max_charge_w": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "batteries[flow800].max_discharge_w": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "batteries[flow800].device_id": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "batteries[flow800].controls": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "batteries[flow800].mode_options": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "batteries[flow800].prepare": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "batteries[flow800].steps": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    },
    "batteries[flow800].priority": {
     "source": "read",
-    "updated": "2026-10-04T14:26:58+00:00"
+    "updated": "2026-10-04T18:04:53+00:00"
    }
   }
  },

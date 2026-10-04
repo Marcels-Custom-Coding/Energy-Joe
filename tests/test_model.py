@@ -104,6 +104,50 @@ def test_distances_come_from_openstreetmap_unless_switched_off() -> None:
     assert model.migrate({**off, "version": 2})["routing"]["service"] is None
 
 
+def test_the_one_mailbox_moves_into_each_car() -> None:
+    """Version 3 had one mailbox for all cars; now each car has its own."""
+
+    def car(car_id: str, source: str) -> dict:
+        return {
+            "id": car_id,
+            "name": car_id,
+            "kind": "switch",
+            "entity_id": f"select.{car_id}",
+            "on_value": "now",
+            "need": {"enabled": True, "source": source},
+        }
+
+    stored = model.apply_update(
+        model.default_config(),
+        {"actions": {"kona": car("kona", "mailbox"), "eup": car("eup", "account")}},
+        "user",
+    )
+    stored["version"] = 3
+    for action in stored["actions"]:
+        del action["need"]["mailbox"], action["need"]["allowed"]
+    stored["mailbox"] = {
+        "enabled": True,
+        "provider": "icloud",
+        "address": "auto@example.org",
+        "allowed": ["robin@example.org"],
+        "cars": {"kona": "auto+kona@example.org"},
+        "accept": False,
+    }
+    stored["provenance"]["mailbox.allowed"] = {"source": "user"}
+    migrated = model.migrate(stored)
+    kona, eup = migrated["actions"]
+    assert kona["need"]["mailbox"]["address"] == "auto+kona@example.org"
+    # The plus address logs in as the mailbox it belongs to.
+    assert kona["need"]["mailbox"]["username"] == "auto@example.org"
+    assert kona["need"]["mailbox"]["imap_host"] == "imap.mail.me.com"
+    assert kona["need"]["mailbox"]["provider"] == "other"
+    assert kona["need"]["mailbox"]["accept"] is False
+    assert kona["need"]["allowed"] == eup["need"]["allowed"] == ["robin@example.org"]
+    assert eup["need"]["mailbox"]["address"] == ""
+    assert "mailbox" not in migrated
+    assert "mailbox.allowed" not in migrated["provenance"]
+
+
 BATTERY = {
     "id": "b1",
     "name": "Garage",

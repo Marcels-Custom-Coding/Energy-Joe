@@ -16,13 +16,12 @@ TO_REDACT = {
     "person_entity",
     "calendars",
     "detail",
-    # The mailbox: addresses of the user and of who may invite.
+    # A car's mailbox: its address and who may invite.
     "address",
     "username",
     "allowed",
-    "cars",
     "recent",
-    # A car's own account (a CalDAV address may hold the user name).
+    # A car's account (a CalDAV address may hold the user name).
     "url",
 }
 REDACTED = "**REDACTED**"
@@ -81,7 +80,7 @@ async def async_get_config_entry_diagnostics(
         REDACTED if item.startswith("person:") else item
         for item in answers.get("ignored", [])
     ]
-    # The mailbox's last invitations: titles, times and senders.
+    # The mailboxes' last invitations: titles, times and senders.
     if isinstance(state.get("mailbox"), dict):
         state["mailbox"] = async_redact_data(state["mailbox"], TO_REDACT)
     observe = state.get("observe", {})

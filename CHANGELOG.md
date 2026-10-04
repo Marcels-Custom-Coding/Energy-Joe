@@ -3,6 +3,29 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.4.0
+
+- **Drei gleichwertige Wege, wie Termine zum Auto kommen** – jeder mit einer
+  Grafik, die zeigt, in welchem Kalender der Termin am Ende steht:
+  1. **Fertiger Kalender:** Die Termine stehen schon in einem Kalender in
+     Home Assistant. Du ordnest ihn zu, Joe liest nur.
+  2. **Postfach ohne Kalender** (z. B. web.de, GMX, Gmail, T-Online): Du lädst
+     das Auto ein, Joe holt die Einladung, sagt zu und trägt den Termin in
+     seinen eigenen Kalender „Kalender ‹Auto›“ in Home Assistant ein – den du
+     auch aufs Handy holen kannst.
+  3. **Postfach mit Kalender** (Microsoft 365, Outlook.com, iCloud,
+     Infomaniak): Der Termin landet von selbst im Kalender des Kontos; Joe
+     liest ihn und sagt dort zu.
+- **Postfach beim Auto:** Jedes Auto hat sein eigenes Postfach. Der Abschnitt
+  „Postfach für Auto-Termine“ in den Einstellungen ist weg; was dort stand,
+  wandert beim Update zum Auto. Den Anbieter erkennt Joe an der Adresse.
+- **„Wer darf das Auto einladen?“** steht jetzt beim Auto. Erlaubst du einen
+  abgelehnten Absender, liest Joe das Postfach noch einmal.
+- Joes eigenen Kalender gibt es nur noch für Autos mit Postfach ohne
+  Kalender – bei den anderen Wegen wäre er nur doppelt.
+- Unbeantwortete Einladungen fremder Absender im Kalender eines Kontos zählen
+  nicht mehr als Fahrt.
+
 ## 0.3.1
 
 - **Kalender des Autos verständlicher:** zwei klare Wege mit einer kleinen

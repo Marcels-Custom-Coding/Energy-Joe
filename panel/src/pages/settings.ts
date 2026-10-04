@@ -6,7 +6,6 @@ import "../components/review";
 import "../components/sheet";
 import { tip } from "../components/tip";
 import { saveConfig, sourceOf } from "../config";
-import "../components/mailbox-settings";
 import { define } from "../define";
 import type { TipName, Translate, TranslationKey } from "../i18n";
 import { shared } from "../styles/shared";
@@ -316,16 +315,6 @@ export class JoeSettings extends LitElement {
         </section>
 
         ${this.renderNotify(t)} ${this.renderRouting(t)}
-
-        <section class="group">
-          <h2>${t("settings.mailbox")}</h2>
-          <joe-mailbox-settings
-            .hass=${this.hass}
-            .t=${t}
-            .config=${config}
-            .status=${joe.mailbox}
-          ></joe-mailbox-settings>
-        </section>
 
         <section class="group plain">
           <h2>${t("settings.uses")}</h2>

@@ -388,7 +388,7 @@
             }
             case "energy_joe/calendar/links": {
               if (msg.renew || !state.calendarToken) state.calendarToken = Math.random().toString(36).slice(2, 14);
-              const cars = state.config.actions.filter((a) => a.kind === "switch" && a.need?.enabled);
+              const cars = state.config.actions.filter((a) => a.kind === "switch" && a.need?.enabled && a.need?.source === "mailbox");
               return {
                 external_url: "https://ha.example.com",
                 links: Object.fromEntries(cars.map((a) => [a.id, `/api/energy_joe/calendar/${state.calendarToken}/${a.id}.ics`])),
@@ -396,24 +396,10 @@
               };
             }
             case "energy_joe/mailbox/secret":
-              state.mailbox = { ...(state.mailbox ?? { state: "waiting" }), has_secret: Boolean(msg.password), state: msg.password ? "ok" : "no_secret", checked: stamp() };
+              state.mailbox = state.mailbox ?? {};
+              state.mailbox[msg.car] = { ...(state.mailbox[msg.car] ?? { state: "waiting" }), has_secret: Boolean(msg.password), state: msg.password ? "ok" : "no_secret", checked: stamp() };
               push();
               return null;
-            case "energy_joe/mailbox/sign_in": {
-              if (!msg.start) {
-                state.mailbox = { ...(state.mailbox ?? {}), has_secret: false, oauth: null, state: "no_secret" };
-                push();
-                return null;
-              }
-              const info = { state: "waiting", user_code: "JOE-4711", uri: "https://microsoft.com/devicelogin", expires: stamp() };
-              state.mailbox = { ...(state.mailbox ?? {}), oauth: info };
-              push();
-              setTimeout(() => {
-                state.mailbox = { ...state.mailbox, oauth: { state: "ok" }, has_secret: true, state: "ok", checked: stamp() };
-                push();
-              }, 3000);
-              return info;
-            }
             case "energy_joe/account": {
               state.accounts = state.accounts ?? {};
               const current = state.accounts[msg.car] ?? {};
@@ -438,19 +424,20 @@
               return null;
             }
             case "energy_joe/mailbox/test":
-              return { error: state.mailbox?.has_secret ? null : "no_secret" };
+              return { error: state.mailbox?.[msg.car]?.has_secret ? null : "no_secret" };
             case "energy_joe/mailbox/check":
-              state.mailbox = {
-                ...(state.mailbox ?? {}),
+              state.mailbox = state.mailbox ?? {};
+              state.mailbox[msg.car] = {
+                ...(state.mailbox[msg.car] ?? {}),
                 state: "ok",
                 checked: stamp(),
                 recent: [
-                  { at: stamp(), summary: "Kundentermin", start: "2026-10-06T14:00:00+02:00", from: "kim@firma.example", organizer: "kim@firma.example", method: "REQUEST", car: state.config.actions[0]?.id, result: "added_accepted" },
+                  { at: stamp(), summary: "Kundentermin", start: "2026-10-06T14:00:00+02:00", from: "kim@firma.example", organizer: "kim@firma.example", method: "REQUEST", result: "added_accepted" },
                   { at: stamp(), summary: "Gewinnspiel", start: null, from: "fremd@spam.example", organizer: null, method: "REQUEST", result: "not_allowed" },
                 ],
               };
               push();
-              return state.mailbox;
+              return state.mailbox[msg.car];
             case "energy_joe/control/answer":
               control.answer = { night: msg.night, yes: msg.yes, at: stamp() };
               log("answer", { night: msg.night, yes: msg.yes });

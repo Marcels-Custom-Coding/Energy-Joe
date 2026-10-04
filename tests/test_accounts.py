@@ -34,10 +34,10 @@ def _config(kind: str, **account: Any) -> dict[str, Any]:
                             "address": "kona@example.org",
                             **account,
                         },
+                        "allowed": ["robin@example.org"],
                     },
                 }
             },
-            "mailbox": {"allowed": ["robin@example.org"]},
         },
         "user",
     )
@@ -128,7 +128,8 @@ async def test_the_microsoft_calendar_of_a_car(
 
     start = dt_util.parse_datetime("2026-10-05T00:00:00+02:00")
     events = await accounts.async_events("kona", start, start + timedelta(days=1))
-    assert [e["location"] for e in events] == ["Messe Hannover", ""]
+    # The unanswered invitation from a stranger is no trip.
+    assert [e["location"] for e in events] == ["Messe Hannover"]
     assert events[0]["start"].startswith("2026-10-05T")
     # Only the allowed organizer got an acceptance.
     accepted = [c for c in aioclient_mock.mock_calls if "accept" in str(c[1])]

@@ -1,12 +1,11 @@
-"""Joe's mailbox: fetch invitations by IMAP, answer them by SMTP.
+"""A car's mailbox: fetch invitations by IMAP, answer them by SMTP.
 
-Plain functions that block (run them in the executor). Login with a password
-(for most providers an app password) or with an OAuth token (XOAUTH2).
+Plain functions that block (run them in the executor). Login with the
+mailbox's password (some providers want an app password).
 """
 
 from __future__ import annotations
 
-import base64
 import contextlib
 from dataclasses import dataclass
 from datetime import date, timedelta
@@ -24,10 +23,17 @@ FIRST_DAYS = 30
 
 # Servers of the common providers (the user can always type their own).
 PROVIDERS: dict[str, dict[str, Any]] = {
-    "icloud": {
-        "imap_host": "imap.mail.me.com",
+    "webde": {
+        "imap_host": "imap.web.de",
         "imap_port": 993,
-        "smtp_host": "smtp.mail.me.com",
+        "smtp_host": "smtp.web.de",
+        "smtp_port": 587,
+        "smtp_security": "starttls",
+    },
+    "gmx": {
+        "imap_host": "imap.gmx.net",
+        "imap_port": 993,
+        "smtp_host": "mail.gmx.net",
         "smtp_port": 587,
         "smtp_security": "starttls",
     },
@@ -38,26 +44,12 @@ PROVIDERS: dict[str, dict[str, Any]] = {
         "smtp_port": 587,
         "smtp_security": "starttls",
     },
-    "infomaniak": {
-        "imap_host": "mail.infomaniak.com",
+    "tonline": {
+        "imap_host": "secureimap.t-online.de",
         "imap_port": 993,
-        "smtp_host": "mail.infomaniak.com",
-        "smtp_port": 587,
-        "smtp_security": "starttls",
-    },
-    "outlook": {
-        "imap_host": "outlook.office365.com",
-        "imap_port": 993,
-        "smtp_host": "smtp-mail.outlook.com",
-        "smtp_port": 587,
-        "smtp_security": "starttls",
-    },
-    "microsoft": {
-        "imap_host": "outlook.office365.com",
-        "imap_port": 993,
-        "smtp_host": "smtp.office365.com",
-        "smtp_port": 587,
-        "smtp_security": "starttls",
+        "smtp_host": "securesmtp.t-online.de",
+        "smtp_port": 465,
+        "smtp_security": "ssl",
     },
 }
 
@@ -90,7 +82,7 @@ def servers(settings: dict[str, Any]) -> dict[str, Any]:
     return base
 
 
-def _login_imap(settings: dict[str, Any], secret: dict[str, Any]) -> imaplib.IMAP4_SSL:
+def _login_imap(settings: dict[str, Any], password: str) -> imaplib.IMAP4_SSL:
     where = servers(settings)
     if not where.get("imap_host"):
         raise MailError("no_server")
@@ -105,11 +97,7 @@ def _login_imap(settings: dict[str, Any], secret: dict[str, Any]) -> imaplib.IMA
         raise MailError("connect", str(err)) from err
     user = settings.get("username") or settings.get("address") or ""
     try:
-        if secret.get("token"):
-            auth = f"user={user}\x01auth=Bearer {secret['token']}\x01\x01"
-            client.authenticate("XOAUTH2", lambda _: auth.encode())
-        else:
-            client.login(user, secret.get("password") or "")
+        client.login(user, password)
     except imaplib.IMAP4.error as err:
         _close(client)
         raise MailError("login", str(err)) from err
@@ -137,7 +125,7 @@ def _calendars(message: Message) -> list[str]:
 
 def fetch(
     settings: dict[str, Any],
-    secret: dict[str, Any],
+    password: str,
     after_uid: int | None,
     validity: str | None,
 ) -> tuple[list[Fetched], str, int]:
@@ -146,7 +134,7 @@ def fetch(
     Returns them with the mailbox's UIDVALIDITY and the highest uid seen; a
     changed UIDVALIDITY means the mailbox was rebuilt and is read again.
     """
-    client = _login_imap(settings, secret)
+    client = _login_imap(settings, password)
     try:
         status, data = client.select("INBOX", readonly=True)
         if status != "OK":
@@ -197,13 +185,13 @@ def _since() -> str:
     return (date.today() - timedelta(days=FIRST_DAYS)).strftime("%d-%b-%Y")
 
 
-def check(settings: dict[str, Any], secret: dict[str, Any]) -> None:
+def check(settings: dict[str, Any], password: str) -> None:
     """Log in to IMAP and SMTP once (the panel's "test")."""
-    _close(_login_imap(settings, secret))
-    _close_smtp(_login_smtp(settings, secret))
+    _close(_login_imap(settings, password))
+    _close_smtp(_login_smtp(settings, password))
 
 
-def _login_smtp(settings: dict[str, Any], secret: dict[str, Any]) -> smtplib.SMTP:
+def _login_smtp(settings: dict[str, Any], password: str) -> smtplib.SMTP:
     where = servers(settings)
     if not where.get("smtp_host"):
         raise MailError("no_server")
@@ -221,15 +209,7 @@ def _login_smtp(settings: dict[str, Any], secret: dict[str, Any]) -> smtplib.SMT
         raise MailError("connect", str(err)) from err
     user = settings.get("username") or settings.get("address") or ""
     try:
-        if secret.get("token"):
-            auth = f"user={user}\x01auth=Bearer {secret['token']}\x01\x01"
-            code, _ = client.docmd(
-                "AUTH", "XOAUTH2 " + base64.b64encode(auth.encode()).decode()
-            )
-            if code != 235:
-                raise smtplib.SMTPAuthenticationError(code, b"XOAUTH2")
-        else:
-            client.login(user, secret.get("password") or "")
+        client.login(user, password)
     except smtplib.SMTPException as err:
         _close_smtp(client)
         raise MailError("login", str(err)) from err
@@ -243,7 +223,7 @@ def _close_smtp(client: smtplib.SMTP) -> None:
 
 def send_reply(
     settings: dict[str, Any],
-    secret: dict[str, Any],
+    password: str,
     to: str,
     subject: str,
     calendar: str,
@@ -258,7 +238,7 @@ def send_reply(
     message.add_alternative(
         calendar, subtype="calendar", params={"method": "REPLY", "charset": "utf-8"}
     )
-    client = _login_smtp(settings, secret)
+    client = _login_smtp(settings, password)
     try:
         client.send_message(message)
     except smtplib.SMTPException as err:

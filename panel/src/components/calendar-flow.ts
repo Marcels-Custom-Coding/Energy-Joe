@@ -8,16 +8,21 @@ interface Step {
   text: string;
 }
 
+export type FlowVariant = "calendar" | "mailbox" | "account";
+
 /**
- * How appointments get to a car, step by step: Joe accepting invitations in
- * the car's name, or a finished calendar of the car that is only assigned.
+ * How appointments get to a car, step by step – and in which calendar they
+ * end up: a finished calendar that is only assigned, the car's mailbox
+ * without a calendar (Joe's calendar for the car), or its mailbox with one.
  * Side by side on wide screens, one below the other on a phone.
  */
 export class JoeCalendarFlow extends LitElement {
   @property({ attribute: false }) t?: Translate;
-  @property() variant: "invite" | "calendar" = "invite";
+  @property() variant: FlowVariant = "calendar";
   /** The address the car is invited with (shown in the second step). */
   @property() address = "";
+  /** Joe's calendar for the car, where invitations from its mailbox land. */
+  @property() calendar = "";
 
   static styles = css`
     :host {
@@ -86,10 +91,11 @@ export class JoeCalendarFlow extends LitElement {
       line-height: 18px;
       text-align: center;
     }
+    /* Joe's steps: dark with an amber ring (visible on dark backgrounds too). */
     li.joe .badge {
       background: #071118;
       color: #fea707;
-      box-shadow: none;
+      box-shadow: inset 0 0 0 2px var(--joe-amber, #fea707);
     }
     li.joe .number {
       background: var(--joe-amber, #fea707);
@@ -130,18 +136,29 @@ export class JoeCalendarFlow extends LitElement {
         { icon: "mdi:calendar-account", text: t("flow.calendar.1") },
         { icon: "mdi:link-variant", text: t("flow.calendar.2") },
         { icon: "mdi:calendar-search", text: t("flow.calendar.3"), joe: true },
-        { icon: "mdi:ev-station", text: t("flow.calendar.4"), joe: true },
+        { icon: "mdi:ev-station", text: t("flow.charge"), joe: true },
       ];
     }
-    return [
+    const invite = [
       { icon: "mdi:calendar-edit", text: t("flow.invite.1") },
       {
         icon: "mdi:car-arrow-right",
         text: t("flow.invite.2", { address: this.address || t("flow.invite.address") }),
       },
-      { icon: "mdi:email-check-outline", text: t("flow.invite.3"), joe: true },
-      { icon: "mdi:calendar-check", text: t("flow.invite.4"), joe: true },
-      { icon: "mdi:ev-station", text: t("flow.invite.5"), joe: true },
+    ];
+    if (this.variant === "mailbox") {
+      return [
+        ...invite,
+        { icon: "mdi:email-check-outline", text: t("flow.mailbox.3"), joe: true },
+        { icon: "mdi:calendar-import", text: t("flow.mailbox.4", { calendar: this.calendar }), joe: true },
+        { icon: "mdi:ev-station", text: t("flow.charge"), joe: true },
+      ];
+    }
+    return [
+      ...invite,
+      { icon: "mdi:calendar-check", text: t("flow.account.3") },
+      { icon: "mdi:calendar-sync", text: t("flow.account.4"), joe: true },
+      { icon: "mdi:ev-station", text: t("flow.charge"), joe: true },
     ];
   }
 
@@ -150,7 +167,7 @@ export class JoeCalendarFlow extends LitElement {
     if (!t) {
       return nothing;
     }
-    return html`<ol aria-label=${t(this.variant === "calendar" ? "flow.calendar.title" : "flow.invite.title")}>
+    return html`<ol aria-label=${t(`flow.${this.variant}.title`)}>
       ${this.steps(t).map(
         (step, index) => html`<li class=${step.joe ? "joe" : ""}>
           <span class="badge" aria-hidden="true">

@@ -1,30 +1,27 @@
-"""Joe's inbox: invitations to a car's address become trips in its calendar.
+"""The cars' mailboxes: invitations become trips in Joe's calendar for the car.
 
-Every few minutes Joe looks for new mail. An invitation counts when its
-organizer (or sender) is on the list of who may invite; the invited address
-says which car it is for (e.g. "auto+kona@…"). New and changed appointments
-go into the car's calendar and Joe accepts them if wanted; cancellations
-remove them. The password or token lives in its own store, never in the
-configuration or the diagnostics.
+A car whose mailbox has no calendar (web.de, GMX, Gmail, ...) gets Joe's
+calendar instead. Every few minutes Joe looks for new mail in each such
+mailbox. An invitation counts when its sender is on the car's list of who
+may invite; new and changed appointments go into Joe's calendar for the car
+and Joe accepts them if wanted; cancellations remove them. The password
+lives in its own store, never in the configuration or the diagnostics.
 """
 
 from __future__ import annotations
 
-import asyncio
 from collections.abc import Callable
 from datetime import datetime, timedelta
 import logging
 from typing import Any
 
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from ..const import DOMAIN
-from ..plan.car_calendar import CarCalendarStore, as_text
-from . import oauth
+from ..plan.car_calendar import CarCalendarStore, as_text, mailbox_cars
 from .ical import Invitation, parse, reply
 from .mailbox import Fetched, MailError, check, fetch, send_reply
 
@@ -34,8 +31,7 @@ STORE_KEY = f"{DOMAIN}.mailbox"
 STORE_VERSION = 1
 # What the panel shows of the last invitations (newest first).
 RECENT = 20
-# Microsoft: personal accounts ("outlook") and Microsoft 365 / Exchange.
-MICROSOFT = ("outlook", "microsoft")
+INTERVAL = timedelta(minutes=5)
 
 
 def allowed(rules: list[str], *addresses: str | None) -> bool:
@@ -69,19 +65,20 @@ def trusted(rules: list[str], sender: str, organizer: str | None) -> bool:
     return sender.rpartition("@")[2].lower() == organizer.rpartition("@")[2].lower()
 
 
-def which_car(
-    cars: dict[str, str], car_ids: list[str], addresses: list[str]
-) -> str | None:
-    """The car an invitation is for: by its invited address, else the only car."""
-    wanted = {a.lower() for a in addresses}
-    for car, address in cars.items():
-        if car in car_ids and address and address.lower() in wanted:
-            return car
-    return car_ids[0] if len(car_ids) == 1 else None
+def invited_as(address: str, attendees: list[str]) -> str:
+    """The address the car was invited with: its own or a plus address of it."""
+    address = address.lower()
+    local, _, domain = address.partition("@")
+    for candidate in attendees:
+        if candidate == address or (
+            candidate.endswith("@" + domain) and candidate.startswith(local + "+")
+        ):
+            return candidate
+    return address
 
 
-class JoeInbox:
-    """Looks for invitations and keeps the car calendars up to date."""
+class CarInboxes:
+    """Looks for invitations in each car's mailbox and fills Joe's calendars."""
 
     def __init__(
         self,
@@ -95,267 +92,188 @@ class JoeInbox:
         self._calendars = calendars
         self._changed = changed
         self._store: Store[dict[str, Any]] = Store(hass, STORE_VERSION, STORE_KEY)
-        self._data: dict[str, Any] = {}
+        # Per car: password, the mailbox's UIDVALIDITY and last uid, the last
+        # invitations and when Joe last looked.
+        self._data: dict[str, dict[str, Any]] = {}
         self._unsub: CALLBACK_TYPE | None = None
-        self._interval: int | None = None
-        self._running = False
-        self._oauth_task: asyncio.Task[None] | None = None
-        self.status: dict[str, Any] = {"state": "off"}
+        self._active: set[str] = set()
+        self._rules: dict[str, set[str]] = {}
+        self._running: set[str] = set()
+        self.status: dict[str, dict[str, Any]] = {}
 
     async def async_load(self) -> None:
-        self._data = await self._store.async_load() or {}
-        self.status = {
-            **self.status,
-            "recent": self._data.get("recent", []),
-            "checked": self._data.get("checked"),
-        }
+        data = await self._store.async_load() or {}
+        if "cars" not in data:
+            data = self._from_one_mailbox(data)
+        # Cars that are gone (or never saved) take their password with them.
+        known = {a["id"] for a in self._config()["actions"]}
+        self._data = {car: v for car, v in data["cars"].items() if car in known}
+        for car in self._data:
+            self._set(car, notify=False)
+
+    def _from_one_mailbox(self, data: dict[str, Any]) -> dict[str, Any]:
+        """Up to 0.3 one mailbox served all cars: its password goes to the first."""
+        cars = [a["id"] for a in mailbox_cars(self._config())]
+        if not cars or not data.get("password"):
+            return {"cars": {}}
+        return {"cars": {cars[0]: {"password": data["password"]}}}
 
     async def _async_save(self) -> None:
-        await self._store.async_save(self._data)
+        await self._store.async_save({"cars": self._data})
 
     async def async_remove(self) -> None:
         self._data = {}
         await self._store.async_remove()
 
-    # --- secret --------------------------------------------------------------
+    def _need(self, car: str) -> dict[str, Any] | None:
+        action = next((a for a in mailbox_cars(self._config()) if a["id"] == car), None)
+        return action["need"] if action else None
 
-    @property
-    def has_secret(self) -> bool:
-        if self._config()["mailbox"]["provider"] in MICROSOFT:
-            return bool((self._data.get("oauth") or {}).get("refresh_token"))
-        return bool(self._data.get("password") or self._data.get("token"))
+    def has_secret(self, car: str) -> bool:
+        return bool((self._data.get(car) or {}).get("password"))
 
-    async def _async_secret(self) -> dict[str, Any]:
-        """The password, or for Microsoft a fresh access token."""
-        settings = self._config()["mailbox"]
-        if settings["provider"] not in MICROSOFT:
-            return {
-                "password": self._data.get("password"),
-                "token": self._data.get("token"),
-            }
-        tokens = self._data.get("oauth") or {}
-        if not oauth.fresh(tokens):
-            try:
-                tokens = await oauth.refresh(
-                    async_get_clientsession(self._hass),
-                    oauth.tenant_for(settings["provider"], settings["tenant"]),
-                    oauth.client_for(settings["client_id"]) or "",
-                    tokens,
-                )
-            except oauth.OAuthError as err:
-                raise MailError("login", err.code) from err
-            self._data["oauth"] = tokens
-            await self._async_save()
-        return {"password": None, "token": tokens.get("access_token")}
-
-    # --- signing in with Microsoft ------------------------------------------
-
-    async def async_oauth_start(self) -> dict[str, Any]:
-        """Ask Microsoft for a sign-in code; Joe waits in the background."""
-        settings = self._config()["mailbox"]
-        client = oauth.client_for(settings["client_id"])
-        if not client:
-            raise MailError("no_client_id")
-        tenant = oauth.tenant_for(settings["provider"], settings["tenant"])
-        self._cancel_oauth()
-        try:
-            found = await oauth.start(
-                async_get_clientsession(self._hass), tenant, client
-            )
-        except oauth.OAuthError as err:
-            self._set_status(oauth={"state": "error", "error": err.code})
-            raise MailError("oauth", err.code) from err
-        expires = dt_util.now() + timedelta(seconds=int(found.get("expires_in") or 900))
-        info = {
-            "state": "waiting",
-            "user_code": found.get("user_code"),
-            "uri": found.get("verification_uri") or "https://microsoft.com/devicelogin",
-            "expires": expires.isoformat(timespec="seconds"),
-        }
-        self._set_status(oauth=info)
-        self._oauth_task = self._hass.async_create_background_task(
-            self._async_wait_for_sign_in(
-                tenant,
-                client,
-                str(found["device_code"]),
-                int(found.get("interval") or 5),
-                expires,
-            ),
-            "energy_joe microsoft sign-in",
-        )
-        return info
-
-    async def _async_wait_for_sign_in(
-        self,
-        tenant: str,
-        client: str,
-        device_code: str,
-        interval: int,
-        until: datetime,
-    ) -> None:
-        session = async_get_clientsession(self._hass)
-        while dt_util.now() < until:
-            await asyncio.sleep(interval)
-            try:
-                tokens = await oauth.poll(session, tenant, client, device_code)
-            except oauth.OAuthError as err:
-                if err.code == "authorization_pending":
-                    continue
-                if err.code == "slow_down":
-                    interval += 5
-                    continue
-                self._set_status(oauth={"state": "error", "error": err.code})
-                return
-            self._data["oauth"] = tokens
-            self._data.pop("validity", None)
-            self._data.pop("last_uid", None)
-            await self._async_save()
-            self._set_status(oauth={"state": "ok"})
-            await self.async_check()
-            return
-        self._set_status(oauth={"state": "error", "error": "expired_token"})
-
-    def _cancel_oauth(self) -> None:
-        task = self._oauth_task
-        if task is not None and not task.done():
-            task.cancel()
-        self._oauth_task = None
-
-    async def async_sign_out(self) -> None:
-        """Forget the Microsoft sign-in."""
-        self._cancel_oauth()
-        self._data.pop("oauth", None)
-        await self._async_save()
-        self._set_status(oauth=None)
-
-    async def async_set_secret(
-        self, password: str | None = None, token: str | None = None
-    ) -> None:
-        """A new password (app password) or OAuth token; None removes it."""
-        self._data["password"] = password or None
-        self._data["token"] = token or None
+    async def async_set_password(self, car: str, password: str | None) -> None:
+        """A new password; None removes it."""
+        entry = self._data.setdefault(car, {})
+        entry["password"] = password or None
         # Another mailbox maybe: read it from the start.
-        self._data.pop("validity", None)
-        self._data.pop("last_uid", None)
+        entry.pop("validity", None)
+        entry.pop("last_uid", None)
         await self._async_save()
-        self._set_status()
-        await self.async_check()
+        self._set(car)
+        await self.async_check(car)
 
     # --- schedule ------------------------------------------------------------
 
     @callback
     def async_apply(self) -> None:
-        """Start, stop or reschedule after a change of the settings."""
-        settings = self._config()["mailbox"]
-        interval = settings["interval_min"] if settings["enabled"] else None
-        if interval == self._interval and (self._unsub is not None) == bool(interval):
-            self._set_status()
-            return
-        self.async_stop()
-        self._interval = interval
-        if interval:
-            self._unsub = async_track_time_interval(
-                self._hass, self._on_tick, timedelta(minutes=interval)
-            )
-            self._hass.async_create_task(self.async_check(), eager_start=False)
-        self._set_status()
+        """Look every few minutes while a car reads its mailbox."""
+        cars = {a["id"] for a in mailbox_cars(self._config())}
+        new = cars - self._active
+        self._active = cars
+        if cars and self._unsub is None:
+            self._unsub = async_track_time_interval(self._hass, self._on_tick, INTERVAL)
+        elif not cars and self._unsub is not None:
+            self._unsub()
+            self._unsub = None
+        for car in set(self.status) - cars:
+            self.status.pop(car, None)
+        for car in cars:
+            rules = set((self._need(car) or {}).get("allowed") or [])
+            if car in self._rules and rules - self._rules[car]:
+                # Someone may invite now: read the mailbox again from the start
+                # (what Joe has already is not answered twice).
+                (self._data.get(car) or {}).pop("last_uid", None)
+                new.add(car)
+            self._rules[car] = rules
+            self._set(car, notify=False)
+        self._changed()
+        for car in new:
+            self._hass.async_create_task(self.async_check(car), eager_start=False)
 
     @callback
     def async_stop(self) -> None:
-        self._cancel_oauth()
         if self._unsub:
             self._unsub()
             self._unsub = None
-        self._interval = None
+        self._active = set()
 
     @callback
     def _on_tick(self, now: datetime) -> None:
         self._hass.async_create_task(self.async_check(), eager_start=False)
 
-    def _set_status(self, **changes: Any) -> None:
-        settings = self._config()["mailbox"]
+    def _set(self, car: str, notify: bool = True, **changes: Any) -> None:
+        previous = self.status.get(car, {})
         state = (
             "off"
-            if not settings["enabled"]
+            if self._need(car) is None
             else "no_secret"
-            if not self.has_secret
-            else changes.pop("state", self.status.get("state") or "waiting")
+            if not self.has_secret(car)
+            else changes.pop("state", previous.get("state") or "waiting")
         )
         if state in ("off", "no_secret"):
             changes.pop("state", None)
-        self.status = {
-            **self.status,
+        entry = self._data.get(car) or {}
+        self.status[car] = {
+            **previous,
             **changes,
             "state": state,
-            "has_secret": self.has_secret,
-            "recent": self._data.get("recent", []),
+            "has_secret": self.has_secret(car),
+            "recent": entry.get("recent", []),
+            "checked": entry.get("checked"),
         }
-        self._changed()
+        if notify:
+            self._changed()
 
     # --- looking -------------------------------------------------------------
 
-    async def async_test(self) -> str | None:
+    async def async_test(self, car: str) -> str | None:
         """Log in once to IMAP and SMTP; None if both work, else an error code."""
-        settings = self._config()["mailbox"]
-        if not self.has_secret:
+        need = self._need(car)
+        if need is None:
+            return "no_mailbox"
+        if not self.has_secret(car):
             return "no_secret"
         try:
-            secret = await self._async_secret()
-            await self._hass.async_add_executor_job(check, settings, secret)
+            await self._hass.async_add_executor_job(
+                check, need["mailbox"], self._data[car]["password"]
+            )
         except MailError as err:
             return err.code
         return None
 
-    async def async_check(self) -> None:
-        """Look for new invitations now."""
-        settings = self._config()["mailbox"]
-        if self._running or not settings["enabled"] or not self.has_secret:
-            self._set_status()
+    async def async_check(self, car: str | None = None) -> None:
+        """Look for new invitations now (in one car's mailbox or in all)."""
+        cars = [car] if car else [a["id"] for a in mailbox_cars(self._config())]
+        for one in cars:
+            await self._async_check(one)
+
+    async def _async_check(self, car: str) -> None:
+        need = self._need(car)
+        if car in self._running or need is None or not self.has_secret(car):
+            self._set(car)
             return
-        self._running = True
+        entry = self._data[car]
+        self._running.add(car)
         try:
-            secret = await self._async_secret()
             found, validity, highest = await self._hass.async_add_executor_job(
                 fetch,
-                settings,
-                secret,
-                self._data.get("last_uid"),
-                self._data.get("validity"),
+                need["mailbox"],
+                entry["password"],
+                entry.get("last_uid"),
+                entry.get("validity"),
             )
         except MailError as err:
-            _LOGGER.debug("Mailbox not reachable: %s", err)
-            self._running = False
-            self._set_status(state="error", error=err.code)
+            _LOGGER.debug("Mailbox of %s not reachable: %s", car, err)
+            self._running.discard(car)
+            self._set(car, state="error", error=err.code)
             return
         except Exception:
             _LOGGER.exception("Looking for invitations failed")
-            self._running = False
-            self._set_status(state="error", error="unknown")
+            self._running.discard(car)
+            self._set(car, state="error", error="unknown")
             return
         try:
             for message in found:
                 for text in message.calendars:
                     for invitation in parse(text):
-                        await self._async_handle(settings, message, invitation)
+                        await self._async_handle(car, need, message, invitation)
         finally:
-            self._running = False
-        self._data["validity"] = validity
-        self._data["last_uid"] = highest
-        self._data["checked"] = dt_util.now().isoformat(timespec="seconds")
+            self._running.discard(car)
+        entry["validity"] = validity
+        entry["last_uid"] = highest
+        entry["checked"] = dt_util.now().isoformat(timespec="seconds")
         await self._async_save()
-        self._set_status(state="ok", error=None, checked=self._data["checked"])
+        self._set(car, state="ok", error=None)
 
     async def _async_handle(
-        self, settings: dict[str, Any], message: Fetched, invitation: Invitation
+        self,
+        car: str,
+        need: dict[str, Any],
+        message: Fetched,
+        invitation: Invitation,
     ) -> None:
-        # Only cars whose appointments come from Joe's mailbox.
-        cars = [
-            a["id"]
-            for a in self._config()["actions"]
-            if a["kind"] == "switch"
-            and (a.get("need") or {}).get("enabled")
-            and (a.get("need") or {}).get("source") == "mailbox"
-        ]
+        settings = need["mailbox"]
         entry: dict[str, Any] = {
             "at": dt_util.now().isoformat(timespec="seconds"),
             "summary": invitation.summary,
@@ -364,30 +282,22 @@ class JoeInbox:
             "organizer": invitation.organizer,
             "method": invitation.method,
         }
-        if not trusted(settings["allowed"], message.sender, invitation.organizer):
-            self._remember({**entry, "result": "not_allowed"})
+        if not trusted(need["allowed"], message.sender, invitation.organizer):
+            self._remember(car, {**entry, "result": "not_allowed"})
             return
-        car = which_car(
-            settings["cars"], cars, [*invitation.attendees, *message.recipients]
-        )
-        known = self._calendars.find(invitation.uid)
+        known = self._calendars.get(car, invitation.uid)
         if invitation.method == "CANCEL" or invitation.status == "CANCELLED":
             if known:
-                self._calendars.delete(known[0], invitation.uid)
-                self._remember({**entry, "car": known[0], "result": "cancelled"})
-            return
-        if car is None:
-            self._remember({**entry, "result": "no_car"})
+                self._calendars.delete(car, invitation.uid)
+                self._remember(car, {**entry, "result": "cancelled"})
             return
         if invitation.start is None or invitation.end is None:
-            self._remember({**entry, "car": car, "result": "no_time"})
+            self._remember(car, {**entry, "result": "no_time"})
             return
-        if known and int(known[1].get("sequence") or 0) > invitation.sequence:
+        if known and int(known.get("sequence") or 0) > invitation.sequence:
             return  # an older version of something Joe already has
-        if known and known[0] != car:
-            self._calendars.delete(known[0], invitation.uid)
-        newer = not known or invitation.sequence > int(known[1].get("sequence") or 0)
-        accepted = bool(known and known[1].get("accepted")) and not newer
+        newer = not known or invitation.sequence > int(known.get("sequence") or 0)
+        accepted = bool(known and known.get("accepted")) and not newer
         event = self._calendars.add(
             car,
             {
@@ -410,13 +320,12 @@ class JoeInbox:
             and invitation.organizer
             and not accepted
         ):
-            attendee = self._attendee(settings, car, invitation, message)
+            attendee = invited_as(settings["address"], invitation.attendees)
             try:
-                secret = await self._async_secret()
                 await self._hass.async_add_executor_job(
                     send_reply,
                     settings,
-                    secret,
+                    self._data[car]["password"],
                     invitation.organizer,
                     f"Zugesagt: {invitation.summary}".strip(),
                     reply(invitation, attendee),
@@ -426,25 +335,8 @@ class JoeInbox:
             except MailError as err:
                 _LOGGER.debug("Accepting failed: %s", err)
                 result += "_not_accepted"
-        self._remember({**entry, "car": car, "result": result})
+        self._remember(car, {**entry, "result": result})
 
-    @staticmethod
-    def _attendee(
-        settings: dict[str, Any], car: str, invitation: Invitation, message: Fetched
-    ) -> str:
-        """The address that was invited (so the organizer sees who accepted)."""
-        mine = (settings["cars"].get(car) or "").lower()
-        if mine and mine in invitation.attendees:
-            return mine
-        address = (settings.get("address") or "").lower()
-        local, _, domain = address.partition("@")
-        for candidate in invitation.attendees:
-            if candidate == address or (
-                candidate.endswith("@" + domain) and candidate.startswith(local + "+")
-            ):
-                return candidate
-        return mine or address
-
-    def _remember(self, entry: dict[str, Any]) -> None:
-        recent = [entry, *self._data.get("recent", [])][:RECENT]
-        self._data["recent"] = recent
+    def _remember(self, car: str, entry: dict[str, Any]) -> None:
+        data = self._data.setdefault(car, {})
+        data["recent"] = [entry, *data.get("recent", [])][:RECENT]

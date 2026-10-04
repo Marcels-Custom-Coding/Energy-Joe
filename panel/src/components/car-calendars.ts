@@ -1,13 +1,14 @@
 import { LitElement, css, html, nothing, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
-import { pickEntity, saveConfig } from "../config";
+import { pickEntity } from "../config";
 import { define } from "../define";
 import { entityName } from "../entities";
 import type { Translate } from "../i18n";
 import { shared } from "../styles/shared";
-import type { CarAccountConfig, CarAccountStatus, CarNeedConfig, HomeAssistant, MailboxConfig } from "../types";
+import type { CarAccountStatus, CarMailboxStatus, CarNeedConfig, HomeAssistant } from "../types";
 import "./calendar-flow";
-import { timeOf } from "./plan-text";
+import "./car-account";
+import "./car-mailbox";
 import { tip } from "./tip";
 
 interface Links {
@@ -16,19 +17,14 @@ interface Links {
   entities: Record<string, string | null>;
 }
 
-type Source = NonNullable<CarNeedConfig["source"]>;
-const KINDS: CarAccountConfig["kind"][] = ["outlook", "microsoft", "icloud", "infomaniak", "caldav"];
-const MICROSOFT = new Set(["outlook", "microsoft"]);
+export type CarSource = NonNullable<CarNeedConfig["source"]>;
 
-export const DEFAULT_ACCOUNT: CarAccountConfig = {
-  kind: "outlook",
-  address: "",
-  username: null,
-  url: null,
-  client_id: null,
-  tenant: "common",
-  accept: true,
-};
+/** The three ways appointments get to a car. */
+const WAYS: { source: CarSource; icon: string }[] = [
+  { source: "ha", icon: "mdi:calendar-check" },
+  { source: "mailbox", icon: "mdi:email-outline" },
+  { source: "account", icon: "mdi:calendar-sync" },
+];
 
 /** Ways to bring other calendars into Home Assistant (each starts its own setup). */
 const CONNECT: { key: string; url: string }[] = [
@@ -39,53 +35,103 @@ const CONNECT: { key: string; url: string }[] = [
 ];
 
 /**
- * The calendars of one car: Joe's own (with a link to subscribe on the phone),
- * and where its appointments come from – a calendar in Home Assistant,
- * invitations to Joe's mailbox, or the car's own account.
+ * Where a car's appointments come from, and in which calendar they end up:
+ * a finished calendar in Home Assistant, the car's mailbox without a calendar
+ * (Joe's calendar for the car) or its mailbox with a calendar.
  */
 export class JoeCarCalendars extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) t?: Translate;
   @property() actionId = "";
-  /** Saved already: only then do Joe's calendar and the account exist. */
-  @property({ type: Boolean }) saved = false;
+  /** How the car is saved (null: not charging by need yet). */
+  @property({ attribute: false }) savedSource: CarSource | null = null;
   @property({ attribute: false }) need?: CarNeedConfig;
-  /** Joe's mailbox: invitations to the car's address land in its calendar. */
-  @property({ attribute: false }) mailbox?: MailboxConfig;
+  @property({ attribute: false }) mailbox?: CarMailboxStatus;
   @property({ attribute: false }) account?: CarAccountStatus;
   @property() carName = "";
 
   @state() private links?: Links;
   @state() private copied = false;
   @state() private failed = false;
-  @state() private password = "";
-  @state() private result?: string;
-  @state() private busy = false;
-  @state() private ownApp = false;
+  @state() private sender = "";
 
   static styles = [
     shared,
     css`
       :host {
         display: grid;
-        gap: 12px;
+        gap: 14px;
+        container-type: inline-size;
       }
-      .own,
-      .part {
+      /* One below the other, or all three side by side – never two and one. */
+      .ways {
         display: grid;
         gap: 8px;
-        padding: 10px 12px;
+      }
+      @container (min-width: 640px) {
+        .ways {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+      .way {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        align-items: start;
+        gap: 4px 10px;
+        padding: 12px;
+        border-radius: 12px;
+        border: 2px solid var(--joe-line);
+        background: var(--joe-surface);
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+        transition:
+          border-color 120ms,
+          background 120ms,
+          transform 120ms;
+      }
+      .way:hover {
+        border-color: color-mix(in srgb, var(--joe-amber, #fea707) 55%, var(--joe-line));
+      }
+      .way:active {
+        transform: scale(0.98);
+      }
+      .way[aria-checked="true"] {
+        border-color: var(--joe-amber, #fea707);
+        background: color-mix(in srgb, var(--joe-amber, #fea707) 12%, var(--joe-surface));
+      }
+      .way ha-icon {
+        grid-row: span 2;
+        --mdc-icon-size: 24px;
+        margin-top: 1px;
+      }
+      .way b {
+        font-weight: 700;
+      }
+      .way small {
+        color: var(--joe-muted);
+        font-size: 12.5px;
+        line-height: 1.4;
+      }
+      .part,
+      .own {
+        display: grid;
+        gap: 8px;
+        padding: 12px;
         border-radius: 12px;
         background: var(--joe-surface-2);
       }
-      .own b,
-      .part b {
-        font-weight: 600;
+      .own {
+        border: 2px dashed color-mix(in srgb, var(--joe-amber, #fea707) 70%, transparent);
       }
       .head-row {
         display: flex;
         align-items: center;
         gap: 6px;
+      }
+      .head-row b {
+        font-weight: 700;
       }
       .link,
       .inline {
@@ -94,7 +140,6 @@ export class JoeCarCalendars extends LitElement {
         gap: 6px;
         flex-wrap: wrap;
       }
-      .link .input,
       .inline .input {
         flex: 1 1 200px;
         min-width: 0;
@@ -122,19 +167,6 @@ export class JoeCarCalendars extends LitElement {
         font-size: 13px;
         color: var(--joe-muted);
       }
-      .ok {
-        color: var(--joe-good);
-      }
-      .bad {
-        color: var(--joe-warn, var(--joe-crit));
-      }
-      .code {
-        margin: 0;
-        font-weight: 600;
-      }
-      .seg {
-        flex-wrap: wrap;
-      }
     `,
   ];
 
@@ -161,73 +193,129 @@ export class JoeCarCalendars extends LitElement {
       return nothing;
     }
     const source = this.need?.source ?? "ha";
-    const invite = source !== "ha";
     return html`<div data-tipped>
         <div class="head-row"><b>${t("calendar.source")}</b> ${tip(t, "calendar_source")}</div>
-        <div class="seg" role="group" aria-label=${t("calendar.source")}>
-          <button type="button" aria-pressed=${String(invite)} @click=${() => this.choose("invite")}>${t("calendar.way.invite")}</button>
-          <button type="button" aria-pressed=${String(!invite)} @click=${() => this.choose("calendar")}>${t("calendar.way.calendar")}</button>
-        </div>
-      </div>
-      ${invite ? this.renderInviteWay(t, source) : this.renderCalendarWay(t, hass)} ${this.renderOwn(t, hass)}
-      ${this.failed ? html`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon>${t("error.action")}</div>` : nothing}`;
-  }
-
-  /** Joe accepts invitations in the car's name: through his mailbox or the car's account. */
-  private renderInviteWay(t: Translate, source: Source): TemplateResult {
-    const address =
-      source === "mailbox" ? (this.mailbox?.cars[this.actionId] ?? "") : (this.need?.account?.address ?? "");
-    return html`<div class="part">
-        <p class="hint">${t("calendar.way.invite.hint")}</p>
-        <joe-calendar-flow .t=${t} variant="invite" address=${address}></joe-calendar-flow>
-      </div>
-      <div data-tipped>
-        <div class="head-row"><b>${t("calendar.mailbox")}</b> ${tip(t, "calendar_mailbox")}</div>
-        <div class="seg" role="group" aria-label=${t("calendar.mailbox")}>
-          ${(["mailbox", "account"] as Source[]).map(
-            (item) =>
-              html`<button type="button" aria-pressed=${String(source === item)} @click=${() => this.change({ source: item })}>
-                ${t(`calendar.mailbox.${item}` as "calendar.mailbox.mailbox")}
-              </button>`,
+        <div class="ways" role="radiogroup" aria-label=${t("calendar.source")}>
+          ${WAYS.map(
+            (way) => html`<button
+              type="button"
+              class="way"
+              role="radio"
+              aria-checked=${String(source === way.source)}
+              @click=${() => this.change({ source: way.source })}
+            >
+              <ha-icon icon=${way.icon}></ha-icon>
+              <b>${t(`calendar.way.${way.source}`)}</b>
+              <small>${t(`calendar.way.${way.source}.hint`)}</small>
+            </button>`,
           )}
         </div>
       </div>
-      ${source === "mailbox" ? this.renderInvite(t) : this.renderAccount(t)}`;
+      ${source === "mailbox"
+        ? this.renderMailbox(t, hass)
+        : source === "account"
+          ? this.renderAccount(t)
+          : this.renderCalendar(t, hass)}
+      ${this.failed ? html`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon>${t("error.action")}</div>` : nothing}`;
   }
 
-  /** A finished calendar of the car: invited and accepted elsewhere, Joe only reads it. */
-  private renderCalendarWay(t: Translate, hass: HomeAssistant): TemplateResult {
+  private saved(source: CarSource): boolean {
+    return this.savedSource === source;
+  }
+
+  // --- 1: a finished calendar in Home Assistant ---------------------------------
+
+  private renderCalendar(t: Translate, hass: HomeAssistant): TemplateResult {
+    const calendars = this.need?.calendars ?? [];
     return html`<div class="part">
-        <p class="hint">${t("calendar.way.calendar.hint")}</p>
         <joe-calendar-flow .t=${t} variant="calendar"></joe-calendar-flow>
       </div>
-      ${this.renderMore(t, hass)} ${this.renderConnect(t)}`;
+      <div data-tipped>
+        <div class="head-row"><b>${t("calendar.pick")}</b> ${tip(t, "calendar_more")}</div>
+        <div class="chips">
+          ${calendars.map(
+            (id) => html`<span class="chip">
+              ${entityName(hass, id)}
+              <button
+                type="button"
+                class="mini-btn quiet"
+                aria-label=${t("calendar.remove", { name: entityName(hass, id) })}
+                @click=${() => this.change({ calendars: calendars.filter((c) => c !== id) })}
+              >
+                <ha-icon icon="mdi:close"></ha-icon>
+              </button>
+            </span>`,
+          )}
+          <button type="button" class="mini-btn" @click=${() => this.pick()}>
+            <ha-icon icon="mdi:calendar-plus"></ha-icon>${t("calendar.add")}
+          </button>
+        </div>
+      </div>
+      <div data-tipped>
+        <p class="hint">${t("calendar.connect")}</p>
+        <div class="chips">
+          ${CONNECT.map(
+            (item) =>
+              html`<a class="mini-btn" href=${item.url} target="_blank" rel="noreferrer noopener">
+                <ha-icon icon="mdi:open-in-new"></ha-icon>${t(`calendar.connect.${item.key}` as "calendar.connect.google")}
+              </a>`,
+          )}
+          ${tip(t, "calendar_connect")}
+        </div>
+      </div>`;
   }
 
-  private choose(way: "invite" | "calendar"): void {
-    if (way === "calendar") {
-      this.change({ source: "ha" });
-      return;
+  private async pick(): Promise<void> {
+    const t = this.t!;
+    const picked = await pickEntity(this, {
+      heading: t("calendar.pick"),
+      tip: "calendar_more",
+      filter: "calendar",
+      selected: this.need?.calendars ?? [],
+      multiple: true,
+      // Joe's own calendars belong to cars with a mailbox.
+      exclude: Object.values(this.links?.entities ?? {}).filter((id): id is string => Boolean(id)),
+    });
+    if (picked) {
+      this.change({ calendars: picked.selected });
     }
-    const current = this.need?.source;
-    if (current === "mailbox" || current === "account") {
-      return;
-    }
-    // Joe's mailbox if it is set up, else the car's own account.
-    this.change({ source: this.mailbox?.enabled ? "mailbox" : "account" });
   }
 
-  private renderOwn(t: Translate, hass: HomeAssistant): TemplateResult {
-    const entity = this.links?.entities[this.actionId];
-    if (!this.saved || !entity) {
-      return html`<p class="hint">${t("calendar.own.after_save")}</p>`;
+  // --- 2: the car's mailbox without a calendar ---------------------------------
+
+  private renderMailbox(t: Translate, hass: HomeAssistant): TemplateResult {
+    const saved = this.saved("mailbox");
+    const entity = saved ? this.links?.entities[this.actionId] : null;
+    const calendar = entity ? entityName(hass, entity) : t("calendar.own.name", { car: this.carName });
+    return html`<div class="part">
+        <joe-calendar-flow .t=${t} variant="mailbox" address=${this.need?.mailbox?.address ?? ""} calendar=${calendar}></joe-calendar-flow>
+      </div>
+      <div class="head-row"><b>${t("calendar.mailbox")}</b></div>
+      <joe-car-mailbox
+        .hass=${hass}
+        .t=${t}
+        actionId=${this.actionId}
+        ?saved=${saved}
+        .need=${this.need}
+        .status=${this.mailbox}
+      ></joe-car-mailbox>
+      ${this.renderAllowed(t)} ${this.renderOwn(t, calendar, entity)}`;
+  }
+
+  /** Where the appointments land: Joe's calendar for the car, with a link for the phone. */
+  private renderOwn(t: Translate, calendar: string, entity: string | null | undefined): TemplateResult {
+    const head = html`<div class="head-row">
+      <ha-icon icon="mdi:calendar-import"></ha-icon><b>${t("calendar.own")}</b> ${tip(t, "calendar_own")}
+    </div>`;
+    if (!entity) {
+      return html`<div class="own" data-tipped>${head}<p class="hint">${t("calendar.own.after_save", { name: calendar })}</p></div>`;
     }
     const path = this.links?.links[this.actionId];
     const base = this.links?.external_url;
     const url = path && base ? `${base.replace(/\/$/, "")}${path}` : null;
     return html`<div class="own" data-tipped>
-      <div class="head-row"><b>${t("calendar.own")}</b> ${tip(t, "calendar_own")}</div>
-      <p class="hint">${t("calendar.own.hint", { name: entityName(hass, entity) })}</p>
+      ${head}
+      <p class="hint">${t("calendar.own.hint", { name: calendar })}</p>
       ${url
         ? html`<div class="link">
             <code>${url}</code>
@@ -243,290 +331,6 @@ export class JoeCarCalendars extends LitElement {
     </div>`;
   }
 
-  // --- 1: calendars in Home Assistant -----------------------------------------
-
-  private renderMore(t: Translate, hass: HomeAssistant): TemplateResult {
-    const calendars = this.need?.calendars ?? [];
-    return html`<div class="part" data-tipped>
-      <div class="chips">
-        ${calendars.map(
-          (id) => html`<span class="chip">
-            ${entityName(hass, id)}
-            <button
-              type="button"
-              class="mini-btn quiet"
-              aria-label=${t("calendar.remove", { name: entityName(hass, id) })}
-              @click=${() => this.change({ calendars: calendars.filter((c) => c !== id) })}
-            >
-              <ha-icon icon="mdi:close"></ha-icon>
-            </button>
-          </span>`,
-        )}
-        <button type="button" class="mini-btn" @click=${() => this.pick()}>
-          <ha-icon icon="mdi:calendar-plus"></ha-icon>${t("calendar.add")}
-        </button>
-        ${tip(t, "calendar_more")}
-      </div>
-    </div>`;
-  }
-
-  private renderConnect(t: Translate): TemplateResult {
-    return html`<div data-tipped>
-      <p class="hint">${t("calendar.connect")}</p>
-      <div class="chips">
-        ${CONNECT.map(
-          (item) =>
-            html`<a class="mini-btn" href=${item.url} target="_blank" rel="noreferrer noopener">
-              <ha-icon icon="mdi:open-in-new"></ha-icon>${t(`calendar.connect.${item.key}` as "calendar.connect.google")}
-            </a>`,
-        )}
-        ${tip(t, "calendar_connect")}
-      </div>
-    </div>`;
-  }
-
-  // --- 2: invitations to Joe's mailbox ----------------------------------------
-
-  /** The address to invite the car with (Joe's mailbox, e.g. "auto+kona@…"). */
-  private renderInvite(t: Translate): TemplateResult {
-    const mail = this.mailbox;
-    if (!mail?.enabled || !mail.address) {
-      return html`<div class="part"><p class="hint">${t("calendar.invite.no_mailbox")}</p></div>`;
-    }
-    const current = mail.cars[this.actionId] ?? "";
-    const [local, domain] = mail.address.split("@");
-    const slug = this.carName
-      .toLowerCase()
-      .normalize("NFKD")
-      .replace(/[^a-z0-9]+/g, "")
-      .slice(0, 20);
-    const suggestion = domain && slug ? `${local}+${slug}@${domain}` : mail.address;
-    return html`<div class="part" data-tipped>
-      <div class="head-row"><b>${t("calendar.invite")}</b> ${tip(t, "calendar_invite")}</div>
-      <p class="hint">${t("calendar.mailbox.mailbox.hint")}</p>
-      <div class="link">
-        <input
-          class="input"
-          type="email"
-          placeholder=${suggestion}
-          aria-label=${t("calendar.invite")}
-          .value=${current}
-          @change=${(ev: Event) => this.saveInvite((ev.target as HTMLInputElement).value.trim().toLowerCase())}
-        />
-        ${current
-          ? nothing
-          : html`<button type="button" class="mini-btn" @click=${() => this.saveInvite(suggestion)}>${t("calendar.invite.use")}</button>`}
-      </div>
-    </div>`;
-  }
-
-  private saveInvite(address: string): void {
-    saveConfig(this, { mailbox: { cars: { ...(this.mailbox?.cars ?? {}), [this.actionId]: address } } });
-  }
-
-  // --- 3: the car's own account ------------------------------------------------
-
-  private renderAccount(t: Translate): TemplateResult {
-    const account = { ...DEFAULT_ACCOUNT, ...(this.need?.account ?? {}) };
-    const microsoft = MICROSOFT.has(account.kind);
-    const status = this.account;
-    return html`<div class="part" data-tipped>
-      <div class="head-row"><b>${t("calendar.account")}</b> ${tip(t, "calendar_account")}</div>
-      <p class="hint">${t("calendar.mailbox.account.hint")}</p>
-      <div class="inline">
-        <select
-          class="input"
-          aria-label=${t("calendar.account.kind")}
-          @change=${(ev: Event) => this.setAccount({ kind: (ev.target as HTMLSelectElement).value as CarAccountConfig["kind"] })}
-        >
-          ${KINDS.map((kind) => html`<option value=${kind} ?selected=${kind === account.kind}>${t(`calendar.account.kind.${kind}`)}</option>`)}
-        </select>
-        <input
-          class="input"
-          type="email"
-          autocomplete="off"
-          placeholder=${t("calendar.account.address")}
-          aria-label=${t("calendar.account.address")}
-          .value=${account.address}
-          @change=${(ev: Event) => this.setAccount({ address: (ev.target as HTMLInputElement).value.trim().toLowerCase() })}
-        />
-      </div>
-      ${!this.saved
-        ? html`<p class="hint">${t("calendar.account.after_save")}</p>`
-        : microsoft
-          ? this.renderSignIn(t, account, status)
-          : this.renderPassword(t, account, status)}
-      <div class="inline">
-        <button
-          type="button"
-          class="switch"
-          role="switch"
-          aria-checked=${String(account.accept)}
-          aria-label=${t("calendar.account.accept")}
-          @click=${() => this.setAccount({ accept: !account.accept })}
-        ></button>
-        <span>${t("calendar.account.accept")}</span>
-        ${tip(t, "calendar_account_accept")}
-      </div>
-      ${this.saved ? this.renderStatus(t, status) : nothing}
-    </div>`;
-  }
-
-  private renderSignIn(t: Translate, account: CarAccountConfig, status?: CarAccountStatus): TemplateResult {
-    const oauth = status?.oauth;
-    const own = this.ownApp || Boolean(account.client_id) || account.kind === "microsoft" || oauth?.error === "no_client_id";
-    return html`${own
-        ? html`<div class="inline">
-            <input
-              class="input"
-              type="text"
-              autocomplete="off"
-              placeholder=${t("calendar.account.client_id")}
-              aria-label=${t("calendar.account.client_id")}
-              .value=${account.client_id ?? ""}
-              @change=${(ev: Event) => this.setAccount({ client_id: (ev.target as HTMLInputElement).value.trim() || null })}
-            />
-            ${account.kind === "microsoft"
-              ? html`<input
-                  class="input"
-                  type="text"
-                  placeholder="common"
-                  aria-label=${t("mail.tenant")}
-                  .value=${account.tenant}
-                  @change=${(ev: Event) => this.setAccount({ tenant: (ev.target as HTMLInputElement).value.trim() || "common" })}
-                />`
-              : nothing}
-            ${tip(t, "mail_microsoft")}
-          </div>`
-        : nothing}
-      <div class="inline">
-        <button type="button" class="mini-btn go" ?disabled=${this.busy} @click=${() => this.act("sign_in")}>
-          <ha-icon icon="mdi:microsoft"></ha-icon>${t(status?.has_secret ? "mail.sign_in.again" : "mail.sign_in")}
-        </button>
-        ${status?.has_secret ? html`<button type="button" class="mini-btn quiet" @click=${() => this.act("sign_out")}>${t("mail.sign_out")}</button>` : nothing}
-        ${!own && account.kind === "outlook"
-          ? html`<button type="button" class="mini-btn quiet" @click=${() => (this.ownApp = true)}>${t("calendar.account.own_app")}</button>`
-          : nothing}
-        ${tip(t, "mail_sign_in")}
-      </div>
-      ${oauth?.state === "waiting"
-        ? html`<p class="code">${t("mail.sign_in.code", { code: oauth.user_code ?? "" })}
-            <a href=${oauth.uri ?? "https://microsoft.com/devicelogin"} target="_blank" rel="noreferrer noopener">${oauth.uri}</a></p>`
-        : oauth?.state === "error"
-          ? html`<p class="bad">${t("mail.sign_in.failed", { error: oauth.error ?? "" })}</p>`
-          : status?.has_secret
-            ? html`<p class="hint ok">${t("mail.signed_in")}</p>`
-            : nothing}`;
-  }
-
-  private renderPassword(t: Translate, account: CarAccountConfig, status?: CarAccountStatus): TemplateResult {
-    return html`${account.kind === "caldav"
-        ? html`<div class="inline">
-            <input
-              class="input"
-              type="url"
-              placeholder="https://caldav.example.com/"
-              aria-label=${t("calendar.account.url")}
-              .value=${account.url ?? ""}
-              @change=${(ev: Event) => this.setAccount({ url: (ev.target as HTMLInputElement).value.trim() || null })}
-            />
-            <input
-              class="input"
-              type="text"
-              placeholder=${t("mail.username")}
-              aria-label=${t("mail.username")}
-              .value=${account.username ?? ""}
-              @change=${(ev: Event) => this.setAccount({ username: (ev.target as HTMLInputElement).value.trim() || null })}
-            />
-          </div>`
-        : nothing}
-      <form
-        class="inline"
-        @submit=${(ev: Event) => {
-          ev.preventDefault();
-          void this.act("password");
-        }}
-      >
-        <input
-          class="input"
-          type="password"
-          autocomplete="new-password"
-          placeholder=${t("mail.password")}
-          aria-label=${t("mail.password")}
-          .value=${this.password}
-          @input=${(ev: Event) => (this.password = (ev.target as HTMLInputElement).value)}
-        />
-        <button type="submit" class="mini-btn go" ?disabled=${!this.password || this.busy}>${t("common.save")}</button>
-        ${tip(t, "calendar_account_password")}
-      </form>
-      ${status?.has_secret ? html`<p class="hint ok">${t("mail.password.saved")}</p>` : nothing}`;
-  }
-
-  private renderStatus(t: Translate, status?: CarAccountStatus): TemplateResult {
-    const text =
-      status?.state === "error"
-        ? t("mail.state.error", { error: t.optional(`calendar.account.error.${status.error}`) ?? String(status.error) })
-        : status?.checked
-          ? t("mail.state.ok", { time: timeOf(status.checked) })
-          : "";
-    return html`<div class="inline">
-      <button type="button" class="mini-btn" ?disabled=${this.busy || !status?.has_secret} @click=${() => this.act("test")}>
-        <ha-icon icon="mdi:calendar-check-outline"></ha-icon>${t("calendar.account.test")}
-      </button>
-      <span class=${status?.state === "error" ? "bad" : "hint"}>${text}</span>
-      ${this.result
-        ? html`<span class=${this.result === "ok" ? "ok" : "bad"}>${t.optional(`calendar.account.result.${this.result}`) ?? this.result}</span>`
-        : nothing}
-    </div>`;
-  }
-
-  private async act(what: "password" | "sign_in" | "sign_out" | "test"): Promise<void> {
-    this.busy = true;
-    this.result = undefined;
-    try {
-      const answer = await this.hass?.callWS<{ error?: string | null } | null>({
-        type: "energy_joe/account",
-        car: this.actionId,
-        do: what,
-        ...(what === "password" ? { password: this.password } : {}),
-      });
-      if (what === "password") {
-        this.password = "";
-      }
-      if (what === "test") {
-        this.result = answer?.error ? answer.error : "ok";
-      }
-    } catch (err) {
-      this.result = (err as { code?: string })?.code ?? "failed";
-    } finally {
-      this.busy = false;
-    }
-  }
-
-  private setAccount(change: Partial<CarAccountConfig>): void {
-    this.change({ account: { ...DEFAULT_ACCOUNT, ...(this.need?.account ?? {}), ...change } });
-  }
-
-  private change(change: Partial<CarNeedConfig>): void {
-    this.dispatchEvent(new CustomEvent("joe-need", { detail: change, bubbles: true, composed: true }));
-  }
-
-  private async pick(): Promise<void> {
-    const t = this.t!;
-    const own = this.links?.entities[this.actionId];
-    const picked = await pickEntity(this, {
-      heading: t("calendar.pick"),
-      tip: "calendar_more",
-      filter: "calendar",
-      selected: this.need?.calendars ?? [],
-      multiple: true,
-      exclude: own ? [own] : [],
-    });
-    if (picked) {
-      this.change({ calendars: picked.selected.filter((id) => id !== own) });
-    }
-  }
-
   private async copy(url: string): Promise<void> {
     try {
       await navigator.clipboard.writeText(url);
@@ -535,6 +339,84 @@ export class JoeCarCalendars extends LitElement {
     } catch {
       this.failed = true;
     }
+  }
+
+  // --- 3: the car's mailbox with a calendar ------------------------------------
+
+  private renderAccount(t: Translate): TemplateResult {
+    return html`<div class="part">
+        <joe-calendar-flow .t=${t} variant="account" address=${this.need?.account?.address ?? ""}></joe-calendar-flow>
+      </div>
+      <div class="head-row"><b>${t("calendar.account")}</b></div>
+      <joe-car-account
+        .hass=${this.hass}
+        .t=${t}
+        actionId=${this.actionId}
+        ?saved=${this.saved("account")}
+        .need=${this.need}
+        .status=${this.account}
+      ></joe-car-account>
+      ${this.renderAllowed(t)}`;
+  }
+
+  // --- who may invite the car (2 and 3) ----------------------------------------
+
+  private renderAllowed(t: Translate): TemplateResult {
+    const allowed = this.need?.allowed ?? [];
+    return html`<div class="part" data-tipped>
+      <div class="head-row"><b>${t("mail.allowed")}</b> ${tip(t, "mail_allowed")}</div>
+      <p class="hint">${t("mail.allowed.hint")}</p>
+      ${allowed.length
+        ? html`<div class="chips">
+            ${allowed.map(
+              (rule) => html`<span class="chip">
+                ${rule}
+                <button
+                  type="button"
+                  class="mini-btn quiet"
+                  aria-label=${t("mail.allowed.remove", { rule })}
+                  @click=${() => this.change({ allowed: allowed.filter((r) => r !== rule) })}
+                >
+                  <ha-icon icon="mdi:close"></ha-icon>
+                </button>
+              </span>`,
+            )}
+          </div>`
+        : html`<div class="note warn"><ha-icon icon="mdi:account-alert-outline"></ha-icon><span>${t("mail.allowed.none")}</span></div>`}
+      <form
+        class="inline"
+        @submit=${(ev: Event) => {
+          ev.preventDefault();
+          this.allow(this.sender);
+        }}
+      >
+        <input
+          class="input"
+          type="text"
+          placeholder="name@example.org, @firma.de"
+          aria-label=${t("mail.allowed.add")}
+          .value=${this.sender}
+          @input=${(ev: Event) => (this.sender = (ev.target as HTMLInputElement).value)}
+        />
+        <button type="submit" class="mini-btn" ?disabled=${!this.sender.trim()}>${t("mail.allowed.add")}</button>
+      </form>
+    </div>`;
+  }
+
+  private allow(text: string): void {
+    const allowed = this.need?.allowed ?? [];
+    const added = text
+      .split(/[\s,;]+/)
+      .map((rule) => rule.trim().toLowerCase())
+      .filter((rule) => rule && !allowed.includes(rule));
+    if (added.length) {
+      this.change({ allowed: [...allowed, ...new Set(added)] });
+    }
+    this.sender = "";
+  }
+
+  private change(change: Partial<CarNeedConfig>): void {
+    this.dispatchEvent(new CustomEvent("joe-need", { detail: change, bubbles: true, composed: true }));
   }
 }
 

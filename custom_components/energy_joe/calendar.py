@@ -1,4 +1,10 @@
-"""A calendar per car charged by need: its trips, editable in Home Assistant."""
+"""Joe's calendar for each car whose mailbox has no calendar of its own.
+
+Invitations to the car's address land here; appointments can also be added
+by hand in Home Assistant. A car that reads a finished calendar or its
+account's calendar needs none: its entity goes away (the appointments stay
+stored in case the car comes back to its mailbox).
+"""
 
 from __future__ import annotations
 
@@ -18,21 +24,17 @@ from homeassistant.components.calendar import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
 from .entity import JoeEntity
-from .plan.car_calendar import as_text, parse_when
+from .plan.car_calendar import as_text, mailbox_cars, parse_when
 from .runtime import DATA_RUNTIME, JoeRuntime
 
 
-def car_actions(config: dict[str, Any]) -> list[dict[str, Any]]:
-    """Night actions that charge a car by need: each has a calendar."""
-    return [
-        a
-        for a in config["actions"]
-        if a["kind"] == "switch" and (a.get("need") or {}).get("enabled")
-    ]
+def unique_id(entry_id: str, car: str) -> str:
+    return f"{entry_id}_calendar_{car}"
 
 
 async def async_setup_entry(
@@ -43,17 +45,33 @@ async def async_setup_entry(
     runtime = hass.data[DATA_RUNTIME]
     await runtime.calendars.async_load()
     known: set[str] = set()
+    last: list[set[str]] = []
 
     @callback
-    def add_cars(_: Any = None) -> None:
-        """A car switched to charging by need gets its calendar right away."""
-        new = [a for a in car_actions(runtime.config) if a["id"] not in known]
-        known.update(a["id"] for a in new)
+    def sync_cars(_: Any = None) -> None:
+        """A car switched to its own mailbox gets Joe's calendar right away."""
+        wanted = {a["id"] for a in mailbox_cars(runtime.config)}
+        if last and last[0] == wanted:
+            return
+        last[:] = [wanted]
+        new = wanted - known
+        known.update(new)
         if new:
-            async_add_entities([JoeCarCalendar(runtime, entry, a["id"]) for a in new])
+            async_add_entities(
+                [JoeCarCalendar(runtime, entry, car) for car in sorted(new)]
+            )
+        registry = er.async_get(hass)
+        prefix = unique_id(entry.entry_id, "")
+        for item in er.async_entries_for_config_entry(registry, entry.entry_id):
+            if item.domain != "calendar" or not item.unique_id.startswith(prefix):
+                continue
+            car = item.unique_id.removeprefix(prefix)
+            if car not in wanted:
+                known.discard(car)
+                registry.async_remove(item.entity_id)
 
-    add_cars()
-    entry.async_on_unload(runtime.async_subscribe(add_cars))
+    sync_cars()
+    entry.async_on_unload(runtime.async_subscribe(sync_cars))
 
 
 def _event(entry: dict[str, Any]) -> CalendarEvent:
@@ -87,7 +105,7 @@ def _fields(event: dict[str, Any]) -> dict[str, Any]:
 
 
 class JoeCarCalendar(JoeEntity, CalendarEntity):
-    """The trips of one car: by hand, or from invitations to the car's address."""
+    """The trips of one car: from invitations to the car's address, or by hand."""
 
     _attr_supported_features = (
         CalendarEntityFeature.CREATE_EVENT
@@ -98,12 +116,12 @@ class JoeCarCalendar(JoeEntity, CalendarEntity):
     def __init__(self, runtime: JoeRuntime, entry: ConfigEntry, action_id: str) -> None:
         super().__init__(runtime, entry, "car_calendar")
         self.action_id = action_id
-        self._attr_unique_id = f"{entry.entry_id}_calendar_{action_id}"
+        self._attr_unique_id = unique_id(entry.entry_id, action_id)
         self._attr_translation_placeholders = {"car": self._name()}
 
     def _action(self) -> dict[str, Any] | None:
         return next(
-            (a for a in car_actions(self.runtime.config) if a["id"] == self.action_id),
+            (a for a in mailbox_cars(self.runtime.config) if a["id"] == self.action_id),
             None,
         )
 
@@ -111,9 +129,27 @@ class JoeCarCalendar(JoeEntity, CalendarEntity):
         action = self._action()
         return action["name"] if action else self.action_id
 
+    _removed = False
+
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
-        self.async_on_remove(self.runtime.calendars.listen(self.async_write_ha_state))
+        self._removed = False
+        self.async_on_remove(self.runtime.calendars.listen(self._on_change))
+
+    async def async_will_remove_from_hass(self) -> None:
+        self._removed = True
+        await super().async_will_remove_from_hass()
+
+    @callback
+    def _on_state(self, state: dict[str, Any]) -> None:
+        self._on_change()
+
+    @callback
+    def _on_change(self) -> None:
+        # Joe calls his listeners from a copied list: one may still come in
+        # right after the car switched away, and would leave a timer behind.
+        if not self._removed:
+            self.async_write_ha_state()
 
     @property
     def available(self) -> bool:

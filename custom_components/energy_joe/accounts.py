@@ -1,11 +1,11 @@
-"""A car's own account: its mailbox and calendar in one place.
+"""A car's mailbox with a calendar: Microsoft, iCloud, Infomaniak, CalDAV.
 
-Outlook and iCloud put invitations into the account's calendar by
-themselves, so Joe only reads that calendar (and accepts invitations from
-allowed senders there): Microsoft accounts through Microsoft Graph with a
-sign-in, iCloud, Infomaniak and other CalDAV servers with an app password.
-Passwords and tokens live in their own store per car, never in the
-configuration.
+These providers put invitations into the account's calendar by themselves,
+so Joe only reads that calendar and accepts invitations from allowed senders
+there: Microsoft accounts through Microsoft Graph with a sign-in, iCloud,
+Infomaniak and other CalDAV servers with an app password. Invitations from
+anyone else that nobody answered do not count as trips. Passwords and tokens
+live in their own store per car, never in the configuration.
 """
 
 from __future__ import annotations
@@ -372,9 +372,12 @@ class CarAccounts:
                 task.cancel()
         self._tasks = {}
 
-    def _account(self, car: str) -> dict[str, Any] | None:
+    def _need(self, car: str) -> dict[str, Any]:
         action = next((a for a in self._config()["actions"] if a["id"] == car), None)
-        need = (action or {}).get("need") or {}
+        return (action or {}).get("need") or {}
+
+    def _account(self, car: str) -> dict[str, Any] | None:
+        need = self._need(car)
         return need.get("account") if need.get("source") == "account" else None
 
     def _has_secret(self, car: str) -> bool:
@@ -549,6 +552,13 @@ class CarAccounts:
             _LOGGER.debug("Account of %s not readable: %s", car, err)
             self._set(car, state="error", error=err.code)
             return []
+        # Unanswered invitations from strangers are no trips of the car.
+        rules = self._need(car).get("allowed") or []
+        events = [
+            e
+            for e in events
+            if not e.get("pending") or allowed(rules, e.get("organizer"))
+        ]
         self._cache[key] = (dt_util.utcnow(), events)
         self._set(
             car,
@@ -563,11 +573,10 @@ class CarAccounts:
     async def _async_accept(
         self, car: str, account: dict[str, Any], events: list[dict[str, Any]]
     ) -> None:
-        """Accept invitations from allowed senders (the same list as the mailbox)."""
-        rules = self._config()["mailbox"]["allowed"]
+        """Accept the invitations from allowed senders."""
         session = async_get_clientsession(self._hass)
         for event in events:
-            if not event.get("pending") or not allowed(rules, event.get("organizer")):
+            if not event.get("pending"):
                 continue
             try:
                 if account["kind"] in MICROSOFT:

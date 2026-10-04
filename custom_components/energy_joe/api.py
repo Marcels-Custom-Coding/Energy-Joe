@@ -18,7 +18,7 @@ from homeassistant.util import dt as dt_util
 
 from . import model
 from .accounts import AccountError
-from .calendar import car_actions
+from .calendar import unique_id as calendar_unique_id
 from .calendar_feed import feed_path
 from .const import DOMAIN
 from .control.profiles import PROFILES
@@ -33,8 +33,8 @@ from .learn.learning import (
     solar_ratios,
 )
 from .learn.models import MIN_DAYS, SOURCE_DAYS, daily_rows
-from .mail.mailbox import MailError
 from .observe.records import day_view, summarize
+from .plan.car_calendar import mailbox_cars
 from .plan.inputs import async_consumption
 from .runtime import (
     AVAILABLE_MODES,
@@ -74,7 +74,6 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_mailbox_secret)
     websocket_api.async_register_command(hass, ws_mailbox_test)
     websocket_api.async_register_command(hass, ws_mailbox_check)
-    websocket_api.async_register_command(hass, ws_mailbox_sign_in)
     websocket_api.async_register_command(hass, ws_account)
 
 
@@ -694,21 +693,19 @@ async def ws_calendar_links(
         external = None
     registry = er.async_get(hass)
     entries = hass.config_entries.async_entries(DOMAIN)
+    cars = [a["id"] for a in mailbox_cars(runtime.config)]
     entities = {}
-    for action in car_actions(runtime.config):
+    for car in cars:
         if entries:
-            entities[action["id"]] = registry.async_get_entity_id(
-                "calendar", DOMAIN, f"{entries[0].entry_id}_calendar_{action['id']}"
+            entities[car] = registry.async_get_entity_id(
+                "calendar", DOMAIN, calendar_unique_id(entries[0].entry_id, car)
             )
     connection.send_result(
         msg["id"],
         {
             "external_url": external,
-            "links": {
-                action["id"]: feed_path(token or "", action["id"])
-                for action in car_actions(runtime.config)
-            },
-            # Joe's own calendar entity per car.
+            "links": {car: feed_path(token or "", car) for car in cars},
+            # Joe's calendar entity of each car whose mailbox has none.
             "entities": entities,
         },
     )
@@ -717,7 +714,8 @@ async def ws_calendar_links(
 @websocket_api.websocket_command(
     {
         vol.Required("type"): f"{DOMAIN}/mailbox/secret",
-        # The (app) password; empty removes it. It is never sent back.
+        vol.Required("car"): str,
+        # The password; empty removes it. It is never sent back.
         vol.Required("password"): vol.Any(None, vol.All(str, vol.Length(max=500))),
     }
 )
@@ -728,14 +726,16 @@ async def ws_mailbox_secret(
     connection: websocket_api.ActiveConnection,
     msg: dict[str, Any],
 ) -> None:
-    """Store the mailbox's password where the configuration never sees it."""
+    """Store a car mailbox's password where the configuration never sees it."""
     if (runtime := _runtime(hass, connection, msg)) is None:
         return
-    await runtime.inbox.async_set_secret(password=msg["password"])
+    await runtime.inbox.async_set_password(msg["car"], msg["password"])
     connection.send_result(msg["id"])
 
 
-@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/mailbox/test"})
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/mailbox/test", vol.Required("car"): str}
+)
 @websocket_api.require_admin
 @websocket_api.async_response
 async def ws_mailbox_test(
@@ -743,13 +743,17 @@ async def ws_mailbox_test(
     connection: websocket_api.ActiveConnection,
     msg: dict[str, Any],
 ) -> None:
-    """Log in to the mailbox once: {"error": None} or the reason it failed."""
+    """Log in to a car's mailbox once: {"error": None} or the reason it failed."""
     if (runtime := _runtime(hass, connection, msg)) is None:
         return
-    connection.send_result(msg["id"], {"error": await runtime.inbox.async_test()})
+    connection.send_result(
+        msg["id"], {"error": await runtime.inbox.async_test(msg["car"])}
+    )
 
 
-@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/mailbox/check"})
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/mailbox/check", vol.Required("car"): str}
+)
 @websocket_api.require_admin
 @websocket_api.async_response
 async def ws_mailbox_check(
@@ -757,40 +761,11 @@ async def ws_mailbox_check(
     connection: websocket_api.ActiveConnection,
     msg: dict[str, Any],
 ) -> None:
-    """Look for invitations now."""
+    """Look for invitations in a car's mailbox now."""
     if (runtime := _runtime(hass, connection, msg)) is None:
         return
-    await runtime.inbox.async_check()
-    connection.send_result(msg["id"], runtime.inbox.status)
-
-
-@websocket_api.websocket_command(
-    {
-        vol.Required("type"): f"{DOMAIN}/mailbox/sign_in",
-        # False: forget the sign-in.
-        vol.Optional("start", default=True): bool,
-    }
-)
-@websocket_api.require_admin
-@websocket_api.async_response
-async def ws_mailbox_sign_in(
-    hass: HomeAssistant,
-    connection: websocket_api.ActiveConnection,
-    msg: dict[str, Any],
-) -> None:
-    """Sign in with Microsoft: a code and a link; Joe waits for the sign-in."""
-    if (runtime := _runtime(hass, connection, msg)) is None:
-        return
-    if not msg["start"]:
-        await runtime.inbox.async_sign_out()
-        connection.send_result(msg["id"])
-        return
-    try:
-        info = await runtime.inbox.async_oauth_start()
-    except MailError as err:
-        connection.send_error(msg["id"], err.code, err.detail or err.code)
-        return
-    connection.send_result(msg["id"], info)
+    await runtime.inbox.async_check(msg["car"])
+    connection.send_result(msg["id"], runtime.inbox.status.get(msg["car"]))
 
 
 @websocket_api.websocket_command(

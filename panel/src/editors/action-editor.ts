@@ -9,7 +9,7 @@ import { define } from "../define";
 import { entityName, formatState, type FilterName } from "../entities";
 import type { TipName, Translate } from "../i18n";
 import { shared } from "../styles/shared";
-import type { ActionCondition, ActionConfig, CarAccountStatus, CarNeedConfig, ConditionOp, Discovery, HomeAssistant, JoeConfig } from "../types";
+import type { ActionCondition, ActionConfig, CarAccountStatus, CarMailboxStatus, CarNeedConfig, ConditionOp, Discovery, HomeAssistant, JoeConfig } from "../types";
 
 export type ActionTemplate = "ev" | "hot_water" | "custom";
 
@@ -31,6 +31,7 @@ export const DEFAULT_NEED: CarNeedConfig = {
   round_trip: true,
   calendars: [],
   source: "ha",
+  allowed: [],
 };
 
 // The same limits as EV_NEED in model.py (a battery size above 0).
@@ -83,7 +84,9 @@ export function newAction(template: ActionTemplate, t: Translate): ActionConfig 
 /** One night action in a sheet: what Joe switches, when, and how he puts it back. */
 export class JoeActionEditor extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
-  /** Each car's own account (sign-in and last read). */
+  /** Each car's mailbox without a calendar (last look, invitations). */
+  @property({ attribute: false }) mailboxes?: Record<string, CarMailboxStatus>;
+  /** Each car's mailbox with a calendar (sign-in and last read). */
   @property({ attribute: false }) accounts?: Record<string, CarAccountStatus>;
   @property({ attribute: false }) t?: Translate;
   @property({ attribute: false }) config?: JoeConfig;
@@ -530,9 +533,9 @@ export class JoeActionEditor extends LitElement {
               .hass=${this.hass}
               .t=${t}
               actionId=${draft.id}
-              ?saved=${Boolean(this.existing?.need?.enabled)}
+              .savedSource=${this.existing?.need?.enabled ? (this.existing.need.source ?? "ha") : null}
               .need=${need}
-              .mailbox=${this.config?.mailbox}
+              .mailbox=${this.mailboxes?.[draft.id]}
               .account=${this.accounts?.[draft.id]}
               carName=${draft.name}
               @joe-need=${(ev: CustomEvent<Partial<CarNeedConfig>>) => this.setNeed(ev.detail)}
