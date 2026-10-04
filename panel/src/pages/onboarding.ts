@@ -171,7 +171,9 @@ export class JoeOnboarding extends LitElement {
             <div class="calm"><span class="pill-sim">${t("mode.simulation")}</span>${t("onb.calm")}</div>
             <details data-notip>
               <summary>${t("onb.welcome.more")}</summary>
-              <p>${t("onb.welcome.more.text")}</p>
+              ${t("onb.welcome.more.text")
+                .split("\n")
+                .map((part) => html`<p>${part}</p>`)}
             </details>
             <div class="actions" data-tipped>
               <button type="button" class="btn btn-primary" @click=${() => this.go("scan")}>

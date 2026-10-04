@@ -618,7 +618,7 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"onb.calm": "Erstmal schau ich nur zu. Ich steuere nichts, bis du es sagst.",
 	"onb.welcome.go": "Schau dich um",
 	"onb.welcome.more": "Was macht Joe genau?",
-	"onb.welcome.more.text": "Jede Nacht rechne ich aus, wie viel deine Speicher aus dem günstigen Netz brauchen, damit sie bis zur Sonne reichen – nicht mehr und nicht weniger. Tagsüber schaue ich, wie gut ich lag, und lerne daraus.",
+	"onb.welcome.more.text": "Jede Nacht rechne ich aus, wie viel deine Speicher aus dem günstigen Netz brauchen, damit sie bis zur Sonne reichen – nicht mehr und nicht weniger. Mit einem Börsenpreis-Tarif lade ich in den günstigsten Viertelstunden.\nReicht die Sonne morgen nicht, schicke ich auch das E-Auto und das Warmwasser in die günstige Zeit – das Auto zum Beispiel über evcc, das Warmwasser bis zu einer Temperatur, die für den Tag reicht. Dabei achte ich auf dein Netzlimit.\nTagsüber schaue ich, wie gut ich lag, und lerne dazu: wie viel ihr bei Kälte braucht, wer laut Kalender zu Hause ist und wie gut die Prognose trifft.",
 	"onb.scan.title": "Ich schau |mich um",
 	"onb.scan.lead": "Gleich zeige ich dir, was ich in deinem Home Assistant gefunden habe – Speicher, Solaranlage, Tarif und mehr. Du bestätigst nur noch.",
 	"onb.scan.energy": "Dein Energie-Dashboard habe ich schon entdeckt:",
@@ -1858,7 +1858,7 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"onb.calm": "For now I just watch. I won't switch anything until you say so.",
 	"onb.welcome.go": "Look around",
 	"onb.welcome.more": "What does Joe do?",
-	"onb.welcome.more.text": "Every night I work out how much your batteries need from the cheap grid to last until the sun takes over – no more, no less. During the day I check how well I did and learn from it.",
+	"onb.welcome.more.text": "Every night I work out how much your batteries need from the cheap grid to last until the sun takes over – no more, no less. With a market-price tariff I charge in the cheapest quarter hours.\nIf the sun won't be enough tomorrow, I also move the electric car and the hot water into the cheap hours – the car for example through evcc, the hot water up to a temperature that lasts the day. I keep an eye on your grid limit.\nDuring the day I check how well I did and learn: how much more you need when it's cold, who is at home according to the calendar and how well the forecast fits.",
 	"onb.scan.title": "Let me |look around",
 	"onb.scan.lead": "In a moment I'll show you what I found in your Home Assistant – batteries, solar, tariff and more. You only confirm.",
 	"onb.scan.energy": "I already spotted your Energy dashboard:",
@@ -10371,7 +10371,7 @@ var qn = {
             <div class="calm"><span class="pill-sim">${e("mode.simulation")}</span>${e("onb.calm")}</div>
             <details data-notip>
               <summary>${e("onb.welcome.more")}</summary>
-              <p>${e("onb.welcome.more.text")}</p>
+              ${e("onb.welcome.more.text").split("\n").map((e) => g`<p>${e}</p>`)}
             </details>
             <div class="actions" data-tipped>
               <button type="button" class="btn btn-primary" @click=${() => this.go("scan")}>

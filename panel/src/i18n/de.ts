@@ -39,7 +39,7 @@ export const de = {
   "onb.welcome.go": "Schau dich um",
   "onb.welcome.more": "Was macht Joe genau?",
   "onb.welcome.more.text":
-    "Jede Nacht rechne ich aus, wie viel deine Speicher aus dem günstigen Netz brauchen, damit sie bis zur Sonne reichen – nicht mehr und nicht weniger. Tagsüber schaue ich, wie gut ich lag, und lerne daraus.",
+    "Jede Nacht rechne ich aus, wie viel deine Speicher aus dem günstigen Netz brauchen, damit sie bis zur Sonne reichen – nicht mehr und nicht weniger. Mit einem Börsenpreis-Tarif lade ich in den günstigsten Viertelstunden.\nReicht die Sonne morgen nicht, schicke ich auch das E-Auto und das Warmwasser in die günstige Zeit – das Auto zum Beispiel über evcc, das Warmwasser bis zu einer Temperatur, die für den Tag reicht. Dabei achte ich auf dein Netzlimit.\nTagsüber schaue ich, wie gut ich lag, und lerne dazu: wie viel ihr bei Kälte braucht, wer laut Kalender zu Hause ist und wie gut die Prognose trifft.",
   "onb.scan.title": "Ich schau |mich um",
   "onb.scan.lead":
     "Gleich zeige ich dir, was ich in deinem Home Assistant gefunden habe – Speicher, Solaranlage, Tarif und mehr. Du bestätigst nur noch.",

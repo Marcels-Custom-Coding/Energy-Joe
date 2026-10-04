@@ -38,7 +38,7 @@ export const en: Record<Key, string> = {
   "onb.welcome.go": "Look around",
   "onb.welcome.more": "What does Joe do?",
   "onb.welcome.more.text":
-    "Every night I work out how much your batteries need from the cheap grid to last until the sun takes over – no more, no less. During the day I check how well I did and learn from it.",
+    "Every night I work out how much your batteries need from the cheap grid to last until the sun takes over – no more, no less. With a market-price tariff I charge in the cheapest quarter hours.\nIf the sun won't be enough tomorrow, I also move the electric car and the hot water into the cheap hours – the car for example through evcc, the hot water up to a temperature that lasts the day. I keep an eye on your grid limit.\nDuring the day I check how well I did and learn: how much more you need when it's cold, who is at home according to the calendar and how well the forecast fits.",
   "onb.scan.title": "Let me |look around",
   "onb.scan.lead":
     "In a moment I'll show you what I found in your Home Assistant – batteries, solar, tariff and more. You only confirm.",
