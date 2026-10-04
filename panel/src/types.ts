@@ -343,7 +343,8 @@ export interface CarNeedConfig {
   reserve_km: number;
   consumption: number | null;
   daily_km: number | null;
-  persons: string[];
+  /** Whose calendars count; null: everyone with a calendar, []: nobody. */
+  persons: string[] | null;
   round_trip: boolean;
 }
 
@@ -383,6 +384,8 @@ export interface CarNeed {
   target_unit?: "%" | "km";
   missing_kwh: number | null;
   wall_kwh: number | null;
+  /** False when tomorrow's driving needs more than a full battery. */
+  fits?: boolean;
   departure: string | null;
   unknown_trips: number;
 }

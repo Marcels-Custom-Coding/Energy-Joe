@@ -343,6 +343,8 @@ class JoeLearner:
             for day, data in days.items()
             if data.get("workday") is not None
         }
+        previous = learned.get("car_models") or {}
+        first = (today - timedelta(days=span)).isoformat()
         for action in config["actions"]:
             need = action.get("need") or {}
             odometer_id = need.get("odometer_entity")
@@ -364,9 +366,28 @@ class JoeLearner:
             capacity = need.get("capacity_kwh") or energy_kwh(
                 self._hass.states.get(need.get("capacity_entity") or "")
             )
-            found = car_model(car_days(odometer, soc, capacity), temps, workdays)
-            if found:
-                result[action["id"]] = found
+            # The recorder keeps only about ten days of states, so each finished
+            # day goes into Joe's own day records and learning uses those. The
+            # first day the recorder returns may start mid-day: it is left out.
+            key = action["id"]
+            for entry in car_days(odometer, soc, capacity)[1:]:
+                if entry["date"] < today.isoformat():
+                    await self._history.async_update_day(
+                        entry["date"], car={key: entry}
+                    )
+                    days.setdefault(entry["date"], {}).setdefault("car", {})[key] = (
+                        entry
+                    )
+            stored = [
+                data["car"][key]
+                for day, data in sorted(days.items())
+                if day >= first and key in (data.get("car") or {})
+            ]
+            found = car_model(stored, temps, workdays) or {}
+            # Too few days for a value keep what Joe learned before (per value).
+            merged = {**(previous.get(key) or {}), **found}
+            if merged:
+                result[key] = merged
         return result
 
     def _questions(

@@ -121,7 +121,12 @@ def plan_actions(
         else:
             reasons.append("manual_only")
         if need is not None and not need.get("known"):
-            reasons.append("need_unknown")
+            # The level is known but not the battery size: say what is missing.
+            reasons.append(
+                "need_capacity"
+                if need.get("soc") is not None and not need.get("capacity_kwh")
+                else "need_unknown"
+            )
         end = window_end - timedelta(minutes=action.get("lead_min") or 0)
         start = window_start
         entry: dict[str, Any] = {

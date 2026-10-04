@@ -1050,7 +1050,7 @@ export const de = {
   "action.need.pick.consumption": "Welcher Sensor zeigt den Durchschnittsverbrauch?",
   "settings.routing": "Entfernungen zu Terminen",
   "settings.routing.intro":
-    "Für das Laden nach Bedarf rechne ich aus, wie weit die Orte eurer Termine weg sind. Dafür schicke ich nur den Ort eines Termins an den Dienst, den du hier wählst – nie den Titel.",
+    "Für das Laden nach Bedarf rechne ich aus, wie weit die Orte eurer Termine weg sind. Dafür schicke ich den Ort eines Termins und euren Standort aus Home Assistant als Start der Strecke an den Dienst, den du hier wählst – nie Titel oder Beschreibung.",
   "settings.routing.service": "Dienst",
   "settings.routing.service.hint": "Einmal je Ort, danach merke ich mir die Strecke.",
   "settings.routing.none": "Nicht berechnen",
@@ -1063,6 +1063,11 @@ export const de = {
   "settings.routing.router_url.hint": "OSRM-Dienst für die Strecke mit dem Auto.",
   "need.unknown":
     "Ladestand und Reichweite des Autos kenne ich nicht – ich entscheide nach der Sonne. Wähle die Sensoren unter Bearbeiten.",
+  "need.unknown_capacity":
+    "Den Ladestand kenne ich, aber nicht die Akkugröße – ich entscheide nach der Sonne. Trag unter Bearbeiten die nutzbare Akkugröße ein (oder wähle einen Sensor dafür).",
+  "need.too_far": "Eine volle Ladung reicht für morgen nicht – plant unterwegs einen Ladestopp ein.",
+  "devices.action.reached_need": "Ziel erreicht ({target} {unit}) – für heute fertig.",
+  "devices.action.why.need_capacity": "Die Akkugröße des Autos kenne ich nicht – ich entscheide nach der Sonne.",
   "need.trips": "Morgen {km} km ({count} Termine) + {reserve} km Reserve = {total} km.",
   "need.unknown_trips": "Bei {count} Termin(en) kenne ich die Entfernung noch nicht – trag sie unten ein.",
   "need.usual": "Morgen etwa {km} km wie üblich + {reserve} km Reserve = {total} km.",
@@ -1230,7 +1235,8 @@ export const de = {
   "tip.routing_service.title": "Welcher Dienst?",
   "tip.routing_service.text":
     "**Waze**: kostenlos, ohne Anmeldung, über Home Assistants eigene Waze-Aktion.\n**Google**: braucht eine eingerichtete „Google Maps Travel Time“-Integration mit API-Schlüssel; schalte dort das Abfragen alle 10 Minuten aus, sonst sind die Freiabfragen schnell weg.\n**OpenStreetMap**: kostenlos, freie Karte; dafür findet Photon den Ort und OSRM die Strecke.\nIch frage jeden Ort nur einmal und merke mir die Strecke. Liegt ein Termin an einer Zone aus Home Assistant, brauche ich keinen Dienst.",
-  "tip.routing_service.hint": "Geschickt wird nur der Ort eines Termins, nie Titel oder Beschreibung.",
+  "tip.routing_service.hint":
+    "Geschickt werden nur der Ort eines Termins und euer Standort als Start der Strecke, nie Titel oder Beschreibung.",
   "tip.routing_osm.title": "Was ist das?",
   "tip.routing_osm.text":
     "Die Adressen der freien OpenStreetMap-Dienste. Sie stehen hier, damit du auf einen eigenen oder anderen Server wechseln kannst, ohne auf ein Update zu warten.",

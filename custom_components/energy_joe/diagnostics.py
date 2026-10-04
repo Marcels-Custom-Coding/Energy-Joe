@@ -25,11 +25,29 @@ async def async_get_config_entry_diagnostics(
     state = runtime.state
     config = state.pop("config")
     # Person ids are entity ids like "person.<name>"; they show up in ids,
-    # provenance paths and the list of ignored items.
-    config["persons"] = [
-        {**person, "id": f"person {index + 1}"}
+    # provenance paths, the list of ignored items, a car's need and day labels.
+    ids = {
+        person["id"]: f"person {index + 1}"
         for index, person in enumerate(config["persons"])
+    }
+    config["persons"] = [
+        {**person, "id": ids[person["id"]]} for person in config["persons"]
     ]
+    for action in config.get("actions") or []:
+        need = action.get("need") or {}
+        if need.get("persons"):
+            need["persons"] = [ids.get(p, REDACTED) for p in need["persons"]]
+    plan = state.get("plan") or {}
+    # Tomorrow's appointments (place and time) come from the family's calendars.
+    for action in plan.get("actions") or []:
+        for trip in (action.get("need") or {}).get("trips") or []:
+            trip["location"] = REDACTED
+            trip["start"] = REDACTED
+    tomorrow = (plan.get("meta") or {}).get("tomorrow") or {}
+    if isinstance(tomorrow.get("labels"), dict):
+        tomorrow["labels"] = {
+            ids.get(key, REDACTED): value for key, value in tomorrow["labels"].items()
+        }
     config["provenance"] = {
         path: entry
         for path, entry in config["provenance"].items()

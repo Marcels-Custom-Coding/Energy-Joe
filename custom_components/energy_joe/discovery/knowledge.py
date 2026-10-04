@@ -263,7 +263,8 @@ CAR_KEYS: dict[str, dict[str, list[tuple[str, str]]]] = {
     },
     "myskoda": {  # Skoda
         "soc": [("sensor", "battery_percentage")],
-        "range": [("sensor", "range")],
+        # Plug-in hybrids have a petrol range too: the electric one first.
+        "range": [("sensor", "electric_range"), ("sensor", "range")],
         "plugged": [("binary_sensor", "charger_connected")],
         "charging": [("sensor", "charging_state"), ("switch", "charging")],
         "odometer": [("sensor", "mileage")],

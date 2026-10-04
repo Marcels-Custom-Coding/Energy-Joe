@@ -25,9 +25,12 @@ export const DEFAULT_NEED: CarNeedConfig = {
   reserve_km: 50,
   consumption: null,
   daily_km: null,
-  persons: [],
+  persons: null,
   round_trip: true,
 };
+
+// The same limits as EV_NEED in model.py (a battery size above 0).
+const NEED_LIMITS = { reserve_km: [0, 1000], consumption: [5, 60], daily_km: [0, 2000], capacity_kwh: [0.1, 300] } as const;
 
 type NeedEntity = "soc_entity" | "range_entity" | "capacity_entity" | "odometer_entity" | "consumption_entity";
 // Which entities fit each car field, and which role of a found car fills it.
@@ -436,15 +439,20 @@ export class JoeActionEditor extends LitElement {
         class="input"
         type="number"
         inputmode="decimal"
-        min="0"
-        max=${max}
+        min=${NEED_LIMITS[key][0]}
+        max=${Math.min(max, NEED_LIMITS[key][1])}
         step=${key === "consumption" ? "0.1" : "1"}
         placeholder=${placeholder}
         .value=${need[key] == null ? "" : String(need[key])}
         @change=${(ev: Event) => {
-          const value = Number.parseFloat((ev.target as HTMLInputElement).value);
-          const empty = key === "reserve_km" ? 0 : null;
-          this.setNeed({ [key]: Number.isFinite(value) && value >= 0 ? value : empty });
+          const input = ev.target as HTMLInputElement;
+          const value = Number.parseFloat(input.value.replace(",", "."));
+          const [low, high] = NEED_LIMITS[key];
+          const ok = Number.isFinite(value) && value >= low && value <= high;
+          const empty = key === "reserve_km" ? 50 : null;
+          // Out of range counts as empty, so the action still saves.
+          if (!ok) input.value = empty == null ? "" : String(empty);
+          this.setNeed({ [key]: ok ? value : empty });
         }}
       />
       <span class="unit">${unit}</span>
@@ -489,16 +497,17 @@ export class JoeActionEditor extends LitElement {
             "a_need_persons",
             persons.length
               ? html`<div class="row" role="group" aria-label=${t("action.need.persons")}>
-                  ${persons.map(
-                    (person) => html`<button
+                  ${persons.map((person) => {
+                    const on = need.persons == null || need.persons.includes(person.id);
+                    return html`<button
                       type="button"
-                      class="mini-btn ${need.persons.includes(person.id) || !need.persons.length ? "go" : "quiet"}"
-                      aria-pressed=${String(need.persons.includes(person.id) || !need.persons.length)}
+                      class="mini-btn ${on ? "go" : "quiet"}"
+                      aria-pressed=${String(on)}
                       @click=${() => this.togglePerson(person.id, persons.map((p) => p.id))}
                     >
                       ${person.name}
-                    </button>`,
-                  )}
+                    </button>`;
+                  })}
                 </div>`
               : html`<p class="field-hint">${t("action.need.no_calendars")}</p>`,
           )}
@@ -532,7 +541,9 @@ export class JoeActionEditor extends LitElement {
       return;
     }
     const cars = this.discovery?.cars ?? [];
-    const car = cars.length === 1 ? cars[0].entities : {};
+    // The one car found belongs to this action only if there is one charge point.
+    const wallboxes = (this.discovery?.wallboxes ?? []).filter((w) => w.is_car);
+    const car = cars.length === 1 && wallboxes.length <= 1 ? cars[0].entities : {};
     const fill: Partial<CarNeedConfig> = { enabled: true };
     for (const [key, info] of Object.entries(NEED_ENTITIES) as [NeedEntity, (typeof NEED_ENTITIES)[NeedEntity]][]) {
       if (!need[key] && car[info.role]) {
@@ -544,10 +555,10 @@ export class JoeActionEditor extends LitElement {
 
   private togglePerson(id: string, all: string[]): void {
     const need = this.draft?.need ?? DEFAULT_NEED;
-    const chosen = need.persons.length ? need.persons : all;
+    const chosen = need.persons ?? all;
     const next = chosen.includes(id) ? chosen.filter((p) => p !== id) : [...chosen, id];
-    // Everyone chosen is the same as nobody chosen: all calendars count.
-    this.setNeed({ persons: next.length === all.length ? [] : next });
+    // Everyone chosen is kept as "everyone" (new calendars count too); [] is nobody.
+    this.setNeed({ persons: all.every((p) => next.includes(p)) ? null : next });
   }
 
   private async pickNeed(key: NeedEntity): Promise<void> {

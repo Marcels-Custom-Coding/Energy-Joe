@@ -25,6 +25,7 @@ import math
 from typing import Any
 
 from homeassistant.core import State
+from homeassistant.util import dt as dt_util
 
 from ..observe.readings import (
     consumption_kwh,
@@ -89,7 +90,14 @@ def consumption(
         heat = max(0.0, 15.0 - temp) if temp is not None else 0.0
         value, source = learned["consumption"] + learned["cold"] * heat, "learned"
     elif learned.get("consumption"):
-        value, source = learned["consumption"], "learned"
+        # Learned without a usable cold slope: scale from the temperature it was learned at.
+        base = learned.get("temp")
+        value = (
+            learned["consumption"]
+            * temperature_factor(temp)
+            / temperature_factor(base if base is not None else SEASON_TEMP)
+        )
+        source = "learned"
     elif sensor:
         value = sensor * temperature_factor(temp) / temperature_factor(SEASON_TEMP)
         source = "car"
@@ -142,13 +150,15 @@ def car_need(
     if soc is not None and capacity:
         need_kwh = needed_km * per_100km / 100
         have_kwh = soc / 100 * capacity
-        missing = max(0.0, need_kwh - have_kwh)
+        # No more than fits into the battery; a longer trip needs a stop on the way.
+        missing = max(0.0, min(need_kwh, capacity) - have_kwh)
         result.update(
             known=True,
             have_km=round(have_kwh / per_100km * 100, 1),
             target=min(100, math.ceil(need_kwh / capacity * 100)),
             target_unit="%",
             sensor=need.get("soc_entity"),
+            fits=need_kwh <= capacity,
         )
     elif range_km is not None:
         # Only the car's own range: the energy for the kilometres missing.
@@ -172,7 +182,11 @@ def car_need(
 def sun_before_departure(need: dict[str, Any], sunny: bool) -> bool:
     """A sunny day and the first trip after noon: the sun can charge first."""
     departure = need.get("departure")
-    return bool(sunny and departure and datetime.fromisoformat(departure).hour >= NOON)
+    return bool(
+        sunny
+        and departure
+        and dt_util.as_local(datetime.fromisoformat(departure)).hour >= NOON
+    )
 
 
 def _departure(trips: list[dict[str, Any]]) -> str | None:

@@ -472,3 +472,240 @@ async def test_the_car_stops_at_the_level_it_needs(
     await executor.async_check()
     assert hass.states.get("select.carport_mode").state == "pv"
     assert executor.status["actions"]["ev"]["reason"] == "reached"
+
+
+def test_more_than_a_full_battery_and_warm_learned_values(hass: HomeAssistant) -> None:
+    hass.states.async_set("sensor.car_soc", "20", {"unit_of_measurement": "%"})
+    found = car_need(
+        need(capacity_kwh=50.0)["need"], hass.states.get, [], {}, 20.0, False, True
+    )
+    long_trip = car_need(
+        need(capacity_kwh=50.0, daily_km=400.0)["need"],
+        hass.states.get,
+        [],
+        {},
+        20.0,
+        False,
+        True,
+    )
+    assert found["fits"] is True
+    # 450 km need 81 kWh, but only 40 fit: no more than that is missing.
+    assert long_trip["missing_kwh"] == 40.0 and long_trip["fits"] is False
+    # Learned in warm weather (no cold slope): the table scales it to the cold.
+    warm = {"consumption": 16.0, "cold": None, "temp": 20.0}
+    assert consumption(need()["need"], warm, None, 0.0, False) == (20.5, "learned")
+
+
+def test_glitches_and_order_of_car_readings() -> None:
+    """A 0 km reading and an odometer written just after the level change nothing."""
+    zone = dt_util.get_default_time_zone()
+    odometer, soc = [], []
+    km = 50000.0
+    temps = {}
+    for offset in range(12):
+        moment = datetime(2026, 7, 1, 7, tzinfo=zone) + timedelta(days=offset)
+        temps[moment.date().isoformat()] = 22.0
+        soc += [
+            (moment, 80.0),
+            (moment + timedelta(hours=1), 80.0 - 30 * 16 / 100 / 60 * 100),
+        ]
+        odometer += [
+            (moment + timedelta(microseconds=50), km),
+            (moment + timedelta(hours=1, microseconds=50), km + 30),
+        ]
+        soc.append((moment + timedelta(hours=10), 80.0))
+        km += 30
+    odometer.append((datetime(2026, 7, 5, 12, tzinfo=zone), 0.0))
+    days = car_days(odometer, soc, 60.0)
+    assert all(abs(d["km"]) <= 30 for d in days)
+    learned = car_model(days, temps)
+    assert learned["consumption"] == pytest.approx(16.0, abs=0.1)
+    # Only warm days: no cold slope, but the temperature it was learned at.
+    assert learned["cold"] is None and learned["temp"] == 22.0
+
+
+async def test_calendars_trips_and_retries(hass: HomeAssistant) -> None:
+    """Yesterday's stay is not a trip, a broken calendar loses only its own, one moment counts once."""
+    events = {
+        "calendar.anna": [
+            {"summary": "Reha", "start": "2026-10-03", "location": "Klinik Bad Belzig"},
+            {
+                "summary": "Essen",
+                "start": "2026-10-05T19:00:00+02:00",
+                "location": "Restaurant Am See",
+            },
+        ],
+        "calendar.bob": [
+            {
+                "summary": "Essen",
+                "start": "2026-10-05T17:00:00+00:00",
+                "location": "Restaurant am See",
+            },
+        ],
+    }
+    calls = {"waze": 0}
+
+    def get_events(call: ServiceCall) -> dict[str, Any]:
+        (entity_id,) = (
+            call.data["entity_id"]
+            if isinstance(call.data["entity_id"], list)
+            else [call.data["entity_id"]]
+        )
+        if entity_id == "calendar.broken":
+            raise RuntimeError("timeout")
+        return {entity_id: {"events": events.get(entity_id, [])}}
+
+    def waze(call: ServiceCall) -> dict[str, Any]:
+        calls["waze"] += 1
+        return {"routes": []}
+
+    hass.services.async_register(
+        "calendar", "get_events", get_events, supports_response=SupportsResponse.ONLY
+    )
+    hass.services.async_register(
+        "waze_travel_time",
+        "get_travel_times",
+        waze,
+        supports_response=SupportsResponse.ONLY,
+    )
+    config = model.validate(
+        {
+            "version": model.CONFIG_VERSION,
+            "persons": [
+                {
+                    "id": "anna",
+                    "name": "Anna",
+                    "calendars": ["calendar.anna", "calendar.broken"],
+                },
+                {"id": "bob", "name": "Bob", "calendars": ["calendar.bob"]},
+            ],
+            "routing": {"service": "waze"},
+        }
+    )
+    places = PlaceStore(hass)
+    trips = await async_trips(hass, config, need()["need"], places, date(2026, 10, 5))
+    assert [t["location"] for t in trips] == ["Restaurant Am See"]
+    assert trips[0]["start"] == "2026-10-05T19:00:00+02:00" and trips[0]["km"] is None
+    # Waze found nothing: not asked again on the next run.
+    await async_trips(hass, config, need()["need"], places, date(2026, 10, 5))
+    assert calls["waze"] == 1
+    # Nobody's calendar chosen: no trips; everyone: both persons.
+    assert (
+        await async_trips(
+            hass, config, need(persons=[])["need"], places, date(2026, 10, 5)
+        )
+        == []
+    )
+
+
+async def test_a_range_target_in_miles_and_tonight_by_hand(
+    hass: HomeAssistant, freezer
+) -> None:
+    from custom_components.energy_joe.control.executor import JoeExecutor
+
+    freezer.move_to("2026-10-05T04:00:00+02:00")
+
+    def keep(call: ServiceCall) -> None:
+        state = hass.states.get(call.data["entity_id"])
+        hass.states.async_set(
+            call.data["entity_id"], call.data["option"], state.attributes
+        )
+
+    hass.services.async_register("select", "select_option", keep)
+    hass.states.async_set(
+        "select.carport_mode", "pv", {"options": ["off", "pv", "now"]}
+    )
+    hass.states.async_set("sensor.car_range", "120", {"unit_of_measurement": "mi"})
+    config = model.validate({"version": model.CONFIG_VERSION, "actions": [need()]})
+    start = dt_util.start_of_local_day(date(2026, 10, 5))
+    entry = {
+        "id": "ev",
+        "name": "Carport",
+        "kind": "switch",
+        "run": True,
+        "manual": False,
+        "reasons": ["need"],
+        "start": (start + timedelta(hours=3)).isoformat(timespec="minutes"),
+        "end": (start + timedelta(hours=5, minutes=-3)).isoformat(timespec="minutes"),
+        "target": 230,
+        "sensor": "sensor.car_range",
+        "need": {"target_unit": "km", "sensor": "sensor.car_range"},
+        "power_kw": 11.0,
+        "energy_kwh": 10.0,
+    }
+    plan = {
+        "kind": "none",
+        "fixed": True,
+        "target": 20,
+        "window": {
+            "start": start.isoformat(),
+            "end": (start + timedelta(hours=5)).isoformat(),
+        },
+        "rules": {"discharge_mode": "until_target"},
+        "batteries": [],
+        "actions": [entry],
+    }
+    executor = JoeExecutor(
+        hass, lambda: config, lambda: plan, lambda: "live", lambda: None
+    )
+    await executor.async_load()
+    # 120 mi are 193 km: below 230 km, so it charges.
+    await executor.async_check()
+    assert hass.states.get("select.carport_mode").state == "now"
+    # 150 mi are 241 km: reached.
+    hass.states.async_set("sensor.car_range", "150", {"unit_of_measurement": "mi"})
+    await executor.async_check()
+    assert executor.status["actions"]["ev"]["reason"] == "reached"
+    # "Tonight" by hand afterwards: the whole window, no target.
+    freezer.move_to("2026-10-05T01:00:00+02:00")
+    await executor.async_action_tonight("ev", True)
+    await executor.async_check()
+    assert hass.states.get("select.carport_mode").state == "now"
+    assert executor.status["actions"]["ev"]["target"] is None
+
+
+async def test_a_correction_reaches_the_fixed_plan(hass: HomeAssistant) -> None:
+    from custom_components.energy_joe.observe.store import HistoryStore
+    from custom_components.energy_joe.plan.scheduler import JoePlanner
+
+    hass.states.async_set("sensor.car_soc", "30", {"unit_of_measurement": "%"})
+    store = HistoryStore(hass)
+    await store.async_load()
+    planner = JoePlanner(hass, store, lambda: None)
+    config = model.validate({"version": model.CONFIG_VERSION, "actions": [need()]})
+    planner._config = config
+    trips = [
+        {
+            "start": "2026-10-05T09:00:00+02:00",
+            "location": "Hauptstr. 1",
+            "km": 600.0,
+            "minutes": 300,
+            "source": "waze",
+        }
+    ]
+    found = car_need(need()["need"], hass.states.get, trips, None, 10.0, False, True)
+    planner._fixed = {
+        "fixed": True,
+        "window": {
+            "start": "2026-10-05T00:00:00+02:00",
+            "end": "2026-10-05T05:00:00+02:00",
+        },
+        "meta": {"tomorrow": {"workday": True}},
+        "actions": [
+            {
+                "id": "ev",
+                "run": True,
+                "manual": False,
+                "target": found["target"],
+                "need": {**found, "trips": trips},
+            }
+        ],
+    }
+    assert found["target"] == 100
+    await planner.places.async_set("Hauptstr. 1", 30.0)
+    await planner.async_correct_needs("Hauptstr. 1")
+    entry = planner.plan["actions"][0]
+    assert entry["need"]["trips"][0]["km"] == 60.0
+    assert entry["need"]["trips"][0]["source"] == "user"
+    assert entry["target"] < 100
+    await store.async_unload()

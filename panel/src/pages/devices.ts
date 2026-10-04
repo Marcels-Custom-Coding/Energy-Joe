@@ -366,7 +366,7 @@ export class JoeDevicesPage extends LitElement {
       </div>
       <p class="now">${this.actionText(t, joe, action, planned, live)}</p>
       ${planned?.need
-        ? html`<joe-car-need .hass=${this.hass} .t=${t} .action=${planned} ?roundTrip=${action.need?.round_trip ?? true}></joe-car-need>`
+        ? html`<joe-car-need .hass=${this.hass} .t=${t} .action=${planned} .roundTrip=${action.need?.round_trip ?? true}></joe-car-need>`
         : nothing}
       <div class="test">
         <span class="toggle-label" id="tonight-${action.id}">${t("devices.action.tonight")}</span>
@@ -406,7 +406,10 @@ export class JoeDevicesPage extends LitElement {
         : t("devices.action.running", { end: timeOf(live.end) });
     }
     if (live?.reason === "reached") {
-      return t("devices.action.reached", { target });
+      // A car stops at a level (%) or range (km), hot water at a temperature.
+      return planned?.need
+        ? t("devices.action.reached_need", { target, unit: planned.need.target_unit === "km" ? "km" : "%" })
+        : t("devices.action.reached", { target });
     }
     if (!planned) {
       return t("devices.action.no_plan");

@@ -15,9 +15,10 @@ from homeassistant.helpers.event import (
 from homeassistant.util import dt as dt_util
 
 from ..observe.store import HistoryStore
+from .ev import car_need
 from .inputs import DEFAULT_SEARCH, async_build_input, next_window
 from .planner import make_plan
-from .trips import PlaceStore
+from .trips import PlaceStore, normalize
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -100,6 +101,55 @@ class JoePlanner:
             }
         self._changed()
         return self.plan
+
+    async def async_correct_needs(self, location: str) -> None:
+        """A place's distance was corrected: tonight's car needs follow at once.
+
+        A fixed plan keeps its window and times; only the trips, the need and
+        the level the car stops at change (the executor reads them every minute).
+        """
+        if self._fixed is None:
+            await self.async_refresh()
+            return
+        key = normalize(location)
+        place = self.places.places.get(key)
+        config = self._config
+        models = config["learned"].get("car_models") or {}
+        actions = {a["id"]: a for a in config["actions"]}
+        workday = ((self._fixed.get("meta") or {}).get("tomorrow") or {}).get(
+            "workday", True
+        )
+        changed = False
+        for entry in self._fixed.get("actions") or []:
+            need = entry.get("need")
+            action = actions.get(entry["id"])
+            if not need or not action or not action.get("need"):
+                continue
+            trips = need.get("trips") or []
+            hits = [t for t in trips if normalize(t["location"]) == key]
+            if not hits or place is None:
+                continue
+            factor = 2 if action["need"]["round_trip"] else 1
+            for trip in hits:
+                trip.update(km=round(place["km"] * factor, 1), source=place["source"])
+            found = car_need(
+                action["need"],
+                self._hass.states.get,
+                trips,
+                models.get(entry["id"]),
+                need.get("temp"),
+                bool(need.get("rain")),
+                workday,
+            )
+            entry["need"] = {**found, "trips": trips}
+            if entry["run"] and not entry.get("manual") and found.get("known"):
+                entry.update(target=found["target"], sensor=found["sensor"])
+            changed = True
+        if changed:
+            night = datetime.fromisoformat(self._fixed["window"]["start"]).date()
+            await self._history.async_update_day(night.isoformat(), plan=self._fixed)
+            self.plan = self._fixed
+            self._changed()
 
     async def _async_compute(self, now: datetime) -> dict[str, Any]:
         inp, notes = await async_build_input(

@@ -176,9 +176,37 @@ async def test_diagnostics_hide_personal_data(ready_hass: HomeAssistant) -> None
         {
             "persons": {"person.robin": {"calendars": []}},
             "answers": {"ignored": ["person:person.robin"]},
+            # A car charged by need for Robin's trips.
+            "actions": [
+                {
+                    "id": "ev",
+                    "name": "Carport",
+                    "kind": "switch",
+                    "entity_id": "select.carport_mode",
+                    "need": {"enabled": True, "persons": ["person.robin"]},
+                }
+            ],
         },
         "user",
     )
+    # Tomorrow's trip to a place from Robin's calendar.
+    hass.data[DOMAIN].planner.plan = {
+        "kind": "none",
+        "actions": [
+            {
+                "id": "ev",
+                "need": {
+                    "trips": [
+                        {
+                            "start": "2026-10-05T09:00:00+02:00",
+                            "location": "Praxis Robinstraße 3",
+                        }
+                    ]
+                },
+            }
+        ],
+        "meta": {"tomorrow": {"labels": {"person.robin": "office"}}},
+    }
 
     diagnostics = await async_get_config_entry_diagnostics(hass, entry)
     person = diagnostics["config"]["persons"][0]

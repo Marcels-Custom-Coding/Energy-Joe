@@ -124,6 +124,7 @@ class JoeRuntime:
             await self.learner.async_stop()
             await self.planner.async_stop()
             await self.observer.async_stop()
+        await self.planner.places.async_flush()
         await self.history.async_unload()
         await self._state_store.async_save(self._state)
         await self._config_store.async_save(self._config)
@@ -134,6 +135,7 @@ class JoeRuntime:
         await self._config_store.async_remove()
         await self._backup_store.async_remove()
         await self.history.async_remove()
+        await self.planner.places.async_remove()
         await self.executor.async_forget()
 
     @callback

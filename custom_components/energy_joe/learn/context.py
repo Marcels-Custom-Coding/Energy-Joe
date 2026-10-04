@@ -6,8 +6,10 @@ from datetime import date, datetime, timedelta
 import logging
 from typing import Any
 
+from homeassistant.const import UnitOfPrecipitationDepth, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
+from homeassistant.util.unit_conversion import DistanceConverter, TemperatureConverter
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,6 +27,27 @@ async def async_weather_day(
     result: dict[str, Any] = {"temp": None, "rain": False}
     if not entity_id or not hass.services.has_service("weather", "get_forecasts"):
         return result
+    # Forecasts come in the entity's units (°F and inches on imperial systems).
+    state = hass.states.get(entity_id)
+    attributes = state.attributes if state else {}
+    temp_unit = attributes.get("temperature_unit") or hass.config.units.temperature_unit
+    rain_unit = (
+        attributes.get("precipitation_unit")
+        or hass.config.units.accumulated_precipitation_unit
+    )
+
+    def celsius(value: Any) -> float | None:
+        if not isinstance(value, int | float):
+            return None
+        return TemperatureConverter.convert(value, temp_unit, UnitOfTemperature.CELSIUS)
+
+    def millimetres(value: Any) -> float | None:
+        if not isinstance(value, int | float):
+            return None
+        return DistanceConverter.convert(
+            value, rain_unit, UnitOfPrecipitationDepth.MILLIMETERS
+        )
+
     for kind in ("daily", "hourly"):
         try:
             response = await hass.services.async_call(
@@ -42,19 +65,18 @@ async def async_weather_day(
             moment = dt_util.parse_datetime(str(item.get("datetime", "")))
             if moment is None or dt_util.as_local(moment).date() != day:
                 continue
-            precipitation = item.get("precipitation")
-            if isinstance(precipitation, int | float):
+            precipitation = millimetres(item.get("precipitation"))
+            if precipitation is not None:
                 rain_mm += precipitation
             wet = wet or item.get("condition") in WET
             if kind == "daily":
-                high, low = item.get("temperature"), item.get("templow")
-                if isinstance(high, int | float):
-                    temp = (
-                        (high + low) / 2 if isinstance(low, int | float) else high - 4
-                    )
+                high = celsius(item.get("temperature"))
+                low = celsius(item.get("templow"))
+                if high is not None:
+                    temp = (high + low) / 2 if low is not None else high - 4
                     return {"temp": temp, "rain": wet or rain_mm >= WET_MM}
-            elif isinstance(item.get("temperature"), int | float):
-                values.append(item["temperature"])
+            elif (value := celsius(item.get("temperature"))) is not None:
+                values.append(value)
         if values:
             return {
                 "temp": sum(values) / len(values),

@@ -16,7 +16,7 @@ export class JoeCarNeed extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) t?: Translate;
   @property({ attribute: false }) action?: PlanAction;
-  @property({ type: Boolean }) roundTrip = true;
+  @property({ attribute: false }) roundTrip = true;
 
   @state() private editing?: string;
   @state() private failed = false;
@@ -99,7 +99,7 @@ export class JoeCarNeed extends LitElement {
     }
     const n = (value: number | null | undefined, digits = 0) => formatNumber(t.lang, value ?? 0, digits);
     if (!need.known) {
-      return html`<p>${t("need.unknown")}</p>`;
+      return html`<p>${t(need.soc != null && !need.capacity_kwh ? "need.unknown_capacity" : "need.unknown")}</p>`;
     }
     const lines: TemplateResult[] = [];
     lines.push(
@@ -135,6 +135,9 @@ export class JoeCarNeed extends LitElement {
           : t("need.enough")}
       </p>`,
     );
+    if (need.fits === false) {
+      lines.push(html`<p>${t("need.too_far")}</p>`);
+    }
     return html`${lines} ${need.trips.length ? this.renderTrips(t, need.trips) : nothing}`;
   }
 

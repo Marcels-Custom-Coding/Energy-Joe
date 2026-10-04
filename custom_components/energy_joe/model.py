@@ -244,8 +244,8 @@ EV_NEED = vol.Schema(
         vol.Optional("daily_km", default=None): vol.Any(
             None, vol.All(vol.Coerce(float), vol.Range(min=0, max=2000))
         ),
-        # Whose calendars count (person ids); empty: everyone with a calendar.
-        vol.Optional("persons", default=list): [str],
+        # Whose calendars count (person ids); None: everyone with a calendar.
+        vol.Optional("persons", default=None): vol.Any(None, [str]),
         vol.Optional("round_trip", default=True): bool,
     }
 )

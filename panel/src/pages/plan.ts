@@ -304,7 +304,7 @@ export class JoePlanPage extends LitElement {
             <dd>
               ${text}${extra ? html`<small>${extra}</small>` : nothing}
               ${action.need
-                ? html`<joe-car-need .hass=${this.hass} .t=${t} .action=${action} ?roundTrip=${config?.need?.round_trip ?? true}></joe-car-need>`
+                ? html`<joe-car-need .hass=${this.hass} .t=${t} .action=${action} .roundTrip=${config?.need?.round_trip ?? true}></joe-car-need>`
                 : nothing}
             </dd>`;
         })}

@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import pytest
+
 from custom_components.energy_joe import model
 from custom_components.energy_joe.discovery import discover
 from custom_components.energy_joe.discovery.snapshot import Snapshot
 
-from .snapshots import entity, fronius_household, generic_household
+from .snapshots import entity, fronius_household, generic_household, snapshot
 
 
 def test_fronius_household_batteries() -> None:
@@ -270,3 +272,157 @@ def test_levers_are_suggested_for_unknown_batteries() -> None:
         },
         "complete": True,
     }
+
+
+def test_cars_and_home_batteries_of_the_same_integration() -> None:
+    """tesla_custom runs car and Powerwall: the car is a car, the Powerwall a home battery."""
+    from custom_components.energy_joe.discovery.snapshot import DeviceInfo
+
+    tc = {"platform": "tesla_custom", "entry": "tesla"}
+    entities = [
+        entity(
+            "sensor.model_y_battery",
+            "Model Y Battery",
+            55,
+            unit="%",
+            device_class="battery",
+            unique_id="vin1_battery",
+            device_id="car",
+            **tc,
+        ),
+        entity(
+            "sensor.model_y_range",
+            "Model Y Range",
+            180,
+            unit="mi",
+            device_class="distance",
+            unique_id="vin1_range",
+            device_id="car",
+            **tc,
+        ),
+        entity(
+            "sensor.my_home_battery",
+            "My Home Battery",
+            80,
+            unit="%",
+            device_class="battery",
+            unique_id="site1_battery",
+            device_id="site",
+            **tc,
+        ),
+        entity(
+            "sensor.my_home_battery_power",
+            "My Home Battery Power",
+            -1200,
+            unit="W",
+            device_class="power",
+            unique_id="site1_battery_power",
+            device_id="site",
+            **tc,
+        ),
+        # A Skoda plug-in hybrid: petrol range, electric range, total range.
+        entity(
+            "sensor.superb_combustion_range",
+            "Superb Combustion Range",
+            650,
+            unit="km",
+            unique_id="vin2_combustion_range",
+            device_id="phev",
+            platform="myskoda",
+        ),
+        entity(
+            "sensor.superb_electric_range",
+            "Superb Electric Range",
+            60,
+            unit="km",
+            unique_id="vin2_electric_range",
+            device_id="phev",
+            platform="myskoda",
+        ),
+        entity(
+            "sensor.superb_range",
+            "Superb Range",
+            710,
+            unit="km",
+            unique_id="vin2_range",
+            device_id="phev",
+            platform="myskoda",
+        ),
+        entity(
+            "sensor.superb_battery",
+            "Superb Battery",
+            70,
+            unit="%",
+            unique_id="vin2_battery_percentage",
+            device_id="phev",
+            platform="myskoda",
+        ),
+    ]
+    devices = [
+        DeviceInfo("car", "Model Y", "Tesla", "Model Y"),
+        DeviceInfo("site", "My Home", "Tesla", "Battery"),
+        DeviceInfo("phev", "Superb", "Skoda", "Superb iV"),
+    ]
+    result = discover(snapshot(entities, devices))
+    cars = {c["name"]: c for c in result["cars"]}
+    assert set(cars) == {"Model Y", "Superb"}
+    assert cars["Model Y"]["range_km"] == pytest.approx(289.7, abs=0.1)
+    assert cars["Superb"]["entities"]["range"] == "sensor.superb_electric_range"
+    assert [b["soc_entity"] for b in result["batteries"]] == ["sensor.my_home_battery"]
+
+
+def test_one_car_and_two_charge_points() -> None:
+    """With two evcc charge points each uses its own car's level, not the one car found."""
+    ev = {"platform": "evcc_intg", "entry": "evcc"}
+    entities = [
+        entity(
+            "sensor.kona_battery",
+            "Kona Battery",
+            64,
+            unit="%",
+            translation_key="ev_battery_percentage",
+            device_id="kona",
+            platform="kia_uvo",
+        ),
+        entity(
+            "sensor.kona_range",
+            "Kona Range",
+            300,
+            unit="km",
+            translation_key="ev_driving_range",
+            device_id="kona",
+            platform="kia_uvo",
+        ),
+    ]
+    for name in ("garage", "carport"):
+        entities += [
+            entity(
+                f"select.evcc_{name}_mode",
+                f"{name} mode",
+                "pv",
+                unique_id=f"evcc_intg.evcc_{name}_mode",
+                device_id=name,
+                attributes={"options": ["off", "pv", "minpv", "now"]},
+                **ev,
+            ),
+            entity(
+                f"binary_sensor.evcc_{name}_connected",
+                f"{name} connected",
+                "on",
+                unique_id=f"evcc_intg.evcc_{name}_connected",
+                device_id=name,
+                **ev,
+            ),
+            entity(
+                f"sensor.evcc_{name}_vehicle_soc",
+                f"{name} vehicle soc",
+                40,
+                unit="%",
+                unique_id=f"evcc_intg.evcc_{name}_vehicle_soc",
+                device_id=name,
+                **ev,
+            ),
+        ]
+    result = discover(snapshot(entities))
+    socs = sorted(a["need"]["soc_entity"] for a in result["proposal"]["actions"])
+    assert socs == ["sensor.evcc_carport_vehicle_soc", "sensor.evcc_garage_vehicle_soc"]

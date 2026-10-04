@@ -167,16 +167,15 @@ def find_batteries(snap: Snapshot, energy: EnergyHints) -> list[dict[str, Any]]:
             if soc.device_id:
                 seen_devices.add(soc.device_id)
 
+    # Car integrations often run the home battery too (a Powerwall): only the
+    # devices that are cars are left out, known by their range or odometer.
+    car_devices = _car_devices(snap)
     for entity in snap.of_domain("sensor"):
         if entity.device_class != "battery" or entity.unit != "%":
             continue
-        if (
-            entity.platform in kb.NOT_HARDWARE
-            or entity.platform in kb.NOT_HOME_BATTERY
-            or entity.platform in kb.CAR_KEYS
-        ):
+        if entity.platform in kb.NOT_HARDWARE or entity.platform in kb.NOT_HOME_BATTERY:
             continue
-        if entity.device_id in seen_devices:
+        if entity.device_id in seen_devices or entity.device_id in car_devices:
             continue
         # A home battery shows itself in the device (not the sensor name, many
         # gadgets call their own battery "Battery") and always reports power.
@@ -197,6 +196,21 @@ def find_batteries(snap: Snapshot, energy: EnergyHints) -> list[dict[str, Any]]:
 
     _link_energy_batteries(snap, energy, batteries)
     return batteries
+
+
+def _car_devices(snap: Snapshot) -> set[str]:
+    """Devices of car integrations that are cars (they report range or odometer)."""
+    return {
+        entity.device_id
+        for platform, roles in kb.CAR_KEYS.items()
+        for entity in snap.of_platform(platform)
+        if entity.device_id
+        and any(
+            entity.domain == domain and entity.has_key(key)
+            for role in ("range", "odometer")
+            for domain, key in roles.get(role, ())
+        )
+    }
 
 
 def _has_power_sensor(snap: Snapshot, device_id: str | None) -> bool:
@@ -913,6 +927,27 @@ def find_wallboxes(snap: Snapshot) -> list[dict[str, Any]]:
     return found
 
 
+def _pick(entities: list[EntityInfo], domain: str, key: str) -> EntityInfo | None:
+    """The entity with this key: an exact translation key first, else the id's end.
+
+    "range" also ends "…_combustion_range"; the exact match must win.
+    """
+    hits = [e for e in entities if e.domain == domain and e.has_key(key)]
+    exact = [e for e in hits if e.translation_key == key]
+    if exact:
+        return exact[0]
+    ending = [
+        e
+        for e in hits
+        if (e.unique_id or "").endswith(f"_{key}")
+        and not any(
+            (e.unique_id or "").endswith(f"_{other}_{key}")
+            for other in ("combustion", "fuel", "petrol", "adblue", "add_blue")
+        )
+    ]
+    return ending[0] if ending else (hits[0] if hits else None)
+
+
 CAR_ROLES = (
     "soc",
     "range",
@@ -938,14 +973,15 @@ def find_cars(snap: Snapshot) -> list[dict[str, Any]]:
             parts: dict[str, EntityInfo] = {}
             for role, keys in roles.items():
                 for domain, key in keys:
-                    match = next(
-                        (e for e in entities if e.domain == domain and e.has_key(key)),
-                        None,
-                    )
+                    match = _pick(entities, domain, key)
                     if match is not None:
                         parts[role] = match
                         break
             if "soc" not in parts and "range" not in parts:
+                continue
+            # A level (and a charging flag) alone also fits a home battery of the
+            # same integration (tesla_custom's Powerwall: "<site>_battery").
+            if not parts.keys() - {"soc", "charging"}:
                 continue
             soc, rng, cap = parts.get("soc"), parts.get("range"), parts.get("capacity")
             name = (snap.device_name(device_id) if device_id else None) or (

@@ -116,15 +116,22 @@ def _night_actions(
     """The car charges at night when tomorrow brings little sun (if it is plugged in).
 
     Charging by need stays off until the user switches it on; its car entities
-    are filled in already: from the one car integration found, else from the
-    wallbox's vehicle (evcc knows the car that is plugged in).
+    are filled in already: from the one car integration found when there is
+    one wallbox, else from the wallbox's vehicle (evcc knows the car that is
+    plugged in at each charge point).
     """
-    car = (cars[0].get("entities") or {}) if len(cars) == 1 else {}
+    car_wallboxes = [
+        w
+        for w in wallboxes
+        if w.get("is_car") and "now" in (w.get("mode_options") or [])
+    ]
+    car = (
+        (cars[0].get("entities") or {})
+        if len(cars) == 1 and len(car_wallboxes) == 1
+        else {}
+    )
     actions = []
-    for wallbox in wallboxes:
-        options = wallbox.get("mode_options") or []
-        if not wallbox.get("is_car") or "now" not in options:
-            continue
+    for wallbox in car_wallboxes:
         entities = wallbox.get("entities") or {}
         conditions = (
             [{"entity_id": entities["connected"], "op": "eq", "value": True}]

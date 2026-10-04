@@ -1039,7 +1039,7 @@ export const en: Record<Key, string> = {
   "action.need.pick.consumption": "Which sensor shows the average consumption?",
   "settings.routing": "Distances to appointments",
   "settings.routing.intro":
-    "To charge by need I work out how far the places of your appointments are. For that I only send an appointment's place to the service you pick here – never its title.",
+    "To charge by need I work out how far the places of your appointments are. For that I send an appointment's place and your home location from Home Assistant as the route's start to the service you pick here – never its title or description.",
   "settings.routing.service": "Service",
   "settings.routing.service.hint": "Once per place, then I remember the distance.",
   "settings.routing.none": "Don't work it out",
@@ -1051,6 +1051,11 @@ export const en: Record<Key, string> = {
   "settings.routing.router_url": "Route planner",
   "settings.routing.router_url.hint": "OSRM service for the route by car.",
   "need.unknown": "I don't know the car's charge level or range – I decide by the sun. Pick the sensors under Edit.",
+  "need.unknown_capacity":
+    "I know the charge level but not the battery size – I decide by the sun. Enter the usable battery size under Edit (or pick a sensor for it).",
+  "need.too_far": "One full charge is not enough for tomorrow – plan a charging stop on the way.",
+  "devices.action.reached_need": "Target reached ({target} {unit}) – done for today.",
+  "devices.action.why.need_capacity": "I don't know the car's battery size – I decide by the sun.",
   "need.trips": "Tomorrow {km} km ({count} appointments) + {reserve} km reserve = {total} km.",
   "need.unknown_trips": "For {count} appointment(s) I don't know the distance yet – enter it below.",
   "need.usual": "Tomorrow about {km} km as usual + {reserve} km reserve = {total} km.",
@@ -1216,7 +1221,8 @@ export const en: Record<Key, string> = {
   "tip.routing_service.title": "Which service?",
   "tip.routing_service.text":
     "**Waze**: free, no sign-up, through Home Assistant's own Waze action.\n**Google**: needs a set-up “Google Maps Travel Time” integration with an API key; switch off its polling every 10 minutes there, or the free calls are gone quickly.\n**OpenStreetMap**: free, open map; Photon finds the place and OSRM the route.\nI ask about each place only once and remember the distance. If an appointment is at a Home Assistant zone, I need no service.",
-  "tip.routing_service.hint": "Only an appointment's place is sent, never its title or description.",
+  "tip.routing_service.hint":
+    "Only an appointment's place and your home location as the route's start are sent, never its title or description.",
   "tip.routing_osm.title": "What is this?",
   "tip.routing_osm.text":
     "The addresses of the free OpenStreetMap services. They are here so you can switch to your own or another server without waiting for an update.",

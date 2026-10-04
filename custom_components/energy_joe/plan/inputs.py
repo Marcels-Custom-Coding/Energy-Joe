@@ -394,16 +394,17 @@ async def async_build_input(
             learned.get("action_models") or {},
             needs,
         )
+
+        def _hours(action: dict[str, Any]) -> int:
+            # From the action's start to the end of the span, so a lead is covered.
+            begin = datetime.fromisoformat(action["start"])
+            return math.ceil((window_end - begin).total_seconds() / 3600)
+
         needed = max(
             [
-                math.ceil(
-                    (
-                        datetime.fromisoformat(a["end"])
-                        - datetime.fromisoformat(a["start"])
-                    ).total_seconds()
-                    / 3600
-                )
-                if a["kind"] == "target"
+                _hours(a)
+                # Hot water, and a car charged by need: as long as they take.
+                if a["kind"] == "target" or a.get("target") is not None
                 else ACTION_HOURS
                 for a in preview
                 if a["run"]

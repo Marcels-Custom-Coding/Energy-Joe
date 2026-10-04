@@ -8,6 +8,7 @@ observe/store.py), so each number can be shown and explained in the panel.
 
 from __future__ import annotations
 
+from bisect import bisect_right
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
@@ -28,6 +29,10 @@ SURPRISE_KWH = 3.0
 SOURCE_DAYS = 7
 # Days of a car's history before Joe trusts what he learned about it.
 CAR_DAYS = 8
+# One poll writes level and odometer a moment apart, in either order.
+SAME_POLL = timedelta(minutes=2)
+# More than this between two odometer readings is a glitch, not a drive (km).
+MAX_STEP_KM = 1500.0
 
 
 @dataclass(slots=True)
@@ -475,14 +480,28 @@ def _hourly(series: list[tuple[datetime, float]]) -> list[tuple[datetime, float]
     return result
 
 
-def _at(series: list[tuple[datetime, float]], moment: datetime) -> float | None:
-    """The last reading at or before a moment."""
-    found = None
-    for when, value in series:
-        if when > moment:
-            break
-        found = value
-    return found
+def _continuous(series: list[tuple[datetime, float]]) -> list[tuple[datetime, float]]:
+    """Odometer readings by time; a 0, a drop (reset, unit change) or a jump adds nothing."""
+    result: list[tuple[datetime, float]] = []
+    offset = 0.0
+    previous: float | None = None
+    for when, value in sorted(series, key=lambda item: item[0]):
+        if value <= 0:
+            continue
+        if previous is not None and not 0 <= value - previous <= MAX_STEP_KM:
+            # Go on from the last good reading.
+            offset += previous - value
+        previous = value
+        result.append((when, value + offset))
+    return result
+
+
+def _at(
+    series: list[tuple[datetime, float]], times: list[datetime], moment: datetime
+) -> float | None:
+    """The last reading at or before a moment (series sorted, times its moments)."""
+    index = bisect_right(times, moment)
+    return series[index - 1][1] if index else None
 
 
 def car_days(
@@ -493,36 +512,58 @@ def car_days(
     """Per day: kilometres driven and, with a known battery, the energy it took.
 
     Energy counts where the level fell while the odometer rose between two
-    readings (driving), so charging in between does not disturb it.
+    readings (driving), so charging in between does not disturb it; "kwh_km"
+    is the distance of just those drives. Days without a reading count 0 km.
     """
-    odometer = sorted(odometer, key=lambda item: item[0])
+    odometer = _continuous(odometer)
+    times = [when for when, _ in odometer]
     soc = _hourly(soc)
     days: dict[str, dict[str, Any]] = {}
     before: float | None = None
     for when, value in odometer:
-        day = when.date().isoformat()
-        if day not in days:
+        day = when.date()
+        if days:
+            # Days in between without a reading: the car stood still.
+            gap = date.fromisoformat(max(days)) + timedelta(days=1)
+            while gap < day:
+                days[gap.isoformat()] = {
+                    "first": before,
+                    "last": before,
+                    "kwh": 0.0,
+                    "kwh_km": 0.0,
+                }
+                gap += timedelta(days=1)
+        key = day.isoformat()
+        if key not in days:
             # A day starts where the last one ended (the car stood overnight).
-            days[day] = {"first": before if before is not None else value, "kwh": 0.0}
-        days[day]["last"] = max(days[day].get("last", value), value)
-        before = days[day]["last"]
+            days[key] = {
+                "first": before if before is not None else value,
+                "kwh": 0.0,
+                "kwh_km": 0.0,
+            }
+        days[key]["last"] = max(days[key].get("last", value), value)
+        before = days[key]["last"]
     if capacity:
-        for (start, before), (end, after) in zip(soc, soc[1:], strict=False):
-            driven_from, driven_to = _at(odometer, start), _at(odometer, end)
+        for (start, level), (end, after) in zip(soc, soc[1:], strict=False):
+            # One poll writes level and odometer a moment apart, in either order.
+            driven_from = _at(odometer, times, start + SAME_POLL)
+            driven_to = _at(odometer, times, end + SAME_POLL)
             if (
-                after < before
+                after < level
                 and driven_from is not None
                 and driven_to is not None
                 and driven_to - driven_from > 0.5
             ):
                 entry = days.get(end.date().isoformat())
                 if entry is not None:
-                    entry["kwh"] += (before - after) / 100 * capacity
+                    entry["kwh"] += (level - after) / 100 * capacity
+                    entry["kwh_km"] += driven_to - driven_from
     return [
         {
             "date": day,
             "km": round(data["last"] - data["first"], 1),
             "kwh": round(data["kwh"], 2) if capacity else None,
+            "kwh_km": round(data["kwh_km"], 1) if capacity else None,
         }
         for day, data in sorted(days.items())
     ]
@@ -540,23 +581,32 @@ def car_model(
     temps = temps or {}
     workdays = workdays or {}
     model: dict[str, Any] = {}
-    driving = [d for d in days if d["km"] >= 10 and d.get("kwh")]
+    driving = [d for d in days if (d.get("kwh_km") or 0) >= 10 and d.get("kwh")]
     if len(driving) >= CAR_DAYS:
-        rows = [
-            [1.0, max(0.0, HEAT_BELOW - temps[d["date"]])]
-            for d in driving
-            if d["date"] in temps
-        ]
-        targets = [100 * d["kwh"] / d["km"] for d in driving if d["date"] in temps]
-        fitted = _solve(rows, targets) if len(rows) >= CAR_DAYS else None
-        if fitted and fitted[0] > 0:
+        known = [d for d in driving if d["date"] in temps]
+        rows = [[1.0, max(0.0, HEAT_BELOW - temps[d["date"]])] for d in known]
+        targets = [100 * d["kwh"] / d["kwh_km"] for d in known]
+        # The cold slope only counts when the days cover cold weather.
+        cold_days = sum(1 for row in rows if row[1] >= 5.0)
+        fitted = (
+            _solve(rows, targets)
+            if len(rows) >= CAR_DAYS and cold_days >= CAR_DAYS // 2
+            else None
+        )
+        if fitted and fitted[0] > 0 and fitted[1] > 0:
             model["consumption"] = round(fitted[0], 1)
-            model["cold"] = round(max(0.0, fitted[1]), 2)
+            model["cold"] = round(fitted[1], 2)
         else:
+            # Without: the median, and the temperature it was learned at.
             model["consumption"] = round(
-                median(100 * d["kwh"] / d["km"] for d in driving), 1
+                median(100 * d["kwh"] / d["kwh_km"] for d in driving), 1
             )
             model["cold"] = None
+            model["temp"] = (
+                round(sum(temps[d["date"]] for d in known) / len(known), 1)
+                if known
+                else None
+            )
         model["consumption_days"] = len(driving)
     for name, wanted in (("workday_km", True), ("day_off_km", False)):
         values = sorted(

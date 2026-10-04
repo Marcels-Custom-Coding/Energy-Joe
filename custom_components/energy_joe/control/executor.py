@@ -32,7 +32,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from ..const import DOMAIN
-from ..observe.readings import measurement_kw, number
+from ..observe.readings import distance_km, measurement_kw, number
 from ..plan.actions import condition_met
 from .actions import ActionAdapter
 from .adapters import Adapter, Desired, RoleAdapter, make_adapter
@@ -316,6 +316,12 @@ class JoeExecutor:
             run = entry["run"] or manual
             start = datetime.fromisoformat(entry["start"])
             end = datetime.fromisoformat(entry["end"])
+            target = entry.get("target")
+            if manual and not entry.get("manual") and entry.get("kind") == "switch":
+                # "Tonight" by hand after the plan was fixed: like in plan_actions,
+                # the whole window and no target (not the charge shortened by need).
+                start = datetime.fromisoformat(plan["window"]["start"])
+                target = None
             reason: str | None = None
             on = False
             if action["id"] in self.data["done"]:
@@ -337,15 +343,15 @@ class JoeExecutor:
                 )
             ):
                 reason = "conditions"
-            elif entry.get("target") is not None and self._target_reached(
-                action, entry
+            elif target is not None and self._target_reached(
+                action, {**entry, "target": target}
             ):
                 reason = "reached"
                 self.data["done"].append(action["id"])
                 self._log(
                     "action_done",
                     battery=adapter.battery["id"],
-                    target=entry.get("target"),
+                    target=target,
                 )
             else:
                 on = True
@@ -364,17 +370,23 @@ class JoeExecutor:
             result[action["id"]] = {
                 "on": on,
                 "reason": reason,
-                "start": entry["start"],
+                "start": start.isoformat(timespec="minutes"),
                 "end": entry["end"],
-                "target": entry.get("target"),
+                "target": target,
                 "problem": problem,
             }
         return result
 
     def _target_reached(self, action: dict[str, Any], entry: dict[str, Any]) -> bool:
-        """Hot water at its temperature, or a car at the level it needs."""
+        """Hot water at its temperature, or a car at the level (or range) it needs."""
         sensor = entry.get("sensor") or action.get("sensor_entity") or ""
-        value = number(self._hass.states.get(sensor))
+        state = self._hass.states.get(sensor)
+        need = entry.get("need") or {}
+        # A range target is in km; the car may report miles.
+        if need.get("target_unit") == "km" and sensor == need.get("sensor"):
+            value = distance_km(state)
+        else:
+            value = number(state)
         target = entry.get("target")
         return value is not None and target is not None and value >= target
 
@@ -900,6 +912,8 @@ class JoeExecutor:
         night = plan["window"]["start"] if plan and plan.get("window") else None
         if on and night:
             self.data["tonight"][action_id] = night
+            # By hand: also when Joe's own charge reached its target before.
+            self.data["done"] = [d for d in self.data["done"] if d != action_id]
         else:
             self.data["tonight"].pop(action_id, None)
         self._log("tonight", battery=f"action:{action_id}", on=on)

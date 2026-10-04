@@ -3,15 +3,16 @@
 The distance comes from the service the user picked in the panel: Waze
 (through Home Assistant's own action, free), a Google travel time entry
 (with its API key) or OpenStreetMap (Photon finds the place, OSRM the
-route). Only the place text leaves Home Assistant, never the title. Places
-that are zones need no service: straight line times a detour factor.
-Results are kept per place; distances the user corrected always win.
+route). Only the place text and the home position as the route's start
+leave Home Assistant, never the title. Places that are zones need no
+service: straight line times a detour factor. Results are kept per place;
+distances the user corrected always win.
 """
 
 from __future__ import annotations
 
 import asyncio
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 import logging
 from typing import Any
 from urllib.parse import quote
@@ -31,8 +32,10 @@ _LOGGER = logging.getLogger(__name__)
 
 STORE_KEY = f"{DOMAIN}.places"
 STORE_VERSION = 1
-# Places are asked again after a month (corrections by the user never).
+# Places are asked again after a month (corrections by the user never),
+# places a service could not find after a few hours.
 REFRESH = timedelta(days=30)
+RETRY = timedelta(hours=6)
 # Road distance against the straight line (Germany ~1.32, long trips ~1.2).
 DETOUR = 1.3
 DETOUR_LONG = 1.2
@@ -72,6 +75,8 @@ class PlaceStore:
         self._store: Store[dict[str, Any]] = Store(hass, STORE_VERSION, STORE_KEY)
         self.places: dict[str, dict[str, Any]] = {}
         self._loaded = False
+        # Places the service could not find: (service, place) -> when it was asked.
+        self._failed: dict[tuple[str, str], datetime] = {}
 
     async def async_load(self) -> None:
         if not self._loaded:
@@ -81,10 +86,24 @@ class PlaceStore:
     def _save(self) -> None:
         self._store.async_delay_save(lambda: {"places": self.places}, 10)
 
+    async def async_flush(self) -> None:
+        """Write pending changes now (unload), so no delayed save fires later."""
+        if self._loaded:
+            await self._store.async_save({"places": self.places})
+
+    async def async_remove(self) -> None:
+        """Forget all places (integration removed)."""
+        self.places = {}
+        self._failed = {}
+        self._loaded = False
+        await self._store.async_remove()
+
     async def async_set(self, text: str, km: float | None) -> None:
         """The user's own distance for a place (None: ask the service again)."""
         await self.async_load()
         key = normalize(text)
+        # Corrected or to be worked out again: no back-off for this place.
+        self._failed = {k: v for k, v in self._failed.items() if k[1] != key}
         if km is None:
             self.places.pop(key, None)
         else:
@@ -104,14 +123,21 @@ class PlaceStore:
         await self.async_load()
         key = normalize(text)
         found = self.places.get(key)
+        asked = dt_util.parse_datetime(found["at"]) if found else None
         if found and (
             found["source"] == "user"
-            or dt_util.now() - dt_util.parse_datetime(found["at"]) < REFRESH
+            or (asked is not None and dt_util.now() - asked < REFRESH)
         ):
+            return found
+        failed_key = (str(routing.get("service")), key)
+        failed = self._failed.get(failed_key)
+        if failed and dt_util.now() - failed < RETRY:
             return found
         result = await async_route(self._hass, routing, text)
         if result is None:
+            self._failed[failed_key] = dt_util.now()
             return found
+        self._failed.pop(failed_key, None)
         self.places[key] = {
             "text": text.strip(),
             **result,
@@ -132,35 +158,49 @@ async def async_trips(
     persons = [
         p
         for p in config["persons"]
-        if p["calendars"] and (not need["persons"] or p["id"] in need["persons"])
+        if p["calendars"] and (need["persons"] is None or p["id"] in need["persons"])
     ]
     calendars = sorted({c for p in persons for c in p["calendars"]})
     if not calendars or not hass.services.has_service("calendar", "get_events"):
         return []
     start = dt_util.start_of_local_day(day)
-    try:
-        response = await hass.services.async_call(
-            "calendar",
-            "get_events",
-            {
-                "entity_id": calendars,
-                "start_date_time": start.isoformat(),
-                "end_date_time": (start + timedelta(days=1)).isoformat(),
-            },
-            blocking=True,
-            return_response=True,
-        )
-    except Exception:  # noqa: BLE001 - a calendar that does not answer gives no trips
-        _LOGGER.debug("Calendars did not answer", exc_info=True)
-        return []
+    span = {
+        "start_date_time": start.isoformat(),
+        "end_date_time": (start + timedelta(days=1)).isoformat(),
+    }
+
+    async def _events(entity_id: str) -> list[dict[str, Any]]:
+        """One calendar at a time: one that does not answer only loses its own."""
+        try:
+            response = await hass.services.async_call(
+                "calendar",
+                "get_events",
+                {"entity_id": entity_id, **span},
+                blocking=True,
+                return_response=True,
+            )
+        except Exception:  # noqa: BLE001 - a calendar that does not answer gives no trips
+            _LOGGER.debug("Calendar %s did not answer", entity_id, exc_info=True)
+            return []
+        return [
+            event
+            for entry in (response or {}).values()
+            for event in (entry or {}).get("events") or []
+        ]
+
+    found = await asyncio.gather(*(_events(c) for c in calendars))
     seen: set[tuple[str, str]] = set()
     trips = []
     factor = 2 if need["round_trip"] else 1
-    for entry in (response or {}).values():
-        for event in (entry or {}).get("events") or []:
+    for events in found:
+        for event in events:
             location = (event.get("location") or "").strip()
-            when = str(event.get("start") or "")
-            if not is_place(location) or (normalize(location), when) in seen:
+            when = _local_start(event.get("start"), day)
+            # Only appointments that begin on the day (not one from yesterday
+            # that runs on, like a stay of several days or a night shift).
+            if when is None or not is_place(location):
+                continue
+            if (normalize(location), when) in seen:
                 continue
             seen.add((normalize(location), when))
             place = await places.async_distance(config["routing"], location)
@@ -175,6 +215,23 @@ async def async_trips(
             )
     trips.sort(key=lambda t: t["start"])
     return trips
+
+
+def _local_start(value: Any, day: date) -> str | None:
+    """An event's start as local time if it begins on the day, else None.
+
+    The same moment in two calendars may come with different offsets.
+    """
+    text = str(value or "")
+    if "T" not in text:
+        return text if text == day.isoformat() else None
+    moment = dt_util.parse_datetime(text)
+    if moment is None:
+        return None
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=dt_util.get_default_time_zone())
+    local = dt_util.as_local(moment)
+    return local.isoformat() if local.date() == day else None
 
 
 async def async_route(
@@ -278,7 +335,11 @@ async def _async_osm(
     session = async_get_clientsession(hass)
     headers = {"User-Agent": USER_AGENT}
     lat, lon = hass.config.latitude, hass.config.longitude
-    url = f"{routing['geocoder_url']}?q={quote(text)}&lat={lat}&lon={lon}&limit=1"
+    # The search only needs to know the area (about 1 km), not the house.
+    url = (
+        f"{routing['geocoder_url']}?q={quote(text)}"
+        f"&lat={round(lat, 2)}&lon={round(lon, 2)}&limit=1"
+    )
     async with asyncio.timeout(TIMEOUT):
         response = await session.get(url, headers=headers)
         response.raise_for_status()
