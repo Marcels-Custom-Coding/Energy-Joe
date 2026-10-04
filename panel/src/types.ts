@@ -438,8 +438,17 @@ export interface CarAccountStatus {
 }
 
 /** A thermostat or air conditioner Joe steers by presence (see control/climate.py). */
+/** The device that measures a climate device (several may share one). */
+export interface ClimateMeter {
+  device_id: string;
+  power: string | null;
+  energy: string | null;
+}
+
 export interface ClimateRoomConfig {
   enabled: boolean;
+  /** null: not chosen yet (Joe suggests one), "none": has no meter. */
+  meter?: ClimateMeter | "none" | null;
   away: "setback" | "off" | "preset";
   setback_k: number;
   away_preset: string | null;

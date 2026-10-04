@@ -612,6 +612,27 @@ var Me = {
 	"climate.no_area": "Ohne Raum",
 	"climate.room.enabled": "Joe steuert {name}",
 	"climate.room.off": "Steuere ich nicht.",
+	"climate.meter": "Messgerät",
+	"climate.meter.pick": "Messgerät für {name} wählen",
+	"climate.meter.choose": "Messgerät wählen",
+	"climate.meter.other_devices": "Weitere Geräte",
+	"climate.meter.none": "Hat keins",
+	"climate.meter.cancel": "Abbrechen",
+	"climate.meter.no_meters": "Joe findet kein Gerät mit Leistungs- oder Energiesensor.",
+	"climate.meter.has_none": "Kein Messgerät – du hast festgelegt, dass dieses Gerät keins hat.",
+	"climate.meter.not_found": "Joe hat kein passendes Messgerät gefunden.",
+	"climate.meter.linked": "gekoppelt",
+	"climate.meter.suggested": "Vorschlag",
+	"climate.meter.power": "Leistung {value}",
+	"climate.meter.energy": "Zähler {value}",
+	"climate.meter.shared": "Gemeinsam mit {names}",
+	"climate.meter.shared_hint": "Diese Geräte hängen am selben Messgerät. Die Messung gilt für alle zusammen.",
+	"climate.meter.other": "Anderes Messgerät",
+	"climate.meter.why": "Ähnlicher Name oder gleicher Raum. Passt das?",
+	"climate.meter.fits": "Passt",
+	"tip.climate_meter.title": "Was misst dieses Gerät?",
+	"tip.climate_meter.text": "Hier koppelst du das Klimagerät mit dem Gerät, das seine Leistung und Energie misst – z. B. einem Kanal eines Shelly Pro 3EM („verbunden über …“). Joe schlägt eines vor, wenn Name oder Raum passen: „Passt“ übernimmt es, „Anderes Messgerät“ öffnet die Liste, „Hat keins“ sagt Joe, dass es keine Messung gibt.",
+	"tip.climate_meter.hint": "Mehrere Klimageräte dürfen sich ein Messgerät teilen – dann gilt die Messung für alle zusammen.",
 	"climate.away": "Wenn keiner da ist",
 	"climate.away.setback": "Absenken",
 	"climate.away.off": "Aus",
@@ -2360,6 +2381,27 @@ var Me = {
 	"climate.no_area": "No room",
 	"climate.room.enabled": "Joe steers {name}",
 	"climate.room.off": "Not steered by me.",
+	"climate.meter": "Meter",
+	"climate.meter.pick": "Pick the meter for {name}",
+	"climate.meter.choose": "Pick a meter",
+	"climate.meter.other_devices": "Other devices",
+	"climate.meter.none": "Has none",
+	"climate.meter.cancel": "Cancel",
+	"climate.meter.no_meters": "Joe finds no device with a power or energy sensor.",
+	"climate.meter.has_none": "No meter – you said this device has none.",
+	"climate.meter.not_found": "Joe found no matching meter.",
+	"climate.meter.linked": "linked",
+	"climate.meter.suggested": "Suggestion",
+	"climate.meter.power": "Power {value}",
+	"climate.meter.energy": "Meter {value}",
+	"climate.meter.shared": "Shared with {names}",
+	"climate.meter.shared_hint": "These devices hang on the same meter. The reading counts for all of them together.",
+	"climate.meter.other": "Other meter",
+	"climate.meter.why": "Similar name or same room. Does it fit?",
+	"climate.meter.fits": "Fits",
+	"tip.climate_meter.title": "What measures this device?",
+	"tip.climate_meter.text": "Link the climate device with the device that measures its power and energy – e.g. a channel of a Shelly Pro 3EM (“connected via …”). Joe suggests one when name or room fit: “Fits” takes it, “Other meter” opens the list, “Has none” tells Joe there is no measurement.",
+	"tip.climate_meter.hint": "Several climate devices may share one meter – the reading then counts for all of them together.",
 	"climate.away": "When nobody is home",
 	"climate.away.setback": "Lower",
 	"climate.away.off": "Off",
@@ -4097,14 +4139,14 @@ function Le(e) {
 }
 //#endregion
 //#region src/define.ts
-var Re = "0.6.5";
+var Re = "0.7.0";
 function H(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Re, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.6.5" && Be();
+	n.joeVersion !== "0.7.0" && Be();
 }
 var ze = !1;
 function Be() {

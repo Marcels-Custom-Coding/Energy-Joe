@@ -447,15 +447,28 @@
               };
               push();
               return state.mailbox[msg.car];
-            case "energy_joe/climate/devices":
+            case "energy_joe/climate/devices": {
+              const via = "Shelly Pro 3EM HV Gerätemessungen";
+              const meters = [
+                { device_id: "dev_a", name: "Klimaanlage Büro", sensor: null, via, area: "Büro", power: "sensor.klima_buero_leistung", energy: "sensor.klima_buero_energie" },
+                { device_id: "dev_b", name: "Klimaanlage Schlafzimmer", sensor: null, via, area: "Schlafzimmer", power: "sensor.klima_schlafzimmer_leistung", energy: "sensor.klima_schlafzimmer_energie" },
+                { device_id: "dev_c", name: "Waschmaschine", sensor: null, via: null, area: "Keller", power: "sensor.waschmaschine_leistung", energy: null },
+              ];
+              for (const [id, value, unit] of [["sensor.klima_buero_leistung", "412", "W"], ["sensor.klima_buero_energie", "183.4", "kWh"], ["sensor.klima_schlafzimmer_leistung", "0", "W"], ["sensor.klima_schlafzimmer_energie", "96.1", "kWh"], ["sensor.waschmaschine_leistung", "3", "W"]]) {
+                hass.states[id] = { entity_id: id, state: value, attributes: { unit_of_measurement: unit } };
+              }
               return {
+                meters,
+                suggested: { "climate.buero": meters[0], "climate.schlafzimmer": meters[1] },
                 devices: [
                   { entity_id: "climate.wohnzimmer", name: "Heizgruppe Wohnzimmer", area: "Wohnzimmer", state: "auto", hvac_modes: ["auto", "heat", "off"], preset_modes: ["boost", "eco", "Standard", "Abwesend", "Feiertag"], temperature: 21, current_temperature: 20.5, platform: "homematicip_cloud" },
-                  { entity_id: "climate.buero", name: "Klimaanlage Büro", area: "Büro", state: "cool", hvac_modes: ["off", "cool", "heat", "dry", "fan_only"], preset_modes: [], temperature: 23, current_temperature: 25.2, platform: "daikin" },
+                  { entity_id: "climate.buero", name: "Klimaanlage Büro", device_id: "ac1", device_name: "Klimaanlage Büro", area: "Büro", state: "cool", hvac_modes: ["off", "cool", "heat", "dry", "fan_only"], preset_modes: [], temperature: 23, current_temperature: 25.2, platform: "daikin" },
+                  { entity_id: "climate.schlafzimmer", name: "Klimaanlage Schlafzimmer", device_id: "ac2", device_name: "Klimaanlage Schlafzimmer", area: "Schlafzimmer", state: "off", hvac_modes: ["off", "cool", "heat"], preset_modes: [], temperature: 22, current_temperature: 23.1, platform: "daikin" },
                 ],
                 arrivals: { "person.marcel": { km: 12.4, direction: "towards" } },
                 proximity: true,
               };
+            }
             case "energy_joe/automations":
             case "energy_joe/automations/switch": {
               // Two automations in the style of a real setup (interlock and boost).

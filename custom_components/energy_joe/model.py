@@ -334,9 +334,19 @@ EV_NEED = vol.Schema(
 _CLOCK = vol.Match(r"^([01]?\d|2[0-3]):[0-5]\d$")
 
 # A thermostat or air conditioner Joe steers by presence (see control/climate.py).
+# The device that measures a climate device (several may share one).
+CLIMATE_METER = vol.Schema(
+    {
+        vol.Required("device_id"): str,
+        vol.Optional("power", default=None): _ENTITY,
+        vol.Optional("energy", default=None): _ENTITY,
+    }
+)
 CLIMATE_ROOM = vol.Schema(
     {
         vol.Optional("enabled", default=False): bool,
+        # None: not chosen yet (Joe suggests one), "none": has no meter.
+        vol.Optional("meter", default=None): vol.Any(None, "none", CLIMATE_METER),
         # While nobody is home: lower (cooling: raise) by setback_k, switch
         # "off", or a "preset" of the device (e.g. a Homematic IP profile).
         vol.Optional("away", default="setback"): vol.In(("setback", "off", "preset")),

@@ -27,6 +27,7 @@ from .calendar import unique_id as calendar_unique_id
 from .calendar_feed import feed_path
 from .const import DOMAIN
 from .control.climate import arrivals as climate_arrivals
+from .control.meters import meter_options, suggest as suggest_meter
 from .control.profiles import PROFILES
 from .discovery import async_check, async_collect, async_discover, discover
 from .discovery.checks import run_config_checks
@@ -905,6 +906,8 @@ def ws_climate_devices(
             {
                 "entity_id": state.entity_id,
                 "name": state.name,
+                "device_id": device.id if device else None,
+                "device_name": (device.name_by_user or device.name) if device else None,
                 "area": area.name if area else None,
                 "state": state.state,
                 "hvac_modes": state.attributes.get("hvac_modes") or [],
@@ -914,6 +917,7 @@ def ws_climate_devices(
                 "platform": item.platform if item else None,
             }
         )
+    meters = meter_options(hass)
     connection.send_result(
         msg["id"],
         {
@@ -922,6 +926,12 @@ def ws_climate_devices(
             ),
             "arrivals": climate_arrivals(hass),
             "proximity": bool(hass.config_entries.async_entries("proximity")),
+            "meters": meters,
+            "suggested": {
+                d["entity_id"]: hit
+                for d in found
+                if (hit := suggest_meter(d, meters)) is not None
+            },
         },
     )
 

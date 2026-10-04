@@ -1,4 +1,4 @@
-import { A as e, C as t, D as n, E as r, O as i, S as a, T as o, _ as s, a as c, b as l, c as u, d, f, g as p, h as m, i as h, j as g, k as _, l as v, m as y, n as ee, o as te, p as ne, r as re, s as b, t as ie, u as ae, v as oe, w as se, x, y as S } from "./tokens-CPX-ThWE.js";
+import { A as e, C as t, D as n, E as r, O as i, S as a, T as o, _ as s, a as c, b as l, c as u, d, f, g as p, h as m, i as h, j as g, k as _, l as v, m as y, n as ee, o as te, p as ne, r as re, s as b, t as ie, u as ae, v as oe, w as se, x, y as S } from "./tokens-CnkEHQ8C.js";
 //#region src/assets.ts
 var ce = import.meta.url.replace(/[^/]*$/, ""), le = (e) => `${ce}${e}`, C = _`<svg
   class="swoosh"
@@ -4292,6 +4292,80 @@ var gt = {
         margin: 10px 0 0;
         font-weight: 600;
       }
+      .meter {
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid var(--joe-line);
+      }
+      .pair {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 76px minmax(0, 1fr);
+        gap: 8px;
+        align-items: center;
+        margin-top: 10px;
+      }
+      .dev {
+        display: grid;
+        gap: 2px;
+        min-width: 0;
+        padding: 8px 10px;
+        border-radius: 12px;
+        background: var(--joe-surface-2);
+      }
+      .dev b {
+        font-weight: 600;
+        overflow-wrap: anywhere;
+      }
+      .dev small {
+        color: var(--joe-muted);
+        font-size: 12.5px;
+        overflow-wrap: anywhere;
+      }
+      .via::before {
+        content: "↳ ";
+        color: var(--joe-amber);
+        font-weight: 800;
+      }
+      .link {
+        display: grid;
+        justify-items: center;
+        gap: 4px;
+        font-size: 12.5px;
+        font-weight: 700;
+        color: var(--joe-good);
+        text-align: center;
+      }
+      .link i {
+        display: block;
+        width: 100%;
+        height: 3px;
+        border-radius: 2px;
+        background: currentColor;
+      }
+      .link.maybe {
+        color: var(--joe-amber-ink, var(--joe-ink-2));
+      }
+      .link.maybe i {
+        background: repeating-linear-gradient(90deg, var(--joe-amber) 0 6px, transparent 6px 10px);
+      }
+      .grow {
+        flex: 1;
+      }
+      .row.chips > span:first-child {
+        flex: 0 0 auto;
+      }
+      .meter select {
+        flex: 1 1 220px;
+      }
+      @media (max-width: 760px) {
+        .pair {
+          grid-template-columns: 1fr;
+        }
+        .link i {
+          width: 3px;
+          height: 18px;
+        }
+      }
       @media (max-width: 760px) {
         .intro,
         .grid {
@@ -4433,7 +4507,106 @@ var gt = {
               ${u ? e.optional(`climate.now.${u.why}`) ?? "" : i}
               ${d ? e("climate.rate", { rate: y(e.lang, d, 1) }) : e("climate.rate_default")}
             </p>` : _`<p class="hint">${e("climate.room.off")}</p>`}
+      ${this.renderMeter(e, t, n, r)}
     </section>`;
+	}
+	renderMeter(e, t, n, r) {
+		let a = this.found?.meters ?? [], o = r.meter && r.meter !== "none" ? r.meter : null, s = r.meter == null ? this.found?.suggested?.[n.entity_id] : void 0, c = o ? this.option(o) ?? {
+			...o,
+			name: null,
+			sensor: null,
+			via: null,
+			area: null
+		} : s, l = _`<div class="head">
+      <div class="eyebrow"><ha-icon icon="mdi:meter-electric-outline"></ha-icon>${e("climate.meter")}</div>
+      ${v(e, "climate_meter")}
+    </div>`;
+		if (this.picking === n.entity_id) {
+			let t = [...new Set(a.map((e) => e.via ?? ""))];
+			return _`<div class="meter" data-tipped>
+        ${l}
+        <div class="row">
+          <select class="input" aria-label=${e("climate.meter.pick", { name: n.name })} @change=${(e) => this.pickMeter(n, e.target.value)}>
+            <option value="" selected disabled>${e("climate.meter.choose")}</option>
+            ${t.map((t) => _`<optgroup label=${t || e("climate.meter.other_devices")}>
+                ${a.filter((e) => (e.via ?? "") === t).map((t) => _`<option value=${this.key(t)}>${this.meterLabel(e, t)}</option>`)}
+              </optgroup>`)}
+            <option value="none">${e("climate.meter.none")}</option>
+          </select>
+          <button type="button" class="btn btn-ghost" @click=${() => this.picking = void 0}>${e("climate.meter.cancel")}</button>
+        </div>
+        ${a.length ? i : _`<p class="hint">${e("climate.meter.no_meters")}</p>`}
+      </div>`;
+		}
+		if (!c) return _`<div class="meter" data-tipped>
+        ${l}
+        <p class="hint">${e(r.meter === "none" ? "climate.meter.has_none" : "climate.meter.not_found")}</p>
+        <div class="row">
+          <button type="button" class="btn btn-secondary" @click=${() => this.picking = n.entity_id}>${e("climate.meter.choose")}</button>
+          ${r.meter == null ? _`<button type="button" class="btn btn-ghost" @click=${() => this.save(n, { meter: "none" })}>${e("climate.meter.none")}</button>` : i}
+        </div>
+      </div>`;
+		let u = o ? (this.found?.devices ?? []).filter((e) => e.entity_id !== n.entity_id && this.sameMeter(t.config.climate?.rooms?.[e.entity_id]?.meter, o)) : [], d = c.power ? this.hass?.states[c.power] : void 0, f = c.energy ? this.hass?.states[c.energy] : void 0;
+		return _`<div class="meter" data-tipped>
+      ${l}
+      <div class="pair">
+        <div class="dev"><b>${n.device_name ?? n.name}</b><small>${n.area ?? e("climate.no_area")}</small></div>
+        <div class="link ${o ? "" : "maybe"}"><i></i>${e(o ? "climate.meter.linked" : "climate.meter.suggested")}</div>
+        <div class="dev">
+          <b>${c.name ?? c.power ?? c.energy ?? c.device_id}${c.sensor ? ` · ${c.sensor}` : ""}</b>
+          ${c.via ? _`<small class="via">${c.via}</small>` : i}
+        </div>
+      </div>
+      ${o ? _`<div class="row chips">
+            ${d ? _`<span class="chip">${e("climate.meter.power", { value: this.reading(e, d) })}</span>` : i}
+            ${f ? _`<span class="chip">${e("climate.meter.energy", { value: this.reading(e, f) })}</span>` : i}
+            ${u.length ? _`<span class="chip">${e("climate.meter.shared", { names: u.map((e) => e.name).join(", ") })}</span>` : i}
+            <span class="grow"></span>
+            <button type="button" class="btn btn-ghost" @click=${() => this.picking = n.entity_id}>${e("climate.meter.other")}</button>
+          </div>
+          ${u.length ? _`<p class="hint">${e("climate.meter.shared_hint")}</p>` : i}` : _`<p class="hint">${e("climate.meter.why")}</p>
+            <div class="row">
+              <button type="button" class="btn btn-primary" @click=${() => this.save(n, { meter: this.meterOf(c) })}>${e("climate.meter.fits")}</button>
+              <button type="button" class="btn btn-secondary" @click=${() => this.picking = n.entity_id}>${e("climate.meter.other")}</button>
+              <button type="button" class="btn btn-ghost" @click=${() => this.save(n, { meter: "none" })}>${e("climate.meter.none")}</button>
+            </div>`}
+    </div>`;
+	}
+	key(e) {
+		return [
+			e.device_id,
+			e.power ?? "",
+			e.energy ?? ""
+		].join("|");
+	}
+	option(e) {
+		return (this.found?.meters ?? []).find((t) => this.key(t) === this.key(e));
+	}
+	meterOf(e) {
+		return {
+			device_id: e.device_id,
+			power: e.power,
+			energy: e.energy
+		};
+	}
+	sameMeter(e, t) {
+		return !!e && e !== "none" && this.key(e) === this.key(t);
+	}
+	meterLabel(e, t) {
+		let n = t.power ? this.hass?.states[t.power] : void 0, r = `${t.name ?? t.device_id}${t.sensor ? ` · ${t.sensor}` : ""}`;
+		return n ? `${r} · ${this.reading(e, n)}` : r || e("climate.meter.choose");
+	}
+	reading(e, t) {
+		let n = Number(t.state);
+		return `${t.state !== "" && Number.isFinite(n) ? y(e.lang, n, n % 1 ? 1 : 0) : t.state} ${String(t.attributes.unit_of_measurement ?? "")}`.trim();
+	}
+	pickMeter(e, t) {
+		if (this.picking = void 0, t === "none") {
+			this.save(e, { meter: "none" });
+			return;
+		}
+		let n = (this.found?.meters ?? []).find((e) => this.key(e) === t);
+		n && this.save(e, { meter: this.meterOf(n) });
 	}
 	presetRow(e, t, n, r, a, o, s = !1) {
 		return _`<div class="row">
@@ -4487,7 +4660,7 @@ var gt = {
 		j(this, { climate: { rooms: { [e.entity_id]: n } } });
 	}
 };
-S([r({ attribute: !1 })], vt.prototype, "hass", void 0), S([r({ attribute: !1 })], vt.prototype, "t", void 0), S([r({ attribute: !1 })], vt.prototype, "state", void 0), S([o()], vt.prototype, "found", void 0), S([o()], vt.prototype, "failed", void 0), x("joe-climate-page", vt);
+S([r({ attribute: !1 })], vt.prototype, "hass", void 0), S([r({ attribute: !1 })], vt.prototype, "t", void 0), S([r({ attribute: !1 })], vt.prototype, "state", void 0), S([o()], vt.prototype, "found", void 0), S([o()], vt.prototype, "failed", void 0), S([o()], vt.prototype, "picking", void 0), x("joe-climate-page", vt);
 //#endregion
 //#region src/components/look-back.ts
 function z(e, t, n = "EUR", r = !1) {

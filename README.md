@@ -60,6 +60,7 @@ Joe braucht kein Vorwissen. Er findet selbst, was er braucht, fragt in Alltagssp
 - Ist keiner zu Hause: absenken (beim Kühlen anheben), ganz aus oder ein Profil des Geräts – bei Homematic IP z. B. dein Heizprofil „Abwesend“. An freien Tagen auf Wunsch ein eigenes Profil.
 - Kommt jemand heim (Integration „Nähe“/Proximity), fährt Joe die Räume so rechtzeitig hoch, wie sie es laut Gelerntem brauchen, und stellt alles genau so zurück, wie es war.
 - Klimaanlagen auf Wunsch nachts aus und rechtzeitig vor dem Morgen wieder an.
+- Messgerät koppeln: Joe schlägt zu jedem Klimagerät das Gerät vor, das seine Leistung misst (z. B. einen Kanal eines Shelly Pro 3EM). Mehrere Klimageräte dürfen sich ein Messgerät teilen.
 
 ### Termine des Autos
 

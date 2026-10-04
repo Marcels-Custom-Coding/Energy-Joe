@@ -3,6 +3,11 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.7.0
+
+- Klima: Messgerät koppeln. Zu jedem Thermostat und jeder Klimaanlage zeigt Joe, welches Gerät Leistung und Energie misst – z. B. den Kanal „Schlafzimmer Klimaanlage“, verbunden über „Shelly Pro 3EM HV Gerätemessungen“. Passen Name oder Raum, schlägt er es vor: „Passt“, „Anderes Messgerät“ oder „Hat keins“. Gekoppelt siehst du Leistung und Zählerstand live.
+- Mehrere Klimageräte dürfen sich ein Messgerät teilen; Joe zeigt dann, mit wem, und dass die Messung für alle zusammen gilt.
+
 ## 0.6.5
 
 - Kalender-Regeln pro Person: Unter „Lernen → Kalender-Regeln“ wählst du oben „Alle“ oder eine Person. Mit dem Schalter „Gilt für alle“ folgt die Person den gemeinsamen Regeln; schaltest du ihn aus, bekommt sie eigene Stichworte und eigene Vorgaben für Tage ohne passenden Termin (zum Start eine Kopie der gemeinsamen).
