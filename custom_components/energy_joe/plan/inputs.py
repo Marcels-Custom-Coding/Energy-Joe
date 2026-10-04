@@ -259,6 +259,7 @@ async def async_build_input(
 
     notes: list[str] = []
     batteries = []
+    defer_kw = 0.0
     learned = config["learned"]
     battery_models = learned.get("battery_models") or {}
     efficiencies: list[tuple[float, float]] = []
@@ -294,6 +295,9 @@ async def async_build_input(
         )
         if battery["adapter"] == "none":
             notes.append("not_controllable")
+        elif "charge_limit" in (battery.get("controls") or {}):
+            # It can hold back charging from the sun (grid-friendly mornings).
+            defer_kw += batteries[-1].charge_kw
     if not batteries:
         return None, [*notes, "no_battery"]
 
@@ -498,6 +502,7 @@ async def async_build_input(
             actions=actions,
             reserved=reserved,
             force_target=100.0 if balance else None,
+            defer_kw=defer_kw,
             meta={
                 "consumption": consumption,
                 "solar": sun_meta,
@@ -571,6 +576,8 @@ def _input(
         max_target=max(rules["max_target_soc"], force or 0.0),
         evening_min=rules["evening_min_soc"],
         grid_limit_kw=rules["grid_limit_w"] / 1000 if rules["grid_limit_w"] else None,
+        grid_friendly=rules["grid_friendly"],
+        grid_first=rules["grid_first"],
         max_night_kwh=rules["max_night_kwh"],
         discharge_mode=rules["discharge_in_window"],
         buffer=rules["buffer_factor"],

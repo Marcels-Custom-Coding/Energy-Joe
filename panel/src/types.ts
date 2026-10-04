@@ -258,6 +258,9 @@ export interface Rules {
   min_saving: number;
   /** Pause charging while the house draws more than the grid limit. */
   guard_grid: boolean;
+  /** Batteries take the midday sun, the car charges with the sun; saving first unless grid_first. */
+  grid_friendly: boolean;
+  grid_first: boolean;
   /** Charge full once every so many days (maintenance); null: off. */
   balance_days: number | null;
 }
@@ -514,6 +517,8 @@ export interface Plan {
   charge_kw?: number;
   batteries?: PlanBattery[];
   sun_takes_over?: string | null;
+  /** Grid-friendly morning: batteries hold back charging until then (see planner._grid_friendly). */
+  day?: { defer_until: string; held_kwh: number; grid_first: boolean; cost?: number } | null;
   full_at?: string | null;
   empty_without?: string | null;
   solar_kwh?: number;
@@ -603,10 +608,13 @@ export type ControlReason =
   | "skipped"
   | "nothing"
   | "steering"
+  | "day"
   | "done";
 
 export interface ControlBattery {
-  action: "charge" | "hold" | "block" | "free" | "watch" | null;
+  action: "charge" | "hold" | "block" | "free" | "watch" | "defer" | null;
+  /** A grid-friendly morning: charging held back until then. */
+  until?: string;
   floor: number | null;
   target: number;
   soc: number | null;

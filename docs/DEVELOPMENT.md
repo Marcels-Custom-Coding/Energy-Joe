@@ -30,6 +30,11 @@ cd panel && npm install
 - Eine Stunde (`observe/records.py`, `compose`) rechnet den Hausverbrauch wie das Energie-Dashboard: Netz rein − raus + PV − Speicher laden + entladen (`home_calc`). Ein Hausverbrauchs-Sensor steht nur ein, wenn das nicht geht (kein Netz, Speicher ohne Messung), und wird sonst als `home_sensor` zum Vergleich gespeichert; `learn/models.py`, `home_check`, vergleicht beide über zwei Wochen. Ältere Stunden (Format 1 im Index der Historie) liest Joe einmal neu ein.
 - Flexible Geräte (`model.flexible_consumers`): die Wallbox (Art `ev`, außer „Auch aus dem Hausspeicher“) und Geräte mit `runs` = `surplus` oder `cheap`. Planen (`plan/inputs.py`, `consumption_profiles`), Lernen (`daily_rows`), Rückfragen und Auswerten (`learn/evaluate.py`, über `meta.consumption.flexible` des Plans) nehmen `base_home`: Hausverbrauch ohne diese Geräte.
 
+## Netzdienlich
+
+- Planen (`plan/planner.py`, `_grid_friendly`): Mit `rules.grid_friendly` und Speichern mit Ladegrenze (`charge_limit`, deren Ladeleistung zählt als `defer_kw`) sucht Joe die späteste Stunde bis zur stärksten Überschuss-Stunde, ab der die Speicher mit 80 % der Prognose noch so voll werden wie ohne Warten (Kosten höchstens 2 ct mehr, mit `rules.grid_first` 30 ct). Das steht als `day` (`defer_until`, `held_kwh`, `cost`) am Plan; die Stunden des Plans zeigen den Tag mit dem Warten, die Kosten der Nacht bleiben die der Nacht.
+- Steuern (`control/executor.py`, `_async_day`): nach dem Fenster bis `defer_until` Ladegrenze 0 (`RoleAdapter.defer`), nur getestete Speicher, nur „Vorschlagen“ (mit Ja für die Nacht) und „Live“. Reicht der Rest der Sonne (× 0,8) nicht mehr für den freien Platz, gibt Joe früher frei (`day_released`). Freigeben am Ende mit Grund `day_done` (keine zweite Morgen-Nachricht).
+
 ## Dynamische Tarife
 
 - Preise liest `custom_components/energy_joe/plan/prices.py`: zuerst Preislisten in den Attributen des Preis-Sensors (Start, optional Ende, Preis; Einheiten €/kWh, ct/kWh, €/MWh), sonst die Aktionen von Tibber (`tibber.get_prices`), Nord Pool aus Home Assistant (`nordpool.get_prices_for_date`), EnergyZero und easyEnergy. Ein neues Format ist meist nur ein weiterer Schlüssel in `START_KEYS`, `END_KEYS` oder `PRICE_KEYS`.

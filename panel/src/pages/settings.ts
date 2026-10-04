@@ -298,6 +298,7 @@ export class JoeSettings extends LitElement {
               )}
             </div>
           </div>
+          ${this.gridFriendlyRows(t, config.rules)}
           <div class="row" data-tipped>
             <div>
               <div class="name"><b>${t("settings.setup")}</b>${tip(t, "restart")}</div>
@@ -656,6 +657,48 @@ export class JoeSettings extends LitElement {
     }
     const stored = rule.integer ? Math.round(value) : Math.round((value / scale) * 10000) / 10000;
     saveConfig(this, { rules: { [rule.key]: stored } });
+  }
+
+  /** Grid-friendly: batteries take the midday sun; what comes first, saving or the grid. */
+  private gridFriendlyRows(t: Translate, rules: Rules): TemplateResult {
+    const config = this.state!.config;
+    return html`<div class="row" data-tipped>
+        <div>
+          <div class="name"><b id="grid-friendly">${t("rule.grid_friendly")}</b>${tip(t, "r_grid_friendly")}</div>
+          <small>${t("rule.grid_friendly.hint")}</small>
+        </div>
+        <div class="control">
+          ${sourceChip(t, sourceOf(config, "rules.grid_friendly"))}
+          <button
+            type="button"
+            class="switch"
+            role="switch"
+            aria-checked=${String(rules.grid_friendly)}
+            aria-labelledby="grid-friendly"
+            @click=${() => saveConfig(this, { rules: { grid_friendly: !rules.grid_friendly } })}
+          ></button>
+        </div>
+      </div>
+      ${rules.grid_friendly
+        ? html`<div class="row" data-tipped>
+            <div>
+              <div class="name"><b>${t("rule.grid_first")}</b>${tip(t, "r_grid_first")}</div>
+              <small>${t(rules.grid_first ? "rule.grid_first.grid.hint" : "rule.grid_first.saving.hint")}</small>
+            </div>
+            <div class="seg" role="group" aria-label=${t("rule.grid_first")}>
+              ${[false, true].map(
+                (first) =>
+                  html`<button
+                    type="button"
+                    aria-pressed=${String(rules.grid_first === first)}
+                    @click=${() => saveConfig(this, { rules: { grid_first: first } })}
+                  >
+                    ${t(first ? "rule.grid_first.grid" : "rule.grid_first.saving")}
+                  </button>`,
+              )}
+            </div>
+          </div>`
+        : nothing}`;
   }
 
   /** Protect the main fuse: pause charging while the house draws more than the limit. */

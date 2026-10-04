@@ -306,7 +306,9 @@ export class JoeDevicesPage extends LitElement {
     const text =
       reason === "waiting" && plan?.window
         ? t("devices.status.waiting", { time: timeOf(plan.window.start) })
-        : t(`devices.status.${reason}`);
+        : reason === "day"
+          ? t("devices.status.day", { time: plan?.day ? timeOf(plan.day.defer_until) : "–" })
+          : t(`devices.status.${reason}`);
     const pill =
       joe.mode === "simulation"
         ? html`<span class="pill-sim">${t("mode.simulation")}</span>`
@@ -353,8 +355,9 @@ export class JoeDevicesPage extends LitElement {
             : t("devices.battery.watch");
     const action = now?.action
       ? t(`devices.action.${now.action}`, {
-          target: formatNumber(t.lang, now.target, 0),
+          target: formatNumber(t.lang, now.target ?? 0, 0),
           floor: formatNumber(t.lang, now.floor ?? 0, 0),
+          until: now.until ? timeOf(now.until) : "",
         })
       : t("devices.action.idle");
     const problem = now?.problem ?? (ready !== "ready" && ready !== "not_controllable" ? ready : null);

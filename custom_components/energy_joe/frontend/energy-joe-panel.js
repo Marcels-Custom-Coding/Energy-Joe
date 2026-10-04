@@ -728,6 +728,8 @@ var $e = import.meta.url.replace(/[^/]*$/, ""), et = (e) => `${$e}${e}`, tt = {
 	"overview.next.4.title": "Was es gebracht hätte",
 	"overview.next.4.text": "Plan gegen Wirklichkeit – Tag für Tag, in Euro.",
 	"status.done": "erledigt",
+	"plan.day": "Netzdienlich: Bis {time} Uhr geht die Morgensonne ins Netz (etwa {kwh} kWh), dann lädt der Speicher in der Mittagsspitze.",
+	"plan.day.cost": "Kostet etwa {cost}.",
 	"plan.title": "Hier |rechne ich",
 	"history.title": "Jeder Tag |unter der Lupe",
 	"devices.title": "Deine |Geräte",
@@ -978,6 +980,13 @@ var $e = import.meta.url.replace(/[^/]*$/, ""), et = (e) => `${$e}${e}`, tt = {
 	"rule.max_price.hint": "Leer = kein Höchstpreis.",
 	"rule.min_saving": "Mindestersparnis pro Nacht",
 	"rule.min_saving.hint": "Darunter lasse ich die Speicher in Ruhe.",
+	"rule.grid_friendly": "Netzdienlich verhalten",
+	"rule.grid_friendly.hint": "Speicher nehmen die Mittagssonne statt der Morgensonne, das Auto lädt mit Sonne.",
+	"rule.grid_first": "Was geht vor?",
+	"rule.grid_first.saving": "Ersparnis",
+	"rule.grid_first.grid": "Netz",
+	"rule.grid_first.saving.hint": "Ich verhalte mich nur netzdienlich, wenn es dich nichts kostet.",
+	"rule.grid_first.grid.hint": "Ich verhalte mich auch netzdienlich, wenn es bis zu 30 ct am Tag kostet.",
 	"rule.guard_grid": "Hauptsicherung schützen",
 	"rule.guard_grid.hint": "Zieht das Haus mehr als das Netzlimit, pausiert das Laden ein paar Minuten.",
 	"rule.guard_grid.no_limit": "Braucht ein Netzlimit (oben).",
@@ -1123,6 +1132,11 @@ var $e = import.meta.url.replace(/[^/]*$/, ""), et = (e) => `${$e}${e}`, tt = {
 	"tip.r_max_price.text": "Teurer als das lade ich nie aus dem Netz – auch wenn die Rechnung es knapp empfehlen würde. Halten darf ich die Speicher trotzdem.",
 	"tip.r_min_saving.title": "Warum eine Mindestersparnis?",
 	"tip.r_min_saving.text": "Jedes Steuern schreibt Werte in deine Geräte. Bringt eine Nacht weniger als diesen Betrag, lasse ich es und die Speicher laufen wie ohne mich. Pflegenächte sind ausgenommen.",
+	"tip.r_grid_friendly.title": "Was heißt netzdienlich?",
+	"tip.r_grid_friendly.text": "Mittags liefern alle Solaranlagen gleichzeitig am meisten – dann ist das Netz voll. Morgens und abends brauchen alle Strom – dann ist es knapp.\n**Speicher**: An sonnigen Tagen halte ich das Laden morgens zurück, der Überschuss geht ins Netz, und der Speicher lädt in der Mittagsspitze. Ich rechne vorsichtig mit 80 % der Prognose und gebe früher frei, wenn die Sonne zurückbleibt. Das geht bei Speichern, deren Ladeleistung ich begrenzen kann.\n**Morgens und abends** nimmt das Haus Strom aus dem Speicher statt aus dem Netz.\n**Auto**: Fährt es erst nachmittags, lädt es mit Sonne statt nachts.",
+	"tip.r_grid_friendly.hint": "Steuern tue ich das nur in den Modi „Vorschlagen“ und „Live“, in der Simulation zeige ich es nur.",
+	"tip.r_grid_first.title": "Ersparnis oder Netz?",
+	"tip.r_grid_first.text": "**Ersparnis**: Ich warte morgens nur so lange, dass der Speicher trotzdem so voll wird wie sonst – es kostet dich nichts.\n**Netz**: Ich warte auch länger, wenn der Speicher dann nicht ganz voll wird – das darf bis zu 30 ct am Tag kosten.",
 	"tip.r_guard_grid.title": "Was macht der Schutz?",
 	"tip.r_guard_grid.text": "Während ich lade, schaue ich jede Minute auf den Netzbezug. Liegt er über deinem Netzlimit – weil gerade Herd, Wallbox und Wärmepumpe laufen –, halte ich die Speicher fünf Minuten lang, statt zu laden. Danach geht es weiter.",
 	"tip.r_balance_days.title": "Was ist eine Pflegeladung?",
@@ -1693,6 +1707,7 @@ var $e = import.meta.url.replace(/[^/]*$/, ""), et = (e) => `${$e}${e}`, tt = {
 	"devices.status.skipped": "Heute Nacht setze ich aus.",
 	"devices.status.nothing": "Heute Nacht gibt es nichts zu tun.",
 	"devices.status.no_plan": "Noch kein Plan für heute Nacht.",
+	"devices.status.day": "Netzdienlich: Ich halte das Laden der Speicher bis {time} Uhr zurück – die Morgensonne geht ins Netz.",
 	"devices.status.done": "Die Nacht ist vorbei, alles ist zurückgestellt.",
 	"devices.pending": "Ein paar Werte stehen noch nicht wieder auf ihrem Ausgangswert. Ich versuche es weiter.",
 	"devices.power.charge": "lädt mit {value} kW",
@@ -1708,6 +1723,7 @@ var $e = import.meta.url.replace(/[^/]*$/, ""), et = (e) => `${$e}${e}`, tt = {
 	"devices.action.charge": "Lädt auf {target} %",
 	"devices.action.hold": "Hält bei {floor} %",
 	"devices.action.block": "Entladen gesperrt, solange ein anderer lädt",
+	"devices.action.defer": "Lädt erst ab {until} Uhr – die Morgensonne geht ins Netz",
 	"devices.action.free": "Frei – ich greife nicht ein",
 	"devices.action.watch": "Nur beobachtet",
 	"devices.action.idle": "Frei – ich greife gerade nicht ein",
@@ -2119,6 +2135,8 @@ var $e = import.meta.url.replace(/[^/]*$/, ""), et = (e) => `${$e}${e}`, tt = {
 	"overview.next.4.title": "What it would have saved",
 	"overview.next.4.text": "Plan against reality – day by day, in money.",
 	"status.done": "done",
+	"plan.day": "Grid-friendly: until {time} the morning sun goes to the grid (about {kwh} kWh), then the battery charges at the midday peak.",
+	"plan.day.cost": "Costs about {cost}.",
 	"plan.title": "Where I |do the math",
 	"history.title": "Every day |up close",
 	"devices.title": "Your |devices",
@@ -2369,6 +2387,13 @@ var $e = import.meta.url.replace(/[^/]*$/, ""), et = (e) => `${$e}${e}`, tt = {
 	"rule.max_price.hint": "Empty = no highest price.",
 	"rule.min_saving": "Minimum saving per night",
 	"rule.min_saving.hint": "Below that I leave the batteries alone.",
+	"rule.grid_friendly": "Be grid-friendly",
+	"rule.grid_friendly.hint": "Batteries take the midday sun instead of the morning sun, the car charges with the sun.",
+	"rule.grid_first": "What comes first?",
+	"rule.grid_first.saving": "Saving",
+	"rule.grid_first.grid": "Grid",
+	"rule.grid_first.saving.hint": "I am only grid-friendly when it costs you nothing.",
+	"rule.grid_first.grid.hint": "I am grid-friendly even when it costs up to 30 ct a day.",
 	"rule.guard_grid": "Protect the main fuse",
 	"rule.guard_grid.hint": "If the house draws more than the grid limit, charging pauses for a few minutes.",
 	"rule.guard_grid.no_limit": "Needs a grid limit (above).",
@@ -2514,6 +2539,11 @@ var $e = import.meta.url.replace(/[^/]*$/, ""), et = (e) => `${$e}${e}`, tt = {
 	"tip.r_max_price.text": "I never charge from the grid above this price – even if the calculation would narrowly recommend it. I may still hold the batteries.",
 	"tip.r_min_saving.title": "Why a minimum saving?",
 	"tip.r_min_saving.text": "Every time I steer, I write values to your devices. If a night brings less than this amount, I leave it and the batteries run as without me. Maintenance nights are the exception.",
+	"tip.r_grid_friendly.title": "What does grid-friendly mean?",
+	"tip.r_grid_friendly.text": "At midday all solar systems deliver the most at once – the grid is full. In the morning and evening everyone needs power – it is short.\n**Batteries**: On sunny days I hold back charging in the morning, the surplus goes to the grid and the battery charges at the midday peak. I take only 80 % of the forecast and let go early when the sun lags. This works with batteries whose charging power I can limit.\n**Morning and evening** the home takes power from the battery instead of the grid.\n**Car**: If it leaves only in the afternoon, it charges with the sun instead of at night.",
+	"tip.r_grid_friendly.hint": "I only steer this in the modes “Suggest” and “Live”; in simulation I only show it.",
+	"tip.r_grid_first.title": "Saving or grid?",
+	"tip.r_grid_first.text": "**Saving**: I only wait in the morning as long as the battery still gets as full as otherwise – it costs you nothing.\n**Grid**: I also wait longer when the battery then doesn't get quite full – that may cost up to 30 ct a day.",
 	"tip.r_guard_grid.title": "What does the protection do?",
 	"tip.r_guard_grid.text": "While I charge, I look at the grid draw every minute. If it is above your grid limit – because stove, wallbox and heat pump run at the same time – I hold the batteries for five minutes instead of charging. Then I carry on.",
 	"tip.r_balance_days.title": "What is a maintenance charge?",
@@ -3084,6 +3114,7 @@ var $e = import.meta.url.replace(/[^/]*$/, ""), et = (e) => `${$e}${e}`, tt = {
 	"devices.status.skipped": "I skip tonight.",
 	"devices.status.nothing": "Nothing to do tonight.",
 	"devices.status.no_plan": "No plan for tonight yet.",
+	"devices.status.day": "Grid-friendly: I hold back charging the batteries until {time} – the morning sun goes to the grid.",
 	"devices.status.done": "The night is over, everything is back.",
 	"devices.pending": "A few values are not back where they were yet. I keep trying.",
 	"devices.power.charge": "charging at {value} kW",
@@ -3099,6 +3130,7 @@ var $e = import.meta.url.replace(/[^/]*$/, ""), et = (e) => `${$e}${e}`, tt = {
 	"devices.action.charge": "Charging to {target} %",
 	"devices.action.hold": "Holding at {floor} %",
 	"devices.action.block": "No discharge while another one charges",
+	"devices.action.defer": "Charges only from {until} – the morning sun goes to the grid",
 	"devices.action.free": "Free – I don't interfere",
 	"devices.action.watch": "Watched only",
 	"devices.action.idle": "Free – I don't interfere right now",
@@ -7428,7 +7460,10 @@ function kn(e, t) {
 	})) : t.kind === "charge" ? n.push(e("plan.say.charge", {
 		from: q(t.charge_from),
 		target: r
-	})) : t.kind === "hold" ? (n.push(e("plan.say.hold", { target: r })), t.empty_without && n.push(e("plan.say.empty", { time: q(t.empty_without) }))) : t.reasons.includes("small_saving") ? n.push(e("plan.say.small_saving")) : n.push(i ? e("plan.say.none", { time: q(i) }) : e("plan.say.none_nosun")), t.reasons.includes("max_price") && t.kind !== "charge" && n.push(e("plan.say.max_price")), t.kind !== "none" && (i && t.full_at && Tn(t.full_at) === Tn(i) ? n.push(e("plan.say.sun_full", {
+	})) : t.kind === "hold" ? (n.push(e("plan.say.hold", { target: r })), t.empty_without && n.push(e("plan.say.empty", { time: q(t.empty_without) }))) : t.reasons.includes("small_saving") ? n.push(e("plan.say.small_saving")) : n.push(i ? e("plan.say.none", { time: q(i) }) : e("plan.say.none_nosun")), t.reasons.includes("max_price") && t.kind !== "charge" && n.push(e("plan.say.max_price")), t.day && (n.push(e("plan.day", {
+		time: q(t.day.defer_until),
+		kwh: M(e.lang, t.day.held_kwh, 0)
+	})), t.day.cost && t.day.cost >= .01 && n.push(e("plan.day.cost", { cost: `${M(e.lang, t.day.cost * 100, 0)} ct` }))), t.kind !== "none" && (i && t.full_at && Tn(t.full_at) === Tn(i) ? n.push(e("plan.say.sun_full", {
 		sun: q(i),
 		full: q(t.full_at)
 	})) : i ? n.push(e("plan.say.sun", { sun: q(i) })) : n.push(e("plan.say.nosun"))), n.join(" ");
@@ -7871,7 +7906,7 @@ var Nn = [
       ${this.confirm ? this.renderConfirm(e, this.confirm) : _}`;
 	}
 	renderStatus(e, t, n) {
-		let r = t.plan, i = n.reason, a = i === "waiting" && r?.window ? e("devices.status.waiting", { time: q(r.window.start) }) : e(`devices.status.${i}`), o = t.mode === "simulation" ? h`<span class="pill-sim">${e("mode.simulation")}</span>` : h`<span class="chip ${t.mode === "live" ? "ok" : t.mode === "advisory" ? "learned" : ""}"
+		let r = t.plan, i = n.reason, a = i === "waiting" && r?.window ? e("devices.status.waiting", { time: q(r.window.start) }) : i === "day" ? e("devices.status.day", { time: r?.day ? q(r.day.defer_until) : "–" }) : e(`devices.status.${i}`), o = t.mode === "simulation" ? h`<span class="pill-sim">${e("mode.simulation")}</span>` : h`<span class="chip ${t.mode === "live" ? "ok" : t.mode === "advisory" ? "learned" : ""}"
             >${e(`mode.${t.mode}`)}</span
           >`, s = n.steering || n.pending;
 		return h`<section class="card status" data-tipped>
@@ -7892,8 +7927,9 @@ var Nn = [
 	}
 	renderBattery(e, t, n) {
 		let r = this.hass, i = j(r, t.soc_entity), a = bt(r, t.power), o = n?.ready[t.id] ?? "not_controllable", s = n?.batteries[t.id], c = n?.testing?.battery === t.id ? n.testing : null, l = n?.tests[t.id], u = t.adapter === "generic" ? e("devices.battery.generic") : t.adapter === "steps" ? e("devices.battery.steps") : t.adapter === "none" ? e("devices.battery.watch") : e("devices.battery.profile", { name: this.info?.profiles?.[t.adapter] ?? t.adapter }), d = s?.action ? e(`devices.action.${s.action}`, {
-			target: M(e.lang, s.target, 0),
-			floor: M(e.lang, s.floor ?? 0, 0)
+			target: M(e.lang, s.target ?? 0, 0),
+			floor: M(e.lang, s.floor ?? 0, 0),
+			until: s.until ? q(s.until) : ""
 		}) : e("devices.action.idle"), f = s?.problem ?? (o !== "ready" && o !== "not_controllable" ? o : null);
 		return h`<section class="card battery" data-tipped>
       <div class="head">
@@ -12859,6 +12895,7 @@ var fr = [
                   </button>`)}
             </div>
           </div>
+          ${this.gridFriendlyRows(e, n.rules)}
           <div class="row" data-tipped>
             <div>
               <div class="name"><b>${e("settings.setup")}</b>${P(e, "restart")}</div>
@@ -13161,6 +13198,41 @@ var fr = [
 		}
 		let a = e.integer ? Math.round(i) : Math.round(i / r * 1e4) / 1e4;
 		z(this, { rules: { [e.key]: a } });
+	}
+	gridFriendlyRows(e, t) {
+		let n = this.state.config;
+		return h`<div class="row" data-tipped>
+        <div>
+          <div class="name"><b id="grid-friendly">${e("rule.grid_friendly")}</b>${P(e, "r_grid_friendly")}</div>
+          <small>${e("rule.grid_friendly.hint")}</small>
+        </div>
+        <div class="control">
+          ${w(e, I(n, "rules.grid_friendly"))}
+          <button
+            type="button"
+            class="switch"
+            role="switch"
+            aria-checked=${String(t.grid_friendly)}
+            aria-labelledby="grid-friendly"
+            @click=${() => z(this, { rules: { grid_friendly: !t.grid_friendly } })}
+          ></button>
+        </div>
+      </div>
+      ${t.grid_friendly ? h`<div class="row" data-tipped>
+            <div>
+              <div class="name"><b>${e("rule.grid_first")}</b>${P(e, "r_grid_first")}</div>
+              <small>${e(t.grid_first ? "rule.grid_first.grid.hint" : "rule.grid_first.saving.hint")}</small>
+            </div>
+            <div class="seg" role="group" aria-label=${e("rule.grid_first")}>
+              ${[!1, !0].map((n) => h`<button
+                    type="button"
+                    aria-pressed=${String(t.grid_first === n)}
+                    @click=${() => z(this, { rules: { grid_first: n } })}
+                  >
+                    ${e(n ? "rule.grid_first.grid" : "rule.grid_first.saving")}
+                  </button>`)}
+            </div>
+          </div>` : _}`;
 	}
 	guardRow(e, t) {
 		let n = this.state.config, r = t.grid_limit_w;

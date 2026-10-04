@@ -502,3 +502,93 @@ async def test_entities_and_services(ready_hass: HomeAssistant) -> None:
     kinds = [entry["kind"] for entry in runtime.executor.data["log"]]
     assert kinds.count("emergency") == 2
     assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+def sunny_morning_plan(now: datetime, until: str = "12:00") -> dict[str, Any]:
+    """Last night's plan with a grid-friendly morning and a sunny day ahead."""
+    plan = night_plan(now, kind="none", target=10)
+    start = dt_util.start_of_local_day(now)
+    plan["day"] = {
+        "defer_until": f"{start.date().isoformat()}T{until}+02:00",
+        "held_kwh": 6.0,
+        "grid_first": False,
+        "cost": 0.0,
+    }
+    plan["batteries"] = [{"id": "byd", "target": 10, "power_kw": 0, "capacity": 10.0}]
+    plan["hours"] = [
+        {
+            "start": (start + timedelta(hours=h)).isoformat(),
+            "solar": max(0.0, 5.0 - abs(h - 13) * 0.8),
+            "home": 0.5,
+            "window": h < 5,
+        }
+        for h in range(24)
+    ]
+    return plan
+
+
+def limited_fronius() -> dict[str, Any]:
+    battery = fronius_battery()
+    battery["controls"] = {
+        **FRONIUS,
+        "charge_limit": "number.charge_limit",
+        "charge_limit_enabled": "switch.charge_limit",
+    }
+    return battery
+
+
+async def test_a_grid_friendly_morning(hass: HomeAssistant, freezer) -> None:
+    """After the night the battery leaves the morning sun to the grid, then charges."""
+    freezer.move_to("2026-10-04T07:00:00+02:00")
+    install_devices(hass, byd_soc=40)
+    percent = {"min": 0, "max": 100, "step": 1, "unit_of_measurement": "%"}
+    hass.states.async_set("number.charge_limit", "100", percent)
+    hass.states.async_set("switch.charge_limit", "off")
+    config = configured(limited_fronius())
+    plan = sunny_morning_plan(dt_util.now())
+    executor, holder = await make_executor(hass, config, plan)
+
+    await executor.async_check()
+    assert hass.states.get("number.charge_limit").state == "0.0"
+    assert hass.states.get("switch.charge_limit").state == "on"
+    assert executor.status["reason"] == "day"
+    assert executor.status["batteries"]["byd"]["action"] == "defer"
+    # Midday: back as it was.
+    freezer.move_to("2026-10-04T12:00:00+02:00")
+    await executor.async_check()
+    assert hass.states.get("number.charge_limit").state == "100.0"
+    assert hass.states.get("switch.charge_limit").state == "off"
+    assert executor.data["saved"] == {}
+    assert executor.status["reason"] == "done"
+    kinds = [entry["kind"] for entry in executor.data["log"]]
+    assert "day" in kinds
+
+
+async def test_the_morning_lets_go_when_the_sun_lags(
+    hass: HomeAssistant, freezer
+) -> None:
+    freezer.move_to("2026-10-04T10:00:00+02:00")
+    install_devices(hass, byd_soc=5)
+    percent = {"min": 0, "max": 100, "step": 1, "unit_of_measurement": "%"}
+    hass.states.async_set("number.charge_limit", "100", percent)
+    hass.states.async_set("switch.charge_limit", "off")
+    config = configured(limited_fronius())
+    plan = sunny_morning_plan(dt_util.now())
+    # Far less sun left than the plan hoped.
+    for hour in plan["hours"]:
+        hour["solar"] = min(hour["solar"], 0.9)
+    executor, _ = await make_executor(hass, config, plan)
+    await executor.async_check()
+    assert hass.states.get("number.charge_limit").state == "100"
+    assert executor.data["day_released"] == plan["window"]["start"]
+    # Not in the simulation, and not when switched off.
+    holder_plan = sunny_morning_plan(dt_util.now())
+    sim, _ = await make_executor(hass, config, holder_plan, mode="simulation")
+    sim.data["day_released"] = None
+    await sim.async_check()
+    assert hass.states.get("number.charge_limit").state == "100"
+    off = model.apply_update(config, {"rules": {"grid_friendly": False}}, "user")
+    live, _ = await make_executor(hass, off, holder_plan)
+    live.data["day_released"] = None
+    await live.async_check()
+    assert hass.states.get("number.charge_limit").state == "100"

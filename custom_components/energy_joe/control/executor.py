@@ -63,6 +63,9 @@ GRID_MARGIN = 1.02
 NO_PROGRESS = timedelta(minutes=30)
 # Charging to a level by hand ends after this at the latest.
 BOOST_LIMIT = timedelta(hours=24)
+# A grid-friendly morning lets go when the rest of the sun, taken with this
+# caution, no longer fills the batteries.
+DAY_CAUTION = 0.8
 
 DEFAULT_DATA: dict[str, Any] = {
     "saved": {},
@@ -91,6 +94,9 @@ DEFAULT_DATA: dict[str, Any] = {
     "progress": {},
     # "Just charge to …" by hand: action id -> target, unit, sensor, since, until.
     "boost": {},
+    # The night whose grid-friendly morning runs, or was let go early.
+    "day": None,
+    "day_released": None,
 }
 
 type Changed = Callable[[], None]
@@ -261,13 +267,20 @@ class JoeExecutor:
         reason, night = self._why(now, config, plan, mode)
         boosts, keep, ended = await self._async_boosts(config, mode, now)
         if reason != "steering":
+            day, held = await self._async_day(config, plan, mode, now)
+            keep |= held
             if self._dirty_except(keep):
-                await self._async_release(reason, now, keep)
+                # The grid-friendly morning is over: its own reason, no second
+                # morning message.
+                was_day = self.data.get("day") is not None and not day
+                await self._async_release("day_done" if was_day else reason, now, keep)
+            if not day:
+                self.data["day"] = None
             if self.data["night"] and self.data["night"] != night:
                 self._end_night()
-            self._set_status(reason, night, {}, boosts)
+            self._set_status("day" if day else reason, night, day, boosts, keep)
             self._watch([])
-            if boosts or ended:
+            if boosts or ended or day:
                 await self._async_save()
             return
         assert plan is not None and night is not None
@@ -689,6 +702,95 @@ class JoeExecutor:
         return any(e not in keep for e in self.data["saved"]) or any(
             not _kept(k, keep, config) for k in self.data["active"]
         )
+
+    # --- grid-friendly mornings -----------------------------------------------
+
+    async def _async_day(
+        self,
+        config: dict[str, Any],
+        plan: dict[str, Any] | None,
+        mode: str,
+        now: datetime,
+    ) -> tuple[dict[str, Any], set[str]]:
+        """After the night: hold back charging until the midday sun (see planner._grid_friendly).
+
+        Only batteries with a charge limit and a passed test run, only in the
+        modes "suggest" (with a yes for the night) and "live". When the sun
+        stays behind the forecast, Joe lets go early.
+        """
+        info = (plan or {}).get("day")
+        if (
+            not info
+            or not plan
+            or not plan.get("fixed")
+            or not config["rules"].get("grid_friendly", True)
+            or mode not in ("advisory", "live")
+        ):
+            return {}, set()
+        night = plan["window"]["start"]
+        until = datetime.fromisoformat(info["defer_until"])
+        lead = timedelta(minutes=config["rules"]["reset_lead_min"])
+        if not datetime.fromisoformat(plan["window"]["end"]) - lead <= now < until:
+            return {}, set()
+        if self.data["skip"] == night or self.data.get("day_released") == night:
+            return {}, set()
+        answer = self.data["answer"] or {}
+        if mode == "advisory" and (
+            answer.get("night") != night or not answer.get("yes")
+        ):
+            return {}, set()
+        items = []
+        for battery in config["batteries"]:
+            adapter = make_adapter(battery)
+            if (
+                isinstance(adapter, RoleAdapter)
+                and adapter.can_defer()
+                and self.tested(battery)
+                and not adapter.missing(self._hass)
+            ):
+                soc = number(self._hass.states.get(battery["soc_entity"]))
+                items.append((battery, adapter, soc))
+        if not items:
+            return {}, set()
+        # Is the rest of the sun (with caution) still enough to fill them?
+        sizes = {b["id"]: b.get("capacity") for b in plan.get("batteries") or []}
+        headroom = sum(
+            (sizes.get(battery["id"]) or battery.get("capacity_kwh") or 0.0)
+            * (100 - (soc or 0.0))
+            / 100
+            for battery, _, soc in items
+        )
+        remaining = sum(
+            max(0.0, hour["solar"] - hour["home"]) * DAY_CAUTION
+            for hour in plan.get("hours") or []
+            if datetime.fromisoformat(hour["start"]) >= now.replace(minute=0, second=0)
+        )
+        if remaining < headroom:
+            self.data["day_released"] = night
+            self._log(
+                "day_released",
+                remaining=round(remaining, 1),
+                headroom=round(headroom, 1),
+            )
+            return {}, set()
+        result: dict[str, Any] = {}
+        keep: set[str] = set()
+        for battery, adapter, soc in items:
+            writes = adapter.defer()
+            problem = await self._async_write(adapter, writes, now, None)
+            keep |= {w.entity_id for w in writes}
+            result[battery["id"]] = {
+                "action": "defer",
+                "until": info["defer_until"],
+                "floor": None,
+                "target": None,
+                "soc": soc,
+                "problem": problem,
+            }
+        if self.data.get("day") != night:
+            self.data["day"] = night
+            self._log("day", until=info["defer_until"])
+        return result, keep
 
     # --- charging to a level by hand ----------------------------------------
 
@@ -1228,6 +1330,7 @@ class JoeExecutor:
         night: str | None,
         batteries: dict[str, Any],
         actions: dict[str, Any],
+        keep: set[str] | None = None,
     ) -> None:
         status = {
             "steering": reason == "steering",
@@ -1235,7 +1338,9 @@ class JoeExecutor:
             "night": night,
             "batteries": batteries,
             "actions": actions,
-            "pending": self._dirty,
+            # Left to put back, apart from what is set on purpose right now.
+            "pending": reason != "steering"
+            and (self._dirty_except(keep) if keep else self._dirty),
         }
         if status != self.status:
             self.status = status

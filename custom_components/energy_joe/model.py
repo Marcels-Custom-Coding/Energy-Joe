@@ -363,6 +363,11 @@ RULES = vol.Schema(
             vol.Coerce(float), vol.Range(min=0, max=5)
         ),
         vol.Optional("guard_grid", default=True): bool,
+        # Grid-friendly: batteries take the sun around midday rather than in
+        # the morning (where they can hold back charging), the car charges
+        # with the sun. The saving comes first unless grid_first is set.
+        vol.Optional("grid_friendly", default=True): bool,
+        vol.Optional("grid_first", default=False): bool,
         # Maintenance: once every so many days the batteries charge full so
         # they can balance their cells (None: off).
         vol.Optional("balance_days", default=None): vol.Any(

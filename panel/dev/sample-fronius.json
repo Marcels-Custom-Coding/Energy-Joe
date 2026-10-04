@@ -836,6 +836,8 @@
    "max_price": null,
    "min_saving": 0.05,
    "guard_grid": true,
+   "grid_friendly": true,
+   "grid_first": false,
    "balance_days": null
   },
   "notify": {
@@ -1233,6 +1235,8 @@
    "max_price": null,
    "min_saving": 0.05,
    "guard_grid": true,
+   "grid_friendly": true,
+   "grid_first": false,
    "balance_days": null
   },
   "notify": {
@@ -1365,451 +1369,451 @@
   "provenance": {
    "measurements.grid_power": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "measurements.home_power": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "measurements.solar_power": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "tariff.kind": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "tariff.price_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "tariff.window": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "tariff.night_price": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "tariff.day_price": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "tariff.feed_in_price": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "tariff.feed_in_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "forecast.provider": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "forecast.config_entries": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "forecast.today": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "forecast.tomorrow": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "forecast.remaining_today": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "forecast.alternatives": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "context.weather_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "context.holiday_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[storage].name": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[storage].adapter": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[storage].soc_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[storage].power": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[storage].capacity_kwh": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[storage].capacity_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[storage].max_charge_w": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[storage].max_discharge_w": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[storage].device_id": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[storage].controls": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[storage].mode_options": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[storage].prepare": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[storage].steps": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[storage].priority": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[venus].name": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[venus].adapter": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[venus].soc_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[venus].power": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[venus].capacity_kwh": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[venus].capacity_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[venus].max_charge_w": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[venus].max_discharge_w": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[venus].device_id": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[venus].controls": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[venus].mode_options": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[venus].prepare": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[venus].steps": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "batteries[venus].priority": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "persons[person.alex].name": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "persons[person.alex].person_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "persons[person.alex].calendars": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "persons[person.sam].name": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "persons[person.sam].person_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "persons[person.sam].calendars": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.house_energy].name": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.house_energy].kind": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.house_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.house_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.house_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.house_energy].source": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.ac_office_energy].name": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.ac_office_energy].kind": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.ac_office_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.ac_office_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.ac_office_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.ac_office_energy].source": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.basement_energy].name": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.basement_energy].kind": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.basement_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.basement_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.basement_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.basement_energy].source": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.hot_water_energy].name": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.hot_water_energy].kind": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.hot_water_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.hot_water_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.hot_water_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.hot_water_energy].source": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.floor_heating_energy].name": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.floor_heating_energy].kind": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.floor_heating_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.floor_heating_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.floor_heating_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.floor_heating_energy].source": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.fridge_energy].name": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.fridge_energy].kind": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.fridge_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.fridge_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.fridge_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.fridge_energy].source": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.wallbox_energy].name": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.wallbox_energy].kind": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.wallbox_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.wallbox_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.wallbox_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "consumers[sensor.wallbox_energy].source": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "actions[ev_carport].name": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "actions[ev_carport].kind": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "actions[ev_carport].entity_id": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "actions[ev_carport].on_value": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "actions[ev_carport].reset": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "actions[ev_carport].lead_min": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "actions[ev_carport].auto": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "actions[ev_carport].forecast_below_kwh": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "actions[ev_carport].conditions": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "actions[ev_carport].power_kw": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "actions[ev_carport].power_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "actions[ev_carport].priority": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "actions[ev_carport].need.enabled": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "actions[ev_carport].need.soc_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "actions[ev_carport].need.range_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "actions[ev_carport].need.capacity_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "actions[ev_carport].need.odometer_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    },
    "actions[ev_carport].need.consumption_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:16+00:00"
    }
   }
  },
@@ -4844,8 +4848,11 @@
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
-      "force_target": null
+      "force_target": null,
+      "grid_friendly": false,
+      "grid_first": false
      },
+     "day": null,
      "reasons": [
       "no_sun"
      ],
@@ -6067,8 +6074,11 @@
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
-      "force_target": null
+      "force_target": null,
+      "grid_friendly": false,
+      "grid_first": false
      },
+     "day": null,
      "reasons": [
       "bridge"
      ],
@@ -7290,8 +7300,11 @@
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
-      "force_target": null
+      "force_target": null,
+      "grid_friendly": false,
+      "grid_first": false
      },
+     "day": null,
      "reasons": [
       "bridge"
      ],
@@ -8508,8 +8521,11 @@
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
-      "force_target": null
+      "force_target": null,
+      "grid_friendly": false,
+      "grid_first": false
      },
+     "day": null,
      "reasons": [
       "small_saving"
      ],
@@ -9731,8 +9747,11 @@
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
-      "force_target": null
+      "force_target": null,
+      "grid_friendly": false,
+      "grid_first": false
      },
+     "day": null,
      "reasons": [
       "bridge"
      ],
@@ -10954,8 +10973,11 @@
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
-      "force_target": null
+      "force_target": null,
+      "grid_friendly": false,
+      "grid_first": false
      },
+     "day": null,
      "reasons": [
       "bridge"
      ],
@@ -12177,8 +12199,11 @@
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
-      "force_target": null
+      "force_target": null,
+      "grid_friendly": false,
+      "grid_first": false
      },
+     "day": null,
      "reasons": [
       "no_sun"
      ],
@@ -13400,8 +13425,11 @@
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
-      "force_target": null
+      "force_target": null,
+      "grid_friendly": false,
+      "grid_first": false
      },
+     "day": null,
      "reasons": [
       "bridge"
      ],
@@ -14618,8 +14646,11 @@
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
-      "force_target": null
+      "force_target": null,
+      "grid_friendly": false,
+      "grid_first": false
      },
+     "day": null,
      "reasons": [
       "small_saving"
      ],
@@ -15836,8 +15867,11 @@
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
-      "force_target": null
+      "force_target": null,
+      "grid_friendly": false,
+      "grid_first": false
      },
+     "day": null,
      "reasons": [
       "small_saving"
      ],
@@ -17059,8 +17093,11 @@
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
-      "force_target": null
+      "force_target": null,
+      "grid_friendly": false,
+      "grid_first": false
      },
+     "day": null,
      "reasons": [
       "bridge"
      ],
@@ -18282,8 +18319,11 @@
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
-      "force_target": null
+      "force_target": null,
+      "grid_friendly": false,
+      "grid_first": false
      },
+     "day": null,
      "reasons": [
       "bridge"
      ],
@@ -19505,8 +19545,11 @@
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
-      "force_target": null
+      "force_target": null,
+      "grid_friendly": false,
+      "grid_first": false
      },
+     "day": null,
      "reasons": [
       "bridge"
      ],
@@ -20728,8 +20771,11 @@
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
-      "force_target": null
+      "force_target": null,
+      "grid_friendly": false,
+      "grid_first": false
      },
+     "day": null,
      "reasons": [
       "bridge"
      ],
@@ -21951,8 +21997,11 @@
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
-      "force_target": null
+      "force_target": null,
+      "grid_friendly": false,
+      "grid_first": false
      },
+     "day": null,
      "reasons": [
       "bridge"
      ],
@@ -23174,8 +23223,11 @@
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
-      "force_target": null
+      "force_target": null,
+      "grid_friendly": false,
+      "grid_first": false
      },
+     "day": null,
      "reasons": [
       "bridge"
      ],
@@ -24397,8 +24449,11 @@
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
-      "force_target": null
+      "force_target": null,
+      "grid_friendly": false,
+      "grid_first": false
      },
+     "day": null,
      "reasons": [
       "no_sun"
      ],
@@ -25620,8 +25675,11 @@
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
-      "force_target": null
+      "force_target": null,
+      "grid_friendly": false,
+      "grid_first": false
      },
+     "day": null,
      "reasons": [
       "no_sun"
      ],
@@ -26843,8 +26901,11 @@
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
-      "force_target": null
+      "force_target": null,
+      "grid_friendly": false,
+      "grid_first": false
      },
+     "day": null,
      "reasons": [
       "bridge"
      ],
@@ -28066,8 +28127,11 @@
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
-      "force_target": null
+      "force_target": null,
+      "grid_friendly": false,
+      "grid_first": false
      },
+     "day": null,
      "reasons": [
       "bridge"
      ],
@@ -28867,8 +28931,11 @@
     "efficiency": 0.9,
     "max_price": null,
     "min_saving": 0.05,
-    "force_target": null
+    "force_target": null,
+    "grid_friendly": false,
+    "grid_first": false
    },
+   "day": null,
    "reasons": [
     "no_sun"
    ],
@@ -29378,8 +29445,11 @@
     "efficiency": 0.9,
     "max_price": null,
     "min_saving": 0.05,
-    "force_target": null
+    "force_target": null,
+    "grid_friendly": false,
+    "grid_first": false
    },
+   "day": null,
    "reasons": [
     "no_sun"
    ],

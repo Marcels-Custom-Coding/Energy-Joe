@@ -72,6 +72,15 @@ export function planSentence(t: Translate, plan: Plan): string {
   if (plan.reasons.includes("max_price") && plan.kind !== "charge") {
     parts.push(t("plan.say.max_price"));
   }
+  if (plan.day) {
+    // Grid-friendly: the morning sun goes to the grid, the battery takes the midday sun.
+    parts.push(
+      t("plan.day", { time: timeOf(plan.day.defer_until), kwh: formatNumber(t.lang, plan.day.held_kwh, 0) }),
+    );
+    if (plan.day.cost && plan.day.cost >= 0.01) {
+      parts.push(t("plan.day.cost", { cost: `${formatNumber(t.lang, plan.day.cost * 100, 0)} ct` }));
+    }
+  }
   if (plan.kind !== "none") {
     if (sun && plan.full_at && dayOf(plan.full_at) === dayOf(sun)) {
       parts.push(t("plan.say.sun_full", { sun: timeOf(sun), full: timeOf(plan.full_at) }));

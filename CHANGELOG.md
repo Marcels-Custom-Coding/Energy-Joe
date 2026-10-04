@@ -3,6 +3,19 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.2.0
+
+- **Netzdienlich verhalten** (Einstellungen → Betrieb, standardmäßig an):
+  An sonnigen Tagen hält Joe das Laden der Speicher morgens zurück, der
+  Überschuss geht ins Netz, und die Speicher laden in der Mittagsspitze –
+  nur so lange, dass sie trotzdem voll werden (vorsichtig mit 80 % der
+  Prognose gerechnet), und früher frei, wenn die Sonne zurückbleibt. Das geht
+  bei Speichern, deren Ladeleistung Joe begrenzen kann (z. B. Fronius), und
+  nur in den Modi „Vorschlagen“ und „Live“.
+- **Was geht vor?** „Ersparnis“ (Standard): netzdienlich nur, wenn es nichts
+  kostet. „Netz“: auch wenn es bis zu 30 ct am Tag kostet.
+- Plan und Geräte zeigen, bis wann Joe das Laden zurückhält.
+
 ## 0.1.2
 
 - **Das Auto ist kein Bedarf für den Hausspeicher:** Joe plant den Speicher

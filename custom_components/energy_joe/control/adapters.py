@@ -187,6 +187,18 @@ class RoleAdapter(Adapter):
     def can_charge(self) -> bool:
         return bool(self.charge_methods())
 
+    def can_defer(self) -> bool:
+        """Whether charging (from the sun too) can be held back while discharging stays free."""
+        return self._has("charge_limit")
+
+    def defer(self) -> list[Write]:
+        """Hold back charging for a grid-friendly morning: charge limit 0."""
+        writes = []
+        if "charge_limit_enabled" in self.controls:
+            writes.append(Write(self.controls["charge_limit_enabled"], True))
+        writes.append(Write(self.controls["charge_limit"], 0))
+        return writes
+
     def missing(self, hass: HomeAssistant) -> list[str]:
         """What keeps Joe from steering: no way to hold, or entities gone.
 

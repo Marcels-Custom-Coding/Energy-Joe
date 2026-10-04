@@ -92,6 +92,12 @@ class PlanInput:
     min_saving: float = 0.0
     # Maintenance night: charge to at least this level (percent).
     force_target: float | None = None
+    # Grid-friendly (see _grid_friendly): batteries that can hold back charging
+    # from the sun take it later in the day; with grid_first it may cost a little.
+    grid_friendly: bool = False
+    grid_first: bool = False
+    defer_kw: float = 0.0
+    defer_until: datetime | None = None
 
     @property
     def capacity(self) -> float:
@@ -173,9 +179,17 @@ def simulate(inp: PlanInput, target: float | None) -> Run:
         charged = bought = sold = 0.0
         price = _price(inp, hour)
         if surplus >= 0:
-            # Sun first: into the batteries, the rest to the grid.
+            # Sun first: into the batteries, the rest to the grid (grid-friendly
+            # batteries wait until defer_until).
+            power = charge_kw
+            if (
+                inp.defer_until is not None
+                and not hour.window
+                and inp.window_end <= hour.start < inp.defer_until
+            ):
+                power = max(0.0, charge_kw - inp.defer_kw)
             take = min(
-                surplus, charge_kw * hour.fraction, max(0.0, capacity - stored) / eta
+                surplus, power * hour.fraction, max(0.0, capacity - stored) / eta
             )
             stored += take * eta
             sold = surplus - take
@@ -407,6 +421,17 @@ def _plan(inp: PlanInput) -> dict[str, Any]:
                     break
             reasons.append("evening")
 
+    # The night's costs stay those of the night; waiting for the midday sun
+    # shows in the hours and with its own (small) cost.
+    night = run
+    day = _grid_friendly(inp, capacity * target / 100)
+    if day is not None:
+        run = simulate(
+            replace(inp, defer_until=datetime.fromisoformat(day["defer_until"])),
+            capacity * target / 100,
+        )
+        day["cost"] = round(max(0.0, run.cost - night.cost), 2)
+
     at_start = 100 * run.energy_at_window_start / capacity if capacity else 0.0
     charging = run.grid_charge > EPSILON
     window_hours = [i for i, h in enumerate(inp.hours) if h.window]
@@ -514,9 +539,9 @@ def _plan(inp: PlanInput) -> dict[str, Any]:
         ),
         "cost": {
             "night_charge": round(plan_cost, 2),
-            "plan": round(run.cost, 2),
+            "plan": round(night.cost, 2),
             "without": round(base.cost, 2),
-            "saving": round(base.cost - run.cost, 2),
+            "saving": round(base.cost - night.cost, 2),
         },
         "prices": {
             "night": inp.prices.night,
@@ -536,7 +561,10 @@ def _plan(inp: PlanInput) -> dict[str, Any]:
             "max_price": inp.max_price,
             "min_saving": inp.min_saving,
             "force_target": inp.force_target,
+            "grid_friendly": inp.grid_friendly,
+            "grid_first": inp.grid_first,
         },
+        "day": day,
         "reasons": reasons,
         "notes": list(inp.notes),
         "meta": inp.meta,
@@ -559,6 +587,62 @@ def _plan(inp: PlanInput) -> dict[str, Any]:
             }
             for i, hour in enumerate(inp.hours)
         ],
+    }
+
+
+# Grid-friendly: the forecast taken with caution, and what it may cost a day.
+CAUTION = 0.8
+ALLOW_SAVING_FIRST = 0.02
+ALLOW_GRID_FIRST = 0.3
+# Less held back than this is not worth steering.
+MIN_HELD_KWH = 0.5
+
+
+def _grid_friendly(inp: PlanInput, target: float) -> dict[str, Any] | None:
+    """Until when batteries can leave the morning sun to the grid and still fill.
+
+    The midday peak is when the grid has too much solar power; a battery that
+    takes the sun then instead of in the morning helps. Joe picks the latest
+    hour (at most the hour with the most surplus) from which the batteries
+    still end the day as full as without waiting, with only 80 % of the
+    forecast. With grid_first it may cost up to 30 ct a day.
+    """
+    if not inp.grid_friendly or inp.defer_kw <= 0:
+        return None
+    day = [
+        (i, h)
+        for i, h in enumerate(inp.hours)
+        if h.start >= inp.window_end and not h.window
+    ]
+    surplus = [(i, h, h.solar - h.home) for i, h in day]
+    sunny = [(i, h, s) for i, h, s in surplus if s > 0]
+    if not sunny:
+        return None
+    peak = max(sunny, key=lambda item: item[2])[0]
+    cautious = replace(
+        inp, hours=[replace(h, solar=h.solar * CAUTION) for h in inp.hours]
+    )
+    allowed = simulate(cautious, target).cost + (
+        ALLOW_GRID_FIRST if inp.grid_first else ALLOW_SAVING_FIRST
+    )
+    best = None
+    for index, hour, _ in sunny:
+        if index > peak:
+            break
+        if index == sunny[0][0]:
+            continue
+        trial = simulate(replace(cautious, defer_until=hour.start), target)
+        if trial.cost <= allowed:
+            best = hour.start
+    if best is None:
+        return None
+    held = sum(min(s, inp.defer_kw * h.fraction) for _, h, s in sunny if h.start < best)
+    if held < MIN_HELD_KWH:
+        return None
+    return {
+        "defer_until": dt_util.as_local(best).isoformat(timespec="minutes"),
+        "held_kwh": round(held, 1),
+        "grid_first": inp.grid_first,
     }
 
 

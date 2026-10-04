@@ -360,6 +360,8 @@
    "max_price": null,
    "min_saving": 0.05,
    "guard_grid": true,
+   "grid_friendly": true,
+   "grid_first": false,
    "balance_days": null
   },
   "notify": {
@@ -586,6 +588,8 @@
    "max_price": null,
    "min_saving": 0.05,
    "guard_grid": true,
+   "grid_friendly": true,
+   "grid_first": false,
    "balance_days": null
   },
   "notify": {
@@ -718,115 +722,115 @@
   "provenance": {
    "measurements.grid_power": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "measurements.home_power": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "measurements.solar_power": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "tariff.kind": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "tariff.price_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "tariff.window": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "tariff.night_price": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "tariff.day_price": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "forecast.provider": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "forecast.config_entries": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "forecast.today": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "forecast.tomorrow": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "forecast.remaining_today": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "forecast.alternatives": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "batteries[flow800].name": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "batteries[flow800].adapter": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "batteries[flow800].soc_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "batteries[flow800].power": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "batteries[flow800].capacity_kwh": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "batteries[flow800].capacity_entity": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "batteries[flow800].max_charge_w": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "batteries[flow800].max_discharge_w": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "batteries[flow800].device_id": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "batteries[flow800].controls": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "batteries[flow800].mode_options": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "batteries[flow800].prepare": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "batteries[flow800].steps": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    },
    "batteries[flow800].priority": {
     "source": "read",
-    "updated": "2026-10-04T12:36:49+00:00"
+    "updated": "2026-10-04T12:47:17+00:00"
    }
   }
  },
@@ -17365,8 +17369,11 @@
     "efficiency": 0.9,
     "max_price": null,
     "min_saving": 0.05,
-    "force_target": null
+    "force_target": null,
+    "grid_friendly": false,
+    "grid_first": false
    },
+   "day": null,
    "reasons": [
     "bridge"
    ],

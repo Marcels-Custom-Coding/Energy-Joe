@@ -346,3 +346,41 @@ def test_car_charging_is_not_planned_for_the_battery() -> None:
     assert with_car[True][19] == pytest.approx(11.5)
     assert without[True][19] == pytest.approx(0.5)
     assert meta["days"] == 10
+
+
+def test_grid_friendly_batteries_take_the_midday_sun() -> None:
+    """A sunny day: the battery waits for the midday sun and is still full by evening."""
+    plan = make_plan(plan_input(solar=40, soc=30, grid_friendly=True, defer_kw=3.0))
+    day = plan["day"]
+    assert day is not None
+    assert "2026-10-04T09:00" <= day["defer_until"] <= "2026-10-04T13:00"
+    assert day["held_kwh"] >= 0.5
+    hours = {h["start"][:16]: h for h in plan["hours"]}
+    # In the morning the sun goes to the grid, the battery level stays.
+    morning = [
+        h for k, h in hours.items() if "2026-10-04T08:00" <= k < day["defer_until"]
+    ]
+    assert all(h["grid_out"] > 0 for h in morning if h["solar"] > h["home"])
+    # By the evening it is full anyway.
+    assert hours["2026-10-04T17:00"]["soc"] >= 99
+
+
+def test_grid_friendly_waits_only_when_the_sun_is_enough() -> None:
+    # A grey day: holding back would cost, so the battery takes the sun right away.
+    assert (
+        make_plan(plan_input(solar=8, soc=30, grid_friendly=True, defer_kw=3.0))["day"]
+        is None
+    )
+    # Without a battery that can hold back charging, or switched off: nothing.
+    assert make_plan(plan_input(solar=40, soc=30, grid_friendly=True))["day"] is None
+    assert make_plan(plan_input(solar=40, soc=30, defer_kw=3.0))["day"] is None
+
+
+def test_grid_first_may_wait_longer() -> None:
+    saving = make_plan(plan_input(solar=16, soc=30, grid_friendly=True, defer_kw=3.0))
+    grid = make_plan(
+        plan_input(solar=16, soc=30, grid_friendly=True, grid_first=True, defer_kw=3.0)
+    )
+    assert grid["day"] is not None
+    if saving["day"] is not None:
+        assert grid["day"]["defer_until"] >= saving["day"]["defer_until"]
