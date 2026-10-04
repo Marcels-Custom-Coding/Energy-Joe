@@ -1786,6 +1786,24 @@ export const en: Record<Key, string> = {
   "devices.charge.tonight_set": "Charges tonight in the cheap hours to {amount}.",
   "devices.charge.tonight_window": "Charges tonight through all the cheap hours.",
   "devices.charge.no_night": "“Tonight” works once I have planned the night.",
+  "automations.title": "Automations on your batteries",
+  "automations.lead":
+    "These automations write to the same controls as I do. While they run they can overwrite my steering – best switch them off so that I can work properly.",
+  "automations.lead_off":
+    "These automations write to the same controls as I do. They are off – so we do not get in each other's way.",
+  "automations.on": "on",
+  "automations.off": "off",
+  "automations.writes": "writes: {what} ({batteries})",
+  "automations.switched_off":
+    "Switched off by me on {day} at {time} – so that it does not overwrite my battery steering.",
+  "automations.all_off": "Switch all off ({count})",
+  "automations.back_on": "Switch on again ({count})",
+  "automations.failed": "Not all of them could be switched – check Home Assistant's automations.",
+  "tip.battery_automations.title": "Why switch them off?",
+  "tip.battery_automations.text":
+    "I steer the batteries through mode, power and limits. If an automation sets the same values, whoever writes last wins – and the battery no longer follows my plan. Listed here are all automations whose actions set something on your batteries; those that only read them are left out.\n“Switch all off” turns them off in Home Assistant and writes into each automation's logbook when and why. “Switch on again” turns on exactly the ones I switched off.",
+  "tip.battery_automations.hint":
+    "Rather keep one? Give it the condition “Energy Joe status is not Steering” – then it stays out of the way while I steer.",
   "devices.boost.stop": "Cancel",
   "devices.boost.reserve": "Your reserve of {reserve} km comes on top.",
   "devices.action.boost": "Charging now because you asked.",

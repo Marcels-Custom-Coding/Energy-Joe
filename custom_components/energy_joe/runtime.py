@@ -17,6 +17,7 @@ from homeassistant.util.hass_dict import HassKey
 from . import model
 from .accounts import CarAccounts
 from .const import DOMAIN
+from .control import automations as battery_automations
 from .control.executor import JoeExecutor
 from .control.notify import JoeNotifier
 from .discovery import async_profile_updates
@@ -184,6 +185,47 @@ class JoeRuntime:
         if patch:
             _LOGGER.info("Battery profiles updated: %s", list(patch["batteries"]))
             self.async_update_config(patch, "read", "profile")
+
+    def automations(self) -> list[dict[str, Any]]:
+        """Automations that write to the batteries (and which ones Joe switched off)."""
+        switched_off: dict[str, Any] = self.executor.data["automations_off"]
+        found = battery_automations.find(self._hass, self._config, switched_off)
+        # Switched on again by hand, or gone: Joe forgets it.
+        off = {a["entity_id"] for a in found if not a["on"]}
+        for entity_id in [e for e in switched_off if e not in off]:
+            del switched_off[entity_id]
+        return found
+
+    async def async_switch_automations(
+        self, on: bool, entity_ids: list[str] | None = None
+    ) -> list[str]:
+        """All (or some) battery automations off, or the ones Joe switched off on again."""
+        switched_off: dict[str, Any] = self.executor.data["automations_off"]
+        found = self.automations()
+        if entity_ids is None:
+            entity_ids = [
+                a["entity_id"] for a in found if (a["switched_off"] if on else a["on"])
+            ]
+        german = (self._hass.config.language or "").startswith("de")
+        if on:
+            message = (
+                "wurde von Energy Joe wieder eingeschaltet"
+                if german
+                else "was switched on again by Energy Joe"
+            )
+        else:
+            message = (
+                "wurde von Energy Joe ausgeschaltet, damit sie Joes Steuerung der "
+                "Speicher nicht überschreibt"
+                if german
+                else "was switched off by Energy Joe so that it does not overwrite "
+                "Joe's battery steering"
+            )
+        failed = await battery_automations.async_switch(
+            self._hass, entity_ids, on, switched_off, message
+        )
+        await self.executor.async_save()
+        return failed
 
     async def async_refresh_plan(self) -> dict[str, Any] | None:
         """Plan again now (the panel's "plan again")."""

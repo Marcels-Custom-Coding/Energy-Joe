@@ -1804,6 +1804,24 @@ export const de = {
   "devices.charge.tonight_set": "Lädt heute Nacht in der günstigen Zeit bis {amount}.",
   "devices.charge.tonight_window": "Lädt heute Nacht in der ganzen günstigen Zeit.",
   "devices.charge.no_night": "„Heute Nacht“ geht, sobald ich die Nacht geplant habe.",
+  "automations.title": "Automationen an deinen Speichern",
+  "automations.lead":
+    "Diese Automationen schreiben auf dieselben Regler wie ich. Solange sie laufen, können sie meine Steuerung überschreiben – schalte sie am besten aus, damit ich richtig arbeiten kann.",
+  "automations.lead_off":
+    "Diese Automationen schreiben auf dieselben Regler wie ich. Sie sind aus – so kommen wir uns nicht in die Quere.",
+  "automations.on": "an",
+  "automations.off": "aus",
+  "automations.writes": "schreibt: {what} ({batteries})",
+  "automations.switched_off":
+    "Von mir ausgeschaltet am {day} um {time} Uhr – damit sie meine Steuerung der Speicher nicht überschreibt.",
+  "automations.all_off": "Alle ausschalten ({count})",
+  "automations.back_on": "Wieder einschalten ({count})",
+  "automations.failed": "Nicht alle ließen sich umschalten – schau in Home Assistant unter Automationen nach.",
+  "tip.battery_automations.title": "Warum ausschalten?",
+  "tip.battery_automations.text":
+    "Ich steuere die Speicher über Modus, Leistung und Grenzwerte. Setzt eine Automation dieselben Werte, gewinnt, wer zuletzt schreibt – dann hält sich der Speicher nicht an meinen Plan. Hier stehen alle Automationen, deren Aktionen etwas an deinen Speichern setzen; welche sie nur lesen, lasse ich weg.\n„Alle ausschalten“ schaltet sie in Home Assistant aus und schreibt ins Logbuch der Automation, wann und warum. „Wieder einschalten“ schaltet genau die wieder an, die ich ausgeschaltet habe.",
+  "tip.battery_automations.hint":
+    "Lieber behalten? Gib der Automation die Bedingung „Energy Joe Status ist nicht Steuert“ – dann hält sie sich raus, solange ich steuere.",
   "devices.boost.stop": "Abbrechen",
   "devices.boost.reserve": "Dazu kommt deine Reserve von {reserve} km.",
   "devices.action.boost": "Lädt jetzt, weil du es willst.",

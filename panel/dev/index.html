@@ -447,6 +447,24 @@
               };
               push();
               return state.mailbox[msg.car];
+            case "energy_joe/automations":
+            case "energy_joe/automations/switch": {
+              // Two automations in the style of a real setup (interlock and boost).
+              const list = (state.automationsMock = state.automationsMock ?? [
+                { entity_id: "automation.akku_interlock_r3", name: "Akku-Interlock R3: BYD-Entladen zu, wenn Venus lädt", on: true, writes: [{ entity_id: "number.discharge_limit", name: "Grenzwert für die Entladeleistung", battery: state.config.batteries[0]?.name ?? "BYD" }], switched_off: null },
+                { entity_id: "automation.akku_boost_r5", name: "Akku-Boost R5: Venus parallel laden", on: true, writes: [{ entity_id: "number.charge_power", name: "Ladeleistung", battery: state.config.batteries[1]?.name ?? "Venus" }, { entity_id: "select.force_mode", name: "Betriebsmodus erzwingen", battery: state.config.batteries[1]?.name ?? "Venus" }], switched_off: null },
+              ]);
+              if (msg.type.endsWith("/switch")) {
+                for (const item of list) {
+                  if (msg.on && item.switched_off) Object.assign(item, { on: true, switched_off: null });
+                  if (!msg.on && item.on) Object.assign(item, { on: false, switched_off: { at: stamp(), reason: "battery" } });
+                  hass.states[item.entity_id] = { entity_id: item.entity_id, state: item.on ? "on" : "off", attributes: { friendly_name: item.name } };
+                }
+                push();
+                return { failed: [], automations: list };
+              }
+              return list;
+            }
             case "energy_joe/control/answer":
               control.answer = { night: msg.night, yes: msg.yes, at: stamp() };
               log("answer", { night: msg.night, yes: msg.yes });

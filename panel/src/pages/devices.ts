@@ -3,6 +3,7 @@ import { property, state } from "lit/decorators.js";
 import { displayTitle, swoosh } from "../components/bits";
 import { dayText } from "../components/look-back";
 import { timeOf } from "../components/plan-text";
+import "../components/battery-automations";
 import "../components/car-need";
 import "../components/pose";
 import "../components/sheet";
@@ -290,7 +291,12 @@ export class JoeDevicesPage extends LitElement {
         ${control ? this.renderStatus(t, joe, control) : nothing}
         <div class="group-label">${t("devices.batteries")}</div>
         ${joe.config.batteries.length
-          ? html`<div class="grid">${joe.config.batteries.map((battery) => this.renderBattery(t, battery, control))}</div>`
+          ? html`<div class="grid">${joe.config.batteries.map((battery) => this.renderBattery(t, battery, control))}</div>
+              <joe-battery-automations
+                .hass=${this.hass}
+                .t=${t}
+                batteries=${JSON.stringify(joe.config.batteries.map((b) => [b.id, b.device_id, b.controls]))}
+              ></joe-battery-automations>`
           : html`<p class="empty">${t("devices.batteries.none")}</p>`}
         <div class="group-label">${t("devices.actions")}</div>
         <div class="grid">

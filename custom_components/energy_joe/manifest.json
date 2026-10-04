@@ -1,10 +1,22 @@
 {
   "domain": "energy_joe",
   "name": "Energy Joe",
-  "after_dependencies": ["energy", "recorder"],
-  "codeowners": ["@Marcels-Custom-Coding"],
+  "after_dependencies": [
+    "automation",
+    "energy",
+    "logbook",
+    "recorder"
+  ],
+  "codeowners": [
+    "@Marcels-Custom-Coding"
+  ],
   "config_flow": true,
-  "dependencies": ["frontend", "http", "panel_custom", "websocket_api"],
+  "dependencies": [
+    "frontend",
+    "http",
+    "panel_custom",
+    "websocket_api"
+  ],
   "documentation": "https://github.com/Marcels-Custom-Coding/Energy-Joe",
   "integration_type": "service",
   "iot_class": "calculated",

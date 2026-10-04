@@ -84,6 +84,8 @@ DEFAULT_DATA: dict[str, Any] = {
     "tonight": {},
     # "Tonight up to …" for a car: action id -> night, target, chosen, unit, sensor.
     "tonight_target": {},
+    # Automations Joe switched off because they write to a battery: id -> at, reason.
+    "automations_off": {},
     "done": [],
     "skip": None,
     "answer": None,
@@ -1416,6 +1418,11 @@ class JoeExecutor:
 
     async def _async_save(self) -> None:
         await self._store.async_save(self.data)
+
+    async def async_save(self) -> None:
+        """Store what changed from outside (e.g. the automations Joe switched off)."""
+        await self._async_save()
+        self._changed()
 
     def readiness(self) -> dict[str, str]:
         """Per battery: ready to steer, or why not ("not_tested", ...)."""
