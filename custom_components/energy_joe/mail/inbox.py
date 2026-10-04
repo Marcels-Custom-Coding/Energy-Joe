@@ -156,8 +156,12 @@ class CarInboxes:
         elif not cars and self._unsub is not None:
             self._unsub()
             self._unsub = None
+        # A password kept for a car that is not (yet) a mailbox car keeps its status.
         for car in set(self.status) - cars:
-            self.status.pop(car, None)
+            if car in self._data:
+                self._set(car, notify=False)
+            else:
+                self.status.pop(car, None)
         for car in cars:
             rules = set((self._need(car) or {}).get("allowed") or [])
             if car in self._rules and rules - self._rules[car]:
@@ -207,19 +211,29 @@ class CarInboxes:
 
     # --- looking -------------------------------------------------------------
 
-    async def async_test(self, car: str) -> str | None:
-        """Log in once to IMAP and SMTP; None if both work, else an error code."""
-        need = self._need(car)
-        if need is None:
-            return "no_mailbox"
+    async def async_test(
+        self, car: str, mailbox: dict[str, Any] | None = None
+    ) -> str | None:
+        """Log in once to IMAP and SMTP; None if both work, else an error code.
+
+        `mailbox` are the settings in the editor, maybe not saved yet.
+        """
+        if mailbox is None:
+            need = self._need(car)
+            if need is None:
+                return "no_mailbox"
+            mailbox = need["mailbox"]
         if not self.has_secret(car):
             return "no_secret"
         try:
             await self._hass.async_add_executor_job(
-                check, need["mailbox"], self._data[car]["password"]
+                check, mailbox, self._data[car]["password"]
             )
         except MailError as err:
             return err.code
+        except Exception:
+            _LOGGER.exception("Testing the mailbox failed")
+            return "unknown"
         return None
 
     async def async_check(self, car: str | None = None) -> None:

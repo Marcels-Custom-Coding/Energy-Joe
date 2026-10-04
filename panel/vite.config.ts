@@ -1,8 +1,11 @@
 import { defineConfig } from "vite";
+import { version } from "./package.json";
 
 // Builds one self-contained ES module that the integration serves as its panel.
 // Files in panel/public (logo, images) are copied next to it.
 export default defineConfig({
+  // The panel compares it with an already loaded one (src/define.ts).
+  define: { __JOE_VERSION__: JSON.stringify(version) },
   build: {
     lib: {
       entry: {

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 
@@ -337,3 +338,45 @@ def test_personal_and_work_accounts(monkeypatch: pytest.MonkeyPatch) -> None:
     assert oauth.client_for("own-app") == "own-app"
     monkeypatch.setattr(oauth, "JOE_CLIENT_ID", None)
     assert oauth.client_for("") is None
+
+
+async def test_the_mailbox_test_takes_the_settings_in_the_editor(
+    hass: HomeAssistant, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Testing works before the car is saved as a mailbox car; its status stays."""
+    seen: list[dict[str, Any]] = []
+    monkeypatch.setattr(
+        inbox_module, "check", lambda settings, password: seen.append(settings)
+    )
+    config = model.default_config()
+    config = model.apply_update(
+        config, {"actions": {"kona": {**_car("kona", "x@y.z"), "need": {}}}}, "user"
+    )
+    calendars = CarCalendarStore(hass)
+    inbox = CarInboxes(hass, lambda: config, calendars, lambda: None)
+    await inbox.async_load()
+    await inbox.async_set_password("kona", "pw")
+    draft = model.CAR_MAILBOX({"provider": "gmx", "address": "kona@gmx.net"})
+    assert await inbox.async_test("kona", draft) is None
+    assert seen[-1]["provider"] == "gmx"
+    inbox.async_apply()
+    assert inbox.status["kona"]["has_secret"] is True
+    inbox.async_stop()
+
+
+def test_a_password_with_umlauts_is_a_clear_error() -> None:
+    from custom_components.energy_joe.mail import mailbox
+
+    class Client:
+        def login(self, user: str, password: str) -> None:
+            password.encode("ascii")
+
+        def logout(self) -> None:
+            pass
+
+    with (
+        patch.object(mailbox.imaplib, "IMAP4_SSL", lambda *a, **k: Client()),
+        pytest.raises(mailbox.MailError) as err,
+    ):
+        mailbox._login_imap({"imap_host": "imap.example.org"}, "Grüße")
+    assert err.value.code == "ascii"

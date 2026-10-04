@@ -37,6 +37,24 @@ def mailbox_cars(config: dict[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
+def calendar_cars(
+    config: dict[str, Any], store: CarCalendarStore, now: datetime | None = None
+) -> list[dict[str, Any]]:
+    """Cars that have Joe's calendar: a mailbox without calendar, or (up to 0.3
+    every car had one) trips entered by hand there that are still to come."""
+    now = now or dt_util.now()
+    return [
+        a
+        for a in config["actions"]
+        if a["kind"] == "switch"
+        and (a.get("need") or {}).get("enabled")
+        and (
+            a["need"].get("source") == "mailbox"
+            or any(e.get("source") == "manual" for e in store.events(a["id"], now))
+        )
+    ]
+
+
 def parse_when(value: str) -> datetime | date:
     """A stored time: a whole day as a date, else a time with its zone."""
     if "T" not in value:

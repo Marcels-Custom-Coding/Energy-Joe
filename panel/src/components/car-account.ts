@@ -30,14 +30,17 @@ export class JoeCarAccount extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) t?: Translate;
   @property() actionId = "";
-  /** Saved as an account car already: only then can Joe sign in. */
+  /** Saved as an account car already: only then does Joe read the calendar. */
   @property({ type: Boolean }) saved = false;
   @property({ attribute: false }) need?: CarNeedConfig;
   @property({ attribute: false }) status?: CarAccountStatus;
+  /** Energy Joe's own apps for signing in (false: one's own app is needed). */
+  @property({ attribute: false }) apps?: { microsoft: boolean; google: boolean };
 
   @state() private password = "";
   @state() private secret = "";
   @state() private result?: string;
+  @state() private signInError?: string;
   @state() private busy = false;
   @state() private ownApp = false;
 
@@ -115,11 +118,7 @@ export class JoeCarAccount extends LitElement {
         />
         ${account.kind === "google" ? html`<p class="hint">${t("calendar.account.google.hint")}</p>` : nothing}
       </div>
-      ${!this.saved
-        ? html`<p class="hint">${t("calendar.account.after_save")}</p>`
-        : signIn
-          ? this.renderSignIn(t, account)
-          : this.renderPassword(t, account)}
+      ${signIn ? this.renderSignIn(t, account) : this.renderPassword(t, account)}
       <div class="inline" data-tipped>
         <button
           type="button"
@@ -132,46 +131,58 @@ export class JoeCarAccount extends LitElement {
         <span>${t("calendar.account.accept")}</span>
         ${tip(t, "calendar_account_accept")}
       </div>
-      ${this.saved ? this.renderStatus(t) : nothing}`;
+      ${this.renderStatus(t)}`;
   }
 
   private get account(): CarAccountConfig {
     return { ...DEFAULT_ACCOUNT, ...(this.need?.account ?? {}) };
   }
 
+  /** Whether Energy Joe brings its own app for this kind of account. */
+  private joeApp(kind: CarAccountConfig["kind"]): boolean {
+    return kind === "google" ? Boolean(this.apps?.google) : Boolean(this.apps?.microsoft);
+  }
+
   private renderSignIn(t: Translate, account: CarAccountConfig): TemplateResult {
     const status = this.status;
     const oauth = status?.oauth;
     const google = account.kind === "google";
-    const own = this.ownApp || Boolean(account.client_id) || account.kind === "microsoft" || oauth?.error === "no_client_id";
-    return html`${own ? this.renderOwnApp(t, account) : nothing}
+    const joeApp = this.joeApp(account.kind);
+    const own = !joeApp || this.ownApp || Boolean(account.client_id) || account.kind === "microsoft";
+    const signedIn = Boolean(status?.has_sign_in);
+    const error = this.signInError ?? (oauth?.state === "error" ? oauth.error : undefined);
+    return html`${own ? this.renderOwnApp(t, account, joeApp) : nothing}
       <div class="field" data-tipped>
         <div class="inline">
           <button type="button" class="mini-btn go" ?disabled=${this.busy} @click=${() => this.act("sign_in")}>
             <ha-icon icon=${google ? "mdi:google" : "mdi:microsoft"}></ha-icon>${t(
-              status?.has_secret ? "mail.sign_in.again" : google ? "mail.sign_in.google" : "mail.sign_in",
+              signedIn ? "mail.sign_in.again" : google ? "mail.sign_in.google" : "mail.sign_in",
             )}
           </button>
-          ${status?.has_secret ? html`<button type="button" class="mini-btn quiet" @click=${() => this.act("sign_out")}>${t("mail.sign_out")}</button>` : nothing}
+          ${signedIn ? html`<button type="button" class="mini-btn quiet" @click=${() => this.act("sign_out")}>${t("mail.sign_out")}</button>` : nothing}
           ${!own ? html`<button type="button" class="mini-btn quiet" @click=${() => (this.ownApp = true)}>${t("calendar.account.own_app")}</button>` : nothing}
           ${tip(t, "mail_sign_in")}
         </div>
-        ${oauth?.state === "waiting"
+        ${oauth?.state === "waiting" && !this.signInError
           ? html`<p class="code">${t("mail.sign_in.code", { code: oauth.user_code ?? "" })}
               <a href=${oauth.uri ?? ""} target="_blank" rel="noreferrer noopener">${oauth.uri}</a></p>`
-          : oauth?.state === "error"
-            ? html`<p class="bad">${t("mail.sign_in.failed", { error: oauth.error ?? "" })}</p>`
-            : status?.has_secret
+          : error
+            ? html`<p class="bad">${t.optional(`calendar.account.oauth.${error}`) ?? t("calendar.account.oauth.other")}</p>`
+            : signedIn
               ? html`<p class="hint ok">${t("mail.signed_in")}</p>`
               : nothing}
       </div>`;
   }
 
   /** One's own app instead of Joe's: its id (and tenant, or Google's secret). */
-  private renderOwnApp(t: Translate, account: CarAccountConfig): TemplateResult {
+  private renderOwnApp(t: Translate, account: CarAccountConfig, joeApp: boolean): TemplateResult {
     const google = account.kind === "google";
     return html`<div class="field" data-tipped>
-      <div class="head-row"><b>${t("calendar.account.client_id")}</b> ${tip(t, google ? "google_app" : "mail_microsoft")}</div>
+      <div class="head-row">
+        <b>${t(joeApp ? "calendar.account.client_id" : "calendar.account.client_id.needed")}</b>
+        ${tip(t, google ? "google_app" : "mail_microsoft")}
+      </div>
+      ${joeApp ? nothing : html`<p class="hint">${t("calendar.account.no_joe_app")}</p>`}
       <div class="inline">
         <input
           class="input"
@@ -211,7 +222,8 @@ export class JoeCarAccount extends LitElement {
               @input=${(ev: Event) => (this.secret = (ev.target as HTMLInputElement).value)}
             />
             <button type="submit" class="mini-btn" ?disabled=${!this.secret || this.busy}>${t("common.save")}</button>
-          </form>`
+          </form>
+          ${this.status?.has_client_secret ? html`<p class="hint ok">${t("mail.password.saved")}</p>` : nothing}`
         : nothing}
     </div>`;
   }
@@ -259,26 +271,30 @@ export class JoeCarAccount extends LitElement {
           />
           <button type="submit" class="mini-btn go" ?disabled=${!this.password || this.busy}>${t("common.save")}</button>
         </form>
-        ${this.status?.has_secret ? html`<p class="hint ok">${t("mail.password.saved")}</p>` : nothing}
+        ${this.status?.has_password ? html`<p class="hint ok">${t("mail.password.saved")}</p>` : nothing}
       </div>`;
   }
 
   private renderStatus(t: Translate): TemplateResult {
     const status = this.status;
-    const text =
-      status?.state === "error"
-        ? t("mail.state.error", { error: t.optional(`calendar.account.error.${status.error}`) ?? String(status.error) })
+    const ready = SIGN_IN.has(this.account.kind) ? status?.has_sign_in : status?.has_password;
+    const text = !this.saved
+      ? t("calendar.account.after_save")
+      : status?.state === "error"
+        ? t("mail.state.error", { error: t.optional(`calendar.account.error.${status.error}`) ?? t("calendar.account.error.other") })
         : status?.checked
           ? t("mail.state.ok", { time: timeOf(status.checked) })
           : "";
     return html`<div class="inline" data-tipped>
-      <button type="button" class="mini-btn" ?disabled=${this.busy || !status?.has_secret} @click=${() => this.act("test")}>
+      <button type="button" class="mini-btn" ?disabled=${this.busy || !ready} @click=${() => this.act("test")}>
         <ha-icon icon="mdi:calendar-check-outline"></ha-icon>${t("calendar.account.test")}
       </button>
       ${tip(t, "calendar_account_test")}
       <span class=${status?.state === "error" ? "bad" : "hint"}>${text}</span>
       ${this.result
-        ? html`<span class=${this.result === "ok" ? "ok" : "bad"}>${t.optional(`calendar.account.result.${this.result}`) ?? this.result}</span>`
+        ? html`<span class=${this.result === "ok" ? "ok" : "bad"}>
+            ${t.optional(`calendar.account.result.${this.result}`) ?? t("calendar.account.result.other")}
+          </span>`
         : nothing}
     </div>`;
   }
@@ -286,6 +302,9 @@ export class JoeCarAccount extends LitElement {
   private async act(what: "password" | "client_secret" | "sign_in" | "sign_out" | "test"): Promise<void> {
     this.busy = true;
     this.result = undefined;
+    if (what === "sign_in" || what === "sign_out") {
+      this.signInError = undefined;
+    }
     try {
       const answer = await this.hass?.callWS<{ error?: string | null } | null>({
         type: "energy_joe/account",
@@ -293,6 +312,8 @@ export class JoeCarAccount extends LitElement {
         do: what,
         ...(what === "password" ? { password: this.password } : {}),
         ...(what === "client_secret" ? { password: this.secret } : {}),
+        // Sign-in and test with the settings as they are here, saved or not.
+        ...(what === "sign_in" || what === "test" ? { account: this.account } : {}),
       });
       if (what === "password") {
         this.password = "";
@@ -304,7 +325,13 @@ export class JoeCarAccount extends LitElement {
         this.result = answer?.error ? answer.error : "ok";
       }
     } catch (err) {
-      this.result = (err as { code?: string })?.code ?? "failed";
+      const code = (err as { code?: string })?.code ?? "failed";
+      if (what === "sign_in") {
+        // "oauth": Microsoft or Google refused; the reason is in the status.
+        this.signInError = code === "oauth" ? (this.status?.oauth?.error ?? code) : code;
+      } else {
+        this.result = code;
+      }
     } finally {
       this.busy = false;
     }

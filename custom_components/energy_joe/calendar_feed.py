@@ -14,9 +14,11 @@ from aiohttp import web
 
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 
+from .calendar import unique_id
 from .const import DOMAIN
-from .plan.car_calendar import mailbox_cars, to_ics
+from .plan.car_calendar import calendar_cars, to_ics
 from .runtime import DATA_RUNTIME
 
 FEED_URL = f"/api/{DOMAIN}/calendar"
@@ -44,10 +46,23 @@ class CarCalendarFeed(HomeAssistantView):
         await store.async_load()
         if not store.token or not hmac.compare_digest(token, store.token):
             return web.Response(status=404)
-        action = next((a for a in mailbox_cars(runtime.config) if a["id"] == car), None)
+        action = next(
+            (a for a in calendar_cars(runtime.config, store) if a["id"] == car), None
+        )
         if action is None:
             return web.Response(status=404)
-        body = to_ics(action["name"], store.events(car))
+        # The name Home Assistant shows for the calendar, else the car's.
+        entries = self.hass.config_entries.async_entries(DOMAIN)
+        entity_id = (
+            er.async_get(self.hass).async_get_entity_id(
+                "calendar", DOMAIN, unique_id(entries[0].entry_id, car)
+            )
+            if entries
+            else None
+        )
+        state = self.hass.states.get(entity_id) if entity_id else None
+        name = state.name if state else action["name"]
+        body = to_ics(name, store.events(car))
         return web.Response(
             body=body.encode(),
             content_type="text/calendar",

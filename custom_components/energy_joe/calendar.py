@@ -2,8 +2,9 @@
 
 Invitations to the car's address land here; appointments can also be added
 by hand in Home Assistant. A car that reads a finished calendar or its
-account's calendar needs none: its entity goes away (the appointments stay
-stored in case the car comes back to its mailbox).
+account's calendar needs none: its entity goes away once no trip entered by
+hand is still to come (the appointments stay stored in case the car comes
+back to its mailbox).
 """
 
 from __future__ import annotations
@@ -29,7 +30,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
 from .entity import JoeEntity
-from .plan.car_calendar import as_text, mailbox_cars, parse_when
+from .plan.car_calendar import as_text, calendar_cars, parse_when
 from .runtime import DATA_RUNTIME, JoeRuntime
 
 
@@ -50,7 +51,7 @@ async def async_setup_entry(
     @callback
     def sync_cars(_: Any = None) -> None:
         """A car switched to its own mailbox gets Joe's calendar right away."""
-        wanted = {a["id"] for a in mailbox_cars(runtime.config)}
+        wanted = {a["id"] for a in calendar_cars(runtime.config, runtime.calendars)}
         if last and last[0] == wanted:
             return
         last[:] = [wanted]
@@ -72,6 +73,8 @@ async def async_setup_entry(
 
     sync_cars()
     entry.async_on_unload(runtime.async_subscribe(sync_cars))
+    # The last trip entered by hand deleted or over: the calendar may go.
+    entry.async_on_unload(runtime.calendars.listen(sync_cars))
 
 
 def _event(entry: dict[str, Any]) -> CalendarEvent:
@@ -121,7 +124,11 @@ class JoeCarCalendar(JoeEntity, CalendarEntity):
 
     def _action(self) -> dict[str, Any] | None:
         return next(
-            (a for a in mailbox_cars(self.runtime.config) if a["id"] == self.action_id),
+            (
+                a
+                for a in calendar_cars(self.runtime.config, self.runtime.calendars)
+                if a["id"] == self.action_id
+            ),
             None,
         )
 

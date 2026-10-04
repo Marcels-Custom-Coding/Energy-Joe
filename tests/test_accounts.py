@@ -325,3 +325,42 @@ def test_accepting_changes_only_the_own_attendee() -> None:
     assert "ATTENDEE;PARTSTAT=ACCEPTED:mailto:kona@example.org" in result
     assert "RSVP" not in result
     assert "ATTENDEE;PARTSTAT=ACCEPTED:mailto:robin@example.org" in result
+
+
+async def test_sign_in_with_the_settings_in_the_editor(
+    hass: HomeAssistant, aioclient_mock: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Saved as Outlook without an app; the editor shows iCloud and an own app."""
+    from custom_components.energy_joe.accounts import AccountError
+    from custom_components.energy_joe.mail import oauth
+
+    monkeypatch.setattr(oauth, "JOE_CLIENT_ID", None)
+    config = _config("outlook")
+    accounts = CarAccounts(hass, lambda: config, lambda: None)
+    await accounts.async_load()
+    # No app of Joe's and none of one's own: the panel is told why.
+    with pytest.raises(AccountError):
+        await accounts.async_sign_in("kona")
+    assert accounts.status["kona"]["oauth"] == {
+        "state": "error",
+        "error": "no_client_id",
+    }
+    # With the own app typed in the editor (not saved yet) it starts.
+    login = "https://login.microsoftonline.com/consumers/oauth2/v2.0"
+    aioclient_mock.post(
+        f"{login}/devicecode",
+        json={"user_code": "X-1", "device_code": "d", "interval": 0, "expires_in": 1},
+    )
+    aioclient_mock.post(f"{login}/token", json={"error": "authorization_pending"})
+    draft = model.CAR_ACCOUNT({"kind": "outlook", "client_id": "own-app"})
+    info = await accounts.async_sign_in("kona", draft)
+    assert info["user_code"] == "X-1"
+    assert aioclient_mock.mock_calls[0][2]["client_id"] == "own-app"
+    accounts.async_stop()
+    # A password stored while the editor shows iCloud counts as stored, even
+    # though the saved kind still needs a sign-in.
+    await accounts.async_set_password("kona", "app-password")
+    status = accounts.status["kona"]
+    assert status["has_password"] is True
+    assert status["has_secret"] is False
+    await accounts.async_remove()

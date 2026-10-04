@@ -551,9 +551,16 @@ async def async_car_needs(
             continue
         own: list[dict[str, Any]] = []
         start = dt_util.start_of_local_day(day)
-        if calendars is not None and need.get("source") == "mailbox":
-            # A mailbox without a calendar: Joe's calendar for the car.
-            own += calendars.events(action["id"], start, start + timedelta(days=1))
+        if calendars is not None:
+            # A mailbox without a calendar: Joe's calendar for the car. Other
+            # cars: only trips entered there by hand (up to 0.3 every car had it).
+            own += [
+                e
+                for e in calendars.events(
+                    action["id"], start, start + timedelta(days=1)
+                )
+                if need.get("source") == "mailbox" or e.get("source") == "manual"
+            ]
         if accounts is not None and need.get("source") == "account":
             # A mailbox with a calendar: the invitations are in there.
             own += await accounts.async_events(

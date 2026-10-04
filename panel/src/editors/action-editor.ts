@@ -88,6 +88,8 @@ export class JoeActionEditor extends LitElement {
   @property({ attribute: false }) mailboxes?: Record<string, CarMailboxStatus>;
   /** Each car's mailbox with a calendar (sign-in and last read). */
   @property({ attribute: false }) accounts?: Record<string, CarAccountStatus>;
+  /** Energy Joe's own apps for signing in. */
+  @property({ attribute: false }) apps?: { microsoft: boolean; google: boolean };
   @property({ attribute: false }) t?: Translate;
   @property({ attribute: false }) config?: JoeConfig;
   @property({ attribute: false }) discovery?: Discovery;
@@ -537,6 +539,7 @@ export class JoeActionEditor extends LitElement {
               .need=${need}
               .mailbox=${this.mailboxes?.[draft.id]}
               .account=${this.accounts?.[draft.id]}
+              .apps=${this.apps}
               carName=${draft.name}
               @joe-need=${(ev: CustomEvent<Partial<CarNeedConfig>>) => this.setNeed(ev.detail)}
             ></joe-car-calendars>`,

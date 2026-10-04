@@ -150,13 +150,15 @@ async def test_only_a_mailbox_without_calendar_gets_joes_calendar(
     hass = ready_hass
     runtime = await _setup(hass)
     calendar = _calendar_id(hass)
-    runtime.calendars.add(
-        "kona", {"start": "2026-10-05", "end": "2026-10-06", "summary": "Messe"}
-    )
+    tomorrow = (dt_util.now() + timedelta(days=1)).date()
+    day = {
+        "start": tomorrow.isoformat(),
+        "end": (tomorrow + timedelta(days=1)).isoformat(),
+    }
+    runtime.calendars.add("kona", {**day, "summary": "Messe", "source": "mail"})
     # A finished calendar of the car: Joe's calendar goes away …
-    runtime.async_update_config(
-        {"actions": [{**CAR, "need": {**CAR["need"], "source": "ha"}}]}, "user"
-    )
+    finished = {"actions": [{**CAR, "need": {**CAR["need"], "source": "ha"}}]}
+    runtime.async_update_config(finished, "user")
     await hass.async_block_till_done()
     assert hass.states.async_all("calendar") == []
     # … and comes back with its appointments when the car reads its mailbox again.
@@ -164,6 +166,15 @@ async def test_only_a_mailbox_without_calendar_gets_joes_calendar(
     await hass.async_block_till_done()
     assert _calendar_id(hass) == calendar
     assert [e["summary"] for e in runtime.calendars.events("kona")] == ["Messe"]
+    # A trip entered by hand (every car had Joe's calendar up to 0.3) keeps it
+    # until it is over, and it counts.
+    trip = runtime.calendars.add("kona", {**day, "summary": "Oma", "location": "Kiel"})
+    runtime.async_update_config(finished, "user")
+    await hass.async_block_till_done()
+    assert _calendar_id(hass) == calendar
+    runtime.calendars.delete("kona", trip["uid"])
+    await hass.async_block_till_done()
+    assert hass.states.async_all("calendar") == []
 
 
 def test_ics_folds_long_lines_and_whole_days() -> None:

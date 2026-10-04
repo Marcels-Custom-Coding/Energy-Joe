@@ -93,11 +93,14 @@ def _login_imap(settings: dict[str, Any], password: str) -> imaplib.IMAP4_SSL:
             ssl_context=ssl.create_default_context(),
             timeout=TIMEOUT,
         )
-    except OSError as err:
+    except (OSError, imaplib.IMAP4.error) as err:
         raise MailError("connect", str(err)) from err
     user = settings.get("username") or settings.get("address") or ""
     try:
         client.login(user, password)
+    except UnicodeError as err:
+        _close(client)
+        raise MailError("ascii", str(err)) from err
     except imaplib.IMAP4.error as err:
         _close(client)
         raise MailError("login", str(err)) from err
@@ -210,6 +213,9 @@ def _login_smtp(settings: dict[str, Any], password: str) -> smtplib.SMTP:
     user = settings.get("username") or settings.get("address") or ""
     try:
         client.login(user, password)
+    except UnicodeError as err:
+        _close_smtp(client)
+        raise MailError("ascii", str(err)) from err
     except smtplib.SMTPException as err:
         _close_smtp(client)
         raise MailError("login", str(err)) from err

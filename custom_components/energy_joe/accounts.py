@@ -442,9 +442,17 @@ class CarAccounts:
         self.status: dict[str, dict[str, Any]] = {}
 
     async def async_load(self) -> None:
-        self._data = (await self._store.async_load() or {}).get("cars", {})
+        stored = (await self._store.async_load() or {}).get("cars", {})
+        # Cars that are gone (or never saved) take their secrets with them.
+        known = {a["id"] for a in self._config()["actions"]}
+        self._data = {car: v for car, v in stored.items() if car in known}
         for car in self._data:
-            self.status[car] = {"has_secret": self._has_secret(car)}
+            self.status[car] = self._secrets(car)
+
+    def async_apply(self) -> None:
+        """After a change of the settings: what is stored fits the kind of account?"""
+        for car in {*self._data, *self.status}:
+            self.status[car] = {**self.status.get(car, {}), **self._secrets(car)}
 
     async def _async_save(self) -> None:
         await self._store.async_save({"cars": self._data})
@@ -475,12 +483,18 @@ class CarAccounts:
             return bool((secret.get("oauth") or {}).get("refresh_token"))
         return bool(secret.get("password"))
 
-    def _set(self, car: str, **changes: Any) -> None:
-        self.status[car] = {
-            **self.status.get(car, {}),
-            **changes,
+    def _secrets(self, car: str) -> dict[str, bool]:
+        """What is stored, apart from which kind the saved settings name."""
+        secret = self._data.get(car) or {}
+        return {
             "has_secret": self._has_secret(car),
+            "has_password": bool(secret.get("password")),
+            "has_sign_in": bool((secret.get("oauth") or {}).get("refresh_token")),
+            "has_client_secret": bool(secret.get("client_secret")),
         }
+
+    def _set(self, car: str, **changes: Any) -> None:
+        self.status[car] = {**self.status.get(car, {}), **changes, **self._secrets(car)}
         self._changed()
 
     # --- secrets -------------------------------------------------------------
@@ -522,12 +536,21 @@ class CarAccounts:
         )
         return oauth.microsoft(tenant, client)
 
-    async def async_sign_in(self, car: str) -> dict[str, Any]:
-        """Google or Microsoft: a code to sign in with; Joe waits in the background."""
-        account = self._account(car)
+    async def async_sign_in(
+        self, car: str, account: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        """Google or Microsoft: a code to sign in with; Joe waits in the background.
+
+        `account` are the settings in the editor, maybe not saved yet.
+        """
+        account = account or self._account(car)
         if not account or account["kind"] not in SIGN_IN:
             raise AccountError("no_sign_in")
-        sign_in = self._sign_in(car, account)
+        try:
+            sign_in = self._sign_in(car, account)
+        except AccountError as err:
+            self._set(car, oauth={"state": "error", "error": err.code})
+            raise
         session = async_get_clientsession(self._hass)
         try:
             found = await oauth.start(session, sign_in)
@@ -715,9 +738,17 @@ class CarAccounts:
             except AccountError as err:
                 _LOGGER.debug("Accepting %s failed: %s", event.get("uid"), err)
 
-    async def async_test(self, car: str) -> str | None:
-        """Read the next week once; None if that works, else the reason."""
-        account = self._account(car)
+    async def async_test(
+        self, car: str, account: dict[str, Any] | None = None
+    ) -> str | None:
+        """Read the next week once; None if that works, else the reason.
+
+        `account` are the settings in the editor, maybe not saved yet: the
+        calendars of the account are then looked up again.
+        """
+        if account is not None and account != self._account(car):
+            (self._data.get(car) or {}).pop("calendars", None)
+        account = account or self._account(car)
         if not account:
             return "no_account"
         now = dt_util.now()

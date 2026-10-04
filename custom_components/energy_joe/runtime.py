@@ -21,6 +21,7 @@ from .control.executor import JoeExecutor
 from .control.notify import JoeNotifier
 from .discovery import async_profile_updates
 from .learn.learner import JoeLearner
+from .mail import oauth
 from .mail.inbox import CarInboxes
 from .observe.observer import BACKFILL_DAYS, JoeObserver
 from .observe.store import HistoryStore
@@ -246,6 +247,13 @@ class JoeRuntime:
                 "control": self.executor.view,
                 "mailbox": self.inbox.status,
                 "accounts": self.accounts.status,
+                # Energy Joe's own apps for signing in (else one's own is needed).
+                "apps": {
+                    "microsoft": oauth.client_for(None) is not None,
+                    "google": bool(
+                        oauth.JOE_GOOGLE_CLIENT_ID and oauth.JOE_GOOGLE_CLIENT_SECRET
+                    ),
+                },
             }
         )
 
@@ -287,6 +295,7 @@ class JoeRuntime:
         """Merge a partial configuration update (raises vol.Invalid)."""
         config = model.apply_update(self._config, patch, source, detail)
         self._config = model.prefer_learned(config)
+        self.accounts.async_apply()
         self._changed(config=True)
         self._update_observer()
         self._check_control()

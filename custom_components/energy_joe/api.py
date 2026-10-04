@@ -34,7 +34,7 @@ from .learn.learning import (
 )
 from .learn.models import MIN_DAYS, SOURCE_DAYS, daily_rows
 from .observe.records import day_view, summarize
-from .plan.car_calendar import mailbox_cars
+from .plan.car_calendar import calendar_cars
 from .plan.inputs import async_consumption
 from .runtime import (
     AVAILABLE_MODES,
@@ -704,7 +704,7 @@ async def ws_calendar_links(
         external = None
     registry = er.async_get(hass)
     entries = hass.config_entries.async_entries(DOMAIN)
-    cars = [a["id"] for a in mailbox_cars(runtime.config)]
+    cars = [a["id"] for a in calendar_cars(runtime.config, store)]
     entities = {}
     for car in cars:
         if entries:
@@ -716,7 +716,7 @@ async def ws_calendar_links(
         {
             "external_url": external,
             "links": {car: feed_path(token or "", car) for car in cars},
-            # Joe's calendar entity of each car whose mailbox has none.
+            # Joe's calendar entity of each car that has one.
             "entities": entities,
         },
     )
@@ -745,7 +745,12 @@ async def ws_mailbox_secret(
 
 
 @websocket_api.websocket_command(
-    {vol.Required("type"): f"{DOMAIN}/mailbox/test", vol.Required("car"): str}
+    {
+        vol.Required("type"): f"{DOMAIN}/mailbox/test",
+        vol.Required("car"): str,
+        # The settings in the editor, maybe not saved yet.
+        vol.Optional("mailbox"): model.CAR_MAILBOX,
+    }
 )
 @websocket_api.require_admin
 @websocket_api.async_response
@@ -758,7 +763,8 @@ async def ws_mailbox_test(
     if (runtime := _runtime(hass, connection, msg)) is None:
         return
     connection.send_result(
-        msg["id"], {"error": await runtime.inbox.async_test(msg["car"])}
+        msg["id"],
+        {"error": await runtime.inbox.async_test(msg["car"], msg.get("mailbox"))},
     )
 
 
@@ -789,6 +795,8 @@ async def ws_mailbox_check(
             ("password", "client_secret", "sign_in", "sign_out", "test")
         ),
         vol.Optional("password"): vol.Any(None, vol.All(str, vol.Length(max=500))),
+        # The settings in the editor (sign_in and test), maybe not saved yet.
+        vol.Optional("account"): model.CAR_ACCOUNT,
     }
 )
 @websocket_api.require_admin
@@ -811,12 +819,12 @@ async def ws_account(
             await accounts.async_set_client_secret(car, msg.get("password"))
             result = None
         elif msg["do"] == "sign_in":
-            result = await accounts.async_sign_in(car)
+            result = await accounts.async_sign_in(car, msg.get("account"))
         elif msg["do"] == "sign_out":
             await accounts.async_sign_out(car)
             result = None
         else:
-            result = {"error": await accounts.async_test(car)}
+            result = {"error": await accounts.async_test(car, msg.get("account"))}
     except AccountError as err:
         connection.send_error(msg["id"], err.code, err.detail or err.code)
         return

@@ -48,11 +48,14 @@ export class JoeCarCalendars extends LitElement {
   @property({ attribute: false }) need?: CarNeedConfig;
   @property({ attribute: false }) mailbox?: CarMailboxStatus;
   @property({ attribute: false }) account?: CarAccountStatus;
+  /** Energy Joe's own apps for signing in. */
+  @property({ attribute: false }) apps?: { microsoft: boolean; google: boolean };
   @property() carName = "";
 
   @state() private links?: Links;
   @state() private copied = false;
-  @state() private failed = false;
+  @state() private copyFailed = false;
+  @state() private linksFailed = false;
   @state() private sender = "";
 
   static styles = [
@@ -61,9 +64,13 @@ export class JoeCarCalendars extends LitElement {
       :host {
         display: grid;
         gap: 14px;
+      }
+      /* One below the other, or all three side by side – never two and one.
+         The container is this box only: it holds no tooltip (a container
+         would catch their fixed position where there is no popover). */
+      .ways-box {
         container-type: inline-size;
       }
-      /* One below the other, or all three side by side – never two and one. */
       .ways {
         display: grid;
         gap: 8px;
@@ -167,6 +174,9 @@ export class JoeCarCalendars extends LitElement {
         font-size: 13px;
         color: var(--joe-muted);
       }
+      .hint.bad {
+        color: var(--joe-warn, var(--joe-crit));
+      }
     `,
   ];
 
@@ -181,9 +191,9 @@ export class JoeCarCalendars extends LitElement {
     }
     try {
       this.links = await this.hass.callWS<Links>({ type: "energy_joe/calendar/links", renew });
-      this.failed = false;
+      this.linksFailed = false;
     } catch {
-      this.failed = true;
+      this.linksFailed = true;
     }
   }
 
@@ -195,7 +205,7 @@ export class JoeCarCalendars extends LitElement {
     const source = this.need?.source ?? "ha";
     return html`<div data-tipped>
         <div class="head-row"><b>${t("calendar.source")}</b> ${tip(t, "calendar_source")}</div>
-        <div class="ways" role="radiogroup" aria-label=${t("calendar.source")}>
+        <div class="ways-box"><div class="ways" role="radiogroup" aria-label=${t("calendar.source")}>
           ${WAYS.map(
             (way) => html`<button
               type="button"
@@ -209,14 +219,19 @@ export class JoeCarCalendars extends LitElement {
               <small>${t(`calendar.way.${way.source}.hint`)}</small>
             </button>`,
           )}
-        </div>
+        </div></div>
       </div>
       ${source === "mailbox"
         ? this.renderMailbox(t, hass)
         : source === "account"
           ? this.renderAccount(t)
           : this.renderCalendar(t, hass)}
-      ${this.failed ? html`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon>${t("error.action")}</div>` : nothing}`;
+      ${this.linksFailed
+        ? html`<div class="note warn">
+            <ha-icon icon="mdi:alert-outline"></ha-icon><span>${t("calendar.links_failed")}</span>
+            <button type="button" class="mini-btn quiet" @click=${() => this.load(false)}>${t("calendar.retry")}</button>
+          </div>`
+        : nothing}`;
   }
 
   private saved(source: CarSource): boolean {
@@ -227,9 +242,17 @@ export class JoeCarCalendars extends LitElement {
 
   private renderCalendar(t: Translate, hass: HomeAssistant): TemplateResult {
     const calendars = this.need?.calendars ?? [];
+    // Up to 0.3 every car had Joe's calendar: one with trips entered by hand stays until they are over.
+    const legacy = this.saved("ha") ? this.links?.entities[this.actionId] : null;
     return html`<div class="part">
         <joe-calendar-flow .t=${t} variant="calendar"></joe-calendar-flow>
       </div>
+      ${legacy
+        ? html`<div class="own" data-tipped>
+            <div class="head-row"><ha-icon icon="mdi:calendar-clock"></ha-icon><b>${t("calendar.own.legacy")}</b> ${tip(t, "calendar_own")}</div>
+            <p class="hint">${t("calendar.own.legacy.hint", { name: entityName(hass, legacy) })}</p>
+          </div>`
+        : nothing}
       <div data-tipped>
         <div class="head-row"><b>${t("calendar.pick")}</b> ${tip(t, "calendar_more")}</div>
         <div class="chips">
@@ -286,6 +309,7 @@ export class JoeCarCalendars extends LitElement {
   private renderMailbox(t: Translate, hass: HomeAssistant): TemplateResult {
     const saved = this.saved("mailbox");
     const entity = saved ? this.links?.entities[this.actionId] : null;
+    // Before saving the name the entity will get (the device "Energy Joe" plus its own name).
     const calendar = entity ? entityName(hass, entity) : t("calendar.own.name", { car: this.carName });
     return html`<div class="part">
         <joe-calendar-flow .t=${t} variant="mailbox" address=${this.need?.mailbox?.address ?? ""} calendar=${calendar}></joe-calendar-flow>
@@ -326,18 +350,51 @@ export class JoeCarCalendars extends LitElement {
               <ha-icon icon="mdi:refresh"></ha-icon>${t("calendar.renew")}
             </button>
             ${tip(t, "calendar_link")}
-          </div>`
+          </div>
+          ${this.copyFailed ? html`<p class="hint bad">${t("calendar.copy_failed")}</p>` : nothing}`
         : html`<p class="hint">${t("calendar.no_external")}</p>`}
     </div>`;
   }
 
+  /** Copy the link; without a secure page (plain http) the old way, else let the user copy. */
   private async copy(url: string): Promise<void> {
+    let done = false;
     try {
-      await navigator.clipboard.writeText(url);
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(url);
+        done = true;
+      }
+    } catch {
+      done = false;
+    }
+    if (!done) {
+      const area = document.createElement("textarea");
+      area.value = url;
+      area.setAttribute("readonly", "");
+      area.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+      document.body.append(area);
+      area.select();
+      try {
+        done = document.execCommand("copy");
+      } catch {
+        done = false;
+      }
+      area.remove();
+    }
+    this.copyFailed = !done;
+    if (done) {
       this.copied = true;
       setTimeout(() => (this.copied = false), 2000);
-    } catch {
-      this.failed = true;
+    } else {
+      // Select the link so it can be copied by hand.
+      const code = this.renderRoot.querySelector(".own code");
+      const selection = window.getSelection();
+      if (code && selection) {
+        const range = document.createRange();
+        range.selectNodeContents(code);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
     }
   }
 
@@ -355,16 +412,17 @@ export class JoeCarCalendars extends LitElement {
         ?saved=${this.saved("account")}
         .need=${this.need}
         .status=${this.account}
+        .apps=${this.apps}
       ></joe-car-account>
-      ${this.renderAllowed(t)}`;
+      ${this.renderAllowed(t, "account_allowed")}`;
   }
 
   // --- who may invite the car (2 and 3) ----------------------------------------
 
-  private renderAllowed(t: Translate): TemplateResult {
+  private renderAllowed(t: Translate, tipName: "mail_allowed" | "account_allowed" = "mail_allowed"): TemplateResult {
     const allowed = this.need?.allowed ?? [];
     return html`<div class="part" data-tipped>
-      <div class="head-row"><b>${t("mail.allowed")}</b> ${tip(t, "mail_allowed")}</div>
+      <div class="head-row"><b>${t("mail.allowed")}</b> ${tip(t, tipName)}</div>
       <p class="hint">${t("mail.allowed.hint")}</p>
       ${allowed.length
         ? html`<div class="chips">
@@ -393,10 +451,11 @@ export class JoeCarCalendars extends LitElement {
         <input
           class="input"
           type="text"
-          placeholder="name@example.org, @firma.de"
+          placeholder=${t("mail.allowed.placeholder")}
           aria-label=${t("mail.allowed.add")}
           .value=${this.sender}
           @input=${(ev: Event) => (this.sender = (ev.target as HTMLInputElement).value)}
+          @change=${() => this.allow(this.sender)}
         />
         <button type="submit" class="mini-btn" ?disabled=${!this.sender.trim()}>${t("mail.allowed.add")}</button>
       </form>

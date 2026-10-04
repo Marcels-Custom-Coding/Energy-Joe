@@ -162,7 +162,7 @@ export class JoeCarMailbox extends LitElement {
           ? nothing
           : html`<button type="button" class="mini-btn quiet" @click=${() => (this.servers = true)}>${t("mail.servers.change")}</button>`}
       </div>
-      ${this.saved ? this.renderStatus(t) : html`<p class="hint">${t("mail.after_save")}</p>`} ${this.renderRecent(t)}`;
+      ${this.renderStatus(t)} ${this.renderRecent(t)}`;
   }
 
   private get mailbox(): CarMailboxConfig {
@@ -241,12 +241,16 @@ export class JoeCarMailbox extends LitElement {
         <button type="button" class="mini-btn" ?disabled=${this.busy || !this.status?.has_secret} @click=${() => this.act("test")}>
           <ha-icon icon="mdi:connection"></ha-icon>${t("mail.test")}
         </button>
-        <button type="button" class="mini-btn" ?disabled=${this.busy || !this.status?.has_secret} @click=${() => this.act("check")}>
-          <ha-icon icon="mdi:email-sync-outline"></ha-icon>${t("mail.check")}
-        </button>
+        ${this.saved
+          ? html`<button type="button" class="mini-btn" ?disabled=${this.busy || !this.status?.has_secret} @click=${() => this.act("check")}>
+              <ha-icon icon="mdi:email-sync-outline"></ha-icon>${t("mail.check")}
+            </button>`
+          : nothing}
         ${tip(t, "mail_status")}
       </div>
-      <p class=${this.status?.state === "error" ? "hint bad" : "hint"}>${this.statusText(t)}</p>
+      <p class=${this.saved && this.status?.state === "error" ? "hint bad" : "hint"}>
+        ${this.saved ? this.statusText(t) : t("mail.after_save")}
+      </p>
       ${this.result
         ? html`<p class=${this.result === "ok" ? "hint ok" : "hint bad"} role="status">
             ${t.optional(`mail.result.${this.result}`) ?? t("mail.result.failed")}
@@ -321,7 +325,12 @@ export class JoeCarMailbox extends LitElement {
         await this.hass?.callWS({ type: "energy_joe/mailbox/secret", car: this.actionId, password: this.password });
         this.password = "";
       } else if (what === "test") {
-        const answer = await this.hass?.callWS<{ error: string | null }>({ type: "energy_joe/mailbox/test", car: this.actionId });
+        // With the settings as they are here, saved or not.
+        const answer = await this.hass?.callWS<{ error: string | null }>({
+          type: "energy_joe/mailbox/test",
+          car: this.actionId,
+          mailbox: this.mailbox,
+        });
         this.result = answer?.error ? `error_${answer.error}` : "ok";
       } else {
         await this.hass?.callWS({ type: "energy_joe/mailbox/check", car: this.actionId });

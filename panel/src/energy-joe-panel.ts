@@ -457,6 +457,7 @@ export class EnergyJoePanel extends LitElement {
           .hass=${this.hass}
           .mailboxes=${this.joe?.mailbox}
           .accounts=${this.joe?.accounts}
+          .apps=${this.joe?.apps}
           .t=${t}
           .config=${config}
           .discovery=${this.discovery}

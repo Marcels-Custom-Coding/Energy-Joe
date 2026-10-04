@@ -1093,6 +1093,43 @@ export const en: Record<Key, string> = {
   "calendar.connect.caldav": "iCloud, Infomaniak, Nextcloud",
   "calendar.connect.ical": "iCal link",
   "calendar.connect.microsoft": "Microsoft 365 / Outlook",
+  "calendar.account.client_id.needed": "Your app at this provider",
+  "calendar.account.no_joe_app":
+    "Joe's own app does not exist here yet – enter the ID of your own app (instructions in the i).",
+  "calendar.account.oauth.no_client_id": "I am missing the app to sign in with – enter your own above.",
+  "calendar.account.oauth.expired_token": "The code ran out – start the sign-in again.",
+  "calendar.account.oauth.access_denied": "The sign-in was declined or cancelled.",
+  "calendar.account.oauth.authorization_declined": "The sign-in was declined or cancelled.",
+  "calendar.account.oauth.invalid_client":
+    "The provider does not know this app ID – check it (and for Google the client secret).",
+  "calendar.account.oauth.unauthorized_client":
+    "This app may not sign in this way – at Microsoft turn on “Allow public client flows”, at Google use the type “TVs and Limited Input devices”.",
+  "calendar.account.oauth.invalid_scope": "The provider refuses access to the calendar.",
+  "calendar.account.oauth.invalid_grant": "The sign-in is no longer valid – sign in again.",
+  "calendar.account.oauth.connect": "The provider could not be reached – try again in a moment.",
+  "calendar.account.oauth.no_sign_in": "This kind of account signs in with a password, not with a code.",
+  "calendar.account.oauth.other": "The sign-in did not work.",
+  "calendar.account.error.no_server": "server address missing",
+  "calendar.account.error.accept": "accepting failed",
+  "calendar.account.error.other": "unknown error",
+  "calendar.account.result.no_sign_in": "This kind of account signs in with a password.",
+  "calendar.account.result.no_account": "Choose the kind of account first.",
+  "calendar.account.result.accept": "Reading works, accepting does not.",
+  "calendar.account.result.other": "That did not work.",
+  "mail.allowed.placeholder": "name@example.org, @company.com",
+  "mail.error.ascii": "password with special characters",
+  "mail.result.error_ascii":
+    "Mailboxes only take passwords without characters like ä, ß or € – an app password works best.",
+  "mail.result.error_unknown": "That did not work – unknown error.",
+  "calendar.links_failed": "I could not load the links to Joe's calendars just now.",
+  "calendar.retry": "Try again",
+  "calendar.copy_failed": "Copying does not work here – the link is selected, copy it yourself.",
+  "calendar.own.legacy": "Joe's old calendar for this car",
+  "calendar.own.legacy.hint":
+    "“{name}” still holds trips you entered by hand. They still count; once none is left, the calendar goes away.",
+  "tip.account_allowed.title": "Why a list?",
+  "tip.account_allowed.text":
+    "Otherwise anyone could send the car appointments. I only accept invitations from senders listed here – an address or a whole domain like “@company.com”. Unanswered invitations from anyone else do not count as trips; what you enter in the account's calendar yourself does.",
   "calendar.account.kind.google": "Google (Gmail)",
   "calendar.account.placeholder.google": "kona@gmail.com",
   "calendar.account.google.hint":
@@ -1113,7 +1150,7 @@ export const en: Record<Key, string> = {
   "calendar.way.account": "Mailbox with calendar",
   "calendar.way.account.hint":
     "Google, Microsoft 365, Outlook.com, iCloud or Infomaniak: the appointments land in the account's calendar. Joe reads it and accepts there.",
-  "calendar.own.name": "Calendar {car}",
+  "calendar.own.name": "Energy Joe Calendar {car}",
   "calendar.account.password": "App password",
   "calendar.account.placeholder.outlook": "kona@outlook.com",
   "calendar.account.placeholder.microsoft": "car@company.com",
@@ -1141,7 +1178,7 @@ export const en: Record<Key, string> = {
   "tip.mail_provider.hint":
     "Does your provider have a calendar (Google, Microsoft, iCloud, Infomaniak)? Then “Mailbox with calendar” is the better way.",
   "tip.calendar_account.hint":
-    "With Google and Microsoft you sign in with a short code – Joe never sees your password.",
+    "Signing in, the password and “Read calendar” work before saving – Joe reads trips once it is saved.",
   "tip.calendar_account_address.title": "Which address?",
   "tip.calendar_account_address.text":
     "The address of the account that belongs to the car only. Exactly this address is what you invite to appointments when you drive the car.",
@@ -1229,7 +1266,7 @@ export const en: Record<Key, string> = {
   "calendar.account.kind.infomaniak": "Infomaniak",
   "calendar.account.kind.caldav": "Other CalDAV server",
   "calendar.account.address": "Address of the account",
-  "calendar.account.after_save": "Once saved, you sign in to the account here.",
+  "calendar.account.after_save": "Once saved, I read the account's calendar.",
   "calendar.account.client_id": "Own app ID (optional)",
   "calendar.account.own_app": "Use an app of my own",
   "calendar.account.url": "Address of the CalDAV server",
@@ -1252,7 +1289,7 @@ export const en: Record<Key, string> = {
   "flow.invite.2": "You need the car? **Invite it:** {address}",
   "flow.invite.address": "the car's address",
   "flow.calendar.title": "How Joe reads a finished calendar",
-  "flow.calendar.1": "The car's appointments are in **a calendar of its own** – invited and accepted.",
+  "flow.calendar.1": "The trips with the car are in **a calendar of its own**.",
   "flow.calendar.2": "You **assign the calendar** to the car here.",
   "flow.calendar.3": "**Joe reads** the appointments with a place.",
   "settings.routing": "Distances to appointments",
@@ -1446,7 +1483,7 @@ export const en: Record<Key, string> = {
   "tip.calendar_link.hint": "“New link” makes the old one invalid.",
   "tip.calendar_more.title": "Which calendar?",
   "tip.calendar_more.text":
-    "A calendar that holds only this car's appointments – for example a shared Google or iCloud calendar “Car”. Every appointment with a place in it counts as a trip with this car.",
+    "A calendar that holds only this car's trips – for example a shared Google or iCloud calendar “Car”. Every appointment with a place in it counts as a trip with this car, so a family calendar does not fit.",
   "tip.calendar_connect.title": "How does my calendar get into Home Assistant?",
   "tip.calendar_connect.text":
     "**Google**: the Google Calendar integration.\n**iCloud, Infomaniak, Nextcloud**: the CalDAV integration (iCloud with an app password).\n**iCal link**: Remote Calendar – any calendar with a subscription link.\n**Microsoft 365 / Outlook**: via HACS the “Microsoft 365 Calendar” integration (Exchange Online and personal accounts).\nThe buttons open the setup in Home Assistant.",
@@ -1465,7 +1502,7 @@ export const en: Record<Key, string> = {
     "I know them for web.de, GMX, Gmail and T-Online. For other providers IMAP and SMTP are in their help – usually IMAP port 993 and SMTP port 587 (STARTTLS) or 465 (SSL).",
   "tip.mail_microsoft.title": "How do I create the app?",
   "tip.mail_microsoft.text":
-    "Only needed for companies whose admin does not allow Joe's app – once in Microsoft Entra (entra.microsoft.com):\n1. App registrations → New registration, account type “Accounts in any organizational directory and personal Microsoft accounts”.\n2. Authentication → “Allow public client flows” to Yes.\n3. API permissions → Microsoft Graph → delegated: Calendars.ReadWrite, User.Read, offline_access.\n4. Enter the application ID here, next to it the tenant (the company's domain or ID).",
+    "Needed while Joe's own app is missing – or if your company does not allow it. Once in Microsoft Entra (entra.microsoft.com):\n1. App registrations → New registration, account type “Accounts in any organizational directory and personal Microsoft accounts”.\n2. Authentication → “Allow public client flows” to Yes.\n3. API permissions → Microsoft Graph → delegated: Calendars.ReadWrite, User.Read, offline_access.\n4. Enter the application ID here; for Microsoft 365 the tenant next to it (the company's domain or ID).",
   "tip.mail_sign_in.title": "How do I sign in?",
   "tip.mail_sign_in.text":
     "I show you a short code and a link. Open the link on any device, enter the code and sign in with the car's account. After that I renew the sign-in myself – Home Assistant does not have to be reachable from outside for that.",
@@ -1481,7 +1518,7 @@ export const en: Record<Key, string> = {
   "tip.mail_recent.text": "The last invitations and what I did with them: added, changed, cancelled – or why not.",
   "tip.calendar_account.title": "What do I need for it?",
   "tip.calendar_account.text":
-    "**Google**: just sign in with Google – no app password.\n**Microsoft personal**: just sign in with Microsoft.\n**Microsoft 365 / Exchange**: sign in with Joe's app if your company allows it – otherwise with an app of your own.\n**iCloud**: an app password from appleid.apple.com.\n**Infomaniak**: the account's password or a device password.\n**Other CalDAV server**: address, user name and password.",
+    "**Google** and **Microsoft**: sign in with a short code – Joe never sees your password. While Joe's own app is missing, you need an app of your own at the provider for that (instructions in the i next to the field).\n**iCloud**: an app password from appleid.apple.com.\n**Infomaniak**: the account's password or a device password.\n**Other CalDAV server**: address, user name and password.",
   "tip.calendar_account_accept.title": "What does accepting mean?",
   "tip.calendar_account_accept.text":
     "I accept invitations in the account's calendar – but only from senders listed below under “Who may invite the car?”. Unanswered invitations from anyone else do not count as trips.",
@@ -1490,7 +1527,7 @@ export const en: Record<Key, string> = {
     "**iCloud**: an app-specific password (appleid.apple.com → Sign-In and Security).\n**Infomaniak**: the account's password or a device password.\nIt stays with me in a store of its own, not in the configuration.",
   "tip.calendar_source.title": "Which way suits me?",
   "tip.calendar_source.text":
-    "**Finished calendar**: the car already has a calendar with its appointments (e.g. a shared family calendar), and it is in Home Assistant. You assign it, Joe only reads.\n**Mailbox without calendar**: the car gets its own email address, e.g. at GMX. You invite it to your appointments; Joe fetches the invitation, accepts and puts the appointment into his own calendar for the car.\n**Mailbox with calendar**: like before, but the account has a calendar itself (Google, Microsoft, iCloud, Infomaniak). The invitation lands there by itself; Joe reads this calendar and accepts there.",
+    "**Finished calendar**: the car already has a calendar of its own that holds only its trips (e.g. a shared calendar “Car”), and it is in Home Assistant. You assign it, Joe only reads.\n**Mailbox without calendar**: the car gets its own email address, e.g. at GMX. You invite it to your appointments; Joe fetches the invitation, accepts and puts the appointment into his own calendar for the car.\n**Mailbox with calendar**: like before, but the account has a calendar itself (Google, Microsoft, iCloud, Infomaniak). The invitation lands there by itself; Joe reads this calendar and accepts there.",
   "tip.calendar_source.hint": "The calendars of the persons you choose above always count too.",
   "tip.routing_service.title": "Which service?",
   "tip.routing_service.text":

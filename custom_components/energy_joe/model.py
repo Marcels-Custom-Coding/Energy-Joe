@@ -813,6 +813,12 @@ def _mailbox_to_cars(data: dict[str, Any]) -> None:
     provenance = data.get("provenance") or {}
     for path in [p for p in provenance if p == "mailbox" or _is_below(p, "mailbox")]:
         del provenance[path]
+    provider = old.get("provider") or "other"
+    mailbox_cars = [
+        a
+        for a in data.get("actions") or []
+        if (a.get("need") or {}).get("source") == "mailbox"
+    ]
     for action in data.get("actions") or []:
         need = action.get("need") or {}
         if need.get("source") not in ("mailbox", "account"):
@@ -820,7 +826,21 @@ def _mailbox_to_cars(data: dict[str, Any]) -> None:
         need.setdefault("allowed", list(old.get("allowed") or []))
         if need["source"] != "mailbox":
             continue
-        provider = old.get("provider") or "other"
+        if provider in ("outlook", "microsoft") and len(mailbox_cars) == 1:
+            # Microsoft's mailbox has a calendar: the car's account now (a new
+            # sign-in is needed, the old one was for mail only).
+            need["source"] = "account"
+            need["account"] = {
+                **(need.get("account") or {}),
+                "kind": provider,
+                "address": (old.get("cars") or {}).get(action["id"])
+                or old.get("address")
+                or "",
+                "client_id": old.get("client_id"),
+                "tenant": old.get("tenant") or "common",
+                "accept": old.get("accept", True),
+            }
+            continue
         imap, smtp = _V3_SERVERS.get(provider, (None, None))
         address = (old.get("cars") or {}).get(action["id"]) or old.get("address") or ""
         login = old.get("username") or old.get("address") or None

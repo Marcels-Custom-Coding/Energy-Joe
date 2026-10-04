@@ -425,7 +425,11 @@ export interface CarAccountConfig {
 
 export interface CarAccountStatus {
   state?: "waiting" | "ok" | "error" | "no_secret";
+  /** Signed in the way the SAVED kind needs; the others whatever the kind. */
   has_secret?: boolean;
+  has_password?: boolean;
+  has_sign_in?: boolean;
+  has_client_secret?: boolean;
   error?: string | null;
   checked?: string;
   oauth?: { state: "waiting" | "ok" | "error"; user_code?: string; uri?: string; error?: string } | null;
@@ -660,6 +664,8 @@ export interface JoeState {
   mailbox?: Record<string, CarMailboxStatus>;
   /** Each car's mailbox with a calendar: sign-in and last read. */
   accounts?: Record<string, CarAccountStatus>;
+  /** Energy Joe's own apps for signing in (false: one's own app is needed). */
+  apps?: { microsoft: boolean; google: boolean };
 }
 
 // --- Steering (see custom_components/energy_joe/control) ---
