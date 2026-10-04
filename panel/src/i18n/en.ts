@@ -1076,6 +1076,21 @@ export const en: Record<Key, string> = {
   "action.need.odometer": "Odometer",
   "action.need.persons": "Whose appointments count",
   "action.need.no_calendars": "Nobody has a calendar yet. You assign calendars under Settings → Household.",
+  "action.need.calendars": "Calendars of this car",
+  "calendar.own.after_save": "Once saved, this car gets a calendar of its own. Every appointment in it is a trip with exactly this car.",
+  "calendar.own.hint": "Every appointment in it is a trip with exactly this car. Add trips in Home Assistant under Calendar – or subscribe to the calendar on your phone:",
+  "calendar.copy": "Copy link",
+  "calendar.copied": "Copied",
+  "calendar.renew": "New link",
+  "calendar.no_external": "To subscribe, Home Assistant must be reachable from outside (e.g. through Home Assistant Cloud or your own address).",
+  "calendar.add": "Choose another calendar",
+  "calendar.remove": "Remove {name}",
+  "calendar.pick": "Which calendars belong to this car?",
+  "calendar.connect": "Not in Home Assistant yet? Connect your calendar:",
+  "calendar.connect.google": "Google",
+  "calendar.connect.caldav": "iCloud, Infomaniak, Nextcloud",
+  "calendar.connect.ical": "iCal link",
+  "calendar.connect.microsoft": "Microsoft 365 / Outlook",
   "action.need.round_trip": "There and back",
   "action.need.no_routing":
     "I can only work out how far appointments are once you pick a service under Settings → Distances. Until then only appointments at a zone and your usual distance count.",
@@ -1263,6 +1278,22 @@ export const en: Record<Key, string> = {
   "tip.a_need_persons.title": "Whose appointments?",
   "tip.a_need_persons.text":
     "Appointments with a place from these people's calendars count as trips with this car. I leave out online meetings (Teams, Zoom and the like).",
+  "tip.a_need_calendars.title": "How do I know which car drives?",
+  "tip.a_need_calendars.text":
+    "Every appointment with a place in this car's calendar is a trip with exactly this car – more precise than the persons' calendars. The calendars of the persons you choose above count too.",
+  "tip.calendar_own.title": "Joe's calendar for this car",
+  "tip.calendar_own.text":
+    "An ordinary calendar in Home Assistant: you can add, change and delete appointments. Soon I can also accept invitations to an address of the car.",
+  "tip.calendar_link.title": "What is the link?",
+  "tip.calendar_link.text":
+    "With it you subscribe to the calendar on your phone (iPhone: Settings → Calendar → Accounts → Add subscribed calendar; Google Calendar: Other calendars → From URL). The link holds a secret key – don't pass it on.",
+  "tip.calendar_link.hint": "“New link” makes the old one invalid.",
+  "tip.calendar_more.title": "More calendars?",
+  "tip.calendar_more.text":
+    "If the car already has a calendar, for example at Google or iCloud, choose it here. Every appointment with a place in it counts as a trip with this car.",
+  "tip.calendar_connect.title": "How does my calendar get into Home Assistant?",
+  "tip.calendar_connect.text":
+    "**Google**: the Google Calendar integration.\n**iCloud, Infomaniak, Nextcloud**: the CalDAV integration (iCloud with an app password).\n**iCal link**: Remote Calendar – any calendar with a subscription link.\n**Microsoft 365 / Outlook**: via HACS the “Microsoft 365 Calendar” integration (Exchange Online and personal accounts).\nThe buttons open the setup in Home Assistant.",
   "tip.a_need_round_trip.title": "There and back?",
   "tip.a_need_round_trip.text": "Usually you drive to the appointment and back home – then I count the distance twice.",
   "tip.routing_service.title": "Which service?",

@@ -19,6 +19,7 @@ from ..observe.readings import energy_kwh, number, sum_kwh
 from ..observe.records import base_home, hour_starts, local_hour
 from ..observe.store import HistoryStore
 from .actions import plan_actions, reserved_kw
+from .car_calendar import CarCalendarStore
 from .ev import car_need
 from .planner import Battery, Hour, PlanInput, Prices, best_window
 from .prices import async_price_slots, quarters
@@ -250,6 +251,7 @@ async def async_build_input(
     now: datetime,
     manual: dict[str, str] | None = None,
     places: PlaceStore | None = None,
+    calendars: CarCalendarStore | None = None,
 ) -> tuple[PlanInput | None, list[str]]:
     """Gather everything for tonight's plan; None with reasons if there is nothing to plan."""
     tariff = config["tariff"]
@@ -392,7 +394,7 @@ async def async_build_input(
     )
     sun_tomorrow = tomorrow_kwh if "no_forecast" not in notes else None
     needs = await async_car_needs(
-        hass, config, places or PlaceStore(hass), tomorrow, outlook
+        hass, config, places or PlaceStore(hass), tomorrow, outlook, calendars
     )
     if dynamic:
         # The cheapest window first; running actions need it long enough.
@@ -526,6 +528,7 @@ async def async_car_needs(
     places: PlaceStore,
     day: date,
     outlook: dict[str, Any],
+    calendars: CarCalendarStore | None = None,
 ) -> dict[str, dict[str, Any]]:
     """For each car charged by need: tomorrow's trips and what is missing."""
     result = {}
@@ -538,7 +541,11 @@ async def async_car_needs(
             or not need.get("enabled")
         ):
             continue
-        trips = await async_trips(hass, config, need, places, day)
+        own = None
+        if calendars is not None:
+            start = dt_util.start_of_local_day(day)
+            own = calendars.events(action["id"], start, start + timedelta(days=1))
+        trips = await async_trips(hass, config, need, places, day, own)
         found = car_need(
             need,
             hass.states.get,

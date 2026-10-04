@@ -17,6 +17,7 @@ from homeassistant.helpers.typing import ConfigType
 from homeassistant.loader import async_get_integration
 
 from . import api, services
+from .calendar_feed import CarCalendarFeed
 from .const import (
     DOMAIN,
     FRONTEND_DIR,
@@ -33,7 +34,13 @@ from .runtime import DATA_RUNTIME, JoeRuntime
 _LOGGER = logging.getLogger(__name__)
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
-PLATFORMS = [Platform.BUTTON, Platform.SELECT, Platform.SENSOR, Platform.SWITCH]
+PLATFORMS = [
+    Platform.BUTTON,
+    Platform.CALENDAR,
+    Platform.SELECT,
+    Platform.SENSOR,
+    Platform.SWITCH,
+]
 
 # Static routes cannot be removed again, so they are registered once per run.
 _DATA_STATIC_REGISTERED = f"{DOMAIN}_static_registered"
@@ -44,6 +51,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Register the websocket API and the services once per Home Assistant run."""
     api.async_register(hass)
     services.async_register(hass)
+    hass.http.register_view(CarCalendarFeed(hass))
     return True
 
 

@@ -271,6 +271,8 @@ EV_NEED = vol.Schema(
         ),
         # Whose calendars count (person ids); None: everyone with a calendar.
         vol.Optional("persons", default=None): vol.Any(None, [str]),
+        # Further calendars of this car (besides Joe's own one for it).
+        vol.Optional("calendars", default=list): [cv.entity_id],
         vol.Optional("round_trip", default=True): bool,
     }
 )

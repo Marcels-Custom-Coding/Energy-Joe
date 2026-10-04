@@ -367,6 +367,8 @@ export interface CarNeedConfig {
   /** Whose calendars count; null: everyone with a calendar, []: nobody. */
   persons: string[] | null;
   round_trip: boolean;
+  /** Further calendars of this car (besides Joe's own one). */
+  calendars?: string[];
 }
 
 export interface RoutingConfig {

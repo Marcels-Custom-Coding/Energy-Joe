@@ -1,6 +1,7 @@
 import { LitElement, css, html, nothing, type PropertyValues, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
 import { displayTitle } from "../components/bits";
+import "../components/car-calendars";
 import { tip } from "../components/tip";
 import { pickEntity, saveConfig, suggestions } from "../config";
 import { hotWaterSuggestions } from "../hot-water";
@@ -28,6 +29,7 @@ export const DEFAULT_NEED: CarNeedConfig = {
   daily_km: null,
   persons: null,
   round_trip: true,
+  calendars: [],
 };
 
 // The same limits as EV_NEED in model.py (a battery size above 0).
@@ -517,6 +519,18 @@ export class JoeActionEditor extends LitElement {
                   })}
                 </div>`
               : html`<p class="field-hint">${t("action.need.no_calendars")}</p>`,
+          )}
+          ${this.field(
+            t("action.need.calendars"),
+            "a_need_calendars",
+            html`<joe-car-calendars
+              .hass=${this.hass}
+              .t=${t}
+              actionId=${draft.id}
+              ?saved=${Boolean(this.existing?.need?.enabled)}
+              .calendars=${need.calendars ?? []}
+              @joe-calendars=${(ev: CustomEvent<{ calendars: string[] }>) => this.setNeed({ calendars: ev.detail.calendars })}
+            ></joe-car-calendars>`,
           )}
           ${this.field(
             t("action.need.round_trip"),

@@ -3,6 +3,19 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.2.1
+
+- **Kalender je Auto:** Jedes Auto, das nach Bedarf lädt, bekommt einen
+  eigenen Kalender in Home Assistant. Jeder Termin mit Ort darin ist eine
+  Fahrt mit genau diesem Auto. Termine legst du in Home Assistant an, änderst
+  oder löschst sie dort.
+- **Aufs Handy:** Den Kalender abonnierst du mit einem Link (geheimer
+  Schlüssel, jederzeit erneuerbar), wenn Home Assistant von unterwegs
+  erreichbar ist.
+- **Weitere Kalender des Autos:** Jeder Kalender aus Home Assistant –
+  Google, iCloud/Infomaniak/Nextcloud (CalDAV), iCal-Links, Microsoft 365.
+  Knöpfe starten die Einrichtung dieser Integrationen.
+
 ## 0.2.0
 
 - **Netzdienlich verhalten** (Einstellungen → Betrieb, standardmäßig an):

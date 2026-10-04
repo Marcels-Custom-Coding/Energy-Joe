@@ -1087,6 +1087,21 @@ export const de = {
   "action.need.odometer": "Kilometerstand",
   "action.need.persons": "Wessen Termine zählen",
   "action.need.no_calendars": "Noch hat niemand einen Kalender. Unter Einstellungen → Haushalt ordnest du Kalender zu.",
+  "action.need.calendars": "Kalender dieses Autos",
+  "calendar.own.after_save": "Nach dem Speichern bekommt dieses Auto einen eigenen Kalender. Jeder Termin darin ist eine Fahrt mit genau diesem Auto.",
+  "calendar.own.hint": "Jeder Termin darin ist eine Fahrt mit genau diesem Auto. Trag Fahrten in Home Assistant unter Kalender ein – oder abonniere den Kalender auf dem Handy:",
+  "calendar.copy": "Link kopieren",
+  "calendar.copied": "Kopiert",
+  "calendar.renew": "Neuer Link",
+  "calendar.no_external": "Zum Abonnieren muss Home Assistant von unterwegs erreichbar sein (z. B. über Home Assistant Cloud oder eine eigene Adresse).",
+  "calendar.add": "Weiteren Kalender wählen",
+  "calendar.remove": "{name} entfernen",
+  "calendar.pick": "Welche Kalender gehören zu diesem Auto?",
+  "calendar.connect": "Noch nicht in Home Assistant? So verbindest du deinen Kalender:",
+  "calendar.connect.google": "Google",
+  "calendar.connect.caldav": "iCloud, Infomaniak, Nextcloud",
+  "calendar.connect.ical": "iCal-Link",
+  "calendar.connect.microsoft": "Microsoft 365 / Outlook",
   "action.need.round_trip": "Hin und zurück",
   "action.need.no_routing":
     "Wie weit die Termine weg sind, kann ich erst ausrechnen, wenn du unter Einstellungen → Entfernungen einen Dienst wählst. Bis dahin zählen nur Termine an einer Zone und deine übliche Strecke.",
@@ -1277,6 +1292,22 @@ export const de = {
   "tip.a_need_persons.title": "Wessen Termine?",
   "tip.a_need_persons.text":
     "Termine mit Ort aus den Kalendern dieser Personen zählen als Fahrt mit diesem Auto. Termine online (Teams, Zoom & Co.) lasse ich weg.",
+  "tip.a_need_calendars.title": "Woher weiß ich, welches Auto fährt?",
+  "tip.a_need_calendars.text":
+    "Jeder Termin mit Ort im Kalender dieses Autos ist eine Fahrt mit genau diesem Auto – das ist genauer als die Kalender der Personen. Dazu kommen die Kalender der Personen, die du oben auswählst.",
+  "tip.calendar_own.title": "Joes Kalender für dieses Auto",
+  "tip.calendar_own.text":
+    "Ein ganz normaler Kalender in Home Assistant: Du kannst Termine anlegen, ändern und löschen. Bald kann ich auch Einladungen an eine eigene Adresse des Autos annehmen.",
+  "tip.calendar_link.title": "Was ist der Link?",
+  "tip.calendar_link.text":
+    "Damit abonnierst du den Kalender auf dem Handy (iPhone: Einstellungen → Kalender → Accounts → Kalenderabo hinzufügen; Google Kalender: Andere Kalender → Per URL). Der Link enthält einen geheimen Schlüssel – gib ihn nicht weiter.",
+  "tip.calendar_link.hint": "„Neuer Link“ macht den alten ungültig.",
+  "tip.calendar_more.title": "Weitere Kalender?",
+  "tip.calendar_more.text":
+    "Hat das Auto schon einen Kalender, zum Beispiel bei Google oder iCloud, wähle ihn hier. Jeder Termin mit Ort darin zählt als Fahrt mit diesem Auto.",
+  "tip.calendar_connect.title": "Wie kommt mein Kalender nach Home Assistant?",
+  "tip.calendar_connect.text":
+    "**Google**: Google-Kalender-Integration.\n**iCloud, Infomaniak, Nextcloud**: CalDAV-Integration (bei iCloud mit App-Passwort).\n**iCal-Link**: Remote Calendar – jeder Kalender mit Abo-Link.\n**Microsoft 365 / Outlook**: über HACS die Integration „Microsoft 365 Calendar“ (Exchange Online und private Konten).\nDie Knöpfe öffnen die Einrichtung in Home Assistant.",
   "tip.a_need_round_trip.title": "Hin und zurück?",
   "tip.a_need_round_trip.text": "Meist fährt man zum Termin und wieder heim – dann zähle ich die Strecke doppelt.",
   "tip.routing_service.title": "Welcher Dienst?",

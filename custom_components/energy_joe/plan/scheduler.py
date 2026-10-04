@@ -16,6 +16,7 @@ from homeassistant.util import dt as dt_util
 
 from ..observe.store import HistoryStore
 from .actions import plan_actions
+from .car_calendar import CarCalendarStore
 from .ev import car_need
 from .inputs import DEFAULT_SEARCH, async_build_input, next_window
 from .planner import make_plan
@@ -47,6 +48,8 @@ class JoePlanner:
         self._fixed_span: str | None = None
         # Distances to the places of appointments (for cars charged by need).
         self.places = PlaceStore(hass)
+        # Joe's own car calendars (set by the runtime).
+        self.calendars: CarCalendarStore | None = None
         self.plan: dict[str, Any] | None = None
 
     @property
@@ -177,7 +180,13 @@ class JoePlanner:
 
     async def _async_compute(self, now: datetime) -> dict[str, Any]:
         inp, notes = await async_build_input(
-            self._hass, self._config, self._history, now, self._manual(), self.places
+            self._hass,
+            self._config,
+            self._history,
+            now,
+            self._manual(),
+            self.places,
+            self.calendars,
         )
         if inp is None:
             return {

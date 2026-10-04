@@ -10,12 +10,15 @@ import voluptuous as vol
 from homeassistant.components import websocket_api
 from homeassistant.const import MAJOR_VERSION, MINOR_VERSION, __version__ as HA_VERSION
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import config_validation as cv, entity_registry as er
+from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.helpers.sun import get_astral_event_date
 from homeassistant.loader import async_get_integration
 from homeassistant.util import dt as dt_util
 
 from . import model
+from .calendar import car_actions
+from .calendar_feed import feed_path
 from .const import DOMAIN
 from .control.profiles import PROFILES
 from .discovery import async_check, async_collect, async_discover, discover
@@ -65,6 +68,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_control_answer)
     websocket_api.async_register_command(hass, ws_control_action_tonight)
     websocket_api.async_register_command(hass, ws_control_boost)
+    websocket_api.async_register_command(hass, ws_calendar_links)
 
 
 def _runtime(
@@ -655,6 +659,52 @@ async def ws_control_boost(
         connection.send_error(msg["id"], str(err), str(err))
         return
     connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/calendar/links",
+        # True: a new secret, the old links stop working.
+        vol.Optional("renew", default=False): bool,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_calendar_links(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """The subscription links of the car calendars (paths; the panel adds the address)."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    store = runtime.calendars
+    await store.async_load()
+    token = store.new_token() if msg["renew"] else store.token
+    try:
+        external = get_url(hass, allow_internal=False, prefer_cloud=True)
+    except NoURLAvailableError:
+        external = None
+    registry = er.async_get(hass)
+    entries = hass.config_entries.async_entries(DOMAIN)
+    entities = {}
+    for action in car_actions(runtime.config):
+        if entries:
+            entities[action["id"]] = registry.async_get_entity_id(
+                "calendar", DOMAIN, f"{entries[0].entry_id}_calendar_{action['id']}"
+            )
+    connection.send_result(
+        msg["id"],
+        {
+            "external_url": external,
+            "links": {
+                action["id"]: feed_path(token or "", action["id"])
+                for action in car_actions(runtime.config)
+            },
+            # Joe's own calendar entity per car.
+            "entities": entities,
+        },
+    )
 
 
 async def _async_energy_summary(hass: HomeAssistant) -> dict[str, Any]:

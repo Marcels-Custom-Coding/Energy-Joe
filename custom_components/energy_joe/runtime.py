@@ -21,6 +21,7 @@ from .control.notify import JoeNotifier
 from .learn.learner import JoeLearner
 from .observe.observer import BACKFILL_DAYS, JoeObserver
 from .observe.store import HistoryStore
+from .plan.car_calendar import CarCalendarStore
 from .plan.scheduler import JoePlanner
 
 _LOGGER = logging.getLogger(__name__)
@@ -96,6 +97,9 @@ class JoeRuntime:
             hass, lambda: self._config, self.executor.async_answer_tonight
         )
         self.executor.notifier = self.notifier
+        # Joe's own calendar per car (trips, by hand or later by mail).
+        self.calendars = CarCalendarStore(hass)
+        self.planner.calendars = self.calendars
         self._started = False
         self._planned: dict[str, Any] | None = None
         self._observed: dict[str, Any] | None = None
@@ -116,6 +120,7 @@ class JoeRuntime:
                 await self._backup_store.async_save(stored)
         await self.history.async_load()
         await self.executor.async_load()
+        await self.calendars.async_load()
 
     async def async_unload(self) -> None:
         """Stop watching and write pending changes immediately."""
@@ -127,6 +132,7 @@ class JoeRuntime:
             await self.planner.async_stop()
             await self.observer.async_stop()
         await self.planner.places.async_flush()
+        await self.calendars.async_flush()
         await self.history.async_unload()
         await self._state_store.async_save(self._state)
         await self._config_store.async_save(self._config)
@@ -138,6 +144,7 @@ class JoeRuntime:
         await self._backup_store.async_remove()
         await self.history.async_remove()
         await self.planner.places.async_remove()
+        await self.calendars.async_remove()
         await self.executor.async_forget()
 
     @callback

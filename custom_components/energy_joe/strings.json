@@ -63,6 +63,11 @@
       "last_night": {
         "name": "Would have saved (last night)"
       }
+    },
+    "calendar": {
+      "car_calendar": {
+        "name": "Calendar {car}"
+      }
     }
   },
   "services": {

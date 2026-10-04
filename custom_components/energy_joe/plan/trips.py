@@ -153,15 +153,24 @@ async def async_trips(
     need: dict[str, Any],
     places: PlaceStore,
     day: date,
+    own: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
-    """The appointments with a place on a day, with the distance there (and back)."""
+    """The appointments with a place on a day, with the distance there (and back).
+
+    From the car's own calendar (`own`: Joe's appointments of this car on the
+    day), the car's further calendars and the chosen persons' calendars.
+    """
     persons = [
         p
         for p in config["persons"]
         if p["calendars"] and (need["persons"] is None or p["id"] in need["persons"])
     ]
-    calendars = sorted({c for p in persons for c in p["calendars"]})
-    if not calendars or not hass.services.has_service("calendar", "get_events"):
+    calendars = sorted(
+        {c for p in persons for c in p["calendars"]} | set(need.get("calendars") or [])
+    )
+    if not hass.services.has_service("calendar", "get_events"):
+        calendars = []
+    if not calendars and not own:
         return []
     start = dt_util.start_of_local_day(day)
     span = {
@@ -188,7 +197,7 @@ async def async_trips(
             for event in (entry or {}).get("events") or []
         ]
 
-    found = await asyncio.gather(*(_events(c) for c in calendars))
+    found = [own or [], *await asyncio.gather(*(_events(c) for c in calendars))]
     seen: set[tuple[str, str]] = set()
     trips = []
     factor = 2 if need["round_trip"] else 1

@@ -386,6 +386,15 @@
               push();
               return null;
             }
+            case "energy_joe/calendar/links": {
+              if (msg.renew || !state.calendarToken) state.calendarToken = Math.random().toString(36).slice(2, 14);
+              const cars = state.config.actions.filter((a) => a.kind === "switch" && a.need?.enabled);
+              return {
+                external_url: "https://ha.example.com",
+                links: Object.fromEntries(cars.map((a) => [a.id, `/api/energy_joe/calendar/${state.calendarToken}/${a.id}.ics`])),
+                entities: Object.fromEntries(cars.map((a) => [a.id, `calendar.energy_joe_kalender_${a.id}`])),
+              };
+            }
             case "energy_joe/control/answer":
               control.answer = { night: msg.night, yes: msg.yes, at: stamp() };
               log("answer", { night: msg.night, yes: msg.yes });
