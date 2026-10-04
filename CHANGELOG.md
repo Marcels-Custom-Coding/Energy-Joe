@@ -5,7 +5,7 @@ hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
 ## 0.6.5
 
-- 
+- Kalender-Regeln pro Person: Unter „Lernen → Kalender-Regeln“ wählst du oben „Alle“ oder eine Person. Mit dem Schalter „Gilt für alle“ folgt die Person den gemeinsamen Regeln; schaltest du ihn aus, bekommt sie eigene Stichworte und eigene Vorgaben für Tage ohne passenden Termin (zum Start eine Kopie der gemeinsamen).
 
 ## 0.6.4
 
