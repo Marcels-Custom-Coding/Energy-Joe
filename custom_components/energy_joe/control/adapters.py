@@ -31,7 +31,7 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 
 from .profiles import GENERIC, MODE_METHODS, PROFILES, Profile, profile_for
-from .writes import Write, available
+from .writes import Write, available, fit, matches
 
 # Charging power when neither the plan nor the battery says (W).
 DEFAULT_CHARGE_W = 1000
@@ -80,6 +80,10 @@ class Adapter:
     def loop_owned(self) -> set[str]:
         """Entities the device's own control takes back once prepare is undone."""
         return set()
+
+    def prepared(self, hass: HomeAssistant) -> bool:
+        """Whether a prepare step is in force now (or cannot be read)."""
+        return False
 
     def missing(self, hass: HomeAssistant) -> list[str]:
         raise NotImplementedError
@@ -160,6 +164,15 @@ class RoleAdapter(Adapter):
 
     def loop_owned(self) -> set[str]:
         return {self.controls[r] for r in self.profile.loop_owned if r in self.controls}
+
+    def prepared(self, hass: HomeAssistant) -> bool:
+        for step in self.prepare:
+            write = Write(step["entity_id"], step.get("value"))
+            if not available(hass.states.get(write.entity_id)) or matches(
+                hass, fit(hass, write)
+            ):
+                return True
+        return False
 
     # --- what the battery offers --------------------------------------------------
 

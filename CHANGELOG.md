@@ -3,6 +3,15 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.4.3
+
+- **Marstek sicherer:** War die „Manuelle Batteriesteuerung“ schon an, bevor
+  Joe steuerte (z. B. durch eine eigene Automation), stellt Joe den
+  Betriebsmodus am Morgen trotzdem zurück – der Akku bleibt nicht im
+  Zwangsladen. Schaltet jemand anderes den manuellen Modus mitten in der
+  Nacht aus, lässt Joe den Akku für den Rest der Nacht in Ruhe, statt jede
+  Minute gegen Omnibattery zu schreiben.
+
 ## 0.4.2
 
 - **Marstek über Omnibattery:** Joe schaltet vor dem Steuern die

@@ -917,7 +917,7 @@ class JoeExecutor:
                 self.data["saved"].pop(entity_id, None)
 
     def _settle_loop_owned(self, adapter: Adapter) -> set[str]:
-        """Once Joe's prepare step is undone (e.g. manual mode off again), the
+        """Once the prepare step is undone (e.g. manual mode off again), the
         device's own control owns mode and power: nothing of them to restore
         or watch any more. Returns those entities."""
         owned = adapter.loop_owned()
@@ -925,17 +925,21 @@ class JoeExecutor:
         if not owned or not adapter.prepare_entities():
             return set()
         saved: dict[str, Any] = self.data["saved"]
-        held = any(
-            entity_id in saved
-            and not matches(self._hass, Write(entity_id, saved[entity_id]))
-            for entity_id in adapter.prepare_entities()
-        )
-        if held:
+        external: list[str] = self.data["external"]
+        if any(e in external for e in adapter.prepare_entities()):
+            # Someone else switched manual mode back: theirs for the night.
+            for entity_id in owned:
+                if entity_id not in external:
+                    external.append(entity_id)
+                saved.pop(entity_id, None)
+            return owned
+        # Still in manual mode (Joe's or someone else's): Joe owns what he set.
+        if adapter.prepared(self._hass):
             return set()
         for entity_id in owned:
             saved.pop(entity_id, None)
             self.data["written"].pop(entity_id, None)
-        self.data["external"] = [e for e in self.data["external"] if e not in owned]
+        self.data["external"] = [e for e in external if e not in owned]
         return owned
 
     # --- release ---------------------------------------------------------------

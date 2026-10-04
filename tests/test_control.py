@@ -602,6 +602,53 @@ async def test_omnibattery_takes_mode_and_power_back(
     assert executor.status["reason"] == "done"
 
 
+async def test_manual_mode_already_on_is_left_but_force_mode_is_not(
+    hass: HomeAssistant, freezer
+) -> None:
+    """Manual mode on before the night: Joe still puts force mode back."""
+    freezer.move_to("2026-10-04T01:00:00+02:00")
+    install_devices(hass, byd_soc=30.4, venus_soc=70)
+    omnibattery_loop(hass)
+    hass.states.async_set("switch.venus_manual_mode", "on")
+    config = configured(fronius_battery(), manual_venus())
+    executor, _ = await make_executor(hass, config, night_plan(dt_util.now()))
+    await executor.async_check()
+    freezer.move_to("2026-10-04T03:10:00+02:00")
+    await executor.async_check()
+    assert hass.states.get("select.force_mode").state == "Charge"
+    freezer.move_to("2026-10-04T04:58:00+02:00")
+    await executor.async_check()
+    assert hass.states.get("select.force_mode").state == "None"
+    assert hass.states.get("switch.venus_manual_mode").state == "on"
+    assert executor.data["saved"] == {}
+
+
+async def test_manual_mode_switched_off_by_someone_else(
+    hass: HomeAssistant, freezer
+) -> None:
+    """Someone switches manual mode off mid-night: Joe stops writing to it."""
+    freezer.move_to("2026-10-04T01:00:00+02:00")
+    install_devices(hass, byd_soc=30.4, venus_soc=70)
+    calls = omnibattery_loop(hass)
+    config = configured(fronius_battery(), manual_venus())
+    executor, _ = await make_executor(hass, config, night_plan(dt_util.now()))
+    freezer.move_to("2026-10-04T03:10:00+02:00")
+    await executor.async_check()
+    assert hass.states.get("switch.venus_manual_mode").state == "on"
+    # The next look confirms what Joe set.
+    freezer.move_to("2026-10-04T03:10:30+02:00")
+    await executor.async_check()
+    freezer.move_to("2026-10-04T03:11:00+02:00")
+    await hass.services.async_call(
+        "switch", "turn_off", {"entity_id": "switch.venus_manual_mode"}, blocking=True
+    )
+    before = len(calls)
+    for minute in (12, 20, 40):
+        freezer.move_to(f"2026-10-04T03:{minute:02d}:00+02:00")
+        await executor.async_check()
+    assert [c for c in calls[before:] if c[0] != "number.reserve"] == []
+
+
 async def test_the_test_run_leaves_omnibattery_to_its_loop(hass: HomeAssistant) -> None:
     install_devices(hass, venus_soc=40)
     omnibattery_loop(hass)
