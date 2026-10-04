@@ -313,7 +313,7 @@ export class JoeSettings extends LitElement {
           </div>
         </section>
 
-        ${this.renderNotify(t)}
+        ${this.renderNotify(t)} ${this.renderRouting(t)}
 
         <section class="group plain">
           <h2>${t("settings.uses")}</h2>
@@ -374,6 +374,60 @@ export class JoeSettings extends LitElement {
         </section>
       </div>
       ${this.question ? this.renderQuestionSheet(t) : nothing}`;
+  }
+
+  /** How Joe works out the distance to an appointment's place (for cars charged by need). */
+  private renderRouting(t: Translate): TemplateResult {
+    const routing = this.state!.config.routing;
+    const options = this.info?.routing;
+    const value = routing.service === "google" ? `google:${routing.google_entry ?? ""}` : (routing.service ?? "");
+    const choose = (raw: string) => {
+      if (raw.startsWith("google:")) {
+        saveConfig(this, { routing: { service: "google", google_entry: raw.slice(7) || null } });
+      } else {
+        saveConfig(this, { routing: { service: (raw || null) as "waze" | "osm" | null, google_entry: null } });
+      }
+    };
+    const url = (key: "geocoder_url" | "router_url") => html`<div class="row" data-tipped>
+      <div>
+        <div class="name"><label for="routing-${key}"><b>${t(`settings.routing.${key}`)}</b></label>${tip(t, "routing_osm")}</div>
+        <small>${t(`settings.routing.${key}.hint`)}</small>
+      </div>
+      <input
+        id="routing-${key}"
+        class="input"
+        type="url"
+        .value=${routing[key]}
+        @change=${(ev: Event) => {
+          const text = (ev.target as HTMLInputElement).value.trim();
+          if (text.startsWith("http")) saveConfig(this, { routing: { [key]: text } });
+        }}
+      />
+    </div>`;
+    return html`<section class="group">
+      <h2>${t("settings.routing")}</h2>
+      <p class="intro">${t("settings.routing.intro")}</p>
+      <div class="row" data-tipped>
+        <div>
+          <div class="name"><label for="routing-service"><b>${t("settings.routing.service")}</b></label>${tip(t, "routing_service")}</div>
+          <small>${t("settings.routing.service.hint")}</small>
+        </div>
+        <select id="routing-service" class="input" @change=${(ev: Event) => choose((ev.target as HTMLSelectElement).value)}>
+          <option value="" ?selected=${value === ""}>${t("settings.routing.none")}</option>
+          ${options?.waze !== false
+            ? html`<option value="waze" ?selected=${value === "waze"}>${t("settings.routing.waze")}</option>`
+            : nothing}
+          ${(options?.google ?? []).map(
+            (entry) =>
+              html`<option value=${`google:${entry.entry_id}`} ?selected=${value === `google:${entry.entry_id}`}>
+                ${t("settings.routing.google", { name: entry.title })}
+              </option>`,
+          )}
+          <option value="osm" ?selected=${value === "osm"}>${t("settings.routing.osm")}</option>
+        </select>
+      </div>
+      ${routing.service === "osm" ? html`${url("geocoder_url")} ${url("router_url")}` : nothing}
+    </section>`;
   }
 
   private renderNotify(t: Translate): TemplateResult {

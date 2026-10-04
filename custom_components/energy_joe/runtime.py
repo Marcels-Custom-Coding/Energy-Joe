@@ -345,6 +345,7 @@ PLANNED_LEARNED = (
     "sources",
     "battery_models",
     "action_models",
+    "car_models",
 )
 
 
@@ -356,6 +357,7 @@ def _planned_parts(config: dict[str, Any]) -> dict[str, Any]:
         "learned": {k: v for k, v in config["learned"].items() if k in PLANNED_LEARNED},
         "actions": config["actions"],
         "calendar": config["calendar"],
+        "routing": config["routing"],
         "calendars": [(p["id"], p["calendars"]) for p in config["persons"]],
         "batteries": [
             (

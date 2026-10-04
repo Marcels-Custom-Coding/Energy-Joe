@@ -24,6 +24,7 @@ def entity(
     entry: str | None = None,
     attributes: dict[str, Any] | None = None,
     seconds: float = 30,
+    translation_key: str | None = None,
 ) -> EntityInfo:
     attrs: dict[str, Any] = {"friendly_name": name}
     if unit:
@@ -41,6 +42,7 @@ def entity(
         device_id=device_id,
         unique_id=unique_id,
         seconds_since_report=seconds,
+        translation_key=translation_key,
     )
 
 
@@ -391,11 +393,50 @@ def fronius_household() -> Snapshot:
         entity(
             "sensor.ev_battery",
             "EV Battery Level",
-            71,
+            23,
             unit="%",
             device_class="battery",
             platform="kia_uvo",
             device_id="car",
+            translation_key="ev_battery_percentage",
+        ),
+        # What the Kia/Hyundai integration knows about the car (capacity in kJ).
+        entity(
+            "sensor.ev_range",
+            "EV Range",
+            214,
+            unit="km",
+            device_class="distance",
+            platform="kia_uvo",
+            device_id="car",
+            translation_key="ev_driving_range",
+        ),
+        entity(
+            "sensor.ev_battery_capacity",
+            "EV Battery Capacity",
+            280800,
+            unit="kJ",
+            platform="kia_uvo",
+            device_id="car",
+            translation_key="ev_battery_capacity",
+        ),
+        entity(
+            "sensor.ev_odometer",
+            "EV Odometer",
+            23456,
+            unit="km",
+            device_class="distance",
+            platform="kia_uvo",
+            device_id="car",
+            translation_key="odometer",
+        ),
+        entity(
+            "binary_sensor.ev_plugged_in",
+            "EV Plugged In",
+            "on",
+            platform="kia_uvo",
+            device_id="car",
+            translation_key="ev_battery_is_plugged_in",
         ),
         entity(
             "sensor.ev_charging_power",

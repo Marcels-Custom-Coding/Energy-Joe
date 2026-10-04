@@ -12,12 +12,19 @@ from homeassistant.util import dt as dt_util
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_weather_temp(
+# Weather conditions that mean a wet road.
+WET = ("rainy", "pouring", "snowy", "snowy-rainy", "hail", "lightning-rainy")
+# From this much rain (mm a day) the road counts as wet.
+WET_MM = 2.0
+
+
+async def async_weather_day(
     hass: HomeAssistant, entity_id: str | None, day: date
-) -> float | None:
-    """The mean outdoor temperature a weather entity forecasts for a day."""
+) -> dict[str, Any]:
+    """A day's mean outdoor temperature and whether it rains, from a weather entity."""
+    result: dict[str, Any] = {"temp": None, "rain": False}
     if not entity_id or not hass.services.has_service("weather", "get_forecasts"):
-        return None
+        return result
     for kind in ("daily", "hourly"):
         try:
             response = await hass.services.async_call(
@@ -30,22 +37,37 @@ async def async_weather_temp(
         except Exception:  # noqa: BLE001 - not every weather entity offers every kind
             continue
         forecast = ((response or {}).get(entity_id) or {}).get("forecast") or []
-        values = []
+        values, rain_mm, wet = [], 0.0, False
         for item in forecast:
             moment = dt_util.parse_datetime(str(item.get("datetime", "")))
             if moment is None or dt_util.as_local(moment).date() != day:
                 continue
+            precipitation = item.get("precipitation")
+            if isinstance(precipitation, int | float):
+                rain_mm += precipitation
+            wet = wet or item.get("condition") in WET
             if kind == "daily":
                 high, low = item.get("temperature"), item.get("templow")
                 if isinstance(high, int | float):
-                    return (
+                    temp = (
                         (high + low) / 2 if isinstance(low, int | float) else high - 4
                     )
+                    return {"temp": temp, "rain": wet or rain_mm >= WET_MM}
             elif isinstance(item.get("temperature"), int | float):
                 values.append(item["temperature"])
         if values:
-            return sum(values) / len(values)
-    return None
+            return {
+                "temp": sum(values) / len(values),
+                "rain": wet or rain_mm >= WET_MM,
+            }
+    return result
+
+
+async def async_weather_temp(
+    hass: HomeAssistant, entity_id: str | None, day: date
+) -> float | None:
+    """The mean outdoor temperature a weather entity forecasts for a day."""
+    return (await async_weather_day(hass, entity_id, day))["temp"]
 
 
 async def async_day_labels(

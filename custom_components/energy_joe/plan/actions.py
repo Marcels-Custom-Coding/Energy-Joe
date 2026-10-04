@@ -18,6 +18,10 @@ from typing import Any
 
 from homeassistant.core import State
 
+from .ev import sun_before_departure
+
+# Less than this missing (kWh) is not worth charging the car for.
+MIN_KWH = 0.2
 # Until Joe has learned them (see learn/): how far the hot water cools over a
 # day, and how fast the heat pump heats it.
 DEFAULT_DEMAND_K = 10.0
@@ -64,9 +68,15 @@ def plan_actions(
     tomorrow_kwh: float | None,
     manual: dict[str, str],
     learned: dict[str, Any] | None = None,
+    needs: dict[str, dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
-    """Which actions run tonight, from when to when, and how much they draw."""
+    """Which actions run tonight, from when to when, and how much they draw.
+
+    A car with "charging by need" (see ev.py) runs only when tomorrow's driving
+    needs more than it has, and only as long as charging the missing energy takes.
+    """
     learned = learned or {}
+    needs = needs or {}
     night = window_start.isoformat()
     result = []
     for action in actions:
@@ -74,6 +84,8 @@ def plan_actions(
             continue
         reasons: list[str] = []
         is_manual = manual.get(action["id"]) == night
+        need = needs.get(action["id"])
+        by_need = action["kind"] == "switch" and bool(need and need.get("known"))
         run = is_manual
         if is_manual:
             reasons.append("tonight")
@@ -89,7 +101,17 @@ def plan_actions(
                 for c in action.get("conditions") or []
                 if not condition_met(get(c["entity_id"]), c["op"], c["value"])
             ]
-            if sunny:
+            if by_need and need is not None:
+                if need["missing_kwh"] < MIN_KWH:
+                    reasons.append("enough_range")
+                elif sun_before_departure(need, sunny):
+                    reasons.append("sun_before_trip")
+                elif failed:
+                    reasons.append("conditions")
+                else:
+                    run = True
+                    reasons.append("need")
+            elif sunny:
                 reasons.append("enough_sun")
             elif failed:
                 reasons.append("conditions")
@@ -98,6 +120,8 @@ def plan_actions(
                 reasons.append("little_sun" if threshold is not None else "every_night")
         else:
             reasons.append("manual_only")
+        if need is not None and not need.get("known"):
+            reasons.append("need_unknown")
         end = window_end - timedelta(minutes=action.get("lead_min") or 0)
         start = window_start
         entry: dict[str, Any] = {
@@ -135,6 +159,16 @@ def plan_actions(
             else:
                 needed = timedelta(hours=(target - temperature) / rate)
                 start = max(window_start, end - needed - MARGIN)
+        if by_need and need is not None:
+            entry["need"] = need
+            if run and not is_manual:
+                # Only as long as the missing energy takes, at the end of the window.
+                if action.get("power_kw"):
+                    needed = timedelta(hours=need["wall_kwh"] / action["power_kw"])
+                    start = max(window_start, end - needed - MARGIN)
+                entry.update(target=need["target"], sensor=need["sensor"])
+        elif need is not None:
+            entry["need"] = need
         hours = max(0.0, (end - start).total_seconds() / 3600)
         power = action.get("power_kw") or 0.0
         entry.update(

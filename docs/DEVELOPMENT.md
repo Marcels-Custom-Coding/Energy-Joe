@@ -31,6 +31,14 @@ cd panel && npm install
 - Der Planer (`plan/planner.py`) bekommt Preise je Stunde (`Hour.price`) und je Viertelstunde (`Hour.quarters`). Mit `PlanInput.search` probiert `best_window` jedes Fenster aus ganzen Stunden im Suchzeitraum (bei laufenden Nacht-Aktionen mindestens so lang, wie sie brauchen) und nimmt das mit den geringsten Kosten. Geladen wird in den günstigsten Stunden des Fensters; `charge_slots` legt in jeder Ladestunde die günstigsten Viertelstunden fest, die der Ausführer abarbeitet (nach dem letzten Block lädt er weiter, bis das Ziel erreicht ist).
 - Den dynamischen Plan legt Joe vor Beginn des Suchzeitraums fest (`plan_offset_min`), nach einem Neustart im Suchzeitraum sofort.
 
+## Auto nach Bedarf laden
+
+- Auto-Integrationen und die Schlüssel ihrer Entitäten (Ladestand, Reichweite, Akkugröße, Kilometerstand, Verbrauch, eingesteckt, lädt, Außentemperatur) stehen in `discovery/knowledge.py` (`CAR_KEYS`), geprüft am Quellcode der Integrationen im Oktober 2026. Einheiten (mi, kJ, Wh/km, km/kWh) rechnet `observe/readings.py` um. Autos sind nie Hausspeicher.
+- Bedarf (`plan/ev.py`): Kilometer morgen (Termine hin und zurück oder die übliche Strecke, je nachdem, was mehr ist) plus Reserve, mal Verbrauch bei Temperatur und Regen (Tabelle aus ANL-, Recurrent-, Geotab- und ADAC-Daten; 18 kWh/100 km an der Batterie als Startwert), Ladeverlust 10 %. Die Nacht-Aktion läuft dann nur so lange, wie die fehlende Energie braucht, und der Ausführer schaltet ab, sobald der Ladestand erreicht ist.
+- Termine und Entfernungen (`plan/trips.py`): `calendar.get_events`, Ort aus `location`; Entfernung über Waze (`waze_travel_time.get_travel_times`, ab HA 2026.8 ohne Eintrag), Google (`google_travel_time.get_travel_times` mit Eintrag) oder OpenStreetMap (Photon und OSRM, Adressen in `routing` einstellbar); Zonen ohne Dienst über Luftlinie × 1,3. Gespeichert in `.storage/energy_joe.places`, Korrekturen des Nutzers gewinnen.
+- Gelernt (`learn/models.py`, `car_days`/`car_model`): Verbrauch aus fallendem Ladestand bei steigendem Kilometerstand, mit Aufschlag je Grad unter 15 °C, und die übliche Strecke (80. Perzentil) für Werktage und freie Tage.
+- Testseite: `?need=1` zeigt die Nacht mit Laden nach Bedarf.
+
 ## Speicher steuern
 
 - Grundgriffe (Rollen) und das Wissen über Integrationen stehen in `custom_components/energy_joe/control/profiles.py`: je Integration die Schlüssel der Entitäten (Ende der unique_id oder translation_key), die Bedeutung der Optionen einer Betriebsart, Vorher-Schalter (`prepare`), umgekehrte Werte (`inverted`) und – für Integrationen, die über Dienste gesteuert werden – Schritte. Eine neue Integration ist ein neuer Eintrag dort plus ein Test in `tests/test_profiles.py`.

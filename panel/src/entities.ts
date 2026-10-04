@@ -16,6 +16,9 @@ export type FilterName =
   | "toggle"
   | "option"
   | "writable"
+  | "distance"
+  | "consumption"
+  | "car_energy"
   | "any";
 
 const POWER_UNITS = ["W", "kW", "MW"];
@@ -41,6 +44,10 @@ const FILTERS: Record<FilterName, (entity: HassEntity) => boolean> = {
     ["number", "input_number", "switch", "input_boolean", "select", "input_select", "script", "button", "input_button"].includes(
       domain(e),
     ),
+  // A car's range or odometer, its consumption, its battery size.
+  distance: (e) => domain(e) === "sensor" && ["km", "mi", "m"].includes(unit(e)),
+  consumption: (e) => domain(e) === "sensor" && /kwh\/100|wh\/km|km\/kwh|mi\/kwh/i.test(unit(e).replace(/\s/g, "")),
+  car_energy: (e) => ["sensor", "number", "input_number"].includes(domain(e)) && [...ENERGY_UNITS, "kJ", "MJ"].includes(unit(e)),
   any: () => true,
 };
 

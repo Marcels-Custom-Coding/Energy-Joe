@@ -3,6 +3,7 @@ import { property, state } from "lit/decorators.js";
 import { displayTitle, swoosh } from "../components/bits";
 import { dayText } from "../components/look-back";
 import { timeOf } from "../components/plan-text";
+import "../components/car-need";
 import "../components/pose";
 import "../components/sheet";
 import { tip } from "../components/tip";
@@ -364,6 +365,9 @@ export class JoeDevicesPage extends LitElement {
         ${action.enabled ? nothing : html`<span class="chip">${t("devices.action.off")}</span>`}
       </div>
       <p class="now">${this.actionText(t, joe, action, planned, live)}</p>
+      ${planned?.need
+        ? html`<joe-car-need .hass=${this.hass} .t=${t} .action=${planned} ?roundTrip=${action.need?.round_trip ?? true}></joe-car-need>`
+        : nothing}
       <div class="test">
         <span class="toggle-label" id="tonight-${action.id}">${t("devices.action.tonight")}</span>
         <button

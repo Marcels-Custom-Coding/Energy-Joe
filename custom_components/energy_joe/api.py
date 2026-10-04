@@ -8,7 +8,7 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.components import websocket_api
-from homeassistant.const import __version__ as HA_VERSION
+from homeassistant.const import MAJOR_VERSION, MINOR_VERSION, __version__ as HA_VERSION
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.sun import get_astral_event_date
@@ -44,6 +44,7 @@ from .runtime import (
 def async_register(hass: HomeAssistant) -> None:
     """Register all websocket commands."""
     websocket_api.async_register_command(hass, ws_info)
+    websocket_api.async_register_command(hass, ws_places_set)
     websocket_api.async_register_command(hass, ws_subscribe)
     websocket_api.async_register_command(hass, ws_set_mode)
     websocket_api.async_register_command(hass, ws_onboarding)
@@ -92,8 +93,47 @@ async def ws_info(
             "energy": await _async_energy_summary(hass),
             "defaults": {"rules": model.default_config()["rules"]},
             "profiles": {key: profile.name for key, profile in PROFILES.items()},
+            "routing": _routing_options(hass),
         },
     )
+
+
+def _routing_options(hass: HomeAssistant) -> dict[str, Any]:
+    """What the panel can offer for distances: Waze, Google entries, OpenStreetMap."""
+    return {
+        # From 2026.8 on Joe can start Waze's action without a Waze entry.
+        "waze": hass.services.has_service("waze_travel_time", "get_travel_times")
+        or (MAJOR_VERSION, MINOR_VERSION) >= (2026, 8),
+        "google": [
+            {"entry_id": entry.entry_id, "title": entry.title}
+            for entry in hass.config_entries.async_entries("google_travel_time")
+        ],
+    }
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/places/set",
+        vol.Required("location"): vol.All(str, vol.Length(min=1, max=300)),
+        vol.Required("km"): vol.Any(
+            None, vol.All(vol.Coerce(float), vol.Range(min=0, max=3000))
+        ),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_places_set(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """The user's own distance to an appointment's place (None: ask again)."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    await runtime.planner.places.async_set(msg["location"], msg["km"])
+    if runtime.planner.active:
+        await runtime.planner.async_refresh()
+    connection.send_result(msg["id"])
 
 
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/subscribe"})

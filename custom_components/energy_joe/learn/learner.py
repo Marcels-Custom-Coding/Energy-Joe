@@ -12,12 +12,15 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.util import dt as dt_util
 
 from .. import model
+from ..observe.readings import energy_kwh, to_km
 from ..observe.store import HistoryStore
 from .context import async_day_labels, async_sensor_series
 from .evaluate import evaluate
 from .learning import buffer, results, solar_factor, solar_ratios, solar_shift
 from .models import (
     battery_model,
+    car_days,
+    car_model,
     consumption_model,
     daily_rows,
     group_models,
@@ -56,6 +59,7 @@ SCOPES: dict[str, tuple[str, ...]] = {
     ),
     "battery": ("battery_models",),
     "hot_water": ("action_models",),
+    "car": ("car_models",),
 }
 # Empty values of what Joe learned.
 EMPTY: dict[str, Any] = {
@@ -72,6 +76,7 @@ EMPTY: dict[str, Any] = {
     "presence": {},
     "battery_models": {},
     "action_models": {},
+    "car_models": {},
 }
 # Answers to "what was special about this day?" (see async_answer).
 ANSWERS = ("normal", "guests", "away", "special")
@@ -259,6 +264,7 @@ class JoeLearner:
                 )
             },
             "action_models": await self._async_hot_water(config, learned, today),
+            "car_models": await self._async_cars(config, learned, today, days),
         }
         patch: dict[str, Any] = {"models_day": today.isoformat()}
         for name, value in values.items():
@@ -311,6 +317,55 @@ class JoeLearner:
                 self._hass, action["sensor_entity"], span
             )
             if found := hot_water_model(series):
+                result[action["id"]] = found
+        return result
+
+    async def _async_cars(
+        self,
+        config: dict[str, Any],
+        learned: dict[str, Any],
+        today: date,
+        days: dict[str, dict[str, Any]],
+    ) -> dict[str, Any]:
+        """What each car charged by need really uses and usually drives."""
+        result = {}
+        reset = (learned.get("reset") or {}).get("car") or learned["since"]
+        span = MODEL_DAYS
+        if reset:
+            span = max(0, min(span, (today - date.fromisoformat(reset[:10])).days))
+        temps = {}
+        for day, data in days.items():
+            values = [h["temp"] for h in data.get("hours") or [] if "temp" in h]
+            if len(values) >= 12:
+                temps[day] = sum(values) / len(values)
+        workdays = {
+            day: data["workday"]
+            for day, data in days.items()
+            if data.get("workday") is not None
+        }
+        for action in config["actions"]:
+            need = action.get("need") or {}
+            odometer_id = need.get("odometer_entity")
+            if not need.get("enabled") or not odometer_id or not span:
+                continue
+            state = self._hass.states.get(odometer_id)
+            unit = state.attributes.get("unit_of_measurement") if state else None
+            odometer = [
+                (moment, to_km(value, unit))
+                for moment, value in await async_sensor_series(
+                    self._hass, odometer_id, span
+                )
+            ]
+            soc = (
+                await async_sensor_series(self._hass, need["soc_entity"], span)
+                if need.get("soc_entity")
+                else []
+            )
+            capacity = need.get("capacity_kwh") or energy_kwh(
+                self._hass.states.get(need.get("capacity_entity") or "")
+            )
+            found = car_model(car_days(odometer, soc, capacity), temps, workdays)
+            if found:
                 result[action["id"]] = found
         return result
 

@@ -10,6 +10,7 @@ Run from the repository root: .venv/bin/python scripts/make_dev_samples.py
 
 from __future__ import annotations
 
+from copy import deepcopy
 from datetime import date, datetime, timedelta
 import json
 import math
@@ -58,6 +59,7 @@ from custom_components.energy_joe.observe.records import (
     summarize,
 )
 from custom_components.energy_joe.plan.actions import plan_actions
+from custom_components.energy_joe.plan.ev import car_need
 from custom_components.energy_joe.plan.inputs import (
     DEFAULT_SEARCH,
     consumption_profiles,
@@ -566,6 +568,47 @@ def history_sample(config: dict, snap_hass: dict | None = None) -> dict:
             for a in actions
         ]
         tonight["meta"]["tomorrow_kwh"] = 5.5
+        # The same night with the car charged by need (test page: ?need=1).
+        tomorrow = (LAST_DAY + timedelta(days=1)).isoformat()
+        trips = [
+            {
+                "start": f"{tomorrow}T09:30:00+02:00",
+                "location": "Hauptstraße 1, Potsdam",
+                "km": 72.4,
+                "minutes": 42,
+                "source": "waze",
+            },
+            {
+                "start": f"{tomorrow}T15:00:00+02:00",
+                "location": "Zahnarztpraxis Dr. Weber",
+                "km": None,
+                "minutes": None,
+                "source": None,
+            },
+        ]
+        by_need = deepcopy(config["actions"])
+        needs = {}
+        for action in by_need:
+            if action["kind"] == "switch":
+                action["need"]["enabled"] = True
+                found = car_need(
+                    action["need"],
+                    _state_getter(snap_hass),
+                    trips,
+                    None,
+                    7.0,
+                    True,
+                    True,
+                )
+                needs[action["id"]] = {**found, "trips": trips}
+        planned = plan_actions(
+            by_need, _state_getter(snap_hass), start, end, 5.5, {}, {}, needs
+        )
+        plan_need = deepcopy(tonight)
+        plan_need["actions"] = [
+            {**a, "cost": round(a["energy_kwh"] * tariff["night_price"], 2)}
+            for a in planned
+        ]
     if tonight.get("meta") is not None:
         tonight["meta"]["tomorrow"] = tomorrow_outlook(
             config, learned, learning["days"], LAST_DAY + timedelta(days=1), 5.5
@@ -577,6 +620,7 @@ def history_sample(config: dict, snap_hass: dict | None = None) -> dict:
         "last_day": max(days),
         "day_count": len(days),
         "plan": tonight,
+        "plan_need": plan_need if window and config["actions"] and snap_hass else None,
         "learned": learned,
         "learning": learning,
         "results": summary,

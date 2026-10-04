@@ -2,16 +2,42 @@ import { LitElement, css, html, nothing, type PropertyValues, type TemplateResul
 import { property, state } from "lit/decorators.js";
 import { displayTitle } from "../components/bits";
 import { tip } from "../components/tip";
-import { pickEntity, saveConfig } from "../config";
+import { pickEntity, saveConfig, suggestions } from "../config";
 import { define } from "../define";
 import { entityName, formatState, type FilterName } from "../entities";
 import type { TipName, Translate } from "../i18n";
 import { shared } from "../styles/shared";
-import type { ActionCondition, ActionConfig, ConditionOp, Discovery, HomeAssistant, JoeConfig } from "../types";
+import type { ActionCondition, ActionConfig, CarNeedConfig, ConditionOp, Discovery, HomeAssistant, JoeConfig } from "../types";
 
 export type ActionTemplate = "ev" | "hot_water" | "custom";
 
 const OPS: ConditionOp[] = ["eq", "ne", "lt", "le", "gt", "ge"];
+
+/** Charging by need, switched off (see custom_components/energy_joe/model.py EV_NEED). */
+export const DEFAULT_NEED: CarNeedConfig = {
+  enabled: false,
+  soc_entity: null,
+  range_entity: null,
+  capacity_kwh: null,
+  capacity_entity: null,
+  odometer_entity: null,
+  consumption_entity: null,
+  reserve_km: 50,
+  consumption: null,
+  daily_km: null,
+  persons: [],
+  round_trip: true,
+};
+
+type NeedEntity = "soc_entity" | "range_entity" | "capacity_entity" | "odometer_entity" | "consumption_entity";
+// Which entities fit each car field, and which role of a found car fills it.
+const NEED_ENTITIES: Record<NeedEntity, { filter: FilterName; role: "soc" | "range" | "capacity" | "odometer" | "consumption"; tip: TipName }> = {
+  soc_entity: { filter: "soc", role: "soc", tip: "a_need_soc" },
+  range_entity: { filter: "distance", role: "range", tip: "a_need_range" },
+  capacity_entity: { filter: "car_energy", role: "capacity", tip: "a_need_capacity" },
+  odometer_entity: { filter: "distance", role: "odometer", tip: "a_need_odometer" },
+  consumption_entity: { filter: "consumption", role: "consumption", tip: "a_need_consumption" },
+};
 
 /** A fresh night action from a template. */
 export function newAction(template: ActionTemplate, t: Translate): ActionConfig {
@@ -291,6 +317,7 @@ export class JoeActionEditor extends LitElement {
         </div>`,
       )}
       ${draft.auto ? this.renderConditions(t, draft) : nothing}
+      ${draft.kind === "switch" ? this.renderNeed(t, draft) : nothing}
       ${this.field(
         t("action.f.power"),
         "a_power",
@@ -396,6 +423,149 @@ export class JoeActionEditor extends LitElement {
         "a_temps",
         html`<div class="temps">${number("comfort", "°C")} ${number("maximum", "°C")} ${number("buffer", "K")}</div>`,
       )}`;
+  }
+
+  /** Charging a car by need: tomorrow's trips and a reserve decide, not only the sun. */
+  private renderNeed(t: Translate, draft: ActionConfig): TemplateResult {
+    const need = draft.need ?? DEFAULT_NEED;
+    const persons = (this.config?.persons ?? []).filter((p) => p.calendars.length);
+    const number = (key: "reserve_km" | "consumption" | "daily_km" | "capacity_kwh", unit: string, max: number, placeholder = "") => html`<span
+      class="unit-input"
+    >
+      <input
+        class="input"
+        type="number"
+        inputmode="decimal"
+        min="0"
+        max=${max}
+        step=${key === "consumption" ? "0.1" : "1"}
+        placeholder=${placeholder}
+        .value=${need[key] == null ? "" : String(need[key])}
+        @change=${(ev: Event) => {
+          const value = Number.parseFloat((ev.target as HTMLInputElement).value);
+          const empty = key === "reserve_km" ? 0 : null;
+          this.setNeed({ [key]: Number.isFinite(value) && value >= 0 ? value : empty });
+        }}
+      />
+      <span class="unit">${unit}</span>
+    </span>`;
+    const box = (key: NeedEntity) => this.entityBox(t, need[key] ?? "", () => this.pickNeed(key));
+    return html`${this.field(
+        t("action.need"),
+        "a_need",
+        html`<div class="row">
+            <button
+              type="button"
+              class="switch"
+              role="switch"
+              aria-checked=${String(need.enabled)}
+              aria-label=${t("action.need")}
+              @click=${() => this.toggleNeed()}
+            ></button>
+            <span>${t(need.enabled ? "action.need.on" : "action.need.off")}</span>
+          </div>
+          <p class="field-hint">${t("action.need.hint")}</p>`,
+      )}
+      ${need.enabled
+        ? html`${this.field(t("action.need.soc"), "a_need_soc", box("soc_entity"))}
+          ${this.field(t("action.need.range"), "a_need_range", box("range_entity"))}
+          ${this.field(
+            t("action.need.capacity"),
+            "a_need_capacity",
+            html`<div class="row">${number("capacity_kwh", "kWh", 300, t("action.need.from_sensor"))}</div>
+              ${need.capacity_kwh == null ? box("capacity_entity") : nothing}`,
+          )}
+          ${this.field(t("action.need.reserve"), "a_need_reserve", number("reserve_km", "km", 1000))}
+          ${this.field(
+            t("action.need.consumption"),
+            "a_need_consumption",
+            html`${number("consumption", "kWh/100 km", 60, t("action.need.learned"))}
+              ${need.consumption == null ? box("consumption_entity") : nothing}`,
+          )}
+          ${this.field(t("action.need.daily"), "a_need_daily", number("daily_km", "km", 2000, t("action.need.learned")))}
+          ${this.field(t("action.need.odometer"), "a_need_odometer", box("odometer_entity"))}
+          ${this.field(
+            t("action.need.persons"),
+            "a_need_persons",
+            persons.length
+              ? html`<div class="row" role="group" aria-label=${t("action.need.persons")}>
+                  ${persons.map(
+                    (person) => html`<button
+                      type="button"
+                      class="mini-btn ${need.persons.includes(person.id) || !need.persons.length ? "go" : "quiet"}"
+                      aria-pressed=${String(need.persons.includes(person.id) || !need.persons.length)}
+                      @click=${() => this.togglePerson(person.id, persons.map((p) => p.id))}
+                    >
+                      ${person.name}
+                    </button>`,
+                  )}
+                </div>`
+              : html`<p class="field-hint">${t("action.need.no_calendars")}</p>`,
+          )}
+          ${this.field(
+            t("action.need.round_trip"),
+            "a_need_round_trip",
+            html`<button
+              type="button"
+              class="switch"
+              role="switch"
+              aria-checked=${String(need.round_trip)}
+              aria-label=${t("action.need.round_trip")}
+              @click=${() => this.setNeed({ round_trip: !need.round_trip })}
+            ></button>`,
+          )}
+          ${this.config?.routing.service
+            ? nothing
+            : html`<div class="note"><ha-icon icon="mdi:map-marker-distance"></ha-icon><span>${t("action.need.no_routing")}</span></div>`}`
+        : nothing}`;
+  }
+
+  private setNeed(change: Partial<CarNeedConfig>): void {
+    this.set({ need: { ...(this.draft?.need ?? DEFAULT_NEED), ...change } });
+  }
+
+  /** Switching it on fills in the car Joe found, where nothing is chosen yet. */
+  private toggleNeed(): void {
+    const need = this.draft?.need ?? DEFAULT_NEED;
+    if (need.enabled) {
+      this.setNeed({ enabled: false });
+      return;
+    }
+    const cars = this.discovery?.cars ?? [];
+    const car = cars.length === 1 ? cars[0].entities : {};
+    const fill: Partial<CarNeedConfig> = { enabled: true };
+    for (const [key, info] of Object.entries(NEED_ENTITIES) as [NeedEntity, (typeof NEED_ENTITIES)[NeedEntity]][]) {
+      if (!need[key] && car[info.role]) {
+        fill[key] = car[info.role] ?? null;
+      }
+    }
+    this.setNeed(fill);
+  }
+
+  private togglePerson(id: string, all: string[]): void {
+    const need = this.draft?.need ?? DEFAULT_NEED;
+    const chosen = need.persons.length ? need.persons : all;
+    const next = chosen.includes(id) ? chosen.filter((p) => p !== id) : [...chosen, id];
+    // Everyone chosen is the same as nobody chosen: all calendars count.
+    this.setNeed({ persons: next.length === all.length ? [] : next });
+  }
+
+  private async pickNeed(key: NeedEntity): Promise<void> {
+    const t = this.t!;
+    const info = NEED_ENTITIES[key];
+    const found = (this.discovery?.cars ?? [])
+      .map((car) => ({ entity_id: car.entities[info.role] ?? "", confidence: car.confidence, reasons: car.reasons }))
+      .filter((s) => s.entity_id);
+    const picked = await pickEntity(this, {
+      heading: t(`action.need.pick.${info.role}`),
+      tip: info.tip,
+      filter: info.filter,
+      selected: this.draft?.need?.[key] ? [this.draft.need[key] as string] : [],
+      suggestions: suggestions(found),
+    });
+    if (picked) {
+      this.setNeed({ [key]: picked.selected[0] ?? null });
+    }
   }
 
   private renderConditions(t: Translate, draft: ActionConfig): TemplateResult {

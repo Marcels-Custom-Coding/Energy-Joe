@@ -139,6 +139,20 @@ def test_fronius_household_proposal_is_valid_config() -> None:
     assert config["forecast"]["config_entries"] == ["A", "B"]
 
 
+def test_fronius_household_finds_the_car() -> None:
+    """The Kia shows up as a car (never as a home battery) and fills charging by need."""
+    result = discover(fronius_household())
+    (car,) = result["cars"]
+    assert car["name"] == "Electric car" and car["integration"] == "kia_uvo"
+    assert car["capacity_kwh"] == 78.0 and car["range_km"] == 214.0
+    assert not any(b["soc_entity"] == "sensor.ev_battery" for b in result["batteries"])
+    need = result["proposal"]["actions"][0]["need"]
+    assert need["enabled"] is False
+    assert need["soc_entity"] == "sensor.ev_battery"
+    assert need["range_entity"] == "sensor.ev_range"
+    assert need["odometer_entity"] == "sensor.ev_odometer"
+
+
 def test_a_second_forecast_becomes_an_alternative() -> None:
     """Forecast.Solar is in the energy dashboard, Solcast is there as well."""
     snap = fronius_household()

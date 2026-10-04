@@ -1,6 +1,7 @@
 import { LitElement, css, html, nothing, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
 import { displayTitle, swoosh } from "../components/bits";
+import "../components/car-need";
 import "../components/chart";
 import type { ChartBand, ChartMarker, ChartSeries } from "../components/chart";
 import { planCostLine, planLines, planPose, planSentence, slotsText, timeOf, windowText } from "../components/plan-text";
@@ -298,8 +299,14 @@ export class JoePlanPage extends LitElement {
             action.run && action.energy_kwh
               ? t("plan.actions.energy", { kwh: formatNumber(t.lang, action.energy_kwh, 1), cost: money(action.cost ?? 0) })
               : "";
+          const config = this.state?.config.actions.find((a) => a.id === action.id);
           return html`<dt>${action.name}</dt>
-            <dd>${text}${extra ? html`<small>${extra}</small>` : nothing}</dd>`;
+            <dd>
+              ${text}${extra ? html`<small>${extra}</small>` : nothing}
+              ${action.need
+                ? html`<joe-car-need .hass=${this.hass} .t=${t} .action=${action} ?roundTrip=${config?.need?.round_trip ?? true}></joe-car-need>`
+                : nothing}
+            </dd>`;
         })}
       </dl>
     </section>`;

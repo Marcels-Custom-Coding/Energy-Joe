@@ -1,0 +1,474 @@
+"""Charging a car by need: tomorrow's trips, a reserve and the weather."""
+
+from __future__ import annotations
+
+from datetime import date, datetime, timedelta
+from typing import Any
+
+import pytest
+
+from custom_components.energy_joe import model
+from custom_components.energy_joe.discovery import discover
+from custom_components.energy_joe.learn.models import car_days, car_model
+from custom_components.energy_joe.plan.actions import plan_actions
+from custom_components.energy_joe.plan.ev import (
+    car_need,
+    consumption,
+    temperature_factor,
+)
+from custom_components.energy_joe.plan.trips import PlaceStore, async_trips, is_place
+from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
+from homeassistant.util import dt as dt_util
+from tests.snapshots import entity, snapshot
+
+
+@pytest.fixture(autouse=True)
+def berlin(hass: HomeAssistant) -> None:
+    dt_util.set_default_time_zone(dt_util.get_time_zone("Europe/Berlin"))
+
+
+def need(**changes: Any) -> dict[str, Any]:
+    action = model.validate(
+        {
+            "version": model.CONFIG_VERSION,
+            "actions": [
+                {
+                    "id": "ev",
+                    "name": "Carport",
+                    "kind": "switch",
+                    "entity_id": "select.carport_mode",
+                    "on_value": "now",
+                    "power_kw": 11.0,
+                    "need": {
+                        "enabled": True,
+                        "soc_entity": "sensor.car_soc",
+                        "range_entity": "sensor.car_range",
+                        "capacity_kwh": 60.0,
+                        **changes,
+                    },
+                }
+            ],
+        }
+    )["actions"][0]
+    return action
+
+
+def test_colder_and_wetter_needs_more() -> None:
+    assert temperature_factor(20) == 1.0
+    assert temperature_factor(0) == pytest.approx(1.28)
+    assert temperature_factor(2.5) == pytest.approx(1.24)
+    assert temperature_factor(-40) == 1.8
+    base = need()["need"]
+    assert consumption(base, None, None, 0.0, False) == (23.0, "default")
+    assert consumption(base, None, None, 20.0, True) == (19.8, "default")
+    # What Joe learned from the car wins, with its own cold behaviour.
+    learned = {"consumption": 16.0, "cold": 0.4}
+    assert consumption(base, learned, None, 5.0, False) == (20.0, "learned")
+    # The car's own long-term average covers all seasons.
+    assert consumption(base, None, 17.0, 20.0, False)[1] == "car"
+    assert consumption({**base, "consumption": 15.0}, learned, None, 20.0, False) == (
+        15.0,
+        "user",
+    )
+
+
+def test_what_tomorrow_needs(hass: HomeAssistant) -> None:
+    """60 km to an appointment and back, 50 km reserve, 0 °C: 110 km at 23 kWh/100 km."""
+    hass.states.async_set("sensor.car_soc", "30", {"unit_of_measurement": "%"})
+    hass.states.async_set("sensor.car_range", "120", {"unit_of_measurement": "mi"})
+    trips = [
+        {
+            "start": "2026-10-05T09:00:00+02:00",
+            "location": "Kunde",
+            "km": 60.0,
+            "minutes": 35,
+        }
+    ]
+    found = car_need(need()["need"], hass.states.get, trips, None, 0.0, False, True)
+    assert found["known"] is True
+    assert found["needed_km"] == 110.0
+    assert found["missing_kwh"] == pytest.approx(110 * 23.0 / 100 - 18.0, abs=0.01)
+    assert found["wall_kwh"] == pytest.approx(found["missing_kwh"] / 0.9, abs=0.01)
+    assert found["target"] == 43 and found["target_unit"] == "%"
+    assert found["departure"] == "2026-10-05T08:25+02:00"
+    # Only the range (here in miles): the kilometres missing.
+    by_range = car_need(
+        need(capacity_kwh=None, soc_entity=None)["need"],
+        hass.states.get,
+        trips,
+        None,
+        0.0,
+        False,
+        True,
+    )
+    assert by_range["have_km"] == pytest.approx(193.1, abs=0.1)
+    assert by_range["missing_kwh"] == 0.0 and by_range["target_unit"] == "km"
+    # Nothing known about the car: Joe cannot tell.
+    unknown = car_need(
+        need(capacity_kwh=None, soc_entity=None, range_entity=None)["need"],
+        hass.states.get,
+        [],
+        None,
+        10.0,
+        False,
+        True,
+    )
+    assert unknown["known"] is False
+    # The usual distance counts when there are no trips (learned per day type).
+    usual = car_need(
+        need()["need"],
+        hass.states.get,
+        [],
+        {"workday_km": 40, "day_off_km": 10},
+        20.0,
+        False,
+        True,
+    )
+    assert usual["needed_km"] == 90.0
+
+
+def test_the_car_charges_only_what_it_needs(hass: HomeAssistant) -> None:
+    start = dt_util.start_of_local_day(date(2026, 10, 5))
+    end = start + timedelta(hours=5)
+    action = need()
+    base = {
+        "known": True,
+        "missing_kwh": 7.3,
+        "wall_kwh": 8.1,
+        "target": 43,
+        "sensor": "sensor.car_soc",
+        "departure": "2026-10-05T08:25+02:00",
+    }
+    plan = plan_actions(
+        [action], hass.states.get, start, end, 8.0, {}, {}, {"ev": base}
+    )[0]
+    assert plan["run"] is True and plan["reasons"] == ["need"]
+    # 8.1 kWh at 11 kW take 44 minutes, plus a quarter of an hour before the end.
+    assert plan["start"] == (end - timedelta(hours=8.1 / 11, minutes=15)).isoformat(
+        timespec="minutes"
+    )
+    assert plan["target"] == 43 and plan["sensor"] == "sensor.car_soc"
+    enough = plan_actions(
+        [action],
+        hass.states.get,
+        start,
+        end,
+        8.0,
+        {},
+        {},
+        {"ev": {**base, "missing_kwh": 0.0}},
+    )[0]
+    assert enough["run"] is False and enough["reasons"] == ["enough_range"]
+    # A sunny day and the first trip after noon: the sun charges before.
+    later = {**base, "departure": "2026-10-05T14:00+02:00"}
+    action_sun = {**action, "forecast_below_kwh": 15.0}
+    sunny = plan_actions(
+        [action_sun], hass.states.get, start, end, 30.0, {}, {}, {"ev": later}
+    )[0]
+    assert sunny["reasons"] == ["sun_before_trip"]
+    # "Tonight" by hand: the whole window, no target.
+    manual = plan_actions(
+        [action],
+        hass.states.get,
+        start,
+        end,
+        8.0,
+        {"ev": start.isoformat()},
+        {},
+        {"ev": base},
+    )[0]
+    assert manual["run"] is True and "target" not in manual
+    # Car unknown: as before, by the sun, with a note.
+    unknown = plan_actions(
+        [action], hass.states.get, start, end, 8.0, {}, {}, {"ev": {"known": False}}
+    )[0]
+    assert unknown["run"] is True and "need_unknown" in unknown["reasons"]
+
+
+def test_learning_what_the_car_uses() -> None:
+    """17 kWh/100 km above 15 °C plus 0.4 per degree below; 40 km on working days."""
+    odometer, soc = [], []
+    km, level = 10000.0, 80.0
+    temps, start = {}, datetime(2026, 9, 1, 7, tzinfo=dt_util.get_default_time_zone())
+    for offset in range(30):
+        moment = start + timedelta(days=offset)
+        temp = 2 + offset % 15
+        temps[moment.date().isoformat()] = temp
+        driven = 40 if moment.weekday() < 5 else 10
+        used = driven * (17 + 0.4 * max(0, 15 - temp)) / 100
+        odometer.append((moment, km))
+        soc.append((moment, level))
+        km += driven
+        level -= used / 60 * 100
+        odometer.append((moment + timedelta(hours=1), km))
+        soc.append((moment + timedelta(hours=1), level))
+        # Charged at night (the level rises while the car stands).
+        level = 80.0
+        soc.append((moment + timedelta(hours=12), level))
+    days = car_days(odometer, soc, 60.0)
+    assert days[0]["km"] == 40.0 and days[0]["kwh"] == pytest.approx(
+        40 * (17 + 0.4 * 13) / 100, abs=0.01
+    )
+    learned = car_model(days, temps)
+    assert learned["consumption"] == pytest.approx(17.0, abs=0.3)
+    assert learned["cold"] == pytest.approx(0.4, abs=0.05)
+    assert learned["workday_km"] == 40 and learned["day_off_km"] == 10
+
+
+async def test_trips_from_the_calendar(hass: HomeAssistant) -> None:
+    """A customer by Waze, a zone without any service, an online meeting left out."""
+    hass.config.latitude, hass.config.longitude = 52.52, 13.40
+    hass.states.async_set(
+        "zone.office",
+        "0",
+        {"latitude": 52.60, "longitude": 13.40, "friendly_name": "Office"},
+    )
+    events = [
+        {
+            "summary": "Kunde",
+            "start": "2026-10-05T10:00:00+02:00",
+            "location": "Hauptstr. 1, Potsdam",
+        },
+        {
+            "summary": "Weekly",
+            "start": "2026-10-05T11:00:00+02:00",
+            "location": "Microsoft Teams-Besprechung",
+        },
+        {
+            "summary": "Büro",
+            "start": "2026-10-05T08:00:00+02:00",
+            "location": "zone.office",
+        },
+    ]
+
+    def get_events(call: ServiceCall) -> dict[str, Any]:
+        return {"calendar.anna": {"events": events}}
+
+    asked: list[dict[str, Any]] = []
+
+    def waze(call: ServiceCall) -> dict[str, Any]:
+        asked.append(dict(call.data))
+        return {
+            "routes": [
+                {
+                    "duration": 41.5,
+                    "distance": 36.24,
+                    "name": "A115",
+                    "street_names": [],
+                }
+            ]
+        }
+
+    hass.services.async_register(
+        "calendar", "get_events", get_events, supports_response=SupportsResponse.ONLY
+    )
+    hass.services.async_register(
+        "waze_travel_time",
+        "get_travel_times",
+        waze,
+        supports_response=SupportsResponse.ONLY,
+    )
+    config = model.validate(
+        {
+            "version": model.CONFIG_VERSION,
+            "persons": [{"id": "anna", "name": "Anna", "calendars": ["calendar.anna"]}],
+            "routing": {"service": "waze"},
+        }
+    )
+    places = PlaceStore(hass)
+    trips = await async_trips(hass, config, need()["need"], places, date(2026, 10, 5))
+    assert [t["location"] for t in trips] == ["zone.office", "Hauptstr. 1, Potsdam"]
+    office, customer = trips
+    # 8.9 km straight line times 1.3, there and back.
+    assert office["source"] == "zone" and office["km"] == pytest.approx(23.2, abs=0.2)
+    assert customer == {
+        "start": "2026-10-05T10:00:00+02:00",
+        "location": "Hauptstr. 1, Potsdam",
+        "km": 72.4,
+        "minutes": 42,
+        "source": "waze",
+    }
+    assert asked[0]["origin"] == "zone.home" and asked[0]["region"] == "eu"
+    # Kept: no second question; a correction by the user wins.
+    await async_trips(hass, config, need()["need"], places, date(2026, 10, 5))
+    assert len(asked) == 1
+    await places.async_set("Hauptstr. 1, Potsdam", 30.0)
+    trips = await async_trips(hass, config, need()["need"], places, date(2026, 10, 5))
+    assert trips[1]["km"] == 60.0 and trips[1]["source"] == "user"
+    # Without a service a free-text place stays unknown.
+    unrouted = model.validate({**config, "routing": {"service": None}})
+    fresh = PlaceStore(hass)
+    fresh.places = {}
+    fresh._loaded = True
+    trips = await async_trips(hass, unrouted, need()["need"], fresh, date(2026, 10, 5))
+    assert trips[1]["km"] is None
+    assert not is_place("https://zoom.us/j/1") and is_place("Marktplatz 3, Ulm")
+
+
+async def test_open_street_map_route(hass: HomeAssistant, aioclient_mock) -> None:
+    hass.config.latitude, hass.config.longitude = 52.52, 13.40
+    config = model.validate(
+        {"version": model.CONFIG_VERSION, "routing": {"service": "osm"}}
+    )
+    routing = config["routing"]
+    aioclient_mock.get(
+        routing["geocoder_url"],
+        json={"features": [{"geometry": {"coordinates": [13.06, 52.40]}}]},
+    )
+    aioclient_mock.get(
+        f"{routing['router_url']}13.4,52.52;13.06,52.4",
+        json={"routes": [{"distance": 35800.0, "duration": 2460.0}]},
+    )
+    from unittest.mock import patch
+
+    from custom_components.energy_joe.plan.trips import async_route
+
+    with patch("custom_components.energy_joe.plan.trips.asyncio.sleep"):
+        found = await async_route(hass, routing, "Potsdam Hbf")
+    assert found == {"km": 35.8, "minutes": 41, "source": "osm"}
+
+
+def test_cars_are_found_and_proposed() -> None:
+    """A Kia (kia_uvo, translation keys, capacity in kJ) next to an evcc wallbox."""
+    car = "kia1"
+    entities = [
+        entity(
+            "sensor.ev6_battery",
+            "EV6 Batterie",
+            64,
+            unit="%",
+            platform="kia_uvo",
+            device_id=car,
+            translation_key="ev_battery_percentage",
+        ),
+        entity(
+            "sensor.ev6_range",
+            "EV6 Reichweite",
+            310,
+            unit="km",
+            platform="kia_uvo",
+            device_id=car,
+            translation_key="ev_driving_range",
+        ),
+        entity(
+            "sensor.ev6_capacity",
+            "EV6 Kapazität",
+            280800,
+            unit="kJ",
+            platform="kia_uvo",
+            device_id=car,
+            translation_key="ev_battery_capacity",
+        ),
+        entity(
+            "sensor.ev6_odometer",
+            "EV6 Kilometerstand",
+            23456,
+            unit="km",
+            platform="kia_uvo",
+            device_id=car,
+            translation_key="odometer",
+        ),
+        entity(
+            "binary_sensor.ev6_plugged",
+            "EV6 eingesteckt",
+            "on",
+            platform="kia_uvo",
+            device_id=car,
+            translation_key="ev_battery_is_plugged_in",
+        ),
+        entity(
+            "select.evcc_carport_mode",
+            "Carport Modus",
+            "pv",
+            platform="evcc_intg",
+            device_id="lp1",
+            unique_id="evcc_intg.evcc_carport_mode",
+            attributes={"options": ["off", "pv", "minpv", "now"]},
+        ),
+        entity(
+            "binary_sensor.evcc_carport_connected",
+            "Carport verbunden",
+            "on",
+            platform="evcc_intg",
+            device_id="lp1",
+            unique_id="evcc_intg.evcc_carport_connected",
+        ),
+        entity(
+            "sensor.evcc_carport_vehicle_soc",
+            "Carport Fahrzeug Ladestand",
+            64,
+            unit="%",
+            platform="evcc_intg",
+            device_id="lp1",
+            unique_id="evcc_intg.evcc_carport_vehicle_soc",
+        ),
+    ]
+    result = discover(snapshot(entities))
+    (found,) = result["cars"]
+    assert found["integration"] == "kia_uvo"
+    assert found["capacity_kwh"] == 78.0 and found["range_km"] == 310.0
+    assert found["entities"]["odometer"] == "sensor.ev6_odometer"
+    (action,) = result["proposal"]["actions"]
+    assert action["need"]["enabled"] is False
+    assert action["need"]["soc_entity"] == "sensor.ev6_battery"
+    assert action["need"]["capacity_entity"] == "sensor.ev6_capacity"
+    model.validate({"version": model.CONFIG_VERSION, **result["proposal"]})
+
+
+async def test_the_car_stops_at_the_level_it_needs(
+    hass: HomeAssistant, freezer
+) -> None:
+    from custom_components.energy_joe.control.executor import JoeExecutor
+
+    freezer.move_to("2026-10-05T04:00:00+02:00")
+
+    def keep(call: ServiceCall) -> None:
+        state = hass.states.get(call.data["entity_id"])
+        hass.states.async_set(
+            call.data["entity_id"], call.data["option"], state.attributes
+        )
+
+    hass.services.async_register("select", "select_option", keep)
+    hass.states.async_set(
+        "select.carport_mode", "pv", {"options": ["off", "pv", "now"]}
+    )
+    hass.states.async_set("sensor.car_soc", "38", {"unit_of_measurement": "%"})
+    action = need()
+    config = model.validate({"version": model.CONFIG_VERSION, "actions": [action]})
+    start = dt_util.start_of_local_day(date(2026, 10, 5))
+    planned = {
+        "id": "ev",
+        "name": "Carport",
+        "kind": "switch",
+        "run": True,
+        "manual": False,
+        "reasons": ["need"],
+        "start": (start + timedelta(hours=3)).isoformat(timespec="minutes"),
+        "end": (start + timedelta(hours=5, minutes=-3)).isoformat(timespec="minutes"),
+        "target": 43,
+        "sensor": "sensor.car_soc",
+        "power_kw": 11.0,
+        "energy_kwh": 21.4,
+    }
+    plan = {
+        "kind": "none",
+        "fixed": True,
+        "target": 20,
+        "window": {
+            "start": start.isoformat(),
+            "end": (start + timedelta(hours=5)).isoformat(),
+        },
+        "rules": {"discharge_mode": "until_target"},
+        "batteries": [],
+        "actions": [planned],
+    }
+    executor = JoeExecutor(
+        hass, lambda: config, lambda: plan, lambda: "live", lambda: None
+    )
+    await executor.async_load()
+    await executor.async_check()
+    assert hass.states.get("select.carport_mode").state == "now"
+    hass.states.async_set("sensor.car_soc", "43", {"unit_of_measurement": "%"})
+    await executor.async_check()
+    assert hass.states.get("select.carport_mode").state == "pv"
+    assert executor.status["actions"]["ev"]["reason"] == "reached"

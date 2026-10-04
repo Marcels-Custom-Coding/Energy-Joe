@@ -13,14 +13,16 @@ from homeassistant.util import dt as dt_util
 
 from .. import model
 from ..control.adapters import make_adapter
-from ..learn.context import async_day_labels, async_weather_temp
+from ..learn.context import async_day_labels, async_weather_day
 from ..learn.models import class_factor, combined_forecast, expected
 from ..observe.readings import energy_kwh, number, sum_kwh
 from ..observe.records import hour_starts, local_hour
 from ..observe.store import HistoryStore
 from .actions import plan_actions, reserved_kw
+from .ev import car_need
 from .planner import Battery, Hour, PlanInput, Prices, best_window
 from .prices import async_price_slots, quarters
+from .trips import PlaceStore, async_trips
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -241,6 +243,7 @@ async def async_build_input(
     history: HistoryStore,
     now: datetime,
     manual: dict[str, str] | None = None,
+    places: PlaceStore | None = None,
 ) -> tuple[PlanInput | None, list[str]]:
     """Gather everything for tonight's plan; None with reasons if there is nothing to plan."""
     tariff = config["tariff"]
@@ -376,6 +379,9 @@ async def async_build_input(
         2,
     )
     sun_tomorrow = tomorrow_kwh if "no_forecast" not in notes else None
+    needs = await async_car_needs(
+        hass, config, places or PlaceStore(hass), tomorrow, outlook
+    )
     if dynamic:
         # The cheapest window first; running actions need it long enough.
         preview = plan_actions(
@@ -386,6 +392,7 @@ async def async_build_input(
             sun_tomorrow,
             manual or {},
             learned.get("action_models") or {},
+            needs,
         )
         needed = max(
             [
@@ -428,6 +435,7 @@ async def async_build_input(
         sun_tomorrow,
         manual or {},
         learned.get("action_models") or {},
+        needs,
     )
     reserved = [
         reserved_kw(actions, h.start, h.start + timedelta(hours=1)) for h in hours
@@ -491,6 +499,38 @@ async def async_build_input(
         ),
         notes,
     )
+
+
+async def async_car_needs(
+    hass: HomeAssistant,
+    config: dict[str, Any],
+    places: PlaceStore,
+    day: date,
+    outlook: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    """For each car charged by need: tomorrow's trips and what is missing."""
+    result = {}
+    models = config["learned"].get("car_models") or {}
+    for action in config["actions"]:
+        need = action.get("need") or {}
+        if (
+            action["kind"] != "switch"
+            or not action.get("enabled", True)
+            or not need.get("enabled")
+        ):
+            continue
+        trips = await async_trips(hass, config, need, places, day)
+        found = car_need(
+            need,
+            hass.states.get,
+            trips,
+            models.get(action["id"]),
+            outlook["temp"],
+            outlook["rain"],
+            outlook["meta"]["workday"],
+        )
+        result[action["id"]] = {**found, "trips": trips}
+    return result
 
 
 def _input(
@@ -585,7 +625,8 @@ async def async_tomorrow(
 ) -> dict[str, Any]:
     """How tomorrow differs from an average day: consumption scale and sun factor."""
     learned = config["learned"]
-    temp = await async_weather_temp(hass, config["context"]["weather_entity"], day)
+    sky = await async_weather_day(hass, config["context"]["weather_entity"], day)
+    temp = sky["temp"]
     labels = (
         await async_day_labels(hass, config, day, workday) if config["persons"] else {}
     )
@@ -594,6 +635,7 @@ async def async_tomorrow(
         "date": day.isoformat(),
         "workday": workday,
         "temp": None if temp is None else round(temp, 1),
+        "rain": sky["rain"],
         "labels": labels,
         "presence": presence,
         "profile_kwh": round(profile_kwh, 2),
@@ -635,7 +677,13 @@ async def async_tomorrow(
         solar_factor=None if factor is None else round(factor, 2),
         solar_source=source if factor is not None else "learned",
     )
-    return {"scale": scale, "solar_factor": factor, "meta": meta, "temp": temp}
+    return {
+        "scale": scale,
+        "solar_factor": factor,
+        "meta": meta,
+        "temp": temp,
+        "rain": sky["rain"],
+    }
 
 
 def _presence(learned: dict[str, Any], labels: dict[str, str]) -> float | None:

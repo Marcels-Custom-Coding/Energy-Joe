@@ -337,7 +337,9 @@ class JoeExecutor:
                 )
             ):
                 reason = "conditions"
-            elif action["kind"] == "target" and self._target_reached(action, entry):
+            elif entry.get("target") is not None and self._target_reached(
+                action, entry
+            ):
                 reason = "reached"
                 self.data["done"].append(action["id"])
                 self._log(
@@ -370,9 +372,11 @@ class JoeExecutor:
         return result
 
     def _target_reached(self, action: dict[str, Any], entry: dict[str, Any]) -> bool:
-        temperature = number(self._hass.states.get(action.get("sensor_entity") or ""))
+        """Hot water at its temperature, or a car at the level it needs."""
+        sensor = entry.get("sensor") or action.get("sensor_entity") or ""
+        value = number(self._hass.states.get(sensor))
         target = entry.get("target")
-        return temperature is not None and target is not None and temperature >= target
+        return value is not None and target is not None and value >= target
 
     def _why(
         self,

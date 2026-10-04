@@ -20,6 +20,7 @@ from ..control.profiles import (
     ROLE_WORDS as CONTROL_WORDS,
     Call,
 )
+from ..observe.readings import to_km, to_kwh
 from . import knowledge as kb
 from .energy import EnergyHints, Power
 from .snapshot import EntityInfo, Snapshot
@@ -169,7 +170,11 @@ def find_batteries(snap: Snapshot, energy: EnergyHints) -> list[dict[str, Any]]:
     for entity in snap.of_domain("sensor"):
         if entity.device_class != "battery" or entity.unit != "%":
             continue
-        if entity.platform in kb.NOT_HARDWARE or entity.platform in kb.NOT_HOME_BATTERY:
+        if (
+            entity.platform in kb.NOT_HARDWARE
+            or entity.platform in kb.NOT_HOME_BATTERY
+            or entity.platform in kb.CAR_KEYS
+        ):
             continue
         if entity.device_id in seen_devices:
             continue
@@ -905,6 +910,65 @@ def find_wallboxes(snap: Snapshot) -> list[dict[str, Any]]:
                 }
             )
     found.sort(key=lambda w: (not w["is_car"], w["name"]))
+    return found
+
+
+CAR_ROLES = (
+    "soc",
+    "range",
+    "capacity",
+    "plugged",
+    "charging",
+    "odometer",
+    "consumption",
+    "outside_temp",
+)
+
+
+def find_cars(snap: Snapshot) -> list[dict[str, Any]]:
+    """Electric cars from car integrations: level, range, size and the rest per car."""
+    found: list[dict[str, Any]] = []
+    for platform, roles in kb.CAR_KEYS.items():
+        by_device: dict[str, list[EntityInfo]] = {}
+        for entity in snap.of_platform(platform):
+            by_device.setdefault(
+                entity.device_id or entity.config_entry_id or "", []
+            ).append(entity)
+        for device_id, entities in by_device.items():
+            parts: dict[str, EntityInfo] = {}
+            for role, keys in roles.items():
+                for domain, key in keys:
+                    match = next(
+                        (e for e in entities if e.domain == domain and e.has_key(key)),
+                        None,
+                    )
+                    if match is not None:
+                        parts[role] = match
+                        break
+            if "soc" not in parts and "range" not in parts:
+                continue
+            soc, rng, cap = parts.get("soc"), parts.get("range"), parts.get("capacity")
+            name = (snap.device_name(device_id) if device_id else None) or (
+                (soc or rng).name if (soc or rng) else platform
+            )
+            found.append(
+                {
+                    "integration": platform,
+                    "device_id": device_id,
+                    "name": name,
+                    "entities": {role: e.entity_id for role, e in parts.items()},
+                    "soc": soc.number if soc else None,
+                    "range_km": round(to_km(rng.number, rng.unit), 1)
+                    if rng and rng.number is not None
+                    else None,
+                    "capacity_kwh": round(to_kwh(cap.number, cap.unit), 1)
+                    if cap and cap.number is not None
+                    else None,
+                    "confidence": _round(0.9 if soc and rng else 0.75),
+                    "reasons": [{"code": "integration_key", "integration": platform}],
+                }
+            )
+    found.sort(key=lambda c: c["name"])
     return found
 
 

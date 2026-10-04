@@ -42,7 +42,9 @@ def build_proposal(result: dict[str, Any]) -> dict[str, Any]:
             }
             for index, b in enumerate(batteries)
         ],
-        "actions": _night_actions(result.get("wallboxes") or []),
+        "actions": _night_actions(
+            result.get("wallboxes") or [], result.get("cars") or []
+        ),
         "tariff": {
             "kind": tariff["kind"],
             "price_entity": tariff["price_entity"],
@@ -108,8 +110,16 @@ def _measurement(found: dict[str, Any] | None) -> dict[str, Any] | None:
     return found["measurement"] if found else None
 
 
-def _night_actions(wallboxes: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """The car charges at night when tomorrow brings little sun (if it is plugged in)."""
+def _night_actions(
+    wallboxes: list[dict[str, Any]], cars: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """The car charges at night when tomorrow brings little sun (if it is plugged in).
+
+    Charging by need stays off until the user switches it on; its car entities
+    are filled in already: from the one car integration found, else from the
+    wallbox's vehicle (evcc knows the car that is plugged in).
+    """
+    car = (cars[0].get("entities") or {}) if len(cars) == 1 else {}
     actions = []
     for wallbox in wallboxes:
         options = wallbox.get("mode_options") or []
@@ -136,6 +146,15 @@ def _night_actions(wallboxes: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "power_kw": 11.0,
                 "power_entity": entities.get("power"),
                 "priority": 1,
+                "need": {
+                    "enabled": False,
+                    "soc_entity": car.get("soc") or entities.get("vehicle_soc"),
+                    "range_entity": car.get("range") or entities.get("vehicle_range"),
+                    "capacity_entity": car.get("capacity"),
+                    "odometer_entity": car.get("odometer")
+                    or entities.get("vehicle_odometer"),
+                    "consumption_entity": car.get("consumption"),
+                },
             }
         )
     return actions

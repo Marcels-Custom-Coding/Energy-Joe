@@ -46,7 +46,51 @@ def to_kwh(value: float, unit_text: str | None) -> float:
         return value / 1000
     if unit_text == "MWh":
         return value * 1000
+    if unit_text == "kJ":
+        return value / 3600
+    if unit_text == "MJ":
+        return value / 3.6
     return value
+
+
+def to_km(value: float, unit_text: str | None) -> float:
+    """A distance in km (cars report km, mi or m)."""
+    text = (unit_text or "").lower()
+    if text in ("mi", "mile", "miles"):
+        return value * 1.609344
+    if text == "m":
+        return value / 1000
+    return value
+
+
+def to_kwh_per_100km(value: float, unit_text: str | None) -> float | None:
+    """A car's consumption in kWh/100 km (also from Wh/km, km/kWh or mi/kWh)."""
+    text = (unit_text or "").lower().replace(" ", "")
+    if value <= 0:
+        return None
+    if text in ("wh/km",):
+        return value / 10
+    if text in ("km/kwh",):
+        return 100 / value
+    if text in ("mi/kwh",):
+        return 100 / (value * 1.609344)
+    if text in ("kwh/100mi",):
+        return value / 1.609344
+    if text in ("kwh/100km", "kwh"):
+        return value
+    return None
+
+
+def distance_km(state: State | None) -> float | None:
+    """A range or odometer reading in km."""
+    value = number(state)
+    return None if value is None else to_km(value, unit(state))
+
+
+def consumption_kwh(state: State | None) -> float | None:
+    """A consumption sensor in kWh/100 km, if its unit says what it is."""
+    value = number(state)
+    return None if value is None else to_kwh_per_100km(value, unit(state))
 
 
 def measurement_entities(measurement: dict[str, Any] | None) -> list[str]:

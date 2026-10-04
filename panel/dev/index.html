@@ -21,7 +21,7 @@
       Zeigt das gebaute Panel mit einem nachgeahmten Home Assistant.
       Aufruf über einen lokalen Webserver im Repo-Wurzelverzeichnis, z. B.
       python3 -m http.server 8767  →  http://localhost:8767/panel/dev/
-      Parameter: ?dark=1  ?lang=en  ?step=scan  ?done=1  ?page=settings  ?mode=off|advisory|live  ?sample=generic  ?audit=1
+      Parameter: ?dark=1  ?lang=en  ?step=scan  ?done=1  ?page=settings  ?mode=off|advisory|live  ?sample=generic  ?audit=1  ?need=1
       sample-*.json kommen aus scripts/make_dev_samples.py (erfundene Haushalte aus tests/snapshots.py):
       Funde, die Konfiguration nach dem Übernehmen, ihre Prüfungen, Zustände und Register sowie
       zwei Wochen erfundener Verlauf mit festen Plänen, nachgespielten Nächten und dem, was Joe
@@ -34,7 +34,7 @@
     <energy-joe-panel></energy-joe-panel>
     <script type="module">
       const params = new URLSearchParams(location.search);
-      const sample = await (await fetch(`./sample-${params.get("sample") || "fronius"}.json`)).json();
+      const sample = await (await fetch(`./sample-${params.get("sample") || "fronius"}.json`, { cache: "no-store" })).json();
 
       // Stand-ins for elements Home Assistant provides.
       customElements.define(
@@ -197,6 +197,14 @@
         backfill: { state: "done", hours: 312 },
       });
       state.observe = done && state.mode !== "off" ? watching() : { active: false, backfill: { state: "idle" } };
+      // ?need=1: the car charges by need (the night computed with made-up trips).
+      if (params.get("need") === "1" && history.plan_need) {
+        history.plan = history.plan_need;
+        for (const action of state.config.actions) {
+          if (action.kind === "switch" && action.need) action.need.enabled = true;
+        }
+        state.config.routing = { ...state.config.routing, service: "waze" };
+      }
       state.plan = done && state.mode !== "off" ? history.plan : null;
       let adopted = done;
       const listeners = new Set();
@@ -222,7 +230,24 @@
                 },
                 defaults: { rules: sample.default_config.rules },
                 profiles: sample.profiles,
+                routing: { waze: true, google: [{ entry_id: "google1", title: "Google Maps" }] },
               };
+            case "energy_joe/places/set": {
+              // A corrected distance: the trips to this place get it (there and back).
+              for (const action of state.plan?.actions ?? []) {
+                for (const trip of action.need?.trips ?? []) {
+                  if (trip.location === msg.location) {
+                    trip.km = msg.km == null ? null : msg.km * 2;
+                    trip.source = msg.km == null ? null : "user";
+                  }
+                }
+                if (action.need) {
+                  action.need.trips_km = action.need.trips.reduce((sum, t) => sum + (t.km ?? 0), 0);
+                }
+              }
+              push();
+              return null;
+            }
             case "energy_joe/set_mode":
               state.mode = msg.mode;
               state.observe =
@@ -366,6 +391,7 @@
                 consumption: { consumption_model: null, group_models: {}, presence: {}, buffer: null, buffer_days: 0 },
                 battery: { battery_models: {} },
                 hot_water: { action_models: {} },
+                car: { car_models: {} },
               };
               const scope = msg.scope ?? "all";
               if (scope !== "all") {

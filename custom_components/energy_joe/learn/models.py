@@ -26,6 +26,8 @@ SURPRISE_SHARE = 0.35
 SURPRISE_KWH = 3.0
 # Days a forecast source needs before Joe weighs it.
 SOURCE_DAYS = 7
+# Days of a car's history before Joe trusts what he learned about it.
+CAR_DAYS = 8
 
 
 @dataclass(slots=True)
@@ -462,3 +464,110 @@ def surprises(
                 }
             )
     return result[-3:]
+
+
+def _hourly(series: list[tuple[datetime, float]]) -> list[tuple[datetime, float]]:
+    """Readings sorted by time, without repeats of the same value."""
+    result: list[tuple[datetime, float]] = []
+    for moment, value in sorted(series, key=lambda item: item[0]):
+        if not result or value != result[-1][1]:
+            result.append((moment, value))
+    return result
+
+
+def _at(series: list[tuple[datetime, float]], moment: datetime) -> float | None:
+    """The last reading at or before a moment."""
+    found = None
+    for when, value in series:
+        if when > moment:
+            break
+        found = value
+    return found
+
+
+def car_days(
+    odometer: list[tuple[datetime, float]],
+    soc: list[tuple[datetime, float]],
+    capacity: float | None,
+) -> list[dict[str, Any]]:
+    """Per day: kilometres driven and, with a known battery, the energy it took.
+
+    Energy counts where the level fell while the odometer rose between two
+    readings (driving), so charging in between does not disturb it.
+    """
+    odometer = sorted(odometer, key=lambda item: item[0])
+    soc = _hourly(soc)
+    days: dict[str, dict[str, Any]] = {}
+    before: float | None = None
+    for when, value in odometer:
+        day = when.date().isoformat()
+        if day not in days:
+            # A day starts where the last one ended (the car stood overnight).
+            days[day] = {"first": before if before is not None else value, "kwh": 0.0}
+        days[day]["last"] = max(days[day].get("last", value), value)
+        before = days[day]["last"]
+    if capacity:
+        for (start, before), (end, after) in zip(soc, soc[1:], strict=False):
+            driven_from, driven_to = _at(odometer, start), _at(odometer, end)
+            if (
+                after < before
+                and driven_from is not None
+                and driven_to is not None
+                and driven_to - driven_from > 0.5
+            ):
+                entry = days.get(end.date().isoformat())
+                if entry is not None:
+                    entry["kwh"] += (before - after) / 100 * capacity
+    return [
+        {
+            "date": day,
+            "km": round(data["last"] - data["first"], 1),
+            "kwh": round(data["kwh"], 2) if capacity else None,
+        }
+        for day, data in sorted(days.items())
+    ]
+
+
+def car_model(
+    days: list[dict[str, Any]],
+    temps: dict[str, float] | None = None,
+    workdays: dict[str, bool] | None = None,
+) -> dict[str, Any] | None:
+    """What a car really uses (kWh/100 km, more when it is cold) and drives a day.
+
+    The usual distance is the 80th percentile of the days, so most days fit.
+    """
+    temps = temps or {}
+    workdays = workdays or {}
+    model: dict[str, Any] = {}
+    driving = [d for d in days if d["km"] >= 10 and d.get("kwh")]
+    if len(driving) >= CAR_DAYS:
+        rows = [
+            [1.0, max(0.0, HEAT_BELOW - temps[d["date"]])]
+            for d in driving
+            if d["date"] in temps
+        ]
+        targets = [100 * d["kwh"] / d["km"] for d in driving if d["date"] in temps]
+        fitted = _solve(rows, targets) if len(rows) >= CAR_DAYS else None
+        if fitted and fitted[0] > 0:
+            model["consumption"] = round(fitted[0], 1)
+            model["cold"] = round(max(0.0, fitted[1]), 2)
+        else:
+            model["consumption"] = round(
+                median(100 * d["kwh"] / d["km"] for d in driving), 1
+            )
+            model["cold"] = None
+        model["consumption_days"] = len(driving)
+    for name, wanted in (("workday_km", True), ("day_off_km", False)):
+        values = sorted(
+            d["km"]
+            for d in days
+            if workdays.get(d["date"], date.fromisoformat(d["date"]).weekday() < 5)
+            == wanted
+        )
+        if len(values) >= CAR_DAYS:
+            model[name] = round(values[min(len(values) - 1, int(0.8 * len(values)))])
+    if not model:
+        return None
+    model["days"] = len(days)
+    return model

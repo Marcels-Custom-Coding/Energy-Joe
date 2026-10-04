@@ -286,14 +286,19 @@ export interface Learned {
   sources: Record<string, { factor: number; error: number; days: number }>;
   battery_models: Record<string, { capacity_kwh: number; efficiency: number; days: number }>;
   action_models: Record<string, { rate_k_per_h: number; loss_k_per_h: number; demand_k: number; days: number }>;
+  /** Per car charged by need: real consumption (kWh/100 km), extra per degree below 15 °C, usual km. */
+  car_models: Record<
+    string,
+    { consumption?: number; cold?: number | null; consumption_days?: number; workday_km?: number; day_off_km?: number; days: number }
+  >;
   models_day: string | null;
   /** When an area was reset last. */
   reset: Partial<Record<LearnScope, string>>;
 }
 
 export type WeatherClass = "clear" | "mixed" | "overcast";
-export type LearnScope = "forecast" | "consumption" | "battery" | "hot_water";
-export const LEARN_SCOPES: LearnScope[] = ["forecast", "consumption", "battery", "hot_water"];
+export type LearnScope = "forecast" | "consumption" | "battery" | "hot_water" | "car";
+export const LEARN_SCOPES: LearnScope[] = ["forecast", "consumption", "battery", "hot_water", "car"];
 
 /** Daily consumption = base + working day + degrees below 15 °C / above 22 °C (+ presence). */
 export interface ConsumptionModel {
@@ -326,6 +331,62 @@ export interface ActionCondition {
 }
 
 /** A night action: something besides the batteries that runs in the cheap window. */
+/** Charging a car by need: tomorrow's driving plus a reserve (see plan/ev.py). */
+export interface CarNeedConfig {
+  enabled: boolean;
+  soc_entity: string | null;
+  range_entity: string | null;
+  capacity_kwh: number | null;
+  capacity_entity: string | null;
+  odometer_entity: string | null;
+  consumption_entity: string | null;
+  reserve_km: number;
+  consumption: number | null;
+  daily_km: number | null;
+  persons: string[];
+  round_trip: boolean;
+}
+
+export interface RoutingConfig {
+  service: "waze" | "google" | "osm" | null;
+  google_entry: string | null;
+  geocoder_url: string;
+  router_url: string;
+}
+
+/** A trip tomorrow: an appointment with a place, and how far (there and back). */
+export interface CarTrip {
+  start: string;
+  location: string;
+  km: number | null;
+  minutes: number | null;
+  source: "waze" | "google" | "osm" | "zone" | "user" | null;
+}
+
+/** What tomorrow's driving needs (plan action entry "need"). */
+export interface CarNeed {
+  known: boolean;
+  trips: CarTrip[];
+  trips_km: number;
+  usual_km: number | null;
+  needed_km: number;
+  reserve_km: number;
+  consumption: number;
+  consumption_source: "user" | "learned" | "car" | "default";
+  temp: number | null;
+  rain: boolean;
+  soc: number | null;
+  range_km: number | null;
+  capacity_kwh: number | null;
+  have_km?: number;
+  target?: number;
+  target_unit?: "%" | "km";
+  missing_kwh: number | null;
+  wall_kwh: number | null;
+  departure: string | null;
+  unknown_trips: number;
+}
+
 export interface ActionConfig {
   id: string;
   name: string;
@@ -347,6 +408,7 @@ export interface ActionConfig {
   comfort: number;
   maximum: number;
   buffer: number;
+  need?: CarNeedConfig;
 }
 
 export interface JoeConfig {
@@ -366,6 +428,7 @@ export interface JoeConfig {
   rules: Rules;
   notify: NotifyConfig;
   calendar: CalendarConfig;
+  routing: RoutingConfig;
   answers: Answers;
   learned: Learned;
   provenance: Record<string, Provenance>;
@@ -492,6 +555,8 @@ export interface PlanAction {
   priority: number;
   target?: number;
   temperature?: number | null;
+  sensor?: string;
+  need?: CarNeed;
 }
 
 export interface JoeState {
@@ -746,6 +811,8 @@ export interface JoeInfo {
   defaults?: { rules: Rules };
   /** Names of the integrations Joe can steer batteries of. */
   profiles?: Record<string, string>;
+  /** What can work out distances: Waze (without setup from HA 2026.8) and Google entries. */
+  routing?: { waze: boolean; google: { entry_id: string; title: string }[] };
 }
 
 export type Page = "overview" | "plan" | "history" | "learn" | "devices" | "settings";
@@ -880,12 +947,26 @@ export interface Discovery {
   tariff: TariffFinding;
   forecast: ForecastFinding | null;
   wallboxes: WallboxFinding[];
+  cars?: CarFinding[];
   weather: ContextFinding | null;
   holiday: ContextFinding | null;
   persons: { entity_id: string; name: string; calendars: string[] }[];
   calendars: { entity_id: string; name: string }[];
   consumers: { id: string; name: string; kind: string }[];
   checks: Check[];
+}
+
+/** An electric car from a car integration. */
+export interface CarFinding {
+  integration: string;
+  device_id: string;
+  name: string;
+  entities: Partial<Record<"soc" | "range" | "capacity" | "plugged" | "charging" | "odometer" | "consumption" | "outside_temp", string>>;
+  soc: number | null;
+  range_km: number | null;
+  capacity_kwh: number | null;
+  confidence: number;
+  reasons: Reason[];
 }
 
 export interface AdoptResult {

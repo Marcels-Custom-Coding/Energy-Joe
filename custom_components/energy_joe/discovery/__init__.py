@@ -10,6 +10,7 @@ from .checks import run_checks, run_config_checks
 from .energy import parse_energy_prefs
 from .find import (
     find_batteries,
+    find_cars,
     find_consumers,
     find_forecast,
     find_holiday,
@@ -48,6 +49,7 @@ def discover(snap: Snapshot) -> dict[str, Any]:
         "tariff": find_tariff(snap, energy),
         "forecast": find_forecast(snap, energy),
         "wallboxes": find_wallboxes(snap),
+        "cars": find_cars(snap),
         "weather": find_weather(snap),
         "holiday": find_holiday(snap),
         "persons": persons,

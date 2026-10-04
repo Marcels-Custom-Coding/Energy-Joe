@@ -17,6 +17,7 @@ from homeassistant.util import dt as dt_util
 from ..observe.store import HistoryStore
 from .inputs import DEFAULT_SEARCH, async_build_input, next_window
 from .planner import make_plan
+from .trips import PlaceStore
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -42,6 +43,8 @@ class JoePlanner:
         self._fixed: dict[str, Any] | None = None
         # The start of the window (or search span) the last fixed plan was for.
         self._fixed_span: str | None = None
+        # Distances to the places of appointments (for cars charged by need).
+        self.places = PlaceStore(hass)
         self.plan: dict[str, Any] | None = None
 
     @property
@@ -100,7 +103,7 @@ class JoePlanner:
 
     async def _async_compute(self, now: datetime) -> dict[str, Any]:
         inp, notes = await async_build_input(
-            self._hass, self._config, self._history, now, self._manual()
+            self._hass, self._config, self._history, now, self._manual(), self.places
         )
         if inp is None:
             return {

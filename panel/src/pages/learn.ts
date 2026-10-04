@@ -504,7 +504,8 @@ export class JoeLearnPage extends LitElement {
               <div class="eyebrow section"><ha-icon icon="mdi:brain"></ha-icon>${t("learn.models")}</div>
               <div class="grid">
                 ${this.renderWeather(t, data)} ${this.renderSources(t, data)} ${this.renderBatteries(t, data)}
-                ${this.renderGroups(t, data)} ${this.renderHotWater(t, data)} ${this.renderPresence(t, data)}
+                ${this.renderGroups(t, data)} ${this.renderHotWater(t, data)} ${this.renderCars(t, data)}
+                ${this.renderPresence(t, data)}
               </div>
               ${this.renderCalendar(t)} ${this.renderAccuracy(t, data)} ${this.renderReset(t)}`
           : nothing}
@@ -1095,6 +1096,46 @@ export class JoeLearnPage extends LitElement {
             }),
           )
         : html`<p class="say">${t("learn.hot_water.none")}</p>`}
+    </section>`;
+  }
+
+  private renderCars(t: Translate, data: Learning): TemplateResult {
+    const lang = t.lang;
+    const config = this.state!.config;
+    const models = data.learned.car_models ?? {};
+    const cars = config.actions.filter((a) => a.kind === "switch" && a.need?.enabled);
+    return html`<section class="card" data-tipped>
+      <div class="head">
+        <div class="eyebrow"><ha-icon icon="mdi:car-electric"></ha-icon>${t("learn.car")}</div>
+        ${tip(t, "learn_car")}
+      </div>
+      ${cars.length
+        ? this.rows(
+            cars.map((action) => {
+              const found = models[action.id];
+              const values: string[] = [];
+              if (found?.consumption != null) {
+                values.push(t("learn.car.consumption", { value: fixed(lang, found.consumption, 1) }));
+                if (found.cold) {
+                  values.push(t("learn.car.cold", { value: fixed(lang, found.cold, 2) }));
+                }
+              }
+              if (found?.workday_km != null || found?.day_off_km != null) {
+                values.push(
+                  t("learn.car.km", {
+                    workday: found.workday_km == null ? "–" : fixed(lang, found.workday_km, 0),
+                    day_off: found.day_off_km == null ? "–" : fixed(lang, found.day_off_km, 0),
+                  }),
+                );
+              }
+              return {
+                name: action.name,
+                values: values.length ? values : [t("learn.still")],
+                note: values.length ? undefined : t(action.need?.odometer_entity ? "learn.car.learning" : "learn.car.no_odometer"),
+              };
+            }),
+          )
+        : html`<p class="say">${t("learn.car.none")}</p>`}
     </section>`;
   }
 

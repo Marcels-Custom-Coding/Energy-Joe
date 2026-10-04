@@ -65,6 +65,7 @@ REPLACED = frozenset(
         "sources",
         "battery_models",
         "action_models",
+        "car_models",
         "reset",
         "alternatives",
     }
@@ -219,6 +220,56 @@ CONDITION = vol.Schema(
 
 # A night action: something besides the batteries that should run in the cheap
 # window when tomorrow brings too little sun (the car, the hot water heat pump).
+# Charging a car by need: only what tomorrow's driving (calendar trips or the
+# usual distance) plus a reserve needs, from the car's level or range.
+EV_NEED = vol.Schema(
+    {
+        vol.Optional("enabled", default=False): bool,
+        vol.Optional("soc_entity", default=None): _ENTITY,
+        vol.Optional("range_entity", default=None): _ENTITY,
+        vol.Optional("capacity_kwh", default=None): _POSITIVE,
+        vol.Optional("capacity_entity", default=None): _ENTITY,
+        vol.Optional("odometer_entity", default=None): _ENTITY,
+        # The car's own long-term average (kWh/100 km, Wh/km or km/kWh).
+        vol.Optional("consumption_entity", default=None): _ENTITY,
+        # Kilometres that always stay in the battery.
+        vol.Optional("reserve_km", default=50.0): vol.All(
+            vol.Coerce(float), vol.Range(min=0, max=1000)
+        ),
+        # kWh per 100 km at mild weather; None: learned, else a typical value.
+        vol.Optional("consumption", default=None): vol.Any(
+            None, vol.All(vol.Coerce(float), vol.Range(min=5, max=60))
+        ),
+        # Kilometres on a usual day; None: learned from the odometer.
+        vol.Optional("daily_km", default=None): vol.Any(
+            None, vol.All(vol.Coerce(float), vol.Range(min=0, max=2000))
+        ),
+        # Whose calendars count (person ids); empty: everyone with a calendar.
+        vol.Optional("persons", default=list): [str],
+        vol.Optional("round_trip", default=True): bool,
+    }
+)
+
+ROUTING_SERVICES = ("waze", "google", "osm")
+
+# How Joe works out the distance to an appointment's place. None: not at all
+# (the place text only leaves Home Assistant once the user picks a service).
+ROUTING = vol.Schema(
+    {
+        vol.Optional("service", default=None): vol.Any(None, vol.In(ROUTING_SERVICES)),
+        # The Google travel time entry (it holds the API key).
+        vol.Optional("google_entry", default=None): vol.Any(None, str),
+        # OpenStreetMap services: geocoding (Photon) and car routing (OSRM).
+        vol.Optional("geocoder_url", default="https://photon.komoot.io/api/"): vol.All(
+            str, vol.Length(min=8, max=200)
+        ),
+        vol.Optional(
+            "router_url",
+            default="https://routing.openstreetmap.de/routed-car/route/v1/driving/",
+        ): vol.All(str, vol.Length(min=8, max=200)),
+    }
+)
+
 ACTION = vol.Schema(
     {
         vol.Required("id"): str,
@@ -251,6 +302,7 @@ ACTION = vol.Schema(
         vol.Optional("buffer", default=3.0): vol.All(
             vol.Coerce(float), vol.Range(min=0, max=30)
         ),
+        vol.Optional("need", default=dict): EV_NEED,
     }
 )
 
@@ -373,6 +425,7 @@ LEARNED = vol.Schema(
         vol.Optional("sources", default=dict): dict,
         vol.Optional("battery_models", default=dict): dict,
         vol.Optional("action_models", default=dict): dict,
+        vol.Optional("car_models", default=dict): dict,
         vol.Optional("models_day", default=None): vol.Any(None, str),
         # When an area was reset last ({"forecast": "2026-10-03T21:00:00+02:00"}).
         vol.Optional("reset", default=dict): {str: str},
@@ -413,6 +466,7 @@ CONFIG = vol.Schema(
         vol.Optional("rules", default=dict): RULES,
         vol.Optional("notify", default=dict): NOTIFY,
         vol.Optional("calendar", default=dict): CALENDAR,
+        vol.Optional("routing", default=dict): ROUTING,
         vol.Optional("answers", default=dict): ANSWERS,
         vol.Optional("learned", default=dict): LEARNED,
         vol.Optional("provenance", default=dict): {str: PROVENANCE},
