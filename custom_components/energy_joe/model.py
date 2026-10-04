@@ -540,11 +540,16 @@ def apply_update(
 
 
 def adopt_proposal(
-    config: dict[str, Any], proposal: dict[str, Any], now: datetime | None = None
+    config: dict[str, Any],
+    proposal: dict[str, Any],
+    now: datetime | None = None,
+    withdrawn: list[str] | None = None,
 ) -> dict[str, Any]:
     """Take over what Joe found, except what the user set, Joe learned or ignored.
 
     Values discovery could not determine (None) never replace known ones.
+    Actions in `withdrawn` (proposed before, wrong as discovery knows now) go
+    again, as long as the user changed nothing in them.
     """
     answers = config.get("answers") or {}
     ignored = set(answers.get(IGNORED) or [])
@@ -616,6 +621,14 @@ def adopt_proposal(
             }
             if fields:
                 items[item_id] = fields
+        if key == "actions":
+            for item_id in withdrawn or []:
+                if (
+                    item_id in known
+                    and item_id not in items
+                    and not is_protected(config, f"actions[{item_id}]")
+                ):
+                    items[item_id] = None
         if items:
             patch[key] = items
 

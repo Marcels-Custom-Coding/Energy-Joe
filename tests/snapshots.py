@@ -359,6 +359,18 @@ def fronius_household() -> Snapshot:
             "pv",
             unique_id="evcc_intg.evcc_floor_mode",
             device_id="floor",
+            attributes={"options": ["off", "pv", "minpv", "now"]},
+            **ev,
+        ),
+        # evcc reports a heater's temperature as its "vehicle level".
+        entity(
+            "sensor.evcc_floor_vehicle_soc",
+            "Floor heating vehicle soc",
+            26.9,
+            unit="°C",
+            device_class="temperature",
+            unique_id="evcc_intg.evcc_floor_vehicle_soc",
+            device_id="floor",
             **ev,
         ),
         entity(

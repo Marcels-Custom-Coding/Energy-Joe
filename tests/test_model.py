@@ -227,3 +227,26 @@ def test_protection_covers_parents_and_children() -> None:
     assert model.is_protected(config, "batteries[b1]")
     assert model.is_protected(config, "batteries[b1].priority")
     assert not model.is_protected(config, "batteries[b1].name")
+
+
+def test_a_heater_proposed_as_wallbox_is_taken_back() -> None:
+    """An evcc heater once proposed as a car charge point goes on the next scan."""
+    heater = {
+        "id": "ev_floor",
+        "name": "Floor heating",
+        "kind": "switch",
+        "entity_id": "select.evcc_floor_mode",
+        "on_value": "now",
+    }
+    car = {**heater, "id": "ev_carport", "entity_id": "select.evcc_carport_mode"}
+    config = model.adopt_proposal(model.default_config(), {"actions": [car, heater]})
+    again = model.adopt_proposal(config, {"actions": [car]}, withdrawn=["ev_floor"])
+    assert [a["id"] for a in again["actions"]] == ["ev_carport"]
+    # Changed by the user: it stays.
+    edited = model.apply_update(
+        config, {"actions": {"ev_floor": {"priority": 2}}}, "user"
+    )
+    kept = model.adopt_proposal(edited, {"actions": [car]}, withdrawn=["ev_floor"])
+    assert [a["id"] for a in kept["actions"]] == ["ev_carport", "ev_floor"]
+    # Unknown ids change nothing.
+    assert model.adopt_proposal(again, {"actions": [car]}, withdrawn=["ev_x"]) == again

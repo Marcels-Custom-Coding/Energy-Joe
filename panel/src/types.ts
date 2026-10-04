@@ -921,6 +921,8 @@ export interface WallboxFinding {
   mode_options?: string[];
   mode?: string;
   entities?: Record<string, string>;
+  /** evcc also drives heaters: their "vehicle level" is a temperature. */
+  kind?: "car" | "heating" | "other";
   is_car: boolean;
   confidence: number;
   reasons: Reason[];

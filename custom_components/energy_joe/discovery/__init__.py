@@ -58,4 +58,9 @@ def discover(snap: Snapshot) -> dict[str, Any]:
     }
     result["checks"] = run_checks(snap, result)
     result["proposal"] = build_proposal(result)
+    # Night actions Joe once proposed for charge points that turned out not to
+    # be for a car (an evcc heater): taken back unless the user changed them.
+    result["not_car_actions"] = [
+        f"ev_{w['device_id']}" for w in result["wallboxes"] if not w["is_car"]
+    ]
     return result

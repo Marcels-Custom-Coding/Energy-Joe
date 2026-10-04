@@ -908,12 +908,19 @@ def find_wallboxes(snap: Snapshot) -> list[dict[str, Any]]:
             mode = parts.get("mode")
             if not mode or mode.domain != "select":
                 continue
-            is_car = bool(parts.get("connected") or parts.get("vehicle_soc"))
+            # evcc also drives heaters (floor heating, a whirlpool, a heat pump):
+            # their "vehicle level" is a temperature, not a car's charge.
+            level = parts.get("vehicle_soc")
+            heating = level is not None and _is_temperature(level)
+            if heating:
+                parts["temperature"] = parts.pop("vehicle_soc")
+            is_car = not heating and bool(parts.get("connected") or level)
             found.append(
                 {
                     "integration": platform,
                     "device_id": device_id,
                     "name": snap.device_name(device_id) or mode.name,
+                    "kind": "car" if is_car else "heating" if heating else "other",
                     "is_car": is_car,
                     "mode_entity": mode.entity_id,
                     "mode_options": list(mode.attributes.get("options") or []),
@@ -925,6 +932,15 @@ def find_wallboxes(snap: Snapshot) -> list[dict[str, Any]]:
             )
     found.sort(key=lambda w: (not w["is_car"], w["name"]))
     return found
+
+
+def _is_temperature(entity: EntityInfo) -> bool:
+    unit = entity.unit or ""
+    return entity.attributes.get("device_class") == "temperature" or unit in (
+        "°C",
+        "°F",
+        "K",
+    )
 
 
 def _pick(entities: list[EntityInfo], domain: str, key: str) -> EntityInfo | None:

@@ -195,6 +195,22 @@ export class JoeReview extends LitElement {
         chips: [html`<span class="chip soon">${t("review.later")}</span>`],
       });
     }
+    for (const car of d?.cars ?? []) {
+      const soc = car.entities.soc ? numberState(hass, car.entities.soc) : null;
+      const parts = [
+        car.name,
+        soc !== null ? `${formatNumber(t.lang, soc, 0)} %` : null,
+        car.range_km !== null ? `${formatNumber(t.lang, car.range_km, 0)} km` : null,
+        t("review.car.later"),
+      ];
+      rows.push({
+        key: `car:${car.device_id}`,
+        icon: "mdi:car-electric",
+        title: t("find.car"),
+        detail: parts.filter(Boolean).join(" · "),
+        chips: [confidenceDots(t, car.confidence), html`<span class="chip soon">${t("review.later")}</span>`],
+      });
+    }
     rows.push(this.contextRow(hass, t, config, "weather"));
     rows.push(this.contextRow(hass, t, config, "holiday"));
     const settings = this.context === "settings";

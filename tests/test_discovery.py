@@ -108,6 +108,13 @@ def test_fronius_household_tariff_forecast_wallbox() -> None:
     assert [w["name"] for w in walls] == ["Carport", "Floor heating"]
     assert walls[0]["is_car"] and not walls[1]["is_car"]
     assert walls[0]["mode_options"] == ["off", "pv", "minpv", "now"]
+    # The floor heating's "vehicle level" is its temperature: a heater, no car.
+    assert walls[1]["kind"] == "heating"
+    assert walls[1]["entities"]["temperature"] == "sensor.evcc_floor_vehicle_soc"
+    assert "vehicle_soc" not in walls[1]["entities"]
+    actions = result["proposal"]["actions"]
+    assert [a["id"] for a in actions] == ["ev_carport"]
+    assert result["not_car_actions"] == ["ev_floor"]
 
 
 def test_fronius_household_people_and_consumers() -> None:

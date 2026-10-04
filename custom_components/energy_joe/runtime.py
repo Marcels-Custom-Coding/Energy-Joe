@@ -238,9 +238,11 @@ class JoeRuntime:
         self._check_control()
 
     @callback
-    def async_adopt(self, proposal: dict[str, Any]) -> None:
+    def async_adopt(
+        self, proposal: dict[str, Any], withdrawn: list[str] | None = None
+    ) -> None:
         """Take over what discovery found; user and learned values stay."""
-        adopted = model.adopt_proposal(self._config, proposal)
+        adopted = model.adopt_proposal(self._config, proposal, withdrawn=withdrawn)
         if adopted is not self._config:
             self._config = adopted
             self._changed(config=True)

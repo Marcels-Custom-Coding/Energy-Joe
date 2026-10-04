@@ -259,7 +259,7 @@ async def ws_adopt(
         return
     snap = await async_collect(hass)
     result = discover(snap)
-    runtime.async_adopt(result["proposal"])
+    runtime.async_adopt(result["proposal"], result["not_car_actions"])
     connection.send_result(
         msg["id"],
         {"discovery": result, "checks": run_config_checks(snap, runtime.config)},
