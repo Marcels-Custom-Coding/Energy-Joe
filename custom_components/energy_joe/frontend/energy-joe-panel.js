@@ -3973,14 +3973,14 @@ function ct(e, t) {
 }
 //#endregion
 //#region src/define.ts
-var lt = "0.4.1";
+var lt = "0.4.2";
 function T(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = lt, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.4.1" && dt();
+	n.joeVersion !== "0.4.2" && dt();
 }
 var ut = !1;
 function dt() {

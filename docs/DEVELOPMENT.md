@@ -50,7 +50,8 @@ cd panel && npm install
 - Testseite: `?need=1` zeigt die Nacht mit Laden nach Bedarf.
 - Woher die Termine eines Autos kommen, sagt `need.source`: `ha` (fertiger Kalender in Home Assistant, `need.calendars`), `mailbox` (Postfach des Autos ohne Kalender, `need.mailbox`) oder `account` (Postfach mit Kalender, `need.account`). Wer das Auto einladen darf, steht je Auto in `need.allowed`. Die Kalender der gewählten Personen zählen immer (`plan/trips.py`).
 - Joes Kalender je Auto (`plan/car_calendar.py`, `calendar.py`) gibt es nur für `mailbox`: Termine in `.storage/energy_joe.calendar` je Aktions-Id, als Kalender-Entität in Home Assistant bearbeitbar. Wechselt das Auto den Weg, verschwindet die Entität (Registereintrag entfernt), die Termine bleiben gespeichert. Abo-Link `/api/energy_joe/calendar/<geheimnis>/<auto>.ics` (`calendar_feed.py`, ohne Anmeldung, Geheimnis im Kalender-Speicher); Befehl `energy_joe/calendar/links` liefert die Pfade und mit `renew` ein neues Geheimnis.
-- „Einfach laden bis …“ (`control/executor.py`, `async_boost`, Befehl `energy_joe/control/boost`): schaltet die Aktion sofort ein, in jedem Modus außer „Aus“, bis der Ladestand (`need.soc_entity`) oder die Reichweite plus Reserve (`need.range_entity`) erreicht ist, höchstens 24 Stunden. Steht in `data["boost"]`, schlägt den Nachtplan, und Freigaben lassen die Entität in Ruhe, solange es läuft.
+- „Jetzt laden“ (`control/executor.py`, `async_boost`, Befehl `energy_joe/control/boost`): schaltet die Aktion sofort ein, in jedem Modus außer „Aus“, bis der Ladestand (`need.soc_entity`) oder die Reichweite plus Reserve (`need.range_entity`) erreicht ist, höchstens 24 Stunden. Steht in `data["boost"]`, schlägt den Nachtplan, und Freigaben lassen die Entität in Ruhe, solange es läuft.
+- „Heute Nacht laden bis …“ (`async_action_tonight` mit `target`/`unit`, Befehl `energy_joe/control/action_tonight`): der Schalter „Heute Nacht“ plus ein Ziel in `data["tonight_target"]`; die Aktion läuft im ganzen günstigen Fenster bis zu diesem Ziel und endet mit der Nacht.
 
 ## Postfach des Autos ohne Kalender
 
@@ -71,8 +72,15 @@ cd panel && npm install
 
 - Grundgriffe (Rollen) und das Wissen über Integrationen stehen in `custom_components/energy_joe/control/profiles.py`: je Integration die Schlüssel der Entitäten (Ende der unique_id oder translation_key), die Bedeutung der Optionen einer Betriebsart, Vorher-Schalter (`prepare`), umgekehrte Werte (`inverted`) und – für Integrationen, die über Dienste gesteuert werden – Schritte. Eine neue Integration ist ein neuer Eintrag dort plus ein Test in `tests/test_profiles.py`.
 - Nur Fronius und Marstek (OmniBattery) sind an echter Hardware geprüft (`proven`); alle anderen Profile stammen aus dem Quellcode der Integrationen. Deshalb steuert Joe einen Speicher erst nach einem bestandenen Testlauf.
+- Omnibattery regelt den Speicher selbst und nimmt Betriebsart und Leistung nur im manuellen Modus an: `prepare` schaltet `battery_manual_mode` des Akkus ein (nicht den Schalter des ganzen Systems), `pace` wartet nach jedem Befehl 1 s (nach dem Vorher-Schalter 2 s, `writes.settle`). Danach gehören Betriebsart und Leistung wieder dem Regler der Integration (`loop_owned`): Joe stellt sie nur zurück, solange er den manuellen Modus noch hält, und vergisst sie, sobald er wieder aus ist (`executor._settle_loop_owned`) – auch im Testlauf.
+- Kennt ein Profil später mehr (z. B. einen Vorher-Schalter), ergänzt Joe das beim Start bei schon eingerichteten Speichern (`discovery.async_profile_updates`), außer der Nutzer hat es selbst eingestellt.
+- Automationen, die auf die Speicher schreiben (`control/automations.py`): gesucht wird in den aufgelösten Aktionen (`action_script.sequence`, auch aufgerufene Skripte und Geräte-Aktionen) nach Entitäten und Geräten der Speicher – Joes Regler, Gerät des Akkus und damit verbundene Geräte, bei `automation_scope="entry"` (Omnibattery) die ganze Integration. Bedingungen, abgeschaltete Schritte und reine Lese-Aktionen zählen nicht. Was Joe ausschaltet, steht mit Zeit und Grund in `data["automations_off"]` und im Logbuch der Automation; beim Entfernen der Integration schaltet Joe sie wieder ein.
 - Was Joe verändert hat, merkt er sich in `.storage/energy_joe.control` und stellt es zurück, bis alles wieder stimmt.
 - Sicherheit im Ausführer: Zieht das Haus mehr als das Netzlimit (`rules.guard_grid`), hält er statt zu laden, jeweils fünf Minuten; steigt ein ladender Speicher eine halbe Stunde lang nicht, meldet er das einmal pro Nacht (Reparaturhinweis `no_progress`).
+
+## Panel nach einem Update
+
+Nach einem Update lädt Home Assistant das neue Panel in die offene Seite, behält aber die alten Klassen schon bekannter Elemente. `panel/src/define.ts` vergleicht deshalb die eingebaute Version (`__JOE_VERSION__` aus `panel/package.json`, gesetzt in `vite.config.ts`) und blendet sonst „Energy Joe wurde aktualisiert – Neu laden“ ein. Deshalb nach dem Versionssprung immer neu bauen.
 
 ## Tooltips
 

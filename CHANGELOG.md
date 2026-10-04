@@ -3,6 +3,39 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.4.2
+
+- **Marstek über Omnibattery:** Joe schaltet vor dem Steuern die
+  „Manuelle Batteriesteuerung“ des Akkus ein und danach wieder aus – mit
+  Pausen zwischen den Befehlen. Danach übernimmt Omnibattery wieder selbst.
+  Bei schon eingerichteten Speichern trägt Joe den Schalter beim Start nach;
+  der Testlauf muss einmal neu gemacht werden.
+- **Automationen an deinen Speichern** (Seite „Geräte“): Joe listet alle
+  Automationen, die etwas an deinen Speichern setzen, und schaltet sie auf
+  Wunsch alle aus – mit Zeit und Grund, auch im Logbuch der Automation. „Wieder
+  einschalten“ macht genau das rückgängig, ebenso das Entfernen von Joe.
+- **Laden beim Auto:** „Laden bis … % oder km“ mit Umschalter, dazu „Jetzt
+  laden“ (sofort) und „Heute Nacht laden“ (in der günstigen Zeit bis genau
+  dorthin).
+- **Kalender des Autos repariert:**
+  - Hängt nach einem Update noch die alte Oberfläche im Browser, sagt Joe das
+    und bietet „Neu laden“ an.
+  - Anmelden, Passwort und „Kalender lesen“ gehen schon vor dem Speichern und
+    nehmen die Einstellungen, die gerade im Editor stehen.
+  - Solange Joes eigene Apps fehlen, ist das Feld für die eigene App bei
+    Google und Microsoft gleich offen – mit ehrlichem Hinweis.
+  - Verständliche Fehlertexte statt Codes; „Fehler beim Speichern“ nur noch,
+    wenn wirklich etwas nicht gespeichert wurde.
+  - Kopieren des Abo-Links klappt auch, wenn Home Assistant lokal über http
+    läuft.
+  - Eine eingetippte, aber nicht hinzugefügte Adresse bei „Wer darf das Auto
+    einladen?“ geht nicht mehr verloren.
+  - Fahrten, die du bis 0.3 von Hand in Joes Kalender eingetragen hast,
+    zählen weiter, bis sie vorbei sind.
+- Status-Sensor kennt jetzt auch „Hält das Laden zurück“ (netzdienlicher
+  Vormittag).
+- README neu gegliedert.
+
 ## 0.4.1
 
 - **Google bei „Postfach mit Kalender“:** Ein Gmail-Konto des Autos meldest du
