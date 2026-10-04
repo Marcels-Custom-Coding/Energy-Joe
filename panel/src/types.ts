@@ -369,9 +369,31 @@ export interface CarNeedConfig {
   round_trip: boolean;
   /** Further calendars of this car (besides Joe's own one). */
   calendars?: string[];
+  /** Where the car's appointments come from (besides Joe's own calendar). */
+  source?: "ha" | "mailbox" | "account";
+  account?: CarAccountConfig;
 }
 
-export type MailProvider = "icloud" | "google" | "infomaniak" | "microsoft" | "other";
+export type MailProvider = "icloud" | "google" | "infomaniak" | "outlook" | "microsoft" | "other";
+
+/** A car's own account with mailbox and calendar (Microsoft, iCloud, Infomaniak, CalDAV). */
+export interface CarAccountConfig {
+  kind: "outlook" | "microsoft" | "icloud" | "infomaniak" | "caldav";
+  address: string;
+  username: string | null;
+  url: string | null;
+  client_id: string | null;
+  tenant: string;
+  accept: boolean;
+}
+
+export interface CarAccountStatus {
+  state?: "waiting" | "ok" | "error" | "no_secret";
+  has_secret?: boolean;
+  error?: string | null;
+  checked?: string;
+  oauth?: { state: "waiting" | "ok" | "error"; user_code?: string; uri?: string; error?: string } | null;
+}
 
 /** Joe's mailbox for car appointments (the password is stored elsewhere). */
 export interface MailboxConfig {
@@ -640,6 +662,8 @@ export interface JoeState {
   questions?: DayQuestion[];
   control?: ControlView;
   mailbox?: MailboxStatus;
+  /** Each car's own account: sign-in and last read. */
+  accounts?: Record<string, CarAccountStatus>;
 }
 
 // --- Steering (see custom_components/energy_joe/control) ---

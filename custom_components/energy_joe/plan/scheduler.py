@@ -50,6 +50,8 @@ class JoePlanner:
         self.places = PlaceStore(hass)
         # Joe's own car calendars (set by the runtime).
         self.calendars: CarCalendarStore | None = None
+        # The cars' own accounts (set by the runtime).
+        self.accounts: Any = None
         self.plan: dict[str, Any] | None = None
 
     @property
@@ -187,6 +189,7 @@ class JoePlanner:
             self._manual(),
             self.places,
             self.calendars,
+            self.accounts,
         )
         if inp is None:
             return {

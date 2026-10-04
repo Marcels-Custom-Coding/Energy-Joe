@@ -3,6 +3,23 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.3.0
+
+- **Drei Wege, wie Termine zum Auto kommen** (beim Auto: „Woher kommen die
+  Termine dieses Autos?“):
+  1. **Kalender aus Home Assistant** – Google, iCloud/CalDAV, Microsoft 365,
+     iCal-Link.
+  2. **Einladungen an Joes Postfach** – Joe fängt sie ab und trägt sie in
+     seinen Kalender für das Auto ein.
+  3. **Konto des Autos** – das Auto hat ein eigenes Konto mit Postfach und
+     Kalender (z. B. kona@outlook.com, iCloud, Infomaniak, CalDAV). Joe liest
+     den Kalender direkt und sagt Einladungen erlaubter Absender dort zu.
+- **Microsoft privat und Microsoft 365 getrennt:** Private Konten
+  (Outlook.com, Hotmail, Live) melden sich mit Joes eigener App an, Firmen
+  mit Joes App (wenn der Admin es zulässt) oder einer eigenen.
+- „Wer darf einladen?“ gilt für das Postfach und die Konten der Autos und ist
+  immer zu sehen.
+
 ## 0.2.4
 
 - Neues Bild „Füße hoch“.

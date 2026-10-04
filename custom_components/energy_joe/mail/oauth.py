@@ -1,12 +1,14 @@
-"""Signing in with Microsoft (Exchange Online and personal Outlook accounts).
+"""Signing in with Microsoft (personal accounts and Microsoft 365 / Exchange).
 
-Microsoft no longer accepts passwords for IMAP and SMTP. Joe uses the
-device code flow: the panel shows a short code and a link, the user signs
-in with the car's mailbox on any device, and Joe gets a refresh token it
-renews itself. It needs an app registration in Microsoft Entra (public
-client flows allowed) with the delegated permissions IMAP.AccessAsUser.All,
-SMTP.Send and offline_access. No address of Home Assistant has to be
+Microsoft no longer accepts passwords for IMAP and SMTP, and its calendar is
+only reachable with a sign-in. Joe uses the device code flow: the panel
+shows a short code and a link, the user signs in on any device, and Joe gets
+a refresh token it renews itself. No address of Home Assistant has to be
 reachable from outside.
+
+Every sign-in needs an app registration. Energy Joe brings its own
+(JOE_CLIENT_ID: personal accounts work without any setup, work and school
+accounts if their admin allows it); a company can use its own instead.
 """
 
 from __future__ import annotations
@@ -19,10 +21,39 @@ from aiohttp import ClientError, ClientSession
 from homeassistant.util import dt as dt_util
 
 AUTHORITY = "https://login.microsoftonline.com"
+# Energy Joe's own app registration (multi-tenant and personal accounts,
+# public client flows). None until it is registered: then a client id has
+# to be entered.
+JOE_CLIENT_ID: str | None = None
+# Reading the mailbox (IMAP) and answering (SMTP).
 SCOPES = (
     "https://outlook.office.com/IMAP.AccessAsUser.All "
     "https://outlook.office.com/SMTP.Send offline_access"
 )
+MAIL_SCOPES = SCOPES
+# Reading a car's calendar and accepting its invitations (Microsoft Graph).
+CALENDAR_SCOPES = (
+    "https://graph.microsoft.com/Calendars.ReadWrite "
+    "https://graph.microsoft.com/User.Read offline_access"
+)
+# Personal accounts (Outlook.com, Hotmail, Live, Xbox) and work or school ones.
+PERSONAL_TENANT = "consumers"
+WORK_TENANT = "organizations"
+
+
+def client_for(client_id: str | None) -> str | None:
+    """The app to sign in with: the user's own, else Energy Joe's."""
+    return (client_id or "").strip() or JOE_CLIENT_ID
+
+
+def tenant_for(kind: str, tenant: str | None) -> str:
+    """Personal accounts sign in with "consumers", work ones with their tenant."""
+    if kind == "outlook":
+        return PERSONAL_TENANT
+    tenant = (tenant or "").strip()
+    return WORK_TENANT if tenant in ("", "common") else tenant
+
+
 TIMEOUT = 20
 # Renew the access token this long before it runs out.
 EARLY = timedelta(minutes=5)
@@ -50,12 +81,14 @@ async def _post(
     return body or {}
 
 
-async def start(session: ClientSession, tenant: str, client_id: str) -> dict[str, Any]:
+async def start(
+    session: ClientSession, tenant: str, client_id: str, scopes: str = MAIL_SCOPES
+) -> dict[str, Any]:
     """Ask for a sign-in code: user_code, verification_uri, device_code, interval."""
     return await _post(
         session,
         f"{AUTHORITY}/{tenant}/oauth2/v2.0/devicecode",
-        {"client_id": client_id, "scope": SCOPES},
+        {"client_id": client_id, "scope": scopes},
     )
 
 
@@ -98,7 +131,11 @@ def fresh(tokens: dict[str, Any]) -> bool:
 
 
 async def refresh(
-    session: ClientSession, tenant: str, client_id: str, tokens: dict[str, Any]
+    session: ClientSession,
+    tenant: str,
+    client_id: str,
+    tokens: dict[str, Any],
+    scopes: str = MAIL_SCOPES,
 ) -> dict[str, Any]:
     """New tokens from the refresh token."""
     if not tokens.get("refresh_token"):
@@ -110,7 +147,7 @@ async def refresh(
             "grant_type": "refresh_token",
             "client_id": client_id,
             "refresh_token": tokens["refresh_token"],
-            "scope": SCOPES,
+            "scope": scopes,
         },
     )
     return _tokens(body, tokens)

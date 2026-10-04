@@ -155,7 +155,7 @@ CARS = [
         "kind": "switch",
         "entity_id": f"select.{car}_mode",
         "on_value": "now",
-        "need": {"enabled": True},
+        "need": {"enabled": True, "source": "mailbox"},
     }
     for car in ("kona", "eup")
 ]
@@ -277,7 +277,8 @@ async def test_signing_in_with_microsoft(
         },
         "user",
     )
-    base = "https://login.microsoftonline.com/common/oauth2/v2.0"
+    # A work account: its tenant ("common" means any work or school account).
+    base = "https://login.microsoftonline.com/organizations/oauth2/v2.0"
     aioclient_mock.post(
         f"{base}/devicecode",
         json={
@@ -330,3 +331,17 @@ async def test_signing_in_with_microsoft(
     assert not inbox.has_secret
     await calendars.async_remove()
     await inbox.async_remove()
+
+
+def test_personal_and_work_accounts(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Personal accounts sign in at "consumers" with Energy Joe's own app."""
+    from custom_components.energy_joe.mail import oauth
+
+    monkeypatch.setattr(oauth, "JOE_CLIENT_ID", "joe-app")
+    assert oauth.tenant_for("outlook", "contoso.example") == "consumers"
+    assert oauth.tenant_for("microsoft", "common") == "organizations"
+    assert oauth.tenant_for("microsoft", "contoso.example") == "contoso.example"
+    assert oauth.client_for(None) == "joe-app"
+    assert oauth.client_for("own-app") == "own-app"
+    monkeypatch.setattr(oauth, "JOE_CLIENT_ID", None)
+    assert oauth.client_for("") is None

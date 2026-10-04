@@ -414,6 +414,29 @@
               }, 3000);
               return info;
             }
+            case "energy_joe/account": {
+              state.accounts = state.accounts ?? {};
+              const current = state.accounts[msg.car] ?? {};
+              if (msg.do === "password") state.accounts[msg.car] = { ...current, has_secret: Boolean(msg.password), state: "waiting" };
+              if (msg.do === "sign_out") state.accounts[msg.car] = { has_secret: false, state: "no_secret", oauth: null };
+              if (msg.do === "test") {
+                state.accounts[msg.car] = { ...current, state: current.has_secret ? "ok" : "error", error: current.has_secret ? null : "no_secret", checked: stamp() };
+                push();
+                return { error: current.has_secret ? null : "no_secret" };
+              }
+              if (msg.do === "sign_in") {
+                const info = { state: "waiting", user_code: "KONA-2026", uri: "https://microsoft.com/devicelogin" };
+                state.accounts[msg.car] = { ...current, oauth: info };
+                push();
+                setTimeout(() => {
+                  state.accounts[msg.car] = { ...state.accounts[msg.car], oauth: { state: "ok" }, has_secret: true, state: "ok", checked: stamp() };
+                  push();
+                }, 3000);
+                return info;
+              }
+              push();
+              return null;
+            }
             case "energy_joe/mailbox/test":
               return { error: state.mailbox?.has_secret ? null : "no_secret" };
             case "energy_joe/mailbox/check":

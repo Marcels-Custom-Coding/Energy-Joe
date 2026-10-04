@@ -247,6 +247,26 @@ CONDITION = vol.Schema(
 # window when tomorrow brings too little sun (the car, the hot water heat pump).
 # Charging a car by need: only what tomorrow's driving (calendar trips or the
 # usual distance) plus a reserve needs, from the car's level or range.
+# A car's own account with mailbox and calendar (see accounts.py).
+CAR_ACCOUNT_KINDS = ("outlook", "microsoft", "icloud", "infomaniak", "caldav")
+CAR_ACCOUNT = vol.Schema(
+    {
+        vol.Optional("kind", default="outlook"): vol.In(CAR_ACCOUNT_KINDS),
+        vol.Optional("address", default=""): str,
+        vol.Optional("username", default=None): vol.Any(None, str),
+        # Another CalDAV server, or a company's own Microsoft app and tenant.
+        vol.Optional("url", default=None): vol.Any(None, str),
+        vol.Optional("client_id", default=None): vol.Any(None, str),
+        vol.Optional("tenant", default="common"): vol.All(
+            str, vol.Length(min=1, max=100)
+        ),
+        vol.Optional("accept", default=True): bool,
+    }
+)
+# Where a car's appointments come from (besides Joe's own calendar for it):
+# calendars in Home Assistant, invitations to Joe's mailbox, or the car's account.
+CAR_SOURCES = ("ha", "mailbox", "account")
+
 EV_NEED = vol.Schema(
     {
         vol.Optional("enabled", default=False): bool,
@@ -273,11 +293,14 @@ EV_NEED = vol.Schema(
         vol.Optional("persons", default=None): vol.Any(None, [str]),
         # Further calendars of this car (besides Joe's own one for it).
         vol.Optional("calendars", default=list): [cv.entity_id],
+        vol.Optional("source", default="ha"): vol.In(CAR_SOURCES),
+        vol.Optional("account", default=dict): CAR_ACCOUNT,
         vol.Optional("round_trip", default=True): bool,
     }
 )
 
-MAIL_PROVIDERS = ("icloud", "google", "infomaniak", "microsoft", "other")
+# "outlook": personal Microsoft accounts, "microsoft": Microsoft 365 / Exchange.
+MAIL_PROVIDERS = ("icloud", "google", "infomaniak", "outlook", "microsoft", "other")
 
 # Joe's mailbox for car appointments (see mail/): invitations from these
 # senders to a car's address become trips. The password lives elsewhere.

@@ -45,6 +45,13 @@ PROVIDERS: dict[str, dict[str, Any]] = {
         "smtp_port": 587,
         "smtp_security": "starttls",
     },
+    "outlook": {
+        "imap_host": "outlook.office365.com",
+        "imap_port": 993,
+        "smtp_host": "smtp-mail.outlook.com",
+        "smtp_port": 587,
+        "smtp_security": "starttls",
+    },
     "microsoft": {
         "imap_host": "outlook.office365.com",
         "imap_port": 993,

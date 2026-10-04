@@ -15,6 +15,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util.hass_dict import HassKey
 
 from . import model
+from .accounts import CarAccounts
 from .const import DOMAIN
 from .control.executor import JoeExecutor
 from .control.notify import JoeNotifier
@@ -103,6 +104,9 @@ class JoeRuntime:
         self.planner.calendars = self.calendars
         # Invitations by mail to a car's address (see mail/).
         self.inbox = JoeInbox(hass, lambda: self._config, self.calendars, self._changed)
+        # Each car's own account (mailbox and calendar in one).
+        self.accounts = CarAccounts(hass, lambda: self._config, self._changed)
+        self.planner.accounts = self.accounts
         self._started = False
         self._planned: dict[str, Any] | None = None
         self._observed: dict[str, Any] | None = None
@@ -125,12 +129,14 @@ class JoeRuntime:
         await self.executor.async_load()
         await self.calendars.async_load()
         await self.inbox.async_load()
+        await self.accounts.async_load()
 
     async def async_unload(self) -> None:
         """Stop watching and write pending changes immediately."""
         self._started = False
         self.notifier.stop()
         self.inbox.async_stop()
+        self.accounts.async_stop()
         await self.executor.async_stop()
         async with self._observe_lock:
             await self.learner.async_stop()
@@ -151,6 +157,7 @@ class JoeRuntime:
         await self.planner.places.async_remove()
         await self.calendars.async_remove()
         await self.inbox.async_remove()
+        await self.accounts.async_remove()
         await self.executor.async_forget()
 
     @callback
@@ -217,6 +224,7 @@ class JoeRuntime:
                 "questions": self.learner.questions,
                 "control": self.executor.view,
                 "mailbox": self.inbox.status,
+                "accounts": self.accounts.status,
             }
         )
 

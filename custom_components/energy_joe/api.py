@@ -17,6 +17,7 @@ from homeassistant.loader import async_get_integration
 from homeassistant.util import dt as dt_util
 
 from . import model
+from .accounts import AccountError
 from .calendar import car_actions
 from .calendar_feed import feed_path
 from .const import DOMAIN
@@ -74,6 +75,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_mailbox_test)
     websocket_api.async_register_command(hass, ws_mailbox_check)
     websocket_api.async_register_command(hass, ws_mailbox_sign_in)
+    websocket_api.async_register_command(hass, ws_account)
 
 
 def _runtime(
@@ -789,6 +791,44 @@ async def ws_mailbox_sign_in(
         connection.send_error(msg["id"], err.code, err.detail or err.code)
         return
     connection.send_result(msg["id"], info)
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/account",
+        vol.Required("car"): str,
+        # "password" (with password), "sign_in", "sign_out" or "test".
+        vol.Required("do"): vol.In(("password", "sign_in", "sign_out", "test")),
+        vol.Optional("password"): vol.Any(None, vol.All(str, vol.Length(max=500))),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_account(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """A car's own account: app password, Microsoft sign-in, or a test read."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    accounts = runtime.accounts
+    car = msg["car"]
+    try:
+        if msg["do"] == "password":
+            await accounts.async_set_password(car, msg.get("password"))
+            result: Any = None
+        elif msg["do"] == "sign_in":
+            result = await accounts.async_sign_in(car)
+        elif msg["do"] == "sign_out":
+            await accounts.async_sign_out(car)
+            result = None
+        else:
+            result = {"error": await accounts.async_test(car)}
+    except AccountError as err:
+        connection.send_error(msg["id"], err.code, err.detail or err.code)
+        return
+    connection.send_result(msg["id"], result)
 
 
 async def _async_energy_summary(hass: HomeAssistant) -> dict[str, Any]:

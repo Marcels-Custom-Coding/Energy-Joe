@@ -8,7 +8,7 @@ import type { HomeAssistant, JoeConfig, MailboxConfig, MailboxStatus, MailProvid
 import { timeOf } from "./plan-text";
 import { tip } from "./tip";
 
-const PROVIDERS: MailProvider[] = ["icloud", "google", "infomaniak", "microsoft", "other"];
+const PROVIDERS: MailProvider[] = ["icloud", "google", "infomaniak", "outlook", "microsoft", "other"];
 
 /**
  * Joe's mailbox for car appointments: invite the car like a person, Joe puts
@@ -157,43 +157,12 @@ export class JoeMailboxSettings extends LitElement {
           @click=${() => this.save({ enabled: !mail.enabled })}
         ></button>
       </div>
-      ${mail.enabled ? this.renderSettings(t, mail) : nothing}`;
+      ${mail.enabled ? this.renderSettings(t, mail) : nothing} ${this.renderAllowed(t, mail)}`;
   }
 
-  private renderSettings(t: Translate, mail: MailboxConfig): TemplateResult {
-    const status = this.status;
+  /** Who may invite: for Joe's mailbox and for the cars' own accounts. */
+  private renderAllowed(t: Translate, mail: MailboxConfig): TemplateResult {
     return html`<div class="row" data-tipped>
-        <div>
-          <div class="name"><label for="mail-provider"><b>${t("mail.provider")}</b></label>${tip(t, "mail_provider")}</div>
-          <small>${t(`mail.provider.${mail.provider}.hint`)}</small>
-        </div>
-        <select id="mail-provider" class="input" @change=${(ev: Event) => this.save({ provider: (ev.target as HTMLSelectElement).value as MailProvider })}>
-          ${PROVIDERS.map((p) => html`<option value=${p} ?selected=${p === mail.provider}>${t(`mail.provider.${p}`)}</option>`)}
-        </select>
-      </div>
-      <div class="row" data-tipped>
-        <div>
-          <div class="name"><label for="mail-address"><b>${t("mail.address")}</b></label>${tip(t, "mail_address")}</div>
-          <small>${t("mail.address.hint")}</small>
-        </div>
-        <input
-          id="mail-address"
-          class="input"
-          type="email"
-          autocomplete="off"
-          .value=${mail.address}
-          @change=${(ev: Event) => this.save({ address: (ev.target as HTMLInputElement).value.trim() })}
-        />
-      </div>
-      ${mail.provider === "microsoft" ? this.renderMicrosoft(t, mail) : this.renderPassword(t)}
-      ${mail.provider === "other" || this.servers ? this.renderServers(t, mail) : html`<div class="row" data-tipped>
-            <div>
-              <div class="name"><b>${t("mail.servers")}</b>${tip(t, "mail_servers")}</div>
-              <small>${t("mail.servers.preset")}</small>
-            </div>
-            <button type="button" class="mini-btn quiet" @click=${() => (this.servers = true)}>${t("mail.servers.change")}</button>
-          </div>`}
-      <div class="row" data-tipped>
         <div>
           <div class="name"><b>${t("mail.allowed")}</b>${tip(t, "mail_allowed")}</div>
           <small>${t("mail.allowed.hint")}</small>
@@ -225,7 +194,42 @@ export class JoeMailboxSettings extends LitElement {
             <button type="submit" class="mini-btn" ?disabled=${!this.sender.trim()}>${t("mail.allowed.add")}</button>
           </form>
         </div>
+      </div>`;
+  }
+
+  private renderSettings(t: Translate, mail: MailboxConfig): TemplateResult {
+    const status = this.status;
+    return html`<div class="row" data-tipped>
+        <div>
+          <div class="name"><label for="mail-provider"><b>${t("mail.provider")}</b></label>${tip(t, "mail_provider")}</div>
+          <small>${t(`mail.provider.${mail.provider}.hint`)}</small>
+        </div>
+        <select id="mail-provider" class="input" @change=${(ev: Event) => this.save({ provider: (ev.target as HTMLSelectElement).value as MailProvider })}>
+          ${PROVIDERS.map((p) => html`<option value=${p} ?selected=${p === mail.provider}>${t(`mail.provider.${p}`)}</option>`)}
+        </select>
       </div>
+      <div class="row" data-tipped>
+        <div>
+          <div class="name"><label for="mail-address"><b>${t("mail.address")}</b></label>${tip(t, "mail_address")}</div>
+          <small>${t("mail.address.hint")}</small>
+        </div>
+        <input
+          id="mail-address"
+          class="input"
+          type="email"
+          autocomplete="off"
+          .value=${mail.address}
+          @change=${(ev: Event) => this.save({ address: (ev.target as HTMLInputElement).value.trim() })}
+        />
+      </div>
+      ${mail.provider === "microsoft" || mail.provider === "outlook" ? this.renderMicrosoft(t, mail) : this.renderPassword(t)}
+      ${mail.provider === "other" || this.servers ? this.renderServers(t, mail) : html`<div class="row" data-tipped>
+            <div>
+              <div class="name"><b>${t("mail.servers")}</b>${tip(t, "mail_servers")}</div>
+              <small>${t("mail.servers.preset")}</small>
+            </div>
+            <button type="button" class="mini-btn quiet" @click=${() => (this.servers = true)}>${t("mail.servers.change")}</button>
+          </div>`}
       <div class="row" data-tipped>
         <div>
           <div class="name"><b id="mail-accept">${t("mail.accept")}</b>${tip(t, "mail_accept")}</div>
@@ -289,10 +293,14 @@ export class JoeMailboxSettings extends LitElement {
   private renderMicrosoft(t: Translate, mail: MailboxConfig): TemplateResult {
     const oauth = this.status?.oauth;
     const signed = this.status?.has_secret;
-    return html`<div class="row" data-tipped>
+    // Personal accounts sign in with Energy Joe's own app; a company may use its own.
+    const personal = mail.provider === "outlook";
+    const ownApp = !personal || this.servers || Boolean(mail.client_id) || oauth?.error === "no_client_id";
+    return html`${ownApp
+        ? html`<div class="row" data-tipped>
         <div>
           <div class="name"><label for="mail-client"><b>${t("mail.client_id")}</b></label>${tip(t, "mail_microsoft")}</div>
-          <small>${t("mail.client_id.hint")}</small>
+          <small>${t(personal ? "mail.client_id.personal" : "mail.client_id.hint")}</small>
         </div>
         <div class="inline">
           <input
@@ -304,16 +312,19 @@ export class JoeMailboxSettings extends LitElement {
             .value=${mail.client_id ?? ""}
             @change=${(ev: Event) => this.save({ client_id: (ev.target as HTMLInputElement).value.trim() || null })}
           />
-          <input
-            class="input"
-            type="text"
-            aria-label=${t("mail.tenant")}
-            placeholder="common"
-            .value=${mail.tenant}
-            @change=${(ev: Event) => this.save({ tenant: (ev.target as HTMLInputElement).value.trim() || "common" })}
-          />
+          ${personal
+            ? nothing
+            : html`<input
+                class="input"
+                type="text"
+                aria-label=${t("mail.tenant")}
+                placeholder="common"
+                .value=${mail.tenant}
+                @change=${(ev: Event) => this.save({ tenant: (ev.target as HTMLInputElement).value.trim() || "common" })}
+              />`}
         </div>
-      </div>
+      </div>`
+        : nothing}
       <div class="row" data-tipped>
         <div>
           <div class="name"><b>${t("mail.sign_in")}</b>${tip(t, "mail_sign_in")}</div>
@@ -326,7 +337,7 @@ export class JoeMailboxSettings extends LitElement {
               : nothing}
         </div>
         <div class="inline">
-          <button type="button" class="mini-btn go" ?disabled=${!mail.client_id || this.busy} @click=${() => this.signIn(true)}>
+          <button type="button" class="mini-btn go" ?disabled=${this.busy} @click=${() => this.signIn(true)}>
             <ha-icon icon="mdi:microsoft"></ha-icon>${t(signed ? "mail.sign_in.again" : "mail.sign_in")}
           </button>
           ${signed

@@ -22,6 +22,8 @@ TO_REDACT = {
     "allowed",
     "cars",
     "recent",
+    # A car's own account (a CalDAV address may hold the user name).
+    "url",
 }
 REDACTED = "**REDACTED**"
 

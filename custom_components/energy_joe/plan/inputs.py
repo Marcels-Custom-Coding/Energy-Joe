@@ -252,6 +252,7 @@ async def async_build_input(
     manual: dict[str, str] | None = None,
     places: PlaceStore | None = None,
     calendars: CarCalendarStore | None = None,
+    accounts: Any = None,
 ) -> tuple[PlanInput | None, list[str]]:
     """Gather everything for tonight's plan; None with reasons if there is nothing to plan."""
     tariff = config["tariff"]
@@ -394,7 +395,13 @@ async def async_build_input(
     )
     sun_tomorrow = tomorrow_kwh if "no_forecast" not in notes else None
     needs = await async_car_needs(
-        hass, config, places or PlaceStore(hass), tomorrow, outlook, calendars
+        hass,
+        config,
+        places or PlaceStore(hass),
+        tomorrow,
+        outlook,
+        calendars,
+        accounts,
     )
     if dynamic:
         # The cheapest window first; running actions need it long enough.
@@ -529,6 +536,7 @@ async def async_car_needs(
     day: date,
     outlook: dict[str, Any],
     calendars: CarCalendarStore | None = None,
+    accounts: Any = None,
 ) -> dict[str, dict[str, Any]]:
     """For each car charged by need: tomorrow's trips and what is missing."""
     result = {}
@@ -541,10 +549,15 @@ async def async_car_needs(
             or not need.get("enabled")
         ):
             continue
-        own = None
+        own: list[dict[str, Any]] = []
+        start = dt_util.start_of_local_day(day)
         if calendars is not None:
-            start = dt_util.start_of_local_day(day)
-            own = calendars.events(action["id"], start, start + timedelta(days=1))
+            own += calendars.events(action["id"], start, start + timedelta(days=1))
+        if accounts is not None and need.get("source") == "account":
+            # The car's own account: its calendar holds the invitations.
+            own += await accounts.async_events(
+                action["id"], start, start + timedelta(days=1)
+            )
         trips = await async_trips(hass, config, need, places, day, own)
         found = car_need(
             need,

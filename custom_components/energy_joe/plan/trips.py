@@ -165,9 +165,10 @@ async def async_trips(
         for p in config["persons"]
         if p["calendars"] and (need["persons"] is None or p["id"] in need["persons"])
     ]
-    calendars = sorted(
-        {c for p in persons for c in p["calendars"]} | set(need.get("calendars") or [])
+    own_calendars = (
+        set(need.get("calendars") or []) if need.get("source", "ha") == "ha" else set()
     )
+    calendars = sorted({c for p in persons for c in p["calendars"]} | own_calendars)
     if not hass.services.has_service("calendar", "get_events"):
         calendars = []
     if not calendars and not own:

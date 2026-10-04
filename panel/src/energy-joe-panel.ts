@@ -455,6 +455,7 @@ export class EnergyJoePanel extends LitElement {
         label = t("action.label");
         content = html`<joe-action-editor
           .hass=${this.hass}
+          .accounts=${this.joe?.accounts}
           .t=${t}
           .config=${config}
           .discovery=${this.discovery}

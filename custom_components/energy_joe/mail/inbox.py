@@ -34,6 +34,8 @@ STORE_KEY = f"{DOMAIN}.mailbox"
 STORE_VERSION = 1
 # What the panel shows of the last invitations (newest first).
 RECENT = 20
+# Microsoft: personal accounts ("outlook") and Microsoft 365 / Exchange.
+MICROSOFT = ("outlook", "microsoft")
 
 
 def allowed(rules: list[str], *addresses: str | None) -> bool:
@@ -119,14 +121,14 @@ class JoeInbox:
 
     @property
     def has_secret(self) -> bool:
-        if self._config()["mailbox"]["provider"] == "microsoft":
+        if self._config()["mailbox"]["provider"] in MICROSOFT:
             return bool((self._data.get("oauth") or {}).get("refresh_token"))
         return bool(self._data.get("password") or self._data.get("token"))
 
     async def _async_secret(self) -> dict[str, Any]:
         """The password, or for Microsoft a fresh access token."""
         settings = self._config()["mailbox"]
-        if settings["provider"] != "microsoft":
+        if settings["provider"] not in MICROSOFT:
             return {
                 "password": self._data.get("password"),
                 "token": self._data.get("token"),
@@ -136,8 +138,8 @@ class JoeInbox:
             try:
                 tokens = await oauth.refresh(
                     async_get_clientsession(self._hass),
-                    settings["tenant"],
-                    settings["client_id"] or "",
+                    oauth.tenant_for(settings["provider"], settings["tenant"]),
+                    oauth.client_for(settings["client_id"]) or "",
                     tokens,
                 )
             except oauth.OAuthError as err:
@@ -151,14 +153,14 @@ class JoeInbox:
     async def async_oauth_start(self) -> dict[str, Any]:
         """Ask Microsoft for a sign-in code; Joe waits in the background."""
         settings = self._config()["mailbox"]
-        if not settings["client_id"]:
+        client = oauth.client_for(settings["client_id"])
+        if not client:
             raise MailError("no_client_id")
+        tenant = oauth.tenant_for(settings["provider"], settings["tenant"])
         self._cancel_oauth()
         try:
             found = await oauth.start(
-                async_get_clientsession(self._hass),
-                settings["tenant"],
-                settings["client_id"],
+                async_get_clientsession(self._hass), tenant, client
             )
         except oauth.OAuthError as err:
             self._set_status(oauth={"state": "error", "error": err.code})
@@ -173,7 +175,8 @@ class JoeInbox:
         self._set_status(oauth=info)
         self._oauth_task = self._hass.async_create_background_task(
             self._async_wait_for_sign_in(
-                settings,
+                tenant,
+                client,
                 str(found["device_code"]),
                 int(found.get("interval") or 5),
                 expires,
@@ -184,7 +187,8 @@ class JoeInbox:
 
     async def _async_wait_for_sign_in(
         self,
-        settings: dict[str, Any],
+        tenant: str,
+        client: str,
         device_code: str,
         interval: int,
         until: datetime,
@@ -193,12 +197,7 @@ class JoeInbox:
         while dt_util.now() < until:
             await asyncio.sleep(interval)
             try:
-                tokens = await oauth.poll(
-                    session,
-                    settings["tenant"],
-                    settings["client_id"] or "",
-                    device_code,
-                )
+                tokens = await oauth.poll(session, tenant, client, device_code)
             except oauth.OAuthError as err:
                 if err.code == "authorization_pending":
                     continue
@@ -349,10 +348,13 @@ class JoeInbox:
     async def _async_handle(
         self, settings: dict[str, Any], message: Fetched, invitation: Invitation
     ) -> None:
+        # Only cars whose appointments come from Joe's mailbox.
         cars = [
             a["id"]
             for a in self._config()["actions"]
-            if a["kind"] == "switch" and (a.get("need") or {}).get("enabled")
+            if a["kind"] == "switch"
+            and (a.get("need") or {}).get("enabled")
+            and (a.get("need") or {}).get("source") == "mailbox"
         ]
         entry: dict[str, Any] = {
             "at": dt_util.now().isoformat(timespec="seconds"),

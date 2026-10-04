@@ -58,6 +58,12 @@ cd panel && npm install
 
 - Microsoft (`mail/oauth.py`): Geräte-Code-Anmeldung (`/devicecode`, dann `/token` abfragen) mit der App-ID aus `mailbox.client_id` und dem Mandanten `mailbox.tenant`; Bereiche IMAP.AccessAsUser.All, SMTP.Send, offline_access. Tokens im Postfach-Speicher, erneuert fünf Minuten vor Ablauf; IMAP und SMTP melden sich mit XOAUTH2 an. Google erlaubt die Geräte-Anmeldung für Mail nicht und bleibt beim App-Passwort.
 
+## Konto des Autos
+
+- `need.source` sagt, woher die Termine eines Autos kommen: `ha` (Kalender aus Home Assistant in `need.calendars`), `mailbox` (Joes Postfach, Zuordnung über `mailbox.cars`) oder `account` (`need.account`). Joes eigener Kalender und die Kalender der gewählten Personen zählen immer.
+- `accounts.py` (`CarAccounts`): Microsoft über Microsoft Graph (`/me/calendarView`, Zusage mit `/me/events/{id}/accept`, Anmeldung mit Geräte-Code und `oauth.CALENDAR_SCOPES`), iCloud, Infomaniak und andere über CalDAV (Erkennung über current-user-principal und calendar-home-set, Termine per REPORT mit time-range, Zusage per PUT mit eigenem ATTENDEE auf ACCEPTED). Zugesagt wird nur Absendern aus `mailbox.allowed`. Termine eines Tages werden zehn Minuten zwischengespeichert; Passwörter und Tokens je Auto in `.storage/energy_joe.accounts`.
+- Microsoft: `outlook` (privat, Mandant `consumers`) und `microsoft` (Firma, Mandant aus der Einstellung, sonst `organizations`). Ohne eigene App-ID gilt Joes App (`mail/oauth.py`, `JOE_CLIENT_ID`).
+
 ## Warmwasser
 
 - Gefunden wird Warmwasser als Verbraucher im Energie-Dashboard (Art `hot_water`). Die Frage „Wie wird euer Wasser warm?“ bietet dann eine Nacht-Aktion an; `panel/src/hot-water.ts` schlägt Fühler und Schalter nach Wörtern in Entity-ID, Name und Gerätename vor (Speicher vor Zirkulation und Ausgang).
