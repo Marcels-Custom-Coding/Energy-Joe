@@ -132,7 +132,9 @@ async def ws_places_set(
         return
     await runtime.planner.places.async_set(msg["location"], msg["km"])
     if runtime.planner.active:
-        await runtime.planner.async_correct_needs(msg["location"])
+        changed = await runtime.planner.async_correct_needs(msg["location"])
+        # A higher level than the one reached before: charge on.
+        await runtime.executor.async_replanned(changed)
     connection.send_result(msg["id"])
 
 

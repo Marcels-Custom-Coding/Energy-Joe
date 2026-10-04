@@ -196,16 +196,22 @@ async def test_diagnostics_hide_personal_data(ready_hass: HomeAssistant) -> None
             {
                 "id": "ev",
                 "need": {
+                    "departure": "2026-10-05T08:35+02:00",
                     "trips": [
                         {
                             "start": "2026-10-05T09:00:00+02:00",
                             "location": "Praxis Robinstraße 3",
+                            "minutes": 25,
                         }
-                    ]
+                    ],
                 },
             }
         ],
         "meta": {"tomorrow": {"labels": {"person.robin": "office"}}},
+    }
+    # What Joe learned about Robin's hours at home.
+    hass.data[DOMAIN]._config["learned"]["presence"] = {
+        "person.robin": {"office": {"hours": 9.0, "days": 12}}
     }
 
     diagnostics = await async_get_config_entry_diagnostics(hass, entry)
@@ -213,4 +219,5 @@ async def test_diagnostics_hide_personal_data(ready_hass: HomeAssistant) -> None
     assert person["name"] == "**REDACTED**"
     assert person["calendars"] == "**REDACTED**"
     assert "robin" not in str(diagnostics).lower()
+    assert "08:35" not in str(diagnostics)
     assert diagnostics["state"]["mode"] == "simulation"

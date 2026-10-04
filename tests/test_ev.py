@@ -709,3 +709,113 @@ async def test_a_correction_reaches_the_fixed_plan(hass: HomeAssistant) -> None:
     assert entry["need"]["trips"][0]["source"] == "user"
     assert entry["target"] < 100
     await store.async_unload()
+
+
+async def test_a_longer_trip_after_fixing_charges_tonight(hass: HomeAssistant) -> None:
+    from custom_components.energy_joe.observe.store import HistoryStore
+    from custom_components.energy_joe.plan.scheduler import JoePlanner
+
+    hass.states.async_set("sensor.car_soc", "60", {"unit_of_measurement": "%"})
+    store = HistoryStore(hass)
+    await store.async_load()
+    planner = JoePlanner(hass, store, lambda: None)
+    config = model.validate({"version": model.CONFIG_VERSION, "actions": [need()]})
+    planner._config = config
+    # The place was not found when the plan was fixed: 60 % looked enough.
+    trips = [
+        {
+            "start": "2026-10-05T09:00:00+02:00",
+            "location": "Messe Hannover",
+            "km": None,
+            "minutes": None,
+            "source": None,
+        }
+    ]
+    found = car_need(need()["need"], hass.states.get, trips, None, 10.0, False, True)
+    start = datetime(2026, 10, 5, 0, 0, tzinfo=dt_util.get_default_time_zone())
+    end = start + timedelta(hours=5)
+    fixed = plan_actions(
+        [config["actions"][0]],
+        hass.states.get,
+        start,
+        end,
+        None,
+        {},
+        None,
+        {"ev": {**found, "trips": trips}},
+    )
+    assert fixed[0]["run"] is False
+    assert fixed[0]["reasons"] == ["enough_range"]
+    planner._fixed = {
+        "fixed": True,
+        "window": {"start": start.isoformat(), "end": end.isoformat()},
+        "meta": {"tomorrow": {"workday": True}},
+        "prices": {"night": 0.25, "day": 0.35},
+        "actions": fixed,
+    }
+    await planner.places.async_set("Messe Hannover", 150.0)
+    assert await planner.async_correct_needs("Messe Hannover") == ["ev"]
+    entry = planner.plan["actions"][0]
+    assert entry["run"] is True
+    assert entry["reasons"] == ["need"]
+    assert entry["need"]["trips"][0]["km"] == 300.0
+    assert entry["target"] == 100
+    # Charging the missing energy takes longer than a few minutes: an earlier start.
+    assert datetime.fromisoformat(entry["start"]) < end - timedelta(hours=1)
+    assert entry["energy_kwh"] > 0
+    assert entry["cost"] > 0
+    # Another place changes nothing.
+    assert await planner.async_correct_needs("Somewhere else") == []
+    await store.async_unload()
+
+
+async def test_days_from_another_sensor_no_longer_count(
+    hass: HomeAssistant, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from custom_components.energy_joe.learn import learner as learner_module
+    from custom_components.energy_joe.learn.learner import JoeLearner
+    from custom_components.energy_joe.observe.store import HistoryStore
+
+    async def no_series(*args: Any, **kwargs: Any) -> list[Any]:
+        return []
+
+    monkeypatch.setattr(learner_module, "async_sensor_series", no_series)
+    store = HistoryStore(hass)
+    await store.async_load()
+    config = model.validate(
+        {
+            "version": model.CONFIG_VERSION,
+            "actions": [need(odometer_entity="sensor.car_odometer")],
+        }
+    )
+    learner = JoeLearner(hass, store, lambda: config, lambda *a: None, lambda: None)
+    old = ["sensor.car_range", "sensor.car_soc", 60.0]
+    new = ["sensor.car_odometer", "sensor.car_soc", 60.0]
+    days: dict[str, dict[str, Any]] = {}
+    for offset in range(20):
+        day = (date(2026, 10, 3) - timedelta(days=offset)).isoformat()
+        # The range sensor first picked as odometer: charging looked like driving.
+        km, source = (250.0, old) if offset >= 10 else (30.0, new)
+        days[day] = {
+            "workday": True,
+            "car": {
+                "ev": {
+                    "date": day,
+                    "km": km,
+                    "kwh": 0.0,
+                    "kwh_km": 0.0,
+                    "source": source,
+                }
+            },
+        }
+    learned = {
+        "since": "2026-08-01",
+        "reset": {},
+        "car_models": {"ev": {"workday_km": 250, "day_off_km": 250, "source": old}},
+    }
+    result = await learner._async_cars(config, learned, date(2026, 10, 4), days)
+    assert result["ev"]["workday_km"] == 30
+    # Learned from the old sensor: gone, not kept.
+    assert "day_off_km" not in result["ev"]
+    assert result["ev"]["source"] == new
+    await store.async_unload()

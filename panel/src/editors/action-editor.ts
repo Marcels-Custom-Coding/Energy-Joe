@@ -441,7 +441,7 @@ export class JoeActionEditor extends LitElement {
         inputmode="decimal"
         min=${NEED_LIMITS[key][0]}
         max=${Math.min(max, NEED_LIMITS[key][1])}
-        step=${key === "consumption" ? "0.1" : "1"}
+        step=${key === "consumption" || key === "capacity_kwh" ? "0.1" : "1"}
         placeholder=${placeholder}
         .value=${need[key] == null ? "" : String(need[key])}
         @change=${(ev: Event) => {

@@ -369,9 +369,17 @@ class JoeLearner:
             # The recorder keeps only about ten days of states, so each finished
             # day goes into Joe's own day records and learning uses those. The
             # first day the recorder returns may start mid-day: it is left out.
+            # Each day notes what it was worked out from; after another sensor
+            # or battery size was picked, older days no longer count.
             key = action["id"]
+            source = [
+                odometer_id,
+                need.get("soc_entity"),
+                round(capacity, 1) if capacity else None,
+            ]
             for entry in car_days(odometer, soc, capacity)[1:]:
                 if entry["date"] < today.isoformat():
+                    entry = {**entry, "source": source}
                     await self._history.async_update_day(
                         entry["date"], car={key: entry}
                     )
@@ -381,13 +389,18 @@ class JoeLearner:
             stored = [
                 data["car"][key]
                 for day, data in sorted(days.items())
-                if day >= first and key in (data.get("car") or {})
+                if day >= first
+                and (data.get("car") or {}).get(key, {}).get("source") == source
             ]
             found = car_model(stored, temps, workdays) or {}
-            # Too few days for a value keep what Joe learned before (per value).
-            merged = {**(previous.get(key) or {}), **found}
+            # Too few days for a value keep what Joe learned before (per value),
+            # if it came from the same sensors.
+            before = previous.get(key) or {}
+            if before.get("source") != source:
+                before = {}
+            merged = {**before, **found}
             if merged:
-                result[key] = merged
+                result[key] = {**merged, "source": source}
         return result
 
     def _questions(

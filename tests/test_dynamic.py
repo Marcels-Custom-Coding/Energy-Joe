@@ -565,3 +565,58 @@ async def test_the_window_is_long_enough_for_the_car(
     assert hours >= needed
     assert car["energy_kwh"] >= car["need"]["wall_kwh"] - 0.1
     await store.async_unload()
+
+
+async def test_a_car_without_power_keeps_the_cheapest_window(
+    hass: HomeAssistant, freezer
+) -> None:
+    """Without a power value the charging time is unknown: not the whole span."""
+    await hass.config.async_set_time_zone("Europe/Berlin")
+    freezer.move_to("2026-10-03T19:30:00+02:00")
+    attributes = nordpool_attributes("2026-10-03")
+    attributes["raw_tomorrow"] = nordpool_attributes("2026-10-04")["raw_today"]
+    hass.states.async_set("sensor.nordpool", "29", attributes)
+    hass.states.async_set("sensor.soc", "20", {"unit_of_measurement": "%"})
+    hass.states.async_set("sensor.car_soc", "10", {"unit_of_measurement": "%"})
+    hass.states.async_set("binary_sensor.plugged", "on")
+    store = HistoryStore(hass)
+    await store.async_load()
+    config = model.apply_update(
+        model.default_config(),
+        {
+            "batteries": {
+                "b1": {
+                    "name": "Speicher",
+                    "adapter": "none",
+                    "soc_entity": "sensor.soc",
+                    "capacity_kwh": 10.0,
+                }
+            },
+            "tariff": {"kind": "dynamic", "price_entity": "sensor.nordpool"},
+            "actions": [
+                {
+                    "id": "ev",
+                    "name": "Carport",
+                    "kind": "switch",
+                    "entity_id": "select.carport_mode",
+                    "on_value": "now",
+                    "power_kw": None,
+                    "need": {
+                        "enabled": True,
+                        "soc_entity": "sensor.car_soc",
+                        "capacity_kwh": 60.0,
+                        "daily_km": 60.0,
+                        "consumption": 18.0,
+                    },
+                }
+            ],
+        },
+        "user",
+    )
+    inp, notes = await async_build_input(hass, config, store, dt_util.now())
+    assert inp is not None, notes
+    (car,) = inp.actions
+    assert car["run"] is True and car["reasons"] == ["need"]
+    assert inp.search is not None
+    assert (inp.window_start, inp.window_end) != inp.search
+    await store.async_unload()

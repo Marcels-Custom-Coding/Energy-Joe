@@ -25,7 +25,8 @@ async def async_get_config_entry_diagnostics(
     state = runtime.state
     config = state.pop("config")
     # Person ids are entity ids like "person.<name>"; they show up in ids,
-    # provenance paths, the list of ignored items, a car's need and day labels.
+    # provenance paths, the list of ignored items, a car's need, day labels and
+    # the learned hours at home.
     ids = {
         person["id"]: f"person {index + 1}"
         for index, person in enumerate(config["persons"])
@@ -37,12 +38,21 @@ async def async_get_config_entry_diagnostics(
         need = action.get("need") or {}
         if need.get("persons"):
             need["persons"] = [ids.get(p, REDACTED) for p in need["persons"]]
+    learned = config.get("learned") or {}
+    if isinstance(learned.get("presence"), dict):
+        learned["presence"] = {
+            ids.get(key, REDACTED): value for key, value in learned["presence"].items()
+        }
     plan = state.get("plan") or {}
-    # Tomorrow's appointments (place and time) come from the family's calendars.
+    # Tomorrow's appointments (place and time) come from the family's calendars;
+    # the departure is the first one's start minus the drive.
     for action in plan.get("actions") or []:
-        for trip in (action.get("need") or {}).get("trips") or []:
+        need = action.get("need") or {}
+        for trip in need.get("trips") or []:
             trip["location"] = REDACTED
             trip["start"] = REDACTED
+        if need.get("departure"):
+            need["departure"] = REDACTED
     tomorrow = (plan.get("meta") or {}).get("tomorrow") or {}
     if isinstance(tomorrow.get("labels"), dict):
         tomorrow["labels"] = {

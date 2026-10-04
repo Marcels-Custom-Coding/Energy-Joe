@@ -920,6 +920,14 @@ class JoeExecutor:
         await self._async_save()
         self._changed()
 
+    async def async_replanned(self, action_ids: list[str]) -> None:
+        """Actions worked out again in the fixed plan: their target counts anew."""
+        if not any(d in action_ids for d in self.data["done"]):
+            return
+        self.data["done"] = [d for d in self.data["done"] if d not in action_ids]
+        await self._async_save()
+        self._changed()
+
     async def async_skip(self, skip: bool) -> None:
         """Skip tonight (or not); releases right away if Joe is steering."""
         plan = self._plan()

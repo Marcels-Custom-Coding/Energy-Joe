@@ -5335,7 +5335,7 @@ var V = class extends y {
         inputmode="decimal"
         min=${Vt[e][0]}
         max=${Math.min(r, Vt[e][1])}
-        step=${e === "consumption" ? "0.1" : "1"}
+        step=${e === "consumption" || e === "capacity_kwh" ? "0.1" : "1"}
         placeholder=${i}
         .value=${n[e] == null ? "" : String(n[e])}
         @change=${(t) => {

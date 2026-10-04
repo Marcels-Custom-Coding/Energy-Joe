@@ -15,6 +15,7 @@ from homeassistant.helpers.event import (
 from homeassistant.util import dt as dt_util
 
 from ..observe.store import HistoryStore
+from .actions import plan_actions
 from .ev import car_need
 from .inputs import DEFAULT_SEARCH, async_build_input, next_window
 from .planner import make_plan
@@ -102,25 +103,34 @@ class JoePlanner:
         self._changed()
         return self.plan
 
-    async def async_correct_needs(self, location: str) -> None:
+    async def async_correct_needs(self, location: str) -> list[str]:
         """A place's distance was corrected: tonight's car needs follow at once.
 
-        A fixed plan keeps its window and times; only the trips, the need and
-        the level the car stops at change (the executor reads them every minute).
+        A fixed plan keeps its window and the batteries' targets; a car that
+        charges by need is worked out again inside that window (whether it runs,
+        from when, and the level it stops at; the executor reads them every minute).
+        Returns the ids of the actions worked out again.
         """
         if self._fixed is None:
             await self.async_refresh()
-            return
+            return []
         key = normalize(location)
         place = self.places.places.get(key)
+        fixed = self._fixed
         config = self._config
         models = config["learned"].get("car_models") or {}
         actions = {a["id"]: a for a in config["actions"]}
-        workday = ((self._fixed.get("meta") or {}).get("tomorrow") or {}).get(
-            "workday", True
+        meta = fixed.get("meta") or {}
+        workday = (meta.get("tomorrow") or {}).get("workday", True)
+        sun = (
+            meta.get("tomorrow_kwh")
+            if "no_forecast" not in (fixed.get("notes") or [])
+            else None
         )
-        changed = False
-        for entry in self._fixed.get("actions") or []:
+        start = datetime.fromisoformat(fixed["window"]["start"])
+        end = datetime.fromisoformat(fixed["window"]["end"])
+        changed: list[str] = []
+        for index, entry in enumerate(fixed.get("actions") or []):
             need = entry.get("need")
             action = actions.get(entry["id"])
             if not need or not action or not action.get("need"):
@@ -141,15 +151,24 @@ class JoePlanner:
                 bool(need.get("rain")),
                 workday,
             )
-            entry["need"] = {**found, "trips": trips}
-            if entry["run"] and not entry.get("manual") and found.get("known"):
-                entry.update(target=found["target"], sensor=found["sensor"])
-            changed = True
+            again = plan_actions(
+                [action],
+                self._hass.states.get,
+                start,
+                end,
+                sun,
+                self._manual(),
+                config["learned"].get("action_models") or {},
+                {entry["id"]: {**found, "trips": trips}},
+            )[0]
+            again["cost"] = _cost(fixed, again)
+            fixed["actions"][index] = again
+            changed.append(entry["id"])
         if changed:
-            night = datetime.fromisoformat(self._fixed["window"]["start"]).date()
-            await self._history.async_update_day(night.isoformat(), plan=self._fixed)
-            self.plan = self._fixed
+            await self._history.async_update_day(start.date().isoformat(), plan=fixed)
+            self.plan = fixed
             self._changed()
+        return changed
 
     async def _async_compute(self, now: datetime) -> dict[str, Any]:
         inp, notes = await async_build_input(
@@ -242,3 +261,24 @@ def _span(config: dict[str, Any]) -> dict[str, str] | None:
     if tariff["kind"] == "dynamic":
         return tariff["window"] or DEFAULT_SEARCH
     return None
+
+
+def _cost(plan: dict[str, Any], action: dict[str, Any]) -> float:
+    """What an action's energy costs at the prices of the plan's hours it runs in."""
+    if not action.get("run") or not action.get("energy_kwh"):
+        return 0.0
+    start = datetime.fromisoformat(action["start"])
+    end = datetime.fromisoformat(action["end"])
+    prices = plan.get("prices") or {}
+    total = 0.0
+    for hour in plan.get("hours") or []:
+        begin = datetime.fromisoformat(hour["start"])
+        overlap = (
+            min(end, begin + timedelta(hours=1)) - max(start, begin)
+        ).total_seconds()
+        if overlap > 0:
+            price = hour.get("price")
+            if price is None:
+                price = prices.get("night" if hour.get("window") else "day") or 0.0
+            total += (action.get("power_kw") or 0.0) * overlap / 3600 * price
+    return round(total or action["energy_kwh"] * (prices.get("night") or 0.0), 2)

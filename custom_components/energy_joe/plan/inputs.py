@@ -403,8 +403,10 @@ async def async_build_input(
         needed = max(
             [
                 _hours(a)
-                # Hot water, and a car charged by need: as long as they take.
-                if a["kind"] == "target" or a.get("target") is not None
+                # Hot water, and a car charged by need: as long as they take
+                # (a car's charging time is known only with its power).
+                if a["kind"] == "target"
+                or (a.get("target") is not None and a.get("power_kw"))
                 else ACTION_HOURS
                 for a in preview
                 if a["run"]
