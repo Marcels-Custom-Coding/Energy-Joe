@@ -301,9 +301,14 @@ class JoeObserver:
         if holiday and 6 <= start.hour < 22:
             state = self._hass.states.get(holiday)
             if state is not None and state.state in ("on", "off"):
-                await self._store.async_update_day(
-                    day_key(start), workday=state.state == "on"
+                # A workday sensor is on on working days; a holiday calendar is
+                # on during a holiday.
+                workday = (
+                    state.state == "off" and start.weekday() < 5
+                    if holiday.startswith("calendar.")
+                    else state.state == "on"
                 )
+                await self._store.async_update_day(day_key(start), workday=workday)
         await self._async_forecast(now)
         self.status.update(self._store.overview())
         self._changed()

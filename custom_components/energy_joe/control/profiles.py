@@ -166,7 +166,7 @@ PROFILES: dict[str, Profile] = {
         ),
         Profile(
             key="omnibattery",
-            name="Marstek",
+            name="Omnibattery",
             roles={
                 "mode": ("force_mode",),
                 "charge_power": ("set_charge_power",),

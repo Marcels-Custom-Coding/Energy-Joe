@@ -4063,14 +4063,14 @@ function Le(e) {
 }
 //#endregion
 //#region src/define.ts
-var Re = "0.6.1";
+var Re = "0.6.2";
 function H(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Re, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.6.1" && Be();
+	n.joeVersion !== "0.6.2" && Be();
 }
 var ze = !1;
 function Be() {

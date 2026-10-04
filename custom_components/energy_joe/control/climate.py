@@ -164,9 +164,14 @@ class ClimateController:
         ]
 
     def _free_day(self) -> bool:
+        """Weekend or holiday: a workday sensor off, or a holiday calendar on."""
         entity = self._config()["context"].get("holiday_entity")
         state = self._hass.states.get(entity) if entity else None
-        return bool(state and state.state == "off")
+        if entity and entity.startswith("calendar."):
+            return dt_util.now().weekday() >= 5 or bool(state and state.state == "on")
+        if state is None:
+            return dt_util.now().weekday() >= 5
+        return state.state == "off"
 
     def _rate(self, entity_id: str) -> float:
         return float(self.data["rates"].get(entity_id) or DEFAULT_RATE_K_H)

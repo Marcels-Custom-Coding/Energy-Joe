@@ -69,7 +69,26 @@ def next_window(now: datetime, window: dict[str, str]) -> tuple[datetime, dateti
 
 
 async def async_workday(hass: HomeAssistant, entity: str | None, day: date) -> bool:
-    """Whether a day is a working day: from the workday integration, else Mon–Fri."""
+    """Whether a day is a working day: from the workday integration or a
+    holiday calendar (a day with an entry is a holiday), else Mon–Fri."""
+    if entity and entity.startswith("calendar.") and day.weekday() < 5:
+        start = dt_util.start_of_local_day(day)
+        try:
+            response = await hass.services.async_call(
+                "calendar",
+                "get_events",
+                {
+                    "entity_id": entity,
+                    "start_date_time": start.isoformat(),
+                    "end_date_time": (start + timedelta(days=1)).isoformat(),
+                },
+                blocking=True,
+                return_response=True,
+            )
+        except Exception:  # noqa: BLE001 - a missing answer falls back to the weekday
+            _LOGGER.debug("Holiday calendar for %s failed", day, exc_info=True)
+        else:
+            return not ((response or {}).get(entity) or {}).get("events")
     if entity and hass.services.has_service("workday", "check_date"):
         try:
             response = await hass.services.async_call(

@@ -146,3 +146,28 @@ async def test_switching_joe_off_puts_rooms_back(hass: HomeAssistant) -> None:
     mode["now"] = "simulation"
     await joe.async_check()
     assert hass.states.get(ROOM).attributes["temperature"] == 21.0
+
+
+async def test_a_holiday_calendar_tells_the_days_off(hass: HomeAssistant) -> None:
+    """A calendar with holidays: a weekday with an entry is a day off."""
+    from datetime import date
+
+    from custom_components.energy_joe.plan.inputs import async_workday
+
+    entity = "calendar.feiertage"
+    holiday = date(2026, 10, 7)  # a Wednesday
+
+    async def events(call: ServiceCall) -> dict[str, Any]:
+        day = call.data["start_date_time"]
+        day = day.date() if hasattr(day, "date") else date.fromisoformat(str(day)[:10])
+        found = [{"summary": "Feiertag"}] if day == holiday else []
+        return {entity: {"events": found}}
+
+    from homeassistant.core import SupportsResponse
+
+    hass.services.async_register(
+        "calendar", "get_events", events, supports_response=SupportsResponse.ONLY
+    )
+    assert await async_workday(hass, entity, holiday) is False
+    assert await async_workday(hass, entity, date(2026, 10, 8)) is True
+    assert await async_workday(hass, entity, date(2026, 10, 10)) is False

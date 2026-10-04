@@ -3,6 +3,16 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.6.2
+
+- **Feiertage aus einem Kalender:** Ist ein Feiertagskalender eingetragen
+  (z. B. „Feiertage in Deutschland“), erkennt Joe jetzt auch Feiertage an
+  kommenden Tagen – für den Plan der Nacht, den Verlauf und die Profile an
+  freien Tagen im Bereich „Klima“. Vorher galt bei einem Kalender nur
+  Montag bis Freitag.
+- Beim Marstek steht jetzt „Automatisch (Omnibattery)“ – der Name der
+  Integration, über die Joe steuert.
+
 ## 0.6.1
 
 - **Handy unter seinem heutigen Namen:** Bei den Benachrichtigungen zeigt
