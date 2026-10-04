@@ -48,6 +48,8 @@ REACHED_K = 0.3
 LOG_SIZE = 50
 
 STATES = ("away", "free_day", "night")
+# States of a night entity that mean "people are in bed".
+NIGHT_STATES = ("on", "true", "sleeping", "asleep", "in_bed")
 
 
 def room_kind(state: Any) -> str:
@@ -132,6 +134,8 @@ class ClimateController:
             for p in self._config()["persons"]
             if p.get("person_entity")
         ]
+        if night := self._night_entity():
+            watched.append(night)
         if watched:
             self._unsubs.append(
                 async_track_state_change_event(self._hass, watched, self._on_change)
@@ -214,12 +218,28 @@ class ClimateController:
             return "free_day", "free_day"
         return None, "home"
 
+    def _night_entity(self) -> str | None:
+        settings = self._config().get("climate") or {}
+        if settings.get("night_by") == "entity":
+            return settings.get("night_entity")
+        return None
+
     def _night(self, room: dict[str, Any], now: datetime, entity_id: str) -> bool:
         """Within the night off, but not yet the time to come back for the morning."""
         start = _at(room.get("night_from") or "23:00")
         morning = _at(room.get("night_until") or "06:30")
         local = dt_util.as_local(now)
         today = local.date()
+        if entity := self._night_entity():
+            # Night while the entity says so (people are in bed); back in
+            # time for the morning all the same.
+            state = self._hass.states.get(entity)
+            if state is None or state.state not in NIGHT_STATES:
+                return False
+            end = datetime.combine(today, morning, local.tzinfo)
+            if end <= local:
+                end += timedelta(days=1)
+            return local < end - self._lead(entity_id, room)
         begin = datetime.combine(today, start, local.tzinfo)
         end = datetime.combine(today, morning, local.tzinfo)
         if end <= begin:

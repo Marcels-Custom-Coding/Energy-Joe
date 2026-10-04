@@ -460,6 +460,9 @@ export interface ClimateRoomConfig {
 
 export interface ClimateConfig {
   enabled: boolean;
+  /** When night is: each room's times, or an entity that is on while people are in bed. */
+  night_by?: "time" | "entity";
+  night_entity?: string | null;
   rooms: Record<string, ClimateRoomConfig>;
 }
 

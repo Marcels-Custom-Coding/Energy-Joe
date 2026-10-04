@@ -61,6 +61,34 @@ export const de = {
   "climate.pick_preset": "Profil wählen",
   "climate.night_off": "Nachts aus",
   "climate.night_span": "Aus von – bis",
+  "climate.night_back": "Spätestens wieder angenehm um",
+  "climate.night": "Wann ist nachts?",
+  "climate.night.say":
+    "Nachts heißt für mich: Ihr liegt im Bett. Dann kann die Klimaanlage aus – und vor dem Morgen fahre ich sie so rechtzeitig wieder hoch, dass es beim Aufstehen angenehm ist.",
+  "climate.night.by": "Nacht erkenne ich",
+  "climate.night.by.time": "an festen Uhrzeiten",
+  "climate.night.by.entity": "an einer Entität",
+  "climate.night.no_entity": "Noch keine Entität gewählt.",
+  "climate.night.now_on": "jetzt: Nacht",
+  "climate.night.now_off": "jetzt: wach",
+  "climate.night.change": "Andere Entität",
+  "climate.night.pick": "Entität wählen",
+  "climate.night.entity_say":
+    "Ist die Entität „an“, ist Nacht – z. B. ein Helfer, den deine Gute-Nacht-Routine einschaltet, ein Bettsensor oder ein Zeitplan. Die Uhrzeit für den Morgen stellst du je Raum ein.",
+  "climate.night.time_say": "Von wann bis wann, stellst du je Klimaanlage unten ein.",
+  "climate.entity": "Entität",
+  "climate.entities": "Entitäten",
+  "pick.night.title": "Was sagt dir, dass ihr im Bett seid?",
+  "tip.climate_night.text":
+    "Die Klimaanlage geht nachts aus und so früh wieder an, dass es zur eingestellten Morgen-Zeit wieder angenehm ist. Wann die Nacht beginnt, steht oben unter „Wann ist nachts?“: feste Uhrzeit oder eine Entität. Wie lange der Raum zum Abkühlen braucht, lerne ich mit der Zeit.",
+  "tip.climate_night_source.title": "Woran erkennt Joe die Nacht?",
+  "tip.climate_night_source.text":
+    "„An festen Uhrzeiten“: jede Klimaanlage hat ihre Zeit von – bis. „An einer Entität“: Nacht ist, solange die gewählte Entität „an“ ist – etwa ein Helfer (input_boolean), den deine Gute-Nacht-Routine einschaltet und morgens wieder aus, ein Bettsensor oder ein Zeitplan.",
+  "tip.climate_night_source.hint":
+    "Auch mit Entität fahre ich die Räume rechtzeitig zur Morgen-Zeit wieder hoch, falls morgens niemand ausschaltet.",
+  "tip.pick_night.title": "Welche Entität sagt „Nacht“?",
+  "tip.pick_night.text":
+    "Passend ist alles, was „an“ ist, solange ihr schlaft: ein Schalter oder Helfer (input_boolean), den deine Gute-Nacht-Routine setzt, ein Binärsensor eines Bettsensors oder ein Zeitplan.",
   "climate.night_from": "Aus ab",
   "climate.night_until": "Wieder angenehm bis",
   "climate.now.home": "Jetzt: wie eingestellt – jemand ist da.",
@@ -89,8 +117,6 @@ export const de = {
   "tip.climate_free_day.text":
     "An Wochenenden und Feiertagen (laut deinem Arbeitstag-Sensor) schalte ich auf dieses Profil, solange jemand zu Hause ist – z. B. ein Homematic-IP-Profil „Feiertag“ mit späterem Aufheizen.",
   "tip.climate_night.title": "Nachts aus?",
-  "tip.climate_night.text":
-    "Die Klimaanlage geht zur ersten Zeit aus und so früh wieder an, dass es zur zweiten Zeit wieder angenehm ist. Wie lange sie dafür braucht, lerne ich mit der Zeit.",
   "tab.settings": "Einstellungen",
   "nav.label": "Bereiche",
 

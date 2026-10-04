@@ -39,6 +39,9 @@ _LOGGER = logging.getLogger(__name__)
 
 # How far back Joe reads the history when he starts for the first time.
 BACKFILL_DAYS = 56
+# Once, Joe reads as far back as Home Assistant's long-term statistics go
+# (they are kept for good), so he knows last winter from the start.
+READ_BACK_DAYS = 730
 # Hours of the last days are checked again every hour (the recorder fills its
 # statistics a few minutes after each hour, and restarts leave gaps).
 REPAIR_DAYS = 2
@@ -121,6 +124,8 @@ class JoeObserver:
         if latest is not None:
             gap = (self._bucket - latest).total_seconds() / 86400
             days = max(REPAIR_DAYS, min(BACKFILL_DAYS, int(gap) + 1))
+        if self._store.read_back < READ_BACK_DAYS:
+            days = READ_BACK_DAYS
         self.start_backfill(days)
 
     async def async_stop(self) -> None:
@@ -413,6 +418,7 @@ class JoeObserver:
                 (h for d in known.values() for h in d.get("hours", [])), start, end
             )
             if not missing:
+                self._store.set_read_back(days)
                 return
             start = missing[0]
         self.status["backfill"] = {"state": "running", "from": start.isoformat()}
@@ -428,6 +434,7 @@ class JoeObserver:
             self.status["backfill"] = {"state": "failed"}
         else:
             await self._store.async_put_hours(records, force=rebuild)
+            self._store.set_read_back(days)
             if rebuild:
                 self._store.set_format(HOURS_FORMAT)
             state = (

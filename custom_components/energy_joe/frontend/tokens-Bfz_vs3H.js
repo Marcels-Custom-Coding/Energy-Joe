@@ -640,6 +640,28 @@ var Me = {
 	"climate.pick_preset": "Profil wählen",
 	"climate.night_off": "Nachts aus",
 	"climate.night_span": "Aus von – bis",
+	"climate.night_back": "Spätestens wieder angenehm um",
+	"climate.night": "Wann ist nachts?",
+	"climate.night.say": "Nachts heißt für mich: Ihr liegt im Bett. Dann kann die Klimaanlage aus – und vor dem Morgen fahre ich sie so rechtzeitig wieder hoch, dass es beim Aufstehen angenehm ist.",
+	"climate.night.by": "Nacht erkenne ich",
+	"climate.night.by.time": "an festen Uhrzeiten",
+	"climate.night.by.entity": "an einer Entität",
+	"climate.night.no_entity": "Noch keine Entität gewählt.",
+	"climate.night.now_on": "jetzt: Nacht",
+	"climate.night.now_off": "jetzt: wach",
+	"climate.night.change": "Andere Entität",
+	"climate.night.pick": "Entität wählen",
+	"climate.night.entity_say": "Ist die Entität „an“, ist Nacht – z. B. ein Helfer, den deine Gute-Nacht-Routine einschaltet, ein Bettsensor oder ein Zeitplan. Die Uhrzeit für den Morgen stellst du je Raum ein.",
+	"climate.night.time_say": "Von wann bis wann, stellst du je Klimaanlage unten ein.",
+	"climate.entity": "Entität",
+	"climate.entities": "Entitäten",
+	"pick.night.title": "Was sagt dir, dass ihr im Bett seid?",
+	"tip.climate_night.text": "Die Klimaanlage geht nachts aus und so früh wieder an, dass es zur eingestellten Morgen-Zeit wieder angenehm ist. Wann die Nacht beginnt, steht oben unter „Wann ist nachts?“: feste Uhrzeit oder eine Entität. Wie lange der Raum zum Abkühlen braucht, lerne ich mit der Zeit.",
+	"tip.climate_night_source.title": "Woran erkennt Joe die Nacht?",
+	"tip.climate_night_source.text": "„An festen Uhrzeiten“: jede Klimaanlage hat ihre Zeit von – bis. „An einer Entität“: Nacht ist, solange die gewählte Entität „an“ ist – etwa ein Helfer (input_boolean), den deine Gute-Nacht-Routine einschaltet und morgens wieder aus, ein Bettsensor oder ein Zeitplan.",
+	"tip.climate_night_source.hint": "Auch mit Entität fahre ich die Räume rechtzeitig zur Morgen-Zeit wieder hoch, falls morgens niemand ausschaltet.",
+	"tip.pick_night.title": "Welche Entität sagt „Nacht“?",
+	"tip.pick_night.text": "Passend ist alles, was „an“ ist, solange ihr schlaft: ein Schalter oder Helfer (input_boolean), den deine Gute-Nacht-Routine setzt, ein Binärsensor eines Bettsensors oder ein Zeitplan.",
 	"climate.night_from": "Aus ab",
 	"climate.night_until": "Wieder angenehm bis",
 	"climate.now.home": "Jetzt: wie eingestellt – jemand ist da.",
@@ -662,7 +684,6 @@ var Me = {
 	"tip.climate_free_day.title": "Freie Tage?",
 	"tip.climate_free_day.text": "An Wochenenden und Feiertagen (laut deinem Arbeitstag-Sensor) schalte ich auf dieses Profil, solange jemand zu Hause ist – z. B. ein Homematic-IP-Profil „Feiertag“ mit späterem Aufheizen.",
 	"tip.climate_night.title": "Nachts aus?",
-	"tip.climate_night.text": "Die Klimaanlage geht zur ersten Zeit aus und so früh wieder an, dass es zur zweiten Zeit wieder angenehm ist. Wie lange sie dafür braucht, lerne ich mit der Zeit.",
 	"tab.settings": "Einstellungen",
 	"nav.label": "Bereiche",
 	"mode.simulation": "Simulation",
@@ -2404,6 +2425,28 @@ var Me = {
 	"climate.pick_preset": "Choose a profile",
 	"climate.night_off": "Off at night",
 	"climate.night_span": "Off from – until",
+	"climate.night_back": "Comfortable again by",
+	"climate.night": "When is night?",
+	"climate.night.say": "Night to me means: you are in bed. The air conditioning can be off then – and before the morning I bring it back early enough to be comfortable when you get up.",
+	"climate.night.by": "I tell night",
+	"climate.night.by.time": "by fixed times",
+	"climate.night.by.entity": "by an entity",
+	"climate.night.no_entity": "No entity chosen yet.",
+	"climate.night.now_on": "now: night",
+	"climate.night.now_off": "now: awake",
+	"climate.night.change": "Other entity",
+	"climate.night.pick": "Pick an entity",
+	"climate.night.entity_say": "While the entity is “on”, it is night – e.g. a helper your good-night routine switches on, a bed sensor or a schedule. Set the morning time per room.",
+	"climate.night.time_say": "Set from when to when for each air conditioner below.",
+	"climate.entity": "Entity",
+	"climate.entities": "Entities",
+	"pick.night.title": "What tells you that you are in bed?",
+	"tip.climate_night.text": "The air conditioner goes off at night and comes back early enough to be comfortable at the morning time you set. When night starts is set above under “When is night?”: fixed times or an entity. How long the room takes to cool, I learn over time.",
+	"tip.climate_night_source.title": "How does Joe tell night?",
+	"tip.climate_night_source.text": "“By fixed times”: each air conditioner has its own from – to. “By an entity”: it is night while the chosen entity is “on” – e.g. a helper (input_boolean) your good-night routine switches on and off again in the morning, a bed sensor or a schedule.",
+	"tip.climate_night_source.hint": "With an entity too, I bring the rooms back in time for the morning in case nobody switches it off.",
+	"tip.pick_night.title": "Which entity says “night”?",
+	"tip.pick_night.text": "Anything that is “on” while you sleep fits: a switch or helper (input_boolean) your good-night routine sets, a bed sensor's binary sensor or a schedule.",
 	"climate.night_from": "Off from",
 	"climate.night_until": "Comfortable again by",
 	"climate.now.home": "Now: as set – someone is home.",
@@ -2426,7 +2469,6 @@ var Me = {
 	"tip.climate_free_day.title": "Days off?",
 	"tip.climate_free_day.text": "On weekends and holidays (according to your workday sensor) I switch to this profile while someone is home – e.g. a Homematic IP profile “Holiday” that warms up later.",
 	"tip.climate_night.title": "Off at night?",
-	"tip.climate_night.text": "The air conditioner goes off at the first time and back on early enough to be comfortable by the second time. How long it needs I learn over time.",
 	"tab.settings": "Settings",
 	"nav.label": "Sections",
 	"mode.simulation": "Simulation",
@@ -4129,14 +4171,14 @@ function Le(e) {
 }
 //#endregion
 //#region src/define.ts
-var Re = "0.7.1";
+var Re = "0.8.0";
 function H(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Re, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.7.1" && Be();
+	n.joeVersion !== "0.8.0" && Be();
 }
 var ze = !1;
 function Be() {
@@ -4746,6 +4788,12 @@ var He = [
 		"kJ",
 		"MJ"
 	].includes(G(e)),
+	night: (e) => [
+		"binary_sensor",
+		"input_boolean",
+		"switch",
+		"schedule"
+	].includes(W(e)),
 	any: () => !0
 };
 function W(e) {

@@ -38,8 +38,11 @@ _LOGGER = logging.getLogger(__name__)
 LEARN_DAYS = 28
 BUFFER_EVALUATIONS = 21
 RESULT_DAYS = 400
-# The models (consumption, batteries, weather, hot water) look further back.
+# The models (batteries, weather, presence, cars) look further back.
 MODEL_DAYS = 60
+# Consumption follows the seasons: those models learn from years, recent days
+# weighing most (see learn.models), so Joe need not start anew every winter.
+SEASON_DAYS = 730
 HOT_WATER_DAYS = 21
 # What a reset forgets, by area (see async_reset).
 SCOPES: dict[str, tuple[str, ...]] = {
@@ -238,12 +241,17 @@ class JoeLearner:
         if learned.get("models_day") == today.isoformat():
             return
         first = (today - timedelta(days=MODEL_DAYS)).isoformat()
-        days = await self._history.async_days(
-            first, (today - timedelta(days=1)).isoformat()
+        seasons = await self._history.async_days(
+            (today - timedelta(days=SEASON_DAYS)).isoformat(),
+            (today - timedelta(days=1)).isoformat(),
         )
+        days = {day: data for day, data in seasons.items() if day >= first}
         await self._async_label_days(config, days)
         consumption = _since(learned, "consumption", days, first)
-        rows = daily_rows(consumption, model.flexible_consumers(config))
+        rows = daily_rows(
+            _since(learned, "consumption", seasons, ""),
+            model.flexible_consumers(config),
+        )
         sunny = _since(learned, "forecast", days, first)
         values: dict[str, Any] = {
             "consumption_model": consumption_model(rows),

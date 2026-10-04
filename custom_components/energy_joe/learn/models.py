@@ -33,6 +33,10 @@ SOURCE_DAYS = 7
 CAR_DAYS = 8
 # One poll writes level and odometer a moment apart, in either order.
 SAME_POLL = timedelta(minutes=2)
+# How fast older days lose weight in the consumption models, and the least
+# weight they keep: a year-old winter still teaches how much heating costs.
+HALF_LIFE_DAYS = 120
+OLD_WEIGHT = 0.2
 # More than this between two odometer readings is a glitch, not a drive (km).
 MAX_STEP_KM = 1500.0
 
@@ -103,16 +107,22 @@ def _features(row_workday: bool, temp: float, presence: float | None) -> list[fl
     return features
 
 
-def _solve(rows: list[list[float]], targets: list[float]) -> list[float] | None:
-    """Least squares via the normal equations (a few features, a little ridge)."""
+def _solve(
+    rows: list[list[float]],
+    targets: list[float],
+    weights: list[float] | None = None,
+) -> list[float] | None:
+    """Weighted least squares via the normal equations (a few features, a little ridge)."""
     size = len(rows[0])
     matrix = [[0.0] * size for _ in range(size)]
     vector = [0.0] * size
-    for features, target in zip(rows, targets, strict=True):
+    for features, target, weight in zip(
+        rows, targets, weights or [1.0] * len(rows), strict=True
+    ):
         for i in range(size):
-            vector[i] += features[i] * target
+            vector[i] += weight * features[i] * target
             for j in range(size):
-                matrix[i][j] += features[i] * features[j]
+                matrix[i][j] += weight * features[i] * features[j]
     for i in range(1, size):
         matrix[i][i] += 1e-3
     # Gaussian elimination with partial pivoting.
@@ -135,6 +145,18 @@ def _solve(rows: list[list[float]], targets: list[float]) -> list[float] | None:
     return result
 
 
+def _weights(rows: list[DayRow]) -> list[float]:
+    """Recent days count most; older seasons still count (last winter's heating)."""
+    newest = max(date.fromisoformat(r.date) for r in rows)
+    return [
+        max(
+            OLD_WEIGHT,
+            0.5 ** ((newest - date.fromisoformat(r.date)).days / HALF_LIFE_DAYS),
+        )
+        for r in rows
+    ]
+
+
 def _fit(rows: list[DayRow], value: Any, use_presence: bool) -> dict[str, Any] | None:
     usable = [
         r
@@ -150,7 +172,7 @@ def _fit(rows: list[DayRow], value: Any, use_presence: bool) -> dict[str, Any] |
         for r in usable
     ]  # type: ignore[arg-type]
     targets = [value(r) for r in usable]
-    coefficients = _solve(features, targets)
+    coefficients = _solve(features, targets, _weights(usable))
     if coefficients is None:
         return None
     predicted = [

@@ -60,6 +60,34 @@ export const en: Record<Key, string> = {
   "climate.pick_preset": "Choose a profile",
   "climate.night_off": "Off at night",
   "climate.night_span": "Off from – until",
+  "climate.night_back": "Comfortable again by",
+  "climate.night": "When is night?",
+  "climate.night.say":
+    "Night to me means: you are in bed. The air conditioning can be off then – and before the morning I bring it back early enough to be comfortable when you get up.",
+  "climate.night.by": "I tell night",
+  "climate.night.by.time": "by fixed times",
+  "climate.night.by.entity": "by an entity",
+  "climate.night.no_entity": "No entity chosen yet.",
+  "climate.night.now_on": "now: night",
+  "climate.night.now_off": "now: awake",
+  "climate.night.change": "Other entity",
+  "climate.night.pick": "Pick an entity",
+  "climate.night.entity_say":
+    "While the entity is “on”, it is night – e.g. a helper your good-night routine switches on, a bed sensor or a schedule. Set the morning time per room.",
+  "climate.night.time_say": "Set from when to when for each air conditioner below.",
+  "climate.entity": "Entity",
+  "climate.entities": "Entities",
+  "pick.night.title": "What tells you that you are in bed?",
+  "tip.climate_night.text":
+    "The air conditioner goes off at night and comes back early enough to be comfortable at the morning time you set. When night starts is set above under “When is night?”: fixed times or an entity. How long the room takes to cool, I learn over time.",
+  "tip.climate_night_source.title": "How does Joe tell night?",
+  "tip.climate_night_source.text":
+    "“By fixed times”: each air conditioner has its own from – to. “By an entity”: it is night while the chosen entity is “on” – e.g. a helper (input_boolean) your good-night routine switches on and off again in the morning, a bed sensor or a schedule.",
+  "tip.climate_night_source.hint":
+    "With an entity too, I bring the rooms back in time for the morning in case nobody switches it off.",
+  "tip.pick_night.title": "Which entity says “night”?",
+  "tip.pick_night.text":
+    "Anything that is “on” while you sleep fits: a switch or helper (input_boolean) your good-night routine sets, a bed sensor's binary sensor or a schedule.",
   "climate.night_from": "Off from",
   "climate.night_until": "Comfortable again by",
   "climate.now.home": "Now: as set – someone is home.",
@@ -87,8 +115,6 @@ export const en: Record<Key, string> = {
   "tip.climate_free_day.text":
     "On weekends and holidays (according to your workday sensor) I switch to this profile while someone is home – e.g. a Homematic IP profile “Holiday” that warms up later.",
   "tip.climate_night.title": "Off at night?",
-  "tip.climate_night.text":
-    "The air conditioner goes off at the first time and back on early enough to be comfortable by the second time. How long it needs I learn over time.",
   "tab.settings": "Settings",
   "nav.label": "Sections",
 

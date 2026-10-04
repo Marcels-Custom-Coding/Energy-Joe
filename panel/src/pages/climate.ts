@@ -3,7 +3,7 @@ import { property, state } from "lit/decorators.js";
 import { displayTitle, swoosh } from "../components/bits";
 import "../components/pose";
 import { tip } from "../components/tip";
-import { saveConfig } from "../config";
+import { pickEntity, saveConfig } from "../config";
 import { define } from "../define";
 import { formatNumber } from "../entities";
 import type { Translate } from "../i18n";
@@ -218,7 +218,7 @@ export class JoeClimatePage extends LitElement {
         </div>
         <joe-pose name="relax"></joe-pose>
       </div>
-      ${this.renderMain(t, joe, climate.enabled)} ${this.renderPresence(t, joe)}
+      ${this.renderMain(t, joe, climate.enabled)} ${this.renderPresence(t, joe)} ${this.renderNightSource(t, joe)}
       ${devices.length ? this.renderMeters(t, joe, devices) : nothing}
       ${this.failed ? html`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${t("climate.failed")}</span></div>` : nothing}
       ${this.found && !devices.length ? html`<p class="hint">${t("climate.none")}</p>` : nothing}
@@ -278,6 +278,64 @@ export class JoeClimatePage extends LitElement {
     </section>`;
   }
 
+  /** When night is: fixed times per room, or an entity that says people are in bed. */
+  private renderNightSource(t: Translate, joe: JoeState): TemplateResult {
+    const climate = joe.config.climate;
+    const by = climate?.night_by ?? "time";
+    const entity = climate?.night_entity ?? null;
+    const live = entity ? this.hass?.states[entity] : undefined;
+    return html`<section class="card" data-tipped>
+      <div class="head">
+        <div class="eyebrow"><ha-icon icon="mdi:weather-night"></ha-icon>${t("climate.night")}</div>
+        ${tip(t, "climate_night_source")}
+      </div>
+      <p class="hint">${t("climate.night.say")}</p>
+      <div class="row">
+        <span>${t("climate.night.by")}</span>
+        <span class="seg" role="group" aria-label=${t("climate.night.by")}>
+          ${(["time", "entity"] as const).map(
+            (way) => html`<button type="button" aria-pressed=${String(by === way)} @click=${() => this.setNightBy(way)}>
+              ${t(`climate.night.by.${way}`)}
+            </button>`,
+          )}
+        </span>
+      </div>
+      ${by === "entity"
+        ? html`<div class="row">
+              <span>${entity ? html`<b title=${entity}>${live?.attributes.friendly_name ?? entity}</b>` : t("climate.night.no_entity")}</span>
+              ${live ? html`<span class="chip ${live.state === "on" ? "ok" : ""}">${t(live.state === "on" ? "climate.night.now_on" : "climate.night.now_off")}</span>` : nothing}
+              <button type="button" class="btn btn-secondary" @click=${() => void this.pickNight()}>
+                ${t(entity ? "climate.night.change" : "climate.night.pick")}
+              </button>
+            </div>
+            ${entity ? html`<details class="ent"><summary>${t("climate.entity")}</summary><code>${entity}</code></details>` : nothing}
+            <p class="hint">${t("climate.night.entity_say")}</p>`
+        : html`<p class="hint">${t("climate.night.time_say")}</p>`}
+    </section>`;
+  }
+
+  private setNightBy(way: "time" | "entity"): void {
+    void saveConfig(this, { climate: { night_by: way } });
+    if (way === "entity" && !this.state?.config.climate?.night_entity) {
+      void this.pickNight();
+    }
+  }
+
+  private async pickNight(): Promise<void> {
+    const t = this.t;
+    if (!t) return;
+    const entity = this.state?.config.climate?.night_entity;
+    const picked = await pickEntity(this, {
+      heading: t("pick.night.title"),
+      tip: "pick_night",
+      filter: "night",
+      selected: entity ? [entity] : [],
+    });
+    if (picked) {
+      void saveConfig(this, { climate: { night_by: "entity", night_entity: picked.selected[0] ?? null } });
+    }
+  }
+
   private renderDevice(t: Translate, joe: JoeState, device: ClimateDevice): TemplateResult {
     const room: ClimateRoomConfig = { ...DEFAULT_ROOM, ...(joe.config.climate?.rooms?.[device.entity_id] ?? {}) };
     const live = this.hass?.states[device.entity_id];
@@ -289,7 +347,7 @@ export class JoeClimatePage extends LitElement {
     const rate = joe.climate?.rates?.[device.entity_id];
     return html`<section class="card" data-tipped>
       <div class="head">
-        <b>${device.name}</b>
+        <b title=${device.entity_id}>${device.name}</b>
         ${current != null
           ? html`<span class="chip">${formatNumber(t.lang, Number(current), 1)} °C${target != null ? ` → ${formatNumber(t.lang, Number(target), 1)} °C` : ""}</span>`
           : nothing}
@@ -303,6 +361,7 @@ export class JoeClimatePage extends LitElement {
         ></button>
         ${tip(t, "climate_room")}
       </div>
+      <details class="ent"><summary>${t("climate.entity")}</summary><code>${device.entity_id}</code></details>
       ${room.enabled
         ? html`<div class="row" data-tipped>
               <span>${t("climate.away")}</span>
@@ -372,7 +431,15 @@ export class JoeClimatePage extends LitElement {
         const power = chosen?.power ? this.hass?.states[chosen.power] : undefined;
         const value = shown ? this.key(shown) : meter === "none" ? "none" : "";
         return html`<div class="line">
-          <div class="dev"><b>${device.name}</b><small>${device.area ?? t("climate.no_area")}</small></div>
+          <div class="dev">
+            <b title=${device.entity_id}>${device.name}</b><small>${device.area ?? t("climate.no_area")}</small>
+            <details class="ent">
+              <summary>${t("climate.entities")}</summary>
+              <code>${device.entity_id}</code>
+              ${chosen?.power ? html`<code>${chosen.power}</code>` : nothing}
+              ${chosen?.energy ? html`<code>${chosen.energy}</code>` : nothing}
+            </details>
+          </div>
           <select class="input" aria-label=${t("climate.meter.pick", { name: device.name })} @change=${(ev: Event) => this.pickMeter(device, (ev.target as HTMLSelectElement).value)}>
             ${!shown && meter !== "none" ? html`<option value="" selected disabled>${t("climate.meter.choose")}</option>` : nothing}
             ${chosen && !this.option(chosen) ? html`<option value=${value} selected>${chosen.power ?? chosen.energy ?? chosen.device_id}</option>` : nothing}
@@ -488,10 +555,15 @@ export class JoeClimatePage extends LitElement {
       ${tip(t, "climate_night")}
     </div>
     ${room.night_off
-      ? html`<div class="row">
-          <span>${t("climate.night_span")}</span>
-          ${time("night_from", room.night_from)} – ${time("night_until", room.night_until)}
-        </div>`
+      ? this.state?.config.climate?.night_by === "entity"
+        ? html`<div class="row">
+            <span>${t("climate.night_back")}</span>
+            ${time("night_until", room.night_until)}
+          </div>`
+        : html`<div class="row">
+            <span>${t("climate.night_span")}</span>
+            ${time("night_from", room.night_from)} – ${time("night_until", room.night_until)}
+          </div>`
       : nothing}`;
   }
 

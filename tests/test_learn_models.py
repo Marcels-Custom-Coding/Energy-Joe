@@ -362,3 +362,40 @@ async def test_a_person_may_have_calendar_rules_of_their_own(
     }
     config["persons"][1]["calendars"] = []
     assert (await async_day_labels(hass, config, day, False))["ben"] == "travel"
+
+
+def test_last_winter_still_teaches_the_heating() -> None:
+    """Summer days alone say nothing about heating; last winter's days do."""
+    from custom_components.energy_joe.learn.models import DayRow, consumption_model
+
+    today = date(2026, 7, 1)
+    rows = []
+    for back in range(40):
+        rows.append(
+            DayRow(
+                date=(today - timedelta(days=back)).isoformat(),
+                home=8.0 + (back % 3) * 0.2,
+                workday=back % 7 < 5,
+                temp=20.0 + back % 4,
+                presence=None,
+                use={},
+                excluded=False,
+            )
+        )
+    for back in range(200, 260):
+        temp = -2.0 + back % 9
+        rows.append(
+            DayRow(
+                date=(today - timedelta(days=back)).isoformat(),
+                home=8.0 + 0.6 * max(0.0, 15.0 - temp),
+                workday=back % 7 < 5,
+                temp=temp,
+                presence=None,
+                use={},
+                excluded=False,
+            )
+        )
+    found = consumption_model(rows)
+    assert found is not None
+    assert found["heat"] == pytest.approx(0.6, abs=0.1)
+    assert found["base"] == pytest.approx(8.2, abs=0.5)

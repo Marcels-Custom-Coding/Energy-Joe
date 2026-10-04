@@ -27,7 +27,7 @@ Joe braucht kein Vorwissen. Er findet selbst, was er braucht, fragt in Alltagssp
 
 ### Beobachten und lernen
 
-- Jede Stunde schreibt Joe Verbrauch, Sonne, Netz, Speicher, Außentemperatur, Anwesenheit und Solarprognose auf und liest die letzten Wochen aus dem Verlauf von Home Assistant.
+- Jede Stunde schreibt Joe Verbrauch, Sonne, Netz, Speicher, Außentemperatur, Anwesenheit und Solarprognose auf und liest beim Start bis zu zwei Jahre aus der Langzeit-Statistik von Home Assistant. Er behält alles über Jahre, damit er nicht jeden Winter neu anfängt.
 - Den Hausverbrauch rechnet er wie das Energie-Dashboard (Balkonkraftwerke inklusive). Geräte, die über evcc mit Sonnenüberschuss oder nur bei günstigem Strom laufen, zählt er getrennt.
 - Einmal am Tag lernt er erklärbare Modelle: Verbrauch nach Außentemperatur, Arbeitstag und Anwesenheit, wie viel die Speicher wirklich fassen, wie gut die Prognose bei klarem, wechselhaftem und trübem Wetter trifft und wie schnell das Warmwasser heizt und abkühlt.
 - Aus euren Kalendern liest er, ob morgen Büro, Homeoffice oder Urlaub ist.
@@ -59,7 +59,7 @@ Joe braucht kein Vorwissen. Er findet selbst, was er braucht, fragt in Alltagssp
 - Neuer Bereich „Klima“: Für jedes Thermostat und jede Klimaanlage einzeln wählst du, ob Joe es steuert.
 - Ist keiner zu Hause: absenken (beim Kühlen anheben), ganz aus oder ein Profil des Geräts – bei Homematic IP z. B. dein Heizprofil „Abwesend“. An freien Tagen auf Wunsch ein eigenes Profil.
 - Kommt jemand heim (Integration „Nähe“/Proximity), fährt Joe die Räume so rechtzeitig hoch, wie sie es laut Gelerntem brauchen, und stellt alles genau so zurück, wie es war.
-- Klimaanlagen auf Wunsch nachts aus und rechtzeitig vor dem Morgen wieder an.
+- Klimaanlagen auf Wunsch nachts aus und rechtzeitig vor dem Morgen wieder an. Wann Nacht ist, sagen feste Uhrzeiten oder eine Entität (z. B. deine Gute-Nacht-Routine oder ein Bettsensor).
 - Messgerät koppeln: Joe schlägt zu jedem Klimagerät das Gerät vor, das seine Leistung misst (z. B. einen Kanal eines Shelly Pro 3EM). Mehrere Klimageräte dürfen sich ein Messgerät teilen.
 
 ### Termine des Autos

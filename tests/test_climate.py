@@ -171,3 +171,29 @@ async def test_a_holiday_calendar_tells_the_days_off(hass: HomeAssistant) -> Non
     assert await async_workday(hass, entity, holiday) is False
     assert await async_workday(hass, entity, date(2026, 10, 8)) is True
     assert await async_workday(hass, entity, date(2026, 10, 10)) is False
+
+
+async def test_night_from_an_entity(hass: HomeAssistant) -> None:
+    """Night while the entity is on (in bed), back in time for the morning."""
+    from datetime import datetime
+
+    from homeassistant.util import dt as dt_util
+
+    install(hass)
+    cfg = config(night_off=True, night_until="06:30")
+    cfg["climate"].update(night_by="entity", night_entity="input_boolean.gute_nacht")
+    joe = ClimateController(hass, lambda: cfg, lambda: "live", lambda: None)
+    room = cfg["climate"]["rooms"][ROOM]
+    zone = dt_util.get_default_time_zone()
+    late = datetime(2026, 1, 10, 21, 0, tzinfo=zone)
+    hass.states.async_set("input_boolean.gute_nacht", "off")
+    assert not joe._night(room, late, ROOM)
+    hass.states.async_set("input_boolean.gute_nacht", "on")
+    assert joe._night(room, late, ROOM)
+    assert joe.desired(ROOM, room, late) == ("night", "night")
+    # Shortly before the morning the room comes back, entity or not.
+    assert not joe._night(room, datetime(2026, 1, 11, 6, 20, tzinfo=zone), ROOM)
+    # Fixed times are not used while an entity tells the night.
+    cfg["climate"]["night_entity"] = None
+    cfg["climate"]["night_by"] = "time"
+    assert joe._night(room, datetime(2026, 1, 11, 1, 0, tzinfo=zone), ROOM)

@@ -1,4 +1,4 @@
-import { A as e, C as t, D as n, E as r, O as i, S as a, T as o, _ as s, a as c, b as l, c as u, d, f, g as p, h as m, i as h, j as g, k as _, l as v, m as y, n as ee, o as te, p as ne, r as re, s as b, t as ie, u as ae, v as oe, w as se, x, y as S } from "./tokens-BoLLatyG.js";
+import { A as e, C as t, D as n, E as r, O as i, S as a, T as o, _ as s, a as c, b as l, c as u, d, f, g as p, h as m, i as h, j as g, k as _, l as v, m as y, n as ee, o as te, p as ne, r as re, s as b, t as ie, u as ae, v as oe, w as se, x, y as S } from "./tokens-Bfz_vs3H.js";
 //#region src/assets.ts
 var ce = import.meta.url.replace(/[^/]*$/, ""), le = (e) => `${ce}${e}`, C = _`<svg
   class="swoosh"
@@ -4365,7 +4365,7 @@ var gt = {
         </div>
         <joe-pose name="relax"></joe-pose>
       </div>
-      ${this.renderMain(e, t, n.enabled)} ${this.renderPresence(e, t)}
+      ${this.renderMain(e, t, n.enabled)} ${this.renderPresence(e, t)} ${this.renderNightSource(e, t)}
       ${r.length ? this.renderMeters(e, t, r) : i}
       ${this.failed ? _`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${e("climate.failed")}</span></div>` : i}
       ${this.found && !r.length ? _`<p class="hint">${e("climate.none")}</p>` : i}
@@ -4413,6 +4413,50 @@ var gt = {
       ${n?.free_day ? _`<p class="hint">${e("climate.free_day")}</p>` : i}
     </section>`;
 	}
+	renderNightSource(e, t) {
+		let n = t.config.climate, r = n?.night_by ?? "time", a = n?.night_entity ?? null, o = a ? this.hass?.states[a] : void 0;
+		return _`<section class="card" data-tipped>
+      <div class="head">
+        <div class="eyebrow"><ha-icon icon="mdi:weather-night"></ha-icon>${e("climate.night")}</div>
+        ${v(e, "climate_night_source")}
+      </div>
+      <p class="hint">${e("climate.night.say")}</p>
+      <div class="row">
+        <span>${e("climate.night.by")}</span>
+        <span class="seg" role="group" aria-label=${e("climate.night.by")}>
+          ${["time", "entity"].map((t) => _`<button type="button" aria-pressed=${String(r === t)} @click=${() => this.setNightBy(t)}>
+              ${e(`climate.night.by.${t}`)}
+            </button>`)}
+        </span>
+      </div>
+      ${r === "entity" ? _`<div class="row">
+              <span>${a ? _`<b title=${a}>${o?.attributes.friendly_name ?? a}</b>` : e("climate.night.no_entity")}</span>
+              ${o ? _`<span class="chip ${o.state === "on" ? "ok" : ""}">${e(o.state === "on" ? "climate.night.now_on" : "climate.night.now_off")}</span>` : i}
+              <button type="button" class="btn btn-secondary" @click=${() => void this.pickNight()}>
+                ${e(a ? "climate.night.change" : "climate.night.pick")}
+              </button>
+            </div>
+            ${a ? _`<details class="ent"><summary>${e("climate.entity")}</summary><code>${a}</code></details>` : i}
+            <p class="hint">${e("climate.night.entity_say")}</p>` : _`<p class="hint">${e("climate.night.time_say")}</p>`}
+    </section>`;
+	}
+	setNightBy(e) {
+		j(this, { climate: { night_by: e } }), e === "entity" && !this.state?.config.climate?.night_entity && this.pickNight();
+	}
+	async pickNight() {
+		let e = this.t;
+		if (!e) return;
+		let t = this.state?.config.climate?.night_entity, n = await M(this, {
+			heading: e("pick.night.title"),
+			tip: "pick_night",
+			filter: "night",
+			selected: t ? [t] : []
+		});
+		n && j(this, { climate: {
+			night_by: "entity",
+			night_entity: n.selected[0] ?? null
+		} });
+	}
 	renderDevice(e, t, n) {
 		let r = {
 			...gt,
@@ -4420,7 +4464,7 @@ var gt = {
 		}, a = this.hass?.states[n.entity_id], o = a?.attributes.current_temperature ?? n.current_temperature, s = a?.attributes.temperature ?? n.temperature, c = n.hvac_modes.includes("cool"), l = n.preset_modes.filter((e) => !["none", "boost"].includes(e)), u = t.climate?.rooms?.[n.entity_id], d = t.climate?.rates?.[n.entity_id];
 		return _`<section class="card" data-tipped>
       <div class="head">
-        <b>${n.name}</b>
+        <b title=${n.entity_id}>${n.name}</b>
         ${o == null ? i : _`<span class="chip">${y(e.lang, Number(o), 1)} °C${s == null ? "" : ` → ${y(e.lang, Number(s), 1)} °C`}</span>`}
         <button
           type="button"
@@ -4432,6 +4476,7 @@ var gt = {
         ></button>
         ${v(e, "climate_room")}
       </div>
+      <details class="ent"><summary>${e("climate.entity")}</summary><code>${n.entity_id}</code></details>
       ${r.enabled ? _`<div class="row" data-tipped>
               <span>${e("climate.away")}</span>
               <span class="seg" role="group" aria-label=${e("climate.away")}>
@@ -4485,7 +4530,15 @@ var gt = {
       ${n.map((t) => {
 			let s = a[t.entity_id]?.meter ?? null, c = s && s !== "none" ? s : null, l = s == null ? this.found?.suggested?.[t.entity_id] : void 0, u = c ?? l, d = c ? n.filter((e) => e.entity_id !== t.entity_id && this.sameMeter(a[e.entity_id]?.meter, c)) : [], f = c?.power ? this.hass?.states[c.power] : void 0, p = u ? this.key(u) : s === "none" ? "none" : "";
 			return _`<div class="line">
-          <div class="dev"><b>${t.name}</b><small>${t.area ?? e("climate.no_area")}</small></div>
+          <div class="dev">
+            <b title=${t.entity_id}>${t.name}</b><small>${t.area ?? e("climate.no_area")}</small>
+            <details class="ent">
+              <summary>${e("climate.entities")}</summary>
+              <code>${t.entity_id}</code>
+              ${c?.power ? _`<code>${c.power}</code>` : i}
+              ${c?.energy ? _`<code>${c.energy}</code>` : i}
+            </details>
+          </div>
           <select class="input" aria-label=${e("climate.meter.pick", { name: t.name })} @change=${(e) => this.pickMeter(t, e.target.value)}>
             ${!u && s !== "none" ? _`<option value="" selected disabled>${e("climate.meter.choose")}</option>` : i}
             ${c && !this.option(c) ? _`<option value=${p} selected>${c.power ?? c.energy ?? c.device_id}</option>` : i}
@@ -4580,10 +4633,13 @@ var gt = {
       ></button>
       ${v(e, "climate_night")}
     </div>
-    ${n.night_off ? _`<div class="row">
-          <span>${e("climate.night_span")}</span>
-          ${r("night_from", n.night_from)} – ${r("night_until", n.night_until)}
-        </div>` : i}`;
+    ${n.night_off ? this.state?.config.climate?.night_by === "entity" ? _`<div class="row">
+            <span>${e("climate.night_back")}</span>
+            ${r("night_until", n.night_until)}
+          </div>` : _`<div class="row">
+            <span>${e("climate.night_span")}</span>
+            ${r("night_from", n.night_from)} – ${r("night_until", n.night_until)}
+          </div>` : i}`;
 	}
 	save(e, t) {
 		let n = {

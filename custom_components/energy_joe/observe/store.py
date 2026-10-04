@@ -14,8 +14,9 @@ from .records import day_key, merge
 VERSION = 1
 META_KEY = f"{DOMAIN}.history"
 SAVE_DELAY = 60
-# Months kept on disk; older ones are deleted.
-KEEP_MONTHS = 25
+# Months kept on disk; older ones are deleted. Joe keeps learning from the
+# years, so this is long (a month is a few hundred kilobytes).
+KEEP_MONTHS = 120
 # Months kept in memory at once.
 CACHED_MONTHS = 4
 
@@ -46,6 +47,8 @@ class HistoryStore:
         self._dirty: dict[str, dict[str, Any]] = {}
         # How the hours were worked out (see HOURS_FORMAT); older ones are read again.
         self.format = HOURS_FORMAT
+        # How many days back the recorder was read once (see observer.READ_BACK_DAYS).
+        self.read_back = 0
 
     async def async_load(self) -> None:
         """Read the index and the two most recent months."""
@@ -53,6 +56,7 @@ class HistoryStore:
         self._months = sorted(meta.get("months", []))
         self._days = sorted(meta.get("days", []))
         self.format = meta.get("format", 1 if self._days else HOURS_FORMAT)
+        self.read_back = int(meta.get("read_back", 0))
         for month in self._months[-2:]:
             await self._async_month(month)
 
@@ -145,10 +149,19 @@ class HistoryStore:
         self._schedule(_month(day))
 
     def _index(self) -> dict[str, Any]:
-        return {"months": self._months, "days": self._days, "format": self.format}
+        return {
+            "months": self._months,
+            "days": self._days,
+            "format": self.format,
+            "read_back": self.read_back,
+        }
 
     def set_format(self, value: int) -> None:
         self.format = value
+        self._meta.async_delay_save(self._index, SAVE_DELAY)
+
+    def set_read_back(self, days: int) -> None:
+        self.read_back = max(self.read_back, days)
         self._meta.async_delay_save(self._index, SAVE_DELAY)
 
     async def _async_day_for_write(self, day: str) -> dict[str, Any]:

@@ -3,6 +3,12 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.8.0
+
+- Längeres Gedächtnis: Joe hebt seine Stunden jetzt bis zu 10 Jahre auf (vorher gut 2) und liest beim nächsten Start einmal so weit zurück, wie die Langzeit-Statistik von Home Assistant reicht – bis zu 2 Jahre. Das Verbrauchsmodell lernt aus allen Jahreszeiten: Neue Tage zählen am meisten, der letzte Winter zählt aber weiter mit. So fängt Joe nicht jeden Winter neu an.
+- Klima: „Wann ist nachts?“ – feste Uhrzeiten je Klimaanlage oder eine Entität, die „an“ ist, solange ihr im Bett seid (z. B. ein Helfer deiner Gute-Nacht-Routine, ein Bettsensor oder ein Zeitplan). Zum Morgen fährt Joe die Räume trotzdem rechtzeitig wieder hoch.
+- Klima: Die Entität jedes Geräts steht beim Darüberfahren am Namen und zum Aufklappen darunter; in der Messgeräte-Liste auch die Sensoren des Messgeräts.
+
 ## 0.7.1
 
 - Klima: Die Messgeräte stehen jetzt in einer eigenen Liste „Messgeräte“ – eine Zeile pro Klimagerät mit Auswahl, gruppiert nach „verbunden über …“. Joes Vorschlag ist vorgewählt („Bestätigen“ übernimmt ihn). Hängen mehrere Klimageräte am selben Messgerät, steht das direkt darunter.
