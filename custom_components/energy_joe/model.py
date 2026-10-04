@@ -248,13 +248,14 @@ CONDITION = vol.Schema(
 # Charging a car by need: only what tomorrow's driving (calendar trips or the
 # usual distance) plus a reserve needs, from the car's level or range.
 # A car's mailbox with a calendar (see accounts.py): Joe reads that calendar.
-CAR_ACCOUNT_KINDS = ("outlook", "microsoft", "icloud", "infomaniak", "caldav")
+CAR_ACCOUNT_KINDS = ("google", "outlook", "microsoft", "icloud", "infomaniak", "caldav")
 CAR_ACCOUNT = vol.Schema(
     {
         vol.Optional("kind", default="outlook"): vol.In(CAR_ACCOUNT_KINDS),
         vol.Optional("address", default=""): str,
         vol.Optional("username", default=None): vol.Any(None, str),
-        # Another CalDAV server, or a company's own Microsoft app and tenant.
+        # Another CalDAV server, or one's own Google or Microsoft app (a
+        # Google app's secret is stored with the passwords) and tenant.
         vol.Optional("url", default=None): vol.Any(None, str),
         vol.Optional("client_id", default=None): vol.Any(None, str),
         vol.Optional("tenant", default="common"): vol.All(

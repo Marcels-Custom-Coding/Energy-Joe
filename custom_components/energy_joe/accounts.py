@@ -1,9 +1,9 @@
-"""A car's mailbox with a calendar: Microsoft, iCloud, Infomaniak, CalDAV.
+"""A car's mailbox with a calendar: Google, Microsoft, iCloud, Infomaniak, CalDAV.
 
 These providers put invitations into the account's calendar by themselves,
 so Joe only reads that calendar and accepts invitations from allowed senders
-there: Microsoft accounts through Microsoft Graph with a sign-in, iCloud,
-Infomaniak and other CalDAV servers with an app password. Invitations from
+there: Google and Microsoft through their calendar APIs with a sign-in,
+iCloud, Infomaniak and other CalDAV servers with an app password. Invitations from
 anyone else that nobody answered do not count as trips. Passwords and tokens
 live in their own store per car, never in the configuration.
 """
@@ -37,11 +37,14 @@ _LOGGER = logging.getLogger(__name__)
 STORE_KEY = f"{DOMAIN}.accounts"
 STORE_VERSION = 1
 GRAPH = "https://graph.microsoft.com/v1.0"
+GOOGLE = "https://www.googleapis.com/calendar/v3/calendars/primary/events"
 CALDAV_SERVERS = {
     "icloud": "https://caldav.icloud.com/",
     "infomaniak": "https://sync.infomaniak.com/",
 }
 MICROSOFT = ("outlook", "microsoft")
+# Kinds that sign in with a code instead of a password.
+SIGN_IN = (*MICROSOFT, "google")
 TIMEOUT = 30
 # A day's appointments are asked again after this long.
 CACHE = timedelta(minutes=10)
@@ -136,6 +139,90 @@ async def graph_accept(session: ClientSession, token: str, event_id: str) -> Non
         async with session.post(
             f"{GRAPH}/me/events/{quote(event_id, safe='')}/accept",
             json={"sendResponse": True},
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=TIMEOUT,
+        ) as response:
+            if response.status >= 400:
+                raise AccountError("accept", str(response.status))
+    except (ClientError, TimeoutError) as err:
+        raise AccountError("connect", str(err)) from err
+
+
+# --- Google Calendar ---------------------------------------------------------
+
+
+def _google_time(value: dict[str, Any] | None) -> str | None:
+    """Google's {"dateTime": …} or {"date": …} as Joe's text."""
+    if not value:
+        return None
+    if value.get("date"):
+        return str(value["date"])
+    moment = dt_util.parse_datetime(value.get("dateTime") or "")
+    return as_text(moment) if moment else None
+
+
+async def google_events(
+    session: ClientSession, token: str, start: datetime, end: datetime
+) -> list[dict[str, Any]]:
+    """The appointments of a span from the signed-in account's main calendar."""
+    params = {
+        "timeMin": dt_util.as_utc(start).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "timeMax": dt_util.as_utc(end).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "singleEvents": "true",
+        "maxResults": "100",
+    }
+    try:
+        async with session.get(
+            GOOGLE,
+            params=params,
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=TIMEOUT,
+        ) as response:
+            if response.status in (401, 403):
+                raise AccountError("login", str(response.status))
+            body = await response.json(content_type=None)
+    except (ClientError, TimeoutError, ValueError) as err:
+        raise AccountError("connect", str(err)) from err
+    found = []
+    for item in (body or {}).get("items") or []:
+        begin = _google_time(item.get("start"))
+        finish = _google_time(item.get("end"))
+        if item.get("status") == "cancelled" or not begin or not finish:
+            continue
+        attendees = item.get("attendees") or []
+        me = next((a for a in attendees if a.get("self")), None)
+        organizer = item.get("organizer") or {}
+        found.append(
+            {
+                "uid": item.get("iCalUID") or item.get("id"),
+                "id": item.get("id"),
+                "summary": item.get("summary") or "",
+                "start": begin,
+                "end": finish,
+                "location": item.get("location") or "",
+                "organizer": (organizer.get("email") or "").lower(),
+                "attendees": attendees,
+                "pending": me is not None
+                and not organizer.get("self")
+                and me.get("responseStatus") == "needsAction",
+            }
+        )
+    return found
+
+
+async def google_accept(
+    session: ClientSession, token: str, event: dict[str, Any]
+) -> None:
+    """Set the account's own answer to accepted; Google tells the organizer."""
+    attendees = [
+        {**a, "responseStatus": "accepted"} if a.get("self") else a
+        for a in event.get("attendees") or []
+    ]
+    try:
+        async with session.patch(
+            f"{GOOGLE}/{quote(str(event['id']), safe='')}",
+            params={"sendUpdates": "all"},
+            json={"attendees": attendees},
             headers={"Authorization": f"Bearer {token}"},
             timeout=TIMEOUT,
         ) as response:
@@ -381,10 +468,10 @@ class CarAccounts:
         return need.get("account") if need.get("source") == "account" else None
 
     def _has_secret(self, car: str) -> bool:
-        """Signed in the way the account's kind needs (Microsoft or a password)."""
+        """Signed in the way the account's kind needs (a sign-in or a password)."""
         secret = self._data.get(car) or {}
         account = self._account(car) or {}
-        if account.get("kind", "outlook") in MICROSOFT:
+        if account.get("kind", "outlook") in SIGN_IN:
             return bool((secret.get("oauth") or {}).get("refresh_token"))
         return bool(secret.get("password"))
 
@@ -405,18 +492,45 @@ class CarAccounts:
         await self._async_save()
         self._set(car, state="waiting", error=None)
 
-    async def async_sign_in(self, car: str) -> dict[str, Any]:
-        """Microsoft: a code to sign in with; Joe waits in the background."""
-        account = self._account(car)
-        if not account or account["kind"] not in MICROSOFT:
-            raise AccountError("not_microsoft")
-        client = oauth.client_for(account.get("client_id"))
+    async def async_set_client_secret(self, car: str, secret: str | None) -> None:
+        """The secret of one's own Google app (the app id is in the settings)."""
+        self._data.setdefault(car, {})["client_secret"] = secret or None
+        await self._async_save()
+        self._set(car)
+
+    def _sign_in(
+        self, car: str, account: dict[str, Any], tokens: dict[str, Any] | None = None
+    ) -> oauth.SignIn:
+        """The app to sign in (or renew) with: one's own, else Energy Joe's."""
+        tokens = tokens or {}
+        if account["kind"] == "google":
+            own = (account.get("client_id") or "").strip()
+            client = tokens.get("client") or own or oauth.JOE_GOOGLE_CLIENT_ID
+            secret = (
+                (self._data.get(car) or {}).get("client_secret")
+                if own and client == own
+                else oauth.JOE_GOOGLE_CLIENT_SECRET
+            )
+            if not client or not secret:
+                raise AccountError("no_client_id")
+            return oauth.google(client, secret)
+        client = tokens.get("client") or oauth.client_for(account.get("client_id"))
         if not client:
             raise AccountError("no_client_id")
-        tenant = oauth.tenant_for(account["kind"], account.get("tenant"))
+        tenant = tokens.get("tenant") or oauth.tenant_for(
+            account["kind"], account.get("tenant")
+        )
+        return oauth.microsoft(tenant, client)
+
+    async def async_sign_in(self, car: str) -> dict[str, Any]:
+        """Google or Microsoft: a code to sign in with; Joe waits in the background."""
+        account = self._account(car)
+        if not account or account["kind"] not in SIGN_IN:
+            raise AccountError("no_sign_in")
+        sign_in = self._sign_in(car, account)
         session = async_get_clientsession(self._hass)
         try:
-            found = await oauth.start(session, tenant, client, oauth.CALENDAR_SCOPES)
+            found = await oauth.start(session, sign_in)
         except oauth.OAuthError as err:
             self._set(car, oauth={"state": "error", "error": err.code})
             raise AccountError("oauth", err.code) from err
@@ -424,7 +538,12 @@ class CarAccounts:
         info = {
             "state": "waiting",
             "user_code": found.get("user_code"),
-            "uri": found.get("verification_uri") or "https://microsoft.com/devicelogin",
+            "uri": found.get("verification_uri")
+            or (
+                "https://www.google.com/device"
+                if account["kind"] == "google"
+                else "https://microsoft.com/devicelogin"
+            ),
             "expires": until.isoformat(timespec="seconds"),
         }
         self._set(car, oauth=info)
@@ -434,8 +553,7 @@ class CarAccounts:
         self._tasks[car] = self._hass.async_create_background_task(
             self._async_wait(
                 car,
-                tenant,
-                client,
+                sign_in,
                 str(found["device_code"]),
                 int(found.get("interval") or 5),
                 until,
@@ -447,8 +565,7 @@ class CarAccounts:
     async def _async_wait(
         self,
         car: str,
-        tenant: str,
-        client: str,
+        sign_in: oauth.SignIn,
         code: str,
         interval: int,
         until: datetime,
@@ -457,7 +574,7 @@ class CarAccounts:
         while dt_util.now() < until:
             await asyncio.sleep(interval)
             try:
-                tokens = await oauth.poll(session, tenant, client, code)
+                tokens = await oauth.poll(session, sign_in, code)
             except oauth.OAuthError as err:
                 if err.code == "authorization_pending":
                     continue
@@ -468,8 +585,8 @@ class CarAccounts:
                 return
             self._data.setdefault(car, {})["oauth"] = {
                 **tokens,
-                "tenant": tenant,
-                "client": client,
+                "client": sign_in.client_id,
+                "tenant": sign_in.tenant,
             }
             await self._async_save()
             self._set(car, oauth={"state": "ok"}, state="waiting", error=None)
@@ -477,7 +594,11 @@ class CarAccounts:
         self._set(car, oauth={"state": "error", "error": "expired_token"})
 
     async def async_sign_out(self, car: str) -> None:
-        self._data.pop(car, None)
+        """Forget the sign-in and the password (one's own app's secret stays)."""
+        kept = {
+            k: v for k, v in (self._data.get(car) or {}).items() if k == "client_secret"
+        }
+        self._data[car] = kept
         self._cache = {k: v for k, v in self._cache.items() if k[0] != car}
         await self._async_save()
         self._set(car, oauth=None, state="no_secret")
@@ -490,13 +611,8 @@ class CarAccounts:
             try:
                 renewed = await oauth.refresh(
                     async_get_clientsession(self._hass),
-                    tokens.get("tenant")
-                    or oauth.tenant_for(account["kind"], account.get("tenant")),
-                    tokens.get("client")
-                    or oauth.client_for(account.get("client_id"))
-                    or "",
+                    self._sign_in(car, account, tokens),
                     tokens,
-                    oauth.CALENDAR_SCOPES,
                 )
             except oauth.OAuthError as err:
                 raise AccountError("login", err.code) from err
@@ -522,6 +638,9 @@ class CarAccounts:
         if account["kind"] in MICROSOFT:
             token = await self._async_token(car, account)
             return await graph_events(session, token, start, end)
+        if account["kind"] == "google":
+            token = await self._async_token(car, account)
+            return await google_events(session, token, start, end)
         auth = self._auth(car, account)
         calendars = (self._data.get(car) or {}).get("calendars")
         if not calendars:
@@ -582,6 +701,9 @@ class CarAccounts:
                 if account["kind"] in MICROSOFT:
                     token = await self._async_token(car, account)
                     await graph_accept(session, token, event["id"])
+                elif account["kind"] == "google":
+                    token = await self._async_token(car, account)
+                    await google_accept(session, token, event)
                 else:
                     await caldav_accept(
                         session,

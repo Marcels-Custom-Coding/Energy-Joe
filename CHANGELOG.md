@@ -3,6 +3,15 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.4.1
+
+- **Google bei „Postfach mit Kalender“:** Ein Gmail-Konto des Autos meldest du
+  mit Google an – kurzer Code, kein App-Passwort. Joe liest den Google
+  Kalender des Kontos und sagt dort im Namen des Autos zu, wie bei Microsoft.
+  Solange Joes eigene Google-App fehlt, geht es mit einer eigenen App
+  (Anleitung im Tooltip).
+- Gmail geht weiter auch als „Postfach ohne Kalender“ mit App-Passwort.
+
 ## 0.4.0
 
 - **Drei gleichwertige Wege, wie Termine zum Auto kommen** – jeder mit einer

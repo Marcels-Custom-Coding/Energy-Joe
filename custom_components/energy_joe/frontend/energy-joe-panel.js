@@ -1529,12 +1529,21 @@ var $e = import.meta.url.replace(/[^/]*$/, ""), et = (e) => `${$e}${e}`, tt = {
 	"calendar.connect.caldav": "iCloud, Infomaniak, Nextcloud",
 	"calendar.connect.ical": "iCal-Link",
 	"calendar.connect.microsoft": "Microsoft 365 / Outlook",
+	"calendar.account.kind.google": "Google (Gmail)",
+	"calendar.account.placeholder.google": "kona@gmail.com",
+	"calendar.account.google.hint": "Damit Einladungen ohne Antwort im Kalender erscheinen: im Google Kalender des Autos unter Einstellungen → „Einladungen zu meinem Kalender hinzufügen“ „Von allen“ wählen.",
+	"calendar.account.client_secret": "Clientschlüssel der App",
+	"calendar.account.result.oauth": "Die Anmeldung ließ sich nicht starten.",
+	"mail.sign_in.google": "Mit Google anmelden",
+	"tip.google_app.title": "Wie lege ich eine eigene Google-App an?",
+	"tip.google_app.text": "Nur nötig, solange Joes eigene App fehlt – einmalig in der Google Cloud Console (console.cloud.google.com):\n1. Neues Projekt anlegen, dann „APIs und Dienste“ → Bibliothek → **Google Calendar API** aktivieren.\n2. OAuth-Zustimmungsbildschirm: Nutzertyp „Extern“, App-Name und deine Adresse; danach die App **veröffentlichen** (sonst läuft die Anmeldung nach 7 Tagen ab).\n3. Anmeldedaten → OAuth-Client-ID erstellen → Typ **„Fernseher und Geräte mit begrenzter Eingabe“**.\n4. Client-ID und Clientschlüssel hier eintragen.",
+	"tip.google_app.hint": "Bei der Anmeldung warnt Google, die App sei nicht überprüft – bei deiner eigenen App ist das in Ordnung („Erweitert“ → „Weiter“).",
 	"calendar.way.ha": "Fertiger Kalender",
 	"calendar.way.ha.hint": "Die Termine des Autos stehen schon in einem Kalender in Home Assistant. Joe liest nur.",
 	"calendar.way.mailbox": "Postfach ohne Kalender",
-	"calendar.way.mailbox.hint": "Das Auto hat eine E-Mail-Adresse, z. B. bei web.de, GMX oder Gmail. Joe sagt zu und trägt die Termine in seinen Kalender ein.",
+	"calendar.way.mailbox.hint": "Das Auto hat eine E-Mail-Adresse, z. B. bei web.de, GMX oder T-Online. Joe sagt zu und trägt die Termine in seinen Kalender ein.",
 	"calendar.way.account": "Postfach mit Kalender",
-	"calendar.way.account.hint": "Microsoft 365, Outlook.com, iCloud oder Infomaniak: Die Termine landen im Kalender des Kontos. Joe liest ihn und sagt dort zu.",
+	"calendar.way.account.hint": "Google, Microsoft 365, Outlook.com, iCloud oder Infomaniak: Die Termine landen im Kalender des Kontos. Joe liest ihn und sagt dort zu.",
 	"calendar.own.name": "Kalender {car}",
 	"calendar.account.password": "App-Passwort",
 	"calendar.account.placeholder.outlook": "kona@outlook.com",
@@ -1560,8 +1569,8 @@ var $e = import.meta.url.replace(/[^/]*$/, ""), et = (e) => `${$e}${e}`, tt = {
 	"mail.allowed.none": "Noch darf niemand einladen – trag zuerst deine eigene Adresse ein.",
 	"mail.result.error_no_mailbox": "Speichere das Auto zuerst.",
 	"mail.state.waiting": "Noch nicht nachgeschaut.",
-	"tip.mail_provider.hint": "Hat dein Anbieter einen Kalender (Microsoft, iCloud, Infomaniak)? Dann ist „Postfach mit Kalender“ der bessere Weg.",
-	"tip.calendar_account.hint": "Gmail? Google lässt Joe nicht direkt an den Kalender. Nimm „Postfach ohne Kalender“ – oder binde den Google-Kalender in Home Assistant ein und nimm „Fertiger Kalender“.",
+	"tip.mail_provider.hint": "Hat dein Anbieter einen Kalender (Google, Microsoft, iCloud, Infomaniak)? Dann ist „Postfach mit Kalender“ der bessere Weg.",
+	"tip.calendar_account.hint": "Bei Google und Microsoft meldest du dich mit einem kurzen Code an – Joe sieht dein Passwort nie.",
 	"tip.calendar_account_address.title": "Welche Adresse?",
 	"tip.calendar_account_address.text": "Die Adresse des Kontos, das nur dem Auto gehört. Genau diese Adresse lädst du zu Terminen ein, wenn du mit dem Auto fährst.",
 	"tip.calendar_account_url.title": "Welcher Server?",
@@ -1578,7 +1587,7 @@ var $e = import.meta.url.replace(/[^/]*$/, ""), et = (e) => `${$e}${e}`, tt = {
 	"mail.provider": "Anbieter",
 	"mail.provider.google": "Gmail",
 	"mail.provider.other": "Anderer Anbieter",
-	"mail.provider.google.hint": "Mit einem App-Passwort (dafür muss die Bestätigung in zwei Schritten an sein).",
+	"mail.provider.google.hint": "Mit einem App-Passwort. Ohne App-Passwort geht es mit „Postfach mit Kalender“ → Google.",
 	"mail.provider.other.hint": "Mit Server-Adressen und Passwort deines Anbieters.",
 	"mail.address": "Adresse des Autos",
 	"mail.password": "Passwort",
@@ -1656,7 +1665,7 @@ var $e = import.meta.url.replace(/[^/]*$/, ""), et = (e) => `${$e}${e}`, tt = {
 	"calendar.account.result.login": "Anmeldung abgelehnt.",
 	"calendar.account.result.connect": "Server nicht erreichbar.",
 	"calendar.account.result.no_calendar": "Kein Kalender gefunden.",
-	"calendar.account.result.no_client_id": "Joes Microsoft-App fehlt noch – trag eine eigene App-ID ein.",
+	"calendar.account.result.no_client_id": "Joes App für diesen Anbieter fehlt noch – trag eine eigene App ein.",
 	"calendar.account.result.no_server": "Mir fehlt die Adresse des Servers.",
 	"calendar.account.error.login": "Anmeldung abgelehnt",
 	"calendar.account.error.connect": "Server nicht erreichbar",
@@ -1849,13 +1858,13 @@ var $e = import.meta.url.replace(/[^/]*$/, ""), et = (e) => `${$e}${e}`, tt = {
 	"tip.mail_recent.title": "Was ist mit den Einladungen passiert?",
 	"tip.mail_recent.text": "Die letzten Einladungen und was ich damit gemacht habe: eingetragen, geändert, abgesagt – oder warum nicht.",
 	"tip.calendar_account.title": "Was brauche ich dafür?",
-	"tip.calendar_account.text": "**Microsoft privat**: einfach mit Microsoft anmelden.\n**Microsoft 365 / Exchange**: anmelden mit Joes App, wenn deine Firma das zulässt – sonst mit einer eigenen App.\n**iCloud**: ein App-Passwort von appleid.apple.com.\n**Infomaniak**: das Passwort des Kontos oder ein Gerätepasswort.\n**Anderer CalDAV-Server**: Adresse, Benutzername und Passwort.",
+	"tip.calendar_account.text": "**Google**: einfach mit Google anmelden – kein App-Passwort.\n**Microsoft privat**: einfach mit Microsoft anmelden.\n**Microsoft 365 / Exchange**: anmelden mit Joes App, wenn deine Firma das zulässt – sonst mit einer eigenen App.\n**iCloud**: ein App-Passwort von appleid.apple.com.\n**Infomaniak**: das Passwort des Kontos oder ein Gerätepasswort.\n**Anderer CalDAV-Server**: Adresse, Benutzername und Passwort.",
 	"tip.calendar_account_accept.title": "Was heißt zusagen?",
 	"tip.calendar_account_accept.text": "Ich sage Einladungen im Kalender des Kontos zu – aber nur von Absendern, die unten bei „Wer darf das Auto einladen?“ stehen. Unbeantwortete Einladungen von anderen zählen nicht als Fahrt.",
 	"tip.calendar_account_password.title": "Welches Passwort?",
 	"tip.calendar_account_password.text": "**iCloud**: ein App-spezifisches Passwort (appleid.apple.com → Anmeldung und Sicherheit).\n**Infomaniak**: das Passwort des Kontos oder ein Gerätepasswort.\nEs liegt bei mir in einem eigenen Speicher, nicht in der Konfiguration.",
 	"tip.calendar_source.title": "Welcher Weg passt zu mir?",
-	"tip.calendar_source.text": "**Fertiger Kalender**: Das Auto hat schon einen Kalender mit seinen Terminen (z. B. einen geteilten Google-Kalender), und der ist in Home Assistant. Du ordnest ihn zu, Joe liest nur.\n**Postfach ohne Kalender**: Das Auto bekommt eine eigene E-Mail-Adresse bei einem beliebigen Anbieter. Du lädst sie zu deinen Terminen ein; Joe holt die Einladung, sagt zu und trägt den Termin in seinen eigenen Kalender für das Auto ein.\n**Postfach mit Kalender**: Wie eben, aber das Konto hat selbst einen Kalender (Microsoft, iCloud, Infomaniak). Die Einladung landet dort von selbst; Joe liest diesen Kalender und sagt dort zu.",
+	"tip.calendar_source.text": "**Fertiger Kalender**: Das Auto hat schon einen Kalender mit seinen Terminen (z. B. einen geteilten Familienkalender), und der ist in Home Assistant. Du ordnest ihn zu, Joe liest nur.\n**Postfach ohne Kalender**: Das Auto bekommt eine eigene E-Mail-Adresse, z. B. bei web.de oder GMX. Du lädst sie zu deinen Terminen ein; Joe holt die Einladung, sagt zu und trägt den Termin in seinen eigenen Kalender für das Auto ein.\n**Postfach mit Kalender**: Wie eben, aber das Konto hat selbst einen Kalender (Google, Microsoft, iCloud, Infomaniak). Die Einladung landet dort von selbst; Joe liest diesen Kalender und sagt dort zu.",
 	"tip.calendar_source.hint": "Dazu kommen immer die Kalender der Personen, die du oben auswählst.",
 	"tip.routing_service.title": "Welcher Dienst?",
 	"tip.routing_service.text": "**Waze**: kostenlos, ohne Anmeldung, über Home Assistants eigene Waze-Aktion.\n**Google**: braucht eine eingerichtete „Google Maps Travel Time“-Integration mit API-Schlüssel; schalte dort das Abfragen alle 10 Minuten aus, sonst sind die Freiabfragen schnell weg.\n**OpenStreetMap**: kostenlos, freie Karte; dafür findet Photon den Ort und OSRM die Strecke.\nIch frage jeden Ort nur einmal und merke mir die Strecke. Liegt ein Termin an einer Zone aus Home Assistant, brauche ich keinen Dienst.",
@@ -3127,12 +3136,21 @@ var $e = import.meta.url.replace(/[^/]*$/, ""), et = (e) => `${$e}${e}`, tt = {
 	"calendar.connect.caldav": "iCloud, Infomaniak, Nextcloud",
 	"calendar.connect.ical": "iCal link",
 	"calendar.connect.microsoft": "Microsoft 365 / Outlook",
+	"calendar.account.kind.google": "Google (Gmail)",
+	"calendar.account.placeholder.google": "kona@gmail.com",
+	"calendar.account.google.hint": "So that unanswered invitations show up in the calendar: in the car's Google Calendar settings set “Add invitations to my calendar” to “From everyone”.",
+	"calendar.account.client_secret": "The app's client secret",
+	"calendar.account.result.oauth": "The sign-in could not be started.",
+	"mail.sign_in.google": "Sign in with Google",
+	"tip.google_app.title": "How do I create a Google app of my own?",
+	"tip.google_app.text": "Only needed while Joe's own app is missing – once in the Google Cloud Console (console.cloud.google.com):\n1. Create a project, then “APIs & Services” → Library → enable the **Google Calendar API**.\n2. OAuth consent screen: user type “External”, app name and your address; then **publish** the app (otherwise the sign-in runs out after 7 days).\n3. Credentials → Create OAuth client ID → type **“TVs and Limited Input devices”**.\n4. Enter client ID and client secret here.",
+	"tip.google_app.hint": "When you sign in, Google warns that the app is not verified – for your own app that is fine (“Advanced” → “Continue”).",
 	"calendar.way.ha": "Finished calendar",
 	"calendar.way.ha.hint": "The car's appointments are already in a calendar in Home Assistant. Joe only reads it.",
 	"calendar.way.mailbox": "Mailbox without calendar",
-	"calendar.way.mailbox.hint": "The car has an email address, e.g. at GMX or Gmail. Joe accepts and puts the appointments into his calendar.",
+	"calendar.way.mailbox.hint": "The car has an email address, e.g. at GMX or another provider. Joe accepts and puts the appointments into his calendar.",
 	"calendar.way.account": "Mailbox with calendar",
-	"calendar.way.account.hint": "Microsoft 365, Outlook.com, iCloud or Infomaniak: the appointments land in the account's calendar. Joe reads it and accepts there.",
+	"calendar.way.account.hint": "Google, Microsoft 365, Outlook.com, iCloud or Infomaniak: the appointments land in the account's calendar. Joe reads it and accepts there.",
 	"calendar.own.name": "Calendar {car}",
 	"calendar.account.password": "App password",
 	"calendar.account.placeholder.outlook": "kona@outlook.com",
@@ -3158,8 +3176,8 @@ var $e = import.meta.url.replace(/[^/]*$/, ""), et = (e) => `${$e}${e}`, tt = {
 	"mail.allowed.none": "Nobody may invite yet – add your own address first.",
 	"mail.result.error_no_mailbox": "Save the car first.",
 	"mail.state.waiting": "Not looked yet.",
-	"tip.mail_provider.hint": "Does your provider have a calendar (Microsoft, iCloud, Infomaniak)? Then “Mailbox with calendar” is the better way.",
-	"tip.calendar_account.hint": "Gmail? Google does not let Joe reach the calendar directly. Choose “Mailbox without calendar” – or add the Google calendar to Home Assistant and choose “Finished calendar”.",
+	"tip.mail_provider.hint": "Does your provider have a calendar (Google, Microsoft, iCloud, Infomaniak)? Then “Mailbox with calendar” is the better way.",
+	"tip.calendar_account.hint": "With Google and Microsoft you sign in with a short code – Joe never sees your password.",
 	"tip.calendar_account_address.title": "Which address?",
 	"tip.calendar_account_address.text": "The address of the account that belongs to the car only. Exactly this address is what you invite to appointments when you drive the car.",
 	"tip.calendar_account_url.title": "Which server?",
@@ -3176,7 +3194,7 @@ var $e = import.meta.url.replace(/[^/]*$/, ""), et = (e) => `${$e}${e}`, tt = {
 	"mail.provider": "Provider",
 	"mail.provider.google": "Gmail",
 	"mail.provider.other": "Other provider",
-	"mail.provider.google.hint": "With an app password (2-step verification has to be on for that).",
+	"mail.provider.google.hint": "With an app password. Without one: “Mailbox with calendar” → Google.",
 	"mail.provider.other.hint": "With your provider's server addresses and password.",
 	"mail.address": "The car's address",
 	"mail.password": "Password",
@@ -3254,7 +3272,7 @@ var $e = import.meta.url.replace(/[^/]*$/, ""), et = (e) => `${$e}${e}`, tt = {
 	"calendar.account.result.login": "Login refused.",
 	"calendar.account.result.connect": "Server not reachable.",
 	"calendar.account.result.no_calendar": "No calendar found.",
-	"calendar.account.result.no_client_id": "Joe's Microsoft app is still missing – enter an app ID of your own.",
+	"calendar.account.result.no_client_id": "Joe's app for this provider is still missing – enter an app of your own.",
 	"calendar.account.result.no_server": "I am missing the server's address.",
 	"calendar.account.error.login": "login refused",
 	"calendar.account.error.connect": "server not reachable",
@@ -3447,13 +3465,13 @@ var $e = import.meta.url.replace(/[^/]*$/, ""), et = (e) => `${$e}${e}`, tt = {
 	"tip.mail_recent.title": "What happened to the invitations?",
 	"tip.mail_recent.text": "The last invitations and what I did with them: added, changed, cancelled – or why not.",
 	"tip.calendar_account.title": "What do I need for it?",
-	"tip.calendar_account.text": "**Microsoft personal**: just sign in with Microsoft.\n**Microsoft 365 / Exchange**: sign in with Joe's app if your company allows it – otherwise with an app of your own.\n**iCloud**: an app password from appleid.apple.com.\n**Infomaniak**: the account's password or a device password.\n**Other CalDAV server**: address, user name and password.",
+	"tip.calendar_account.text": "**Google**: just sign in with Google – no app password.\n**Microsoft personal**: just sign in with Microsoft.\n**Microsoft 365 / Exchange**: sign in with Joe's app if your company allows it – otherwise with an app of your own.\n**iCloud**: an app password from appleid.apple.com.\n**Infomaniak**: the account's password or a device password.\n**Other CalDAV server**: address, user name and password.",
 	"tip.calendar_account_accept.title": "What does accepting mean?",
 	"tip.calendar_account_accept.text": "I accept invitations in the account's calendar – but only from senders listed below under “Who may invite the car?”. Unanswered invitations from anyone else do not count as trips.",
 	"tip.calendar_account_password.title": "Which password?",
 	"tip.calendar_account_password.text": "**iCloud**: an app-specific password (appleid.apple.com → Sign-In and Security).\n**Infomaniak**: the account's password or a device password.\nIt stays with me in a store of its own, not in the configuration.",
 	"tip.calendar_source.title": "Which way suits me?",
-	"tip.calendar_source.text": "**Finished calendar**: the car already has a calendar with its appointments (e.g. a shared Google calendar), and it is in Home Assistant. You assign it, Joe only reads.\n**Mailbox without calendar**: the car gets its own email address at any provider. You invite it to your appointments; Joe fetches the invitation, accepts and puts the appointment into his own calendar for the car.\n**Mailbox with calendar**: like before, but the account has a calendar itself (Microsoft, iCloud, Infomaniak). The invitation lands there by itself; Joe reads this calendar and accepts there.",
+	"tip.calendar_source.text": "**Finished calendar**: the car already has a calendar with its appointments (e.g. a shared family calendar), and it is in Home Assistant. You assign it, Joe only reads.\n**Mailbox without calendar**: the car gets its own email address, e.g. at GMX. You invite it to your appointments; Joe fetches the invitation, accepts and puts the appointment into his own calendar for the car.\n**Mailbox with calendar**: like before, but the account has a calendar itself (Google, Microsoft, iCloud, Infomaniak). The invitation lands there by itself; Joe reads this calendar and accepts there.",
 	"tip.calendar_source.hint": "The calendars of the persons you choose above always count too.",
 	"tip.routing_service.title": "Which service?",
 	"tip.routing_service.text": "**Waze**: free, no sign-up, through Home Assistant's own Waze action.\n**Google**: needs a set-up “Google Maps Travel Time” integration with an API key; switch off its polling every 10 minutes there, or the free calls are gone quickly.\n**OpenStreetMap**: free, open map; Photon finds the place and OSRM the route.\nI ask about each place only once and remember the distance. If an appointment is at a Home Assistant zone, I need no service.",
@@ -5732,12 +5750,17 @@ function qt(e, t, n = "EUR") {
 //#endregion
 //#region src/components/car-account.ts
 var Jt = [
+	"google",
 	"outlook",
 	"microsoft",
 	"icloud",
 	"infomaniak",
 	"caldav"
-], Yt = /* @__PURE__ */ new Set(["outlook", "microsoft"]), Xt = {
+], Yt = /* @__PURE__ */ new Set([
+	"google",
+	"outlook",
+	"microsoft"
+]), Xt = {
 	kind: "outlook",
 	address: "",
 	username: null,
@@ -5747,7 +5770,7 @@ var Jt = [
 	accept: !0
 }, V = class extends v {
 	constructor(...e) {
-		super(...e), this.actionId = "", this.saved = !1, this.password = "", this.busy = !1, this.ownApp = !1;
+		super(...e), this.actionId = "", this.saved = !1, this.password = "", this.secret = "", this.busy = !1, this.ownApp = !1;
 	}
 	static {
 		this.styles = [T, o`
@@ -5816,6 +5839,7 @@ var Jt = [
           .value=${t.address}
           @change=${(e) => this.set({ address: e.target.value.trim().toLowerCase() })}
         />
+        ${t.kind === "google" ? h`<p class="hint">${e("calendar.account.google.hint")}</p>` : _}
       </div>
       ${this.saved ? n ? this.renderSignIn(e, t) : this.renderPassword(e, t) : h`<p class="hint">${e("calendar.account.after_save")}</p>`}
       <div class="inline" data-tipped>
@@ -5839,41 +5863,62 @@ var Jt = [
 		};
 	}
 	renderSignIn(e, t) {
-		let n = this.status, r = n?.oauth, i = this.ownApp || !!t.client_id || t.kind === "microsoft" || r?.error === "no_client_id";
-		return h`${i ? h`<div class="field" data-tipped>
-            <div class="head-row"><b>${e("calendar.account.client_id")}</b> ${P(e, "mail_microsoft")}</div>
-            <div class="inline">
-              <input
-                class="input"
-                type="text"
-                autocomplete="off"
-                placeholder="00000000-0000-0000-0000-000000000000"
-                aria-label=${e("calendar.account.client_id")}
-                .value=${t.client_id ?? ""}
-                @change=${(e) => this.set({ client_id: e.target.value.trim() || null })}
-              />
-              ${t.kind === "microsoft" ? h`<input
-                    class="input"
-                    type="text"
-                    placeholder="common"
-                    aria-label=${e("mail.tenant")}
-                    .value=${t.tenant}
-                    @change=${(e) => this.set({ tenant: e.target.value.trim() || "common" })}
-                  />` : _}
-            </div>
-          </div>` : _}
+		let n = this.status, r = n?.oauth, i = t.kind === "google", a = this.ownApp || !!t.client_id || t.kind === "microsoft" || r?.error === "no_client_id";
+		return h`${a ? this.renderOwnApp(e, t) : _}
       <div class="field" data-tipped>
         <div class="inline">
           <button type="button" class="mini-btn go" ?disabled=${this.busy} @click=${() => this.act("sign_in")}>
-            <ha-icon icon="mdi:microsoft"></ha-icon>${e(n?.has_secret ? "mail.sign_in.again" : "mail.sign_in")}
+            <ha-icon icon=${i ? "mdi:google" : "mdi:microsoft"}></ha-icon>${e(n?.has_secret ? "mail.sign_in.again" : i ? "mail.sign_in.google" : "mail.sign_in")}
           </button>
           ${n?.has_secret ? h`<button type="button" class="mini-btn quiet" @click=${() => this.act("sign_out")}>${e("mail.sign_out")}</button>` : _}
-          ${!i && t.kind === "outlook" ? h`<button type="button" class="mini-btn quiet" @click=${() => this.ownApp = !0}>${e("calendar.account.own_app")}</button>` : _}
+          ${a ? _ : h`<button type="button" class="mini-btn quiet" @click=${() => this.ownApp = !0}>${e("calendar.account.own_app")}</button>`}
           ${P(e, "mail_sign_in")}
         </div>
         ${r?.state === "waiting" ? h`<p class="code">${e("mail.sign_in.code", { code: r.user_code ?? "" })}
-              <a href=${r.uri ?? "https://microsoft.com/devicelogin"} target="_blank" rel="noreferrer noopener">${r.uri}</a></p>` : r?.state === "error" ? h`<p class="bad">${e("mail.sign_in.failed", { error: r.error ?? "" })}</p>` : n?.has_secret ? h`<p class="hint ok">${e("mail.signed_in")}</p>` : _}
+              <a href=${r.uri ?? ""} target="_blank" rel="noreferrer noopener">${r.uri}</a></p>` : r?.state === "error" ? h`<p class="bad">${e("mail.sign_in.failed", { error: r.error ?? "" })}</p>` : n?.has_secret ? h`<p class="hint ok">${e("mail.signed_in")}</p>` : _}
       </div>`;
+	}
+	renderOwnApp(e, t) {
+		let n = t.kind === "google";
+		return h`<div class="field" data-tipped>
+      <div class="head-row"><b>${e("calendar.account.client_id")}</b> ${P(e, n ? "google_app" : "mail_microsoft")}</div>
+      <div class="inline">
+        <input
+          class="input"
+          type="text"
+          autocomplete="off"
+          placeholder=${n ? "1234567890-abc.apps.googleusercontent.com" : "00000000-0000-0000-0000-000000000000"}
+          aria-label=${e("calendar.account.client_id")}
+          .value=${t.client_id ?? ""}
+          @change=${(e) => this.set({ client_id: e.target.value.trim() || null })}
+        />
+        ${t.kind === "microsoft" ? h`<input
+              class="input"
+              type="text"
+              placeholder="common"
+              aria-label=${e("mail.tenant")}
+              .value=${t.tenant}
+              @change=${(e) => this.set({ tenant: e.target.value.trim() || "common" })}
+            />` : _}
+      </div>
+      ${n ? h`<form
+            class="inline"
+            @submit=${(e) => {
+			e.preventDefault(), this.act("client_secret");
+		}}
+          >
+            <input
+              class="input"
+              type="password"
+              autocomplete="off"
+              placeholder=${e("calendar.account.client_secret")}
+              aria-label=${e("calendar.account.client_secret")}
+              .value=${this.secret}
+              @input=${(e) => this.secret = e.target.value}
+            />
+            <button type="submit" class="mini-btn" ?disabled=${!this.secret || this.busy}>${e("common.save")}</button>
+          </form>` : _}
+    </div>`;
 	}
 	renderPassword(e, t) {
 		return h`${t.kind === "caldav" ? h`<div class="field" data-tipped>
@@ -5936,9 +5981,10 @@ var Jt = [
 				type: "energy_joe/account",
 				car: this.actionId,
 				do: e,
-				...e === "password" ? { password: this.password } : {}
+				...e === "password" ? { password: this.password } : {},
+				...e === "client_secret" ? { password: this.secret } : {}
 			});
-			e === "password" && (this.password = ""), e === "test" && (this.result = t?.error ? t.error : "ok");
+			e === "password" && (this.password = ""), e === "client_secret" && (this.secret = ""), e === "test" && (this.result = t?.error ? t.error : "ok");
 		} catch (e) {
 			this.result = e?.code ?? "failed";
 		} finally {
@@ -5956,7 +6002,7 @@ var Jt = [
 		}));
 	}
 };
-E([y({ attribute: !1 })], V.prototype, "hass", void 0), E([y({ attribute: !1 })], V.prototype, "t", void 0), E([y()], V.prototype, "actionId", void 0), E([y({ type: Boolean })], V.prototype, "saved", void 0), E([y({ attribute: !1 })], V.prototype, "need", void 0), E([y({ attribute: !1 })], V.prototype, "status", void 0), E([b()], V.prototype, "password", void 0), E([b()], V.prototype, "result", void 0), E([b()], V.prototype, "busy", void 0), E([b()], V.prototype, "ownApp", void 0), w("joe-car-account", V);
+E([y({ attribute: !1 })], V.prototype, "hass", void 0), E([y({ attribute: !1 })], V.prototype, "t", void 0), E([y()], V.prototype, "actionId", void 0), E([y({ type: Boolean })], V.prototype, "saved", void 0), E([y({ attribute: !1 })], V.prototype, "need", void 0), E([y({ attribute: !1 })], V.prototype, "status", void 0), E([b()], V.prototype, "password", void 0), E([b()], V.prototype, "secret", void 0), E([b()], V.prototype, "result", void 0), E([b()], V.prototype, "busy", void 0), E([b()], V.prototype, "ownApp", void 0), w("joe-car-account", V);
 //#endregion
 //#region src/components/car-mailbox.ts
 var Zt = [

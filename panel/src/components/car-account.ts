@@ -7,8 +7,9 @@ import type { CarAccountConfig, CarAccountStatus, CarNeedConfig, HomeAssistant }
 import { timeOf } from "./plan-text";
 import { tip } from "./tip";
 
-const KINDS: CarAccountConfig["kind"][] = ["outlook", "microsoft", "icloud", "infomaniak", "caldav"];
-const MICROSOFT = new Set(["outlook", "microsoft"]);
+const KINDS: CarAccountConfig["kind"][] = ["google", "outlook", "microsoft", "icloud", "infomaniak", "caldav"];
+/** Kinds that sign in with a code instead of a password. */
+const SIGN_IN = new Set(["google", "outlook", "microsoft"]);
 
 export const DEFAULT_ACCOUNT: CarAccountConfig = {
   kind: "outlook",
@@ -21,7 +22,7 @@ export const DEFAULT_ACCOUNT: CarAccountConfig = {
 };
 
 /**
- * A car's mailbox with a calendar (Microsoft, iCloud, Infomaniak, CalDAV):
+ * A car's mailbox with a calendar (Google, Microsoft, iCloud, Infomaniak, CalDAV):
  * invitations land in the account's calendar by themselves, Joe reads it and
  * accepts there.
  */
@@ -35,6 +36,7 @@ export class JoeCarAccount extends LitElement {
   @property({ attribute: false }) status?: CarAccountStatus;
 
   @state() private password = "";
+  @state() private secret = "";
   @state() private result?: string;
   @state() private busy = false;
   @state() private ownApp = false;
@@ -93,7 +95,7 @@ export class JoeCarAccount extends LitElement {
       return nothing;
     }
     const account = this.account;
-    const microsoft = MICROSOFT.has(account.kind);
+    const signIn = SIGN_IN.has(account.kind);
     return html`<div class="field" data-tipped>
         <div class="head-row"><label for="account-kind"><b>${t("calendar.account.kind")}</b></label> ${tip(t, "calendar_account")}</div>
         <select id="account-kind" class="input" @change=${(ev: Event) => this.set({ kind: (ev.target as HTMLSelectElement).value as CarAccountConfig["kind"] })}>
@@ -111,10 +113,11 @@ export class JoeCarAccount extends LitElement {
           .value=${account.address}
           @change=${(ev: Event) => this.set({ address: (ev.target as HTMLInputElement).value.trim().toLowerCase() })}
         />
+        ${account.kind === "google" ? html`<p class="hint">${t("calendar.account.google.hint")}</p>` : nothing}
       </div>
       ${!this.saved
         ? html`<p class="hint">${t("calendar.account.after_save")}</p>`
-        : microsoft
+        : signIn
           ? this.renderSignIn(t, account)
           : this.renderPassword(t, account)}
       <div class="inline" data-tipped>
@@ -139,53 +142,78 @@ export class JoeCarAccount extends LitElement {
   private renderSignIn(t: Translate, account: CarAccountConfig): TemplateResult {
     const status = this.status;
     const oauth = status?.oauth;
+    const google = account.kind === "google";
     const own = this.ownApp || Boolean(account.client_id) || account.kind === "microsoft" || oauth?.error === "no_client_id";
-    return html`${own
-        ? html`<div class="field" data-tipped>
-            <div class="head-row"><b>${t("calendar.account.client_id")}</b> ${tip(t, "mail_microsoft")}</div>
-            <div class="inline">
-              <input
-                class="input"
-                type="text"
-                autocomplete="off"
-                placeholder="00000000-0000-0000-0000-000000000000"
-                aria-label=${t("calendar.account.client_id")}
-                .value=${account.client_id ?? ""}
-                @change=${(ev: Event) => this.set({ client_id: (ev.target as HTMLInputElement).value.trim() || null })}
-              />
-              ${account.kind === "microsoft"
-                ? html`<input
-                    class="input"
-                    type="text"
-                    placeholder="common"
-                    aria-label=${t("mail.tenant")}
-                    .value=${account.tenant}
-                    @change=${(ev: Event) => this.set({ tenant: (ev.target as HTMLInputElement).value.trim() || "common" })}
-                  />`
-                : nothing}
-            </div>
-          </div>`
-        : nothing}
+    return html`${own ? this.renderOwnApp(t, account) : nothing}
       <div class="field" data-tipped>
         <div class="inline">
           <button type="button" class="mini-btn go" ?disabled=${this.busy} @click=${() => this.act("sign_in")}>
-            <ha-icon icon="mdi:microsoft"></ha-icon>${t(status?.has_secret ? "mail.sign_in.again" : "mail.sign_in")}
+            <ha-icon icon=${google ? "mdi:google" : "mdi:microsoft"}></ha-icon>${t(
+              status?.has_secret ? "mail.sign_in.again" : google ? "mail.sign_in.google" : "mail.sign_in",
+            )}
           </button>
           ${status?.has_secret ? html`<button type="button" class="mini-btn quiet" @click=${() => this.act("sign_out")}>${t("mail.sign_out")}</button>` : nothing}
-          ${!own && account.kind === "outlook"
-            ? html`<button type="button" class="mini-btn quiet" @click=${() => (this.ownApp = true)}>${t("calendar.account.own_app")}</button>`
-            : nothing}
+          ${!own ? html`<button type="button" class="mini-btn quiet" @click=${() => (this.ownApp = true)}>${t("calendar.account.own_app")}</button>` : nothing}
           ${tip(t, "mail_sign_in")}
         </div>
         ${oauth?.state === "waiting"
           ? html`<p class="code">${t("mail.sign_in.code", { code: oauth.user_code ?? "" })}
-              <a href=${oauth.uri ?? "https://microsoft.com/devicelogin"} target="_blank" rel="noreferrer noopener">${oauth.uri}</a></p>`
+              <a href=${oauth.uri ?? ""} target="_blank" rel="noreferrer noopener">${oauth.uri}</a></p>`
           : oauth?.state === "error"
             ? html`<p class="bad">${t("mail.sign_in.failed", { error: oauth.error ?? "" })}</p>`
             : status?.has_secret
               ? html`<p class="hint ok">${t("mail.signed_in")}</p>`
               : nothing}
       </div>`;
+  }
+
+  /** One's own app instead of Joe's: its id (and tenant, or Google's secret). */
+  private renderOwnApp(t: Translate, account: CarAccountConfig): TemplateResult {
+    const google = account.kind === "google";
+    return html`<div class="field" data-tipped>
+      <div class="head-row"><b>${t("calendar.account.client_id")}</b> ${tip(t, google ? "google_app" : "mail_microsoft")}</div>
+      <div class="inline">
+        <input
+          class="input"
+          type="text"
+          autocomplete="off"
+          placeholder=${google ? "1234567890-abc.apps.googleusercontent.com" : "00000000-0000-0000-0000-000000000000"}
+          aria-label=${t("calendar.account.client_id")}
+          .value=${account.client_id ?? ""}
+          @change=${(ev: Event) => this.set({ client_id: (ev.target as HTMLInputElement).value.trim() || null })}
+        />
+        ${account.kind === "microsoft"
+          ? html`<input
+              class="input"
+              type="text"
+              placeholder="common"
+              aria-label=${t("mail.tenant")}
+              .value=${account.tenant}
+              @change=${(ev: Event) => this.set({ tenant: (ev.target as HTMLInputElement).value.trim() || "common" })}
+            />`
+          : nothing}
+      </div>
+      ${google
+        ? html`<form
+            class="inline"
+            @submit=${(ev: Event) => {
+              ev.preventDefault();
+              void this.act("client_secret");
+            }}
+          >
+            <input
+              class="input"
+              type="password"
+              autocomplete="off"
+              placeholder=${t("calendar.account.client_secret")}
+              aria-label=${t("calendar.account.client_secret")}
+              .value=${this.secret}
+              @input=${(ev: Event) => (this.secret = (ev.target as HTMLInputElement).value)}
+            />
+            <button type="submit" class="mini-btn" ?disabled=${!this.secret || this.busy}>${t("common.save")}</button>
+          </form>`
+        : nothing}
+    </div>`;
   }
 
   private renderPassword(t: Translate, account: CarAccountConfig): TemplateResult {
@@ -255,7 +283,7 @@ export class JoeCarAccount extends LitElement {
     </div>`;
   }
 
-  private async act(what: "password" | "sign_in" | "sign_out" | "test"): Promise<void> {
+  private async act(what: "password" | "client_secret" | "sign_in" | "sign_out" | "test"): Promise<void> {
     this.busy = true;
     this.result = undefined;
     try {
@@ -264,9 +292,13 @@ export class JoeCarAccount extends LitElement {
         car: this.actionId,
         do: what,
         ...(what === "password" ? { password: this.password } : {}),
+        ...(what === "client_secret" ? { password: this.secret } : {}),
       });
       if (what === "password") {
         this.password = "";
+      }
+      if (what === "client_secret") {
+        this.secret = "";
       }
       if (what === "test") {
         this.result = answer?.error ? answer.error : "ok";

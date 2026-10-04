@@ -412,9 +412,9 @@ export interface CarMailboxStatus {
   }[];
 }
 
-/** A car's mailbox with a calendar (Microsoft, iCloud, Infomaniak, CalDAV). */
+/** A car's mailbox with a calendar (Google, Microsoft, iCloud, Infomaniak, CalDAV). */
 export interface CarAccountConfig {
-  kind: "outlook" | "microsoft" | "icloud" | "infomaniak" | "caldav";
+  kind: "google" | "outlook" | "microsoft" | "icloud" | "infomaniak" | "caldav";
   address: string;
   username: string | null;
   url: string | null;

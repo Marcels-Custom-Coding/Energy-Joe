@@ -1104,14 +1104,26 @@ export const de = {
   "calendar.connect.caldav": "iCloud, Infomaniak, Nextcloud",
   "calendar.connect.ical": "iCal-Link",
   "calendar.connect.microsoft": "Microsoft 365 / Outlook",
+  "calendar.account.kind.google": "Google (Gmail)",
+  "calendar.account.placeholder.google": "kona@gmail.com",
+  "calendar.account.google.hint":
+    "Damit Einladungen ohne Antwort im Kalender erscheinen: im Google Kalender des Autos unter Einstellungen → „Einladungen zu meinem Kalender hinzufügen“ „Von allen“ wählen.",
+  "calendar.account.client_secret": "Clientschlüssel der App",
+  "calendar.account.result.oauth": "Die Anmeldung ließ sich nicht starten.",
+  "mail.sign_in.google": "Mit Google anmelden",
+  "tip.google_app.title": "Wie lege ich eine eigene Google-App an?",
+  "tip.google_app.text":
+    "Nur nötig, solange Joes eigene App fehlt – einmalig in der Google Cloud Console (console.cloud.google.com):\n1. Neues Projekt anlegen, dann „APIs und Dienste“ → Bibliothek → **Google Calendar API** aktivieren.\n2. OAuth-Zustimmungsbildschirm: Nutzertyp „Extern“, App-Name und deine Adresse; danach die App **veröffentlichen** (sonst läuft die Anmeldung nach 7 Tagen ab).\n3. Anmeldedaten → OAuth-Client-ID erstellen → Typ **„Fernseher und Geräte mit begrenzter Eingabe“**.\n4. Client-ID und Clientschlüssel hier eintragen.",
+  "tip.google_app.hint":
+    "Bei der Anmeldung warnt Google, die App sei nicht überprüft – bei deiner eigenen App ist das in Ordnung („Erweitert“ → „Weiter“).",
   "calendar.way.ha": "Fertiger Kalender",
   "calendar.way.ha.hint": "Die Termine des Autos stehen schon in einem Kalender in Home Assistant. Joe liest nur.",
   "calendar.way.mailbox": "Postfach ohne Kalender",
   "calendar.way.mailbox.hint":
-    "Das Auto hat eine E-Mail-Adresse, z. B. bei web.de, GMX oder Gmail. Joe sagt zu und trägt die Termine in seinen Kalender ein.",
+    "Das Auto hat eine E-Mail-Adresse, z. B. bei web.de, GMX oder T-Online. Joe sagt zu und trägt die Termine in seinen Kalender ein.",
   "calendar.way.account": "Postfach mit Kalender",
   "calendar.way.account.hint":
-    "Microsoft 365, Outlook.com, iCloud oder Infomaniak: Die Termine landen im Kalender des Kontos. Joe liest ihn und sagt dort zu.",
+    "Google, Microsoft 365, Outlook.com, iCloud oder Infomaniak: Die Termine landen im Kalender des Kontos. Joe liest ihn und sagt dort zu.",
   "calendar.own.name": "Kalender {car}",
   "calendar.account.password": "App-Passwort",
   "calendar.account.placeholder.outlook": "kona@outlook.com",
@@ -1140,9 +1152,9 @@ export const de = {
   "mail.result.error_no_mailbox": "Speichere das Auto zuerst.",
   "mail.state.waiting": "Noch nicht nachgeschaut.",
   "tip.mail_provider.hint":
-    "Hat dein Anbieter einen Kalender (Microsoft, iCloud, Infomaniak)? Dann ist „Postfach mit Kalender“ der bessere Weg.",
+    "Hat dein Anbieter einen Kalender (Google, Microsoft, iCloud, Infomaniak)? Dann ist „Postfach mit Kalender“ der bessere Weg.",
   "tip.calendar_account.hint":
-    "Gmail? Google lässt Joe nicht direkt an den Kalender. Nimm „Postfach ohne Kalender“ – oder binde den Google-Kalender in Home Assistant ein und nimm „Fertiger Kalender“.",
+    "Bei Google und Microsoft meldest du dich mit einem kurzen Code an – Joe sieht dein Passwort nie.",
   "tip.calendar_account_address.title": "Welche Adresse?",
   "tip.calendar_account_address.text":
     "Die Adresse des Kontos, das nur dem Auto gehört. Genau diese Adresse lädst du zu Terminen ein, wenn du mit dem Auto fährst.",
@@ -1163,7 +1175,8 @@ export const de = {
   "mail.provider": "Anbieter",
   "mail.provider.google": "Gmail",
   "mail.provider.other": "Anderer Anbieter",
-  "mail.provider.google.hint": "Mit einem App-Passwort (dafür muss die Bestätigung in zwei Schritten an sein).",
+  "mail.provider.google.hint":
+    "Mit einem App-Passwort. Ohne App-Passwort geht es mit „Postfach mit Kalender“ → Google.",
   "mail.provider.other.hint": "Mit Server-Adressen und Passwort deines Anbieters.",
   "mail.address": "Adresse des Autos",
   "mail.password": "Passwort",
@@ -1242,7 +1255,7 @@ export const de = {
   "calendar.account.result.login": "Anmeldung abgelehnt.",
   "calendar.account.result.connect": "Server nicht erreichbar.",
   "calendar.account.result.no_calendar": "Kein Kalender gefunden.",
-  "calendar.account.result.no_client_id": "Joes Microsoft-App fehlt noch – trag eine eigene App-ID ein.",
+  "calendar.account.result.no_client_id": "Joes App für diesen Anbieter fehlt noch – trag eine eigene App ein.",
   "calendar.account.result.no_server": "Mir fehlt die Adresse des Servers.",
   "calendar.account.error.login": "Anmeldung abgelehnt",
   "calendar.account.error.connect": "Server nicht erreichbar",
@@ -1486,7 +1499,7 @@ export const de = {
   "tip.mail_recent.text": "Die letzten Einladungen und was ich damit gemacht habe: eingetragen, geändert, abgesagt – oder warum nicht.",
   "tip.calendar_account.title": "Was brauche ich dafür?",
   "tip.calendar_account.text":
-    "**Microsoft privat**: einfach mit Microsoft anmelden.\n**Microsoft 365 / Exchange**: anmelden mit Joes App, wenn deine Firma das zulässt – sonst mit einer eigenen App.\n**iCloud**: ein App-Passwort von appleid.apple.com.\n**Infomaniak**: das Passwort des Kontos oder ein Gerätepasswort.\n**Anderer CalDAV-Server**: Adresse, Benutzername und Passwort.",
+    "**Google**: einfach mit Google anmelden – kein App-Passwort.\n**Microsoft privat**: einfach mit Microsoft anmelden.\n**Microsoft 365 / Exchange**: anmelden mit Joes App, wenn deine Firma das zulässt – sonst mit einer eigenen App.\n**iCloud**: ein App-Passwort von appleid.apple.com.\n**Infomaniak**: das Passwort des Kontos oder ein Gerätepasswort.\n**Anderer CalDAV-Server**: Adresse, Benutzername und Passwort.",
   "tip.calendar_account_accept.title": "Was heißt zusagen?",
   "tip.calendar_account_accept.text":
     "Ich sage Einladungen im Kalender des Kontos zu – aber nur von Absendern, die unten bei „Wer darf das Auto einladen?“ stehen. Unbeantwortete Einladungen von anderen zählen nicht als Fahrt.",
@@ -1495,7 +1508,7 @@ export const de = {
     "**iCloud**: ein App-spezifisches Passwort (appleid.apple.com → Anmeldung und Sicherheit).\n**Infomaniak**: das Passwort des Kontos oder ein Gerätepasswort.\nEs liegt bei mir in einem eigenen Speicher, nicht in der Konfiguration.",
   "tip.calendar_source.title": "Welcher Weg passt zu mir?",
   "tip.calendar_source.text":
-    "**Fertiger Kalender**: Das Auto hat schon einen Kalender mit seinen Terminen (z. B. einen geteilten Google-Kalender), und der ist in Home Assistant. Du ordnest ihn zu, Joe liest nur.\n**Postfach ohne Kalender**: Das Auto bekommt eine eigene E-Mail-Adresse bei einem beliebigen Anbieter. Du lädst sie zu deinen Terminen ein; Joe holt die Einladung, sagt zu und trägt den Termin in seinen eigenen Kalender für das Auto ein.\n**Postfach mit Kalender**: Wie eben, aber das Konto hat selbst einen Kalender (Microsoft, iCloud, Infomaniak). Die Einladung landet dort von selbst; Joe liest diesen Kalender und sagt dort zu.",
+    "**Fertiger Kalender**: Das Auto hat schon einen Kalender mit seinen Terminen (z. B. einen geteilten Familienkalender), und der ist in Home Assistant. Du ordnest ihn zu, Joe liest nur.\n**Postfach ohne Kalender**: Das Auto bekommt eine eigene E-Mail-Adresse, z. B. bei web.de oder GMX. Du lädst sie zu deinen Terminen ein; Joe holt die Einladung, sagt zu und trägt den Termin in seinen eigenen Kalender für das Auto ein.\n**Postfach mit Kalender**: Wie eben, aber das Konto hat selbst einen Kalender (Google, Microsoft, iCloud, Infomaniak). Die Einladung landet dort von selbst; Joe liest diesen Kalender und sagt dort zu.",
   "tip.calendar_source.hint": "Dazu kommen immer die Kalender der Personen, die du oben auswählst.",
   "tip.routing_service.title": "Welcher Dienst?",
   "tip.routing_service.text":

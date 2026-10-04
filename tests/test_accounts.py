@@ -138,6 +138,117 @@ async def test_the_microsoft_calendar_of_a_car(
     await accounts.async_remove()
 
 
+async def test_the_google_calendar_of_a_car(
+    hass: HomeAssistant, aioclient_mock: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from custom_components.energy_joe.mail import oauth
+
+    await hass.config.async_set_time_zone("Europe/Berlin")
+    monkeypatch.setattr(oauth, "JOE_GOOGLE_CLIENT_ID", "joe-google")
+    monkeypatch.setattr(oauth, "JOE_GOOGLE_CLIENT_SECRET", "not-secret")
+    config = _config("google", address="kona@gmail.com")
+    aioclient_mock.post(
+        oauth.GOOGLE_DEVICE,
+        json={
+            "user_code": "GQVQ-JKEC",
+            "device_code": "dev",
+            "verification_url": "https://www.google.com/device",
+            "interval": 0,
+            "expires_in": 1800,
+        },
+    )
+    aioclient_mock.post(
+        oauth.GOOGLE_TOKEN,
+        json={"access_token": "g-1", "refresh_token": "gr-1", "expires_in": 3600},
+    )
+    me = {"email": "kona@gmail.com", "self": True, "responseStatus": "needsAction"}
+    aioclient_mock.get(
+        "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+        json={
+            "items": [
+                {
+                    "id": "ev1",
+                    "iCalUID": "uid-1@google.com",
+                    "status": "confirmed",
+                    "summary": "Kundentermin",
+                    "location": "Messe Hannover",
+                    "start": {"dateTime": "2026-10-05T09:00:00+02:00"},
+                    "end": {"dateTime": "2026-10-05T10:00:00+02:00"},
+                    "organizer": {"email": "Robin@example.org"},
+                    "attendees": [
+                        {"email": "robin@example.org", "organizer": True},
+                        me,
+                    ],
+                },
+                {
+                    "id": "ev2",
+                    "status": "confirmed",
+                    "summary": "Werbung",
+                    "location": "Irgendwo",
+                    "start": {"dateTime": "2026-10-05T11:00:00+02:00"},
+                    "end": {"dateTime": "2026-10-05T12:00:00+02:00"},
+                    "organizer": {"email": "spam@example.net"},
+                    "attendees": [me],
+                },
+                {
+                    "id": "ev3",
+                    "status": "cancelled",
+                    "start": {"date": "2026-10-05"},
+                    "end": {"date": "2026-10-06"},
+                },
+            ]
+        },
+    )
+    aioclient_mock.patch(
+        "https://www.googleapis.com/calendar/v3/calendars/primary/events/ev1",
+        json={"id": "ev1"},
+    )
+    accounts = CarAccounts(hass, lambda: config, lambda: None)
+    await accounts.async_load()
+    info = await accounts.async_sign_in("kona")
+    assert info["user_code"] == "GQVQ-JKEC"
+    assert info["uri"] == "https://www.google.com/device"
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert accounts.status["kona"]["oauth"] == {"state": "ok"}
+    # Google wants the app's secret when the code is exchanged.
+    token_call = [
+        c for c in aioclient_mock.mock_calls if str(c[1]) == oauth.GOOGLE_TOKEN
+    ]
+    assert token_call[-1][2]["client_secret"] == "not-secret"
+
+    start = dt_util.parse_datetime("2026-10-05T00:00:00+02:00")
+    events = await accounts.async_events("kona", start, start + timedelta(days=1))
+    # The stranger's unanswered invitation and the cancelled one are no trips.
+    assert [e["location"] for e in events] == ["Messe Hannover"]
+    assert events[0]["start"] == "2026-10-05T09:00:00+02:00"
+    (accepted,) = [c for c in aioclient_mock.mock_calls if c[0] == "PATCH"]
+    attendees = accepted[2]["attendees"]
+    assert {
+        "email": "kona@gmail.com",
+        "self": True,
+        "responseStatus": "accepted",
+    } in attendees
+    assert {"email": "robin@example.org", "organizer": True} in attendees
+    await accounts.async_remove()
+
+
+def test_without_joes_google_app_ones_own_is_needed(
+    hass: HomeAssistant, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from custom_components.energy_joe.accounts import AccountError
+    from custom_components.energy_joe.mail import oauth
+
+    monkeypatch.setattr(oauth, "JOE_GOOGLE_CLIENT_ID", None)
+    config = _config("google", client_id="own-app")
+    accounts = CarAccounts(hass, lambda: config, lambda: None)
+    account = config["actions"][0]["need"]["account"]
+    with pytest.raises(AccountError):
+        accounts._sign_in("kona", account)
+    accounts._data["kona"] = {"client_secret": "own-secret"}
+    sign_in = accounts._sign_in("kona", account)
+    assert (sign_in.client_id, sign_in.client_secret) == ("own-app", "own-secret")
+
+
 PRINCIPAL = """<?xml version="1.0"?><d:multistatus xmlns:d="DAV:"><d:response><d:href>/</d:href>
 <d:propstat><d:prop><d:current-user-principal><d:href>/123/principal/</d:href>
 </d:current-user-principal></d:prop></d:propstat></d:response></d:multistatus>"""

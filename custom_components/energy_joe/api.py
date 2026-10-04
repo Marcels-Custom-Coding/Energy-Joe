@@ -772,8 +772,11 @@ async def ws_mailbox_check(
     {
         vol.Required("type"): f"{DOMAIN}/account",
         vol.Required("car"): str,
-        # "password" (with password), "sign_in", "sign_out" or "test".
-        vol.Required("do"): vol.In(("password", "sign_in", "sign_out", "test")),
+        # "password" or "client_secret" (with password), "sign_in", "sign_out"
+        # or "test".
+        vol.Required("do"): vol.In(
+            ("password", "client_secret", "sign_in", "sign_out", "test")
+        ),
         vol.Optional("password"): vol.Any(None, vol.All(str, vol.Length(max=500))),
     }
 )
@@ -784,7 +787,7 @@ async def ws_account(
     connection: websocket_api.ActiveConnection,
     msg: dict[str, Any],
 ) -> None:
-    """A car's own account: app password, Microsoft sign-in, or a test read."""
+    """A car's account: password, own app's secret, sign-in, or a test read."""
     if (runtime := _runtime(hass, connection, msg)) is None:
         return
     accounts = runtime.accounts
@@ -793,6 +796,9 @@ async def ws_account(
         if msg["do"] == "password":
             await accounts.async_set_password(car, msg.get("password"))
             result: Any = None
+        elif msg["do"] == "client_secret":
+            await accounts.async_set_client_secret(car, msg.get("password"))
+            result = None
         elif msg["do"] == "sign_in":
             result = await accounts.async_sign_in(car)
         elif msg["do"] == "sign_out":
