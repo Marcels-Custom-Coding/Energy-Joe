@@ -1,4 +1,4 @@
-import { A as e, C as t, D as n, E as r, O as i, S as a, T as o, _ as s, a as c, b as l, c as u, d, f, g as p, h as m, i as h, j as g, k as _, l as v, m as y, n as ee, o as te, p as ne, r as re, s as b, t as ie, u as ae, v as oe, w as se, x, y as S } from "./tokens-9Zolpl-x.js";
+import { A as e, C as t, D as n, E as r, O as i, S as a, T as o, _ as s, a as c, b as l, c as u, d, f, g as p, h as m, i as h, j as g, k as _, l as v, m as y, n as ee, o as te, p as ne, r as re, s as b, t as ie, u as ae, v as oe, w as se, x, y as S } from "./tokens-CRWjiNyJ.js";
 //#region src/assets.ts
 var ce = import.meta.url.replace(/[^/]*$/, ""), le = (e) => `${ce}${e}`, C = _`<svg
   class="swoosh"
@@ -8079,6 +8079,45 @@ var Gt = class extends n {
         color: var(--joe-ink-2);
         font-size: 14px;
       }
+      .topics {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 10px;
+      }
+      .topics .eyebrow {
+        margin-right: 4px;
+      }
+      .topic {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        min-height: 32px;
+        padding: 4px 12px;
+        border: 1px solid var(--joe-line-2);
+        border-radius: 999px;
+        background: var(--joe-surface);
+        color: var(--joe-ink-2);
+        font: inherit;
+        font-size: 13.5px;
+        cursor: pointer;
+      }
+      .topic:hover {
+        border-color: var(--joe-amber);
+      }
+      .topic.done {
+        color: var(--joe-ink);
+      }
+      .topic ha-icon {
+        --mdc-icon-size: 16px;
+      }
+      .topic[aria-current="step"] {
+        background: var(--joe-ink);
+        border-color: var(--joe-ink);
+        color: var(--joe-bg);
+        font-weight: 700;
+      }
       @media (max-width: 760px) {
         .wrap {
           grid-template-columns: 1fr;
@@ -8091,6 +8130,9 @@ var Gt = class extends n {
         }
       }
     `];
+	}
+	topic(e, t, n) {
+		return n.startsWith("capacity:") ? t.batteries.find((e) => `capacity:${e.id}` === n)?.name ?? e("ask.topic.capacity") : e.optional(`ask.topic.${n}`) ?? n;
 	}
 	render() {
 		let { t: e, config: t } = this;
@@ -8105,10 +8147,20 @@ var Gt = class extends n {
       <div class="wrap">
         <joe-pose name=${Ht[a.split(":")[0]] ?? "ask"}></joe-pose>
         <div>
-          <div class="eyebrow">${e("ask.count", {
+          <nav class="topics" aria-label=${e("ask.topics")} data-notip>
+            <span class="eyebrow">${e("ask.count", {
 			n: r + 1,
 			total: n.length
-		})}</div>
+		})}</span>
+            ${n.map((n, a) => _`<button
+                type="button"
+                class="topic ${a < r ? "done" : ""}"
+                aria-current=${a === r ? "step" : "false"}
+                @click=${() => this.index = a}
+              >
+                ${a < r ? _`<ha-icon icon="mdi:check"></ha-icon>` : i}${this.topic(e, t, n)}
+              </button>`)}
+          </nav>
           ${this.renderQuestion(e, t, a)}
           <div class="actions" data-notip>
             <button type="button" class="btn btn-primary" @click=${() => this.move(1, n.length)}>

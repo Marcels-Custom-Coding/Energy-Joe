@@ -899,7 +899,15 @@ var Me = {
 	"pick.holiday.title": "Welcher Sensor kennt |die Feiertage?",
 	"pick.person.title": "Wer |fehlt noch?",
 	"pick.calendar.title": "Welche Kalender |hat {name}?",
-	"ask.count": "Frage {n} von {total}",
+	"ask.count": "Frage {n} von {total}:",
+	"ask.topics": "Fragen – zum Springen antippen",
+	"ask.topic.tariff": "Tarif",
+	"ask.topic.feed_in": "Einspeisung",
+	"ask.topic.capacity": "Speicher",
+	"ask.topic.heating": "Heizen",
+	"ask.topic.hot_water": "Warmwasser",
+	"ask.topic.ev": "E-Auto",
+	"ask.topic.household": "Haushalt",
 	"ask.finish": "Fertig",
 	"ask.idk": "Weiß ich nicht",
 	"ask.idk_learn": "Weiß ich nicht – lern es",
@@ -2630,7 +2638,15 @@ var Me = {
 	"pick.holiday.title": "Which sensor knows |the holidays?",
 	"pick.person.title": "Who's |missing?",
 	"pick.calendar.title": "Which calendars |does {name} have?",
-	"ask.count": "Question {n} of {total}",
+	"ask.count": "Question {n} of {total}:",
+	"ask.topics": "Questions – tap to jump",
+	"ask.topic.tariff": "Tariff",
+	"ask.topic.feed_in": "Feed-in",
+	"ask.topic.capacity": "Battery",
+	"ask.topic.heating": "Heating",
+	"ask.topic.hot_water": "Hot water",
+	"ask.topic.ev": "Electric car",
+	"ask.topic.household": "Household",
 	"ask.finish": "Done",
 	"ask.idk": "I don't know",
 	"ask.idk_learn": "I don't know – learn it",
@@ -4063,14 +4079,14 @@ function Le(e) {
 }
 //#endregion
 //#region src/define.ts
-var Re = "0.6.2";
+var Re = "0.6.3";
 function H(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Re, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.6.2" && Be();
+	n.joeVersion !== "0.6.3" && Be();
 }
 var ze = !1;
 function Be() {

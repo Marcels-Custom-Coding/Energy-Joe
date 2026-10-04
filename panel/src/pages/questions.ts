@@ -118,6 +118,45 @@ export class JoeQuestions extends LitElement {
         color: var(--joe-ink-2);
         font-size: 14px;
       }
+      .topics {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 10px;
+      }
+      .topics .eyebrow {
+        margin-right: 4px;
+      }
+      .topic {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        min-height: 32px;
+        padding: 4px 12px;
+        border: 1px solid var(--joe-line-2);
+        border-radius: 999px;
+        background: var(--joe-surface);
+        color: var(--joe-ink-2);
+        font: inherit;
+        font-size: 13.5px;
+        cursor: pointer;
+      }
+      .topic:hover {
+        border-color: var(--joe-amber);
+      }
+      .topic.done {
+        color: var(--joe-ink);
+      }
+      .topic ha-icon {
+        --mdc-icon-size: 16px;
+      }
+      .topic[aria-current="step"] {
+        background: var(--joe-ink);
+        border-color: var(--joe-ink);
+        color: var(--joe-bg);
+        font-weight: 700;
+      }
       @media (max-width: 760px) {
         .wrap {
           grid-template-columns: 1fr;
@@ -131,6 +170,15 @@ export class JoeQuestions extends LitElement {
       }
     `,
   ];
+
+  /** A short name for a question (the topics above it can be clicked). */
+  private topic(t: Translate, config: JoeConfig, id: string): string {
+    if (id.startsWith("capacity:")) {
+      const battery = config.batteries.find((b) => `capacity:${b.id}` === id);
+      return battery?.name ?? t("ask.topic.capacity");
+    }
+    return t.optional(`ask.topic.${id}`) ?? id;
+  }
 
   protected render() {
     const { t, config } = this;
@@ -153,7 +201,19 @@ export class JoeQuestions extends LitElement {
       <div class="wrap">
         <joe-pose name=${POSES[id.split(":")[0]] ?? "ask"}></joe-pose>
         <div>
-          <div class="eyebrow">${t("ask.count", { n: index + 1, total: list.length })}</div>
+          <nav class="topics" aria-label=${t("ask.topics")} data-notip>
+            <span class="eyebrow">${t("ask.count", { n: index + 1, total: list.length })}</span>
+            ${list.map(
+              (item, i) => html`<button
+                type="button"
+                class="topic ${i < index ? "done" : ""}"
+                aria-current=${i === index ? "step" : "false"}
+                @click=${() => (this.index = i)}
+              >
+                ${i < index ? html`<ha-icon icon="mdi:check"></ha-icon>` : nothing}${this.topic(t, config, item)}
+              </button>`,
+            )}
+          </nav>
           ${this.renderQuestion(t, config, id)}
           <div class="actions" data-notip>
             <button type="button" class="btn btn-primary" @click=${() => this.move(1, list.length)}>

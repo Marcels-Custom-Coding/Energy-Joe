@@ -3,6 +3,13 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.6.3
+
+- **Fragen mit Themen:** Über Joes Fragen steht jetzt nicht nur „Frage 1
+  von 4“, sondern auch, worum es geht – Tarif, Speicher, Heizen,
+  Warmwasser, E-Auto, Haushalt. Ein Tipp auf ein Thema springt direkt zur
+  Frage; beantwortete haben einen Haken.
+
 ## 0.6.2
 
 - **Feiertage aus einem Kalender:** Ist ein Feiertagskalender eingetragen
