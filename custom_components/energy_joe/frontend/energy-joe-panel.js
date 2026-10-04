@@ -1,4 +1,4 @@
-import { A as e, C as t, D as n, E as r, O as i, S as a, T as o, _ as s, a as c, b as l, c as u, d, f, g as p, h as m, i as h, j as g, k as _, l as v, m as y, n as ee, o as te, p as ne, r as re, s as b, t as ie, u as ae, v as oe, w as se, x, y as S } from "./tokens-DboDRiuT.js";
+import { A as e, C as t, D as n, E as r, O as i, S as a, T as o, _ as s, a as c, b as l, c as u, d, f, g as p, h as m, i as h, j as g, k as _, l as v, m as y, n as ee, o as te, p as ne, r as re, s as b, t as ie, u as ae, v as oe, w as se, x, y as S } from "./tokens-4ZRvXhwd.js";
 //#region src/assets.ts
 var ce = import.meta.url.replace(/[^/]*$/, ""), le = (e) => `${ce}${e}`, C = _`<svg
   class="swoosh"
@@ -7502,32 +7502,36 @@ var zt = /* @__PURE__ */ new Set([
 			}),
 			chips: [E(t, { source: "read" })]
 		}), i.push(...this.batteryRows(e, t, n)), i.push(this.tariffRow(t, n)), i.push(this.forecastRow(t, n)), i.push(this.powerRow(e, t, n, "grid_power")), i.push(this.powerRow(e, t, n, "home_power")), i.push(this.solarRow(e, t, n));
-		for (let e of r?.wallboxes.filter((e) => e.is_car) ?? []) i.push({
-			key: `wallbox:${e.name}`,
-			icon: "mdi:ev-station",
-			title: t("find.wallbox"),
-			detail: `${e.name} · ${t("review.wallbox.later")}`,
-			chips: [_`<span class="chip soon">${t("review.later")}</span>`]
-		});
-		for (let n of r?.cars ?? []) {
-			let r = n.entities.soc ? s(e, n.entities.soc) : null, a = [
-				n.name,
-				r === null ? null : `${y(t.lang, r, 0)} %`,
-				n.range_km === null ? null : `${y(t.lang, n.range_km, 0)} km`,
-				t("review.car.later")
-			];
+		let o = (e) => _`<span class="chip ${e ? "ok" : "soon"}">${t(e ? "review.used" : "review.unused")}</span>`;
+		for (let e of r?.wallboxes.filter((e) => e.is_car) ?? []) {
+			let r = n.actions.some((t) => t.id === `ev_${e.device_id}` || e.mode_entity && t.entity_id === e.mode_entity);
 			i.push({
-				key: `car:${n.device_id}`,
+				key: `wallbox:${e.name}`,
+				icon: "mdi:ev-station",
+				title: t("find.wallbox"),
+				detail: `${e.name} · ${t(r ? "review.wallbox.used" : "review.wallbox.unused")}`,
+				chips: [o(r)]
+			});
+		}
+		for (let a of r?.cars ?? []) {
+			let r = a.entities.soc ? s(e, a.entities.soc) : null, c = [
+				a.name,
+				r === null ? null : `${y(t.lang, r, 0)} %`,
+				a.range_km === null ? null : `${y(t.lang, a.range_km, 0)} km`,
+				null
+			], l = n.actions.some((e) => e.need?.enabled && (a.entities.soc && e.need.soc_entity === a.entities.soc || a.entities.range && e.need.range_entity === a.entities.range));
+			c[3] = t(l ? "review.car.used" : "review.car.unused"), i.push({
+				key: `car:${a.device_id}`,
 				icon: "mdi:car-electric",
 				title: t("find.car"),
-				detail: a.filter(Boolean).join(" · "),
-				chips: [T(t, n.confidence), _`<span class="chip soon">${t("review.later")}</span>`]
+				detail: c.filter(Boolean).join(" · "),
+				chips: [T(t, a.confidence), o(l)]
 			});
 		}
 		i.push(this.contextRow(e, t, n, "weather")), i.push(this.contextRow(e, t, n, "holiday"));
-		let o = this.context === "settings", c = [_`<span class="chip soon">${t("review.ask_later")}</span>`];
-		if (o || n.persons.length || r?.calendars.length) {
-			let e = o ? n.persons.reduce((e, t) => e + t.calendars.length, 0) : r?.calendars.length ?? 0;
+		let c = this.context === "settings", l = [_`<span class="chip soon">${t("review.ask_later")}</span>`];
+		if (c || n.persons.length || r?.calendars.length) {
+			let e = c ? n.persons.reduce((e, t) => e + t.calendars.length, 0) : r?.calendars.length ?? 0;
 			i.push({
 				key: "people",
 				icon: "mdi:account-group-outline",
@@ -7536,23 +7540,23 @@ var zt = /* @__PURE__ */ new Set([
 					persons: this.count(t, n.persons.length, "word.person"),
 					calendars: this.count(t, e, "word.calendar")
 				}),
-				chips: o ? [] : c,
-				tip: o ? "q_household" : void 0,
-				actions: o ? [this.button(t("review.change"), "mdi:account-edit-outline", () => this.edit("household"))] : void 0
+				chips: c ? [] : l,
+				tip: c ? "q_household" : void 0,
+				actions: c ? [this.button(t("review.change"), "mdi:account-edit-outline", () => this.edit("household"))] : void 0
 			});
 		}
-		let l = n.consumers.filter((e) => e.kind !== "submeter");
-		return l.length && i.push({
+		let u = n.consumers.filter((e) => e.kind !== "submeter");
+		return u.length && i.push({
 			key: "devices",
 			icon: "mdi:devices",
 			title: t("find.devices"),
 			detail: t("find.devices.detail", {
-				count: this.count(t, l.length, "word.device"),
-				heating: l.filter((e) => zt.has(e.kind)).length
+				count: this.count(t, u.length, "word.device"),
+				heating: u.filter((e) => zt.has(e.kind)).length
 			}),
-			chips: o ? [] : c,
-			tip: o ? "f_consumer_kind" : void 0,
-			actions: o ? [this.button(t("review.assign"), "mdi:devices", () => this.edit("consumers"))] : void 0
+			chips: c ? [] : l,
+			tip: c ? "f_consumer_kind" : void 0,
+			actions: c ? [this.button(t("review.assign"), "mdi:devices", () => this.edit("consumers"))] : void 0
 		}), i;
 	}
 	batteryRows(e, t, n) {
@@ -10126,12 +10130,18 @@ var Zt = [
       ${t.service === "osm" ? _`${o("geocoder_url")} ${o("router_url")}` : i}
     </section>`;
 	}
+	connectedCallback() {
+		super.connectedCallback(), this.hass?.callWS({ type: "energy_joe/notify/targets" }).then((e) => this.notifyTargets = e).catch(() => void 0);
+	}
 	renderNotify(e) {
-		let t = this.state.config, n = t.notify, r = Object.keys(this.hass?.services?.notify ?? {}).filter((e) => ![
+		let t = this.state.config, n = t.notify, r = this.notifyTargets ?? Object.keys(this.hass?.services?.notify ?? {}).filter((e) => ![
 			"persistent_notification",
 			"send_message",
 			"notify"
-		].includes(e)).sort(), i = (t, r) => _`<div class="row" data-tipped>
+		].includes(e)).sort().map((e) => ({
+			service: e,
+			name: e.replace(/_/g, " ")
+		})), a = n.service?.replace(/^notify\./, ""), o = !!a && this.notifyTargets !== void 0 && !r.some((e) => e.service === a), s = (t, r) => _`<div class="row" data-tipped>
         <div>
           <div class="name"><b id="notify-${t}">${e(`settings.notify.${t}`)}</b>${v(e, r)}</div>
           <small>${e(`settings.notify.${t}.hint`)}</small>
@@ -10163,10 +10173,11 @@ var Zt = [
 		}}
         >
           <option value="" ?selected=${!n.service}>${e("settings.notify.none")}</option>
-          ${r.map((e) => _`<option value=${e} ?selected=${n.service === `notify.${e}`}>${e.replace(/_/g, " ")}</option>`)}
+          ${r.map((e) => _`<option value=${e.service} ?selected=${a === e.service}>${e.name}</option>`)}
+          ${o ? _`<option value=${a} selected>${e("settings.notify.gone", { name: a ?? "" })}</option>` : i}
         </select>
       </div>
-      ${i("ask", "notify_ask")} ${i("problems", "notify_problems")} ${i("morning", "notify_morning")}
+      ${s("ask", "notify_ask")} ${s("problems", "notify_problems")} ${s("morning", "notify_morning")}
       <div class="row" data-tipped>
         <div>
           <div class="name"><label for="ask-time"><b>${e("settings.ask_time")}</b></label>${v(e, "ask_time")}</div>
@@ -10450,7 +10461,7 @@ var Zt = [
 		}));
 	}
 };
-S([r({ attribute: !1 })], Q.prototype, "t", void 0), S([r({ attribute: !1 })], Q.prototype, "hass", void 0), S([r({ attribute: !1 })], Q.prototype, "state", void 0), S([r({ attribute: !1 })], Q.prototype, "info", void 0), S([r({ attribute: !1 })], Q.prototype, "discovery", void 0), S([r({ attribute: !1 })], Q.prototype, "checks", void 0), S([o()], Q.prototype, "pro", void 0), S([o()], Q.prototype, "question", void 0), x("joe-settings", Q);
+S([r({ attribute: !1 })], Q.prototype, "t", void 0), S([r({ attribute: !1 })], Q.prototype, "hass", void 0), S([r({ attribute: !1 })], Q.prototype, "state", void 0), S([r({ attribute: !1 })], Q.prototype, "info", void 0), S([r({ attribute: !1 })], Q.prototype, "discovery", void 0), S([r({ attribute: !1 })], Q.prototype, "checks", void 0), S([o()], Q.prototype, "pro", void 0), S([o()], Q.prototype, "notifyTargets", void 0), S([o()], Q.prototype, "question", void 0), x("joe-settings", Q);
 //#endregion
 //#region src/energy-joe-panel.ts
 var rn = [

@@ -187,13 +187,19 @@ export class JoeReview extends LitElement {
     rows.push(this.powerRow(hass, t, config, "grid_power"));
     rows.push(this.powerRow(hass, t, config, "home_power"));
     rows.push(this.solarRow(hass, t, config));
+    // Used by a night action, or still to set up (Geräte → Nacht-Aktionen).
+    const used = (yes: boolean) =>
+      html`<span class="chip ${yes ? "ok" : "soon"}">${t(yes ? "review.used" : "review.unused")}</span>`;
     for (const w of d?.wallboxes.filter((w) => w.is_car) ?? []) {
+      const mine = config.actions.some(
+        (a) => a.id === `ev_${w.device_id}` || (w.mode_entity && a.entity_id === w.mode_entity),
+      );
       rows.push({
         key: `wallbox:${w.name}`,
         icon: "mdi:ev-station",
         title: t("find.wallbox"),
-        detail: `${w.name} · ${t("review.wallbox.later")}`,
-        chips: [html`<span class="chip soon">${t("review.later")}</span>`],
+        detail: `${w.name} · ${t(mine ? "review.wallbox.used" : "review.wallbox.unused")}`,
+        chips: [used(mine)],
       });
     }
     for (const car of d?.cars ?? []) {
@@ -202,14 +208,21 @@ export class JoeReview extends LitElement {
         car.name,
         soc !== null ? `${formatNumber(t.lang, soc, 0)} %` : null,
         car.range_km !== null ? `${formatNumber(t.lang, car.range_km, 0)} km` : null,
-        t("review.car.later"),
+        null,
       ];
+      const charged = config.actions.some(
+        (a) =>
+          a.need?.enabled &&
+          ((car.entities.soc && a.need.soc_entity === car.entities.soc) ||
+            (car.entities.range && a.need.range_entity === car.entities.range)),
+      );
+      parts[3] = t(charged ? "review.car.used" : "review.car.unused");
       rows.push({
         key: `car:${car.device_id}`,
         icon: "mdi:car-electric",
         title: t("find.car"),
         detail: parts.filter(Boolean).join(" · "),
-        chips: [confidenceDots(t, car.confidence), html`<span class="chip soon">${t("review.later")}</span>`],
+        chips: [confidenceDots(t, car.confidence), used(charged)],
       });
     }
     rows.push(this.contextRow(hass, t, config, "weather"));

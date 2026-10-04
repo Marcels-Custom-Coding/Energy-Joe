@@ -19,7 +19,7 @@ from homeassistant.helpers import (
 from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.helpers.sun import get_astral_event_date
 from homeassistant.loader import async_get_integration
-from homeassistant.util import dt as dt_util
+from homeassistant.util import dt as dt_util, slugify
 
 from . import model
 from .accounts import AccountError
@@ -77,6 +77,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_control_action_tonight)
     websocket_api.async_register_command(hass, ws_automations)
     websocket_api.async_register_command(hass, ws_climate_devices)
+    websocket_api.async_register_command(hass, ws_notify_targets)
     websocket_api.async_register_command(hass, ws_automations_switch)
     websocket_api.async_register_command(hass, ws_control_boost)
     websocket_api.async_register_command(hass, ws_calendar_links)
@@ -923,6 +924,36 @@ def ws_climate_devices(
             "proximity": bool(hass.config_entries.async_entries("proximity")),
         },
     )
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/notify/targets"})
+@websocket_api.require_admin
+@callback
+def ws_notify_targets(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Notify services with the name of the phone as Home Assistant shows it now.
+
+    The Companion App's service keeps the name the phone had when the app was
+    set up ("mobile_app_<name>"); the device may have been renamed since.
+    """
+    devices = dr.async_get(hass)
+    names: dict[str, str] = {}
+    for entry in hass.config_entries.async_entries("mobile_app"):
+        slug = slugify(str(entry.data.get("device_name") or ""))
+        device = next(
+            iter(dr.async_entries_for_config_entry(devices, entry.entry_id)), None
+        )
+        if slug and device:
+            names[f"mobile_app_{slug}"] = device.name_by_user or device.name or slug
+    targets = [
+        {"service": name, "name": names.get(name) or name.replace("_", " ")}
+        for name in sorted(hass.services.async_services_for_domain("notify"))
+        if name not in ("persistent_notification", "send_message", "notify")
+    ]
+    connection.send_result(msg["id"], targets)
 
 
 async def _async_energy_summary(hass: HomeAssistant) -> dict[str, Any]:

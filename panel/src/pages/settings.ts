@@ -98,6 +98,8 @@ export class JoeSettings extends LitElement {
   @property({ attribute: false }) checks: Check[] = [];
 
   @state() private pro = false;
+  /** Notify services with the phone's current name (see energy_joe/notify/targets). */
+  @state() private notifyTargets?: { service: string; name: string }[];
   @state() private question = "";
 
   static styles = [
@@ -431,12 +433,26 @@ export class JoeSettings extends LitElement {
     </section>`;
   }
 
+  connectedCallback(): void {
+    super.connectedCallback();
+    this.hass
+      ?.callWS<{ service: string; name: string }[]>({ type: "energy_joe/notify/targets" })
+      .then((targets) => (this.notifyTargets = targets))
+      .catch(() => undefined);
+  }
+
   private renderNotify(t: Translate): TemplateResult {
     const config = this.state!.config;
     const notify = config.notify;
-    const services = Object.keys(this.hass?.services?.notify ?? {})
-      .filter((name) => !["persistent_notification", "send_message", "notify"].includes(name))
-      .sort();
+    // Phones by the name Home Assistant shows now (the service keeps the old one).
+    const services =
+      this.notifyTargets ??
+      Object.keys(this.hass?.services?.notify ?? {})
+        .filter((name) => !["persistent_notification", "send_message", "notify"].includes(name))
+        .sort()
+        .map((name) => ({ service: name, name: name.replace(/_/g, " ") }));
+    const chosen = notify.service?.replace(/^notify\./, "");
+    const gone = Boolean(chosen) && this.notifyTargets !== undefined && !services.some((s) => s.service === chosen);
     const toggle = (key: "ask" | "problems" | "morning", tipName: "notify_ask" | "notify_problems" | "notify_morning") =>
       html`<div class="row" data-tipped>
         <div>
@@ -471,8 +487,9 @@ export class JoeSettings extends LitElement {
         >
           <option value="" ?selected=${!notify.service}>${t("settings.notify.none")}</option>
           ${services.map(
-            (name) => html`<option value=${name} ?selected=${notify.service === `notify.${name}`}>${name.replace(/_/g, " ")}</option>`,
+            (target) => html`<option value=${target.service} ?selected=${chosen === target.service}>${target.name}</option>`,
           )}
+          ${gone ? html`<option value=${chosen} selected>${t("settings.notify.gone", { name: chosen ?? "" })}</option>` : nothing}
         </select>
       </div>
       ${toggle("ask", "notify_ask")} ${toggle("problems", "notify_problems")} ${toggle("morning", "notify_morning")}

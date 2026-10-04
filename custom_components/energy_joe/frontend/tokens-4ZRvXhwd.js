@@ -842,8 +842,13 @@ var Me = {
 	"review.invert": "Umdrehen",
 	"review.keep": "Stimmt so",
 	"review.ignored": "lasse ich weg",
-	"review.later": "später",
 	"review.ask_later": "frag ich dich gleich",
+	"review.used": "genutzt",
+	"review.unused": "noch nicht genutzt",
+	"review.wallbox.used": "für die Nacht-Aktion „E-Auto laden“",
+	"review.wallbox.unused": "für eine Nacht-Aktion – einrichten unter Geräte → „E-Auto laden“",
+	"review.car.used": "für Laden nach Bedarf",
+	"review.car.unused": "für Laden nach Bedarf – einschalten unter Geräte → E-Auto → „Laden nach Bedarf“",
 	"review.capacity_unknown": "Größe unbekannt",
 	"review.battery": "Speicher",
 	"review.battery.none": "Keinen Speicher gefunden. Hast du einen, such ihn dir aus.",
@@ -866,8 +871,6 @@ var Me = {
 	"review.home.computed": "rechne ich aus Netz, PV und Speicher aus",
 	"review.solar.none": "Hab keine PV",
 	"review.solar.without": "keine PV-Anlage",
-	"review.car.later": "für Laden nach Bedarf",
-	"review.wallbox.later": "für die Nacht-Aktionen",
 	"review.weather.none": "Mit einer Wettervorhersage lerne ich, wie die Außentemperatur deinen Verbrauch ändert.",
 	"review.holiday.none": "Tipp: Die Integration „Arbeitstag“ (Workday) sagt mir, wann Wochenende oder Feiertag ist.",
 	"pick.search": "Suchen – Name, Raum oder Gerät",
@@ -1973,6 +1976,7 @@ var Me = {
 	"settings.notify.service": "Handy oder Dienst",
 	"settings.notify.service.hint": "Wohin ich schreibe, z. B. die Home-Assistant-App auf deinem Handy.",
 	"settings.notify.none": "Nirgendwohin",
+	"settings.notify.gone": "{name} – gibt es nicht mehr, bitte neu wählen",
 	"settings.notify.ask": "Abends fragen",
 	"settings.notify.ask.hint": "Im Modus Vorschlagen, mit „Ja“ und „Heute nicht“ direkt in der Nachricht.",
 	"settings.notify.problems": "Probleme melden",
@@ -2569,8 +2573,13 @@ var Me = {
 	"review.invert": "Flip",
 	"review.keep": "It's right",
 	"review.ignored": "left out",
-	"review.later": "later",
 	"review.ask_later": "I'll ask you in a moment",
+	"review.used": "in use",
+	"review.unused": "not in use yet",
+	"review.wallbox.used": "for the night action “Charge the car”",
+	"review.wallbox.unused": "for a night action – set up under Devices → “Charge the car”",
+	"review.car.used": "for charging by need",
+	"review.car.unused": "for charging by need – switch on under Devices → car → “Charge by need”",
 	"review.capacity_unknown": "size unknown",
 	"review.battery": "Battery",
 	"review.battery.none": "No battery found. If you have one, pick it.",
@@ -2593,8 +2602,6 @@ var Me = {
 	"review.home.computed": "worked out from grid, solar and battery",
 	"review.solar.none": "No solar",
 	"review.solar.without": "no solar system",
-	"review.car.later": "for charging by need",
-	"review.wallbox.later": "for the night actions",
 	"review.weather.none": "With a weather forecast I learn how the outdoor temperature changes your consumption.",
 	"review.holiday.none": "Tip: the Workday integration tells me when it's a weekend or public holiday.",
 	"pick.search": "Search – name, room or device",
@@ -3700,6 +3707,7 @@ var Me = {
 	"settings.notify.service": "Phone or service",
 	"settings.notify.service.hint": "Where I write to, e.g. the Home Assistant app on your phone.",
 	"settings.notify.none": "Nowhere",
+	"settings.notify.gone": "{name} – no longer exists, please choose again",
 	"settings.notify.ask": "Ask in the evening",
 	"settings.notify.ask.hint": "In the suggest mode, with “Yes” and “Not tonight” right in the message.",
 	"settings.notify.problems": "Report problems",
@@ -4055,14 +4063,14 @@ function Le(e) {
 }
 //#endregion
 //#region src/define.ts
-var Re = "0.6.0";
+var Re = "0.6.1";
 function H(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Re, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.6.0" && Be();
+	n.joeVersion !== "0.6.1" && Be();
 }
 var ze = !1;
 function Be() {

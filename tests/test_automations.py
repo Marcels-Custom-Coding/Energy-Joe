@@ -301,3 +301,34 @@ async def test_joe_keeps_and_restores_what_it_switched_off(
     assert await hass.config_entries.async_remove(entry.entry_id)
     await hass.async_block_till_done()
     assert hass.states.get("automation.old").state == "on"
+
+
+async def test_phones_are_shown_by_their_current_name(
+    ready_hass: HomeAssistant, hass_ws_client: Any
+) -> None:
+    from custom_components.energy_joe.const import DOMAIN
+
+    hass = ready_hass
+    entry = MockConfigEntry(domain=DOMAIN, data={})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    phone = MockConfigEntry(
+        domain="mobile_app", data={"device_name": "iPhone 15 Pro Max"}
+    )
+    phone.add_to_hass(hass)
+    device = dr.async_get(hass).async_get_or_create(
+        config_entry_id=phone.entry_id,
+        identifiers={("mobile_app", "x")},
+        name="iPhone 15 Pro Max",
+    )
+    dr.async_get(hass).async_update_device(device.id, name_by_user="Marcels iPhone 17")
+    hass.services.async_register(
+        "notify", "mobile_app_iphone_15_pro_max", lambda call: None
+    )
+    ws = await hass_ws_client(hass)
+    await ws.send_json_auto_id({"type": f"{DOMAIN}/notify/targets"})
+    result = (await ws.receive_json())["result"]
+    assert {
+        "service": "mobile_app_iphone_15_pro_max",
+        "name": "Marcels iPhone 17",
+    } in result

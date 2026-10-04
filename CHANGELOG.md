@@ -3,6 +3,15 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.6.1
+
+- **Handy unter seinem heutigen Namen:** Bei den Benachrichtigungen zeigt
+  Joe dein Handy so, wie es in Home Assistant heißt – nicht mehr unter dem
+  Namen, den die App beim Einrichten hatte. Gibt es den gewählten Dienst
+  nicht mehr, sagt Joe das.
+- **„Später“ ersetzt:** Bei Wallbox und Auto steht jetzt, ob Joe sie nutzt
+  („genutzt“) oder wo du sie einrichtest („noch nicht genutzt“).
+
 ## 0.6.0
 
 - **Neuer Bereich „Klima“:** Joe steuert auf Wunsch Thermostate und
