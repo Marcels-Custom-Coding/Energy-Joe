@@ -10,18 +10,21 @@ configuration or the diagnostics.
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable
 from datetime import datetime, timedelta
 import logging
 from typing import Any
 
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from ..const import DOMAIN
 from ..plan.car_calendar import CarCalendarStore, as_text
+from . import oauth
 from .ical import Invitation, parse, reply
 from .mailbox import Fetched, MailError, check, fetch, send_reply
 
@@ -94,6 +97,7 @@ class JoeInbox:
         self._unsub: CALLBACK_TYPE | None = None
         self._interval: int | None = None
         self._running = False
+        self._oauth_task: asyncio.Task[None] | None = None
         self.status: dict[str, Any] = {"state": "off"}
 
     async def async_load(self) -> None:
@@ -115,13 +119,115 @@ class JoeInbox:
 
     @property
     def has_secret(self) -> bool:
+        if self._config()["mailbox"]["provider"] == "microsoft":
+            return bool((self._data.get("oauth") or {}).get("refresh_token"))
         return bool(self._data.get("password") or self._data.get("token"))
 
-    def _secret(self) -> dict[str, Any]:
-        return {
-            "password": self._data.get("password"),
-            "token": self._data.get("token"),
+    async def _async_secret(self) -> dict[str, Any]:
+        """The password, or for Microsoft a fresh access token."""
+        settings = self._config()["mailbox"]
+        if settings["provider"] != "microsoft":
+            return {
+                "password": self._data.get("password"),
+                "token": self._data.get("token"),
+            }
+        tokens = self._data.get("oauth") or {}
+        if not oauth.fresh(tokens):
+            try:
+                tokens = await oauth.refresh(
+                    async_get_clientsession(self._hass),
+                    settings["tenant"],
+                    settings["client_id"] or "",
+                    tokens,
+                )
+            except oauth.OAuthError as err:
+                raise MailError("login", err.code) from err
+            self._data["oauth"] = tokens
+            await self._async_save()
+        return {"password": None, "token": tokens.get("access_token")}
+
+    # --- signing in with Microsoft ------------------------------------------
+
+    async def async_oauth_start(self) -> dict[str, Any]:
+        """Ask Microsoft for a sign-in code; Joe waits in the background."""
+        settings = self._config()["mailbox"]
+        if not settings["client_id"]:
+            raise MailError("no_client_id")
+        self._cancel_oauth()
+        try:
+            found = await oauth.start(
+                async_get_clientsession(self._hass),
+                settings["tenant"],
+                settings["client_id"],
+            )
+        except oauth.OAuthError as err:
+            self._set_status(oauth={"state": "error", "error": err.code})
+            raise MailError("oauth", err.code) from err
+        expires = dt_util.now() + timedelta(seconds=int(found.get("expires_in") or 900))
+        info = {
+            "state": "waiting",
+            "user_code": found.get("user_code"),
+            "uri": found.get("verification_uri") or "https://microsoft.com/devicelogin",
+            "expires": expires.isoformat(timespec="seconds"),
         }
+        self._set_status(oauth=info)
+        self._oauth_task = self._hass.async_create_background_task(
+            self._async_wait_for_sign_in(
+                settings,
+                str(found["device_code"]),
+                int(found.get("interval") or 5),
+                expires,
+            ),
+            "energy_joe microsoft sign-in",
+        )
+        return info
+
+    async def _async_wait_for_sign_in(
+        self,
+        settings: dict[str, Any],
+        device_code: str,
+        interval: int,
+        until: datetime,
+    ) -> None:
+        session = async_get_clientsession(self._hass)
+        while dt_util.now() < until:
+            await asyncio.sleep(interval)
+            try:
+                tokens = await oauth.poll(
+                    session,
+                    settings["tenant"],
+                    settings["client_id"] or "",
+                    device_code,
+                )
+            except oauth.OAuthError as err:
+                if err.code == "authorization_pending":
+                    continue
+                if err.code == "slow_down":
+                    interval += 5
+                    continue
+                self._set_status(oauth={"state": "error", "error": err.code})
+                return
+            self._data["oauth"] = tokens
+            self._data.pop("validity", None)
+            self._data.pop("last_uid", None)
+            await self._async_save()
+            self._set_status(oauth={"state": "ok"})
+            await self.async_check()
+            return
+        self._set_status(oauth={"state": "error", "error": "expired_token"})
+
+    def _cancel_oauth(self) -> None:
+        task = self._oauth_task
+        if task is not None and not task.done():
+            task.cancel()
+        self._oauth_task = None
+
+    async def async_sign_out(self) -> None:
+        """Forget the Microsoft sign-in."""
+        self._cancel_oauth()
+        self._data.pop("oauth", None)
+        await self._async_save()
+        self._set_status(oauth=None)
 
     async def async_set_secret(
         self, password: str | None = None, token: str | None = None
@@ -157,6 +263,7 @@ class JoeInbox:
 
     @callback
     def async_stop(self) -> None:
+        self._cancel_oauth()
         if self._unsub:
             self._unsub()
             self._unsub = None
@@ -194,7 +301,8 @@ class JoeInbox:
         if not self.has_secret:
             return "no_secret"
         try:
-            await self._hass.async_add_executor_job(check, settings, self._secret())
+            secret = await self._async_secret()
+            await self._hass.async_add_executor_job(check, settings, secret)
         except MailError as err:
             return err.code
         return None
@@ -207,10 +315,11 @@ class JoeInbox:
             return
         self._running = True
         try:
+            secret = await self._async_secret()
             found, validity, highest = await self._hass.async_add_executor_job(
                 fetch,
                 settings,
-                self._secret(),
+                secret,
                 self._data.get("last_uid"),
                 self._data.get("validity"),
             )
@@ -301,10 +410,11 @@ class JoeInbox:
         ):
             attendee = self._attendee(settings, car, invitation, message)
             try:
+                secret = await self._async_secret()
                 await self._hass.async_add_executor_job(
                     send_reply,
                     settings,
-                    self._secret(),
+                    secret,
                     invitation.organizer,
                     f"Zugesagt: {invitation.summary}".strip(),
                     reply(invitation, attendee),

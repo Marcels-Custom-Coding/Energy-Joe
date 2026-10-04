@@ -56,6 +56,8 @@ cd panel && npm install
 - `mail/ical.py` liest Einladungen (iMIP: METHOD, UID, SEQUENCE, Zeiten mit UTC, TZID – auch Windows-Namen von Outlook –, ganzen Tagen und DURATION) und schreibt Zusagen (METHOD:REPLY). `mail/mailbox.py` holt neue Mails per IMAP (UIDVALIDITY und letzte UID, beim ersten Mal 30 Tage zurück) und sendet per SMTP; Anmeldung mit Passwort oder OAuth-Token (XOAUTH2). Beides blockiert und läuft im Executor.
 - `mail/inbox.py` (`JoeInbox`) schaut alle `mailbox.interval_min` Minuten nach. Eine Einladung zählt, wenn der Absender auf `mailbox.allowed` steht (oder der Organisator, aber nur aus derselben Domain wie der Absender). Das Auto kommt aus `mailbox.cars` (eingeladene Adresse → Aktion), mit nur einem Auto ist es dieses. REQUEST trägt ein oder ändert (höhere SEQUENCE gewinnt) und sagt zu, CANCEL entfernt. Passwort und Stand in `.storage/energy_joe.mailbox`, nicht in der Konfiguration; die Diagnose schwärzt Adressen und letzte Einladungen.
 
+- Microsoft (`mail/oauth.py`): Geräte-Code-Anmeldung (`/devicecode`, dann `/token` abfragen) mit der App-ID aus `mailbox.client_id` und dem Mandanten `mailbox.tenant`; Bereiche IMAP.AccessAsUser.All, SMTP.Send, offline_access. Tokens im Postfach-Speicher, erneuert fünf Minuten vor Ablauf; IMAP und SMTP melden sich mit XOAUTH2 an. Google erlaubt die Geräte-Anmeldung für Mail nicht und bleibt beim App-Passwort.
+
 ## Warmwasser
 
 - Gefunden wird Warmwasser als Verbraucher im Energie-Dashboard (Art `hot_water`). Die Frage „Wie wird euer Wasser warm?“ bietet dann eine Nacht-Aktion an; `panel/src/hot-water.ts` schlägt Fühler und Schalter nach Wörtern in Entity-ID, Name und Gerätename vor (Speicher vor Zirkulation und Ausgang).

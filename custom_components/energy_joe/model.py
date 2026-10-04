@@ -298,6 +298,11 @@ MAILBOX = vol.Schema(
         vol.Optional("smtp_security", default=None): vol.Any(
             None, vol.In(("starttls", "ssl"))
         ),
+        # Signing in with Microsoft: the app registration and its tenant.
+        vol.Optional("client_id", default=None): vol.Any(None, str),
+        vol.Optional("tenant", default="common"): vol.All(
+            str, vol.Length(min=1, max=100)
+        ),
         # Who may invite: addresses or "@domain".
         vol.Optional("allowed", default=list): [str],
         vol.Optional("accept", default=True): bool,

@@ -125,6 +125,14 @@ export class JoeMailboxSettings extends LitElement {
       .ok {
         color: var(--joe-good);
       }
+      .bad {
+        color: var(--joe-warn, var(--joe-crit));
+      }
+      .code {
+        margin: 6px 0 0;
+        font-size: 15px;
+        font-weight: 600;
+      }
     `,
   ];
 
@@ -177,29 +185,7 @@ export class JoeMailboxSettings extends LitElement {
           @change=${(ev: Event) => this.save({ address: (ev.target as HTMLInputElement).value.trim() })}
         />
       </div>
-      <div class="row" data-tipped>
-        <div>
-          <div class="name"><label for="mail-password"><b>${t("mail.password")}</b></label>${tip(t, "mail_password")}</div>
-          <small>${status?.has_secret ? html`<span class="ok">${t("mail.password.saved")}</span>` : t("mail.password.hint")}</small>
-        </div>
-        <form
-          class="inline"
-          @submit=${(ev: Event) => {
-            ev.preventDefault();
-            void this.savePassword();
-          }}
-        >
-          <input
-            id="mail-password"
-            class="input"
-            type="password"
-            autocomplete="new-password"
-            .value=${this.password}
-            @input=${(ev: Event) => (this.password = (ev.target as HTMLInputElement).value)}
-          />
-          <button type="submit" class="mini-btn go" ?disabled=${!this.password || this.busy}>${t("common.save")}</button>
-        </form>
-      </div>
+      ${mail.provider === "microsoft" ? this.renderMicrosoft(t, mail) : this.renderPassword(t)}
       ${mail.provider === "other" || this.servers ? this.renderServers(t, mail) : html`<div class="row" data-tipped>
             <div>
               <div class="name"><b>${t("mail.servers")}</b>${tip(t, "mail_servers")}</div>
@@ -270,6 +256,96 @@ export class JoeMailboxSettings extends LitElement {
       </div>
       ${this.result ? html`<div class="note ${this.result === "ok" ? "" : "warn"}" role="status">${t(`mail.result.${this.result}` as "mail.result.ok")}</div>` : nothing}
       ${this.renderRecent(t)}`;
+  }
+
+  private renderPassword(t: Translate): TemplateResult {
+    const status = this.status;
+    return html`<div class="row" data-tipped>
+        <div>
+          <div class="name"><label for="mail-password"><b>${t("mail.password")}</b></label>${tip(t, "mail_password")}</div>
+          <small>${status?.has_secret ? html`<span class="ok">${t("mail.password.saved")}</span>` : t("mail.password.hint")}</small>
+        </div>
+        <form
+          class="inline"
+          @submit=${(ev: Event) => {
+            ev.preventDefault();
+            void this.savePassword();
+          }}
+        >
+          <input
+            id="mail-password"
+            class="input"
+            type="password"
+            autocomplete="new-password"
+            .value=${this.password}
+            @input=${(ev: Event) => (this.password = (ev.target as HTMLInputElement).value)}
+          />
+          <button type="submit" class="mini-btn go" ?disabled=${!this.password || this.busy}>${t("common.save")}</button>
+        </form>
+      </div>`;
+  }
+
+  /** Microsoft: the app registration, then a code to sign in with. */
+  private renderMicrosoft(t: Translate, mail: MailboxConfig): TemplateResult {
+    const oauth = this.status?.oauth;
+    const signed = this.status?.has_secret;
+    return html`<div class="row" data-tipped>
+        <div>
+          <div class="name"><label for="mail-client"><b>${t("mail.client_id")}</b></label>${tip(t, "mail_microsoft")}</div>
+          <small>${t("mail.client_id.hint")}</small>
+        </div>
+        <div class="inline">
+          <input
+            id="mail-client"
+            class="input"
+            type="text"
+            autocomplete="off"
+            placeholder="00000000-0000-0000-0000-000000000000"
+            .value=${mail.client_id ?? ""}
+            @change=${(ev: Event) => this.save({ client_id: (ev.target as HTMLInputElement).value.trim() || null })}
+          />
+          <input
+            class="input"
+            type="text"
+            aria-label=${t("mail.tenant")}
+            placeholder="common"
+            .value=${mail.tenant}
+            @change=${(ev: Event) => this.save({ tenant: (ev.target as HTMLInputElement).value.trim() || "common" })}
+          />
+        </div>
+      </div>
+      <div class="row" data-tipped>
+        <div>
+          <div class="name"><b>${t("mail.sign_in")}</b>${tip(t, "mail_sign_in")}</div>
+          <small>${signed ? html`<span class="ok">${t("mail.signed_in")}</span>` : t("mail.sign_in.hint")}</small>
+          ${oauth?.state === "waiting"
+            ? html`<p class="code">${t("mail.sign_in.code", { code: oauth.user_code ?? "" })}
+                <a href=${oauth.uri ?? "https://microsoft.com/devicelogin"} target="_blank" rel="noreferrer noopener">${oauth.uri}</a></p>`
+            : oauth?.state === "error"
+              ? html`<p class="bad">${t("mail.sign_in.failed", { error: oauth.error ?? "" })}</p>`
+              : nothing}
+        </div>
+        <div class="inline">
+          <button type="button" class="mini-btn go" ?disabled=${!mail.client_id || this.busy} @click=${() => this.signIn(true)}>
+            <ha-icon icon="mdi:microsoft"></ha-icon>${t(signed ? "mail.sign_in.again" : "mail.sign_in")}
+          </button>
+          ${signed
+            ? html`<button type="button" class="mini-btn quiet" @click=${() => this.signIn(false)}>${t("mail.sign_out")}</button>`
+            : nothing}
+        </div>
+      </div>`;
+  }
+
+  private async signIn(start: boolean): Promise<void> {
+    this.busy = true;
+    try {
+      await this.hass?.callWS({ type: "energy_joe/mailbox/sign_in", start });
+      this.result = undefined;
+    } catch {
+      this.result = "failed";
+    } finally {
+      this.busy = false;
+    }
   }
 
   private renderServers(t: Translate, mail: MailboxConfig): TemplateResult {

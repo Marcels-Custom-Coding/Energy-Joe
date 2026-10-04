@@ -3,6 +3,16 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.2.3
+
+- **Postfach bei Microsoft** (Exchange Online und private Outlook-Konten):
+  Anmeldung über Microsoft mit einem Code statt mit Passwort. Einmalig eine
+  App in Microsoft Entra anlegen (Anleitung im Tooltip), dann „Bei Microsoft
+  anmelden“. Joe hält die Anmeldung selbst frisch; Home Assistant muss dafür
+  nicht von außen erreichbar sein.
+- Google bleibt beim App-Passwort: Google erlaubt die Anmeldung per Code für
+  Postfächer nicht.
+
 ## 0.2.2
 
 - **Postfach für Auto-Termine** (Einstellungen): Lade das Auto zu Terminen

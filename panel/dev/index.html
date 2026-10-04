@@ -399,6 +399,21 @@
               state.mailbox = { ...(state.mailbox ?? { state: "waiting" }), has_secret: Boolean(msg.password), state: msg.password ? "ok" : "no_secret", checked: stamp() };
               push();
               return null;
+            case "energy_joe/mailbox/sign_in": {
+              if (!msg.start) {
+                state.mailbox = { ...(state.mailbox ?? {}), has_secret: false, oauth: null, state: "no_secret" };
+                push();
+                return null;
+              }
+              const info = { state: "waiting", user_code: "JOE-4711", uri: "https://microsoft.com/devicelogin", expires: stamp() };
+              state.mailbox = { ...(state.mailbox ?? {}), oauth: info };
+              push();
+              setTimeout(() => {
+                state.mailbox = { ...state.mailbox, oauth: { state: "ok" }, has_secret: true, state: "ok", checked: stamp() };
+                push();
+              }, 3000);
+              return info;
+            }
             case "energy_joe/mailbox/test":
               return { error: state.mailbox?.has_secret ? null : "no_secret" };
             case "energy_joe/mailbox/check":

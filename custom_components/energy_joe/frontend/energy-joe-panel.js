@@ -1549,7 +1549,7 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"mail.provider.icloud.hint": "Mit einem App-Passwort von appleid.apple.com.",
 	"mail.provider.google.hint": "Mit einem App-Passwort (dafür muss die Bestätigung in zwei Schritten an sein).",
 	"mail.provider.infomaniak.hint": "Mit dem Passwort des Postfachs oder einem App-Passwort.",
-	"mail.provider.microsoft.hint": "Microsoft lässt Passwörter für Postfächer nicht mehr zu – die Anmeldung über Microsoft kommt im nächsten Schritt.",
+	"mail.provider.microsoft.hint": "Mit der Anmeldung über Microsoft – einmalig eine App in Entra anlegen.",
 	"mail.provider.other.hint": "Mit Server-Adressen und Passwort deines Anbieters.",
 	"mail.address": "Adresse",
 	"mail.address.hint": "Das Postfach, an das Einladungen gehen.",
@@ -1567,6 +1567,16 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"mail.smtp_port": "SMTP-Port",
 	"mail.smtp_security": "Verschlüsselung",
 	"mail.smtp_security.auto": "Automatisch",
+	"mail.client_id": "App-ID bei Microsoft",
+	"mail.client_id.hint": "Die Anwendungs-ID (Client-ID) deiner App in Microsoft Entra, daneben der Mandant (leer: common).",
+	"mail.tenant": "Mandant",
+	"mail.sign_in": "Bei Microsoft anmelden",
+	"mail.sign_in.again": "Neu anmelden",
+	"mail.sign_in.hint": "Du bekommst einen Code und meldest dich damit auf einem beliebigen Gerät mit dem Postfach des Autos an.",
+	"mail.sign_in.code": "Gib diesen Code ein: {code} –",
+	"mail.sign_in.failed": "Anmeldung hat nicht geklappt ({error}).",
+	"mail.signed_in": "Angemeldet – ich halte die Anmeldung selbst frisch.",
+	"mail.sign_out": "Abmelden",
 	"mail.allowed": "Wer darf einladen?",
 	"mail.allowed.hint": "Nur Einladungen von diesen Absendern trage ich ein – Adressen oder „@domain“.",
 	"mail.allowed.add": "Hinzufügen",
@@ -1769,13 +1779,18 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"tip.mail_enabled.text": "Du lädst die Adresse des Autos zu einem Termin ein – aus jedem Kalender, wie eine Person. Ich lese das Postfach, trage den Termin mit Ort in den Kalender des Autos ein und sage zu. Ändert sich der Termin oder wird er abgesagt, ändere oder entferne ich ihn auch.",
 	"tip.mail_enabled.hint": "Nimm am besten ein eigenes Postfach nur für das Auto.",
 	"tip.mail_provider.title": "Wie bekomme ich ein App-Passwort?",
-	"tip.mail_provider.text": "**iCloud**: appleid.apple.com → Anmeldung und Sicherheit → App-spezifische Passwörter.\n**Google**: myaccount.google.com → Sicherheit → Bestätigung in zwei Schritten einschalten → App-Passwörter.\n**Infomaniak**: das Passwort des Postfachs, oder im Manager ein Gerätepasswort.\n**Microsoft**: lässt keine Passwörter mehr zu – die Anmeldung über Microsoft kommt bald.",
+	"tip.mail_provider.text": "**iCloud**: appleid.apple.com → Anmeldung und Sicherheit → App-spezifische Passwörter.\n**Google**: myaccount.google.com → Sicherheit → Bestätigung in zwei Schritten einschalten → App-Passwörter.\n**Infomaniak**: das Passwort des Postfachs, oder im Manager ein Gerätepasswort.\n**Microsoft**: braucht kein Passwort, sondern die Anmeldung über Microsoft (siehe dort).",
 	"tip.mail_address.title": "Welche Adresse?",
 	"tip.mail_address.text": "Die Adresse des Postfachs, das ich lese. Für mehrere Autos geht ein Postfach mit Plus-Adressen, z. B. auto+kona@… – die Zuordnung stellst du beim Auto ein.",
 	"tip.mail_password.title": "Ist das sicher?",
 	"tip.mail_password.text": "Das Passwort liegt in einem eigenen Speicher von Home Assistant, nicht in Joes Konfiguration und nicht in der Diagnose. Ein App-Passwort kannst du beim Anbieter jederzeit widerrufen.",
 	"tip.mail_servers.title": "Welche Server?",
 	"tip.mail_servers.text": "Für iCloud, Google, Infomaniak und Microsoft kenne ich sie. Bei anderen Anbietern stehen IMAP und SMTP in deren Hilfe – meist IMAP-Port 993 und SMTP-Port 587 (STARTTLS) oder 465 (SSL).",
+	"tip.mail_microsoft.title": "Wie lege ich die App an?",
+	"tip.mail_microsoft.text": "Einmalig in Microsoft Entra (entra.microsoft.com, auch mit privatem Konto über portal.azure.com):\n1. App-Registrierungen → Neue Registrierung, Kontotyp „Konten in einem beliebigen Organisationsverzeichnis und persönliche Microsoft-Konten“.\n2. Authentifizierung → „Öffentliche Clientflows zulassen“ auf Ja.\n3. API-Berechtigungen → Hinzufügen → Office 365 Exchange Online (bzw. die von deiner Organisation verwendeten APIs) → delegiert: IMAP.AccessAsUser.All und SMTP.Send.\n4. Die Anwendungs-ID hier eintragen.",
+	"tip.mail_microsoft.hint": "Bei Exchange Online muss für das Postfach SMTP-Anmeldung erlaubt sein (Admin-Center → Postfach → E-Mail-Apps).",
+	"tip.mail_sign_in.title": "Wie melde ich mich an?",
+	"tip.mail_sign_in.text": "Ich zeige dir einen kurzen Code und einen Link. Öffne den Link auf einem beliebigen Gerät, gib den Code ein und melde dich mit dem Postfach des Autos an. Danach erneuere ich die Anmeldung selbst – Home Assistant muss dafür nicht von außen erreichbar sein.",
 	"tip.mail_allowed.title": "Warum eine Liste?",
 	"tip.mail_allowed.text": "Sonst könnte jeder dem Auto Termine schicken. Ich nehme nur Einladungen, deren Absender hier steht – eine Adresse oder eine ganze Domain wie „@firma.de“.",
 	"tip.mail_allowed.hint": "Nicht erlaubte Einladungen siehst du unten und kannst den Absender mit einem Klick erlauben.",
@@ -3077,7 +3092,7 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"mail.provider.icloud.hint": "With an app password from appleid.apple.com.",
 	"mail.provider.google.hint": "With an app password (2-step verification must be on).",
 	"mail.provider.infomaniak.hint": "With the mailbox password or an app password.",
-	"mail.provider.microsoft.hint": "Microsoft no longer allows passwords for mailboxes – signing in with Microsoft comes in the next step.",
+	"mail.provider.microsoft.hint": "Signing in with Microsoft – create an app in Entra once.",
 	"mail.provider.other.hint": "With your provider's server addresses and password.",
 	"mail.address": "Address",
 	"mail.address.hint": "The mailbox invitations go to.",
@@ -3095,6 +3110,16 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"mail.smtp_port": "SMTP port",
 	"mail.smtp_security": "Encryption",
 	"mail.smtp_security.auto": "Automatic",
+	"mail.client_id": "App ID at Microsoft",
+	"mail.client_id.hint": "The application (client) ID of your app in Microsoft Entra, next to it the tenant (empty: common).",
+	"mail.tenant": "Tenant",
+	"mail.sign_in": "Sign in with Microsoft",
+	"mail.sign_in.again": "Sign in again",
+	"mail.sign_in.hint": "You get a code and sign in with the car's mailbox on any device.",
+	"mail.sign_in.code": "Enter this code: {code} –",
+	"mail.sign_in.failed": "Signing in did not work ({error}).",
+	"mail.signed_in": "Signed in – I keep the sign-in fresh myself.",
+	"mail.sign_out": "Sign out",
 	"mail.allowed": "Who may invite?",
 	"mail.allowed.hint": "I only take invitations from these senders – addresses or “@domain”.",
 	"mail.allowed.add": "Add",
@@ -3297,13 +3322,18 @@ var Qe = import.meta.url.replace(/[^/]*$/, ""), $e = (e) => `${Qe}${e}`, et = {
 	"tip.mail_enabled.text": "You invite the car's address to an appointment – from any calendar, like a person. I read the mailbox, put the appointment with its place into the car's calendar and accept it. If it changes or is cancelled, I change or remove it too.",
 	"tip.mail_enabled.hint": "Best use a mailbox only for the car.",
 	"tip.mail_provider.title": "How do I get an app password?",
-	"tip.mail_provider.text": "**iCloud**: appleid.apple.com → Sign-In and Security → App-Specific Passwords.\n**Google**: myaccount.google.com → Security → turn on 2-Step Verification → App passwords.\n**Infomaniak**: the mailbox password, or a device password in the Manager.\n**Microsoft**: no longer allows passwords – signing in with Microsoft comes soon.",
+	"tip.mail_provider.text": "**iCloud**: appleid.apple.com → Sign-In and Security → App-Specific Passwords.\n**Google**: myaccount.google.com → Security → turn on 2-Step Verification → App passwords.\n**Infomaniak**: the mailbox password, or a device password in the Manager.\n**Microsoft**: needs no password but signing in with Microsoft (see there).",
 	"tip.mail_address.title": "Which address?",
 	"tip.mail_address.text": "The address of the mailbox I read. For several cars one mailbox with plus addresses works, e.g. auto+kona@… – you set the assignment with the car.",
 	"tip.mail_password.title": "Is that safe?",
 	"tip.mail_password.text": "The password lives in a store of its own in Home Assistant, not in Joe's configuration and not in the diagnostics. You can revoke an app password at the provider at any time.",
 	"tip.mail_servers.title": "Which servers?",
 	"tip.mail_servers.text": "For iCloud, Google, Infomaniak and Microsoft I know them. Other providers list IMAP and SMTP in their help – usually IMAP port 993 and SMTP port 587 (STARTTLS) or 465 (SSL).",
+	"tip.mail_microsoft.title": "How do I create the app?",
+	"tip.mail_microsoft.text": "Once in Microsoft Entra (entra.microsoft.com, with a personal account via portal.azure.com):\n1. App registrations → New registration, account type “Accounts in any organizational directory and personal Microsoft accounts”.\n2. Authentication → “Allow public client flows” to Yes.\n3. API permissions → Add → Office 365 Exchange Online (or the APIs your organization uses) → delegated: IMAP.AccessAsUser.All and SMTP.Send.\n4. Enter the application ID here.",
+	"tip.mail_microsoft.hint": "With Exchange Online, SMTP authentication must be allowed for the mailbox (admin center → mailbox → email apps).",
+	"tip.mail_sign_in.title": "How do I sign in?",
+	"tip.mail_sign_in.text": "I show you a short code and a link. Open the link on any device, enter the code and sign in with the car's mailbox. Afterwards I renew the sign-in myself – Home Assistant does not need to be reachable from outside.",
 	"tip.mail_allowed.title": "Why a list?",
 	"tip.mail_allowed.text": "Otherwise anyone could send the car appointments. I only take invitations whose sender is listed here – an address or a whole domain like “@company.com”.",
 	"tip.mail_allowed.hint": "Invitations that were not allowed show below, and you can allow the sender with one click.",
@@ -13139,6 +13169,14 @@ var hr = [
       .ok {
         color: var(--joe-good);
       }
+      .bad {
+        color: var(--joe-warn, var(--joe-crit));
+      }
+      .code {
+        margin: 6px 0 0;
+        font-size: 15px;
+        font-weight: 600;
+      }
     `];
 	}
 	render() {
@@ -13187,28 +13225,7 @@ var hr = [
           @change=${(e) => this.save({ address: e.target.value.trim() })}
         />
       </div>
-      <div class="row" data-tipped>
-        <div>
-          <div class="name"><label for="mail-password"><b>${e("mail.password")}</b></label>${M(e, "mail_password")}</div>
-          <small>${n?.has_secret ? g`<span class="ok">${e("mail.password.saved")}</span>` : e("mail.password.hint")}</small>
-        </div>
-        <form
-          class="inline"
-          @submit=${(e) => {
-			e.preventDefault(), this.savePassword();
-		}}
-        >
-          <input
-            id="mail-password"
-            class="input"
-            type="password"
-            autocomplete="new-password"
-            .value=${this.password}
-            @input=${(e) => this.password = e.target.value}
-          />
-          <button type="submit" class="mini-btn go" ?disabled=${!this.password || this.busy}>${e("common.save")}</button>
-        </form>
-      </div>
+      ${t.provider === "microsoft" ? this.renderMicrosoft(e, t) : this.renderPassword(e)}
       ${t.provider === "other" || this.servers ? this.renderServers(e, t) : g`<div class="row" data-tipped>
             <div>
               <div class="name"><b>${e("mail.servers")}</b>${M(e, "mail_servers")}</div>
@@ -13276,6 +13293,86 @@ var hr = [
       </div>
       ${this.result ? g`<div class="note ${this.result === "ok" ? "" : "warn"}" role="status">${e(`mail.result.${this.result}`)}</div>` : v}
       ${this.renderRecent(e)}`;
+	}
+	renderPassword(e) {
+		let t = this.status;
+		return g`<div class="row" data-tipped>
+        <div>
+          <div class="name"><label for="mail-password"><b>${e("mail.password")}</b></label>${M(e, "mail_password")}</div>
+          <small>${t?.has_secret ? g`<span class="ok">${e("mail.password.saved")}</span>` : e("mail.password.hint")}</small>
+        </div>
+        <form
+          class="inline"
+          @submit=${(e) => {
+			e.preventDefault(), this.savePassword();
+		}}
+        >
+          <input
+            id="mail-password"
+            class="input"
+            type="password"
+            autocomplete="new-password"
+            .value=${this.password}
+            @input=${(e) => this.password = e.target.value}
+          />
+          <button type="submit" class="mini-btn go" ?disabled=${!this.password || this.busy}>${e("common.save")}</button>
+        </form>
+      </div>`;
+	}
+	renderMicrosoft(e, t) {
+		let n = this.status?.oauth, r = this.status?.has_secret;
+		return g`<div class="row" data-tipped>
+        <div>
+          <div class="name"><label for="mail-client"><b>${e("mail.client_id")}</b></label>${M(e, "mail_microsoft")}</div>
+          <small>${e("mail.client_id.hint")}</small>
+        </div>
+        <div class="inline">
+          <input
+            id="mail-client"
+            class="input"
+            type="text"
+            autocomplete="off"
+            placeholder="00000000-0000-0000-0000-000000000000"
+            .value=${t.client_id ?? ""}
+            @change=${(e) => this.save({ client_id: e.target.value.trim() || null })}
+          />
+          <input
+            class="input"
+            type="text"
+            aria-label=${e("mail.tenant")}
+            placeholder="common"
+            .value=${t.tenant}
+            @change=${(e) => this.save({ tenant: e.target.value.trim() || "common" })}
+          />
+        </div>
+      </div>
+      <div class="row" data-tipped>
+        <div>
+          <div class="name"><b>${e("mail.sign_in")}</b>${M(e, "mail_sign_in")}</div>
+          <small>${r ? g`<span class="ok">${e("mail.signed_in")}</span>` : e("mail.sign_in.hint")}</small>
+          ${n?.state === "waiting" ? g`<p class="code">${e("mail.sign_in.code", { code: n.user_code ?? "" })}
+                <a href=${n.uri ?? "https://microsoft.com/devicelogin"} target="_blank" rel="noreferrer noopener">${n.uri}</a></p>` : n?.state === "error" ? g`<p class="bad">${e("mail.sign_in.failed", { error: n.error ?? "" })}</p>` : v}
+        </div>
+        <div class="inline">
+          <button type="button" class="mini-btn go" ?disabled=${!t.client_id || this.busy} @click=${() => this.signIn(!0)}>
+            <ha-icon icon="mdi:microsoft"></ha-icon>${e(r ? "mail.sign_in.again" : "mail.sign_in")}
+          </button>
+          ${r ? g`<button type="button" class="mini-btn quiet" @click=${() => this.signIn(!1)}>${e("mail.sign_out")}</button>` : v}
+        </div>
+      </div>`;
+	}
+	async signIn(e) {
+		this.busy = !0;
+		try {
+			await this.hass?.callWS({
+				type: "energy_joe/mailbox/sign_in",
+				start: e
+			}), this.result = void 0;
+		} catch {
+			this.result = "failed";
+		} finally {
+			this.busy = !1;
+		}
 	}
 	renderServers(e, t) {
 		let n = (n, r = "text") => g`<input

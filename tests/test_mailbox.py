@@ -255,3 +255,78 @@ async def test_the_mailbox_stays_quiet_without_a_password(
     assert inbox.status["state"] == "no_secret"
     assert dt_util.now() is not None
     await calendars.async_remove()
+
+
+async def test_signing_in_with_microsoft(
+    hass: HomeAssistant,
+    config: dict[str, Any],
+    aioclient_mock: Any,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A code to enter at Microsoft; Joe waits, keeps the tokens and renews them."""
+    from custom_components.energy_joe.mail import oauth
+
+    config = model.apply_update(
+        config,
+        {
+            "mailbox": {
+                "provider": "microsoft",
+                "client_id": "app-id",
+                "tenant": "common",
+            }
+        },
+        "user",
+    )
+    base = "https://login.microsoftonline.com/common/oauth2/v2.0"
+    aioclient_mock.post(
+        f"{base}/devicecode",
+        json={
+            "user_code": "ABCD-EFGH",
+            "device_code": "dev",
+            "verification_uri": "https://microsoft.com/devicelogin",
+            "interval": 0,
+            "expires_in": 900,
+        },
+    )
+    aioclient_mock.post(
+        f"{base}/token",
+        json={
+            "access_token": "access-1",
+            "refresh_token": "refresh-1",
+            "expires_in": 3600,
+        },
+    )
+    seen: list[dict[str, Any]] = []
+
+    def fake_fetch(settings: Any, secret: Any, after: Any, validity: Any) -> Any:
+        seen.append(secret)
+        return [], "1", 0
+
+    monkeypatch.setattr(inbox_module, "fetch", fake_fetch)
+    calendars = CarCalendarStore(hass)
+    await calendars.async_load()
+    inbox = JoeInbox(hass, lambda: config, calendars, lambda: None)
+    await inbox.async_load()
+    assert not inbox.has_secret
+    info = await inbox.async_oauth_start()
+    assert info["user_code"] == "ABCD-EFGH"
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert inbox.has_secret
+    assert inbox.status["oauth"] == {"state": "ok"}
+    # The look after signing in used the access token.
+    assert seen[-1]["token"] == "access-1"
+    # Run out: Joe renews it before the next look.
+    inbox._data["oauth"]["expires"] = "2000-01-01T00:00:00+00:00"
+    aioclient_mock.clear_requests()
+    aioclient_mock.post(
+        f"{base}/token", json={"access_token": "access-2", "expires_in": 3600}
+    )
+    await inbox.async_check()
+    assert seen[-1]["token"] == "access-2"
+    # Microsoft kept the refresh token: so does Joe.
+    assert inbox._data["oauth"]["refresh_token"] == "refresh-1"
+    assert oauth.fresh(inbox._data["oauth"])
+    await inbox.async_sign_out()
+    assert not inbox.has_secret
+    await calendars.async_remove()
+    await inbox.async_remove()

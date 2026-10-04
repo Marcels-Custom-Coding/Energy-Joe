@@ -384,6 +384,9 @@ export interface MailboxConfig {
   smtp_host: string | null;
   smtp_port: number | null;
   smtp_security: "starttls" | "ssl" | null;
+  /** Signing in with Microsoft: the app registration and its tenant. */
+  client_id: string | null;
+  tenant: string;
   allowed: string[];
   accept: boolean;
   /** Which invited address means which car (action id -> address). */
@@ -396,6 +399,8 @@ export interface MailboxStatus {
   has_secret?: boolean;
   checked?: string | null;
   error?: string | null;
+  /** Signing in with Microsoft: a code to enter, done, or failed. */
+  oauth?: { state: "waiting" | "ok" | "error"; user_code?: string; uri?: string; expires?: string; error?: string } | null;
   recent?: {
     at: string;
     summary: string;

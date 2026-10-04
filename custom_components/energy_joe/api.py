@@ -32,6 +32,7 @@ from .learn.learning import (
     solar_ratios,
 )
 from .learn.models import MIN_DAYS, SOURCE_DAYS, daily_rows
+from .mail.mailbox import MailError
 from .observe.records import day_view, summarize
 from .plan.inputs import async_consumption
 from .runtime import (
@@ -72,6 +73,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_mailbox_secret)
     websocket_api.async_register_command(hass, ws_mailbox_test)
     websocket_api.async_register_command(hass, ws_mailbox_check)
+    websocket_api.async_register_command(hass, ws_mailbox_sign_in)
 
 
 def _runtime(
@@ -758,6 +760,35 @@ async def ws_mailbox_check(
         return
     await runtime.inbox.async_check()
     connection.send_result(msg["id"], runtime.inbox.status)
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/mailbox/sign_in",
+        # False: forget the sign-in.
+        vol.Optional("start", default=True): bool,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_mailbox_sign_in(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Sign in with Microsoft: a code and a link; Joe waits for the sign-in."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    if not msg["start"]:
+        await runtime.inbox.async_sign_out()
+        connection.send_result(msg["id"])
+        return
+    try:
+        info = await runtime.inbox.async_oauth_start()
+    except MailError as err:
+        connection.send_error(msg["id"], err.code, err.detail or err.code)
+        return
+    connection.send_result(msg["id"], info)
 
 
 async def _async_energy_summary(hass: HomeAssistant) -> dict[str, Any]:
