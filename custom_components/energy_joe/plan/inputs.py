@@ -16,7 +16,7 @@ from ..control.adapters import make_adapter
 from ..learn.context import async_day_labels, async_weather_day
 from ..learn.models import class_factor, combined_forecast, expected
 from ..observe.readings import energy_kwh, number, sum_kwh
-from ..observe.records import hour_starts, local_hour
+from ..observe.records import base_home, hour_starts, local_hour
 from ..observe.store import HistoryStore
 from .actions import plan_actions, reserved_kw
 from .ev import car_need
@@ -88,18 +88,22 @@ async def async_workday(hass: HomeAssistant, entity: str | None, day: date) -> b
 
 
 async def async_consumption(
-    history: HistoryStore, today: date
+    history: HistoryStore, today: date, flexible: list[str] | None = None
 ) -> tuple[dict[bool, list[float]], dict[str, Any]]:
-    """Expected consumption per hour of the day, for working days and days off."""
+    """Expected consumption per hour of the day, for working days and days off.
+
+    Without the flexible devices (the car, surplus and cheap-hour devices):
+    what the home battery has to cover.
+    """
     days = await history.async_days(
         (today - timedelta(days=PROFILE_DAYS)).isoformat(),
         (today - timedelta(days=1)).isoformat(),
     )
-    return consumption_profiles(days)
+    return consumption_profiles(days, flexible or [])
 
 
 def consumption_profiles(
-    days: dict[str, dict[str, Any]],
+    days: dict[str, dict[str, Any]], flexible: list[str] | None = None
 ) -> tuple[dict[bool, list[float]], dict[str, Any]]:
     """Average consumption per hour of the day from stored days (see async_consumption)."""
     rows: dict[bool, list[list[float | None]]] = {True: [], False: []}
@@ -111,7 +115,9 @@ def consumption_profiles(
             continue
         values: list[float | None] = [None] * 24
         for hour in hours:
-            values[datetime.fromisoformat(hour["start"]).hour] = hour["home"]
+            values[datetime.fromisoformat(hour["start"]).hour] = base_home(
+                hour, flexible or []
+            )
         workday = data.get("workday")
         if workday is None:
             workday = date.fromisoformat(day).weekday() < 5
@@ -297,7 +303,9 @@ async def async_build_input(
     )
     starts = hour_starts(local_hour(now), window_start + timedelta(days=1))
     today = dt_util.as_local(now).date()
-    profiles, consumption = await async_consumption(history, today)
+    flexible = model.flexible_consumers(config)
+    profiles, consumption = await async_consumption(history, today, flexible)
+    consumption["flexible"] = flexible
     holiday = config["context"]["holiday_entity"]
     workdays = {
         day: await async_workday(hass, holiday, day)
@@ -453,6 +461,9 @@ async def async_build_input(
         profiles_use = await async_consumer_profiles(history, today)
         groups = learned.get("group_models") or {}
         for consumer in linked:
+            if consumer in flexible:
+                # Not in the profile the battery covers anyway.
+                continue
             profile = profiles_use.get(consumer)
             if not profile:
                 continue

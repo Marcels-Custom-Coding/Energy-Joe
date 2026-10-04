@@ -25,6 +25,11 @@ cd panel && npm install
 - Speicher: Größe und Wirkungsgrad aus `entladen = η · geladen − Größe · √η · ΔSoC`; die Planung nimmt die gemessene Größe, außer sie ist selbst eingetragen oder passt nicht zum Gerätewert (50–115 %).
 - Zurücksetzen je Bereich (`forecast`, `consumption`, `battery`, `hot_water`) merkt sich den Zeitpunkt in `learned.reset`; ältere Tage zählen für diesen Bereich nicht mehr.
 
+## Hausverbrauch und flexible Geräte
+
+- Eine Stunde (`observe/records.py`, `compose`) rechnet den Hausverbrauch wie das Energie-Dashboard: Netz rein − raus + PV − Speicher laden + entladen (`home_calc`). Ein Hausverbrauchs-Sensor steht nur ein, wenn das nicht geht (kein Netz, Speicher ohne Messung), und wird sonst als `home_sensor` zum Vergleich gespeichert; `learn/models.py`, `home_check`, vergleicht beide über zwei Wochen. Ältere Stunden (Format 1 im Index der Historie) liest Joe einmal neu ein.
+- Flexible Geräte (`model.flexible_consumers`): die Wallbox (Art `ev`, außer „Auch aus dem Hausspeicher“) und Geräte mit `runs` = `surplus` oder `cheap`. Planen (`plan/inputs.py`, `consumption_profiles`), Lernen (`daily_rows`), Rückfragen und Auswerten (`learn/evaluate.py`, über `meta.consumption.flexible` des Plans) nehmen `base_home`: Hausverbrauch ohne diese Geräte.
+
 ## Dynamische Tarife
 
 - Preise liest `custom_components/energy_joe/plan/prices.py`: zuerst Preislisten in den Attributen des Preis-Sensors (Start, optional Ende, Preis; Einheiten €/kWh, ct/kWh, €/MWh), sonst die Aktionen von Tibber (`tibber.get_prices`), Nord Pool aus Home Assistant (`nordpool.get_prices_for_date`), EnergyZero und easyEnergy. Ein neues Format ist meist nur ein weiterer Schlüssel in `START_KEYS`, `END_KEYS` oder `PRICE_KEYS`.

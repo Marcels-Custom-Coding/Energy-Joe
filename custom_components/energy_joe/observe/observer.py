@@ -33,7 +33,7 @@ from .readings import (
     temperature_c,
 )
 from .records import Flow, HourParts, compose, day_key, local_hour
-from .store import HistoryStore
+from .store import HOURS_FORMAT, HistoryStore
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -112,6 +112,10 @@ class JoeObserver:
         self.status.update(self._store.overview())
         self._changed()
         await self._async_forecast(now)
+        if self._store.format < HOURS_FORMAT:
+            # Hours worked out the old way: read the weeks again, once.
+            self.start_backfill(BACKFILL_DAYS, rebuild=True)
+            return
         latest = self._store.latest_start()
         days = BACKFILL_DAYS
         if latest is not None:
@@ -419,6 +423,8 @@ class JoeObserver:
             self.status["backfill"] = {"state": "failed"}
         else:
             await self._store.async_put_hours(records, force=rebuild)
+            if rebuild:
+                self._store.set_format(HOURS_FORMAT)
             state = (
                 "done"
                 if records or "recorder" in self._hass.config.components

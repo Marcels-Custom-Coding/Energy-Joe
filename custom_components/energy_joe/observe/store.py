@@ -20,6 +20,10 @@ KEEP_MONTHS = 25
 CACHED_MONTHS = 4
 
 
+# 2: consumption is the balance of grid, sun and storage, like the Energy dashboard.
+HOURS_FORMAT = 2
+
+
 def _month(day: str) -> str:
     return day[:7]
 
@@ -40,12 +44,15 @@ class HistoryStore:
         self._stores: dict[str, Store[dict[str, Any]]] = {}
         self._data: dict[str, dict[str, Any]] = {}
         self._dirty: dict[str, dict[str, Any]] = {}
+        # How the hours were worked out (see HOURS_FORMAT); older ones are read again.
+        self.format = HOURS_FORMAT
 
     async def async_load(self) -> None:
         """Read the index and the two most recent months."""
         meta = await self._meta.async_load() or {}
         self._months = sorted(meta.get("months", []))
         self._days = sorted(meta.get("days", []))
+        self.format = meta.get("format", 1 if self._days else HOURS_FORMAT)
         for month in self._months[-2:]:
             await self._async_month(month)
 
@@ -138,7 +145,11 @@ class HistoryStore:
         self._schedule(_month(day))
 
     def _index(self) -> dict[str, Any]:
-        return {"months": self._months, "days": self._days}
+        return {"months": self._months, "days": self._days, "format": self.format}
+
+    def set_format(self, value: int) -> None:
+        self.format = value
+        self._meta.async_delay_save(self._index, SAVE_DELAY)
 
     async def _async_day_for_write(self, day: str) -> dict[str, Any]:
         month = _month(day)

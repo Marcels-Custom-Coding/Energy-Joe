@@ -240,6 +240,15 @@ export const en: Record<Key, string> = {
     "Without a solar forecast I plan cautiously. Set up Forecast.Solar, for example, in Home Assistant and I'll look again.",
   "review.grid.none":
     "Without a grid meter I can't see what really happens. Pick the sensor that measures the power at your grid connection.",
+  "review.home.balance": "Like the Energy dashboard: grid + solar ± storage",
+  "review.home.compare": "To compare: {name} · {live}",
+  "review.home.flexible": "For the battery I leave out: {names}. I never charge the car from the home battery.",
+  "review.home.flexible_some": "For the battery I leave out: {names}.",
+  "review.home.flexible_none": "Do some devices run only on solar surplus or cheap power? Tell me with the devices – then I plan the battery without them.",
+  "review.home.off": "Over the last {days} days your sensor shows {pct} % {direction} than grid + solar ± storage. Is a small solar system missing in it? I work with grid + solar ± storage.",
+  "review.home.less": "less",
+  "review.home.more": "more",
+  "review.home.devices": "Assign devices",
   "review.home.none":
     "Don't know one? No problem – I'll work out home consumption from grid, solar and battery myself.",
   "review.home.without": "I don't have one",
@@ -365,6 +374,13 @@ export const en: Record<Key, string> = {
   "household.calendar_add": "Calendar",
   "household.calendar_remove": "Remove calendar {name}",
 
+  "consumers.runs": "When does it run?",
+  "consumers.runs_of": "When {name} runs",
+  "runs.auto": "When it is needed",
+  "runs.ev.auto": "Never from the home battery",
+  "runs.ev.always": "Also from the home battery",
+  "runs.surplus": "Only with solar surplus",
+  "runs.cheap": "Only on cheap power",
   "consumers.kind": "What kind of device is it?",
   "consumers.kind_of": "Kind of {name}",
   "consumers.empty": "The Energy dashboard lists no individual devices.",
@@ -464,7 +480,7 @@ export const en: Record<Key, string> = {
     "It shows how much power is coming from or going to the grid right now. That's how I see whether my plans work out, and learn from it.\n**Change** – choose another sensor.\n**Flip** – if it counts the other way round.\n**It's right** – my hint was wrong, I won't mention it again.",
   "tip.review_home.title": "Why do I need home consumption?",
   "tip.review_home.text":
-    "From it I learn how much you use and when – the heart of my planning.\n**Change** – choose another sensor.\n**I don't have one** – then I work it out from grid, solar and battery.",
+    "From it I learn how much you use and when – the heart of my planning. I work it out like the Energy dashboard from grid, solar and battery, so a balcony system counts too. A consumption sensor I use to compare, and in its place when the balance cannot be made.\n**Change** – choose another sensor.\n**I don't have one** – then I only work it out from grid, solar and battery.",
   "tip.review_solar.title": "Why do I need solar power?",
   "tip.review_solar.text":
     "I compare what the forecast promised with what your system really delivered. That way I get more accurate every day.\n**Change** – choose sensors; I add up several inverters.\n**No solar** – then I plan with cheap grid power only.",
@@ -579,6 +595,9 @@ export const en: Record<Key, string> = {
     "Appointments tell me when someone is away or working from home. I only read whether and when something is scheduled. Each person can have as many calendars as you like.",
   "tip.f_person_add.title": "Who belongs here?",
   "tip.f_person_add.text": "Everyone who lives here. Their presence comes from Home Assistant; you can add calendars afterwards.",
+  "tip.f_consumer_runs.title": "Why do I want to know?",
+  "tip.f_consumer_runs.text":
+    "I plan the home battery only for what it really has to cover.\n**Only with solar surplus** – runs only when the sun delivers more than the home needs (e.g. via evcc). I plan the battery without this device.\n**Only on cheap power** – runs at night in the cheap hours, not from the battery.\n**When it is needed** – counts as usual.\nA wallbox never counts: I don't charge the car from the home battery.",
   "tip.f_consumer_kind.title": "What does the kind mean?",
   "tip.f_consumer_kind.text":
     "For every device with its own meter I learn how its use depends on the outdoor temperature. **Meter for other devices** means it also measures devices listed here themselves – I don't count them twice.",

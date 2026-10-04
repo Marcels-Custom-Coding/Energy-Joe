@@ -403,7 +403,8 @@ async def ws_learning(
     if since and since[:10] > first:
         first = since[:10]
     days = await runtime.history.async_days(first, today.isoformat())
-    profiles, consumption = await async_consumption(runtime.history, today)
+    flexible = model.flexible_consumers(config)
+    profiles, consumption = await async_consumption(runtime.history, today, flexible)
     # The days behind the models: consumption against the outdoor temperature.
     model_first = (today - timedelta(days=MODEL_DAYS)).isoformat()
     if since and since[:10] > model_first:
@@ -421,7 +422,7 @@ async def ws_learning(
             "answer": model_days[row.date].get("answer"),
             "labels": model_days[row.date].get("labels") or {},
         }
-        for row in daily_rows(model_days)
+        for row in daily_rows(model_days, flexible)
     ]
     accuracy = []
     for day, data in days.items():

@@ -9,6 +9,7 @@ local start of the hour; a day is a local calendar day (23 to 25 hours).
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
 from typing import Any
@@ -81,6 +82,16 @@ def _round(value: float | None, digits: int = 4) -> float | None:
     return None if value is None else round(value, digits)
 
 
+def base_home(record: dict[str, Any], flexible: Iterable[str] = ()) -> float | None:
+    """What the home used in an hour without the flexible devices (see
+    model.flexible_consumers): the part the home battery has to cover."""
+    home = record.get("home")
+    if home is None:
+        return None
+    use = record.get("use") or {}
+    return max(0.0, home - sum(use.get(c, 0.0) for c in flexible))
+
+
 def compose(start: datetime, parts: HourParts, source: str) -> dict[str, Any]:
     """Turn the parts of an hour into a record (fields without a value are left out)."""
     coverages: list[float] = []
@@ -125,14 +136,29 @@ def compose(start: datetime, parts: HourParts, source: str) -> dict[str, Any]:
         if battery_id not in batteries and soc is not None:
             batteries[battery_id] = {"soc": round(soc, 1)}
 
+    # Like the Energy dashboard: what came in from the grid and the sun, minus
+    # what went out or into storage. That counts every solar system (a
+    # balcony one too), which a consumption sensor often misses. The sensor
+    # only stands in when the balance cannot be made (no grid, or a battery
+    # without a reading), and is kept to compare.
+    counted = parts.bat_in is not None and parts.bat_out is not None
+    batteries_known = counted or all(
+        flow is not None for flow in parts.batteries.values()
+    )
+    sensor = parts.home.net if parts.home is not None else None
     home = None
-    if parts.home is not None:
-        coverages.append(parts.home.coverage)
-        home = parts.home.net
-    elif grid_in is not None and grid_out is not None:
-        # No consumption sensor: what came in, minus what went out or into storage.
+    if (
+        grid_in is not None
+        and grid_out is not None
+        and (batteries_known or sensor is None)
+    ):
         home = grid_in - grid_out + (solar or 0.0) - (bat_in or 0.0) + (bat_out or 0.0)
         record["home_calc"] = True
+        if sensor is not None:
+            record["home_sensor"] = round(sensor, 4)
+    elif parts.home is not None:
+        coverages.append(parts.home.coverage)
+        home = sensor
 
     for name, value in (
         ("home", home),

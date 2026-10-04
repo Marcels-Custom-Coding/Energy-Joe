@@ -219,6 +219,22 @@ export interface ConsumerConfig {
   power_entity: string | null;
   included_in: string | null;
   source: "energy_dashboard" | "manual";
+  /** When it runs: "auto" lets Joe decide (a wallbox never draws on the home battery). */
+  runs?: ConsumerRuns;
+}
+
+export const CONSUMER_RUNS = ["auto", "always", "surplus", "cheap"] as const;
+export type ConsumerRuns = (typeof CONSUMER_RUNS)[number];
+
+/** Devices the home battery never has to cover (mirrors model.flexible_consumers). */
+export function flexibleConsumers(consumers: ConsumerConfig[]): ConsumerConfig[] {
+  const found = consumers.filter(
+    (c) =>
+      c.kind !== "submeter" &&
+      ((c.kind === "ev" && (c.runs ?? "auto") !== "always") || c.runs === "surplus" || c.runs === "cheap"),
+  );
+  const inside = new Set(found.map((c) => c.energy_entity).filter(Boolean));
+  return found.filter((c) => !c.included_in || !inside.has(c.included_in));
 }
 
 export type PriorityItem = "ev" | "hot_water" | "battery";
@@ -287,6 +303,8 @@ export interface Learned {
   battery_models: Record<string, { capacity_kwh: number; efficiency: number; days: number }>;
   action_models: Record<string, { rate_k_per_h: number; loss_k_per_h: number; demand_k: number; days: number }>;
   /** Per car charged by need: real consumption (kWh/100 km), extra per degree below 15 °C, usual km. */
+  /** The home's use from the balance against its own sensor (kWh, last weeks). */
+  home_check?: { days: number; calc_kwh: number; sensor_kwh: number } | null;
   car_models: Record<
     string,
     { consumption?: number; cold?: number | null; consumption_days?: number; workday_km?: number; day_off_km?: number; days: number }

@@ -24,6 +24,7 @@ from .models import (
     consumption_model,
     daily_rows,
     group_models,
+    home_check,
     hot_water_model,
     presence_by_label,
     solar_classes,
@@ -242,7 +243,7 @@ class JoeLearner:
         )
         await self._async_label_days(config, days)
         consumption = _since(learned, "consumption", days, first)
-        rows = daily_rows(consumption)
+        rows = daily_rows(consumption, model.flexible_consumers(config))
         sunny = _since(learned, "forecast", days, first)
         values: dict[str, Any] = {
             "consumption_model": consumption_model(rows),
@@ -265,6 +266,13 @@ class JoeLearner:
             },
             "action_models": await self._async_hot_water(config, learned, today),
             "car_models": await self._async_cars(config, learned, today, days),
+            "home_check": home_check(
+                {
+                    d: v
+                    for d, v in days.items()
+                    if d >= (today - timedelta(days=14)).isoformat()
+                }
+            ),
         }
         patch: dict[str, Any] = {"models_day": today.isoformat()}
         for name, value in values.items():
@@ -407,14 +415,19 @@ class JoeLearner:
         self, days: dict[str, dict[str, Any]], today: date
     ) -> list[dict[str, Any]]:
         """Recent days far off the consumption model, not answered yet."""
-        learned = self._config()["learned"]
+        config = self._config()
+        learned = config["learned"]
         past = {
             day: data
             for day, data in _since(learned, "consumption", days, "").items()
             if day < today.isoformat()
         }
         answered = {day for day, data in past.items() if data.get("answer")}
-        return surprises(daily_rows(past), learned.get("consumption_model"), answered)
+        return surprises(
+            daily_rows(past, model.flexible_consumers(config)),
+            learned.get("consumption_model"),
+            answered,
+        )
 
     async def async_answer(self, day: str, answer: str) -> None:
         """What was special about a day: guests, away, something else, or nothing."""

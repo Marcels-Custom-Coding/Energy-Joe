@@ -3,6 +3,21 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.1.2
+
+- **Das Auto ist kein Bedarf für den Hausspeicher:** Joe plant den Speicher
+  ohne die Wallbox. Bisher zählte Autoladen wie normaler Hausverbrauch.
+- **Wann läuft es?** Bei jedem Gerät mit eigenem Zähler: „Wenn es gebraucht
+  wird“, „Nur mit Sonnenüberschuss“ oder „Nur mit günstigem Strom“. Geräte,
+  die nur mit Überschuss oder günstigem Strom laufen, rechnet Joe für den
+  Speicher heraus.
+- **Hausverbrauch wie im Energie-Dashboard:** Netz + PV ± Speicher, so zählt
+  auch ein Balkonkraftwerk mit. Ein Hausverbrauchs-Sensor dient zum Vergleich
+  und als Ersatz. Weicht er deutlich ab, sagt Joe es in der Übersicht. Nach
+  dem Update liest Joe die letzten Wochen einmal neu ein.
+- Die Übersicht zeigt beim Hausverbrauch, woher er kommt und welche Geräte
+  Joe für den Speicher herausrechnet.
+
 ## 0.1.1
 
 - **Einfach laden bis …:** Bei jedem Auto ein Knopf, der sofort lädt, bis

@@ -262,3 +262,56 @@ def test_a_heater_proposed_as_wallbox_is_taken_back() -> None:
     assert [a["id"] for a in kept["actions"]] == ["ev_carport", "ev_floor"]
     # Unknown ids change nothing.
     assert model.adopt_proposal(again, {"actions": [car]}, withdrawn=["ev_x"]) == again
+
+
+def test_the_car_and_surplus_devices_are_not_for_the_battery() -> None:
+    """The wallbox never draws on the home battery; surplus and cheap-hour devices neither."""
+    consumers = {
+        "wallbox": {"name": "Wallbox", "kind": "ev", "energy_entity": "sensor.wb"},
+        "pool": {
+            "name": "Whirlpool",
+            "kind": "comfort",
+            "energy_entity": "sensor.pool",
+            "runs": "surplus",
+        },
+        "floor": {
+            "name": "Fußbodenheizung",
+            "kind": "electric_heating",
+            "energy_entity": "sensor.floor",
+            "runs": "cheap",
+        },
+        "fridge": {
+            "name": "Kühlschrank",
+            "kind": "household",
+            "energy_entity": "sensor.f",
+        },
+        "house": {"name": "Haus", "kind": "submeter", "energy_entity": "sensor.house"},
+        # Measured inside the whirlpool's meter: counted there already.
+        "pump": {
+            "name": "Pumpe",
+            "kind": "other",
+            "energy_entity": "sensor.pump",
+            "included_in": "sensor.pool",
+            "runs": "surplus",
+        },
+    }
+    config = model.apply_update(
+        model.default_config(), {"consumers": consumers}, "user"
+    )
+    assert model.flexible_consumers(config) == ["floor", "pool", "wallbox"]
+    # A car that does charge from the battery (the user says so) counts again.
+    config = model.apply_update(
+        config, {"consumers": {"wallbox": {"runs": "always"}}}, "user"
+    )
+    assert "wallbox" not in model.flexible_consumers(config)
+
+
+def test_base_consumption_leaves_out_flexible_devices() -> None:
+    from custom_components.energy_joe.observe.records import base_home
+
+    hour = {"home": 12.0, "use": {"wallbox": 11.0, "fridge": 0.1}}
+    assert base_home(hour, ["wallbox"]) == pytest.approx(1.0)
+    assert base_home(hour) == 12.0
+    # Meters a little ahead of the house: never below zero.
+    assert base_home({"home": 1.0, "use": {"wallbox": 1.4}}, ["wallbox"]) == 0.0
+    assert base_home({"use": {}}, ["wallbox"]) is None

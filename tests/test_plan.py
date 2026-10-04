@@ -320,3 +320,29 @@ async def test_a_slow_run_does_not_undo_the_fixed_plan(hass: HomeAssistant) -> N
     if planner._commit:
         planner._commit()
     await store.async_unload()
+
+
+def test_car_charging_is_not_planned_for_the_battery() -> None:
+    """11 kWh into the car every evening must not look like the home's own use."""
+    from custom_components.energy_joe.plan.inputs import consumption_profiles
+
+    days = {}
+    for offset in range(10):
+        day = f"2026-09-{10 + offset:02d}"
+        hours = []
+        for hour in range(24):
+            car = 11.0 if hour == 19 else 0.0
+            hours.append(
+                {
+                    "start": f"{day}T{hour:02d}:00:00+02:00",
+                    "home": 0.5 + car,
+                    "use": {"wallbox": car},
+                    "cov": 1.0,
+                }
+            )
+        days[day] = {"hours": hours, "workday": True}
+    with_car, _ = consumption_profiles(days)
+    without, meta = consumption_profiles(days, ["wallbox"])
+    assert with_car[True][19] == pytest.approx(11.5)
+    assert without[True][19] == pytest.approx(0.5)
+    assert meta["days"] == 10

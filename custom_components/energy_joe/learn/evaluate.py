@@ -12,6 +12,7 @@ from typing import Any
 
 from homeassistant.util import dt as dt_util
 
+from ..observe.records import base_home
 from ..plan.planner import Battery, Hour, PlanInput, Prices, simulate
 
 # Hours of the day that may be missing before an evaluation does not count.
@@ -77,6 +78,8 @@ def evaluate(
     """
     window_start = datetime.fromisoformat(plan["window"]["start"])
     window_end = datetime.fromisoformat(plan["window"]["end"])
+    # The same devices left out as when the plan was made (the car, surplus ...).
+    flexible = ((plan.get("meta") or {}).get("consumption") or {}).get("flexible") or []
     planned = [
         h
         for h in plan.get("hours") or []
@@ -115,7 +118,7 @@ def evaluate(
             Hour(
                 datetime.fromisoformat(hour["start"]),
                 max(0.0, record.get("solar", 0.0)),
-                max(0.0, record["home"]),
+                base_home(record, flexible) or 0.0,
                 hour["window"],
                 price=hour.get("price"),
             )

@@ -37,6 +37,9 @@ CONSUMER_KINDS = (
     "submeter",
     "other",
 )
+# When a device with its own meter runs. "auto": Joe decides (a wallbox never
+# draws on the home battery, everything else counts as needed when it is used).
+CONSUMER_RUNS = ("auto", "always", "surplus", "cheap")
 DISCHARGE_MODES = ("until_target", "block", "free")
 PRIORITY_ITEMS = ("ev", "hot_water", "battery")
 
@@ -206,8 +209,30 @@ CONSUMER = vol.Schema(
         vol.Optional("source", default="manual"): vol.In(
             ("energy_dashboard", "manual")
         ),
+        vol.Optional("runs", default="auto"): vol.In(CONSUMER_RUNS),
     }
 )
+
+
+def flexible_consumers(config: dict[str, Any]) -> list[str]:
+    """Devices the home battery never has to cover: the car's wallbox, and
+    devices that only run on solar surplus or in the cheap hours."""
+    found = [
+        c
+        for c in config.get("consumers") or []
+        if c["kind"] != "submeter"
+        and (
+            (
+                c["kind"] == "ev"
+                and c.get("runs", "auto") in ("auto", "cheap", "surplus")
+            )
+            or c.get("runs") in ("surplus", "cheap")
+        )
+    ]
+    # A device measured inside another flexible one is in it already.
+    inside = {c["energy_entity"] for c in found if c.get("energy_entity")}
+    return sorted(c["id"] for c in found if c.get("included_in") not in inside)
+
 
 # A condition of a night action: an entity compared with a value.
 CONDITION = vol.Schema(
@@ -427,6 +452,9 @@ LEARNED = vol.Schema(
         vol.Optional("battery_models", default=dict): dict,
         vol.Optional("action_models", default=dict): dict,
         vol.Optional("car_models", default=dict): dict,
+        # The home's use worked out like the Energy dashboard against its own
+        # consumption sensor, over the last weeks (kWh): days, calc, sensor.
+        vol.Optional("home_check", default=None): vol.Any(None, dict),
         vol.Optional("models_day", default=None): vol.Any(None, str),
         # When an area was reset last ({"forecast": "2026-10-03T21:00:00+02:00"}).
         vol.Optional("reset", default=dict): {str: str},

@@ -16,6 +16,8 @@ import math
 from statistics import median
 from typing import Any
 
+from ..observe.records import base_home
+
 # Degree-day limits: below this the house heats, above that it cools (°C).
 HEAT_BELOW = 15.0
 COOL_ABOVE = 22.0
@@ -48,8 +50,14 @@ class DayRow:
     excluded: bool
 
 
-def daily_rows(days: dict[str, dict[str, Any]]) -> list[DayRow]:
-    """Complete days with their totals, mean temperature and presence hours."""
+def daily_rows(
+    days: dict[str, dict[str, Any]], flexible: Iterable[str] = ()
+) -> list[DayRow]:
+    """Complete days with their totals, mean temperature and presence hours.
+
+    The total leaves out the flexible devices (see model.flexible_consumers).
+    """
+    flexible = list(flexible)
     rows = []
     for day, data in sorted(days.items()):
         hours = [h for h in data.get("hours") or [] if h.get("cov", 0) >= 0.8]
@@ -72,7 +80,7 @@ def daily_rows(days: dict[str, dict[str, Any]]) -> list[DayRow]:
         rows.append(
             DayRow(
                 date=day,
-                home=sum(h["home"] for h in hours),
+                home=sum(base_home(h, flexible) or 0.0 for h in hours),
                 workday=bool(workday),
                 temp=sum(temps) / len(temps) if len(temps) >= 12 else None,
                 presence=sum(present) if len(present) >= 12 else None,
@@ -621,3 +629,30 @@ def car_model(
         return None
     model["days"] = len(days)
     return model
+
+
+def home_check(days: dict[str, dict[str, Any]]) -> dict[str, Any] | None:
+    """The home's use from the balance against the consumption sensor.
+
+    Only complete hours that have both count. A sensor that misses a solar
+    system (often a balcony one) shows less than the balance on sunny days.
+    """
+    calc = sensor = 0.0
+    counted = set()
+    for day, data in days.items():
+        for hour in data.get("hours") or []:
+            if (
+                hour.get("home_calc")
+                and "home_sensor" in hour
+                and hour.get("cov", 0) >= 0.8
+            ):
+                calc += hour["home"]
+                sensor += hour["home_sensor"]
+                counted.add(day)
+    if len(counted) < 3 or calc <= 0:
+        return None
+    return {
+        "days": len(counted),
+        "calc_kwh": round(calc, 1),
+        "sensor_kwh": round(sensor, 1),
+    }

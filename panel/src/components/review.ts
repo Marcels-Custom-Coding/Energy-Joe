@@ -14,6 +14,7 @@ import type {
   Measurement,
   Reason,
 } from "../types";
+import { flexibleConsumers } from "../types";
 import { confidenceDots, reasonText, sourceChip } from "./bits";
 import { tip } from "./tip";
 import { checkText, tariffText } from "./texts";
@@ -483,6 +484,15 @@ export class JoeReview extends LitElement {
       tip: (grid ? "review_grid" : "review_home") as TipName,
     };
     const pick = this.button(t(m ? "review.change" : "review.choose"), "mdi:magnify", () => this.pickPower(role));
+    if (!m && !grid && config.measurements.grid_power) {
+      // No consumption sensor needed: worked out like the Energy dashboard.
+      return {
+        ...base,
+        detail: t("review.home.balance"),
+        notes: this.homeNotes(t, config),
+        actions: [pick, this.button(t("review.home.devices"), "mdi:devices", () => this.edit("consumers"))],
+      };
+    }
     if (!m) {
       if (ignored) {
         return {
@@ -528,6 +538,17 @@ export class JoeReview extends LitElement {
       return this.note(t, c);
     });
     const same = found?.entity.entity_id === m.entity_id;
+    if (!grid && config.measurements.grid_power) {
+      // Worked out like the Energy dashboard; the sensor is there to compare.
+      return {
+        ...base,
+        detail: `${t("review.home.balance")} · ${t("review.home.compare", { name: entityName(hass, m.entity_id), live })}`,
+        chips: [sourceChip(t, sourceOf(config, `measurements.${role}`))],
+        notes: [...this.homeNotes(t, config), ...notes],
+        state: checks.some((c) => c.level === "warn") ? "flag" : undefined,
+        actions: [pick, this.button(t("review.home.devices"), "mdi:devices", () => this.edit("consumers"))],
+      };
+    }
     return {
       ...base,
       detail: `${entityName(hass, m.entity_id)} · ${live}`,
@@ -537,6 +558,36 @@ export class JoeReview extends LitElement {
       state: checks.some((c) => c.level === "warn") ? "flag" : undefined,
       actions: [pick],
     };
+  }
+
+  /** What Joe leaves out for the battery, and how far the sensor is off. */
+  private homeNotes(t: Translate, config: JoeConfig): TemplateResult[] {
+    const notes: TemplateResult[] = [];
+    const flexible = flexibleConsumers(config.consumers);
+    if (flexible.length) {
+      const names = flexible
+        .map((c) => (c.kind === "ev" || c.runs === "always" || !c.runs ? c.name : `${c.name} (${t(`runs.${c.runs}`)})`))
+        .join(", ");
+      notes.push(this.info(t(flexible.some((c) => c.kind === "ev") ? "review.home.flexible" : "review.home.flexible_some", { names })));
+    } else if (config.consumers.some((c) => c.kind !== "submeter")) {
+      notes.push(this.info(t("review.home.flexible_none")));
+    }
+    const check = config.learned.home_check;
+    if (check && check.calc_kwh > 0) {
+      const off = (check.sensor_kwh - check.calc_kwh) / check.calc_kwh;
+      if (Math.abs(off) >= 0.1) {
+        notes.push(
+          this.info(
+            t("review.home.off", {
+              days: check.days,
+              pct: formatNumber(t.lang, Math.abs(off) * 100, 0),
+              direction: t(off < 0 ? "review.home.less" : "review.home.more"),
+            }),
+          ),
+        );
+      }
+    }
+    return notes;
   }
 
   private async pickPower(role: "grid_power" | "home_power"): Promise<void> {

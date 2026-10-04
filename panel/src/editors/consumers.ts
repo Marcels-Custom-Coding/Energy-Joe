@@ -6,10 +6,22 @@ import { define } from "../define";
 import { formatState } from "../entities";
 import type { Translate } from "../i18n";
 import { shared } from "../styles/shared";
-import { CONSUMER_KINDS, type ConsumerConfig, type ConsumerKind, type HomeAssistant, type JoeConfig } from "../types";
+import {
+  CONSUMER_KINDS,
+  type ConsumerConfig,
+  type ConsumerKind,
+  type ConsumerRuns,
+  type HomeAssistant,
+  type JoeConfig,
+} from "../types";
 import { sourceChip } from "../components/bits";
 
-/** Devices from the Energy dashboard and what kind each one is. Saved right away. */
+// A wallbox: never from the home battery unless the user says it is.
+const EV_RUNS = ["auto", "always"] as const;
+// Everything else: as needed (counts for the battery), or only on surplus / cheap power.
+const OTHER_RUNS = ["auto", "surplus", "cheap"] as const;
+
+/** Devices from the Energy dashboard: what kind each one is and when it runs. Saved right away. */
 export class JoeConsumers extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) t?: Translate;
@@ -61,6 +73,15 @@ export class JoeConsumers extends LitElement {
       .empty {
         color: var(--joe-muted);
       }
+      .head.sub {
+        margin-top: 6px;
+        font-weight: 600;
+        color: var(--joe-ink-2);
+      }
+      .selects {
+        display: grid;
+        gap: 6px;
+      }
       @media (max-width: 480px) {
         li {
           grid-template-columns: 1fr;
@@ -79,6 +100,7 @@ export class JoeConsumers extends LitElement {
     );
     return html`<div data-tipped>
       <div class="head">${t("consumers.kind")} ${tip(t, "f_consumer_kind")}</div>
+      <div class="head sub">${t("consumers.runs")} ${tip(t, "f_consumer_runs")}</div>
       ${list.length
         ? html`<ul>
             ${list.map((consumer) => this.renderConsumer(t, hass, config, consumer))}
@@ -94,17 +116,41 @@ export class JoeConsumers extends LitElement {
         <b>${consumer.name}</b>
         <small>${sourceChip(t, sourceOf(config, `consumers[${consumer.id}].kind`))}${live}</small>
       </div>
-      <select
-        class="input"
-        aria-label=${t("consumers.kind_of", { name: consumer.name })}
-        .value=${consumer.kind}
-        @change=${(ev: Event) => this.setKind(consumer, (ev.target as HTMLSelectElement).value as ConsumerKind)}
-      >
-        ${CONSUMER_KINDS.map(
-          (kind) => html`<option value=${kind} ?selected=${kind === consumer.kind}>${t(`kind.${kind}`)}</option>`,
-        )}
-      </select>
+      <div class="selects">
+        <select
+          class="input"
+          aria-label=${t("consumers.kind_of", { name: consumer.name })}
+          .value=${consumer.kind}
+          @change=${(ev: Event) => this.setKind(consumer, (ev.target as HTMLSelectElement).value as ConsumerKind)}
+        >
+          ${CONSUMER_KINDS.map(
+            (kind) => html`<option value=${kind} ?selected=${kind === consumer.kind}>${t(`kind.${kind}`)}</option>`,
+          )}
+        </select>
+        ${consumer.kind === "submeter"
+          ? nothing
+          : html`<select
+              class="input"
+              aria-label=${t("consumers.runs_of", { name: consumer.name })}
+              .value=${consumer.runs ?? "auto"}
+              @change=${(ev: Event) => this.setRuns(consumer, (ev.target as HTMLSelectElement).value as ConsumerRuns)}
+            >
+              ${consumer.kind === "ev"
+                ? EV_RUNS.map(
+                    (runs) => html`<option value=${runs} ?selected=${runs === (consumer.runs ?? "auto")}>${t(`runs.ev.${runs}`)}</option>`,
+                  )
+                : OTHER_RUNS.map(
+                    (runs) => html`<option value=${runs} ?selected=${runs === (consumer.runs ?? "auto")}>${t(`runs.${runs}`)}</option>`,
+                  )}
+            </select>`}
+      </div>
     </li>`;
+  }
+
+  private setRuns(consumer: ConsumerConfig, runs: ConsumerRuns): void {
+    if (runs !== (consumer.runs ?? "auto")) {
+      saveConfig(this, { consumers: { [consumer.id]: { runs } } });
+    }
   }
 
   private setKind(consumer: ConsumerConfig, kind: ConsumerKind): void {

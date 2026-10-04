@@ -83,6 +83,38 @@ def test_compose_computes_home_without_sensor() -> None:
     assert record["cov"] == 0.9
 
 
+def test_the_balance_beats_the_consumption_sensor() -> None:
+    """A balcony system the sensor misses still counts; the sensor stands in when needed."""
+    start = dt_util.parse_datetime("2026-10-03T12:00:00+02:00")
+    balcony = compose(
+        start,
+        HourParts(
+            grid=Flow(0.3, 0.0, 1.0),
+            home=Flow(0.9, 0.0, 1.0),
+            solar=[Flow(1.0, 0.0, 1.0), Flow(0.4, 0.0, 1.0)],
+        ),
+        "live",
+    )
+    assert balcony["home"] == pytest.approx(1.7)
+    assert balcony["home_sensor"] == pytest.approx(0.9)
+    # A battery without a reading: the balance would be wrong, the sensor counts.
+    unknown = compose(
+        start,
+        HourParts(
+            grid=Flow(0.3, 0.0, 1.0),
+            home=Flow(0.9, 0.0, 1.0),
+            solar=[Flow(1.0, 0.0, 1.0)],
+            batteries={"b1": None},
+        ),
+        "live",
+    )
+    assert unknown["home"] == pytest.approx(0.9)
+    assert "home_calc" not in unknown
+    # No grid reading at all: only the sensor.
+    alone = compose(start, HourParts(home=Flow(0.9, 0.0, 1.0)), "live")
+    assert alone["home"] == pytest.approx(0.9)
+
+
 def test_counters_beat_power_sums() -> None:
     start = dt_util.parse_datetime("2026-10-03T12:00:00+02:00")
     record = compose(
@@ -247,7 +279,11 @@ async def test_observer_records_live_hours(
     assert record["src"] == "live"
     assert record["grid_in"] == pytest.approx(0.5)
     assert record["grid_out"] == pytest.approx(0.25)
-    assert record["home"] == pytest.approx(3.0)
+    # Like the Energy dashboard: 0.5 in − 0.25 out + 2.5 sun − 0.5 into the battery.
+    assert record["home"] == pytest.approx(2.25)
+    assert record["home_calc"] is True
+    # The consumption sensor (3 kW) is kept to compare.
+    assert record["home_sensor"] == pytest.approx(3.0)
     assert record["solar"] == pytest.approx(2.5)
     assert record["bat_in"] == pytest.approx(0.5)
     assert record["bat"]["b1"]["soc"] == 45.0

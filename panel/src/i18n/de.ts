@@ -241,6 +241,15 @@ export const de = {
     "Ohne Solarprognose plane ich vorsichtig. Richte in Home Assistant zum Beispiel Forecast.Solar ein, dann such ich nochmal.",
   "review.grid.none":
     "Ohne Netzzähler sehe ich nicht, was wirklich passiert. Such dir den Sensor aus, der die Leistung am Hausanschluss misst.",
+  "review.home.balance": "Wie im Energie-Dashboard: Netz + PV ± Speicher",
+  "review.home.compare": "Zum Vergleich: {name} · {live}",
+  "review.home.flexible": "Für den Speicher rechne ich heraus: {names}. Das Auto lade ich nie aus dem Hausspeicher.",
+  "review.home.flexible_some": "Für den Speicher rechne ich heraus: {names}.",
+  "review.home.flexible_none": "Laufen bei dir Geräte nur mit Sonnenüberschuss oder günstigem Strom? Sag es mir bei den Geräten – dann plane ich den Speicher ohne sie.",
+  "review.home.off": "Dein Sensor zeigt in den letzten {days} Tagen {pct} % {direction} als Netz + PV ± Speicher. Fehlt darin vielleicht eine kleine PV-Anlage? Ich rechne mit Netz + PV ± Speicher.",
+  "review.home.less": "weniger",
+  "review.home.more": "mehr",
+  "review.home.devices": "Geräte zuordnen",
   "review.home.none":
     "Kennst du keinen? Kein Problem – dann rechne ich den Hausverbrauch aus Netz, PV und Speicher selbst aus.",
   "review.home.without": "Hab ich nicht",
@@ -366,6 +375,13 @@ export const de = {
   "household.calendar_add": "Kalender",
   "household.calendar_remove": "Kalender {name} entfernen",
 
+  "consumers.runs": "Wann läuft es?",
+  "consumers.runs_of": "Wann {name} läuft",
+  "runs.auto": "Wenn es gebraucht wird",
+  "runs.ev.auto": "Nie aus dem Hausspeicher",
+  "runs.ev.always": "Auch aus dem Hausspeicher",
+  "runs.surplus": "Nur mit Sonnenüberschuss",
+  "runs.cheap": "Nur mit günstigem Strom",
   "consumers.kind": "Was ist das für ein Gerät?",
   "consumers.kind_of": "Art von {name}",
   "consumers.empty": "Im Energie-Dashboard sind keine einzelnen Geräte eingetragen.",
@@ -467,7 +483,7 @@ export const de = {
     "Er zeigt, wie viel Strom gerade aus dem Netz kommt oder hineingeht. Damit sehe ich, ob meine Pläne aufgehen, und lerne daraus.\n**Ändern** – einen anderen Sensor wählen.\n**Umdrehen** – falls er andersherum zählt.\n**Stimmt so** – mein Hinweis war falsch, ich sage nichts mehr.",
   "tip.review_home.title": "Wofür brauche ich den Hausverbrauch?",
   "tip.review_home.text":
-    "Daraus lerne ich, wie viel ihr wann braucht – das Herzstück meiner Planung.\n**Ändern** – einen anderen Sensor wählen.\n**Hab ich nicht** – dann rechne ich ihn aus Netz, PV und Speicher aus.",
+    "Daraus lerne ich, wie viel ihr wann braucht – das Herzstück meiner Planung. Ich rechne ihn wie das Energie-Dashboard aus Netz, PV und Speicher aus; so zählt auch ein Balkonkraftwerk mit. Einen Hausverbrauchs-Sensor nehme ich zum Vergleich und als Ersatz, wenn die Rechnung nicht geht.\n**Ändern** – einen anderen Sensor wählen.\n**Hab ich nicht** – dann rechne ich nur aus Netz, PV und Speicher.",
   "tip.review_solar.title": "Wofür brauche ich die PV-Leistung?",
   "tip.review_solar.text":
     "Ich vergleiche, was die Prognose versprochen hat, mit dem, was deine Anlage wirklich geliefert hat. So werde ich jeden Tag genauer.\n**Ändern** – Sensoren wählen; mehrere Wechselrichter zähle ich zusammen.\n**Hab keine PV** – dann plane ich nur mit dem günstigen Netzstrom.",
@@ -583,6 +599,9 @@ export const de = {
   "tip.f_person_add.title": "Wer gehört dazu?",
   "tip.f_person_add.text":
     "Alle, die hier wohnen. Ihre Anwesenheit kommt aus Home Assistant, Kalender kannst du danach hinzufügen.",
+  "tip.f_consumer_runs.title": "Warum will ich das wissen?",
+  "tip.f_consumer_runs.text":
+    "Den Hausspeicher plane ich nur für das, was er wirklich abdecken muss.\n**Nur mit Sonnenüberschuss** – läuft nur, wenn die Sonne mehr liefert als das Haus braucht (z. B. über evcc). Den Speicher plane ich ohne dieses Gerät.\n**Nur mit günstigem Strom** – läuft nachts in der günstigen Zeit, nicht aus dem Speicher.\n**Wenn es gebraucht wird** – zählt ganz normal mit.\nEine Wallbox zählt nie mit: Das Auto lade ich nicht aus dem Hausspeicher.",
   "tip.f_consumer_kind.title": "Was bedeutet die Art?",
   "tip.f_consumer_kind.text":
     "Für jedes Gerät mit eigenem Zähler lerne ich, wie sein Verbrauch von der Außentemperatur abhängt. **Zähler für andere Geräte** heißt: Er misst Geräte mit, die hier selbst stehen – die zähle ich nicht doppelt.",
