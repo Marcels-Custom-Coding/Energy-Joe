@@ -40,6 +40,10 @@ export const en: Record<Key, string> = {
   "household.presence.stop": "Stop using",
   "household.presence.propose":
     "I propose a helper “someone home” in Home Assistant: on as soon as one of these persons is home. With a guest mode switch, those without a phone count too – babysitter, children, guests. Both are yours and work without me.",
+  "household.presence.found":
+    "You already have a group for this. I'll use it – then it tells me whether someone is home.",
+  "household.presence.use": "Use this one",
+  "household.presence.new_instead": "Create a new helper instead",
   "household.presence.persons": "Persons in the helper",
   "household.presence.guest": "Also create a guest mode switch",
   "household.presence.create": "Create helper",

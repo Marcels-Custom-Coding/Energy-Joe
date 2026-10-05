@@ -3,6 +3,10 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.4
+
+- Anwesenheit: Hast du schon eine Gruppe aus Personen (z. B. „Anwesenheit irgendjemand“), schlägt Joe genau diese vor („Diese nehmen“). Einen neuen Helfer bietet er nur an, wenn keine da ist – oder auf ausdrücklichen Wunsch.
+
 ## 0.9.3
 
 - Anwesenheit aus einem einzigen Helfer: Ob jemand zu Hause ist, entscheidet Joe nur noch über eine Entität, z. B. „Jemand zu Hause“. Im Haushalt (auch bei der Einrichtung) schlägt Joe vor, ihn anzulegen: du wählst die Personen, auf Wunsch kommt ein Gastmodus-Schalter dazu. Beides sind normale Helfer in Home Assistant (Template-Binärsensor und Schalter) und funktionieren auch ohne Joe. Eine eigene, vorhandene Gruppe kannst du stattdessen wählen.

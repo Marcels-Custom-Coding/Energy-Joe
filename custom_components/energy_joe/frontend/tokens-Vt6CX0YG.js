@@ -620,6 +620,9 @@ var Me = {
 	"household.presence.other": "Andere Entität",
 	"household.presence.stop": "Nicht mehr nutzen",
 	"household.presence.propose": "Ich schlage einen Helfer „Jemand zu Hause“ in Home Assistant vor: an, sobald eine dieser Personen zu Hause ist. Mit Gastmodus-Schalter zählt auch, wer kein Handy dabei hat – Babysitter, Kinder, Gäste. Beides gehört dir und funktioniert auch ohne mich.",
+	"household.presence.found": "Du hast schon eine Gruppe dafür. Die nehme ich – dann sagt sie mir, ob jemand zu Hause ist.",
+	"household.presence.use": "Diese nehmen",
+	"household.presence.new_instead": "Stattdessen einen neuen Helfer anlegen",
 	"household.presence.persons": "Personen im Helfer",
 	"household.presence.guest": "Gastmodus-Schalter dazu anlegen",
 	"household.presence.create": "Helfer anlegen",
@@ -2445,6 +2448,9 @@ var Me = {
 	"household.presence.other": "Other entity",
 	"household.presence.stop": "Stop using",
 	"household.presence.propose": "I propose a helper “someone home” in Home Assistant: on as soon as one of these persons is home. With a guest mode switch, those without a phone count too – babysitter, children, guests. Both are yours and work without me.",
+	"household.presence.found": "You already have a group for this. I'll use it – then it tells me whether someone is home.",
+	"household.presence.use": "Use this one",
+	"household.presence.new_instead": "Create a new helper instead",
 	"household.presence.persons": "Persons in the helper",
 	"household.presence.guest": "Also create a guest mode switch",
 	"household.presence.create": "Create helper",
@@ -4251,14 +4257,14 @@ function Le(e) {
 }
 //#endregion
 //#region src/define.ts
-var Re = "0.9.3";
+var Re = "0.9.4";
 function H(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Re, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.3" && Be();
+	n.joeVersion !== "0.9.4" && Be();
 }
 var ze = !1;
 function Be() {

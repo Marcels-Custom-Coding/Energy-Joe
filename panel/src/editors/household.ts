@@ -23,6 +23,7 @@ export class JoeHousehold extends LitElement {
   @state() private guest = true;
   @state() private creating = false;
   @state() private failed?: string;
+  @state() private offerNew = false;
 
   static styles = [
     shared,
@@ -217,6 +218,26 @@ export class JoeHousehold extends LitElement {
     }
     const persons = config.persons.filter((p) => p.person_entity);
     const chosen = persons.filter((p) => !this.leftOut.includes(p.person_entity!));
+    const found = presenceGroups(hass);
+    if (found.length && !this.offerNew) {
+      // The user has such a group already: offer it, not a new one.
+      return html`<div class="presence" data-tipped>
+        ${head}
+        <p>${t("household.presence.found")}</p>
+        ${found.map(
+          (group) => html`<div class="row">
+            <span class="chip" title=${group.entity_id}>${group.name}</span>
+            <small>${group.members.join(", ")}</small>
+            <button type="button" class="btn btn-primary" @click=${() => saveConfig(this, { context: { presence_entity: group.entity_id } })}>
+              ${t("household.presence.use")}
+            </button>
+          </div>`,
+        )}
+        <div class="row">
+          <button type="button" class="btn btn-ghost" @click=${() => (this.offerNew = true)}>${t("household.presence.new_instead")}</button>
+        </div>
+      </div>`;
+    }
     return html`<div class="presence" data-tipped>
       ${head}
       <p>${t("household.presence.propose")}</p>
@@ -400,6 +421,19 @@ export class JoeHousehold extends LitElement {
   private setCalendars(person: PersonConfig, calendars: string[]): void {
     saveConfig(this, { persons: { [person.id]: { calendars } } });
   }
+}
+
+/** Groups the user already has for "someone is home": members are persons or trackers. */
+function presenceGroups(hass: HomeAssistant): { entity_id: string; name: string; members: string[] }[] {
+  return Object.values(hass.states)
+    .filter((state) => state.entity_id.startsWith("group."))
+    .map((state) => ({ state, members: (state.attributes.entity_id as string[] | undefined) ?? [] }))
+    .filter(({ members }) => members.length && members.every((m) => /^(person|device_tracker)\./.test(m)))
+    .map(({ state, members }) => ({
+      entity_id: state.entity_id,
+      name: entityName(hass, state.entity_id),
+      members: members.map((m) => entityName(hass, m)),
+    }));
 }
 
 define("joe-household", JoeHousehold);

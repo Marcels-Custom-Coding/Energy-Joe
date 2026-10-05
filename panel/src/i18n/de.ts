@@ -41,6 +41,10 @@ export const de = {
   "household.presence.stop": "Nicht mehr nutzen",
   "household.presence.propose":
     "Ich schlage einen Helfer „Jemand zu Hause“ in Home Assistant vor: an, sobald eine dieser Personen zu Hause ist. Mit Gastmodus-Schalter zählt auch, wer kein Handy dabei hat – Babysitter, Kinder, Gäste. Beides gehört dir und funktioniert auch ohne mich.",
+  "household.presence.found":
+    "Du hast schon eine Gruppe dafür. Die nehme ich – dann sagt sie mir, ob jemand zu Hause ist.",
+  "household.presence.use": "Diese nehmen",
+  "household.presence.new_instead": "Stattdessen einen neuen Helfer anlegen",
   "household.presence.persons": "Personen im Helfer",
   "household.presence.guest": "Gastmodus-Schalter dazu anlegen",
   "household.presence.create": "Helfer anlegen",
