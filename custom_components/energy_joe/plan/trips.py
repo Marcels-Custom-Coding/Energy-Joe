@@ -277,6 +277,76 @@ async def async_route(
     return None
 
 
+async def async_drive_home(
+    hass: HomeAssistant, routing: dict[str, Any], lat: float, lon: float
+) -> dict[str, Any] | None:
+    """Minutes by car from a position to home with the chosen service (now,
+    with traffic where the service knows it). The position is rounded to
+    about 100 m before it leaves Home Assistant."""
+    origin = f"{round(lat, 3)},{round(lon, 3)}"
+    service = routing.get("service")
+    try:
+        if service == "waze" and hass.services.has_service(
+            "waze_travel_time", "get_travel_times"
+        ):
+            response = await hass.services.async_call(
+                "waze_travel_time",
+                "get_travel_times",
+                {
+                    "origin": origin,
+                    "destination": "zone.home",
+                    "region": _region(hass.config.country),
+                    "units": "metric",
+                    "realtime": True,
+                },
+                blocking=True,
+                return_response=True,
+            )
+            routes = (response or {}).get("routes") or []
+            if routes:
+                return {
+                    "minutes": round(float(routes[0]["duration"])),
+                    "source": "waze",
+                }
+        elif service == "google" and routing.get("google_entry"):
+            response = await hass.services.async_call(
+                "google_travel_time",
+                "get_travel_times",
+                {
+                    "config_entry_id": routing["google_entry"],
+                    "origin": origin,
+                    "destination": "zone.home",
+                    "mode": "driving",
+                    "units": "metric",
+                },
+                blocking=True,
+                return_response=True,
+            )
+            routes = (response or {}).get("routes") or []
+            if routes:
+                return {
+                    "minutes": round(routes[0]["duration"] / 60),
+                    "source": "google",
+                }
+        elif service == "osm":
+            session = async_get_clientsession(hass)
+            home_lat, home_lon = hass.config.latitude, hass.config.longitude
+            url = (
+                f"{routing['router_url']}{round(lon, 3)},{round(lat, 3)};"
+                f"{home_lon},{home_lat}?overview=false"
+            )
+            async with asyncio.timeout(TIMEOUT):
+                response = await session.get(url, headers={"User-Agent": USER_AGENT})
+                response.raise_for_status()
+                route = await response.json()
+            routes = (route or {}).get("routes") or []
+            if routes:
+                return {"minutes": round(routes[0]["duration"] / 60), "source": "osm"}
+    except Exception:  # noqa: BLE001 - without an answer Joe estimates from the distance
+        _LOGGER.debug("Drive time home not available from %s", service, exc_info=True)
+    return None
+
+
 async def _async_waze(hass: HomeAssistant, text: str) -> dict[str, Any] | None:
     if not hass.services.has_service("waze_travel_time", "get_travel_times"):
         # From 2026.8 on the action works without a Waze entry.

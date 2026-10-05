@@ -38,7 +38,7 @@ interface Devices {
   devices: ClimateDevice[];
   meters?: MeterOption[];
   suggested?: Record<string, MeterOption>;
-  arrivals: Record<string, { km?: number; direction?: string }>;
+  arrivals: Record<string, { km?: number; direction?: string; minutes?: number; source?: string }>;
   proximity: boolean;
 }
 
@@ -272,7 +272,7 @@ export class JoeClimatePage extends LitElement {
   private renderPresence(t: Translate, joe: JoeState): TemplateResult {
     const status = joe.climate;
     const home = status?.home ?? [];
-    const arrivals = Object.entries(this.found?.arrivals ?? status?.arrivals ?? {});
+    const arrivals = Object.entries(status?.arrivals ?? this.found?.arrivals ?? {});
     const names = Object.fromEntries(joe.config.persons.map((p) => [p.person_entity, p.name]));
     const presence = joe.config.context.presence_entity ?? null;
     const presenceOn = !!presence && ["home", "on"].includes(this.hass?.states[presence]?.state ?? "");
@@ -288,8 +288,31 @@ export class JoeClimatePage extends LitElement {
             name: names[person] ?? this.hass?.states[person]?.attributes.friendly_name ?? person,
             km: info.km != null ? formatNumber(t.lang, info.km, 1) : "–",
           })}
+          ${info.direction === "towards" && info.minutes != null
+            ? t(info.source ? "climate.way.minutes_route" : "climate.way.minutes_guess", { minutes: info.minutes })
+            : nothing}
         </p>`,
       )}
+      ${Object.entries(status?.usual ?? {}).map(
+        ([person, minute]) => html`<p class="hint">
+          ${t("climate.usual", {
+            name: names[person] ?? this.hass?.states[person]?.attributes.friendly_name ?? person,
+            time: `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`,
+          })}
+        </p>`,
+      )}
+      <div class="row" data-tipped>
+        <span id="route-eta">${t("climate.route_eta")}</span>
+        <button
+          type="button"
+          class="switch"
+          role="switch"
+          aria-checked=${String(joe.config.climate?.route_eta ?? true)}
+          aria-labelledby="route-eta"
+          @click=${() => saveConfig(this, { climate: { route_eta: !(joe.config.climate?.route_eta ?? true) } })}
+        ></button>
+        ${tip(t, "climate_route_eta")}
+      </div>
       ${this.found && !this.found.proximity
         ? html`<p class="hint">
             ${t("climate.no_proximity")}

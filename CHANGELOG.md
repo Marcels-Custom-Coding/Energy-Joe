@@ -3,6 +3,11 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.5
+
+- Heimweg mit echter Fahrzeit: Kommt jemand näher, fragt Joe den Routendienst aus den Einstellungen (OpenStreetMap, Waze oder Google), wie lange die Fahrt noch dauert – statt pauschal 40 km/h. Die Position geht dafür auf etwa 100 m gerundet an den Dienst; abschaltbar unter Klima → „Wer ist da?“.
+- Joe lernt, wann ihr heimkommt: je Person an Arbeits- und an freien Tagen. Kennt er die übliche Zeit (nach 4 Heimkehren, schwankt höchstens 45 Minuten), sind die Räume dann schon warm – bevor jemand losfährt. Wer zu einer ganz anderen Zeit nur in der Nähe vorbeifährt, zählt erst, wenn er stetig näher kommt.
+
 ## 0.9.4
 
 - Anwesenheit: Hast du schon eine Gruppe aus Personen (z. B. „Anwesenheit irgendjemand“), schlägt Joe genau diese vor („Diese nehmen“). Einen neuen Helfer bietet er nur an, wenn keine da ist – oder auf ausdrücklichen Wunsch.

@@ -217,3 +217,103 @@ async def test_the_presence_entity_alone_decides(hass: HomeAssistant) -> None:
     hass.states.async_set("binary_sensor.jemand_zu_hause", "off")
     await joe.async_check()
     assert hass.states.get(ROOM).attributes["temperature"] < 21.0
+
+
+async def test_drive_time_from_the_routing_service(
+    hass: HomeAssistant, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The real drive decides, not 40 km/h: a jam keeps the room down."""
+    from datetime import timedelta
+
+    from homeassistant.util import dt as dt_util
+
+    install(hass)
+    cfg = config()
+    joe = ClimateController(hass, lambda: cfg, lambda: "live", lambda: None)
+    hass.states.async_set(
+        "person.marcel", "not_home", {"latitude": 50.1, "longitude": 8.6}
+    )
+    monkeypatch.setattr(
+        climate_module,
+        "arrivals",
+        lambda hass: {"person.marcel": {"km": 20.0, "direction": "towards"}},
+    )
+    minutes = {"value": 200}
+
+    async def drive(hass, routing, lat, lon):
+        assert (lat, lon) == (50.1, 8.6)
+        return {"minutes": minutes["value"], "source": "osm"}
+
+    monkeypatch.setattr(climate_module, "async_drive_home", drive)
+    now = dt_util.now()
+    await joe._async_etas(now)
+    # 20 km would be 30 min at 40 km/h – but the jam says 200 min.
+    assert joe._arriving(timedelta(minutes=130), now) is None
+    minutes["value"] = 25
+    await joe._async_etas(now + timedelta(minutes=6))
+    assert (
+        joe._arriving(timedelta(minutes=130), now + timedelta(minutes=6)) == "arriving"
+    )
+    assert joe._etas["person.marcel"]["source"] == "osm"
+
+
+async def test_the_usual_homecoming(hass: HomeAssistant, monkeypatch) -> None:
+    """Weekdays at 17:30: warm by then, before anyone sets off; and someone
+    passing by at another time does not count unless steadily approaching."""
+    from datetime import datetime, timedelta
+
+    from homeassistant.util import dt as dt_util
+
+    install(hass)
+    cfg = config()
+    joe = ClimateController(hass, lambda: cfg, lambda: "live", lambda: None)
+    zone = dt_util.get_default_time_zone()
+    today = datetime(2026, 10, 7, tzinfo=zone)  # a Wednesday
+    for back in range(1, 8):
+        day = today - timedelta(days=back)
+        if day.weekday() < 5:
+            joe.data["homecomings"].setdefault("person.marcel", []).append(
+                {"at": day.replace(hour=17, minute=30).isoformat(), "free": False}
+            )
+    hass.states.async_set("person.marcel", "not_home")
+    monkeypatch.setattr(climate_module, "arrivals", lambda hass: {})
+    lead = timedelta(minutes=130)
+    assert joe._arriving(lead, today.replace(hour=14, minute=0)) is None
+    assert joe._arriving(lead, today.replace(hour=15, minute=30)) == "arriving_usual"
+    # Clearly too far away to make it: 5 h drive.
+    monkeypatch.setattr(
+        climate_module,
+        "arrivals",
+        lambda hass: {"person.marcel": {"km": 300.0, "direction": "away_from"}},
+    )
+    joe._etas["person.marcel"] = {
+        "minutes": 300,
+        "source": "osm",
+        "at": today.replace(hour=15, minute=30),
+    }
+    assert joe._arriving(lead, today.replace(hour=15, minute=30)) is None
+    # 10:00, 5 km away and heading this way once: just passing by.
+    joe._etas.clear()
+    monkeypatch.setattr(
+        climate_module,
+        "arrivals",
+        lambda hass: {"person.marcel": {"km": 5.0, "direction": "towards"}},
+    )
+    ten = today.replace(hour=10)
+    assert joe._arriving(lead, ten) is None
+    # Steadily closer (8 km five minutes ago): really coming home.
+    joe._seen_km["person.marcel"] = [(ten - timedelta(minutes=5), 8.0), (ten, 5.0)]
+    assert joe._arriving(lead, ten) == "arriving"
+
+
+async def test_homecomings_are_noted(hass: HomeAssistant) -> None:
+    install(hass)
+    cfg = config()
+    joe = ClimateController(hass, lambda: cfg, lambda: "simulation", lambda: None)
+    hass.states.async_set("person.marcel", "not_home")
+    joe.async_start()
+    hass.states.async_set("person.marcel", "home")
+    await hass.async_block_till_done()
+    joe.async_stop()
+    entries = joe.data["homecomings"]["person.marcel"]
+    assert len(entries) == 1 and entries[0]["free"] is False

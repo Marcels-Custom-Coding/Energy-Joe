@@ -59,7 +59,7 @@ Joe braucht kein Vorwissen. Er findet selbst, was er braucht, fragt in Alltagssp
 - Neuer Bereich „Klima“: Für jedes Thermostat und jede Klimaanlage einzeln wählst du, ob Joe es steuert.
 - Ob jemand zu Hause ist, sagt ein einziger Helfer in HA („Jemand zu Hause“ aus euren Personen plus Gastmodus-Schalter für Babysitter oder Kinder ohne Handy). Joe schlägt ihn bei der Einrichtung vor und legt ihn auf Wunsch an; er funktioniert auch ohne Joe.
 - Ist keiner zu Hause: absenken (beim Kühlen anheben), ganz aus oder ein Profil des Geräts – bei Homematic IP z. B. dein Heizprofil „Abwesend“. An freien Tagen auf Wunsch ein eigenes Profil.
-- Kommt jemand heim (Integration „Nähe“/Proximity), fährt Joe die Räume so rechtzeitig hoch, wie sie es laut Gelerntem brauchen, und stellt alles genau so zurück, wie es war.
+- Kommt jemand heim (Integration „Nähe“/Proximity), fährt Joe die Räume so rechtzeitig hoch, wie sie es laut Gelerntem brauchen – mit der echten Fahrzeit vom Routendienst. Er lernt auch, wann ihr meist heimkommt, und heizt schon vorher. Danach stellt er alles genau so zurück, wie es war.
 - Klimaanlagen auf Wunsch nachts aus und rechtzeitig vor dem Morgen wieder an. Wann Nacht ist, sagen feste Uhrzeiten oder eine Entität (z. B. deine Gute-Nacht-Routine oder ein Bettsensor).
 - Messgerät koppeln: Joe schlägt zu jedem Klimagerät das Gerät vor, das seine Leistung misst (z. B. einen Kanal eines Shelly Pro 3EM). Mehrere Klimageräte dürfen sich ein Messgerät teilen.
 

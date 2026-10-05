@@ -31,6 +31,8 @@ from homeassistant.util import dt as dt_util
 
 from ..const import DOMAIN
 from ..observe.readings import temperature_c
+from ..plan.trips import async_drive_home
+from .homecoming import expected_soon, record, usual
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -46,6 +48,19 @@ MARGIN = timedelta(minutes=10)
 # A room counts as there when this close to its target (K).
 REACHED_K = 0.3
 LOG_SIZE = 50
+# Drive times home are asked again after this long, and trusted this long.
+ETA_EVERY = timedelta(minutes=5)
+ETA_VALID = timedelta(minutes=12)
+# Joe asks for a drive time only between these distances (km).
+ETA_KM = (0.3, 300.0)
+# Heading home counts when the distance keeps shrinking: this much within
+# APPROACH_SPAN, or when already this close (km).
+APPROACH_KM = 2.0
+APPROACH_SPAN = timedelta(minutes=10)
+NEAR_KM = 2.0
+# Outside the usual time of day by more than this, a live approach needs to be
+# a steady one (not someone passing by).
+USUAL_WINDOW = timedelta(hours=2)
 
 STATES = ("away", "free_day", "night")
 # States of the presence entity that mean "someone is home".
@@ -116,7 +131,12 @@ class ClimateController:
             "warming": {},
             "rates": {},
             "log": [],
+            # person entity -> homecomings (see homecoming.py)
+            "homecomings": {},
         }
+        # tracked entity -> {"minutes", "source", "at"}; and recent distances.
+        self._etas: dict[str, dict[str, Any]] = {}
+        self._seen_km: dict[str, list[tuple[datetime, float]]] = {}
         self.status: dict[str, Any] = {}
         self._unsubs: list[CALLBACK_TYPE] = []
 
@@ -158,6 +178,22 @@ class ClimateController:
 
     @callback
     def _on_change(self, event: Event) -> None:
+        old = event.data.get("old_state")
+        new = event.data.get("new_state")
+        persons = {p.get("person_entity") for p in self._config()["persons"]}
+        if (
+            event.data.get("entity_id") in persons
+            and new is not None
+            and new.state == "home"
+            and old is not None
+            and old.state not in ("home", "unknown", "unavailable")
+        ):
+            record(
+                self.data["homecomings"],
+                event.data["entity_id"],
+                dt_util.as_local(new.last_changed),
+                self._free_day(),
+            )
         self._hass.async_create_task(self.async_check(), eager_start=False)
 
     # --- what each room should do ------------------------------------------------
@@ -210,15 +246,94 @@ class ClimateController:
             gap = abs(float(target) - float(current))
         return timedelta(hours=gap / self._rate(entity_id)) + MARGIN
 
-    def _arriving(self, lead: timedelta) -> str | None:
-        """Someone heading home who will be there within `lead`."""
-        for person, info in arrivals(self._hass).items():
-            if info.get("direction") != "towards" or "km" not in info:
-                continue
-            eta = timedelta(hours=info["km"] / DEFAULT_SPEED_KMH)
-            if eta <= lead:
-                return person
+    def _drive(self, tracked: str, info: dict[str, Any], now: datetime) -> float | None:
+        """Minutes until a person is home: the routing service, else the distance."""
+        found = self._etas.get(tracked)
+        if found and now - found["at"] <= ETA_VALID:
+            return float(found["minutes"])
+        if "km" in info:
+            return info["km"] / DEFAULT_SPEED_KMH * 60
         return None
+
+    def _approaching(self, tracked: str, info: dict[str, Any], now: datetime) -> bool:
+        """Getting steadily closer – not just passing by."""
+        if info.get("km", 99.0) <= NEAR_KM:
+            return True
+        seen = [
+            km for at, km in self._seen_km.get(tracked, []) if now - at <= APPROACH_SPAN
+        ]
+        return len(seen) >= 2 and seen[0] - seen[-1] >= APPROACH_KM
+
+    def _usual(self, person_entity: str, now: datetime) -> dict[str, int] | None:
+        return usual(
+            self.data["homecomings"].get(person_entity) or [],
+            self._free_day(),
+            dt_util.as_local(now).date(),
+        )
+
+    def _arriving(self, lead: timedelta, now: datetime | None = None) -> str | None:
+        """Why a room should be back already: someone heading home who will be
+        there within `lead` ("arriving"), or someone's usual homecoming is that
+        close ("arriving_usual")."""
+        now = now or dt_util.now()
+        local = dt_util.as_local(now)
+        minute = local.hour * 60 + local.minute
+        lead_min = lead.total_seconds() / 60
+        tracked = arrivals(self._hass)
+        for entity, info in tracked.items():
+            if info.get("direction") != "towards":
+                continue
+            drive = self._drive(entity, info, now)
+            if drive is None or drive > lead_min:
+                continue
+            found = self._usual(entity, now)
+            near_usual = found is not None and abs(found["minute"] - minute) <= (
+                USUAL_WINDOW.total_seconds() / 60
+            )
+            # Off the usual time, only a steady approach counts.
+            if found is None or near_usual or self._approaching(entity, info, now):
+                return "arriving"
+        for person in self._config()["persons"]:
+            entity = person.get("person_entity")
+            state = self._hass.states.get(entity) if entity else None
+            if state is None or state.state == "home":
+                continue
+            info = tracked.get(entity) or {}
+            drive = self._drive(entity, info, now) if info else None
+            if expected_soon(self._usual(entity, now), minute, lead_min, drive):
+                return "arriving_usual"
+        return None
+
+    async def _async_etas(self, now: datetime) -> None:
+        """Ask the routing service how long those heading home still need."""
+        settings = self._config().get("climate") or {}
+        routing = self._config().get("routing") or {}
+        for entity, info in arrivals(self._hass).items():
+            if "km" in info:
+                seen = self._seen_km.setdefault(entity, [])
+                seen.append((now, info["km"]))
+                del seen[: max(0, len(seen) - 20)]
+            heading = (
+                info.get("direction") == "towards"
+                and ETA_KM[0] <= info.get("km", 0.0) <= ETA_KM[1]
+            )
+            if (
+                not heading
+                or not settings.get("route_eta", True)
+                or not routing.get("service")
+            ):
+                self._etas.pop(entity, None)
+                continue
+            found = self._etas.get(entity)
+            if found and now - found["at"] < ETA_EVERY:
+                continue
+            state = self._hass.states.get(entity)
+            lat = state.attributes.get("latitude") if state else None
+            lon = state.attributes.get("longitude") if state else None
+            if not isinstance(lat, int | float) or not isinstance(lon, int | float):
+                continue
+            if answer := await async_drive_home(self._hass, routing, lat, lon):
+                self._etas[entity] = {**answer, "at": now}
 
     def desired(
         self, entity_id: str, room: dict[str, Any], now: datetime
@@ -228,8 +343,8 @@ class ClimateController:
         if room.get("night_off") and self._night(room, now, entity_id):
             return "night", "night"
         if not self._home():
-            if self._arriving(self._lead(entity_id, room)):
-                return None, "arriving"
+            if why := self._arriving(self._lead(entity_id, room), now):
+                return None, why
             return "away", "away"
         presets = (state.attributes.get("preset_modes") if state else None) or []
         if self._free_day() and room.get("free_day_preset") in presets:
@@ -281,6 +396,8 @@ class ClimateController:
             if room.get("enabled")
         }
         status: dict[str, Any] = {}
+        if rooms and settings.get("enabled"):
+            await self._async_etas(now)
         # Rooms no longer chosen (or Joe no longer steering): back as they were.
         for entity_id in list(self.data["states"]):
             if entity_id not in rooms or not live:
@@ -299,7 +416,29 @@ class ClimateController:
             self._learn(entity_id)
         self.status = {
             "home": self._home(),
-            "arrivals": arrivals(self._hass),
+            "arrivals": {
+                entity: {
+                    **info,
+                    **(
+                        {"minutes": round(drive)}
+                        if info.get("direction") == "towards"
+                        and (drive := self._drive(entity, info, now)) is not None
+                        else {}
+                    ),
+                    **(
+                        {"source": self._etas[entity]["source"]}
+                        if entity in self._etas
+                        else {}
+                    ),
+                }
+                for entity, info in arrivals(self._hass).items()
+            },
+            "usual": {
+                p["person_entity"]: found["minute"]
+                for p in config["persons"]
+                if p.get("person_entity")
+                and (found := self._usual(p["person_entity"], now))
+            },
             "free_day": self._free_day(),
             "rooms": status,
             "live": bool(live),

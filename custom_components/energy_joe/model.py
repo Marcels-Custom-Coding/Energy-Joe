@@ -370,6 +370,9 @@ CLIMATE = vol.Schema(
         # When night is: each room's times, or an entity that is "on" while
         # people are in bed (a "good night" routine, a bed sensor ...).
         vol.Optional("night_by", default="time"): vol.In(("time", "entity")),
+        # The drive home from the routing service (the position, rounded to
+        # about 100 m, goes to it) instead of an average speed.
+        vol.Optional("route_eta", default=True): bool,
         vol.Optional("night_entity", default=None): _ENTITY,
         vol.Optional("rooms", default=dict): {cv.entity_id: CLIMATE_ROOM},
     }

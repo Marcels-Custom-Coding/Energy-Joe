@@ -604,6 +604,14 @@ var Me = {
 	"climate.way.towards": "{name} ist {km} km weg und kommt näher.",
 	"climate.way.away": "{name} ist {km} km weg und entfernt sich.",
 	"climate.way.other": "{name} ist {km} km weg.",
+	"climate.way.minutes_route": "Noch etwa {minutes} Minuten Fahrt.",
+	"climate.way.minutes_guess": "Geschätzt etwa {minutes} Minuten.",
+	"climate.usual": "{name} kommt an solchen Tagen meist gegen {time} heim.",
+	"climate.route_eta": "Fahrzeit über den Routendienst",
+	"climate.now.arriving_usual": "Jetzt: gleich ist die übliche Heimkehrzeit – ich fahre schon hoch.",
+	"tip.climate_route_eta.title": "Wie weiß Joe, wann jemand heimkommt?",
+	"tip.climate_route_eta.text": "Zwei Wege: 1. Kommt jemand näher (Integration „Nähe“), frage ich den Routendienst aus den Einstellungen (OpenStreetMap, Waze oder Google), wie lange die Fahrt noch dauert – mit Stau, wo der Dienst ihn kennt. Dafür geht die Position der Person, auf etwa 100 m gerundet, an diesen Dienst. Schaltest du das aus, rechne ich mit 40 km/h. 2. Ich merke mir, wann ihr an Arbeits- und freien Tagen meist heimkommt, und fahre die Räume zu dieser Zeit schon vorher hoch. Wer zu einer ganz anderen Zeit nur in der Nähe vorbeifährt, zählt erst, wenn er stetig näher kommt.",
+	"tip.climate_route_eta.hint": "Die übliche Zeit kenne ich nach 4 Heimkehren an solchen Tagen, und nur, wenn sie nicht mehr als 45 Minuten schwankt.",
 	"climate.no_proximity": "Damit ich rechtzeitig vorheize, wenn jemand heimkommt, brauche ich die Integration „Nähe“ (Proximity) für eure Personen.",
 	"climate.add_proximity": "Nähe einrichten",
 	"climate.free_day": "Heute ist ein freier Tag.",
@@ -2432,6 +2440,14 @@ var Me = {
 	"climate.way.towards": "{name} is {km} km away and getting closer.",
 	"climate.way.away": "{name} is {km} km away and moving away.",
 	"climate.way.other": "{name} is {km} km away.",
+	"climate.way.minutes_route": "About {minutes} minutes' drive left.",
+	"climate.way.minutes_guess": "Estimated about {minutes} minutes.",
+	"climate.usual": "On days like this, {name} usually comes home around {time}.",
+	"climate.route_eta": "Drive time from the routing service",
+	"climate.now.arriving_usual": "Now: the usual homecoming is close – I'm warming up already.",
+	"tip.climate_route_eta.title": "How does Joe know when someone comes home?",
+	"tip.climate_route_eta.text": "Two ways: 1. When someone gets closer (Proximity integration), I ask the routing service from the settings (OpenStreetMap, Waze or Google) how long the drive still takes – with traffic where the service knows it. For that, the person's position, rounded to about 100 m, goes to that service. Switch it off and I assume 40 km/h. 2. I note when you usually come home on working days and days off, and bring the rooms back ahead of that time. Someone merely passing by at a quite different time only counts when getting steadily closer.",
+	"tip.climate_route_eta.hint": "I know the usual time after 4 homecomings on such days, and only if it varies by no more than 45 minutes.",
 	"climate.no_proximity": "To warm up in time when someone comes home I need the Proximity integration for your persons.",
 	"climate.add_proximity": "Set up Proximity",
 	"climate.free_day": "Today is a day off.",
@@ -4257,14 +4273,14 @@ function Le(e) {
 }
 //#endregion
 //#region src/define.ts
-var Re = "0.9.4";
+var Re = "0.9.5";
 function H(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Re, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.4" && Be();
+	n.joeVersion !== "0.9.5" && Be();
 }
 var ze = !1;
 function Be() {

@@ -1,4 +1,4 @@
-import { A as e, C as t, D as n, E as r, O as i, S as a, T as o, _ as s, a as c, b as l, c as u, d, f, g as p, h as m, i as h, j as g, k as _, l as v, m as y, n as ee, o as te, p as ne, r as re, s as b, t as ie, u as ae, v as oe, w as se, x, y as S } from "./tokens-Vt6CX0YG.js";
+import { A as e, C as t, D as n, E as r, O as i, S as a, T as o, _ as s, a as c, b as l, c as u, d, f, g as p, h as m, i as h, j as g, k as _, l as v, m as y, n as ee, o as te, p as ne, r as re, s as b, t as ie, u as ae, v as oe, w as se, x, y as S } from "./tokens-B4JHsIl8.js";
 //#region src/assets.ts
 var ce = import.meta.url.replace(/[^/]*$/, ""), C = (e) => `${ce}${e}`, w = _`<svg
   class="swoosh"
@@ -4574,7 +4574,7 @@ var mt = {
     </section>`;
 	}
 	renderPresence(e, t) {
-		let n = t.climate, r = n?.home ?? [], a = Object.entries(this.found?.arrivals ?? n?.arrivals ?? {}), o = Object.fromEntries(t.config.persons.map((e) => [e.person_entity, e.name])), s = t.config.context.presence_entity ?? null, c = !!s && ["home", "on"].includes(this.hass?.states[s]?.state ?? "");
+		let n = t.climate, r = n?.home ?? [], a = Object.entries(n?.arrivals ?? this.found?.arrivals ?? {}), o = Object.fromEntries(t.config.persons.map((e) => [e.person_entity, e.name])), s = t.config.context.presence_entity ?? null, c = !!s && ["home", "on"].includes(this.hass?.states[s]?.state ?? "");
 		return _`<section class="card" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:home-account"></ha-icon>${e("climate.presence")}</div>
@@ -4586,7 +4586,26 @@ var mt = {
 			name: o[t] ?? this.hass?.states[t]?.attributes.friendly_name ?? t,
 			km: n.km == null ? "–" : y(e.lang, n.km, 1)
 		})}
+          ${n.direction === "towards" && n.minutes != null ? e(n.source ? "climate.way.minutes_route" : "climate.way.minutes_guess", { minutes: n.minutes }) : i}
         </p>`)}
+      ${Object.entries(n?.usual ?? {}).map(([t, n]) => _`<p class="hint">
+          ${e("climate.usual", {
+			name: o[t] ?? this.hass?.states[t]?.attributes.friendly_name ?? t,
+			time: `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`
+		})}
+        </p>`)}
+      <div class="row" data-tipped>
+        <span id="route-eta">${e("climate.route_eta")}</span>
+        <button
+          type="button"
+          class="switch"
+          role="switch"
+          aria-checked=${String(t.config.climate?.route_eta ?? !0)}
+          aria-labelledby="route-eta"
+          @click=${() => M(this, { climate: { route_eta: !(t.config.climate?.route_eta ?? !0) } })}
+        ></button>
+        ${v(e, "climate_route_eta")}
+      </div>
       ${this.found && !this.found.proximity ? _`<p class="hint">
             ${e("climate.no_proximity")}
             <a href=${ht} target="_blank" rel="noreferrer noopener">${e("climate.add_proximity")}</a>

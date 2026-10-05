@@ -469,13 +469,17 @@ export interface ClimateConfig {
   enabled: boolean;
   /** When night is: each room's times, or an entity that is on while people are in bed. */
   night_by?: "time" | "entity";
+  /** The drive home from the routing service instead of an average speed. */
+  route_eta?: boolean;
   night_entity?: string | null;
   rooms: Record<string, ClimateRoomConfig>;
 }
 
 export interface ClimateStatus {
   home: string[];
-  arrivals: Record<string, { km?: number; direction?: string }>;
+  arrivals: Record<string, { km?: number; direction?: string; minutes?: number; source?: string }>;
+  /** Per person entity: the usual homecoming today (minutes after midnight). */
+  usual?: Record<string, number>;
   free_day: boolean;
   rooms: Record<string, { want: string | null; why: string }>;
   live: boolean;

@@ -20,6 +20,16 @@ export const en: Record<Key, string> = {
   "climate.way.towards": "{name} is {km} km away and getting closer.",
   "climate.way.away": "{name} is {km} km away and moving away.",
   "climate.way.other": "{name} is {km} km away.",
+  "climate.way.minutes_route": "About {minutes} minutes' drive left.",
+  "climate.way.minutes_guess": "Estimated about {minutes} minutes.",
+  "climate.usual": "On days like this, {name} usually comes home around {time}.",
+  "climate.route_eta": "Drive time from the routing service",
+  "climate.now.arriving_usual": "Now: the usual homecoming is close – I'm warming up already.",
+  "tip.climate_route_eta.title": "How does Joe know when someone comes home?",
+  "tip.climate_route_eta.text":
+    "Two ways: 1. When someone gets closer (Proximity integration), I ask the routing service from the settings (OpenStreetMap, Waze or Google) how long the drive still takes – with traffic where the service knows it. For that, the person's position, rounded to about 100 m, goes to that service. Switch it off and I assume 40 km/h. 2. I note when you usually come home on working days and days off, and bring the rooms back ahead of that time. Someone merely passing by at a quite different time only counts when getting steadily closer.",
+  "tip.climate_route_eta.hint":
+    "I know the usual time after 4 homecomings on such days, and only if it varies by no more than 45 minutes.",
   "climate.no_proximity":
     "To warm up in time when someone comes home I need the Proximity integration for your persons.",
   "climate.add_proximity": "Set up Proximity",
