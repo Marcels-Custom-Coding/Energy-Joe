@@ -24,6 +24,9 @@ PACKAGE = ROOT / "panel" / "package.json"
 LOCK = ROOT / "panel" / "package-lock.json"
 CHANGELOG = ROOT / "CHANGELOG.md"
 VERSION = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
+# Until Energy Joe is published officially, versions stay in 0.9.x: no 1.0,
+# and no 0.10 that reads like it. Only the owner lifts this when publishing.
+CEILING = (0, 9)
 
 
 def current() -> str:
@@ -69,6 +72,12 @@ def main() -> None:
     if len(sys.argv) != 2:
         raise SystemExit(__doc__)
     version = next_version(current(), sys.argv[1])
+    major, minor, _ = (int(part) for part in version.split("."))
+    if (major, minor) > CEILING:
+        raise SystemExit(
+            f"{version}: before publishing, versions stay at "
+            f"{CEILING[0]}.{CEILING[1]}.x – use patch"
+        )
     _replace_json_version(MANIFEST, version, 1)
     _replace_json_version(PACKAGE, version, 1)
     # The lock file names the panel's version twice: at the top and for "".
