@@ -1,4 +1,4 @@
-import { A as e, C as t, D as n, E as r, O as i, S as a, T as o, _ as s, a as c, b as l, c as u, d, f, g as p, h as m, i as h, j as g, k as _, l as v, m as y, n as ee, o as te, p as ne, r as re, s as b, t as ie, u as ae, v as oe, w as se, x, y as S } from "./tokens-BwhhVl40.js";
+import { A as e, C as t, D as n, E as r, O as i, S as a, T as o, _ as s, a as c, b as l, c as u, d, f, g as p, h as m, i as h, j as g, k as _, l as v, m as y, n as ee, o as te, p as ne, r as re, s as b, t as ie, u as ae, v as oe, w as se, x, y as S } from "./tokens-RSCLH2ZT.js";
 //#region src/assets.ts
 var ce = import.meta.url.replace(/[^/]*$/, ""), le = (e) => `${ce}${e}`, C = _`<svg
   class="swoosh"
@@ -9529,6 +9529,7 @@ var Xt = class extends n {
       .card {
         padding: 22px 22px 24px;
         overflow: hidden;
+        container-type: inline-size;
       }
       .card .display {
         font-size: clamp(30px, 3.6vw, 40px);
@@ -9544,8 +9545,13 @@ var Xt = class extends n {
         /* Inside the card's padding: never cut off at the edge. */
         right: 18px;
         top: 16px;
-        width: 160px;
+        /* Bigger in a wide card, smaller where the card is narrow. */
+        width: clamp(120px, 30cqw, 240px);
         pointer-events: none;
+      }
+      /* The heading row keeps clear of the bigger picture. */
+      .card:has(> joe-pose) > .head {
+        padding-right: clamp(126px, calc(30cqw + 8px), 248px);
       }
       .figure-card .head .eyebrow {
         flex: none;
@@ -9766,7 +9772,10 @@ var Xt = class extends n {
         .card > joe-pose {
           right: 12px;
           top: 12px;
-          width: 112px;
+          width: 128px;
+        }
+        .card:has(> joe-pose) > .head {
+          padding-right: 136px;
         }
         .card .display {
           max-width: 64%;

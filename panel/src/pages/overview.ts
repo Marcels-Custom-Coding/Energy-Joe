@@ -42,6 +42,7 @@ export class JoeOverview extends LitElement {
       .card {
         padding: 22px 22px 24px;
         overflow: hidden;
+        container-type: inline-size;
       }
       .card .display {
         font-size: clamp(30px, 3.6vw, 40px);
@@ -57,8 +58,13 @@ export class JoeOverview extends LitElement {
         /* Inside the card's padding: never cut off at the edge. */
         right: 18px;
         top: 16px;
-        width: 160px;
+        /* Bigger in a wide card, smaller where the card is narrow. */
+        width: clamp(120px, 30cqw, 240px);
         pointer-events: none;
+      }
+      /* The heading row keeps clear of the bigger picture. */
+      .card:has(> joe-pose) > .head {
+        padding-right: clamp(126px, calc(30cqw + 8px), 248px);
       }
       .figure-card .head .eyebrow {
         flex: none;
@@ -279,7 +285,10 @@ export class JoeOverview extends LitElement {
         .card > joe-pose {
           right: 12px;
           top: 12px;
-          width: 112px;
+          width: 128px;
+        }
+        .card:has(> joe-pose) > .head {
+          padding-right: 136px;
         }
         .card .display {
           max-width: 64%;
