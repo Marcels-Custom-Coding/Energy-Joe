@@ -2381,6 +2381,10 @@ var Me = {
 	"devices.action.tonight": "Heute Nacht",
 	"devices.action.edit": "Bearbeiten",
 	"devices.car.no_calendar": "Kein Kalender verbunden",
+	"devices.car.lonely": "Dieses Auto kenne ich aus deinem Energie-Dashboard – laden kann ich es noch nicht. Richte es einmal ein: Wallbox wählen, „Laden nach Bedarf“ ist schon an.",
+	"devices.car.set_up": "Laden einrichten",
+	"tip.devices_lonely_car.title": "Warum steht hier „einrichten“?",
+	"tip.devices_lonely_car.text": "Unter Einstellungen steht das Auto als Verbraucher – so weiß ich, wie viel es zieht. Damit ich es nachts günstig oder nach Bedarf lade, brauche ich noch, wie ich die Wallbox schalte. Das richtest du hier einmal ein; danach steht hier die Karte mit „Laden nach Bedarf“ und dem Kalender.",
 	"devices.car.of_persons": "Kalender von {names}",
 	"devices.car.calendar_ok": "verbunden",
 	"devices.car.calendar_problem": "gerade ein Problem – bitte ansehen",
@@ -4262,6 +4266,10 @@ var Me = {
 	"devices.action.tonight": "Tonight",
 	"devices.action.edit": "Edit",
 	"devices.car.no_calendar": "No calendar connected",
+	"devices.car.lonely": "I know this car from your Energy dashboard – I can't charge it yet. Set it up once: pick the wallbox, “charging by need” is already on.",
+	"devices.car.set_up": "Set up charging",
+	"tip.devices_lonely_car.title": "Why does it say “set up” here?",
+	"tip.devices_lonely_car.text": "In the settings the car is listed as a consumer – so I know how much it draws. To charge it cheaply at night or by need, I still need to know how to switch the wallbox. Set that up here once; then this becomes the card with “charging by need” and the calendar.",
 	"devices.car.of_persons": "calendars of {names}",
 	"devices.car.calendar_ok": "connected",
 	"devices.car.calendar_problem": "a problem right now – please have a look",
@@ -4363,14 +4371,14 @@ function Le(e) {
 }
 //#endregion
 //#region src/define.ts
-var Re = "0.9.8";
+var Re = "0.9.9";
 function H(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Re, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.8" && Be();
+	n.joeVersion !== "0.9.9" && Be();
 }
 var ze = !1;
 function Be() {

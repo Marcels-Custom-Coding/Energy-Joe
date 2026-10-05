@@ -297,7 +297,8 @@ export class JoeDevicesPage extends LitElement {
           : html`<p class="empty">${t("devices.batteries.none")}</p>`}
         <div class="group-label">${t("devices.actions")}</div>
         <div class="grid">
-          ${joe.config.actions.map((action) => this.renderAction(t, joe, action))} ${this.renderAddAction(t)}
+          ${joe.config.actions.map((action) => this.renderAction(t, joe, action))} ${this.renderLonelyCars(t, joe)}
+          ${this.renderAddAction(t)}
         </div>
         ${control ? this.renderLog(t, control) : nothing}
       </div>
@@ -508,6 +509,27 @@ export class JoeDevicesPage extends LitElement {
     }) ?? reason;
   }
 
+  /** Cars Joe knows as consumers (Energy dashboard) without a night action yet. */
+  private renderLonelyCars(t: Translate, joe: JoeState): TemplateResult[] {
+    const linked = new Set(joe.config.actions.map((a) => a.consumer_id).filter(Boolean));
+    return joe.config.consumers
+      .filter((c) => c.kind === "ev" && !linked.has(c.id))
+      .map(
+        (car) => html`<section class="card action" data-tipped>
+          <div class="head">
+            <div class="eyebrow"><ha-icon icon="mdi:car-electric"></ha-icon>${car.name}</div>
+            ${tip(t, "devices_lonely_car")}
+          </div>
+          <p class="now">${t("devices.car.lonely")}</p>
+          <div class="setup">
+            <button type="button" class="btn btn-primary" @click=${() => this.editAction(`new:ev`, "need", car.id)}>
+              ${t("devices.car.set_up")}
+            </button>
+          </div>
+        </section>`,
+      );
+  }
+
   private renderAddAction(t: Translate): TemplateResult {
     return html`<section class="card add" data-tipped>
       <div class="head">
@@ -551,8 +573,8 @@ export class JoeDevicesPage extends LitElement {
     return Boolean(action.need?.enabled || action.need?.soc_entity || /ev|car|auto|wallbox/i.test(action.id + action.name));
   }
 
-  private editAction(id: string, focus?: string): void {
-    this.dispatchEvent(new CustomEvent("joe-edit", { detail: { editor: "action", id, focus }, bubbles: true, composed: true }));
+  private editAction(id: string, focus?: string, consumer?: string): void {
+    this.dispatchEvent(new CustomEvent("joe-edit", { detail: { editor: "action", id, focus, consumer }, bubbles: true, composed: true }));
   }
 
   /** A car's calendar on its card: which one, whether Joe read it lately; one click to change or connect. */

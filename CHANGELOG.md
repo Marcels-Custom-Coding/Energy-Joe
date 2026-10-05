@@ -3,6 +3,10 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.9
+
+- Geräte: Autos aus dem Energie-Dashboard, für die es noch keine Nacht-Aktion gibt, erscheinen jetzt als eigene Karte mit „Laden einrichten“. Das öffnet das Auto vorausgefüllt (Name, Wallbox, Sensoren des Autos) mit „Laden nach Bedarf“ schon an; nach dem Speichern steht dort die Autokarte mit Schalter und Kalender.
+
 ## 0.9.8
 
 - „Laden nach Bedarf“ als Schalter direkt auf der Autokarte unter Geräte. Kennt Joe die Sensoren des Autos schon, schaltet er sofort um; beim ersten Mal öffnet er die Einstellungen des Autos an genau dieser Stelle und trägt ein, was er gefunden hat.

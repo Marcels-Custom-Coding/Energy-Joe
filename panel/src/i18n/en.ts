@@ -2067,6 +2067,12 @@ export const en: Record<Key, string> = {
   "devices.action.tonight": "Tonight",
   "devices.action.edit": "Edit",
   "devices.car.no_calendar": "No calendar connected",
+  "devices.car.lonely":
+    "I know this car from your Energy dashboard – I can't charge it yet. Set it up once: pick the wallbox, “charging by need” is already on.",
+  "devices.car.set_up": "Set up charging",
+  "tip.devices_lonely_car.title": "Why does it say “set up” here?",
+  "tip.devices_lonely_car.text":
+    "In the settings the car is listed as a consumer – so I know how much it draws. To charge it cheaply at night or by need, I still need to know how to switch the wallbox. Set that up here once; then this becomes the card with “charging by need” and the calendar.",
   "devices.car.of_persons": "calendars of {names}",
   "devices.car.calendar_ok": "connected",
   "devices.car.calendar_problem": "a problem right now – please have a look",

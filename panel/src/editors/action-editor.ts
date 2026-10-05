@@ -97,6 +97,8 @@ export class JoeActionEditor extends LitElement {
   @property() actionId = "";
   /** "calendars": opened from the car card to connect a calendar. */
   @property() section = "";
+  /** A car from the Energy dashboard this new action is for. */
+  @property() consumer = "";
 
   @state() private draft?: ActionConfig;
   @state() private saving = false;
@@ -217,7 +219,16 @@ export class JoeActionEditor extends LitElement {
           // The one hot water meter found: its energy moves into the night.
           draft.consumer_id = hotWater[0].id;
         }
+        const car = this.config?.consumers.find((c) => c.id === this.consumer);
+        if (car) {
+          draft.name = car.name;
+          draft.consumer_id = car.id;
+          draft.power_entity = car.power_entity ?? null;
+        }
         this.draft = draft;
+        if (this.section === "need") {
+          this.toggleNeed();
+        }
       } else if (this.existing) {
         this.draft = structuredClone(this.existing);
         if ((this.section === "calendars" || this.section === "need") && !this.draft.need?.enabled) {

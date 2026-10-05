@@ -1,4 +1,4 @@
-import { A as e, C as t, D as n, E as r, O as i, S as a, T as o, _ as s, a as c, b as l, c as u, d, f, g as p, h as m, i as h, j as g, k as _, l as v, m as y, n as ee, o as te, p as ne, r as re, s as b, t as ie, u as ae, v as oe, w as se, x, y as S } from "./tokens-Ddd4iLJu.js";
+import { A as e, C as t, D as n, E as r, O as i, S as a, T as o, _ as s, a as c, b as l, c as u, d, f, g as p, h as m, i as h, j as g, k as _, l as v, m as y, n as ee, o as te, p as ne, r as re, s as b, t as ie, u as ae, v as oe, w as se, x, y as S } from "./tokens-BwhhVl40.js";
 //#region src/assets.ts
 var ce = import.meta.url.replace(/[^/]*$/, ""), le = (e) => `${ce}${e}`, C = _`<svg
   class="swoosh"
@@ -2078,7 +2078,7 @@ function Ge(e, t) {
 }
 var I = class extends n {
 	constructor(...e) {
-		super(...e), this.actionId = "", this.section = "", this.saving = !1, this.problem = "", this.focused = !1;
+		super(...e), this.actionId = "", this.section = "", this.consumer = "", this.saving = !1, this.problem = "", this.focused = !1;
 	}
 	static {
 		this.styles = [l, g`
@@ -2185,7 +2185,9 @@ var I = class extends n {
 				let e = Ge(this.actionId.slice(4), this.t), t = this.discovery?.wallboxes.find((e) => e.is_car);
 				this.actionId === "new:ev" && t && Object.assign(e, this.fromWallbox(t));
 				let n = this.config?.consumers.filter((e) => e.kind === "hot_water") ?? [];
-				this.actionId === "new:hot_water" && n.length === 1 && (e.consumer_id = n[0].id), this.draft = e;
+				this.actionId === "new:hot_water" && n.length === 1 && (e.consumer_id = n[0].id);
+				let r = this.config?.consumers.find((e) => e.id === this.consumer);
+				r && (e.name = r.name, e.consumer_id = r.id, e.power_entity = r.power_entity ?? null), this.draft = e, this.section === "need" && this.toggleNeed();
 			} else this.existing && (this.draft = structuredClone(this.existing), (this.section === "calendars" || this.section === "need") && !this.draft.need?.enabled && this.toggleNeed());
 		}
 	}
@@ -2632,7 +2634,7 @@ var I = class extends n {
 		}));
 	}
 };
-S([r({ attribute: !1 })], I.prototype, "hass", void 0), S([r({ attribute: !1 })], I.prototype, "mailboxes", void 0), S([r({ attribute: !1 })], I.prototype, "accounts", void 0), S([r({ attribute: !1 })], I.prototype, "apps", void 0), S([r({ attribute: !1 })], I.prototype, "t", void 0), S([r({ attribute: !1 })], I.prototype, "config", void 0), S([r({ attribute: !1 })], I.prototype, "discovery", void 0), S([r()], I.prototype, "actionId", void 0), S([r()], I.prototype, "section", void 0), S([o()], I.prototype, "draft", void 0), S([o()], I.prototype, "saving", void 0), S([o()], I.prototype, "problem", void 0), x("joe-action-editor", I);
+S([r({ attribute: !1 })], I.prototype, "hass", void 0), S([r({ attribute: !1 })], I.prototype, "mailboxes", void 0), S([r({ attribute: !1 })], I.prototype, "accounts", void 0), S([r({ attribute: !1 })], I.prototype, "apps", void 0), S([r({ attribute: !1 })], I.prototype, "t", void 0), S([r({ attribute: !1 })], I.prototype, "config", void 0), S([r({ attribute: !1 })], I.prototype, "discovery", void 0), S([r()], I.prototype, "actionId", void 0), S([r()], I.prototype, "section", void 0), S([r()], I.prototype, "consumer", void 0), S([o()], I.prototype, "draft", void 0), S([o()], I.prototype, "saving", void 0), S([o()], I.prototype, "problem", void 0), x("joe-action-editor", I);
 //#endregion
 //#region src/types.ts
 var Ke = [
@@ -5729,7 +5731,8 @@ var Ct = [
               ></joe-battery-automations>` : _`<p class="empty">${e("devices.batteries.none")}</p>`}
         <div class="group-label">${e("devices.actions")}</div>
         <div class="grid">
-          ${t.config.actions.map((n) => this.renderAction(e, t, n))} ${this.renderAddAction(e)}
+          ${t.config.actions.map((n) => this.renderAction(e, t, n))} ${this.renderLonelyCars(e, t)}
+          ${this.renderAddAction(e)}
         </div>
         ${n ? this.renderLog(e, n) : i}
       </div>
@@ -5862,6 +5865,21 @@ var Ct = [
 			temperature: y(e.lang, r.temperature ?? 0, 0)
 		}) ?? s;
 	}
+	renderLonelyCars(e, t) {
+		let n = new Set(t.config.actions.map((e) => e.consumer_id).filter(Boolean));
+		return t.config.consumers.filter((e) => e.kind === "ev" && !n.has(e.id)).map((t) => _`<section class="card action" data-tipped>
+          <div class="head">
+            <div class="eyebrow"><ha-icon icon="mdi:car-electric"></ha-icon>${t.name}</div>
+            ${v(e, "devices_lonely_car")}
+          </div>
+          <p class="now">${e("devices.car.lonely")}</p>
+          <div class="setup">
+            <button type="button" class="btn btn-primary" @click=${() => this.editAction("new:ev", "need", t.id)}>
+              ${e("devices.car.set_up")}
+            </button>
+          </div>
+        </section>`);
+	}
 	renderAddAction(e) {
 		return _`<section class="card add" data-tipped>
       <div class="head">
@@ -5904,12 +5922,13 @@ var Ct = [
 	isCar(e) {
 		return !!(e.need?.enabled || e.need?.soc_entity || /ev|car|auto|wallbox/i.test(e.id + e.name));
 	}
-	editAction(e, t) {
+	editAction(e, t, n) {
 		this.dispatchEvent(new CustomEvent("joe-edit", {
 			detail: {
 				editor: "action",
 				id: e,
-				focus: t
+				focus: t,
+				consumer: n
 			},
 			bubbles: !0,
 			composed: !0
@@ -11683,6 +11702,7 @@ var on = [
           .discovery=${this.discovery}
           actionId=${t.id ?? ""}
           section=${t.focus ?? ""}
+          consumer=${t.consumer ?? ""}
         ></joe-action-editor>`;
 				break;
 			case "consumers": a = e("edit.consumers.label"), o = !0, i = _`<div class="sheet-title">${w(e("edit.consumers.title"))}</div>

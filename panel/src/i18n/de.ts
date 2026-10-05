@@ -2093,6 +2093,12 @@ export const de = {
   "devices.action.tonight": "Heute Nacht",
   "devices.action.edit": "Bearbeiten",
   "devices.car.no_calendar": "Kein Kalender verbunden",
+  "devices.car.lonely":
+    "Dieses Auto kenne ich aus deinem Energie-Dashboard – laden kann ich es noch nicht. Richte es einmal ein: Wallbox wählen, „Laden nach Bedarf“ ist schon an.",
+  "devices.car.set_up": "Laden einrichten",
+  "tip.devices_lonely_car.title": "Warum steht hier „einrichten“?",
+  "tip.devices_lonely_car.text":
+    "Unter Einstellungen steht das Auto als Verbraucher – so weiß ich, wie viel es zieht. Damit ich es nachts günstig oder nach Bedarf lade, brauche ich noch, wie ich die Wallbox schalte. Das richtest du hier einmal ein; danach steht hier die Karte mit „Laden nach Bedarf“ und dem Kalender.",
   "devices.car.of_persons": "Kalender von {names}",
   "devices.car.calendar_ok": "verbunden",
   "devices.car.calendar_problem": "gerade ein Problem – bitte ansehen",
