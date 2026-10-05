@@ -95,6 +95,8 @@ export class JoeActionEditor extends LitElement {
   @property({ attribute: false }) discovery?: Discovery;
   /** An existing action's id, or "new:<template>". */
   @property() actionId = "";
+  /** "calendars": opened from the car card to connect a calendar. */
+  @property() section = "";
 
   @state() private draft?: ActionConfig;
   @state() private saving = false;
@@ -218,9 +220,25 @@ export class JoeActionEditor extends LitElement {
         this.draft = draft;
       } else if (this.existing) {
         this.draft = structuredClone(this.existing);
+        if (this.section === "calendars" && !this.draft.need?.enabled) {
+          // Calendars belong to charging by need: switch it on (until saved, nothing changes).
+          this.toggleNeed();
+        }
       }
     }
   }
+
+  protected updated(): void {
+    if (this.section === "calendars" && !this.focused) {
+      const field = this.shadowRoot?.querySelector("joe-car-calendars");
+      if (field) {
+        this.focused = true;
+        field.scrollIntoView({ block: "center" });
+      }
+    }
+  }
+
+  private focused = false;
 
   private fromWallbox(w: Discovery["wallboxes"][number]): Partial<ActionConfig> {
     const conditions: ActionCondition[] = w.entities?.connected ? [{ entity_id: w.entities.connected, op: "eq", value: true }] : [];

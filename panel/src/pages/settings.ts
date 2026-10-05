@@ -97,6 +97,9 @@ export class JoeSettings extends LitElement {
   @property({ attribute: false }) discovery?: Discovery;
   @property({ attribute: false }) checks: Check[] = [];
 
+  /** A backup file read and waiting for the user's yes. */
+  @state() private backup?: { name: string; when: string; config: Record<string, unknown> };
+  @state() private backupNote?: { ok: boolean; text: string };
   @state() private pro = false;
   /** Notify services with the phone's current name (see energy_joe/notify/targets). */
   @state() private notifyTargets?: { service: string; name: string }[];
@@ -105,6 +108,23 @@ export class JoeSettings extends LitElement {
   static styles = [
     shared,
     css`
+      label.file {
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+      }
+      label.file input {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+      }
+      .confirm {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+      }
       :host {
         display: block;
       }
@@ -370,6 +390,8 @@ export class JoeSettings extends LitElement {
             : nothing}
         </section>
 
+        ${this.renderBackup(t)}
+
         <section class="group">
           <h2>${t("settings.about")}</h2>
           <div class="row"><b>${t("settings.version")}</b><span class="value">${this.info?.version ?? "–"}</span></div>
@@ -378,6 +400,96 @@ export class JoeSettings extends LitElement {
         </section>
       </div>
       ${this.question ? this.renderQuestionSheet(t) : nothing}`;
+  }
+
+  /** Export all settings (with what Joe learned) to a file, or take such a file back in. */
+  private renderBackup(t: Translate): TemplateResult {
+    return html`<section class="group">
+      <h2>${t("settings.backup")}</h2>
+      <div class="row" data-tipped>
+        <div>
+          <div class="name"><b>${t("settings.backup.export")}</b>${tip(t, "backup_export")}</div>
+          <small>${t("settings.backup.export.hint")}</small>
+        </div>
+        <button type="button" class="btn btn-secondary" @click=${() => void this.exportSettings()}>${t("settings.backup.download")}</button>
+      </div>
+      <div class="row" data-tipped>
+        <div>
+          <div class="name"><b>${t("settings.backup.import")}</b>${tip(t, "backup_import")}</div>
+          <small>${t("settings.backup.import.hint")}</small>
+        </div>
+        <label class="btn btn-secondary file">
+          ${t("settings.backup.choose")}
+          <input type="file" accept="application/json,.json" @change=${(ev: Event) => void this.readBackup(ev)} />
+        </label>
+      </div>
+      ${this.backup
+        ? html`<div class="note warn">
+            <ha-icon icon="mdi:alert-outline"></ha-icon>
+            <span>
+              ${t("settings.backup.confirm", { file: this.backup.name, when: this.backup.when })}
+              <span class="confirm">
+                <button type="button" class="btn btn-danger" @click=${() => void this.importSettings()}>${t("settings.backup.replace")}</button>
+                <button type="button" class="btn btn-ghost" @click=${() => (this.backup = undefined)}>${t("common.cancel")}</button>
+              </span>
+            </span>
+          </div>`
+        : nothing}
+      ${this.backupNote
+        ? html`<div class="note ${this.backupNote.ok ? "ok" : "warn"}">
+            <ha-icon icon=${this.backupNote.ok ? "mdi:check" : "mdi:alert-outline"}></ha-icon><span>${this.backupNote.text}</span>
+          </div>`
+        : nothing}
+    </section>`;
+  }
+
+  private async exportSettings(): Promise<void> {
+    const t = this.t!;
+    try {
+      const data = await this.hass!.callWS<Record<string, unknown>>({ type: "energy_joe/config/export" });
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `energy-joe-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      this.backupNote = { ok: true, text: t("settings.backup.exported") };
+    } catch (err) {
+      this.backupNote = { ok: false, text: t("settings.backup.failed", { error: String((err as { message?: string })?.message ?? err) }) };
+    }
+  }
+
+  private async readBackup(ev: Event): Promise<void> {
+    const t = this.t!;
+    const input = ev.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+    this.backupNote = undefined;
+    try {
+      const data = JSON.parse(await file.text()) as { kind?: string; exported?: string; config?: Record<string, unknown> };
+      if (data.kind !== "energy_joe_settings" || !data.config) throw new Error(t("settings.backup.not_ours"));
+      this.backup = {
+        name: file.name,
+        when: data.exported ? new Date(data.exported).toLocaleString(t.lang) : "–",
+        config: data.config,
+      };
+    } catch (err) {
+      this.backupNote = { ok: false, text: t("settings.backup.failed", { error: String((err as { message?: string })?.message ?? err) }) };
+    }
+  }
+
+  private async importSettings(): Promise<void> {
+    const t = this.t!;
+    const backup = this.backup;
+    this.backup = undefined;
+    if (!backup) return;
+    try {
+      await this.hass!.callWS({ type: "energy_joe/config/import", config: backup.config });
+      this.backupNote = { ok: true, text: t("settings.backup.imported") };
+    } catch (err) {
+      this.backupNote = { ok: false, text: t("settings.backup.failed", { error: String((err as { message?: string })?.message ?? err) }) };
+    }
   }
 
   /** How Joe works out the distance to an appointment's place (for cars charged by need). */

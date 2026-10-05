@@ -67,3 +67,36 @@ async def test_create_the_presence_helper(
     assert hass.states.get(entity_id).state == "on"
     runtime = hass.data["energy_joe"]
     assert runtime.config["context"]["presence_entity"] == entity_id
+
+
+async def test_export_and_import_the_settings(
+    ready_hass: HomeAssistant, hass_ws_client: WebSocketGenerator
+) -> None:
+    """An export taken back in restores the settings; a broken one changes nothing."""
+    hass = ready_hass
+    entry = MockConfigEntry(domain=DOMAIN, data={})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    runtime = hass.data["energy_joe"]
+    runtime.async_update_config({"rules": {"reserve_soc": 25}}, "user")
+
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id({"type": f"{DOMAIN}/config/export"})
+    exported = (await client.receive_json())["result"]
+    assert exported["kind"] == "energy_joe_settings"
+    assert exported["config"]["rules"]["reserve_soc"] == 25
+
+    runtime.async_update_config({"rules": {"reserve_soc": 40}}, "user")
+    await client.send_json_auto_id(
+        {"type": f"{DOMAIN}/config/import", "config": exported["config"]}
+    )
+    assert (await client.receive_json())["success"]
+    assert runtime.config["rules"]["reserve_soc"] == 25
+
+    broken = {**exported["config"], "rules": {"reserve_soc": "viel"}}
+    await client.send_json_auto_id(
+        {"type": f"{DOMAIN}/config/import", "config": broken}
+    )
+    msg = await client.receive_json()
+    assert not msg["success"] and msg["error"]["code"] == "invalid_settings"
+    assert runtime.config["rules"]["reserve_soc"] == 25

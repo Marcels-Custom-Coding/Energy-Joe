@@ -58,6 +58,8 @@ def async_register(hass: HomeAssistant) -> None:
     """Register all websocket commands."""
     websocket_api.async_register_command(hass, ws_info)
     websocket_api.async_register_command(hass, ws_presence_create)
+    websocket_api.async_register_command(hass, ws_config_export)
+    websocket_api.async_register_command(hass, ws_config_import)
     websocket_api.async_register_command(hass, ws_places_set)
     websocket_api.async_register_command(hass, ws_subscribe)
     websocket_api.async_register_command(hass, ws_set_mode)
@@ -126,6 +128,54 @@ async def ws_presence_create(
         return
     runtime.async_update_config({"context": {"presence_entity": entity_id}}, "user")
     connection.send_result(msg["id"], {"entity_id": entity_id})
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/config/export"})
+@websocket_api.require_admin
+@callback
+def ws_config_export(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Everything Joe is set to and has learned, to keep or move elsewhere.
+
+    Passwords and sign-ins are not part of it (they are stored apart).
+    """
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    connection.send_result(
+        msg["id"],
+        {
+            "kind": "energy_joe_settings",
+            "exported": dt_util.now().isoformat(timespec="seconds"),
+            "config": runtime.config,
+        },
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/config/import",
+        vol.Required("config"): dict,
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_config_import(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Replace the whole configuration with an exported one (checked first)."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    try:
+        runtime.async_replace_config(msg["config"])
+    except (vol.Invalid, KeyError, TypeError, ValueError) as err:
+        connection.send_error(msg["id"], "invalid_settings", str(err))
+        return
+    connection.send_result(msg["id"], {"ok": True})
 
 
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/info"})

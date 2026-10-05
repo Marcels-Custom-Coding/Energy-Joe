@@ -3,6 +3,12 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.7
+
+- Autokarte unter Geräte: zeigt, welcher Kalender verbunden ist (auch die Kalender der Personen, die für das Auto zählen) und wann Joe ihn zuletzt gelesen hat. „Kalender verbinden“ bzw. „Ändern“ öffnet die Einstellungen des Autos direkt beim Kalender.
+- Klima → Messgeräte: nur noch für Geräte, die selbst Strom brauchen (Klimaanlagen) – Heizkörperthermostate fallen weg. Statt der langen Auswahlliste gibt es ein kleines Suchfeld (Name, Raum oder Shelly). Der ganze Abschnitt ist eingeklappt und zeigt oben, wie viele gekoppelt sind.
+- Einstellungen → Sichern: alle Einstellungen samt Gelerntem als Datei exportieren und wieder importieren. Die Datei wird vor dem Import geprüft; Passwörter und Anmeldungen von Postfächern sind nicht enthalten.
+
 ## 0.9.6
 
 - Gastmodus: Im Haushalt legt Joe auf Wunsch einen Schalter „Gastmodus“ (normal aus), einen Geräte-Tracker „Gast“ und eine Automation an, die den Tracker dem Schalter folgen lässt (an = home, aus = not_home). Der Tracker gehört in deine Anwesenheitsgruppe – wie eine Person –, so bleibt die Gruppe bei „home“/„not_home“ und deine Automationen laufen weiter. Alles sind normale Teile von Home Assistant und funktionieren auch ohne Joe.

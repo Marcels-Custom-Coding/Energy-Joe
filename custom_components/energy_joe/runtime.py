@@ -417,6 +417,18 @@ class JoeRuntime:
             self.climate.async_start()
 
     @callback
+    def async_replace_config(self, data: dict[str, Any]) -> None:
+        """Take a whole configuration (an imported backup; raises vol.Invalid)."""
+        self._config = model.prefer_learned(model.migrate(data))
+        self.accounts.async_apply()
+        self._changed(config=True)
+        self._update_observer()
+        self._check_control()
+        if self._started:
+            self.inbox.async_apply()
+            self.climate.async_start()
+
+    @callback
     def async_adopt(
         self, proposal: dict[str, Any], withdrawn: list[str] | None = None
     ) -> None:

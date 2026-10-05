@@ -67,7 +67,7 @@ export class EnergyJoePanel extends LitElement {
   @state() private discoveryFailed = false;
   @state() private checks: Check[] = [];
   @state() private picker?: PickEvent;
-  @state() private editor?: { editor: string; id?: string };
+  @state() private editor?: { editor: string; id?: string; focus?: string };
 
   private unsubscribe?: Promise<() => Promise<void>>;
   private infoRequested = false;
@@ -81,7 +81,7 @@ export class EnergyJoePanel extends LitElement {
       this.picker = (ev as CustomEvent<PickEvent>).detail;
     });
     this.addEventListener("joe-edit", (ev) => {
-      this.editor = (ev as CustomEvent<{ editor: string; id?: string }>).detail;
+      this.editor = (ev as CustomEvent<{ editor: string; id?: string; focus?: string }>).detail;
     });
   }
 
@@ -467,6 +467,7 @@ export class EnergyJoePanel extends LitElement {
           .config=${config}
           .discovery=${this.discovery}
           actionId=${editor.id ?? ""}
+          section=${editor.focus ?? ""}
         ></joe-action-editor>`;
         break;
       case "consumers":

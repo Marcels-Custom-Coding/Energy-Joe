@@ -63,6 +63,11 @@ export class JoeClimatePage extends LitElement {
 
   @state() private found?: Devices;
   @state() private failed = false;
+  /** The meters section is folded by default. */
+  @state() private metersOpen = false;
+  /** The air conditioner whose meter is being searched, and the search text. */
+  @state() private picking?: string;
+  @state() private query = "";
 
   static styles = [
     shared,
@@ -158,6 +163,82 @@ export class JoeClimatePage extends LitElement {
         font-size: 12px;
         color: var(--joe-ink-2);
         overflow-wrap: anywhere;
+      }
+      .fold {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        min-width: 0;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+        text-align: left;
+      }
+      .meter-pick {
+        display: grid;
+        gap: 6px;
+        min-width: 0;
+      }
+      .picked {
+        display: grid;
+        min-width: 0;
+      }
+      .picked b {
+        font-weight: 600;
+        overflow-wrap: anywhere;
+      }
+      .picked small,
+      .hits small {
+        color: var(--joe-muted);
+        font-size: 12.5px;
+      }
+      .via::before {
+        content: "↳ ";
+        color: var(--joe-amber);
+        font-weight: 800;
+      }
+      .hits {
+        display: grid;
+        gap: 2px;
+        max-height: 300px;
+        overflow-y: auto;
+      }
+      .hit {
+        display: grid;
+        text-align: left;
+        padding: 6px 8px;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--joe-ink);
+        font: inherit;
+        cursor: pointer;
+      }
+      .hit:hover,
+      .hit:focus-visible {
+        background: var(--joe-surface-2);
+      }
+      .hit:active {
+        background: var(--joe-line);
+      }
+      .hit b {
+        font-weight: 600;
+      }
+      .hit-actions {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 4px;
+      }
+      .line .state {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
       }
       .line {
         display: grid;
@@ -470,64 +551,141 @@ export class JoeClimatePage extends LitElement {
   }
 
   /** One line per climate device and the device that measures it; several may share one. */
-  private renderMeters(t: Translate, joe: JoeState, devices: ClimateDevice[]): TemplateResult {
+  private renderMeters(t: Translate, joe: JoeState, all: ClimateDevice[]): TemplateResult {
     const meters = this.found?.meters ?? [];
     const rooms = joe.config.climate?.rooms ?? {};
-    const groups = [...new Set(meters.map((m) => m.via ?? ""))];
+    // Only devices that use power themselves: air conditioners, or what has a meter already.
+    const devices = all.filter((d) => {
+      const meter = rooms[d.entity_id]?.meter;
+      const own = this.found?.suggested?.[d.entity_id]?.device_id;
+      return (
+        d.hvac_modes.some((mode) => ["cool", "dry", "fan_only", "heat_cool"].includes(mode)) ||
+        (meter && meter !== "none") ||
+        (own != null && own === d.device_id)
+      );
+    });
+    if (!devices.length) return html``;
+    const linked = devices.filter((d) => {
+      const meter = rooms[d.entity_id]?.meter;
+      return meter && meter !== "none";
+    }).length;
     return html`<section class="card" data-tipped>
       <div class="head">
-        <div class="eyebrow"><ha-icon icon="mdi:meter-electric-outline"></ha-icon>${t("climate.meters")}</div>
+        <button type="button" class="fold" aria-expanded=${String(this.metersOpen)} @click=${() => (this.metersOpen = !this.metersOpen)}>
+          <ha-icon icon=${this.metersOpen ? "mdi:chevron-down" : "mdi:chevron-right"}></ha-icon>
+          <span class="eyebrow"><ha-icon icon="mdi:meter-electric-outline"></ha-icon>${t("climate.meters")}</span>
+          <span class="chip">${t("climate.meters.count", { linked, all: devices.length })}</span>
+        </button>
         ${tip(t, "climate_meter")}
       </div>
-      <p class="hint">${t("climate.meters.say")}</p>
-      ${!meters.length ? html`<p class="hint">${t("climate.meter.no_meters")}</p>` : nothing}
-      ${devices.map((device) => {
-        const meter = rooms[device.entity_id]?.meter ?? null;
-        const chosen = meter && meter !== "none" ? meter : null;
-        const suggested = meter == null ? this.found?.suggested?.[device.entity_id] : undefined;
-        const shown = chosen ?? suggested;
-        const sharing = chosen
-          ? devices.filter((d) => d.entity_id !== device.entity_id && this.sameMeter(rooms[d.entity_id]?.meter, chosen))
-          : [];
-        const power = chosen?.power ? this.hass?.states[chosen.power] : undefined;
-        const value = shown ? this.key(shown) : meter === "none" ? "none" : "";
-        return html`<div class="line">
-          <div class="dev">
-            <b title=${device.entity_id}>${device.name}</b><small>${device.area ?? t("climate.no_area")}</small>
-            <details class="ent">
-              <summary>${t("climate.entities")}</summary>
-              <code>${device.entity_id}</code>
-              ${chosen?.power ? html`<code>${chosen.power}</code>` : nothing}
-              ${chosen?.energy ? html`<code>${chosen.energy}</code>` : nothing}
-            </details>
-          </div>
-          <select class="input" aria-label=${t("climate.meter.pick", { name: device.name })} @change=${(ev: Event) => this.pickMeter(device, (ev.target as HTMLSelectElement).value)}>
-            ${!shown && meter !== "none" ? html`<option value="" selected disabled>${t("climate.meter.choose")}</option>` : nothing}
-            ${chosen && !this.option(chosen) ? html`<option value=${value} selected>${chosen.power ?? chosen.energy ?? chosen.device_id}</option>` : nothing}
-            ${groups.map(
-              (via) => html`<optgroup label=${via || t("climate.meter.other_devices")}>
-                ${meters.filter((m) => (m.via ?? "") === via).map(
-                  (m) => html`<option value=${this.key(m)} ?selected=${this.key(m) === value}>
-                    ${this.meterLabel(t, m)}${suggested && this.key(m) === value ? ` (${t("climate.meter.suggested")})` : ""}
-                  </option>`,
-                )}
-              </optgroup>`,
-            )}
-            <option value="none" ?selected=${value === "none"}>${t("climate.meter.none_option")}</option>
-          </select>
-          <div class="state">
-            ${chosen
-              ? html`<span class="chip ok">${power ? this.reading(t, power) : t("climate.meter.linked")}</span>`
-              : suggested
-                ? html`<button type="button" class="btn btn-secondary" @click=${() => this.save(device, { meter: this.meterOf(suggested) })}>
-                    ${t("climate.meter.confirm")}
-                  </button>`
-                : html`<span class="chip">${t(meter === "none" ? "climate.meter.without" : "climate.meter.open")}</span>`}
-          </div>
-          ${sharing.length ? html`<p class="hint shared">${t("climate.meter.shared", { names: sharing.map((d) => d.name).join(", ") })}</p>` : nothing}
-        </div>`;
-      })}
+      ${this.metersOpen
+        ? html`<p class="hint">${t("climate.meters.say")}</p>
+            ${!meters.length ? html`<p class="hint">${t("climate.meter.no_meters")}</p>` : nothing}
+            ${devices.map((device) => this.meterLine(t, device, devices, rooms))}`
+        : nothing}
     </section>`;
+  }
+
+  /** One air conditioner: its meter (or Joe's suggestion), and a small search to pick another. */
+  private meterLine(
+    t: Translate,
+    device: ClimateDevice,
+    devices: ClimateDevice[],
+    rooms: Record<string, ClimateRoomConfig>,
+  ): TemplateResult {
+    const meter = rooms[device.entity_id]?.meter ?? null;
+    const chosen = meter && meter !== "none" ? meter : null;
+    const suggested = meter == null ? this.found?.suggested?.[device.entity_id] : undefined;
+    const sharing = chosen
+      ? devices.filter((d) => d.entity_id !== device.entity_id && this.sameMeter(rooms[d.entity_id]?.meter, chosen))
+      : [];
+    const power = chosen?.power ? this.hass?.states[chosen.power] : undefined;
+    const shown = chosen ? (this.option(chosen) ?? null) : (suggested ?? null);
+    const picking = this.picking === device.entity_id;
+    return html`<div class="line">
+      <div class="dev">
+        <b title=${device.entity_id}>${device.name}</b><small>${device.area ?? t("climate.no_area")}</small>
+        <details class="ent">
+          <summary>${t("climate.entities")}</summary>
+          <code>${device.entity_id}</code>
+          ${chosen?.power ? html`<code>${chosen.power}</code>` : nothing}
+          ${chosen?.energy ? html`<code>${chosen.energy}</code>` : nothing}
+        </details>
+      </div>
+      <div class="meter-pick">
+        ${picking
+          ? this.meterSearch(t, device)
+          : html`<span class="picked">
+              ${shown
+                ? html`<b>${shown.name ?? shown.device_id}${shown.sensor ? ` · ${shown.sensor}` : ""}</b>
+                    ${shown.via ? html`<small class="via">${shown.via}</small>` : nothing}`
+                : chosen
+                  ? html`<b>${chosen.power ?? chosen.energy ?? chosen.device_id}</b>`
+                  : html`<small>${t(meter === "none" ? "climate.meter.without_long" : "climate.meter.open_long")}</small>`}
+            </span>`}
+      </div>
+      <div class="state">
+        ${picking
+          ? nothing
+          : chosen
+            ? html`<span class="chip ok">${power ? this.reading(t, power) : t("climate.meter.linked")}</span>
+                <button type="button" class="mini-btn" @click=${() => this.startPicking(device)}>${t("climate.meter.change")}</button>`
+            : suggested
+              ? html`<button type="button" class="btn btn-secondary" @click=${() => this.save(device, { meter: this.meterOf(suggested) })}>
+                    ${t("climate.meter.confirm")}
+                  </button>
+                  <button type="button" class="mini-btn" @click=${() => this.startPicking(device)}>${t("climate.meter.other_short")}</button>`
+              : html`<button type="button" class="mini-btn" @click=${() => this.startPicking(device)}>${t("climate.meter.search")}</button>`}
+      </div>
+      ${sharing.length ? html`<p class="hint shared">${t("climate.meter.shared", { names: sharing.map((d) => d.name).join(", ") })}</p>` : nothing}
+    </div>`;
+  }
+
+  private startPicking(device: ClimateDevice): void {
+    this.picking = device.entity_id;
+    this.query = "";
+    void this.updateComplete.then(() => this.shadowRoot?.querySelector<HTMLInputElement>(".meter-pick input")?.focus());
+  }
+
+  /** A small search over all devices with a power or energy sensor. */
+  private meterSearch(t: Translate, device: ClimateDevice): TemplateResult {
+    const words = this.query.toLowerCase().split(/\s+/).filter(Boolean);
+    const hits = (this.found?.meters ?? [])
+      .filter((m) => {
+        const text = [m.name, m.sensor, m.via, m.area, m.power, m.energy].join(" ").toLowerCase();
+        return words.every((w) => text.includes(w));
+      })
+      .slice(0, 8);
+    return html`<input
+        class="input"
+        type="search"
+        placeholder=${t("climate.meter.search_placeholder")}
+        aria-label=${t("climate.meter.pick", { name: device.name })}
+        .value=${this.query}
+        @input=${(ev: Event) => (this.query = (ev.target as HTMLInputElement).value)}
+        @keydown=${(ev: KeyboardEvent) => {
+          if (ev.key === "Escape") this.picking = undefined;
+          if (ev.key === "Enter" && hits[0]) this.pickMeter(device, this.key(hits[0]));
+        }}
+      />
+      <div class="hits" role="listbox" aria-label=${t("climate.meter.pick", { name: device.name })}>
+        ${hits.map(
+          (m) => html`<button type="button" role="option" class="hit" @click=${() => this.pickMeter(device, this.key(m))}>
+            <b>${m.name ?? m.device_id}${m.sensor ? ` · ${m.sensor}` : ""}</b>
+            <small>${[m.via, m.area, m.power ? this.readingOf(t, m.power) : ""].filter(Boolean).join(" · ")}</small>
+          </button>`,
+        )}
+        ${!hits.length ? html`<small class="none">${t("climate.meter.no_hits")}</small>` : nothing}
+        <div class="hit-actions">
+          <button type="button" class="mini-btn" @click=${() => this.pickMeter(device, "none")}>${t("climate.meter.none_option")}</button>
+          <button type="button" class="mini-btn quiet" @click=${() => (this.picking = undefined)}>${t("climate.meter.cancel")}</button>
+        </div>
+      </div>`;
+  }
+
+  private readingOf(t: Translate, entity: string): string {
+    const state = this.hass?.states[entity];
+    return state ? this.reading(t, state) : "";
   }
 
   private key(meter: ClimateMeter): string {
@@ -546,12 +704,6 @@ export class JoeClimatePage extends LitElement {
     return !!meter && meter !== "none" && this.key(meter) === this.key(other);
   }
 
-  private meterLabel(t: Translate, meter: MeterOption): string {
-    const power = meter.power ? this.hass?.states[meter.power] : undefined;
-    const name = `${meter.name ?? meter.device_id}${meter.sensor ? ` · ${meter.sensor}` : ""}`;
-    return power ? `${name} · ${this.reading(t, power)}` : name || t("climate.meter.choose");
-  }
-
   /** A sensor's value with its unit, numbers in the user's language. */
   private reading(t: Translate, sensor: { state: string; attributes: Record<string, unknown> }): string {
     const value = Number(sensor.state);
@@ -560,6 +712,7 @@ export class JoeClimatePage extends LitElement {
   }
 
   private pickMeter(device: ClimateDevice, value: string): void {
+    this.picking = undefined;
     if (value === "none") {
       this.save(device, { meter: "none" });
       return;

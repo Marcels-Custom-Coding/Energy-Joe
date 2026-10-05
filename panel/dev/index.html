@@ -461,6 +461,12 @@
               };
               push();
               return state.mailbox[msg.car];
+            case "energy_joe/config/export":
+              return { kind: "energy_joe_settings", exported: stamp(), config: structuredClone(state.config) };
+            case "energy_joe/config/import":
+              state.config = structuredClone(msg.config);
+              push();
+              return { ok: true };
             case "input_boolean/create": {
               const id = "gastmodus";
               hass.states[`input_boolean.${id}`] = { entity_id: `input_boolean.${id}`, state: "off", attributes: { friendly_name: msg.name } };

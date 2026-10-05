@@ -43,6 +43,28 @@ export class JoeDevicesPage extends LitElement {
   static styles = [
     shared,
     css`
+      .car-cal {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 10px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        background: var(--joe-surface-2);
+      }
+      .car-cal .grow {
+        flex: 1;
+        min-width: 0;
+        display: grid;
+      }
+      .car-cal b {
+        font-weight: 600;
+        overflow-wrap: anywhere;
+      }
+      .car-cal small {
+        color: var(--joe-muted);
+        font-size: 12.5px;
+      }
       :host {
         display: block;
       }
@@ -377,6 +399,7 @@ export class JoeDevicesPage extends LitElement {
         ${action.enabled ? nothing : html`<span class="chip">${t("devices.action.off")}</span>`}
       </div>
       <p class="now">${this.actionText(t, joe, action, planned, live)}</p>
+      ${action.kind === "switch" && this.isCar(action) ? this.renderCarCalendar(t, joe, action) : nothing}
       ${planned?.need
         ? html`<joe-car-need .hass=${this.hass} .t=${t} .action=${planned} .roundTrip=${action.need?.round_trip ?? true}></joe-car-need>`
         : nothing}
@@ -481,8 +504,60 @@ export class JoeDevicesPage extends LitElement {
     }
   }
 
-  private editAction(id: string): void {
-    this.dispatchEvent(new CustomEvent("joe-edit", { detail: { editor: "action", id }, bubbles: true, composed: true }));
+  private isCar(action: ActionConfig): boolean {
+    return Boolean(action.need?.enabled || action.need?.soc_entity || /ev|car|auto|wallbox/i.test(action.id + action.name));
+  }
+
+  private editAction(id: string, focus?: string): void {
+    this.dispatchEvent(new CustomEvent("joe-edit", { detail: { editor: "action", id, focus }, bubbles: true, composed: true }));
+  }
+
+  /** A car's calendar on its card: which one, whether Joe read it lately; one click to change or connect. */
+  private renderCarCalendar(t: Translate, joe: JoeState, action: ActionConfig): TemplateResult {
+    const need = action.need;
+    const source = need?.enabled ? (need.source ?? "ha") : null;
+    let name = "";
+    let state: "ok" | "warn" | "none" = "none";
+    let when: string | null = null;
+    // Charging by need also reads the calendars of the persons chosen for the car.
+    const persons = need?.enabled
+      ? joe.config.persons.filter((p) => p.calendars.length && (need.persons == null || need.persons.includes(p.id)))
+      : [];
+    if (source === "ha" && (need?.calendars?.length || persons.length)) {
+      name = [
+        ...(need?.calendars ?? []).map((c) => entityName(this.hass!, c)),
+        ...(persons.length ? [t("devices.car.of_persons", { names: persons.map((p) => p.name).join(", ") })] : []),
+      ].join(" · ");
+      state = "ok";
+    } else if (source === "mailbox" && need?.mailbox?.address) {
+      const status = joe.mailbox?.[action.id];
+      name = need.mailbox.address;
+      state = status?.state === "ok" ? "ok" : "warn";
+      when = status?.checked ?? null;
+    } else if (source === "account" && need?.account?.address) {
+      const status = joe.accounts?.[action.id];
+      name = need.account.address;
+      state = status?.state === "ok" ? "ok" : "warn";
+      when = status?.checked ?? null;
+    }
+    return html`<div class="car-cal" data-tipped>
+      <ha-icon icon="mdi:calendar-month-outline"></ha-icon>
+      <span class="grow">
+        ${state === "none"
+          ? html`<b>${t("devices.car.no_calendar")}</b>`
+          : html`<b>${name}</b>
+              <small>
+                ${t(state === "ok" ? "devices.car.calendar_ok" : "devices.car.calendar_problem")}
+                ${when ? t("devices.car.checked", {
+                      when: new Date(when).toLocaleString(t.lang, { weekday: "short", hour: "2-digit", minute: "2-digit" }),
+                    }) : nothing}
+              </small>`}
+      </span>
+      <button type="button" class="mini-btn ${state === "none" ? "go" : ""}" @click=${() => this.editAction(action.id, "calendars")}>
+        ${t(state === "none" ? "devices.car.connect" : "devices.car.change")}
+      </button>
+      ${tip(t, "car_calendar_card")}
+    </div>`;
   }
 
   /** Joe found levers that may steer a battery he only watches. */
