@@ -274,7 +274,8 @@ export class JoeClimatePage extends LitElement {
     const home = status?.home ?? [];
     const arrivals = Object.entries(this.found?.arrivals ?? status?.arrivals ?? {});
     const names = Object.fromEntries(joe.config.persons.map((p) => [p.person_entity, p.name]));
-    const extra = joe.config.climate?.home_entities ?? [];
+    const presence = joe.config.context.presence_entity ?? null;
+    const presenceOn = !!presence && ["home", "on"].includes(this.hass?.states[presence]?.state ?? "");
     return html`<section class="card" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:home-account"></ha-icon>${t("climate.presence")}</div>
@@ -297,36 +298,22 @@ export class JoeClimatePage extends LitElement {
         : nothing}
       ${status?.free_day ? html`<p class="hint">${t("climate.free_day")}</p>` : nothing}
       <div class="row" data-tipped>
-        <span>${t("climate.home_entities")}</span>
-        <button type="button" class="btn btn-secondary" @click=${() => void this.pickHome()}>
-          ${t(extra.length ? "climate.home_entities.change" : "climate.home_entities.add")}
+        ${presence
+          ? html`<span>${t("climate.presence_from")}</span>
+              <span class="chip ${presenceOn ? "ok" : ""}" title=${presence}>
+                ${this.hass?.states[presence]?.attributes.friendly_name ?? presence}
+              </span>`
+          : html`<span>${t("climate.presence_missing")}</span>`}
+        <button type="button" class="btn btn-secondary" @click=${() => this.editHousehold()}>
+          ${t(presence ? "climate.presence_change" : "climate.presence_create")}
         </button>
-        ${tip(t, "climate_home_entities")}
+        ${tip(t, "climate_presence_entity")}
       </div>
-      ${extra.map((entity) => {
-        const live = this.hass?.states[entity];
-        const on = !!live && ["home", "on", "true", "occupied", "detected"].includes(live.state);
-        return html`<div class="row chips">
-          <span class="chip ${on ? "ok" : ""}" title=${entity}>${live?.attributes.friendly_name ?? entity}</span>
-          <span class="hint">${t(on ? "climate.home_entities.on" : "climate.home_entities.off")}</span>
-        </div>`;
-      })}
     </section>`;
   }
 
-  private async pickHome(): Promise<void> {
-    const t = this.t;
-    if (!t) return;
-    const picked = await pickEntity(this, {
-      heading: t("pick.home_entities.title"),
-      tip: "pick_home_entities",
-      filter: "presence",
-      multiple: true,
-      selected: this.state?.config.climate?.home_entities ?? [],
-    });
-    if (picked) {
-      void saveConfig(this, { climate: { home_entities: picked.selected } });
-    }
+  private editHousehold(): void {
+    this.dispatchEvent(new CustomEvent("joe-edit", { detail: { editor: "household" }, bubbles: true, composed: true }));
   }
 
   /** When night is: fixed times per room, or an entity that says people are in bed. */

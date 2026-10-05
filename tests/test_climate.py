@@ -199,19 +199,21 @@ async def test_night_from_an_entity(hass: HomeAssistant) -> None:
     assert joe._night(room, datetime(2026, 1, 11, 1, 0, tzinfo=zone), ROOM)
 
 
-async def test_guest_mode_counts_as_home(hass: HomeAssistant) -> None:
-    """Nobody tracked is home, but the babysitter's helper is on: rooms stay warm."""
+async def test_the_presence_entity_alone_decides(hass: HomeAssistant) -> None:
+    """Nobody tracked is home, but the helper (guest switch inside) is on."""
     install(hass)
     cfg = config()
-    cfg["climate"]["home_entities"] = ["input_boolean.gastmodus"]
+    cfg["context"]["presence_entity"] = "binary_sensor.jemand_zu_hause"
     joe = ClimateController(hass, lambda: cfg, lambda: "live", lambda: None)
     hass.states.async_set("person.marcel", "not_home")
     hass.states.async_set(
-        "input_boolean.gastmodus", "on", {"friendly_name": "Gastmodus"}
+        "binary_sensor.jemand_zu_hause", "on", {"friendly_name": "Jemand zu Hause"}
     )
     await joe.async_check()
     assert hass.states.get(ROOM).attributes["temperature"] == 21.0
-    assert joe.status["home"] == ["Gastmodus"]
-    hass.states.async_set("input_boolean.gastmodus", "off")
+    assert joe.status["home"] == ["Jemand zu Hause"]
+    # The person says home, the helper says nobody: the helper counts.
+    hass.states.async_set("person.marcel", "home")
+    hass.states.async_set("binary_sensor.jemand_zu_hause", "off")
     await joe.async_check()
     assert hass.states.get(ROOM).attributes["temperature"] < 21.0

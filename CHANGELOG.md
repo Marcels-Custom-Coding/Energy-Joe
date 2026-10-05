@@ -3,6 +3,11 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.3
+
+- Anwesenheit aus einem einzigen Helfer: Ob jemand zu Hause ist, entscheidet Joe nur noch über eine Entität, z. B. „Jemand zu Hause“. Im Haushalt (auch bei der Einrichtung) schlägt Joe vor, ihn anzulegen: du wählst die Personen, auf Wunsch kommt ein Gastmodus-Schalter dazu. Beides sind normale Helfer in Home Assistant (Template-Binärsensor und Schalter) und funktionieren auch ohne Joe. Eine eigene, vorhandene Gruppe kannst du stattdessen wählen.
+- Die Liste „Gilt auch als zu Hause“ aus 0.9.2 entfällt dafür. Ohne Helfer schaut Joe wie bisher auf eure Personen.
+
 ## 0.9.2
 
 - Klima → „Wer ist da?“: „Gilt auch als zu Hause“. Wähle zusätzlich z. B. einen Gastmodus-Helfer oder deine Gruppe „Jemand zu Hause“. Ist eine davon „an“ oder „zu Hause“, verhält sich Joe so, als wäre jemand daheim – für den Babysitter oder Kinder ohne getracktes Handy.

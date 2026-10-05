@@ -470,8 +470,6 @@ export interface ClimateConfig {
   /** When night is: each room's times, or an entity that is on while people are in bed. */
   night_by?: "time" | "entity";
   night_entity?: string | null;
-  /** Also "someone is home" while one of these is on or home (guest mode, a group). */
-  home_entities?: string[];
   rooms: Record<string, ClimateRoomConfig>;
 }
 
@@ -560,7 +558,7 @@ export interface JoeConfig {
   batteries: BatteryConfig[];
   tariff: TariffConfig;
   forecast: ForecastConfig;
-  context: { weather_entity: string | null; holiday_entity: string | null };
+  context: { weather_entity: string | null; holiday_entity: string | null; presence_entity?: string | null };
   persons: PersonConfig[];
   consumers: ConsumerConfig[];
   actions: ActionConfig[];

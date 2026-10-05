@@ -48,7 +48,7 @@ REACHED_K = 0.3
 LOG_SIZE = 50
 
 STATES = ("away", "free_day", "night")
-# States of an extra presence entity that mean "someone is home".
+# States of the presence entity that mean "someone is home".
 HOME_STATES = ("home", "on", "true", "occupied", "detected")
 # States of a night entity that mean "people are in bed".
 NIGHT_STATES = ("on", "true", "sleeping", "asleep", "in_bed")
@@ -138,7 +138,8 @@ class ClimateController:
         ]
         if night := self._night_entity():
             watched.append(night)
-        watched.extend((self._config().get("climate") or {}).get("home_entities") or [])
+        if presence := self._config()["context"].get("presence_entity"):
+            watched.append(presence)
         if watched:
             self._unsubs.append(
                 async_track_state_change_event(self._hass, watched, self._on_change)
@@ -162,20 +163,27 @@ class ClimateController:
     # --- what each room should do ------------------------------------------------
 
     def _home(self) -> list[str]:
-        """Who is home: the persons, and the extra entities (guest mode ...)."""
+        """Who is home (empty: nobody).
+
+        With a presence entity (a helper of the persons and a guest switch)
+        only it decides; the names are those of the persons at home, else its
+        own (a guest). Without one, the persons themselves.
+        """
         config = self._config()
-        found = [
+        persons = [
             p["name"]
             for p in config["persons"]
             if p.get("person_entity")
             and (s := self._hass.states.get(p["person_entity"]))
             and s.state == "home"
         ]
-        for entity_id in (config.get("climate") or {}).get("home_entities") or []:
-            state = self._hass.states.get(entity_id)
-            if state is not None and state.state in HOME_STATES:
-                found.append(state.name)
-        return found
+        entity_id = config["context"].get("presence_entity")
+        if not entity_id:
+            return persons
+        state = self._hass.states.get(entity_id)
+        if state is None or state.state not in HOME_STATES:
+            return []
+        return persons or [state.name]
 
     def _free_day(self) -> bool:
         """Weekend or holiday: a workday sensor off, or a holiday calendar on."""

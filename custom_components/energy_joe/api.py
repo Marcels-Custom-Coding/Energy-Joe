@@ -43,6 +43,7 @@ from .learn.models import MIN_DAYS, SOURCE_DAYS, daily_rows
 from .observe.records import day_view, summarize
 from .plan.car_calendar import calendar_cars
 from .plan.inputs import async_consumption
+from .presence import PresenceError, async_create_presence
 from .runtime import (
     AVAILABLE_MODES,
     DATA_RUNTIME,
@@ -56,6 +57,7 @@ from .runtime import (
 def async_register(hass: HomeAssistant) -> None:
     """Register all websocket commands."""
     websocket_api.async_register_command(hass, ws_info)
+    websocket_api.async_register_command(hass, ws_presence_create)
     websocket_api.async_register_command(hass, ws_places_set)
     websocket_api.async_register_command(hass, ws_subscribe)
     websocket_api.async_register_command(hass, ws_set_mode)
@@ -95,6 +97,35 @@ def _runtime(
     if (runtime := hass.data.get(DATA_RUNTIME)) is None:
         connection.send_error(msg["id"], "not_loaded", "Energy Joe is not set up.")
     return runtime
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/presence/create",
+        vol.Required("name"): vol.All(str, vol.Length(min=1, max=60)),
+        vol.Required("persons"): [cv.entity_id],
+        vol.Optional("guest", default=None): vol.Any(None, cv.entity_id),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_presence_create(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Create the helper "someone is home" in Home Assistant and use it."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    try:
+        entity_id = await async_create_presence(
+            hass, msg["name"], msg["persons"], msg["guest"]
+        )
+    except PresenceError as err:
+        connection.send_error(msg["id"], "presence_failed", str(err))
+        return
+    runtime.async_update_config({"context": {"presence_entity": entity_id}}, "user")
+    connection.send_result(msg["id"], {"entity_id": entity_id})
 
 
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/info"})

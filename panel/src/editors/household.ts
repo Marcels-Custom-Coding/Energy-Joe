@@ -1,5 +1,5 @@
 import { LitElement, css, html, nothing, type TemplateResult } from "lit";
-import { property } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
 import { tip } from "../components/tip";
 import { isIgnored, pickEntity, saveConfig, withIgnored } from "../config";
 import { define } from "../define";
@@ -17,6 +17,12 @@ export class JoeHousehold extends LitElement {
   @property({ attribute: false }) t?: Translate;
   @property({ attribute: false }) config?: JoeConfig;
   @property({ attribute: false }) discovery?: Discovery;
+
+  /** For the proposed helper: persons left out (all others are in), a guest switch. */
+  @state() private leftOut: string[] = [];
+  @state() private guest = true;
+  @state() private creating = false;
+  @state() private failed?: string;
 
   static styles = [
     shared,
@@ -133,6 +139,24 @@ export class JoeHousehold extends LitElement {
         color: var(--joe-muted);
         margin: 0;
       }
+      .presence {
+        margin-top: 16px;
+        padding: 14px;
+        border-radius: 12px;
+        background: var(--joe-surface-2);
+      }
+      .presence p {
+        margin: 6px 0 0;
+        color: var(--joe-ink-2);
+        font-size: 14px;
+      }
+      .presence .row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-top: 10px;
+      }
     `,
   ];
 
@@ -156,6 +180,7 @@ export class JoeHousehold extends LitElement {
         </button>
         ${tip(t, "f_person_add")}
       </div>
+      ${this.renderPresence(t, hass, config)}
       ${outside.length
         ? html`<div class="others">
             <span>${t("household.left_out")}</span>
@@ -167,6 +192,113 @@ export class JoeHousehold extends LitElement {
           </div>`
         : nothing}
     </div>`;
+  }
+
+  /** "Someone is home": one helper of Home Assistant – Joe proposes to create it. */
+  private renderPresence(t: Translate, hass: HomeAssistant, config: JoeConfig): TemplateResult {
+    const entity = config.context.presence_entity;
+    const head = html`<div class="with-tip"><b>${t("household.presence")}</b>${tip(t, "household_presence")}</div>`;
+    if (entity) {
+      const on = ["on", "home"].includes(hass.states[entity]?.state ?? "");
+      return html`<div class="presence" data-tipped>
+        ${head}
+        <div class="row">
+          <span class="chip ${on ? "ok" : ""}" title=${entity}>${entityName(hass, entity)}</span>
+          <small>${t(on ? "household.presence.on" : "household.presence.off")}</small>
+        </div>
+        <p>${t("household.presence.yours")}</p>
+        <div class="row">
+          <button type="button" class="mini-btn" @click=${() => void this.pickPresence()}>${t("household.presence.other")}</button>
+          <button type="button" class="mini-btn quiet" @click=${() => saveConfig(this, { context: { presence_entity: null } })}>
+            ${t("household.presence.stop")}
+          </button>
+        </div>
+      </div>`;
+    }
+    const persons = config.persons.filter((p) => p.person_entity);
+    const chosen = persons.filter((p) => !this.leftOut.includes(p.person_entity!));
+    return html`<div class="presence" data-tipped>
+      ${head}
+      <p>${t("household.presence.propose")}</p>
+      <div class="row" role="group" aria-label=${t("household.presence.persons")}>
+        ${persons.map((person) => {
+          const on = !this.leftOut.includes(person.person_entity!);
+          return html`<button
+            type="button"
+            class="mini-btn ${on ? "go" : "quiet"}"
+            aria-pressed=${String(on)}
+            @click=${() =>
+              (this.leftOut = on
+                ? [...this.leftOut, person.person_entity!]
+                : this.leftOut.filter((e) => e !== person.person_entity))}
+          >
+            ${person.name}
+          </button>`;
+        })}
+      </div>
+      <div class="row">
+        <button
+          type="button"
+          class="switch"
+          role="switch"
+          aria-checked=${String(this.guest)}
+          aria-labelledby="presence-guest"
+          @click=${() => (this.guest = !this.guest)}
+        ></button>
+        <span id="presence-guest">${t("household.presence.guest")}</span>
+      </div>
+      ${this.failed ? html`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${this.failed}</span></div>` : nothing}
+      <div class="row">
+        <button
+          type="button"
+          class="btn btn-primary"
+          ?disabled=${this.creating || (!chosen.length && !this.guest)}
+          @click=${() => void this.createPresence(chosen.map((p) => p.person_entity!))}
+        >
+          ${t(this.creating ? "household.presence.creating" : "household.presence.create")}
+        </button>
+        <button type="button" class="btn btn-ghost" @click=${() => void this.pickPresence()}>${t("household.presence.own")}</button>
+      </div>
+    </div>`;
+  }
+
+  private async createPresence(persons: string[]): Promise<void> {
+    const { t, hass } = this;
+    if (!t || !hass) return;
+    this.creating = true;
+    this.failed = undefined;
+    try {
+      let guest: string | null = null;
+      if (this.guest) {
+        // An ordinary toggle helper of Home Assistant, the user's own.
+        const created = await hass.callWS<{ id: string }>({
+          type: "input_boolean/create",
+          name: t("household.presence.guest_name"),
+          icon: "mdi:account-child-outline",
+        });
+        guest = `input_boolean.${created.id}`;
+      }
+      await hass.callWS({ type: "energy_joe/presence/create", name: t("household.presence.name"), persons, guest });
+    } catch (err) {
+      this.failed = t("household.presence.failed", { error: String((err as { message?: string })?.message ?? err) });
+    } finally {
+      this.creating = false;
+    }
+  }
+
+  private async pickPresence(): Promise<void> {
+    const t = this.t;
+    if (!t) return;
+    const current = this.config?.context.presence_entity;
+    const picked = await pickEntity(this, {
+      heading: t("pick.presence.title"),
+      tip: "pick_presence",
+      filter: "presence",
+      selected: current ? [current] : [],
+    });
+    if (picked?.selected[0]) {
+      saveConfig(this, { context: { presence_entity: picked.selected[0] } });
+    }
   }
 
   private renderPerson(t: Translate, hass: HomeAssistant, person: PersonConfig): TemplateResult {

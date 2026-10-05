@@ -447,6 +447,18 @@
               };
               push();
               return state.mailbox[msg.car];
+            case "input_boolean/create": {
+              const id = "gastmodus";
+              hass.states[`input_boolean.${id}`] = { entity_id: `input_boolean.${id}`, state: "off", attributes: { friendly_name: msg.name } };
+              return { id, name: msg.name };
+            }
+            case "energy_joe/presence/create": {
+              const entity = "binary_sensor.jemand_zu_hause";
+              hass.states[entity] = { entity_id: entity, state: "on", attributes: { friendly_name: msg.name, device_class: "presence" } };
+              state.config.context = { ...state.config.context, presence_entity: entity };
+              push();
+              return { entity_id: entity };
+            }
             case "energy_joe/climate/devices": {
               const via = "Shelly Pro 3EM HV Gerätemessungen";
               const meters = [

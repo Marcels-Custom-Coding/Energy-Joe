@@ -22,7 +22,7 @@ from homeassistant.helpers import config_validation as cv
 
 from .control.profiles import ADAPTERS, MODE_OPTIONS, ROLES
 
-CONFIG_VERSION = 4
+CONFIG_VERSION = 5
 
 SOURCES = ("read", "learned", "default", "user")
 TARIFF_KINDS = ("fixed_window", "dynamic", "flat", "unknown")
@@ -371,9 +371,6 @@ CLIMATE = vol.Schema(
         # people are in bed (a "good night" routine, a bed sensor ...).
         vol.Optional("night_by", default="time"): vol.In(("time", "entity")),
         vol.Optional("night_entity", default=None): _ENTITY,
-        # Also "someone is home" while one of these is on or home: a guest
-        # mode helper (the babysitter, children without a phone), a group.
-        vol.Optional("home_entities", default=list): [cv.entity_id],
         vol.Optional("rooms", default=dict): {cv.entity_id: CLIMATE_ROOM},
     }
 )
@@ -598,6 +595,9 @@ CONFIG = vol.Schema(
             {
                 vol.Optional("weather_entity", default=None): _ENTITY,
                 vol.Optional("holiday_entity", default=None): _ENTITY,
+                # "Someone is home": one entity (a helper group of the persons
+                # and a guest switch), on or "home" while anyone is there.
+                vol.Optional("presence_entity", default=None): _ENTITY,
             }
         ),
         vol.Optional("persons", default=list): [PERSON],
@@ -851,6 +851,9 @@ def migrate(data: dict[str, Any]) -> dict[str, Any]:
             data["routing"] = {**routing, "service": "osm"}
     if data.get("version", 1) < 4:
         _mailbox_to_cars(data)
+    if data.get("version", 1) < 5:
+        # 0.9.2 had a list of extra entities; now one presence entity says it.
+        (data.get("climate") or {}).pop("home_entities", None)
     data["version"] = CONFIG_VERSION
     return validate(data)
 

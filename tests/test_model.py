@@ -396,3 +396,12 @@ def test_base_consumption_leaves_out_flexible_devices() -> None:
     # Meters a little ahead of the house: never below zero.
     assert base_home({"home": 1.0, "use": {"wallbox": 1.4}}, ["wallbox"]) == 0.0
     assert base_home({"use": {}}, ["wallbox"]) is None
+
+
+def test_version_4_drops_the_extra_home_entities() -> None:
+    data = model.default_config()
+    data["version"] = 4
+    data["climate"]["home_entities"] = ["input_boolean.gastmodus"]
+    migrated = model.migrate(data)
+    assert "home_entities" not in migrated["climate"]
+    assert migrated["context"]["presence_entity"] is None
