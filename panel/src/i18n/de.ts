@@ -47,6 +47,8 @@ export const de = {
   "household.presence.off": "gerade: niemand da",
   "household.presence.yours":
     "Das ist ein Helfer in Home Assistant – ändern kannst du ihn dort unter Einstellungen → Geräte & Dienste → Helfer.",
+  "household.presence.yours_group":
+    "Das ist deine Gruppe – ich lese sie nur. Ihre Mitglieder änderst du in deiner Konfiguration.",
   "household.presence.other": "Andere Entität",
   "household.presence.stop": "Nicht mehr nutzen",
   "household.presence.propose":
@@ -57,11 +59,28 @@ export const de = {
   "household.presence.new_instead": "Stattdessen einen neuen Helfer anlegen",
   "household.presence.persons": "Personen im Helfer",
   "household.presence.guest": "Gastmodus-Schalter dazu anlegen",
+  "household.guest": "Gastmodus",
+  "household.guest.offer":
+    "Für den Babysitter oder Kinder ohne Handy: ein Schalter „Gastmodus“ (normal aus). Ist er an, gilt ein Gast als zu Hause – über einen Tracker „Gast“, der in deine Gruppe kommt. So bleibt die Gruppe bei „home“/„not_home“.",
+  "household.guest.create": "Gastmodus anlegen",
+  "household.guest.name": "Gastmodus",
+  "household.guest.tracker_name": "Gast",
+  "household.guest.home": "Gast gilt als zu Hause",
+  "household.guest.away": "aus – kein Gast",
+  "household.guest.add_to_group":
+    "Damit der Gastmodus zählt, nimm den Tracker in „{group}“ auf. Die Gruppe steht in deiner YAML-Konfiguration; ergänze bei ihren Mitgliedern diese Zeile und lade die Gruppen neu:",
+  "household.guest.automation": "Gastmodus → Tracker „Gast“",
+  "household.guest.automation_text":
+    "Angelegt von Energy Joe: {tracker} folgt dem Schalter {guest} (an = home, aus = not_home), damit die Anwesenheitsgruppe bei home/not_home bleibt.",
+  "tip.household_guest.title": "Wie funktioniert der Gastmodus?",
+  "tip.household_guest.text":
+    "Ich lege drei normale Dinge in Home Assistant an: den Schalter „Gastmodus“, einen Geräte-Tracker „Gast“ und eine Automation, die den Tracker dem Schalter folgen lässt (an = zu Hause, aus = weg). Der Tracker ist ein Mitglied deiner Anwesenheitsgruppe – wie eine Person. Ein Schalter direkt in der Gruppe würde ihren Zustand auf an/aus ändern, und Automationen, die auf „home“ prüfen, liefen nicht mehr.",
+  "tip.household_guest.hint":
+    "Alles funktioniert auch ohne mich. Schalte den Gastmodus wieder aus, wenn der Besuch geht.",
   "household.presence.create": "Helfer anlegen",
   "household.presence.creating": "Lege an …",
   "household.presence.own": "Eigene Entität wählen",
   "household.presence.name": "Jemand zu Hause",
-  "household.presence.guest_name": "Gastmodus",
   "household.presence.failed":
     "Das hat nicht geklappt ({error}). Du kannst den Helfer auch selbst anlegen und hier wählen.",
   "pick.presence.title": "Was sagt, dass jemand zu Hause ist?",

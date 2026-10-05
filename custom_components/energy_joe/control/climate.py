@@ -219,6 +219,10 @@ class ClimateController:
         state = self._hass.states.get(entity_id)
         if state is None or state.state not in HOME_STATES:
             return []
+        tracker = config["context"].get("guest_tracker")
+        guest = self._hass.states.get(tracker) if tracker else None
+        if guest is not None and guest.state == "home":
+            persons.append(guest.name)
         return persons or [state.name]
 
     def _free_day(self) -> bool:

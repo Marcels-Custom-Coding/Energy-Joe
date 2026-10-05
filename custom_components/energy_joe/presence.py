@@ -22,10 +22,11 @@ class PresenceError(Exception):
 
 
 def presence_template(persons: list[str], guest: str | None) -> str:
-    """On while a person is home or the guest switch is on."""
-    parts = [f"is_state('{entity}', 'home')" for entity in persons]
-    if guest:
-        parts.append(f"is_state('{guest}', 'on')")
+    """On while a person (or the guest tracker) is home."""
+    parts = [
+        f"is_state('{entity}', 'home')"
+        for entity in [*persons, *([guest] if guest else [])]
+    ]
     return "{{ " + (" or ".join(parts) or "false") + " }}"
 
 

@@ -57,7 +57,7 @@ Joe braucht kein Vorwissen. Er findet selbst, was er braucht, fragt in Alltagssp
 ### Heizung und Klima
 
 - Neuer Bereich „Klima“: Für jedes Thermostat und jede Klimaanlage einzeln wählst du, ob Joe es steuert.
-- Ob jemand zu Hause ist, sagt ein einziger Helfer in HA („Jemand zu Hause“ aus euren Personen plus Gastmodus-Schalter für Babysitter oder Kinder ohne Handy). Joe schlägt ihn bei der Einrichtung vor und legt ihn auf Wunsch an; er funktioniert auch ohne Joe.
+- Ob jemand zu Hause ist, sagt eine einzige Gruppe in HA (z. B. eure Personen). Joe nimmt eine vorhandene oder legt auf Wunsch eine an, dazu optional einen Gastmodus für Babysitter oder Kinder ohne Handy – alles funktioniert auch ohne Joe.
 - Ist keiner zu Hause: absenken (beim Kühlen anheben), ganz aus oder ein Profil des Geräts – bei Homematic IP z. B. dein Heizprofil „Abwesend“. An freien Tagen auf Wunsch ein eigenes Profil.
 - Kommt jemand heim (Integration „Nähe“/Proximity), fährt Joe die Räume so rechtzeitig hoch, wie sie es laut Gelerntem brauchen – mit der echten Fahrzeit vom Routendienst. Er lernt auch, wann ihr meist heimkommt, und heizt schon vorher. Danach stellt er alles genau so zurück, wie es war.
 - Klimaanlagen auf Wunsch nachts aus und rechtzeitig vor dem Morgen wieder an. Wann Nacht ist, sagen feste Uhrzeiten oder eine Entität (z. B. deine Gute-Nacht-Routine oder ein Bettsensor).

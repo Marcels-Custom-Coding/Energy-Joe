@@ -317,3 +317,21 @@ async def test_homecomings_are_noted(hass: HomeAssistant) -> None:
     joe.async_stop()
     entries = joe.data["homecomings"]["person.marcel"]
     assert len(entries) == 1 and entries[0]["free"] is False
+
+
+async def test_a_guest_keeps_the_group_home(hass: HomeAssistant) -> None:
+    """Nobody tracked is home; the guest tracker (in the group) is: shown as the guest."""
+    install(hass)
+    cfg = config()
+    cfg["context"].update(
+        presence_entity="group.anwesenheit_jemand",
+        guest_switch="input_boolean.gastmodus",
+        guest_tracker="device_tracker.gast",
+    )
+    joe = ClimateController(hass, lambda: cfg, lambda: "live", lambda: None)
+    hass.states.async_set("person.marcel", "not_home")
+    hass.states.async_set("device_tracker.gast", "home", {"friendly_name": "Gast"})
+    hass.states.async_set("group.anwesenheit_jemand", "home")
+    await joe.async_check()
+    assert joe.status["home"] == ["Gast"]
+    assert hass.states.get(ROOM).attributes["temperature"] == 21.0

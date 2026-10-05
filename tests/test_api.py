@@ -45,7 +45,7 @@ async def test_create_the_presence_helper(
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
     hass.states.async_set("person.anna", "not_home")
-    hass.states.async_set("input_boolean.gastmodus", "off")
+    hass.states.async_set("device_tracker.gast", "not_home")
 
     client = await hass_ws_client(hass)
     await client.send_json_auto_id(
@@ -53,7 +53,7 @@ async def test_create_the_presence_helper(
             "type": f"{DOMAIN}/presence/create",
             "name": "Jemand zu Hause",
             "persons": ["person.anna"],
-            "guest": "input_boolean.gastmodus",
+            "guest": "device_tracker.gast",
         }
     )
     msg = await client.receive_json()
@@ -62,7 +62,7 @@ async def test_create_the_presence_helper(
     assert entity_id.startswith("binary_sensor.")
     await hass.async_block_till_done()
     assert hass.states.get(entity_id).state == "off"
-    hass.states.async_set("input_boolean.gastmodus", "on")
+    hass.states.async_set("device_tracker.gast", "home")
     await hass.async_block_till_done()
     assert hass.states.get(entity_id).state == "on"
     runtime = hass.data["energy_joe"]

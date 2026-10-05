@@ -46,6 +46,7 @@ export const en: Record<Key, string> = {
   "household.presence.off": "now: nobody there",
   "household.presence.yours":
     "This is a helper in Home Assistant – change it there under Settings → Devices & services → Helpers.",
+  "household.presence.yours_group": "This is your group – I only read it. Change its members in your configuration.",
   "household.presence.other": "Other entity",
   "household.presence.stop": "Stop using",
   "household.presence.propose":
@@ -56,11 +57,27 @@ export const en: Record<Key, string> = {
   "household.presence.new_instead": "Create a new helper instead",
   "household.presence.persons": "Persons in the helper",
   "household.presence.guest": "Also create a guest mode switch",
+  "household.guest": "Guest mode",
+  "household.guest.offer":
+    "For the babysitter or children without a phone: a switch “guest mode” (normally off). While it is on, a guest counts as home – through a tracker “guest” that joins your group. So the group stays “home”/“not_home”.",
+  "household.guest.create": "Create guest mode",
+  "household.guest.name": "Guest mode",
+  "household.guest.tracker_name": "Guest",
+  "household.guest.home": "a guest counts as home",
+  "household.guest.away": "off – no guest",
+  "household.guest.add_to_group":
+    "For the guest mode to count, add the tracker to “{group}”. The group is in your YAML configuration; add this line to its members and reload the groups:",
+  "household.guest.automation": "Guest mode → tracker “guest”",
+  "household.guest.automation_text":
+    "Created by Energy Joe: {tracker} follows the switch {guest} (on = home, off = not_home), so the presence group stays home/not_home.",
+  "tip.household_guest.title": "How does guest mode work?",
+  "tip.household_guest.text":
+    "I create three ordinary things in Home Assistant: the switch “guest mode”, a device tracker “guest” and an automation that makes the tracker follow the switch (on = home, off = away). The tracker is a member of your presence group – like a person. A switch directly in the group would turn its state into on/off, and automations checking for “home” would stop working.",
+  "tip.household_guest.hint": "Everything works without me too. Switch guest mode off again when the visit leaves.",
   "household.presence.create": "Create helper",
   "household.presence.creating": "Creating …",
   "household.presence.own": "Pick my own entity",
   "household.presence.name": "Someone home",
-  "household.presence.guest_name": "Guest mode",
   "household.presence.failed": "That didn't work ({error}). You can create the helper yourself and pick it here.",
   "pick.presence.title": "What tells that someone is home?",
   "tip.household_presence.title": "Why a helper of its own?",

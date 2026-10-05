@@ -151,6 +151,18 @@ export class JoeHousehold extends LitElement {
         color: var(--joe-ink-2);
         font-size: 14px;
       }
+      .guest {
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px solid var(--joe-line);
+      }
+      .guest code {
+        display: block;
+        margin-top: 4px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12.5px;
+        user-select: all;
+      }
       .presence .row {
         display: flex;
         flex-wrap: wrap;
@@ -207,7 +219,8 @@ export class JoeHousehold extends LitElement {
           <span class="chip ${on ? "ok" : ""}" title=${entity}>${entityName(hass, entity)}</span>
           <small>${t(on ? "household.presence.on" : "household.presence.off")}</small>
         </div>
-        <p>${t("household.presence.yours")}</p>
+        <p>${t(entity.startsWith("group.") ? "household.presence.yours_group" : "household.presence.yours")}</p>
+        ${this.renderGuest(t, hass, config, entity)}
         <div class="row">
           <button type="button" class="mini-btn" @click=${() => void this.pickPresence()}>${t("household.presence.other")}</button>
           <button type="button" class="mini-btn quiet" @click=${() => saveConfig(this, { context: { presence_entity: null } })}>
@@ -283,22 +296,108 @@ export class JoeHousehold extends LitElement {
     </div>`;
   }
 
+  /** Guest mode: the switch, whether its tracker is home, and whether the group counts it. */
+  private renderGuest(t: Translate, hass: HomeAssistant, config: JoeConfig, presence: string): TemplateResult {
+    const { guest_switch: guest, guest_tracker: tracker } = config.context;
+    if (!guest || !tracker) {
+      return html`<div class="guest" data-tipped>
+        <div class="with-tip"><b>${t("household.guest")}</b>${tip(t, "household_guest")}</div>
+        <p>${t("household.guest.offer")}</p>
+        ${this.failed ? html`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${this.failed}</span></div>` : nothing}
+        <div class="row">
+          <button type="button" class="btn btn-secondary" ?disabled=${this.creating} @click=${() => void this.addGuest()}>
+            ${t(this.creating ? "household.presence.creating" : "household.guest.create")}
+          </button>
+        </div>
+      </div>`;
+    }
+    const on = hass.states[guest]?.state === "on";
+    const members = hass.states[presence]?.attributes.entity_id as string[] | undefined;
+    const inGroup = !members || members.includes(tracker);
+    return html`<div class="guest" data-tipped>
+      <div class="row">
+        <button
+          type="button"
+          class="switch"
+          role="switch"
+          aria-checked=${String(on)}
+          aria-labelledby="guest-label"
+          @click=${() => void hass.callService?.("input_boolean", on ? "turn_off" : "turn_on", { entity_id: guest })}
+        ></button>
+        <b id="guest-label">${t("household.guest")}</b>
+        <small>${t(hass.states[tracker]?.state === "home" ? "household.guest.home" : "household.guest.away")}</small>
+        ${tip(t, "household_guest")}
+      </div>
+      ${inGroup
+        ? nothing
+        : html`<div class="note warn">
+            <ha-icon icon="mdi:alert-outline"></ha-icon>
+            <span>${t("household.guest.add_to_group", { group: entityName(hass, presence) })}<code>- ${tracker}</code></span>
+          </div>`}
+    </div>`;
+  }
+
+  /** The switch, the tracker following it and the automation that links them – all Home Assistant's own. */
+  private async createGuest(): Promise<string> {
+    const { t, hass } = this;
+    if (!t || !hass?.callApi || !hass.callService) throw new Error("no api");
+    const created = await hass.callWS<{ id: string }>({
+      type: "input_boolean/create",
+      name: t("household.guest.name"),
+      icon: "mdi:account-child-outline",
+    });
+    const guest = `input_boolean.${created.id}`;
+    const tracker = `device_tracker.${GUEST_ID}`;
+    await hass.callApi("POST", `config/automation/config/energy_joe_${GUEST_ID}`, {
+      alias: t("household.guest.automation"),
+      description: t("household.guest.automation_text", { guest, tracker }),
+      triggers: [
+        { trigger: "state", entity_id: guest },
+        // Trackers like this one fall back to "not_home" after a few minutes without news.
+        { trigger: "time_pattern", minutes: "/1" },
+        { trigger: "homeassistant", event: "start" },
+      ],
+      conditions: [],
+      actions: [
+        {
+          action: "device_tracker.see",
+          data: {
+            dev_id: GUEST_ID,
+            host_name: t("household.guest.tracker_name"),
+            location_name: `{{ 'home' if is_state('${guest}', 'on') else 'not_home' }}`,
+          },
+        },
+      ],
+      mode: "queued",
+    });
+    await hass.callService("device_tracker", "see", {
+      dev_id: GUEST_ID,
+      host_name: t("household.guest.tracker_name"),
+      location_name: "not_home",
+    });
+    saveConfig(this, { context: { guest_switch: guest, guest_tracker: tracker } });
+    return tracker;
+  }
+
+  private async addGuest(): Promise<void> {
+    this.creating = true;
+    this.failed = undefined;
+    try {
+      await this.createGuest();
+    } catch (err) {
+      this.failed = this.t!("household.presence.failed", { error: String((err as { message?: string })?.message ?? err) });
+    } finally {
+      this.creating = false;
+    }
+  }
+
   private async createPresence(persons: string[]): Promise<void> {
     const { t, hass } = this;
     if (!t || !hass) return;
     this.creating = true;
     this.failed = undefined;
     try {
-      let guest: string | null = null;
-      if (this.guest) {
-        // An ordinary toggle helper of Home Assistant, the user's own.
-        const created = await hass.callWS<{ id: string }>({
-          type: "input_boolean/create",
-          name: t("household.presence.guest_name"),
-          icon: "mdi:account-child-outline",
-        });
-        guest = `input_boolean.${created.id}`;
-      }
+      const guest = this.guest ? (this.config?.context.guest_tracker ?? (await this.createGuest())) : null;
       await hass.callWS({ type: "energy_joe/presence/create", name: t("household.presence.name"), persons, guest });
     } catch (err) {
       this.failed = t("household.presence.failed", { error: String((err as { message?: string })?.message ?? err) });
@@ -422,6 +521,9 @@ export class JoeHousehold extends LitElement {
     saveConfig(this, { persons: { [person.id]: { calendars } } });
   }
 }
+
+/** The guest tracker's id: device_tracker.gast. */
+const GUEST_ID = "gast";
 
 /** Groups the user already has for "someone is home": members are persons or trackers. */
 function presenceGroups(hass: HomeAssistant): { entity_id: string; name: string; members: string[] }[] {

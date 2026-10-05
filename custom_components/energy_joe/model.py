@@ -601,6 +601,10 @@ CONFIG = vol.Schema(
                 # "Someone is home": one entity (a helper group of the persons
                 # and a guest switch), on or "home" while anyone is there.
                 vol.Optional("presence_entity", default=None): _ENTITY,
+                # Guest mode: a switch, and the tracker that follows it (home
+                # while on), so a group of persons stays "home"/"not_home".
+                vol.Optional("guest_switch", default=None): _ENTITY,
+                vol.Optional("guest_tracker", default=None): _ENTITY,
             }
         ),
         vol.Optional("persons", default=list): [PERSON],

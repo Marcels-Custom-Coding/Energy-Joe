@@ -3,6 +3,11 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.6
+
+- Gastmodus: Im Haushalt legt Joe auf Wunsch einen Schalter „Gastmodus“ (normal aus), einen Geräte-Tracker „Gast“ und eine Automation an, die den Tracker dem Schalter folgen lässt (an = home, aus = not_home). Der Tracker gehört in deine Anwesenheitsgruppe – wie eine Person –, so bleibt die Gruppe bei „home“/„not_home“ und deine Automationen laufen weiter. Alles sind normale Teile von Home Assistant und funktionieren auch ohne Joe.
+- Steht deine Gruppe in der YAML-Konfiguration, zeigt Joe die Zeile, die du ergänzen musst, und meldet, sobald der Tracker drin ist. Den Gastmodus schaltest du direkt dort oder überall in Home Assistant.
+
 ## 0.9.5
 
 - Heimweg mit echter Fahrzeit: Kommt jemand näher, fragt Joe den Routendienst aus den Einstellungen (OpenStreetMap, Waze oder Google), wie lange die Fahrt noch dauert – statt pauschal 40 km/h. Die Position geht dafür auf etwa 100 m gerundet an den Dienst; abschaltbar unter Klima → „Wer ist da?“.

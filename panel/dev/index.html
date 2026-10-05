@@ -216,6 +216,20 @@
         themes: { darkMode: params.get("dark") === "1" },
         config: { currency: "EUR", time_zone: "Europe/Berlin" },
         services: { notify: { mobile_app_handy: {}, persistent_notification: {}, send_message: {} } },
+        async callApi(method, path, data) {
+          (state.apiCalls = state.apiCalls ?? []).push({ method, path, data });
+          return { result: "ok" };
+        },
+        async callService(domain, service, data) {
+          if (domain === "device_tracker" && service === "see") {
+            const id = `device_tracker.${data.dev_id}`;
+            hass.states[id] = { entity_id: id, state: data.location_name, attributes: { friendly_name: data.host_name } };
+          }
+          if (domain === "input_boolean") {
+            hass.states[data.entity_id] = { ...hass.states[data.entity_id], state: service === "turn_on" ? "on" : "off" };
+            push();
+          }
+        },
         async callWS(msg) {
           switch (msg.type) {
             case "energy_joe/info":

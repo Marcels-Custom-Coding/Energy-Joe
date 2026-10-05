@@ -39,6 +39,8 @@ export interface HassArea {
 
 export interface HomeAssistant {
   callWS<T>(msg: { type: string; [key: string]: unknown }): Promise<T>;
+  callApi?<T>(method: "GET" | "POST" | "DELETE", path: string, data?: Record<string, unknown>): Promise<T>;
+  callService?(domain: string, service: string, data?: Record<string, unknown>): Promise<unknown>;
   connection: {
     subscribeMessage<T>(
       callback: (msg: T) => void,
@@ -562,7 +564,10 @@ export interface JoeConfig {
   batteries: BatteryConfig[];
   tariff: TariffConfig;
   forecast: ForecastConfig;
-  context: { weather_entity: string | null; holiday_entity: string | null; presence_entity?: string | null };
+  context: { weather_entity: string | null; holiday_entity: string | null; presence_entity?: string | null;
+    guest_switch?: string | null;
+    guest_tracker?: string | null;
+  };
   persons: PersonConfig[];
   consumers: ConsumerConfig[];
   actions: ActionConfig[];
