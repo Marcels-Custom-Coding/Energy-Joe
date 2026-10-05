@@ -52,6 +52,8 @@ class Battery:
     controllable: bool = True
     # Whether Joe can charge it from the grid (some batteries can only be held).
     grid: bool = True
+    # The level it is never discharged below (percent of its own size).
+    floor: float = 0.0
 
 
 @dataclass(slots=True)
@@ -479,11 +481,8 @@ def _plan(inp: PlanInput) -> dict[str, Any]:
     drop = max(0.0, _soc_now(inp) - at_start)
     batteries = []
     for battery in inp.batteries:
-        start_soc = (
-            max(inp.reserve, battery.soc - drop)
-            if battery.soc > inp.reserve
-            else battery.soc
-        )
+        low = max(inp.reserve, battery.floor)
+        start_soc = max(low, battery.soc - drop) if battery.soc > low else battery.soc
         energy = max(0.0, target - start_soc) / 100 * battery.capacity
         share = battery.charge_kw / charge_kw if charge_kw and battery.grid else 0.0
         batteries.append(

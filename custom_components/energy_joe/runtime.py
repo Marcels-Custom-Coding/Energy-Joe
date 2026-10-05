@@ -29,6 +29,7 @@ from .mail.inbox import CarInboxes
 from .observe.observer import BACKFILL_DAYS, JoeObserver
 from .observe.store import HistoryStore
 from .plan.car_calendar import CarCalendarStore
+from .plan.inputs import battery_floor, device_floor
 from .plan.scheduler import JoePlanner
 
 _LOGGER = logging.getLogger(__name__)
@@ -114,6 +115,7 @@ class JoeRuntime:
         # Each car's mailbox with a calendar (see accounts.py).
         self.accounts = CarAccounts(hass, lambda: self._config, self._changed)
         self.planner.accounts = self.accounts
+        self.planner.held = lambda: self.executor.data["saved"]
         # Heating and air conditioning by presence (the "Klima" page).
         self.climate = ClimateController(
             hass, lambda: self._config, lambda: self._state["mode"], self._changed
@@ -340,6 +342,24 @@ class JoeRuntime:
                 "mailbox": self.inbox.status,
                 "accounts": self.accounts.status,
                 "climate": self.climate.status,
+                # Each battery's floor and where it comes from (user, device, unknown).
+                "floors": {
+                    b["id"]: dict(
+                        zip(
+                            ("value", "source", "device"),
+                            (
+                                *battery_floor(
+                                    self._hass, b, self.executor.data["saved"]
+                                ),
+                                device_floor(
+                                    self._hass, b, self.executor.data["saved"]
+                                ),
+                            ),
+                            strict=True,
+                        )
+                    )
+                    for b in self._config.get("batteries") or []
+                },
                 # Energy Joe's own apps for signing in (else one's own is needed).
                 "apps": {
                     "microsoft": oauth.client_for(None) is not None,

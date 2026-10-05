@@ -466,6 +466,14 @@ export const en: Record<Key, string> = {
   "f.battery.soc": "Charge level",
   "f.battery.power": "Power",
   "f.battery.limits": "Maximum power",
+  "f.battery.floor": "Discharge floor",
+  "f.battery.floor.read": "Set on the device: {value} %. Leave empty to use it; a number of your own applies instead.",
+  "f.battery.floor.ask": "I can't read the floor from the device. Down to what percentage may this battery discharge?",
+  "plan.note.floor_unknown": "I don't know one battery's discharge floor – I use the reserve from the rules there.",
+  "tip.f_battery_floor.title": "How low may it discharge?",
+  "tip.f_battery_floor.text":
+    "The battery does not go below this level – as set on the device (Fronius “minimum reserve”, Marstek “discharge cutoff”). I read it and work out how much energy is really usable. A number you enter applies instead.",
+  "tip.f_battery_floor.hint": "The reserve from the rules stays the lowest level for all batteries.",
   "f.battery.max_charge": "Charging",
   "f.battery.max_discharge": "Discharging",
   "f.battery.priority": "Order",
@@ -541,7 +549,11 @@ export const en: Record<Key, string> = {
   "settings.pro.intro": "Fine-tuning for the night. The defaults suit most homes – you don't have to change anything here.",
 
   "rule.reserve_soc": "Reserve",
-  "rule.reserve_soc.hint": "I never discharge the batteries below this.",
+  "rule.reserve_soc.hint":
+    "At least this much stays in every battery. If a battery's own floor is higher, that applies.",
+  "tip.r_reserve_soc.text":
+    "The lowest level for all batteries – e.g. as an emergency reserve or to spare the battery. Each battery also has its own discharge floor (set on the device, see the battery). For each battery I use the higher of the two.",
+  "tip.r_reserve_soc.hint": "10 % fits most batteries.",
   "rule.max_target_soc": "Charge at night up to",
   "rule.max_target_soc.hint": "I never charge more than this from the grid at night.",
   "rule.evening_min_soc": "Minimum in the evening",
@@ -730,8 +742,6 @@ export const en: Record<Key, string> = {
   "tip.f_consumer_kind.text":
     "For every device with its own meter I learn how its use depends on the outdoor temperature. **Meter for other devices** means it also measures devices listed here themselves – I don't count them twice.",
   "tip.r_reserve_soc.title": "What is the reserve?",
-  "tip.r_reserve_soc.text": "I never discharge the batteries below this – as an emergency reserve or to go easy on the battery.",
-  "tip.r_reserve_soc.hint": "10 % suits most batteries.",
   "tip.r_max_target_soc.title": "Why not always charge to full?",
   "tip.r_max_target_soc.text":
     "I never charge higher than this from the grid at night, so there's room for the sun. Usually I charge less anyway, because I work out exactly what's needed.",

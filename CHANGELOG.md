@@ -3,6 +3,11 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.0
+
+- Entladegrenze je Speicher: Joe liest sie vom Gerät (Fronius „Mindestreserve“, Marstek „Discharge Cutoff“ …) und zeigt sie unter Geräte → Speicher. Du kannst eine eigene Zahl eintragen; kann Joe nichts auslesen, fragt er dort danach.
+- Die Planung rechnet je Speicher mit dem höheren Wert aus seiner Entladegrenze und der Reserve aus den Regeln – statt mit einer Reserve für alle zusammen. Hat Joe die Grenze selbst gerade angehoben (zum Laden), zählt der Wert von vorher.
+
 ## 0.8.0
 
 - Längeres Gedächtnis: Joe hebt seine Stunden jetzt bis zu 10 Jahre auf (vorher gut 2) und liest beim nächsten Start einmal so weit zurück, wie die Langzeit-Statistik von Home Assistant reicht – bis zu 2 Jahre. Das Verbrauchsmodell lernt aus allen Jahreszeiten: Neue Tage zählen am meisten, der letzte Winter zählt aber weiter mit. So fängt Joe nicht jeden Winter neu an.

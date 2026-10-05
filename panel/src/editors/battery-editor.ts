@@ -7,7 +7,7 @@ import { define } from "../define";
 import { energyKwh, entityName, formatNumber, formatState, measurementKw } from "../entities";
 import type { TipName, Translate } from "../i18n";
 import { shared } from "../styles/shared";
-import type { BatteryConfig, Discovery, HomeAssistant, JoeConfig, JoeInfo, Measurement } from "../types";
+import type { BatteryConfig, BatteryFloor, Discovery, HomeAssistant, JoeConfig, JoeInfo, Measurement } from "../types";
 import "./battery-control";
 import type { ControlValue } from "./battery-control";
 
@@ -19,6 +19,7 @@ type Draft = Pick<
   | "power"
   | "max_charge_w"
   | "max_discharge_w"
+  | "floor_soc"
   | "priority"
   | "adapter"
   | "controls"
@@ -34,6 +35,7 @@ const FIELDS: (keyof Draft)[] = [
   "power",
   "max_charge_w",
   "max_discharge_w",
+  "floor_soc",
   "priority",
   "adapter",
   "controls",
@@ -49,6 +51,7 @@ export class JoeBatteryEditor extends LitElement {
   @property({ attribute: false }) config?: JoeConfig;
   @property({ attribute: false }) discovery?: Discovery;
   @property({ attribute: false }) info?: JoeInfo;
+  @property({ attribute: false }) floor?: BatteryFloor;
   @property() batteryId = "";
 
   @state() private draft?: Draft;
@@ -206,6 +209,34 @@ export class JoeBatteryEditor extends LitElement {
           <label>${t("f.battery.max_charge")} ${this.kwInput(t, draft.max_charge_w, "max_charge_w")}</label>
           <label>${t("f.battery.max_discharge")} ${this.kwInput(t, draft.max_discharge_w, "max_discharge_w")}</label>
         </div>`,
+      )}
+      ${this.field(
+        t("f.battery.floor"),
+        "f_battery_floor",
+        html`<span class="unit-input">
+            <input
+              class="input"
+              type="number"
+              inputmode="decimal"
+              min="0"
+              max="100"
+              step="1"
+              aria-label=${t("f.battery.floor")}
+              .value=${draft.floor_soc == null ? "" : String(draft.floor_soc)}
+              placeholder=${this.floor?.device != null ? formatNumber(t.lang, this.floor.device, 0) : t("f.unknown")}
+              @change=${(ev: Event) => {
+                const value = Number.parseFloat((ev.target as HTMLInputElement).value.replace(",", "."));
+                this.set({ floor_soc: Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : null });
+              }}
+            />
+            <span class="unit">%</span>
+          </span>
+          ${this.floor?.device != null
+            ? html`<p class="field-hint">${t("f.battery.floor.read", { value: formatNumber(t.lang, this.floor.device, 0) })}</p>`
+            : draft.floor_soc == null
+              ? html`<div class="note warn"><ha-icon icon="mdi:help-circle-outline"></ha-icon><span>${t("f.battery.floor.ask")}</span></div>`
+              : nothing}`,
+        sourceChip(t, sourceOf(config, `batteries[${battery.id}].floor_soc`)),
       )}
       ${config.batteries.length > 1
         ? this.field(

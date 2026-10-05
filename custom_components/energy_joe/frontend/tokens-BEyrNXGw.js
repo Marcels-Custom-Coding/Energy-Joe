@@ -1001,6 +1001,13 @@ var Me = {
 	"f.battery.soc": "Ladezustand",
 	"f.battery.power": "Leistung",
 	"f.battery.limits": "Höchstleistung",
+	"f.battery.floor": "Entladegrenze",
+	"f.battery.floor.read": "Am Gerät eingestellt: {value} %. Leer lassen, dann nehme ich diesen Wert; eine eigene Zahl gilt stattdessen.",
+	"f.battery.floor.ask": "Ich kann die Grenze am Gerät nicht auslesen. Bis wie viel Prozent darf der Speicher entladen werden?",
+	"plan.note.floor_unknown": "Bei einem Speicher kenne ich die Entladegrenze nicht – ich rechne dort mit der Reserve aus den Regeln.",
+	"tip.f_battery_floor.title": "Bis wohin darf er entladen?",
+	"tip.f_battery_floor.text": "Unter diesen Ladestand geht der Speicher nicht – so ist er am Gerät eingestellt (bei Fronius „Mindestreserve“, beim Marstek „Discharge Cutoff“). Ich lese den Wert aus und rechne damit, wie viel Energie wirklich nutzbar ist. Trägst du eine Zahl ein, gilt deine.",
+	"tip.f_battery_floor.hint": "Die Reserve aus den Regeln bleibt die Untergrenze für alle Speicher.",
 	"f.battery.max_charge": "Laden",
 	"f.battery.max_discharge": "Entladen",
 	"f.battery.priority": "Reihenfolge",
@@ -1070,7 +1077,9 @@ var Me = {
 	"settings.pro": "Für Profis",
 	"settings.pro.intro": "Feinheiten für die Nacht. Die Startwerte passen für die meisten – ändern musst du hier nichts.",
 	"rule.reserve_soc": "Reserve",
-	"rule.reserve_soc.hint": "Darunter entlade ich die Speicher nie.",
+	"rule.reserve_soc.hint": "Mindestens so viel bleibt in jedem Speicher. Hat ein Speicher eine höhere Entladegrenze, gilt die.",
+	"tip.r_reserve_soc.text": "Die Untergrenze für alle Speicher – zum Beispiel als Notreserve oder um die Batterie zu schonen. Jeder Speicher hat zusätzlich seine eigene Entladegrenze (am Gerät eingestellt, siehe Speicher). Ich rechne je Speicher mit dem höheren der beiden Werte.",
+	"tip.r_reserve_soc.hint": "10 % passen für die meisten Speicher.",
 	"rule.max_target_soc": "Nachts höchstens laden bis",
 	"rule.max_target_soc.hint": "Mehr lade ich nachts nicht aus dem Netz.",
 	"rule.evening_min_soc": "Abends mindestens",
@@ -1220,8 +1229,6 @@ var Me = {
 	"tip.f_consumer_kind.title": "Was bedeutet die Art?",
 	"tip.f_consumer_kind.text": "Für jedes Gerät mit eigenem Zähler lerne ich, wie sein Verbrauch von der Außentemperatur abhängt. **Zähler für andere Geräte** heißt: Er misst Geräte mit, die hier selbst stehen – die zähle ich nicht doppelt.",
 	"tip.r_reserve_soc.title": "Was ist die Reserve?",
-	"tip.r_reserve_soc.text": "Darunter entlade ich die Speicher nie – zum Beispiel als Notreserve oder um die Batterie zu schonen.",
-	"tip.r_reserve_soc.hint": "10 % passen für die meisten Speicher.",
 	"tip.r_max_target_soc.title": "Warum nicht immer voll laden?",
 	"tip.r_max_target_soc.text": "Höher lade ich nachts aus dem Netz nie, damit Platz für die Sonne bleibt. Meist lade ich ohnehin weniger, weil ich genau ausrechne, was nötig ist.",
 	"tip.r_evening_min_soc.title": "Was heißt abends mindestens?",
@@ -2786,6 +2793,13 @@ var Me = {
 	"f.battery.soc": "Charge level",
 	"f.battery.power": "Power",
 	"f.battery.limits": "Maximum power",
+	"f.battery.floor": "Discharge floor",
+	"f.battery.floor.read": "Set on the device: {value} %. Leave empty to use it; a number of your own applies instead.",
+	"f.battery.floor.ask": "I can't read the floor from the device. Down to what percentage may this battery discharge?",
+	"plan.note.floor_unknown": "I don't know one battery's discharge floor – I use the reserve from the rules there.",
+	"tip.f_battery_floor.title": "How low may it discharge?",
+	"tip.f_battery_floor.text": "The battery does not go below this level – as set on the device (Fronius “minimum reserve”, Marstek “discharge cutoff”). I read it and work out how much energy is really usable. A number you enter applies instead.",
+	"tip.f_battery_floor.hint": "The reserve from the rules stays the lowest level for all batteries.",
 	"f.battery.max_charge": "Charging",
 	"f.battery.max_discharge": "Discharging",
 	"f.battery.priority": "Order",
@@ -2855,7 +2869,9 @@ var Me = {
 	"settings.pro": "For pros",
 	"settings.pro.intro": "Fine-tuning for the night. The defaults suit most homes – you don't have to change anything here.",
 	"rule.reserve_soc": "Reserve",
-	"rule.reserve_soc.hint": "I never discharge the batteries below this.",
+	"rule.reserve_soc.hint": "At least this much stays in every battery. If a battery's own floor is higher, that applies.",
+	"tip.r_reserve_soc.text": "The lowest level for all batteries – e.g. as an emergency reserve or to spare the battery. Each battery also has its own discharge floor (set on the device, see the battery). For each battery I use the higher of the two.",
+	"tip.r_reserve_soc.hint": "10 % fits most batteries.",
 	"rule.max_target_soc": "Charge at night up to",
 	"rule.max_target_soc.hint": "I never charge more than this from the grid at night.",
 	"rule.evening_min_soc": "Minimum in the evening",
@@ -3005,8 +3021,6 @@ var Me = {
 	"tip.f_consumer_kind.title": "What does the kind mean?",
 	"tip.f_consumer_kind.text": "For every device with its own meter I learn how its use depends on the outdoor temperature. **Meter for other devices** means it also measures devices listed here themselves – I don't count them twice.",
 	"tip.r_reserve_soc.title": "What is the reserve?",
-	"tip.r_reserve_soc.text": "I never discharge the batteries below this – as an emergency reserve or to go easy on the battery.",
-	"tip.r_reserve_soc.hint": "10 % suits most batteries.",
 	"tip.r_max_target_soc.title": "Why not always charge to full?",
 	"tip.r_max_target_soc.text": "I never charge higher than this from the grid at night, so there's room for the sun. Usually I charge less anyway, because I work out exactly what's needed.",
 	"tip.r_evening_min_soc.title": "What does minimum in the evening mean?",
@@ -4171,14 +4185,14 @@ function Le(e) {
 }
 //#endregion
 //#region src/define.ts
-var Re = "0.8.0";
+var Re = "0.9.0";
 function H(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Re, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.8.0" && Be();
+	n.joeVersion !== "0.9.0" && Be();
 }
 var ze = !1;
 function Be() {

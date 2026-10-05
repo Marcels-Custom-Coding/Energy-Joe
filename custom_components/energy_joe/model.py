@@ -137,6 +137,8 @@ BATTERY = vol.Schema(
         vol.Optional("capacity_entity", default=None): _ENTITY,
         vol.Optional("max_charge_w", default=None): _POSITIVE,
         vol.Optional("max_discharge_w", default=None): _POSITIVE,
+        # The level it never discharges below; None: as set on the device.
+        vol.Optional("floor_soc", default=None): vol.Any(None, _PERCENT),
         vol.Optional("device_id", default=None): vol.Any(None, str),
         # Levers by role (see control/profiles.py) and the mode select's options.
         vol.Optional("controls", default=dict): {vol.In(ROLES): cv.entity_id},

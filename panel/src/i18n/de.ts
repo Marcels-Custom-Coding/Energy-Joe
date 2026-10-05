@@ -468,6 +468,17 @@ export const de = {
   "f.battery.soc": "Ladezustand",
   "f.battery.power": "Leistung",
   "f.battery.limits": "Höchstleistung",
+  "f.battery.floor": "Entladegrenze",
+  "f.battery.floor.read":
+    "Am Gerät eingestellt: {value} %. Leer lassen, dann nehme ich diesen Wert; eine eigene Zahl gilt stattdessen.",
+  "f.battery.floor.ask":
+    "Ich kann die Grenze am Gerät nicht auslesen. Bis wie viel Prozent darf der Speicher entladen werden?",
+  "plan.note.floor_unknown":
+    "Bei einem Speicher kenne ich die Entladegrenze nicht – ich rechne dort mit der Reserve aus den Regeln.",
+  "tip.f_battery_floor.title": "Bis wohin darf er entladen?",
+  "tip.f_battery_floor.text":
+    "Unter diesen Ladestand geht der Speicher nicht – so ist er am Gerät eingestellt (bei Fronius „Mindestreserve“, beim Marstek „Discharge Cutoff“). Ich lese den Wert aus und rechne damit, wie viel Energie wirklich nutzbar ist. Trägst du eine Zahl ein, gilt deine.",
+  "tip.f_battery_floor.hint": "Die Reserve aus den Regeln bleibt die Untergrenze für alle Speicher.",
   "f.battery.max_charge": "Laden",
   "f.battery.max_discharge": "Entladen",
   "f.battery.priority": "Reihenfolge",
@@ -544,7 +555,11 @@ export const de = {
   "settings.pro.intro": "Feinheiten für die Nacht. Die Startwerte passen für die meisten – ändern musst du hier nichts.",
 
   "rule.reserve_soc": "Reserve",
-  "rule.reserve_soc.hint": "Darunter entlade ich die Speicher nie.",
+  "rule.reserve_soc.hint":
+    "Mindestens so viel bleibt in jedem Speicher. Hat ein Speicher eine höhere Entladegrenze, gilt die.",
+  "tip.r_reserve_soc.text":
+    "Die Untergrenze für alle Speicher – zum Beispiel als Notreserve oder um die Batterie zu schonen. Jeder Speicher hat zusätzlich seine eigene Entladegrenze (am Gerät eingestellt, siehe Speicher). Ich rechne je Speicher mit dem höheren der beiden Werte.",
+  "tip.r_reserve_soc.hint": "10 % passen für die meisten Speicher.",
   "rule.max_target_soc": "Nachts höchstens laden bis",
   "rule.max_target_soc.hint": "Mehr lade ich nachts nicht aus dem Netz.",
   "rule.evening_min_soc": "Abends mindestens",
@@ -735,8 +750,6 @@ export const de = {
   "tip.f_consumer_kind.text":
     "Für jedes Gerät mit eigenem Zähler lerne ich, wie sein Verbrauch von der Außentemperatur abhängt. **Zähler für andere Geräte** heißt: Er misst Geräte mit, die hier selbst stehen – die zähle ich nicht doppelt.",
   "tip.r_reserve_soc.title": "Was ist die Reserve?",
-  "tip.r_reserve_soc.text": "Darunter entlade ich die Speicher nie – zum Beispiel als Notreserve oder um die Batterie zu schonen.",
-  "tip.r_reserve_soc.hint": "10 % passen für die meisten Speicher.",
   "tip.r_max_target_soc.title": "Warum nicht immer voll laden?",
   "tip.r_max_target_soc.text":
     "Höher lade ich nachts aus dem Netz nie, damit Platz für die Sonne bleibt. Meist lade ich ohnehin weniger, weil ich genau ausrechne, was nötig ist.",

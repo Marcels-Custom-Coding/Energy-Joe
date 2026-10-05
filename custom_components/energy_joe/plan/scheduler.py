@@ -52,6 +52,8 @@ class JoePlanner:
         self.calendars: CarCalendarStore | None = None
         # The cars' own accounts (set by the runtime).
         self.accounts: Any = None
+        # What the executor changed on the devices, with the values from before.
+        self.held: Callable[[], dict[str, Any]] = dict
         self.plan: dict[str, Any] | None = None
 
     @property
@@ -190,6 +192,7 @@ class JoePlanner:
             self.places,
             self.calendars,
             self.accounts,
+            self.held(),
         )
         if inp is None:
             return {

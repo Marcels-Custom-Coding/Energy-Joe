@@ -435,6 +435,7 @@ export class EnergyJoePanel extends LitElement {
           .config=${config}
           .discovery=${this.discovery}
           .info=${this.info}
+          .floor=${this.joe?.floors?.[editor.id ?? ""]}
           batteryId=${editor.id ?? ""}
         ></joe-battery-editor>`;
         break;

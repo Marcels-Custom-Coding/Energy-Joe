@@ -12,7 +12,7 @@ from homeassistant.helpers.sun import get_astral_event_date
 from homeassistant.util import dt as dt_util
 
 from .. import model
-from ..control.adapters import make_adapter
+from ..control.adapters import RoleAdapter, make_adapter
 from ..learn.context import async_day_labels, async_weather_day
 from ..learn.models import class_factor, combined_forecast, expected
 from ..observe.readings import energy_kwh, number, sum_kwh
@@ -272,6 +272,7 @@ async def async_build_input(
     places: PlaceStore | None = None,
     calendars: CarCalendarStore | None = None,
     accounts: Any = None,
+    held: dict[str, Any] | None = None,
 ) -> tuple[PlanInput | None, list[str]]:
     """Gather everything for tonight's plan; None with reasons if there is nothing to plan."""
     tariff = config["tariff"]
@@ -300,6 +301,9 @@ async def async_build_input(
             notes.append("soc_unknown")
             continue
         default_power = min(5.0, capacity * 0.5)
+        floor, _ = battery_floor(hass, battery, held)
+        if floor is None:
+            notes.append("floor_unknown")
         adapter = make_adapter(battery)
         batteries.append(
             Battery(
@@ -313,6 +317,7 @@ async def async_build_input(
                 controllable=battery["adapter"] != "none",
                 # Watched batteries are planned as if Joe could steer them.
                 grid=adapter.can_charge if adapter else True,
+                floor=max(config["rules"]["reserve_soc"], floor or 0.0),
             )
         )
         if battery["adapter"] == "none":
@@ -614,7 +619,7 @@ def _input(
         hours=hours,
         batteries=batteries,
         prices=prices,
-        reserve=rules["reserve_soc"],
+        reserve=_pooled_floor(batteries, rules["reserve_soc"]),
         # A maintenance night may go above the usual highest level.
         max_target=max(rules["max_target_soc"], force or 0.0),
         evening_min=rules["evening_min_soc"],
@@ -790,3 +795,40 @@ def _efficiency(found: list[tuple[float, float]]) -> float:
     if not weight:
         return 0.9
     return round(sum(value * size for value, size in found) / weight, 3)
+
+
+def _pooled_floor(batteries: list[Battery], reserve: float) -> float:
+    """The lowest level of all batteries together: each its own floor, by size."""
+    size = sum(b.capacity for b in batteries)
+    if not size:
+        return reserve
+    return round(sum(b.capacity * max(reserve, b.floor) for b in batteries) / size, 2)
+
+
+def device_floor(
+    hass: HomeAssistant, battery: dict[str, Any], held: dict[str, Any] | None = None
+) -> float | None:
+    """The level a battery's own setting keeps (Fronius minimum reserve, Marstek
+    discharge cutoff ...). While Joe has changed it, what it had before."""
+    entity_id = (battery.get("controls") or {}).get("min_soc")
+    if not entity_id:
+        return None
+    value = (held or {}).get(entity_id)
+    if not isinstance(value, int | float):
+        value = number(hass.states.get(entity_id))
+    if value is None:
+        return None
+    adapter = make_adapter(battery)
+    if isinstance(adapter, RoleAdapter):
+        value = adapter._level("min_soc", value)
+    return round(max(0.0, min(100.0, float(value))), 1)
+
+
+def battery_floor(
+    hass: HomeAssistant, battery: dict[str, Any], held: dict[str, Any] | None = None
+) -> tuple[float | None, str]:
+    """A battery's floor and where it comes from: the user, the device, or unknown."""
+    if battery.get("floor_soc") is not None:
+        return float(battery["floor_soc"]), "user"
+    found = device_floor(hass, battery, held)
+    return (found, "device") if found is not None else (None, "unknown")

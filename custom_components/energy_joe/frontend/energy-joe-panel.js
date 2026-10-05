@@ -1,4 +1,4 @@
-import { A as e, C as t, D as n, E as r, O as i, S as a, T as o, _ as s, a as c, b as l, c as u, d, f, g as p, h as m, i as h, j as g, k as _, l as v, m as y, n as ee, o as te, p as ne, r as re, s as b, t as ie, u as ae, v as oe, w as se, x, y as S } from "./tokens-Bfz_vs3H.js";
+import { A as e, C as t, D as n, E as r, O as i, S as a, T as o, _ as s, a as c, b as l, c as u, d, f, g as p, h as m, i as h, j as g, k as _, l as v, m as y, n as ee, o as te, p as ne, r as re, s as b, t as ie, u as ae, v as oe, w as se, x, y as S } from "./tokens-BEyrNXGw.js";
 //#region src/assets.ts
 var ce = import.meta.url.replace(/[^/]*$/, ""), le = (e) => `${ce}${e}`, C = _`<svg
   class="swoosh"
@@ -3103,6 +3103,7 @@ var it = [
 	"power",
 	"max_charge_w",
 	"max_discharge_w",
+	"floor_soc",
 	"priority",
 	"adapter",
 	"controls",
@@ -3225,6 +3226,25 @@ var it = [
           <label>${e("f.battery.max_charge")} ${this.kwInput(e, r.max_charge_w, "max_charge_w")}</label>
           <label>${e("f.battery.max_discharge")} ${this.kwInput(e, r.max_discharge_w, "max_discharge_w")}</label>
         </div>`)}
+      ${this.field(e("f.battery.floor"), "f_battery_floor", _`<span class="unit-input">
+            <input
+              class="input"
+              type="number"
+              inputmode="decimal"
+              min="0"
+              max="100"
+              step="1"
+              aria-label=${e("f.battery.floor")}
+              .value=${r.floor_soc == null ? "" : String(r.floor_soc)}
+              placeholder=${this.floor?.device == null ? e("f.unknown") : y(e.lang, this.floor.device, 0)}
+              @change=${(e) => {
+			let t = Number.parseFloat(e.target.value.replace(",", "."));
+			this.set({ floor_soc: Number.isFinite(t) ? Math.min(100, Math.max(0, t)) : null });
+		}}
+            />
+            <span class="unit">%</span>
+          </span>
+          ${this.floor?.device == null ? r.floor_soc == null ? _`<div class="note warn"><ha-icon icon="mdi:help-circle-outline"></ha-icon><span>${e("f.battery.floor.ask")}</span></div>` : i : _`<p class="field-hint">${e("f.battery.floor.read", { value: y(e.lang, this.floor.device, 0) })}</p>`}`, E(e, O(n, `batteries[${a.id}].floor_soc`)))}
       ${n.batteries.length > 1 ? this.field(e("f.battery.priority"), "f_battery_priority", _`<span class="unit-input">
               <input
                 class="input"
@@ -3372,7 +3392,7 @@ var it = [
 		}));
 	}
 };
-S([r({ attribute: !1 })], L.prototype, "hass", void 0), S([r({ attribute: !1 })], L.prototype, "t", void 0), S([r({ attribute: !1 })], L.prototype, "config", void 0), S([r({ attribute: !1 })], L.prototype, "discovery", void 0), S([r({ attribute: !1 })], L.prototype, "info", void 0), S([r()], L.prototype, "batteryId", void 0), S([o()], L.prototype, "draft", void 0), S([o()], L.prototype, "capacityUnknown", void 0), S([o()], L.prototype, "saving", void 0), x("joe-battery-editor", L);
+S([r({ attribute: !1 })], L.prototype, "hass", void 0), S([r({ attribute: !1 })], L.prototype, "t", void 0), S([r({ attribute: !1 })], L.prototype, "config", void 0), S([r({ attribute: !1 })], L.prototype, "discovery", void 0), S([r({ attribute: !1 })], L.prototype, "info", void 0), S([r({ attribute: !1 })], L.prototype, "floor", void 0), S([r()], L.prototype, "batteryId", void 0), S([o()], L.prototype, "draft", void 0), S([o()], L.prototype, "capacityUnknown", void 0), S([o()], L.prototype, "saving", void 0), x("joe-battery-editor", L);
 //#endregion
 //#region src/editors/consumers.ts
 var at = ["auto", "always"], ot = [
@@ -10966,6 +10986,7 @@ var rn = [
           .config=${n}
           .discovery=${this.discovery}
           .info=${this.info}
+          .floor=${this.joe?.floors?.[t.id ?? ""]}
           batteryId=${t.id ?? ""}
         ></joe-battery-editor>`;
 				break;

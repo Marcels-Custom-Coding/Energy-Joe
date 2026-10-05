@@ -129,6 +129,8 @@ export interface BatteryConfig {
   capacity_entity: string | null;
   max_charge_w: number | null;
   max_discharge_w: number | null;
+  /** The level it never discharges below; null: as set on the device. */
+  floor_soc?: number | null;
   device_id: string | null;
   controls: Partial<Record<ControlRole, string>>;
   mode_options: Partial<Record<ModeMeaning, string>>;
@@ -709,6 +711,14 @@ export interface JoeState {
   apps?: { microsoft: boolean; google: boolean };
   /** Heating and air conditioning by presence. */
   climate?: ClimateStatus;
+  /** Each battery's floor (%), where it comes from, and the device's own setting. */
+  floors?: Record<string, BatteryFloor>;
+}
+
+export interface BatteryFloor {
+  value: number | null;
+  source: "user" | "device" | "unknown";
+  device: number | null;
 }
 
 // --- Steering (see custom_components/energy_joe/control) ---
