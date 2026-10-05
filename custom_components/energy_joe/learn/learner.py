@@ -22,6 +22,7 @@ from .models import (
     car_days,
     car_model,
     consumption_model,
+    converter_model,
     daily_rows,
     group_models,
     home_check,
@@ -264,7 +265,12 @@ class JoeLearner:
                 sunny, [a["id"] for a in config["forecast"]["alternatives"]]
             ),
             "battery_models": {
-                battery["id"]: found
+                battery["id"]: {
+                    **found,
+                    "converter": converter_model(
+                        _since(learned, "battery", days, first), battery["id"]
+                    ),
+                }
                 for battery in config["batteries"]
                 if (
                     found := battery_model(

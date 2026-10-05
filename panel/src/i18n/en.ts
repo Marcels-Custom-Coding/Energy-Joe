@@ -549,6 +549,14 @@ export const en: Record<Key, string> = {
   "settings.pro.intro": "Fine-tuning for the night. The defaults suit most homes – you don't have to change anything here.",
 
   "rule.reserve_soc": "Reserve",
+  "rule.converter_losses": "Count inverter losses when charging from the grid",
+  "rule.converter_losses.hint": "Measured at the grid meter – for batteries whose own meter sits behind the inverter.",
+  "learn.battery.converter": "{value} % of the grid power arrives when charging",
+  "tip.r_converter_losses.title": "What are inverter losses?",
+  "tip.r_converter_losses.text":
+    "Some batteries report their power on the direct-current side (e.g. a BYD on a Fronius). Then my measurement misses the inverter's losses when it converts grid power for charging. I measure them at the grid meter on nights with grid charging and no sun. With the switch on, I count them for charging and discharging – grid charging then pays off a little less often.",
+  "tip.r_converter_losses.hint":
+    "I need 5 such nights before I have a value; until then the switch changes nothing. Batteries on alternating current (e.g. Marstek) don't need it.",
   "rule.reserve_soc.hint":
     "At least this much stays in every battery. If a battery's own floor is higher, that applies.",
   "tip.r_reserve_soc.text":

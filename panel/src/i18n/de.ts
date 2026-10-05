@@ -555,6 +555,15 @@ export const de = {
   "settings.pro.intro": "Feinheiten für die Nacht. Die Startwerte passen für die meisten – ändern musst du hier nichts.",
 
   "rule.reserve_soc": "Reserve",
+  "rule.converter_losses": "Wandlerverluste beim Netzladen mitrechnen",
+  "rule.converter_losses.hint":
+    "Am Netzzähler gemessen – für Speicher, deren eigene Messung hinter dem Wechselrichter sitzt.",
+  "learn.battery.converter": "{value} % vom Netzstrom kommen beim Laden an",
+  "tip.r_converter_losses.title": "Was sind Wandlerverluste?",
+  "tip.r_converter_losses.text":
+    "Manche Speicher melden ihre Leistung auf der Gleichstrom-Seite (z. B. ein BYD am Fronius). Dann fehlen in meiner Messung die Verluste des Wechselrichters, wenn er Netzstrom zum Laden umwandelt. Ich messe sie in Nächten mit Netzladen ohne Sonne am Netzzähler nach. Ist der Schalter an, rechne ich sie beim Laden und Entladen mit ein – Netzladen lohnt sich dann etwas seltener.",
+  "tip.r_converter_losses.hint":
+    "Erst nach 5 solchen Nächten habe ich einen Wert; bis dahin ändert der Schalter nichts. Für Speicher am Wechselstrom (z. B. Marstek) ist er nicht nötig.",
   "rule.reserve_soc.hint":
     "Mindestens so viel bleibt in jedem Speicher. Hat ein Speicher eine höhere Entladegrenze, gilt die.",
   "tip.r_reserve_soc.text":

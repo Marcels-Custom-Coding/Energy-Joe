@@ -1077,6 +1077,12 @@ var Me = {
 	"settings.pro": "Für Profis",
 	"settings.pro.intro": "Feinheiten für die Nacht. Die Startwerte passen für die meisten – ändern musst du hier nichts.",
 	"rule.reserve_soc": "Reserve",
+	"rule.converter_losses": "Wandlerverluste beim Netzladen mitrechnen",
+	"rule.converter_losses.hint": "Am Netzzähler gemessen – für Speicher, deren eigene Messung hinter dem Wechselrichter sitzt.",
+	"learn.battery.converter": "{value} % vom Netzstrom kommen beim Laden an",
+	"tip.r_converter_losses.title": "Was sind Wandlerverluste?",
+	"tip.r_converter_losses.text": "Manche Speicher melden ihre Leistung auf der Gleichstrom-Seite (z. B. ein BYD am Fronius). Dann fehlen in meiner Messung die Verluste des Wechselrichters, wenn er Netzstrom zum Laden umwandelt. Ich messe sie in Nächten mit Netzladen ohne Sonne am Netzzähler nach. Ist der Schalter an, rechne ich sie beim Laden und Entladen mit ein – Netzladen lohnt sich dann etwas seltener.",
+	"tip.r_converter_losses.hint": "Erst nach 5 solchen Nächten habe ich einen Wert; bis dahin ändert der Schalter nichts. Für Speicher am Wechselstrom (z. B. Marstek) ist er nicht nötig.",
 	"rule.reserve_soc.hint": "Mindestens so viel bleibt in jedem Speicher. Hat ein Speicher eine höhere Entladegrenze, gilt die.",
 	"tip.r_reserve_soc.text": "Die Untergrenze für alle Speicher – zum Beispiel als Notreserve oder um die Batterie zu schonen. Jeder Speicher hat zusätzlich seine eigene Entladegrenze (am Gerät eingestellt, siehe Speicher). Ich rechne je Speicher mit dem höheren der beiden Werte.",
 	"tip.r_reserve_soc.hint": "10 % passen für die meisten Speicher.",
@@ -2869,6 +2875,12 @@ var Me = {
 	"settings.pro": "For pros",
 	"settings.pro.intro": "Fine-tuning for the night. The defaults suit most homes – you don't have to change anything here.",
 	"rule.reserve_soc": "Reserve",
+	"rule.converter_losses": "Count inverter losses when charging from the grid",
+	"rule.converter_losses.hint": "Measured at the grid meter – for batteries whose own meter sits behind the inverter.",
+	"learn.battery.converter": "{value} % of the grid power arrives when charging",
+	"tip.r_converter_losses.title": "What are inverter losses?",
+	"tip.r_converter_losses.text": "Some batteries report their power on the direct-current side (e.g. a BYD on a Fronius). Then my measurement misses the inverter's losses when it converts grid power for charging. I measure them at the grid meter on nights with grid charging and no sun. With the switch on, I count them for charging and discharging – grid charging then pays off a little less often.",
+	"tip.r_converter_losses.hint": "I need 5 such nights before I have a value; until then the switch changes nothing. Batteries on alternating current (e.g. Marstek) don't need it.",
 	"rule.reserve_soc.hint": "At least this much stays in every battery. If a battery's own floor is higher, that applies.",
 	"tip.r_reserve_soc.text": "The lowest level for all batteries – e.g. as an emergency reserve or to spare the battery. Each battery also has its own discharge floor (set on the device, see the battery). For each battery I use the higher of the two.",
 	"tip.r_reserve_soc.hint": "10 % fits most batteries.",
@@ -4185,14 +4197,14 @@ function Le(e) {
 }
 //#endregion
 //#region src/define.ts
-var Re = "0.9.0";
+var Re = "0.9.1";
 function H(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Re, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.0" && Be();
+	n.joeVersion !== "0.9.1" && Be();
 }
 var ze = !1;
 function Be() {

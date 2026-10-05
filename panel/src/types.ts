@@ -265,6 +265,8 @@ export interface Rules {
   /** Batteries take the midday sun, the car charges with the sun; saving first unless grid_first. */
   grid_friendly: boolean;
   grid_first: boolean;
+  /** Expert: count the inverter's losses when charging from the grid (measured at the grid meter). */
+  converter_losses: boolean;
   /** Charge full once every so many days (maintenance); null: off. */
   balance_days: number | null;
 }
@@ -307,7 +309,10 @@ export interface Learned {
   };
   /** How well each forecast source fits ("main" and the alternatives). */
   sources: Record<string, { factor: number; error: number; days: number }>;
-  battery_models: Record<string, { capacity_kwh: number; efficiency: number; days: number }>;
+  battery_models: Record<
+    string,
+    { capacity_kwh: number; efficiency: number; days: number; converter?: { factor: number; nights: number } | null }
+  >;
   action_models: Record<string, { rate_k_per_h: number; loss_k_per_h: number; demand_k: number; days: number }>;
   /** Per car charged by need: real consumption (kWh/100 km), extra per degree below 15 °C, usual km. */
   /** The home's use from the balance against its own sensor (kWh, last weeks). */

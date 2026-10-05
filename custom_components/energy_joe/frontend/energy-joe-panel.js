@@ -1,4 +1,4 @@
-import { A as e, C as t, D as n, E as r, O as i, S as a, T as o, _ as s, a as c, b as l, c as u, d, f, g as p, h as m, i as h, j as g, k as _, l as v, m as y, n as ee, o as te, p as ne, r as re, s as b, t as ie, u as ae, v as oe, w as se, x, y as S } from "./tokens-BEyrNXGw.js";
+import { A as e, C as t, D as n, E as r, O as i, S as a, T as o, _ as s, a as c, b as l, c as u, d, f, g as p, h as m, i as h, j as g, k as _, l as v, m as y, n as ee, o as te, p as ne, r as re, s as b, t as ie, u as ae, v as oe, w as se, x, y as S } from "./tokens-ppu_Jr4j.js";
 //#region src/assets.ts
 var ce = import.meta.url.replace(/[^/]*$/, ""), le = (e) => `${ce}${e}`, C = _`<svg
   class="swoosh"
@@ -7261,7 +7261,11 @@ var Y = class extends n {
 			let o = i[a.id], s = a.capacity_kwh, c = r.provenance[`batteries[${a.id}].capacity_kwh`]?.source === "user", l;
 			return l = o ? c && s ? e("learn.battery.user", { value: B(n, s, 1) }) : s && (o.capacity_kwh / s < .5 || o.capacity_kwh / s > 1.15) ? e("learn.battery.odd", { value: B(n, s, 1) }) : s ? e("learn.battery.uses_nominal", { value: B(n, s, 1) }) : e("learn.battery.uses") : a.power ? e("learn.battery.learning", { need: t.needs.models }) : e("learn.battery.no_power"), {
 				name: a.name,
-				values: o ? [e("learn.battery.capacity", { value: B(n, o.capacity_kwh, 1) }), e("learn.battery.efficiency", { value: y(n, o.efficiency * 100, 0) })] : [e("learn.still")],
+				values: o ? [
+					e("learn.battery.capacity", { value: B(n, o.capacity_kwh, 1) }),
+					e("learn.battery.efficiency", { value: y(n, o.efficiency * 100, 0) }),
+					...o.converter ? [e("learn.battery.converter", { value: y(n, o.converter.factor * 100, 0) })] : []
+				] : [e("learn.still")],
 				note: l
 			};
 		})) : _`<p class="say">${e("learn.battery.none")}</p>`}
@@ -10347,6 +10351,7 @@ var Zt = [
                 ${$t.map((t) => this.numberRow(e, n.rules, t))} ${this.guardRow(e, n.rules)}
                 ${this.numberRow(e, n.rules, en)}
                 ${this.priorityRow(e, n.rules)} ${this.dischargeRow(e, n.rules)}
+                ${this.converterRow(e, n.rules)}
                 ${Qt.slice(5).map((t) => this.numberRow(e, n.rules, t))}` : i}
         </section>
 
@@ -10643,6 +10648,26 @@ var Zt = [
           aria-labelledby="guard-grid"
           ?disabled=${!r}
           @click=${() => j(this, { rules: { guard_grid: !t.guard_grid } })}
+        ></button>
+      </div>
+    </div>`;
+	}
+	converterRow(e, t) {
+		let n = this.state.config;
+		return _`<div class="row" data-tipped>
+      <div>
+        <div class="name"><b id="converter-losses">${e("rule.converter_losses")}</b>${v(e, "r_converter_losses")}</div>
+        <small>${e("rule.converter_losses.hint")}</small>
+      </div>
+      <div class="control">
+        ${E(e, O(n, "rules.converter_losses"))}
+        <button
+          type="button"
+          class="switch"
+          role="switch"
+          aria-checked=${String(t.converter_losses)}
+          aria-labelledby="converter-losses"
+          @click=${() => j(this, { rules: { converter_losses: !t.converter_losses } })}
         ></button>
       </div>
     </div>`;

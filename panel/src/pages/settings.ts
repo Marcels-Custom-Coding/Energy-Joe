@@ -365,6 +365,7 @@ export class JoeSettings extends LitElement {
                 ${SAFETY_RULES.map((rule) => this.numberRow(t, config.rules, rule))} ${this.guardRow(t, config.rules)}
                 ${this.numberRow(t, config.rules, BALANCE_RULE)}
                 ${this.priorityRow(t, config.rules)} ${this.dischargeRow(t, config.rules)}
+                ${this.converterRow(t, config.rules)}
                 ${NUMBER_RULES.slice(5).map((rule) => this.numberRow(t, config.rules, rule))}`
             : nothing}
         </section>
@@ -737,6 +738,28 @@ export class JoeSettings extends LitElement {
           aria-labelledby="guard-grid"
           ?disabled=${!limit}
           @click=${() => saveConfig(this, { rules: { guard_grid: !rules.guard_grid } })}
+        ></button>
+      </div>
+    </div>`;
+  }
+
+  /** Expert: the inverter's losses when charging from the grid, measured at the grid meter. */
+  private converterRow(t: Translate, rules: Rules): TemplateResult {
+    const config = this.state!.config;
+    return html`<div class="row" data-tipped>
+      <div>
+        <div class="name"><b id="converter-losses">${t("rule.converter_losses")}</b>${tip(t, "r_converter_losses")}</div>
+        <small>${t("rule.converter_losses.hint")}</small>
+      </div>
+      <div class="control">
+        ${sourceChip(t, sourceOf(config, "rules.converter_losses"))}
+        <button
+          type="button"
+          class="switch"
+          role="switch"
+          aria-checked=${String(rules.converter_losses)}
+          aria-labelledby="converter-losses"
+          @click=${() => saveConfig(this, { rules: { converter_losses: !rules.converter_losses } })}
         ></button>
       </div>
     </div>`;

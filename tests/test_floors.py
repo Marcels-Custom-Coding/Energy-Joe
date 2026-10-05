@@ -39,3 +39,33 @@ def test_pooled_floor_weighs_each_battery_by_size() -> None:
     # The rule "reserve" stays the least.
     small = Battery("m", "Marstek", 5.0, 50.0, 2.5, 2.5, floor=5.0)
     assert _pooled_floor([small], 10.0) == 10.0
+
+
+def test_converter_losses_from_grid_charging_nights() -> None:
+    """The battery meter sees 92 % of what the grid gave for charging."""
+    from custom_components.energy_joe.learn.models import converter_model
+
+    days = {}
+    for night in range(6):
+        hours = []
+        for hour in range(6):
+            charging = hour >= 2
+            bat_in = 2.3 if charging else 0.0
+            hours.append(
+                {
+                    "start": f"2026-01-{10 + night:02d}T{hour:02d}:00:00+01:00",
+                    "cov": 1.0,
+                    "solar": 0.0,
+                    "home": 0.4 + (0.2 if charging else 0.0),
+                    "grid_in": 0.4 + (bat_in / 0.92 if charging else 0.0),
+                    "grid_out": 0.0,
+                    "bat": {
+                        "byd": {"in": bat_in, "out": 0.0},
+                        "m": {"in": 0.0, "out": 0.0},
+                    },
+                }
+            )
+        days[f"2026-01-{10 + night:02d}"] = {"hours": hours}
+    found = converter_model(days, "byd")
+    assert found == {"factor": 0.92, "nights": 6}
+    assert converter_model(dict(list(days.items())[:3]), "byd") is None

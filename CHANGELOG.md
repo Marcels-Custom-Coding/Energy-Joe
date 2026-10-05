@@ -3,6 +3,10 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.1
+
+- Einstellungen → Für Profis: neuer Schalter „Wandlerverluste beim Netzladen mitrechnen“ (Standard: aus). Für Speicher, deren eigene Messung hinter dem Wechselrichter sitzt (z. B. BYD am Fronius): Joe misst in Nächten mit Netzladen ohne Sonne am Netzzähler, wie viel vom Netzstrom wirklich ankommt, und rechnet es ein, wenn der Schalter an ist. Den Wert zeigt er unter Lernen → Speicher, sobald er 5 solche Nächte hat.
+
 ## 0.9.0
 
 - Entladegrenze je Speicher: Joe liest sie vom Gerät (Fronius „Mindestreserve“, Marstek „Discharge Cutoff“ …) und zeigt sie unter Geräte → Speicher. Du kannst eine eigene Zahl eintragen; kann Joe nichts auslesen, fragt er dort danach.

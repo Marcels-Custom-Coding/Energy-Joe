@@ -292,7 +292,12 @@ async def async_build_input(
         )
         if found := battery_models.get(battery["id"]):
             capacity = _real_capacity(config, battery["id"], capacity, found)
-            efficiencies.append((found["efficiency"], capacity or 0.0))
+            efficiency = found["efficiency"]
+            converter = found.get("converter") or {}
+            if config["rules"]["converter_losses"] and converter.get("factor"):
+                # The inverter's losses on the way in and out again.
+                efficiency *= converter["factor"] ** 2
+            efficiencies.append((efficiency, capacity or 0.0))
         soc = number(hass.states.get(battery["soc_entity"]))
         if not capacity:
             notes.append("capacity_unknown")

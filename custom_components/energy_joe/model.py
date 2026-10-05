@@ -468,6 +468,9 @@ RULES = vol.Schema(
         # with the sun. The saving comes first unless grid_first is set.
         vol.Optional("grid_friendly", default=True): bool,
         vol.Optional("grid_first", default=False): bool,
+        # Expert: count the inverter's losses when charging from the grid,
+        # measured at the grid meter (a battery's own meter may sit behind it).
+        vol.Optional("converter_losses", default=False): bool,
         # Maintenance: once every so many days the batteries charge full so
         # they can balance their cells (None: off).
         vol.Optional("balance_days", default=None): vol.Any(

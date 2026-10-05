@@ -1036,6 +1036,9 @@ export class JoeLearnPage extends LitElement {
                   ? [
                       t("learn.battery.capacity", { value: fixed(lang, found.capacity_kwh, 1) }),
                       t("learn.battery.efficiency", { value: formatNumber(lang, found.efficiency * 100, 0) }),
+                      ...(found.converter
+                        ? [t("learn.battery.converter", { value: formatNumber(lang, found.converter.factor * 100, 0) })]
+                        : []),
                     ]
                   : [t("learn.still")],
                 note,

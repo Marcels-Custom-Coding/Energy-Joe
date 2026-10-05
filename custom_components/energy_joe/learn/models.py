@@ -37,6 +37,8 @@ SAME_POLL = timedelta(minutes=2)
 # weight they keep: a year-old winter still teaches how much heating costs.
 HALF_LIFE_DAYS = 120
 OLD_WEIGHT = 0.2
+# Grid-charging nights before Joe trusts the inverter's losses.
+CONVERTER_NIGHTS = 5
 # More than this between two odometer readings is a glitch, not a drive (km).
 MAX_STEP_KM = 1500.0
 
@@ -288,6 +290,65 @@ def battery_model(
         "efficiency": round(efficiency, 3),
         "days": len(features),
     }
+
+
+def converter_model(
+    days: dict[str, dict[str, Any]], battery_id: str
+) -> dict[str, Any] | None:
+    """How much of what comes from the grid reaches the battery's own meter.
+
+    A battery meter on the direct-current side (e.g. behind a hybrid inverter)
+    does not see the inverter's losses. On nights with grid charging and no
+    sun: grid energy minus what the home used meanwhile (the median of the
+    night's quiet hours) is what went into charging; the battery meter shows
+    what arrived.
+    """
+    ratios = []
+    for _, data in sorted(days.items()):
+        hours = [
+            h
+            for h in data.get("hours") or []
+            if h.get("cov", 0) >= 0.8 and (h.get("solar") or 0.0) < 0.02
+        ]
+
+        def flows(hour: dict[str, Any]) -> list[tuple[str, float, float]]:
+            return [
+                (key, entry.get("in", 0.0), entry.get("out", 0.0))
+                for key, entry in (hour.get("bat") or {}).items()
+            ]
+
+        quiet = sorted(
+            h["home"]
+            for h in hours
+            if "home" in h
+            and h.get("bat")
+            and all(i < 0.05 and o < 0.05 for _, i, o in flows(h))
+        )
+        if len(quiet) < 2:
+            continue
+        base = quiet[len(quiet) // 2]
+        arrived = drawn = 0.0
+        for hour in hours:
+            mine = (hour.get("bat") or {}).get(battery_id) or {}
+            others = [(i, o) for key, i, o in flows(hour) if key != battery_id]
+            if mine.get("in", 0.0) < 0.3 or any(
+                i > 0.05 or o > 0.05 for i, o in others
+            ):
+                continue
+            ac = (hour.get("grid_in") or 0.0) - (hour.get("grid_out") or 0.0) - base
+            if ac <= 0.1:
+                continue
+            arrived += mine["in"]
+            drawn += ac
+        if drawn >= 1.0:
+            ratios.append(arrived / drawn)
+    if len(ratios) < CONVERTER_NIGHTS:
+        return None
+    ratios.sort()
+    factor = ratios[len(ratios) // 2]
+    if not 0.75 <= factor <= 1.05:
+        return None
+    return {"factor": round(min(1.0, factor), 3), "nights": len(ratios)}
 
 
 def solar_classes(ratios: list[dict[str, Any]]) -> dict[str, Any]:
