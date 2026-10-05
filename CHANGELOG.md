@@ -3,6 +3,10 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.8
+
+- „Laden nach Bedarf“ als Schalter direkt auf der Autokarte unter Geräte. Kennt Joe die Sensoren des Autos schon, schaltet er sofort um; beim ersten Mal öffnet er die Einstellungen des Autos an genau dieser Stelle und trägt ein, was er gefunden hat.
+
 ## 0.9.7
 
 - Autokarte unter Geräte: zeigt, welcher Kalender verbunden ist (auch die Kalender der Personen, die für das Auto zählen) und wann Joe ihn zuletzt gelesen hat. „Kalender verbinden“ bzw. „Ändern“ öffnet die Einstellungen des Autos direkt beim Kalender.

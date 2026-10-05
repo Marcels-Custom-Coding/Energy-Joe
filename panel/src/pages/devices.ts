@@ -9,6 +9,7 @@ import "../components/car-need";
 import "../components/pose";
 import "../components/sheet";
 import { tip } from "../components/tip";
+import { saveConfig } from "../config";
 import { define } from "../define";
 import { entityName, formatNumber, measurementKw, numberState } from "../entities";
 import type { Translate } from "../i18n";
@@ -43,6 +44,21 @@ export class JoeDevicesPage extends LitElement {
   static styles = [
     shared,
     css`
+      .car-need {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .car-need span {
+        flex: 1;
+        min-width: 0;
+        display: grid;
+      }
+      .car-need small {
+        color: var(--joe-muted);
+        font-size: 12.5px;
+      }
       .car-cal {
         display: flex;
         align-items: center;
@@ -399,7 +415,21 @@ export class JoeDevicesPage extends LitElement {
         ${action.enabled ? nothing : html`<span class="chip">${t("devices.action.off")}</span>`}
       </div>
       <p class="now">${this.actionText(t, joe, action, planned, live)}</p>
-      ${action.kind === "switch" && this.isCar(action) ? this.renderCarCalendar(t, joe, action) : nothing}
+      ${action.kind === "switch" && this.isCar(action)
+        ? html`<div class="car-need" data-tipped>
+              <button
+                type="button"
+                class="switch"
+                role="switch"
+                aria-checked=${String(Boolean(action.need?.enabled))}
+                aria-labelledby="need-${action.id}"
+                @click=${() => this.toggleNeed(action)}
+              ></button>
+              <span id="need-${action.id}"><b>${t("action.need")}</b><small>${t(action.need?.enabled ? "action.need.on" : "action.need.off")}</small></span>
+              ${tip(t, "a_need")}
+            </div>
+            ${this.renderCarCalendar(t, joe, action)}`
+        : nothing}
       ${planned?.need
         ? html`<joe-car-need .hass=${this.hass} .t=${t} .action=${planned} .roundTrip=${action.need?.round_trip ?? true}></joe-car-need>`
         : nothing}
@@ -501,6 +531,19 @@ export class JoeDevicesPage extends LitElement {
       await this.hass?.callWS({ type: "energy_joe/control/action_tonight", action_id: actionId, on });
     } catch {
       this.notice = this.t!("error.action");
+    }
+  }
+
+  /** Charging by need on or off right on the card; the first time, the car's sensors are chosen in the editor. */
+  private toggleNeed(action: ActionConfig): void {
+    const need = action.need;
+    if (need?.enabled) {
+      saveConfig(this, { actions: { [action.id]: { need: { ...need, enabled: false } } } });
+    } else if (need?.soc_entity || need?.range_entity) {
+      saveConfig(this, { actions: { [action.id]: { need: { ...need, enabled: true } } } });
+    } else {
+      // Nothing known about the car yet: the editor switches it on and fills in what Joe found.
+      this.editAction(action.id, "need");
     }
   }
 

@@ -1,4 +1,4 @@
-import { A as e, C as t, D as n, E as r, O as i, S as a, T as o, _ as s, a as c, b as l, c as u, d, f, g as p, h as m, i as h, j as g, k as _, l as v, m as y, n as ee, o as te, p as ne, r as re, s as b, t as ie, u as ae, v as oe, w as se, x, y as S } from "./tokens-CYOseDvB.js";
+import { A as e, C as t, D as n, E as r, O as i, S as a, T as o, _ as s, a as c, b as l, c as u, d, f, g as p, h as m, i as h, j as g, k as _, l as v, m as y, n as ee, o as te, p as ne, r as re, s as b, t as ie, u as ae, v as oe, w as se, x, y as S } from "./tokens-Ddd4iLJu.js";
 //#region src/assets.ts
 var ce = import.meta.url.replace(/[^/]*$/, ""), le = (e) => `${ce}${e}`, C = _`<svg
   class="swoosh"
@@ -2186,12 +2186,12 @@ var I = class extends n {
 				this.actionId === "new:ev" && t && Object.assign(e, this.fromWallbox(t));
 				let n = this.config?.consumers.filter((e) => e.kind === "hot_water") ?? [];
 				this.actionId === "new:hot_water" && n.length === 1 && (e.consumer_id = n[0].id), this.draft = e;
-			} else this.existing && (this.draft = structuredClone(this.existing), this.section === "calendars" && !this.draft.need?.enabled && this.toggleNeed());
+			} else this.existing && (this.draft = structuredClone(this.existing), (this.section === "calendars" || this.section === "need") && !this.draft.need?.enabled && this.toggleNeed());
 		}
 	}
 	updated() {
-		if (this.section === "calendars" && !this.focused) {
-			let e = this.shadowRoot?.querySelector("joe-car-calendars");
+		if ((this.section === "calendars" || this.section === "need") && !this.focused) {
+			let e = this.shadowRoot?.querySelector(this.section === "need" ? `[aria-label="${this.t?.("action.need") ?? ""}"]` : "joe-car-calendars");
 			e && (this.focused = !0, e.scrollIntoView({ block: "center" }));
 		}
 	}
@@ -5482,6 +5482,21 @@ var Ct = [
 	}
 	static {
 		this.styles = [l, g`
+      .car-need {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .car-need span {
+        flex: 1;
+        min-width: 0;
+        display: grid;
+      }
+      .car-need small {
+        color: var(--joe-muted);
+        font-size: 12.5px;
+      }
       .car-cal {
         display: flex;
         align-items: center;
@@ -5780,7 +5795,19 @@ var Ct = [
         ${n.enabled ? i : _`<span class="chip">${e("devices.action.off")}</span>`}
       </div>
       <p class="now">${this.actionText(e, t, n, a, o)}</p>
-      ${n.kind === "switch" && this.isCar(n) ? this.renderCarCalendar(e, t, n) : i}
+      ${n.kind === "switch" && this.isCar(n) ? _`<div class="car-need" data-tipped>
+              <button
+                type="button"
+                class="switch"
+                role="switch"
+                aria-checked=${String(!!n.need?.enabled)}
+                aria-labelledby="need-${n.id}"
+                @click=${() => this.toggleNeed(n)}
+              ></button>
+              <span id="need-${n.id}"><b>${e("action.need")}</b><small>${e(n.need?.enabled ? "action.need.on" : "action.need.off")}</small></span>
+              ${v(e, "a_need")}
+            </div>
+            ${this.renderCarCalendar(e, t, n)}` : i}
       ${a?.need ? _`<joe-car-need .hass=${this.hass} .t=${e} .action=${a} .roundTrip=${n.need?.round_trip ?? !0}></joe-car-need>` : i}
       ${n.kind === "switch" && (n.need?.soc_entity || n.need?.range_entity) ? _`<joe-car-charge .hass=${this.hass} .t=${e} .state=${t} .action=${n}></joe-car-charge>` : _`<div class="test">
             <span class="toggle-label" id="tonight-${n.id}">${e("devices.action.tonight")}</span>
@@ -5863,6 +5890,16 @@ var Ct = [
 		} catch {
 			this.notice = this.t("error.action");
 		}
+	}
+	toggleNeed(e) {
+		let t = e.need;
+		t?.enabled ? j(this, { actions: { [e.id]: { need: {
+			...t,
+			enabled: !1
+		} } } }) : t?.soc_entity || t?.range_entity ? j(this, { actions: { [e.id]: { need: {
+			...t,
+			enabled: !0
+		} } } }) : this.editAction(e.id, "need");
 	}
 	isCar(e) {
 		return !!(e.need?.enabled || e.need?.soc_entity || /ev|car|auto|wallbox/i.test(e.id + e.name));

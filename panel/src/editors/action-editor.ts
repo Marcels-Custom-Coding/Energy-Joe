@@ -220,7 +220,7 @@ export class JoeActionEditor extends LitElement {
         this.draft = draft;
       } else if (this.existing) {
         this.draft = structuredClone(this.existing);
-        if (this.section === "calendars" && !this.draft.need?.enabled) {
+        if ((this.section === "calendars" || this.section === "need") && !this.draft.need?.enabled) {
           // Calendars belong to charging by need: switch it on (until saved, nothing changes).
           this.toggleNeed();
         }
@@ -229,8 +229,8 @@ export class JoeActionEditor extends LitElement {
   }
 
   protected updated(): void {
-    if (this.section === "calendars" && !this.focused) {
-      const field = this.shadowRoot?.querySelector("joe-car-calendars");
+    if ((this.section === "calendars" || this.section === "need") && !this.focused) {
+      const field = this.shadowRoot?.querySelector(this.section === "need" ? `[aria-label="${this.t?.("action.need") ?? ""}"]` : "joe-car-calendars");
       if (field) {
         this.focused = true;
         field.scrollIntoView({ block: "center" });

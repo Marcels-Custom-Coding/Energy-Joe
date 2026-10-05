@@ -4363,14 +4363,14 @@ function Le(e) {
 }
 //#endregion
 //#region src/define.ts
-var Re = "0.9.7";
+var Re = "0.9.8";
 function H(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Re, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.7" && Be();
+	n.joeVersion !== "0.9.8" && Be();
 }
 var ze = !1;
 function Be() {
