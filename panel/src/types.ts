@@ -470,6 +470,8 @@ export interface ClimateConfig {
   /** When night is: each room's times, or an entity that is on while people are in bed. */
   night_by?: "time" | "entity";
   night_entity?: string | null;
+  /** Also "someone is home" while one of these is on or home (guest mode, a group). */
+  home_entities?: string[];
   rooms: Record<string, ClimateRoomConfig>;
 }
 

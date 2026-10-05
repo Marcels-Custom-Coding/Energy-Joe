@@ -139,6 +139,26 @@ export class JoeClimatePage extends LitElement {
         margin: 10px 0 0;
         font-weight: 600;
       }
+      .row.chips > span:first-child {
+        flex: 0 1 auto;
+      }
+      details.ent {
+        margin-top: 4px;
+        font-size: 12.5px;
+        color: var(--joe-muted);
+      }
+      details.ent summary {
+        cursor: pointer;
+        width: fit-content;
+      }
+      details.ent code {
+        display: block;
+        margin-top: 2px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12px;
+        color: var(--joe-ink-2);
+        overflow-wrap: anywhere;
+      }
       .line {
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) auto;
@@ -254,6 +274,7 @@ export class JoeClimatePage extends LitElement {
     const home = status?.home ?? [];
     const arrivals = Object.entries(this.found?.arrivals ?? status?.arrivals ?? {});
     const names = Object.fromEntries(joe.config.persons.map((p) => [p.person_entity, p.name]));
+    const extra = joe.config.climate?.home_entities ?? [];
     return html`<section class="card" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:home-account"></ha-icon>${t("climate.presence")}</div>
@@ -275,7 +296,37 @@ export class JoeClimatePage extends LitElement {
           </p>`
         : nothing}
       ${status?.free_day ? html`<p class="hint">${t("climate.free_day")}</p>` : nothing}
+      <div class="row" data-tipped>
+        <span>${t("climate.home_entities")}</span>
+        <button type="button" class="btn btn-secondary" @click=${() => void this.pickHome()}>
+          ${t(extra.length ? "climate.home_entities.change" : "climate.home_entities.add")}
+        </button>
+        ${tip(t, "climate_home_entities")}
+      </div>
+      ${extra.map((entity) => {
+        const live = this.hass?.states[entity];
+        const on = !!live && ["home", "on", "true", "occupied", "detected"].includes(live.state);
+        return html`<div class="row chips">
+          <span class="chip ${on ? "ok" : ""}" title=${entity}>${live?.attributes.friendly_name ?? entity}</span>
+          <span class="hint">${t(on ? "climate.home_entities.on" : "climate.home_entities.off")}</span>
+        </div>`;
+      })}
     </section>`;
+  }
+
+  private async pickHome(): Promise<void> {
+    const t = this.t;
+    if (!t) return;
+    const picked = await pickEntity(this, {
+      heading: t("pick.home_entities.title"),
+      tip: "pick_home_entities",
+      filter: "presence",
+      multiple: true,
+      selected: this.state?.config.climate?.home_entities ?? [],
+    });
+    if (picked) {
+      void saveConfig(this, { climate: { home_entities: picked.selected } });
+    }
   }
 
   /** When night is: fixed times per room, or an entity that says people are in bed. */

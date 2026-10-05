@@ -20,6 +20,7 @@ export type FilterName =
   | "consumption"
   | "car_energy"
   | "night"
+  | "presence"
   | "any";
 
 const POWER_UNITS = ["W", "kW", "MW"];
@@ -50,6 +51,7 @@ const FILTERS: Record<FilterName, (entity: HassEntity) => boolean> = {
   consumption: (e) => domain(e) === "sensor" && /kwh\/100|wh\/km|km\/kwh|mi\/kwh/i.test(unit(e).replace(/\s/g, "")),
   car_energy: (e) => ["sensor", "number", "input_number"].includes(domain(e)) && [...ENERGY_UNITS, "kJ", "MJ"].includes(unit(e)),
   night: (e) => ["binary_sensor", "input_boolean", "switch", "schedule"].includes(domain(e)),
+  presence: (e) => ["group", "input_boolean", "binary_sensor", "switch", "person", "device_tracker"].includes(domain(e)),
   any: () => true,
 };
 

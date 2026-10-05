@@ -1,4 +1,4 @@
-import { A as e, C as t, D as n, E as r, O as i, S as a, T as o, _ as s, a as c, b as l, c as u, d, f, g as p, h as m, i as h, j as g, k as _, l as v, m as y, n as ee, o as te, p as ne, r as re, s as b, t as ie, u as ae, v as oe, w as se, x, y as S } from "./tokens-ppu_Jr4j.js";
+import { A as e, C as t, D as n, E as r, O as i, S as a, T as o, _ as s, a as c, b as l, c as u, d, f, g as p, h as m, i as h, j as g, k as _, l as v, m as y, n as ee, o as te, p as ne, r as re, s as b, t as ie, u as ae, v as oe, w as se, x, y as S } from "./tokens--5puV3E1.js";
 //#region src/assets.ts
 var ce = import.meta.url.replace(/[^/]*$/, ""), le = (e) => `${ce}${e}`, C = _`<svg
   class="swoosh"
@@ -4312,6 +4312,26 @@ var gt = {
         margin: 10px 0 0;
         font-weight: 600;
       }
+      .row.chips > span:first-child {
+        flex: 0 1 auto;
+      }
+      details.ent {
+        margin-top: 4px;
+        font-size: 12.5px;
+        color: var(--joe-muted);
+      }
+      details.ent summary {
+        cursor: pointer;
+        width: fit-content;
+      }
+      details.ent code {
+        display: block;
+        margin-top: 2px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12px;
+        color: var(--joe-ink-2);
+        overflow-wrap: anywhere;
+      }
       .line {
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) auto;
@@ -4413,7 +4433,7 @@ var gt = {
     </section>`;
 	}
 	renderPresence(e, t) {
-		let n = t.climate, r = n?.home ?? [], a = Object.entries(this.found?.arrivals ?? n?.arrivals ?? {}), o = Object.fromEntries(t.config.persons.map((e) => [e.person_entity, e.name]));
+		let n = t.climate, r = n?.home ?? [], a = Object.entries(this.found?.arrivals ?? n?.arrivals ?? {}), o = Object.fromEntries(t.config.persons.map((e) => [e.person_entity, e.name])), s = t.config.climate?.home_entities ?? [];
 		return _`<section class="card" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:home-account"></ha-icon>${e("climate.presence")}</div>
@@ -4431,7 +4451,39 @@ var gt = {
             <a href=${_t} target="_blank" rel="noreferrer noopener">${e("climate.add_proximity")}</a>
           </p>` : i}
       ${n?.free_day ? _`<p class="hint">${e("climate.free_day")}</p>` : i}
+      <div class="row" data-tipped>
+        <span>${e("climate.home_entities")}</span>
+        <button type="button" class="btn btn-secondary" @click=${() => void this.pickHome()}>
+          ${e(s.length ? "climate.home_entities.change" : "climate.home_entities.add")}
+        </button>
+        ${v(e, "climate_home_entities")}
+      </div>
+      ${s.map((t) => {
+			let n = this.hass?.states[t], r = !!n && [
+				"home",
+				"on",
+				"true",
+				"occupied",
+				"detected"
+			].includes(n.state);
+			return _`<div class="row chips">
+          <span class="chip ${r ? "ok" : ""}" title=${t}>${n?.attributes.friendly_name ?? t}</span>
+          <span class="hint">${e(r ? "climate.home_entities.on" : "climate.home_entities.off")}</span>
+        </div>`;
+		})}
     </section>`;
+	}
+	async pickHome() {
+		let e = this.t;
+		if (!e) return;
+		let t = await M(this, {
+			heading: e("pick.home_entities.title"),
+			tip: "pick_home_entities",
+			filter: "presence",
+			multiple: !0,
+			selected: this.state?.config.climate?.home_entities ?? []
+		});
+		t && j(this, { climate: { home_entities: t.selected } });
 	}
 	renderNightSource(e, t) {
 		let n = t.config.climate, r = n?.night_by ?? "time", a = n?.night_entity ?? null, o = a ? this.hass?.states[a] : void 0;

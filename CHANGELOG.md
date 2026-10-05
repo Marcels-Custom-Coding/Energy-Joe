@@ -3,6 +3,11 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.2
+
+- Klima → „Wer ist da?“: „Gilt auch als zu Hause“. Wähle zusätzlich z. B. einen Gastmodus-Helfer oder deine Gruppe „Jemand zu Hause“. Ist eine davon „an“ oder „zu Hause“, verhält sich Joe so, als wäre jemand daheim – für den Babysitter oder Kinder ohne getracktes Handy.
+- Klima: Die aufklappbaren Entitäten sind wieder klein und einheitlich dargestellt.
+
 ## 0.9.1
 
 - Einstellungen → Für Profis: neuer Schalter „Wandlerverluste beim Netzladen mitrechnen“ (Standard: aus). Für Speicher, deren eigene Messung hinter dem Wechselrichter sitzt (z. B. BYD am Fronius): Joe misst in Nächten mit Netzladen ohne Sonne am Netzzähler, wie viel vom Netzstrom wirklich ankommt, und rechnet es ein, wenn der Schalter an ist. Den Wert zeigt er unter Lernen → Speicher, sobald er 5 solche Nächte hat.

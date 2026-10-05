@@ -371,6 +371,9 @@ CLIMATE = vol.Schema(
         # people are in bed (a "good night" routine, a bed sensor ...).
         vol.Optional("night_by", default="time"): vol.In(("time", "entity")),
         vol.Optional("night_entity", default=None): _ENTITY,
+        # Also "someone is home" while one of these is on or home: a guest
+        # mode helper (the babysitter, children without a phone), a group.
+        vol.Optional("home_entities", default=list): [cv.entity_id],
         vol.Optional("rooms", default=dict): {cv.entity_id: CLIMATE_ROOM},
     }
 )

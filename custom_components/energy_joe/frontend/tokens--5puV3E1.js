@@ -607,6 +607,17 @@ var Me = {
 	"climate.no_proximity": "Damit ich rechtzeitig vorheize, wenn jemand heimkommt, brauche ich die Integration „Nähe“ (Proximity) für eure Personen.",
 	"climate.add_proximity": "Nähe einrichten",
 	"climate.free_day": "Heute ist ein freier Tag.",
+	"climate.home_entities": "Gilt auch als „zu Hause“",
+	"climate.home_entities.add": "Hinzufügen",
+	"climate.home_entities.change": "Ändern",
+	"climate.home_entities.on": "gerade: jemand da",
+	"climate.home_entities.off": "gerade: aus",
+	"pick.home_entities.title": "Was sagt außerdem, dass jemand da ist?",
+	"tip.climate_home_entities.title": "Wer zählt noch als zu Hause?",
+	"tip.climate_home_entities.text": "Nicht jeder hat ein getracktes Handy – Kinder, der Babysitter, Gäste. Wähle hier zusätzlich z. B. einen Helfer „Gastmodus“ oder deine Gruppe „Jemand zu Hause“. Ist eine davon „an“ oder „zu Hause“, verhalte ich mich genau so, als wäre jemand von euch daheim: nichts wird abgesenkt.",
+	"tip.climate_home_entities.hint": "Für Gastmodus: einen Helfer „Schalter“ (input_boolean) anlegen und hier wählen.",
+	"tip.pick_home_entities.title": "Was zählt als „jemand ist da“?",
+	"tip.pick_home_entities.text": "Passend ist alles, was „an“ oder „zu Hause“ ist, solange jemand da ist: ein Gastmodus-Helfer, eine Gruppe, ein Präsenzmelder oder ein Gerät, das nur zu Hause verbunden ist.",
 	"climate.failed": "Die Geräte konnte ich gerade nicht laden.",
 	"climate.none": "Ich habe keine Thermostate oder Klimaanlagen in Home Assistant gefunden.",
 	"climate.no_area": "Ohne Raum",
@@ -2405,6 +2416,17 @@ var Me = {
 	"climate.no_proximity": "To warm up in time when someone comes home I need the Proximity integration for your persons.",
 	"climate.add_proximity": "Set up Proximity",
 	"climate.free_day": "Today is a day off.",
+	"climate.home_entities": "Also counts as “home”",
+	"climate.home_entities.add": "Add",
+	"climate.home_entities.change": "Change",
+	"climate.home_entities.on": "now: someone there",
+	"climate.home_entities.off": "now: off",
+	"pick.home_entities.title": "What else tells that someone is there?",
+	"tip.climate_home_entities.title": "Who else counts as home?",
+	"tip.climate_home_entities.text": "Not everyone has a tracked phone – children, the babysitter, guests. Pick e.g. a “guest mode” helper or your group “someone home” here as well. While one of them is “on” or “home”, I act exactly as if one of you were home: nothing is set back.",
+	"tip.climate_home_entities.hint": "For a guest mode: create a toggle helper (input_boolean) and pick it here.",
+	"tip.pick_home_entities.title": "What counts as “someone is there”?",
+	"tip.pick_home_entities.text": "Anything that is “on” or “home” while someone is there fits: a guest mode helper, a group, a presence sensor or a device that only connects at home.",
 	"climate.failed": "I could not load the devices just now.",
 	"climate.none": "I found no thermostats or air conditioners in Home Assistant.",
 	"climate.no_area": "No room",
@@ -4197,14 +4219,14 @@ function Le(e) {
 }
 //#endregion
 //#region src/define.ts
-var Re = "0.9.1";
+var Re = "0.9.2";
 function H(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Re, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.1" && Be();
+	n.joeVersion !== "0.9.2" && Be();
 }
 var ze = !1;
 function Be() {
@@ -4819,6 +4841,14 @@ var He = [
 		"input_boolean",
 		"switch",
 		"schedule"
+	].includes(W(e)),
+	presence: (e) => [
+		"group",
+		"input_boolean",
+		"binary_sensor",
+		"switch",
+		"person",
+		"device_tracker"
 	].includes(W(e)),
 	any: () => !0
 };

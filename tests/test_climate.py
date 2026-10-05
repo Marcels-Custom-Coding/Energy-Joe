@@ -197,3 +197,21 @@ async def test_night_from_an_entity(hass: HomeAssistant) -> None:
     cfg["climate"]["night_entity"] = None
     cfg["climate"]["night_by"] = "time"
     assert joe._night(room, datetime(2026, 1, 11, 1, 0, tzinfo=zone), ROOM)
+
+
+async def test_guest_mode_counts_as_home(hass: HomeAssistant) -> None:
+    """Nobody tracked is home, but the babysitter's helper is on: rooms stay warm."""
+    install(hass)
+    cfg = config()
+    cfg["climate"]["home_entities"] = ["input_boolean.gastmodus"]
+    joe = ClimateController(hass, lambda: cfg, lambda: "live", lambda: None)
+    hass.states.async_set("person.marcel", "not_home")
+    hass.states.async_set(
+        "input_boolean.gastmodus", "on", {"friendly_name": "Gastmodus"}
+    )
+    await joe.async_check()
+    assert hass.states.get(ROOM).attributes["temperature"] == 21.0
+    assert joe.status["home"] == ["Gastmodus"]
+    hass.states.async_set("input_boolean.gastmodus", "off")
+    await joe.async_check()
+    assert hass.states.get(ROOM).attributes["temperature"] < 21.0
