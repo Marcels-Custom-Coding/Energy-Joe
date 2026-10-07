@@ -64,7 +64,12 @@ def config(**room: Any) -> dict[str, Any]:
                 }
             },
             "context": {"holiday_entity": "binary_sensor.workday"},
-            "climate": {"enabled": True, "rooms": {ROOM: {"enabled": True, **room}}},
+            # Away at once (the delay has tests of its own).
+            "climate": {
+                "enabled": True,
+                "away_after_min": 0,
+                "rooms": {ROOM: {"enabled": True, **room}},
+            },
         },
         "user",
     )
@@ -196,7 +201,7 @@ async def test_night_from_an_entity(hass: HomeAssistant) -> None:
     # Fixed times are not used while an entity tells the night.
     cfg["climate"]["night_entity"] = None
     cfg["climate"]["night_by"] = "time"
-    assert joe._night(room, datetime(2026, 1, 11, 1, 0, tzinfo=zone), ROOM)
+    assert joe._night(room, datetime(2026, 1, 12, 1, 0, tzinfo=zone), ROOM)
 
 
 async def test_the_presence_entity_alone_decides(hass: HomeAssistant) -> None:

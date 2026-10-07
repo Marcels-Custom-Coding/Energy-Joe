@@ -20,9 +20,10 @@ import voluptuous as vol
 
 from homeassistant.helpers import config_validation as cv
 
+from .control import week
 from .control.profiles import ADAPTERS, MODE_OPTIONS, ROLES
 
-CONFIG_VERSION = 5
+CONFIG_VERSION = 6
 
 SOURCES = ("read", "learned", "default", "user")
 TARIFF_KINDS = ("fixed_window", "dynamic", "flat", "unknown")
@@ -71,6 +72,9 @@ REPLACED = frozenset(
         "car_models",
         "reset",
         "alternatives",
+        # Weekly profiles per mode and the ticks on a thermostat's own profiles.
+        "modes",
+        "device_profiles",
     }
 )
 # Origins that Joe's own reading never overwrites.
@@ -362,11 +366,27 @@ CLIMATE_ROOM = vol.Schema(
         vol.Optional("night_off", default=False): bool,
         vol.Optional("night_from", default="23:00"): _CLOCK,
         vol.Optional("night_until", default="06:30"): _CLOCK,
+        # Air conditioners: six profiles per mode with a curve over the day
+        # (see control/week.py).
+        vol.Optional("week", default=dict): vol.Schema(
+            {
+                vol.Optional("enabled", default=False): bool,
+                vol.Optional("modes", default=dict): {
+                    vol.In(week.MODES): week.profile_set
+                },
+            }
+        ),
+        # Thermostats with profiles of their own (Homematic IP): ticks by preset.
+        vol.Optional("device_profiles", default=dict): week.device_profiles,
     }
 )
 CLIMATE = vol.Schema(
     {
         vol.Optional("enabled", default=False): bool,
+        # Nobody home counts as away only after this many minutes.
+        vol.Optional("away_after_min", default=15): vol.All(
+            int, vol.Range(min=0, max=240)
+        ),
         # When night is: each room's times, or an entity that is "on" while
         # people are in bed (a "good night" routine, a bed sensor ...).
         vol.Optional("night_by", default="time"): vol.In(("time", "entity")),
@@ -605,6 +625,8 @@ CONFIG = vol.Schema(
                 # while on), so a group of persons stays "home"/"not_home".
                 vol.Optional("guest_switch", default=None): _ENTITY,
                 vol.Optional("guest_tracker", default=None): _ENTITY,
+                # Today is a day off as well while one of these is on.
+                vol.Optional("free_day_entities", default=list): [cv.entity_id],
             }
         ),
         vol.Optional("persons", default=list): [PERSON],
@@ -785,11 +807,8 @@ def adopt_proposal(
 
 def source_of(config: dict[str, Any], path: str) -> str:
     """Where a value came from: its own entry or the nearest parent's ("default" if none)."""
-    provenance = config.get("provenance") or {}
-    for candidate in reversed(_ancestors(path)):
-        if entry := provenance.get(candidate):
-            return entry.get("source", "default")
-    return "default"
+    entry = _entry_of(config.get("provenance") or {}, path)
+    return entry.get("source", "default") if entry else "default"
 
 
 def prefer_learned(config: dict[str, Any]) -> dict[str, Any]:
@@ -861,8 +880,42 @@ def migrate(data: dict[str, Any]) -> dict[str, Any]:
     if data.get("version", 1) < 5:
         # 0.9.2 had a list of extra entities; now one presence entity says it.
         (data.get("climate") or {}).pop("home_entities", None)
+    if data.get("version", 1) < 6:
+        _presets_to_tags(data)
     data["version"] = CONFIG_VERSION
     return validate(data)
+
+
+def _presets_to_tags(data: dict[str, Any]) -> None:
+    """Version 5 picked a thermostat's own profile for absence and days off;
+    now ticks on its profiles say it (the old fields stay)."""
+    provenance = data.get("provenance") or {}
+    for entity_id, room in ((data.get("climate") or {}).get("rooms") or {}).items():
+        found: list[tuple[str, str, str]] = []
+        if room.get("away") == "preset":
+            found.append((room.get("away_preset") or "", "away", "away_preset"))
+        found.append((room.get("free_day_preset") or "", "holiday", "free_day_preset"))
+        origin = None
+        for preset, tag, field in found:
+            if not week.WEEK_PROGRAM.match(preset):
+                continue
+            profiles = room.setdefault("device_profiles", {})
+            entry = profiles.setdefault(preset, {"name": "", "tags": []})
+            if tag not in entry.setdefault("tags", []):
+                entry["tags"].append(tag)
+            origin = origin or _entry_of(
+                provenance, f"climate.rooms.{entity_id}.{field}"
+            )
+        if origin is not None:
+            provenance[f"climate.rooms.{entity_id}.device_profiles"] = dict(origin)
+
+
+def _entry_of(provenance: dict[str, Any], path: str) -> dict[str, Any] | None:
+    """The provenance entry of a path or its nearest parent."""
+    for candidate in reversed(_ancestors(path)):
+        if entry := provenance.get(candidate):
+            return entry
+    return None
 
 
 # Servers of the providers version 3 knew and version 4 has no preset for.

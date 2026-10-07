@@ -26,6 +26,7 @@ from .accounts import AccountError
 from .calendar import unique_id as calendar_unique_id
 from .calendar_feed import feed_path
 from .const import DOMAIN
+from .control import week
 from .control.climate import arrivals as climate_arrivals
 from .control.meters import meter_options, suggest as suggest_meter
 from .control.profiles import PROFILES
@@ -82,6 +83,10 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_control_action_tonight)
     websocket_api.async_register_command(hass, ws_automations)
     websocket_api.async_register_command(hass, ws_climate_devices)
+    websocket_api.async_register_command(hass, ws_week_default)
+    websocket_api.async_register_command(hass, ws_week_set)
+    websocket_api.async_register_command(hass, ws_week_hold)
+    websocket_api.async_register_command(hass, ws_week_resume)
     websocket_api.async_register_command(hass, ws_notify_targets)
     websocket_api.async_register_command(hass, ws_automations_switch)
     websocket_api.async_register_command(hass, ws_control_boost)
@@ -996,6 +1001,16 @@ def ws_climate_devices(
                 "temperature": state.attributes.get("temperature"),
                 "current_temperature": state.attributes.get("current_temperature"),
                 "platform": item.platform if item else None,
+                # A thermostat's own weekly profiles, and the device's limits.
+                "week_presets": week.week_presets(
+                    state.attributes.get("preset_modes") or []
+                ),
+                **{
+                    key: value
+                    if isinstance(value := state.attributes.get(key), int | float)
+                    else None
+                    for key in ("min_temp", "max_temp", "target_temp_step")
+                },
             }
         )
     meters = meter_options(hass)
@@ -1015,6 +1030,138 @@ def ws_climate_devices(
             },
         },
     )
+
+
+def _week_room(runtime: JoeRuntime, entity_id: str) -> dict[str, Any]:
+    """A room's settings (the defaults while it has none)."""
+    rooms = (runtime.config.get("climate") or {}).get("rooms") or {}
+    return rooms.get(entity_id) or model.CLIMATE_ROOM({})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/climate/week/default",
+        vol.Required("entity_id"): cv.entity_id,
+        vol.Required("mode"): vol.In(week.MODES),
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_week_default(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Six profiles to start from for one mode of an air conditioner."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    state = hass.states.get(msg["entity_id"])
+    temperature = (
+        state.attributes.get("temperature")
+        if state is not None and state.state == msg["mode"]
+        else None
+    )
+    available, _ = week.home_office_available(runtime.config)
+    connection.send_result(
+        msg["id"],
+        {
+            "profiles": week.suggest(
+                msg["mode"],
+                temperature,
+                _week_room(runtime, msg["entity_id"]),
+                available,
+                (hass.config.language or "").startswith("de"),
+                # The device's own limits and step.
+                {
+                    key: state.attributes.get(key)
+                    for key in ("min_temp", "max_temp", "target_temp_step")
+                }
+                if state is not None
+                else None,
+            )
+        },
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/climate/week/set",
+        vol.Required("entity_id"): cv.entity_id,
+        vol.Required("mode"): vol.In(week.MODES),
+        vol.Required("profiles"): list,
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_week_set(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Store the six profiles of one mode (the other mode stays)."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    entity_id = msg["entity_id"]
+    try:
+        profiles = week.profile_set(msg["profiles"])
+        modes = dict(_week_room(runtime, entity_id)["week"]["modes"])
+        modes[msg["mode"]] = profiles
+        runtime.async_update_config(
+            {"climate": {"rooms": {entity_id: {"week": {"modes": modes}}}}}, "user"
+        )
+    except vol.Invalid as err:
+        connection.send_error(msg["id"], "invalid_week", str(err))
+        return
+    connection.send_result(msg["id"], {"ok": True})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/climate/week/hold",
+        vol.Required("entity_id"): cv.entity_id,
+        # None: back to the automatic choice.
+        vol.Required("profile"): vol.Any(
+            None, vol.All(int, vol.Range(min=0, max=week.PROFILE_COUNT - 1))
+        ),
+        vol.Optional("until", default="midnight"): vol.In(("midnight", "forever")),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_week_hold(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Run a profile by hand: until midnight or until lifted."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    try:
+        await runtime.climate.async_hold(msg["entity_id"], msg["profile"], msg["until"])
+    except ValueError as err:
+        connection.send_error(msg["id"], str(err), "This device has no profiles.")
+        return
+    connection.send_result(msg["id"], {"ok": True})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/climate/week/resume",
+        vol.Required("entity_id"): cv.entity_id,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_week_resume(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Back to the plan after a change by hand (also after switching off by hand)."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    await runtime.climate.async_resume(msg["entity_id"])
+    connection.send_result(msg["id"], {"ok": True})
 
 
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/notify/targets"})

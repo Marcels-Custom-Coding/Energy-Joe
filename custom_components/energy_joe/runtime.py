@@ -520,7 +520,10 @@ def _observed_parts(config: dict[str, Any]) -> dict[str, Any]:
         "batteries": [
             (b["id"], b["power"], b["soc_entity"]) for b in config["batteries"]
         ],
-        "context": config["context"],
+        # The days off of the climate page are not the observer's.
+        "context": {
+            k: v for k, v in config["context"].items() if k != "free_day_entities"
+        },
         "persons": [(p["id"], p["person_entity"]) for p in config["persons"]],
         "consumers": [
             (c["id"], c["energy_entity"], c["kind"]) for c in config["consumers"]

@@ -405,3 +405,99 @@ def test_version_4_drops_the_extra_home_entities() -> None:
     migrated = model.migrate(data)
     assert "home_entities" not in migrated["climate"]
     assert migrated["context"]["presence_entity"] is None
+
+
+def test_version_5_ticks_the_thermostats_own_profiles() -> None:
+    """A thermostat's profile for absence and days off becomes ticks on it."""
+    data = model.apply_update(
+        model.default_config(),
+        {
+            "climate": {
+                "rooms": {
+                    "climate.wohnzimmer": {
+                        "away": "preset",
+                        "away_preset": "week_program_2",
+                        "free_day_preset": "week_program_3",
+                    },
+                    "climate.bad": {
+                        "away": "setback",
+                        "away_preset": "week_program_2",
+                        "free_day_preset": "Feiertag",
+                    },
+                    "climate.flur": {
+                        "away": "preset",
+                        "away_preset": "week_program_1",
+                        "free_day_preset": "week_program_1",
+                    },
+                }
+            }
+        },
+        "user",
+    )
+    data["version"] = 5
+    del data["climate"]["away_after_min"], data["context"]["free_day_entities"]
+    for room in data["climate"]["rooms"].values():
+        del room["week"], room["device_profiles"]
+    migrated = model.migrate(data)
+    rooms = migrated["climate"]["rooms"]
+    assert rooms["climate.wohnzimmer"]["device_profiles"] == {
+        "week_program_2": {"name": "", "tags": ["away"]},
+        "week_program_3": {"name": "", "tags": ["holiday"]},
+    }
+    # The old fields stay; other presets and setbacks give no ticks.
+    assert rooms["climate.wohnzimmer"]["away_preset"] == "week_program_2"
+    assert rooms["climate.bad"]["device_profiles"] == {}
+    assert rooms["climate.flur"]["device_profiles"] == {
+        "week_program_1": {"name": "", "tags": ["away", "holiday"]}
+    }
+    provenance = migrated["provenance"]
+    assert (
+        provenance["climate.rooms.climate.wohnzimmer.device_profiles"]["source"]
+        == "user"
+    )
+    assert rooms["climate.wohnzimmer"]["week"] == {"enabled": False, "modes": {}}
+    assert migrated["climate"]["away_after_min"] == 15
+    assert migrated["context"]["free_day_entities"] == []
+
+
+def test_profiles_are_replaced_as_a_whole() -> None:
+    room = "climate.wohnzimmer"
+
+    def ticks(profiles: dict) -> dict:
+        return {"climate": {"rooms": {room: {"device_profiles": profiles}}}}
+
+    config = model.apply_update(
+        model.default_config(),
+        ticks(
+            {
+                "week_program_1": {"tags": ["normal"]},
+                "week_program_2": {"tags": ["away"]},
+            }
+        ),
+        "user",
+    )
+    config = model.apply_update(
+        config, ticks({"week_program_1": {"name": "Weg", "tags": ["away"]}}), "user"
+    )
+    assert config["climate"]["rooms"][room]["device_profiles"] == {
+        "week_program_1": {"name": "Weg", "tags": ["away"]}
+    }
+    with pytest.raises(vol.Invalid):
+        model.apply_update(
+            config,
+            ticks(
+                {
+                    "week_program_1": {"tags": ["away"]},
+                    "week_program_2": {"tags": ["away"]},
+                }
+            ),
+            "user",
+        )
+    with pytest.raises(vol.Invalid):
+        model.apply_update(
+            config,
+            {"climate": {"rooms": {room: {"week": {"modes": {"dry": []}}}}}},
+            "user",
+        )
+    with pytest.raises(vol.Invalid):
+        model.apply_update(config, {"climate": {"away_after_min": 300}}, "user")

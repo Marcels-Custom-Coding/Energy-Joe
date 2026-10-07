@@ -454,6 +454,36 @@ export interface ClimateMeter {
   energy: string | null;
 }
 
+/** When a week profile applies (each tag sits on at most one profile of a set). */
+export type WeekTag = "normal" | "holiday" | "away" | "home_office";
+export const WEEK_TAGS: WeekTag[] = ["normal", "holiday", "away", "home_office"];
+export type WeekMode = "heat" | "cool";
+export const WEEK_MODES: WeekMode[] = ["heat", "cool"];
+/** A switching point: minute of the day (0..1435, steps of 5) and a temperature or "off". */
+export type WeekValue = number | "off";
+export type WeekPoint = [number, WeekValue];
+/** One curve for all days, Mon–Fri and Sat–Sun, or each day (index 0 = Monday). */
+export type WeekSplit = "all" | "week_weekend" | "each";
+
+export interface WeekProfile {
+  name: string;
+  tags: WeekTag[];
+  split: WeekSplit;
+  curves: WeekPoint[][];
+}
+
+export interface ClimateWeekConfig {
+  enabled: boolean;
+  /** Exactly 6 profiles per operating mode. */
+  modes: Partial<Record<WeekMode, WeekProfile[]>>;
+}
+
+/** A device's own profile (e.g. Homematic IP week_program_N) with Joe's tags. */
+export interface DeviceProfileConfig {
+  name: string;
+  tags: WeekTag[];
+}
+
 export interface ClimateRoomConfig {
   enabled: boolean;
   /** null: not chosen yet (Joe suggests one), "none": has no meter. */
@@ -465,6 +495,10 @@ export interface ClimateRoomConfig {
   night_off: boolean;
   night_from: string;
   night_until: string;
+  /** Week profiles of an air conditioner. */
+  week?: ClimateWeekConfig;
+  /** Tags on the device's own week programs, by preset name. */
+  device_profiles?: Record<string, DeviceProfileConfig>;
 }
 
 export interface ClimateConfig {
@@ -474,7 +508,69 @@ export interface ClimateConfig {
   /** The drive home from the routing service instead of an average speed. */
   route_eta?: boolean;
   night_entity?: string | null;
+  /** Minutes without anybody home before the house counts as empty. */
+  away_after_min?: number;
   rooms: Record<string, ClimateRoomConfig>;
+}
+
+/** A thermostat or air conditioner as energy_joe/climate/devices lists it. */
+export interface ClimateDevice {
+  entity_id: string;
+  name: string;
+  device_id: string | null;
+  device_name: string | null;
+  area: string | null;
+  state: string;
+  hvac_modes: string[];
+  preset_modes: string[];
+  temperature: number | null;
+  current_temperature: number | null;
+  platform: string | null;
+  /** The device's own week programs (week_program_N), in order. */
+  week_presets?: string[];
+  min_temp?: number | null;
+  max_temp?: number | null;
+  target_temp_step?: number | null;
+}
+
+/** What kind of day today is for the climate control. */
+export interface ClimateDay {
+  free: boolean;
+  holiday: boolean;
+  weekend: boolean;
+  /** Names of the people working from home today (from their calendar). */
+  home_office: string[];
+  home_office_available: boolean;
+  home_office_reason: "default" | "no_calendar" | null;
+  labels_at: string | null;
+  /** The calendars today: not read yet, read ("ok": at least one person with a result), or not reachable. */
+  labels_state?: "unread" | "ok" | "error";
+}
+
+/** A profile chosen by hand, whatever the situation (until: ISO, or null for until further notice). */
+export interface ClimateHold {
+  profile: number;
+  mode: WeekMode;
+  until: string | null;
+}
+
+export interface ClimateRoomStatus {
+  want: string | null;
+  why: string;
+  kind?: "week" | "device" | "legacy";
+  mode?: WeekMode | null;
+  profile?: { index: number | null; name: string; tags: WeekTag[]; held: boolean } | null;
+  target?: { hvac: string; temperature?: number; preset?: string } | null;
+  /** The next switching point today. */
+  next?: { at: string; value: WeekValue } | null;
+  override?: { reason: "manual" | "off" | "preset"; until: string | null } | null;
+  /** The profile chosen by hand, also while the night or nobody home comes first. */
+  hold?: ClimateHold | null;
+  /** Profiles start ("start") or end ("end") once the night or absence now on is over. */
+  pending?: "start" | "end" | null;
+  error?: string | null;
+  /** True when Joe only shows what he would do (not live). */
+  would?: boolean;
 }
 
 export interface ClimateStatus {
@@ -483,9 +579,21 @@ export interface ClimateStatus {
   /** Per person entity: the usual homecoming today (minutes after midnight). */
   usual?: Record<string, number>;
   free_day: boolean;
-  rooms: Record<string, { want: string | null; why: string }>;
+  day?: ClimateDay;
+  /** Since when nobody is home (ISO), or null. */
+  nobody_since?: string | null;
+  rooms: Record<string, ClimateRoomStatus>;
   live: boolean;
   rates: Record<string, number>;
+  /** What Joe switched last, oldest first. */
+  log?: ClimateLogEntry[];
+}
+
+/** One switch in the climate log: a situation Joe set ("away", "normal" …), "back" or "failed". */
+export interface ClimateLogEntry {
+  at: string;
+  entity: string;
+  what: string;
 }
 
 export interface RoutingConfig {
@@ -567,6 +675,8 @@ export interface JoeConfig {
   context: { weather_entity: string | null; holiday_entity: string | null; presence_entity?: string | null;
     guest_switch?: string | null;
     guest_tracker?: string | null;
+    /** Today is a day off as well when one of these is on. */
+    free_day_entities?: string[];
   };
   persons: PersonConfig[];
   consumers: ConsumerConfig[];

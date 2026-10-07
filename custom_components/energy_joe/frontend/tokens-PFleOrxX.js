@@ -58,23 +58,23 @@ var e = globalThis, t = e.ShadowRoot && (e.ShadyCSS === void 0 || e.ShadyCSS.nat
 		}
 		return n;
 	}
-}, v = (e, t) => !l(e, t), re = {
+}, re = (e, t) => !l(e, t), ie = {
 	attribute: !0,
 	type: String,
 	converter: _,
 	reflect: !1,
 	useDefault: !1,
-	hasChanged: v
+	hasChanged: re
 };
 Symbol.metadata ??= Symbol("metadata"), h.litPropertyMetadata ??= /* @__PURE__ */ new WeakMap();
-var y = class extends HTMLElement {
+var v = class extends HTMLElement {
 	static addInitializer(e) {
 		this._$Ei(), (this.l ??= []).push(e);
 	}
 	static get observedAttributes() {
 		return this.finalize(), this._$Eh && [...this._$Eh.keys()];
 	}
-	static createProperty(e, t = re) {
+	static createProperty(e, t = ie) {
 		if (t.state && (t.attribute = !1), this._$Ei(), this.prototype.hasOwnProperty(e) && ((t = Object.create(t)).wrapped = !0), this.elementProperties.set(e, t), !t.noAccessor) {
 			let n = Symbol(), r = this.getPropertyDescriptor(e, n, t);
 			r !== void 0 && u(this.prototype, e, r);
@@ -100,7 +100,7 @@ var y = class extends HTMLElement {
 		};
 	}
 	static getPropertyOptions(e) {
-		return this.elementProperties.get(e) ?? re;
+		return this.elementProperties.get(e) ?? ie;
 	}
 	static _$Ei() {
 		if (this.hasOwnProperty(g("elementProperties"))) return;
@@ -187,7 +187,7 @@ var y = class extends HTMLElement {
 	requestUpdate(e, t, n, r = !1, i) {
 		if (e !== void 0) {
 			let a = this.constructor;
-			if (!1 === r && (i = this[e]), n ??= a.getPropertyOptions(e), !((n.hasChanged ?? v)(i, t) || n.useDefault && n.reflect && i === this._$Ej?.get(e) && !this.hasAttribute(a._$Eu(e, n)))) return;
+			if (!1 === r && (i = this[e]), n ??= a.getPropertyOptions(e), !((n.hasChanged ?? re)(i, t) || n.useDefault && n.reflect && i === this._$Ej?.get(e) && !this.hasAttribute(a._$Eu(e, n)))) return;
 			this.C(e, t, n);
 		}
 		!1 === this.isUpdatePending && (this._$ES = this._$EP());
@@ -251,17 +251,17 @@ var y = class extends HTMLElement {
 	updated(e) {}
 	firstUpdated(e) {}
 };
-y.elementStyles = [], y.shadowRootOptions = { mode: "open" }, y[g("elementProperties")] = /* @__PURE__ */ new Map(), y[g("finalized")] = /* @__PURE__ */ new Map(), ne?.({ ReactiveElement: y }), (h.reactiveElementVersions ??= []).push("2.1.2");
+v.elementStyles = [], v.shadowRootOptions = { mode: "open" }, v[g("elementProperties")] = /* @__PURE__ */ new Map(), v[g("finalized")] = /* @__PURE__ */ new Map(), ne?.({ ReactiveElement: v }), (h.reactiveElementVersions ??= []).push("2.1.2");
 //#endregion
 //#region node_modules/lit-html/lit-html.js
-var b = globalThis, ie = (e) => e, x = b.trustedTypes, ae = x ? x.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, oe = "$lit$", S = `lit$${Math.random().toFixed(9).slice(2)}$`, se = "?" + S, ce = `<${se}>`, C = document, w = () => C.createComment(""), T = (e) => e === null || typeof e != "object" && typeof e != "function", le = Array.isArray, ue = (e) => le(e) || typeof e?.[Symbol.iterator] == "function", E = "[ 	\n\f\r]", D = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, de = /-->/g, fe = />/g, O = RegExp(`>|${E}(?:([^\\s"'>=/]+)(${E}*=${E}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`, "g"), pe = /'/g, me = /"/g, he = /^(?:script|style|textarea|title)$/i, ge = (e) => (t, ...n) => ({
+var y = globalThis, ae = (e) => e, b = y.trustedTypes, oe = b ? b.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, x = "$lit$", S = `lit$${Math.random().toFixed(9).slice(2)}$`, C = "?" + S, se = `<${C}>`, w = document, T = () => w.createComment(""), E = (e) => e === null || typeof e != "object" && typeof e != "function", ce = Array.isArray, le = (e) => ce(e) || typeof e?.[Symbol.iterator] == "function", ue = "[ 	\n\f\r]", D = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, de = /-->/g, fe = />/g, O = RegExp(`>|${ue}(?:([^\\s"'>=/]+)(${ue}*=${ue}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`, "g"), pe = /'/g, me = /"/g, he = /^(?:script|style|textarea|title)$/i, ge = (e) => (t, ...n) => ({
 	_$litType$: e,
 	strings: t,
 	values: n
-}), k = ge(1), _e = ge(2), A = Symbol.for("lit-noChange"), j = Symbol.for("lit-nothing"), ve = /* @__PURE__ */ new WeakMap(), M = C.createTreeWalker(C, 129);
+}), k = ge(1), _e = ge(2), A = Symbol.for("lit-noChange"), j = Symbol.for("lit-nothing"), ve = /* @__PURE__ */ new WeakMap(), M = w.createTreeWalker(w, 129);
 function ye(e, t) {
-	if (!le(e) || !e.hasOwnProperty("raw")) throw Error("invalid template strings array");
-	return ae === void 0 ? t : ae.createHTML(t);
+	if (!ce(e) || !e.hasOwnProperty("raw")) throw Error("invalid template strings array");
+	return oe === void 0 ? t : oe.createHTML(t);
 }
 var be = (e, t) => {
 	let n = e.length - 1, r = [], i, a = t === 2 ? "<svg>" : t === 3 ? "<math>" : "", o = D;
@@ -269,7 +269,7 @@ var be = (e, t) => {
 		let n = e[t], s, c, l = -1, u = 0;
 		for (; u < n.length && (o.lastIndex = u, c = o.exec(n), c !== null);) u = o.lastIndex, o === D ? c[1] === "!--" ? o = de : c[1] === void 0 ? c[2] === void 0 ? c[3] !== void 0 && (o = O) : (he.test(c[2]) && (i = RegExp("</" + c[2], "g")), o = O) : o = fe : o === O ? c[0] === ">" ? (o = i ?? D, l = -1) : c[1] === void 0 ? l = -2 : (l = o.lastIndex - c[2].length, s = c[1], o = c[3] === void 0 ? O : c[3] === "\"" ? me : pe) : o === me || o === pe ? o = O : o === de || o === fe ? o = D : (o = O, i = void 0);
 		let d = o === O && e[t + 1].startsWith("/>") ? " " : "";
-		a += o === D ? n + ce : l >= 0 ? (r.push(s), n.slice(0, l) + oe + n.slice(l) + S + d) : n + S + (l === -2 ? t : d);
+		a += o === D ? n + se : l >= 0 ? (r.push(s), n.slice(0, l) + x + n.slice(l) + S + d) : n + S + (l === -2 ? t : d);
 	}
 	return [ye(e, a + (e[n] || "<?>") + (t === 2 ? "</svg>" : t === 3 ? "</math>" : "")), r];
 }, N = class e {
@@ -283,7 +283,7 @@ var be = (e, t) => {
 		}
 		for (; (i = M.nextNode()) !== null && c.length < s;) {
 			if (i.nodeType === 1) {
-				if (i.hasAttributes()) for (let e of i.getAttributeNames()) if (e.endsWith(oe)) {
+				if (i.hasAttributes()) for (let e of i.getAttributeNames()) if (e.endsWith(x)) {
 					let t = u[o++], n = i.getAttribute(e).split(S), r = /([.?@])?(.*)/.exec(t);
 					c.push({
 						type: 1,
@@ -299,16 +299,16 @@ var be = (e, t) => {
 				if (he.test(i.tagName)) {
 					let e = i.textContent.split(S), t = e.length - 1;
 					if (t > 0) {
-						i.textContent = x ? x.emptyScript : "";
-						for (let n = 0; n < t; n++) i.append(e[n], w()), M.nextNode(), c.push({
+						i.textContent = b ? b.emptyScript : "";
+						for (let n = 0; n < t; n++) i.append(e[n], T()), M.nextNode(), c.push({
 							type: 2,
 							index: ++a
 						});
-						i.append(e[t], w());
+						i.append(e[t], T());
 					}
 				}
 			} else if (i.nodeType === 8) {
-				if (i.data === se) c.push({
+				if (i.data === C) c.push({
 					type: 2,
 					index: a
 				});
@@ -324,13 +324,13 @@ var be = (e, t) => {
 		}
 	}
 	static createElement(e, t) {
-		let n = C.createElement("template");
+		let n = w.createElement("template");
 		return n.innerHTML = e, n;
 	}
 };
 function P(e, t, n = e, r) {
 	if (t === A) return t;
-	let i = r === void 0 ? n._$Cl : n._$Co?.[r], a = T(t) ? void 0 : t._$litDirective$;
+	let i = r === void 0 ? n._$Cl : n._$Co?.[r], a = E(t) ? void 0 : t._$litDirective$;
 	return i?.constructor !== a && (i?._$AO?.(!1), a === void 0 ? i = void 0 : (i = new a(e), i._$AT(e, n, r)), r === void 0 ? n._$Cl = i : (n._$Co ??= [])[r] = i), i !== void 0 && (t = P(e, i._$AS(e, t.values), i, r)), t;
 }
 var xe = class {
@@ -344,7 +344,7 @@ var xe = class {
 		return this._$AM._$AU;
 	}
 	u(e) {
-		let { el: { content: t }, parts: n } = this._$AD, r = (e?.creationScope ?? C).importNode(t, !0);
+		let { el: { content: t }, parts: n } = this._$AD, r = (e?.creationScope ?? w).importNode(t, !0);
 		M.currentNode = r;
 		let i = M.nextNode(), a = 0, o = 0, s = n[0];
 		for (; s !== void 0;) {
@@ -354,7 +354,7 @@ var xe = class {
 			}
 			a !== s?.index && (i = M.nextNode(), a++);
 		}
-		return M.currentNode = C, r;
+		return M.currentNode = w, r;
 	}
 	p(e) {
 		let t = 0;
@@ -378,7 +378,7 @@ var xe = class {
 		return this._$AB;
 	}
 	_$AI(e, t = this) {
-		e = P(this, e, t), T(e) ? e === j || e == null || e === "" ? (this._$AH !== j && this._$AR(), this._$AH = j) : e !== this._$AH && e !== A && this._(e) : e._$litType$ === void 0 ? e.nodeType === void 0 ? ue(e) ? this.k(e) : this._(e) : this.T(e) : this.$(e);
+		e = P(this, e, t), E(e) ? e === j || e == null || e === "" ? (this._$AH !== j && this._$AR(), this._$AH = j) : e !== this._$AH && e !== A && this._(e) : e._$litType$ === void 0 ? e.nodeType === void 0 ? le(e) ? this.k(e) : this._(e) : this.T(e) : this.$(e);
 	}
 	O(e) {
 		return this._$AA.parentNode.insertBefore(e, this._$AB);
@@ -387,7 +387,7 @@ var xe = class {
 		this._$AH !== e && (this._$AR(), this._$AH = this.O(e));
 	}
 	_(e) {
-		this._$AH !== j && T(this._$AH) ? this._$AA.nextSibling.data = e : this.T(C.createTextNode(e)), this._$AH = e;
+		this._$AH !== j && E(this._$AH) ? this._$AA.nextSibling.data = e : this.T(w.createTextNode(e)), this._$AH = e;
 	}
 	$(e) {
 		let { values: t, _$litType$: n } = e, r = typeof n == "number" ? this._$AC(e) : (n.el === void 0 && (n.el = N.createElement(ye(n.h, n.h[0]), this.options)), n);
@@ -402,15 +402,15 @@ var xe = class {
 		return t === void 0 && ve.set(e.strings, t = new N(e)), t;
 	}
 	k(t) {
-		le(this._$AH) || (this._$AH = [], this._$AR());
+		ce(this._$AH) || (this._$AH = [], this._$AR());
 		let n = this._$AH, r, i = 0;
-		for (let a of t) i === n.length ? n.push(r = new e(this.O(w()), this.O(w()), this, this.options)) : r = n[i], r._$AI(a), i++;
+		for (let a of t) i === n.length ? n.push(r = new e(this.O(T()), this.O(T()), this, this.options)) : r = n[i], r._$AI(a), i++;
 		i < n.length && (this._$AR(r && r._$AB.nextSibling, i), n.length = i);
 	}
 	_$AR(e = this._$AA.nextSibling, t) {
 		for (this._$AP?.(!1, !0, t); e !== this._$AB;) {
-			let t = ie(e).nextSibling;
-			ie(e).remove(), e = t;
+			let t = ae(e).nextSibling;
+			ae(e).remove(), e = t;
 		}
 	}
 	setConnected(e) {
@@ -428,10 +428,10 @@ var xe = class {
 	}
 	_$AI(e, t = this, n, r) {
 		let i = this.strings, a = !1;
-		if (i === void 0) e = P(this, e, t, 0), a = !T(e) || e !== this._$AH && e !== A, a && (this._$AH = e);
+		if (i === void 0) e = P(this, e, t, 0), a = !E(e) || e !== this._$AH && e !== A, a && (this._$AH = e);
 		else {
 			let r = e, o, s;
-			for (e = i[0], o = 0; o < i.length - 1; o++) s = P(this, r[n + o], t, o), s === A && (s = this._$AH[o]), a ||= !T(s) || s !== this._$AH[o], s === j ? e = j : e !== j && (e += (s ?? "") + i[o + 1]), this._$AH[o] = s;
+			for (e = i[0], o = 0; o < i.length - 1; o++) s = P(this, r[n + o], t, o), s === A && (s = this._$AH[o]), a ||= !E(s) || s !== this._$AH[o], s === j ? e = j : e !== j && (e += (s ?? "") + i[o + 1]), this._$AH[o] = s;
 		}
 		a && !r && this.j(e);
 	}
@@ -474,16 +474,31 @@ var xe = class {
 	_$AI(e) {
 		P(this, e);
 	}
-}, Ee = b.litHtmlPolyfillSupport;
-Ee?.(N, F), (b.litHtmlVersions ??= []).push("3.3.3");
-var De = (e, t, n) => {
+}, Ee = {
+	M: x,
+	P: S,
+	A: C,
+	C: 1,
+	L: be,
+	R: xe,
+	D: le,
+	V: P,
+	I: F,
+	H: I,
+	N: Ce,
+	U: we,
+	B: Se,
+	F: Te
+}, De = y.litHtmlPolyfillSupport;
+De?.(N, F), (y.litHtmlVersions ??= []).push("3.3.3");
+var Oe = (e, t, n) => {
 	let r = n?.renderBefore ?? t, i = r._$litPart$;
 	if (i === void 0) {
 		let e = n?.renderBefore ?? null;
-		r._$litPart$ = i = new F(t.insertBefore(w(), e), e, void 0, n ?? {});
+		r._$litPart$ = i = new F(t.insertBefore(T(), e), e, void 0, n ?? {});
 	}
 	return i._$AI(e), i;
-}, L = globalThis, R = class extends y {
+}, L = globalThis, R = class extends v {
 	constructor() {
 		super(...arguments), this.renderOptions = { host: this }, this._$Do = void 0;
 	}
@@ -493,7 +508,7 @@ var De = (e, t, n) => {
 	}
 	update(e) {
 		let t = this.render();
-		this.hasUpdated || (this.renderOptions.isConnected = this.isConnected), super.update(e), this._$Do = De(t, this.renderRoot, this.renderOptions);
+		this.hasUpdated || (this.renderOptions.isConnected = this.isConnected), super.update(e), this._$Do = Oe(t, this.renderRoot, this.renderOptions);
 	}
 	connectedCallback() {
 		super.connectedCallback(), this._$Do?.setConnected(!0);
@@ -506,17 +521,17 @@ var De = (e, t, n) => {
 	}
 };
 R._$litElement$ = !0, R.finalized = !0, L.litElementHydrateSupport?.({ LitElement: R });
-var Oe = L.litElementPolyfillSupport;
-Oe?.({ LitElement: R }), (L.litElementVersions ??= []).push("4.2.2");
+var ke = L.litElementPolyfillSupport;
+ke?.({ LitElement: R }), (L.litElementVersions ??= []).push("4.2.2");
 //#endregion
 //#region node_modules/@lit/reactive-element/decorators/property.js
-var ke = {
+var Ae = {
 	attribute: !0,
 	type: String,
 	converter: _,
 	reflect: !1,
-	hasChanged: v
-}, Ae = (e = ke, t, n) => {
+	hasChanged: re
+}, je = (e = Ae, t, n) => {
 	let { kind: r, metadata: i } = n, a = globalThis.litPropertyMetadata.get(i);
 	if (a === void 0 && globalThis.litPropertyMetadata.set(i, a = /* @__PURE__ */ new Map()), r === "setter" && ((e = Object.create(e)).wrapped = !0), a.set(n.name, e), r === "accessor") {
 		let { name: r } = n;
@@ -540,7 +555,7 @@ var ke = {
 	throw Error("Unsupported decorator location: " + r);
 };
 function z(e) {
-	return (t, n) => typeof n == "object" ? Ae(e, t, n) : ((e, t, n) => {
+	return (t, n) => typeof n == "object" ? je(e, t, n) : ((e, t, n) => {
 		let r = t.hasOwnProperty(n);
 		return t.constructor.createProperty(n, e), r ? Object.getOwnPropertyDescriptor(t, n) : void 0;
 	})(e, t, n);
@@ -556,7 +571,7 @@ function B(e) {
 }
 //#endregion
 //#region node_modules/@lit/reactive-element/decorators/base.js
-var je = (e, t, n) => (n.configurable = !0, n.enumerable = !0, Reflect.decorate && typeof t != "object" && Object.defineProperty(e, t, n), n);
+var Me = (e, t, n) => (n.configurable = !0, n.enumerable = !0, Reflect.decorate && typeof t != "object" && Object.defineProperty(e, t, n), n);
 //#endregion
 //#region node_modules/@lit/reactive-element/decorators/query.js
 function V(e, t) {
@@ -574,19 +589,19 @@ function V(e, t) {
 					}
 				};
 			})();
-			return je(n, r, { get() {
+			return Me(n, r, { get() {
 				let n = e.call(this);
 				return n === void 0 && (n = a(this), (n !== null || this.hasUpdated) && t.call(this, n)), n;
 			} });
 		}
-		return je(n, r, { get() {
+		return Me(n, r, { get() {
 			return a(this);
 		} });
 	};
 }
 //#endregion
 //#region src/i18n/de.ts
-var Me = {
+var Ne = {
 	"tab.overview": "Übersicht",
 	"tab.plan": "Plan",
 	"tab.history": "Historie",
@@ -729,6 +744,18 @@ var Me = {
 	"climate.now.night": "Jetzt: Nachtruhe.",
 	"climate.rate": "Erreicht etwa {rate} °C pro Stunde (gelernt).",
 	"climate.rate_default": "Wie schnell der Raum warm oder kühl wird, lerne ich noch.",
+	"climate.log": "Was ich zuletzt umgestellt habe",
+	"climate.log.normal": "auf Normal gestellt",
+	"climate.log.holiday": "auf Feiertag gestellt",
+	"climate.log.home_office": "auf Homeoffice gestellt",
+	"climate.log.held": "auf dein Profil von Hand gestellt",
+	"climate.log.night": "für die Nacht ausgeschaltet",
+	"climate.log.away": "auf Abwesenheit gestellt",
+	"climate.log.free_day": "auf das Profil für freie Tage gestellt",
+	"climate.log.back": "zurückgestellt, wie es vorher war",
+	"climate.log.failed": "Einstellen hat nicht geklappt",
+	"tip.climate_log.title": "Was hat Joe umgestellt?",
+	"tip.climate_log.text": "Meine letzten Einstellungen an den Klimageräten – mit Uhrzeit und Anlass, das Neueste oben. Was du selbst am Gerät änderst, steht hier nicht.",
 	"tip.climate_enabled.title": "Was macht Joe hier?",
 	"tip.climate_enabled.text": "Ich schaue, wer zu Hause ist (die Personen aus Home Assistant). Ist keiner da, stelle ich die Geräte, die du einschaltest, wie gewählt ein – absenken, aus oder ein Profil. Kommt jemand heim, stelle ich alles genau so zurück, wie es vorher war.",
 	"tip.climate_enabled.hint": "Wie überall: In der Simulation schalte ich nichts, sondern zeige nur, was ich täte.",
@@ -742,6 +769,194 @@ var Me = {
 	"tip.climate_free_day.title": "Freie Tage?",
 	"tip.climate_free_day.text": "An Wochenenden und Feiertagen (laut deinem Arbeitstag-Sensor) schalte ich auf dieses Profil, solange jemand zu Hause ist – z. B. ein Homematic-IP-Profil „Feiertag“ mit späterem Aufheizen.",
 	"tip.climate_night.title": "Nachts aus?",
+	"climate.away_after": "Als abwesend erst nach",
+	"climate.away_after.unit": "min",
+	"tip.climate_away_after.title": "Ab wann gilt das Haus als leer?",
+	"tip.climate_away_after.text": "Erst wenn so viele Minuten niemand mehr da ist, schalte ich auf Abwesenheit. Gehst du nur kurz zum Bäcker oder verliert dein Handy kurz das WLAN, bleibt alles, wie es ist.",
+	"tip.climate_away_after.hint": "0 heißt sofort. Das gilt für alle Geräte.",
+	"climate.now.just_left": "Jetzt: Gerade sind alle gegangen – ich warte noch {min} Minuten, ob jemand zurückkommt.",
+	"climate.today": "Heute",
+	"tip.climate_today.title": "Was für ein Tag ist heute?",
+	"tip.climate_today.text": "Danach wähle ich die Profile: an Arbeitstagen und am Wochenende „Normal“, an freien Werktagen „Feiertag“ und an Tagen, an denen jemand laut Kalender zu Hause arbeitet, „Homeoffice“.\nFrei ist ein Tag laut deinem Arbeitstag-Sensor oder Feiertagskalender – oder wenn eine der Entitäten darunter an ist.",
+	"climate.today.workday": "Heute ist ein Arbeitstag.",
+	"climate.today.weekend": "Heute ist Wochenende.",
+	"climate.today.holiday": "Heute ist ein freier Werktag – Feiertag oder Brückentag.",
+	"climate.today.ho": "Homeoffice heute: {names}.",
+	"climate.today.ho_none": "Heute arbeitet laut Kalender niemand im Homeoffice.",
+	"climate.today.read_at": "Kalender gelesen um {time}.",
+	"climate.today.labels_unread": "Kalender noch nicht gelesen – ob heute jemand im Homeoffice ist, sehe ich in ein paar Minuten.",
+	"climate.today.labels_error": "Kalender gerade nicht erreichbar – ob heute jemand im Homeoffice ist, weiß ich nicht. Ich versuche es bald wieder.",
+	"climate.today.free_by": "Zusätzlich frei, wenn eins davon an ist",
+	"climate.today.free_none": "nichts gewählt",
+	"climate.today.free_pick": "Auswählen",
+	"climate.today.free_change": "Ändern",
+	"tip.climate_free_entities.title": "Was macht einen Tag zusätzlich frei?",
+	"tip.climate_free_entities.text": "Zum Beispiel ein Helfer „Brückentag“ oder „Urlaub“, ein Zeitplan oder ein Schalter. Ist einer davon an, gilt heute als frei – an Werktagen nehme ich dann das Feiertagsprofil.",
+	"climate.today.rules": "Homeoffice-Tage erkenne ich an Kalender-Regeln, z. B. „Homeoffice“ im Titel eines Termins.",
+	"pick.free_day.title": "Was macht einen Tag frei?",
+	"tip.pick_free_day.title": "Welche Entitäten passen?",
+	"tip.pick_free_day.text": "Alles, was an einem freien Tag „an“ ist: ein Helfer (input_boolean) „Brückentag“, ein Zeitplan, ein Schalter oder ein Binärsensor. Du kannst mehrere wählen – einer reicht.",
+	"week.row": "Wochenprofile",
+	"tip.climate_week.title": "Was sind Wochenprofile?",
+	"tip.climate_week.text": "Wie bei einem Homematic-IP-Thermostat: Für Heizen und Kühlen gibt es je 6 Profile mit Schaltpunkten über den Tag, z. B. 07:00 → 22 °C, 23:00 → aus. Per Haken sagst du, wann ich welches Profil nehme: Normal, Feiertag, Abwesend, Homeoffice.\nIch folge der Betriebsart, die an der Klimaanlage eingestellt ist. Schaltest du sie von Hand aus, schalte ich sie nicht wieder ein.",
+	"tip.climate_week.hint": "Ich stelle nur ein, wenn sich das Ziel ändert – nicht jede Minute. In der Simulation zeige ich nur, was ich täte.",
+	"week.edit": "Profile bearbeiten",
+	"week.no_sets": "Noch keine Profile – tipp auf „Profile bearbeiten“. Bis dahin gilt die Einstellung darunter.",
+	"week.pending.start": "Die Wochenprofile übernehmen, sobald die laufende Nacht oder Abwesenheit vorbei ist – bis dahin bleibt alles, wie es ist.",
+	"week.pending.end": "Die Wochenprofile laufen noch bis zum Ende der Nacht bzw. Abwesenheit, dann gebe ich ab.",
+	"devprof.pending.start": "Die Haken wirken, sobald die laufende Abwesenheit oder der freie Tag vorbei ist – bis dahin bleibt alles, wie es ist.",
+	"devprof.pending.end": "Das Abwesenheitsprogramm läuft noch, bis jemand heimkommt; dann stelle ich das normale Programm ein und gebe ab.",
+	"week.legacy_now": "Die Klimaanlage steht gerade auf „{state}“ – dafür gibt es keine Profile, also gilt die Einstellung darunter.",
+	"climate.hvac.off": "Aus",
+	"climate.hvac.heat": "Heizen",
+	"climate.hvac.cool": "Kühlen",
+	"climate.hvac.dry": "Entfeuchten",
+	"climate.hvac.fan_only": "Nur Lüften",
+	"climate.hvac.auto": "Automatik",
+	"climate.hvac.heat_cool": "Heizen/Kühlen",
+	"week.now": "Jetzt: {text}",
+	"week.would": "Würde jetzt: {text}",
+	"week.state_off": "Aus",
+	"week.held": "von Hand",
+	"week.next": "um {time} → {value}",
+	"week.why.night": "Nachtruhe",
+	"week.why.away": "Niemand da",
+	"week.why.just_left": "Gerade gegangen – ich warte {min} Minuten",
+	"week.why.arriving": "Jemand kommt heim",
+	"week.why.arriving_usual": "Gleich übliche Heimkehr",
+	"week.why.holiday": "Freier Werktag",
+	"week.why.home_office": "Homeoffice",
+	"week.why.weekend": "Wochenende",
+	"week.why.home": "Jemand ist da",
+	"week.why.held": "Profil von Hand",
+	"week.why.override": "Von Hand verstellt",
+	"week.why.off_by_hand": "Von Hand aus",
+	"week.why.unavailable": "Gerät nicht erreichbar",
+	"week.why.manual_mode": "Gerät nicht auf Automatik",
+	"week.override.manual": "Von Hand verstellt – das gilt bis {time}, dann geht es nach Plan weiter.",
+	"week.override.manual_open": "Von Hand verstellt – das gilt bis zum nächsten Schaltpunkt.",
+	"week.override.off": "Von Hand aus – ich warte, bis du sie wieder einschaltest.",
+	"week.override.preset": "Profil am Gerät von Hand gewechselt – das gilt bis {time}.",
+	"week.override.preset_open": "Profil am Gerät von Hand gewechselt – das gilt, bis jemand geht oder heimkommt oder ein anderer Tag beginnt.",
+	"week.resume": "Zurück zum Plan",
+	"tip.week_resume.title": "Was macht „Zurück zum Plan“?",
+	"tip.week_resume.text": "Ich vergesse deine Änderung von Hand und stelle gleich wieder ein, was laut Profil jetzt gilt.",
+	"week.error": "Das Einstellen hat nicht geklappt: {error}",
+	"week.error.not_confirmed": "Ich habe es mehrmals versucht, aber das Gerät hat den Wert nicht übernommen. Ist es erreichbar?",
+	"week.as_is": "wie am Gerät eingestellt",
+	"week.hold": "Profil von Hand",
+	"week.hold.auto": "Automatik",
+	"week.hold.until": "Wie lange?",
+	"week.hold.midnight": "bis heute 24:00",
+	"week.hold.forever": "bis auf Weiteres",
+	"week.hold.later_night": "Gerade hat die Nachtruhe Vorrang – danach gilt wieder {profile}.",
+	"week.hold.later_away": "Gerade ist niemand da, das geht vor – sobald jemand heimkommt, gilt wieder {profile}.",
+	"week.hold.other_mode": "Fürs {mode} hast du {profile} von Hand gewählt ({until}) – das gilt wieder, sobald die Klimaanlage auf {mode} steht.",
+	"week.hold.lift": "Aufheben",
+	"tip.week_hold.title": "Heute ein anderes Profil?",
+	"tip.week_hold.text": "Wähle ein Profil, das statt meiner Wahl gelten soll – z. B. Profil 5 für einen Tag mit Gästen. Es gilt bis heute 24:00 oder bis auf Weiteres. „Automatik“ gibt die Wahl wieder an mich.\nNachtruhe und Abwesenheit gehen trotzdem vor.",
+	"week.away_fallback": "Gilt nur, solange kein Profil den Haken „Abwesend“ hat.",
+	"tip.week_away.title": "Was passiert, wenn keiner da ist?",
+	"tip.week_away.text": "Hat kein Profil den Haken „Abwesend“, mache ich Folgendes:\n**Absenken**: das Profil von jetzt, um die eingestellten Grad kühler (beim Kühlen wärmer).\n**Aus**: die Klimaanlage ganz aus.",
+	"devprof.title": "Heizprofile des Geräts",
+	"tip.climate_device_profiles.title": "Wann nimmt Joe welches Heizprofil?",
+	"tip.climate_device_profiles.text": "Zeiten und Temperaturen der Wochenprogramme stehen im Gerät (z. B. in der CCU oder der Homematic-IP-App) – die ändere ich nicht. Du sagst mir nur per Haken, wofür ein Profil gilt: **Normal** an Arbeitstagen und am Wochenende, **Feiertag** an freien Werktagen, **Abwesend**, wenn keiner da ist, **Homeoffice** an Tagen mit Homeoffice laut Kalender. Der Name ist nur für dich.\nIch wechsle das Profil nur, wenn das Gerät auf Automatik steht, und höchstens alle 15 Minuten – außer beim Gehen und Heimkommen.",
+	"tip.climate_device_profiles.hint": "Jeder Haken sitzt an höchstens einem Profil. Setzt du ihn woanders, wandert er dorthin.",
+	"devprof.name": "Name für {preset}",
+	"devprof.tags": "Wofür gilt {preset}?",
+	"devprof.moved": "„{tag}“ sitzt jetzt bei {to} statt bei {from}.",
+	"devprof.need_normal": "Setz den Haken „Normal“ bei einem Profil. Erst dann gelten die Haken – bis dahin steuere ich das Gerät wie bisher mit den Einstellungen darunter.",
+	"devprof.not_auto": "Ich wechsle Profile nur im Automatik-Betrieb. Gerade steht das Gerät auf „{state}“.",
+	"devprof.away_keep": "Lassen",
+	"tip.devprof_away.title": "Was passiert, wenn keiner da ist?",
+	"tip.devprof_away.text": "Hat kein Profil den Haken „Abwesend“:\n**Lassen**: Ich ändere nichts.\n**Aus**: Ich schalte die Heizung aus und beim Heimkommen wieder auf Automatik.",
+	"week.profile": "Profil {n}",
+	"week.mode.heat": "Heizen",
+	"week.mode.cool": "Kühlen",
+	"week.off": "aus",
+	"week.tag.normal": "Normal",
+	"week.tag.holiday": "Feiertag",
+	"week.tag.away": "Abwesend",
+	"week.tag.home_office": "Homeoffice",
+	"week.ho.default": "Homeoffice ist bei euch der normale Arbeitstag – dafür braucht es keinen eigenen Haken.",
+	"week.ho.no_calendar": "Homeoffice lese ich aus dem Kalender – dafür braucht jemand im Haushalt einen Kalender.",
+	"week.ho.rules": "Kalender-Regeln unter Lernen",
+	"week.label": "Wochenprofile bearbeiten",
+	"week.title": "Wochen|profile",
+	"week.loading": "Lade das Gerät …",
+	"week.load_failed": "Die Geräte konnte ich gerade nicht laden.",
+	"week.device_missing": "Dieses Gerät finde ich gerade nicht in Home Assistant.",
+	"week.no_modes": "Dieses Gerät kann weder heizen noch kühlen.",
+	"week.modes": "Betriebsart",
+	"tip.week_mode.title": "Heizen oder Kühlen?",
+	"tip.week_mode.text": "Jede Betriebsart hat ihre eigenen 6 Profile. Welche gerade gilt, bestimmt die Klimaanlage: Ich folge dem, was an ihr eingestellt ist.",
+	"week.empty": "Für {mode} gibt es noch keine Profile.",
+	"week.create": "Profile anlegen",
+	"week.creating": "Lege an …",
+	"tip.week_create.title": "Wie fange ich an?",
+	"tip.week_create.text": "Ich schlage dir 6 Profile vor: Normal, Feiertag, Abwesend, Homeoffice und zwei freie – mit der Temperatur, die gerade eingestellt ist, und „Nachts aus“, wenn du das eingeschaltet hast. Danach passt du sie an. Gespeichert wird erst mit „Speichern“.",
+	"week.profiles": "Profile",
+	"tip.week_profiles.title": "Welches Profil bearbeite ich?",
+	"tip.week_profiles.text": "Tipp auf ein Profil, um es darunter zu bearbeiten. An der Klimaanlage ändert sich dadurch nichts. Der grüne Punkt zeigt das Profil, das gerade läuft, die kleine Leiste den Verlauf von heute.",
+	"week.running": "läuft gerade",
+	"week.name": "Name",
+	"tip.week_name.title": "Wie soll das Profil heißen?",
+	"tip.week_name.text": "Nur für dich, z. B. „Früh raus“ oder „Gäste“. Höchstens 30 Zeichen.",
+	"week.tags": "Wofür gilt dieses Profil?",
+	"tip.week_tags.title": "Wann nimmt Joe dieses Profil?",
+	"tip.week_tags.text": "**Normal**: an Arbeitstagen und am Wochenende, wenn jemand da ist. Genau ein Profil hat diesen Haken.\n**Feiertag**: an freien Werktagen. Ohne diesen Haken nehme ich „Normal“ mit dem Sonntagsverlauf.\n**Abwesend**: wenn alle eine Weile weg sind. Ohne diesen Haken gilt „Wenn keiner da ist“ auf der Karte.\n**Homeoffice**: an Arbeitstagen, an denen jemand laut Kalender zu Hause arbeitet.",
+	"tip.week_tags.hint": "Jeder Haken sitzt an höchstens einem Profil. Setzt du ihn hier, wandert er vom anderen Profil hierher.",
+	"week.tag.moved": "„{tag}“ kam von {from} – dort ist der Haken jetzt weg.",
+	"week.normal_fixed": "„Normal“ braucht genau ein Profil. Setz den Haken bei einem anderen Profil, dann wandert er dorthin.",
+	"week.no_normal": "Kein Profil hat den Haken „Normal“ – dann nehme ich Profil 1.",
+	"week.untagged": "Ohne Haken nutze ich dieses Profil nicht von selbst – nur über „Profil von Hand“.",
+	"week.days": "Tage",
+	"tip.week_split.title": "Jeden Tag gleich?",
+	"tip.week_split.text": "**Alle Tage gleich**: ein Verlauf für die ganze Woche.\n**Mo–Fr und Sa–So**: einer für Werktage, einer fürs Wochenende.\n**Jeder Tag einzeln**: sieben Verläufe.\nAufteilen kopiert den bisherigen Verlauf auf alle neuen Tage. Zusammenlegen behält den ersten (Montag bzw. Mo–Fr).",
+	"week.split.all": "Alle Tage gleich",
+	"week.split.week_weekend": "Mo–Fr und Sa–So",
+	"week.split.each": "Jeder Tag einzeln",
+	"week.split.split": "Aufgeteilt: Jeder Tag startet mit dem bisherigen Verlauf.",
+	"week.split.merged": "Zusammengelegt: Es gilt jetzt der Verlauf von {first}.",
+	"week.split.merged_days": "Zusammengelegt: Mo–Fr übernimmt den Montag, Sa–So den Samstag.",
+	"week.group.all": "Alle Tage",
+	"week.group.weekdays": "Mo–Fr",
+	"week.group.weekend": "Sa–So",
+	"week.today": "heute",
+	"week.curve": "Verlauf {label}",
+	"week.points": "Verlauf und Schaltpunkte",
+	"tip.week_points.title": "Was ist ein Schaltpunkt?",
+	"tip.week_points.text": "Ab dieser Uhrzeit gilt der Wert – bis zum nächsten Schaltpunkt. Der erste um 00:00 steht fest. Mit „aus“ geht die Klimaanlage aus, der nächste Punkt mit Temperatur schaltet sie wieder ein.\nDie Leiste zeigt den Tag von 0 bis 24 Uhr, der Strich ist jetzt. Tipp auf einen Tag, um seine Schaltpunkte zu sehen.",
+	"tip.week_points.hint": "Höchstens 12 Schaltpunkte am Tag, Uhrzeiten in 5-Minuten-Schritten.",
+	"week.limits": "Die Klimaanlage kann {min} bis {max} °C in Schritten von {step}.",
+	"week.fitted": "Einige Werte lagen außerhalb dessen, was die Klimaanlage kann. Ich habe sie angepasst – „Speichern“ übernimmt das.",
+	"week.night_time": "„Nachts aus“ ist an: Von {from} bis {until} bleibt die Klimaanlage aus, egal was hier steht.",
+	"week.night_entity": "„Nachts aus“ ist an: Solange Nacht ist, bleibt die Klimaanlage aus – spätestens ab {until} gilt wieder der Plan.",
+	"week.point.first": "Der Tag beginnt immer um 00:00.",
+	"week.point.time": "Uhrzeit des Schaltpunkts",
+	"week.point.value": "Temperatur ab {time}",
+	"week.point.less": "{step} °C weniger",
+	"week.point.more": "{step} °C mehr",
+	"week.point.off": "Ab {time} aus",
+	"week.point.delete": "Schaltpunkt um {time} löschen",
+	"week.point.add": "Schaltpunkt",
+	"tip.week_add.title": "Wo kommt der neue Schaltpunkt hin?",
+	"tip.week_add.text": "In die Mitte des längsten Abschnitts, auf 15 Minuten gerundet, mit dem Wert davor. Danach stellst du Uhrzeit und Wert ein.",
+	"week.point.max": "Mehr als 12 Schaltpunkte am Tag gehen nicht.",
+	"week.point.no_room": "Hier ist kein Platz für einen weiteren Schaltpunkt.",
+	"week.point.duplicate": "Um {time} gibt es schon einen Schaltpunkt.",
+	"week.copy": "Kopieren nach …",
+	"tip.week_copy.title": "Den Verlauf auf andere Tage übertragen?",
+	"tip.week_copy.text": "Kopiert die Schaltpunkte dieses Tages auf die gewählten Tage. Deren bisheriger Verlauf wird ersetzt.",
+	"week.copy.all": "alle anderen Tage",
+	"week.copied": "Kopiert nach {days}.",
+	"week.saving": "Speichere …",
+	"week.unsaved": "Noch nicht gespeichert",
+	"week.save_failed": "{mode} nicht gespeichert: {error}",
+	"week.problem.count": "Es müssen genau 6 Profile sein.",
+	"week.problem.tags": "Ein Haken sitzt an mehr als einem Profil.",
+	"week.problem.curves": "Die Zahl der Verläufe passt nicht zu den Tagen.",
+	"week.problem.points": "Ein Verlauf hat ungültige Schaltpunkte.",
 	"tab.settings": "Einstellungen",
 	"nav.label": "Bereiche",
 	"mode.simulation": "Simulation",
@@ -2473,7 +2688,7 @@ var Me = {
 	"error.text": "Ich erreiche die Integration nicht. Lade die Seite neu – hilft das nicht, schau unter Einstellungen → System → Protokolle nach.",
 	"error.action": "Fehler beim Speichern",
 	loading: "Joe sattelt auf …"
-}, Ne = {
+}, Pe = {
 	"tab.overview": "Overview",
 	"tab.plan": "Plan",
 	"tab.history": "History",
@@ -2616,6 +2831,18 @@ var Me = {
 	"climate.now.night": "Now: night.",
 	"climate.rate": "Gets about {rate} °C per hour (learned).",
 	"climate.rate_default": "I am still learning how fast the room warms up or cools down.",
+	"climate.log": "What I changed lately",
+	"climate.log.normal": "set to Normal",
+	"climate.log.holiday": "set to Holiday",
+	"climate.log.home_office": "set to Home office",
+	"climate.log.held": "set to your profile by hand",
+	"climate.log.night": "switched off for the night",
+	"climate.log.away": "set to away",
+	"climate.log.free_day": "set to the day-off profile",
+	"climate.log.back": "put back as it was",
+	"climate.log.failed": "setting it did not work",
+	"tip.climate_log.title": "What did Joe change?",
+	"tip.climate_log.text": "My latest changes to the climate devices – with time and reason, newest first. What you change at the device yourself is not listed here.",
 	"tip.climate_enabled.title": "What does Joe do here?",
 	"tip.climate_enabled.text": "I watch who is home (the persons in Home Assistant). When nobody is, I set the devices you switch on as chosen – lower, off or a profile. When someone comes home I put everything back exactly as it was.",
 	"tip.climate_enabled.hint": "As everywhere: in the simulation I switch nothing and only show what I would do.",
@@ -2629,6 +2856,194 @@ var Me = {
 	"tip.climate_free_day.title": "Days off?",
 	"tip.climate_free_day.text": "On weekends and holidays (according to your workday sensor) I switch to this profile while someone is home – e.g. a Homematic IP profile “Holiday” that warms up later.",
 	"tip.climate_night.title": "Off at night?",
+	"climate.away_after": "Count as away only after",
+	"climate.away_after.unit": "min",
+	"tip.climate_away_after.title": "When does the house count as empty?",
+	"tip.climate_away_after.text": "Only when nobody has been home for this many minutes do I switch to away. If you just pop out to the bakery or your phone briefly drops off the Wi-Fi, everything stays as it is.",
+	"tip.climate_away_after.hint": "0 means right away. This applies to all devices.",
+	"climate.now.just_left": "Now: everyone just left – I wait {min} minutes in case someone comes back.",
+	"climate.today": "Today",
+	"tip.climate_today.title": "What kind of day is today?",
+	"tip.climate_today.text": "This decides the profiles: “Normal” on working days and at weekends, “Holiday” on days off during the week, and “Home office” when someone works from home according to their calendar.\nA day is off according to your workday sensor or holiday calendar – or when one of the entities below is on.",
+	"climate.today.workday": "Today is a working day.",
+	"climate.today.weekend": "Today is the weekend.",
+	"climate.today.holiday": "Today is a day off during the week – a public holiday or a bridge day.",
+	"climate.today.ho": "Working from home today: {names}.",
+	"climate.today.ho_none": "According to the calendars, nobody works from home today.",
+	"climate.today.read_at": "Calendars read at {time}.",
+	"climate.today.labels_unread": "Calendars not read yet – I'll know in a few minutes whether anyone works from home today.",
+	"climate.today.labels_error": "Calendars can't be reached right now – I don't know whether anyone works from home today. I'll try again soon.",
+	"climate.today.free_by": "Also a day off when one of these is on",
+	"climate.today.free_none": "nothing chosen",
+	"climate.today.free_pick": "Choose",
+	"climate.today.free_change": "Change",
+	"tip.climate_free_entities.title": "What else makes a day off?",
+	"tip.climate_free_entities.text": "For example a helper “Bridge day” or “Vacation”, a schedule or a switch. If one of them is on, today counts as a day off – on weekdays I then use the holiday profile.",
+	"climate.today.rules": "I recognise home office days by calendar rules, e.g. “home office” in an event's title.",
+	"pick.free_day.title": "What makes a day off?",
+	"tip.pick_free_day.title": "Which entities fit?",
+	"tip.pick_free_day.text": "Anything that is “on” on a day off: a helper (input_boolean) “Bridge day”, a schedule, a switch or a binary sensor. You can pick several – one is enough.",
+	"week.row": "Week profiles",
+	"tip.climate_week.title": "What are week profiles?",
+	"tip.climate_week.text": "Like a Homematic IP thermostat: heating and cooling each get 6 profiles with switching points over the day, e.g. 07:00 → 22 °C, 23:00 → off. With tags you tell me when to use which profile: Normal, Holiday, Away, Home office.\nI follow the operating mode set on the air conditioner. If you switch it off by hand, I do not switch it back on.",
+	"tip.climate_week.hint": "I only write when the target changes – not every minute. In simulation I just show what I would do.",
+	"week.edit": "Edit profiles",
+	"week.no_sets": "No profiles yet – tap “Edit profiles”. Until then the setting below applies.",
+	"week.pending.start": "The weekly profiles take over once the current night or absence is over – until then everything stays as it is.",
+	"week.pending.end": "The weekly profiles run until the night or absence is over, then I let go.",
+	"devprof.pending.start": "The ticks take effect once the current absence or day off is over – until then everything stays as it is.",
+	"devprof.pending.end": "The absence program runs until someone comes home; then I set the normal program and let go.",
+	"week.legacy_now": "The air conditioner is set to “{state}” right now – there are no profiles for that, so the setting below applies.",
+	"climate.hvac.off": "Off",
+	"climate.hvac.heat": "Heat",
+	"climate.hvac.cool": "Cool",
+	"climate.hvac.dry": "Dry",
+	"climate.hvac.fan_only": "Fan only",
+	"climate.hvac.auto": "Auto",
+	"climate.hvac.heat_cool": "Heat/Cool",
+	"week.now": "Now: {text}",
+	"week.would": "Would now: {text}",
+	"week.state_off": "Off",
+	"week.held": "by hand",
+	"week.next": "at {time} → {value}",
+	"week.why.night": "Night",
+	"week.why.away": "Nobody home",
+	"week.why.just_left": "Just left – waiting {min} minutes",
+	"week.why.arriving": "Someone is coming home",
+	"week.why.arriving_usual": "Usual homecoming soon",
+	"week.why.holiday": "Day off",
+	"week.why.home_office": "Home office",
+	"week.why.weekend": "Weekend",
+	"week.why.home": "Someone is home",
+	"week.why.held": "Profile by hand",
+	"week.why.override": "Changed by hand",
+	"week.why.off_by_hand": "Off by hand",
+	"week.why.unavailable": "Device unavailable",
+	"week.why.manual_mode": "Device not on auto",
+	"week.override.manual": "Changed by hand – this holds until {time}, then the plan takes over again.",
+	"week.override.manual_open": "Changed by hand – this holds until the next switching point.",
+	"week.override.off": "Switched off by hand – I wait until you switch it on again.",
+	"week.override.preset": "Profile changed by hand at the device – this holds until {time}.",
+	"week.override.preset_open": "Profile changed by hand at the device – this holds until someone leaves or comes home or another day begins.",
+	"week.resume": "Back to the plan",
+	"tip.week_resume.title": "What does “Back to the plan” do?",
+	"tip.week_resume.text": "I forget your change by hand and set again what the profile says for now.",
+	"week.error": "Setting the device did not work: {error}",
+	"week.error.not_confirmed": "I tried several times, but the device did not take the value. Is it reachable?",
+	"week.as_is": "as set on the device",
+	"week.hold": "Profile by hand",
+	"week.hold.auto": "Automatic",
+	"week.hold.until": "How long?",
+	"week.hold.midnight": "until midnight",
+	"week.hold.forever": "until further notice",
+	"week.hold.later_night": "The night comes first right now – afterwards {profile} applies again.",
+	"week.hold.later_away": "Nobody is home right now, which comes first – as soon as someone comes home, {profile} applies again.",
+	"week.hold.other_mode": "You picked {profile} by hand for {mode} ({until}) – it applies again as soon as the air conditioner is set to {mode}.",
+	"week.hold.lift": "Lift",
+	"tip.week_hold.title": "A different profile today?",
+	"tip.week_hold.text": "Pick a profile to use instead of my choice – e.g. profile 5 for a day with guests. It holds until midnight or until further notice. “Automatic” hands the choice back to me.\nNight and away still come first.",
+	"week.away_fallback": "Only applies while no profile has the “Away” tag.",
+	"tip.week_away.title": "What happens when nobody is home?",
+	"tip.week_away.text": "If no profile has the “Away” tag, I do this:\n**Lower**: the current profile, the set degrees cooler (warmer when cooling).\n**Off**: the air conditioner switched off.",
+	"devprof.title": "The device's heating profiles",
+	"tip.climate_device_profiles.title": "When does Joe use which heating profile?",
+	"tip.climate_device_profiles.text": "The week programs' times and temperatures live in the device (e.g. the CCU or the Homematic IP app) – I do not change them. You only tell me with tags what a profile is for: **Normal** on working days and at weekends, **Holiday** on days off during the week, **Away** when nobody is home, **Home office** on days someone works from home according to the calendar. The name is just for you.\nI only switch profiles while the device is on auto, and at most every 15 minutes – except when people leave or come home.",
+	"tip.climate_device_profiles.hint": "Each tag sits on one profile at most. Set it elsewhere and it moves there.",
+	"devprof.name": "Name for {preset}",
+	"devprof.tags": "What is {preset} for?",
+	"devprof.moved": "“{tag}” is now on {to} instead of {from}.",
+	"devprof.need_normal": "Set the “Normal” tag on one profile. Only then do the tags apply – until then I steer the device as before, with the settings below.",
+	"devprof.not_auto": "I only switch profiles in auto mode. The device is set to “{state}” right now.",
+	"devprof.away_keep": "Leave",
+	"tip.devprof_away.title": "What happens when nobody is home?",
+	"tip.devprof_away.text": "If no profile has the “Away” tag:\n**Leave**: I change nothing.\n**Off**: I switch the heating off, and back to auto when someone comes home.",
+	"week.profile": "Profile {n}",
+	"week.mode.heat": "Heating",
+	"week.mode.cool": "Cooling",
+	"week.off": "off",
+	"week.tag.normal": "Normal",
+	"week.tag.holiday": "Holiday",
+	"week.tag.away": "Away",
+	"week.tag.home_office": "Home office",
+	"week.ho.default": "Working from home is your normal working day – that needs no tag of its own.",
+	"week.ho.no_calendar": "I read home office days from the calendar – for that someone in the household needs a calendar.",
+	"week.ho.rules": "Calendar rules under Learning",
+	"week.label": "Edit week profiles",
+	"week.title": "Week |profiles",
+	"week.loading": "Loading the device …",
+	"week.load_failed": "I could not load the devices just now.",
+	"week.device_missing": "I cannot find this device in Home Assistant right now.",
+	"week.no_modes": "This device can neither heat nor cool.",
+	"week.modes": "Operating mode",
+	"tip.week_mode.title": "Heating or cooling?",
+	"tip.week_mode.text": "Each operating mode has its own 6 profiles. Which one applies is up to the air conditioner: I follow what is set on it.",
+	"week.empty": "There are no profiles for {mode} yet.",
+	"week.create": "Create profiles",
+	"week.creating": "Creating …",
+	"tip.week_create.title": "How do I start?",
+	"tip.week_create.text": "I propose 6 profiles: Normal, Holiday, Away, Home office and two spare ones – with the temperature set right now, and “Off at night” if you switched that on. Then you adjust them. Nothing is stored until “Save”.",
+	"week.profiles": "Profiles",
+	"tip.week_profiles.title": "Which profile am I editing?",
+	"tip.week_profiles.text": "Tap a profile to edit it below. Nothing changes at the air conditioner. The green dot marks the profile running now, the small bar shows today's curve.",
+	"week.running": "running now",
+	"week.name": "Name",
+	"tip.week_name.title": "What should the profile be called?",
+	"tip.week_name.text": "Just for you, e.g. “Early start” or “Guests”. At most 30 characters.",
+	"week.tags": "What is this profile for?",
+	"tip.week_tags.title": "When does Joe use this profile?",
+	"tip.week_tags.text": "**Normal**: on working days and at weekends when someone is home. Exactly one profile has this tag.\n**Holiday**: on days off during the week. Without this tag I use “Normal” with its Sunday curve.\n**Away**: when everyone has been gone for a while. Without this tag, “When nobody is home” on the card applies.\n**Home office**: on working days when someone works from home according to their calendar.",
+	"tip.week_tags.hint": "Each tag sits on one profile at most. Set it here and it moves over from the other profile.",
+	"week.tag.moved": "“{tag}” came from {from} – it is gone there now.",
+	"week.normal_fixed": "“Normal” needs exactly one profile. Set the tag on another profile and it moves there.",
+	"week.no_normal": "No profile has the “Normal” tag – then I use profile 1.",
+	"week.untagged": "Without a tag I never use this profile on my own – only via “Profile by hand”.",
+	"week.days": "Days",
+	"tip.week_split.title": "The same every day?",
+	"tip.week_split.text": "**All days the same**: one curve for the whole week.\n**Mon–Fri and Sat–Sun**: one for weekdays, one for the weekend.\n**Each day**: seven curves.\nSplitting copies the current curve to all new days. Merging keeps the first one (Monday or Mon–Fri).",
+	"week.split.all": "All days the same",
+	"week.split.week_weekend": "Mon–Fri and Sat–Sun",
+	"week.split.each": "Each day",
+	"week.split.split": "Split: every day starts with the previous curve.",
+	"week.split.merged": "Merged: the curve of {first} applies now.",
+	"week.split.merged_days": "Merged: Mon–Fri takes Monday's curve, Sat–Sun Saturday's.",
+	"week.group.all": "All days",
+	"week.group.weekdays": "Mon–Fri",
+	"week.group.weekend": "Sat–Sun",
+	"week.today": "today",
+	"week.curve": "Curve {label}",
+	"week.points": "Curve and switching points",
+	"tip.week_points.title": "What is a switching point?",
+	"tip.week_points.text": "From this time the value applies – until the next switching point. The first one at 00:00 is fixed. “Off” switches the air conditioner off; the next point with a temperature switches it back on.\nThe bar shows the day from 0 to 24 h, the line is now. Tap a day to see its switching points.",
+	"tip.week_points.hint": "At most 12 switching points per day, times in steps of 5 minutes.",
+	"week.limits": "The air conditioner can do {min} to {max} °C in steps of {step}.",
+	"week.fitted": "Some values were outside what the air conditioner can do. I adjusted them – “Save” keeps that.",
+	"week.night_time": "“Off at night” is on: from {from} to {until} the air conditioner stays off, whatever it says here.",
+	"week.night_entity": "“Off at night” is on: while it is night the air conditioner stays off – from {until} at the latest the plan applies again.",
+	"week.point.first": "The day always starts at 00:00.",
+	"week.point.time": "Time of the switching point",
+	"week.point.value": "Temperature from {time}",
+	"week.point.less": "{step} °C less",
+	"week.point.more": "{step} °C more",
+	"week.point.off": "Off from {time}",
+	"week.point.delete": "Delete the switching point at {time}",
+	"week.point.add": "Switching point",
+	"tip.week_add.title": "Where does the new switching point go?",
+	"tip.week_add.text": "Into the middle of the longest stretch, rounded to 15 minutes, with the value before it. Then set its time and value.",
+	"week.point.max": "More than 12 switching points per day are not possible.",
+	"week.point.no_room": "There is no room for another switching point here.",
+	"week.point.duplicate": "There already is a switching point at {time}.",
+	"week.copy": "Copy to …",
+	"tip.week_copy.title": "Copy the curve to other days?",
+	"tip.week_copy.text": "Copies this day's switching points to the chosen days. Their previous curve is replaced.",
+	"week.copy.all": "all other days",
+	"week.copied": "Copied to {days}.",
+	"week.saving": "Saving …",
+	"week.unsaved": "Not saved yet",
+	"week.save_failed": "{mode} not saved: {error}",
+	"week.problem.count": "There must be exactly 6 profiles.",
+	"week.problem.tags": "A tag sits on more than one profile.",
+	"week.problem.curves": "The number of curves does not match the days.",
+	"week.problem.points": "A curve has invalid switching points.",
 	"tab.settings": "Settings",
 	"nav.label": "Sections",
 	"mode.simulation": "Simulation",
@@ -4360,34 +4775,34 @@ var Me = {
 	"error.text": "I can't reach the integration. Reload the page – if that doesn't help, check Settings → System → Logs.",
 	"error.action": "Saving failed",
 	loading: "Joe is saddling up …"
-}, Pe = /* @__PURE__ */ new Map();
-function Fe(e, t) {
+}, Fe = /* @__PURE__ */ new Map();
+function Ie(e, t) {
 	return e.replace(/\{(\w+)\}/g, (e, n) => String(t?.[n] ?? ""));
 }
-function Ie(e) {
-	let t = e || "en", n = Pe.get(t);
-	if (n) return n;
-	let r = t.startsWith("de") ? Me : Ne, i = ((e, t) => Fe(r[e], t));
-	return i.optional = (e, t) => e in r ? Fe(r[e], t) : void 0, Object.defineProperty(i, "lang", { value: t }), Pe.set(t, i), i;
-}
 function Le(e) {
+	let t = e || "en", n = Fe.get(t);
+	if (n) return n;
+	let r = t.startsWith("de") ? Ne : Pe, i = ((e, t) => Ie(r[e], t));
+	return i.optional = (e, t) => e in r ? Ie(r[e], t) : void 0, Object.defineProperty(i, "lang", { value: t }), Fe.set(t, i), i;
+}
+function Re(e) {
 	return e.split("|");
 }
 //#endregion
 //#region src/define.ts
-var Re = "0.9.11";
+var ze = "0.9.12";
 function H(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
-		t.joeVersion = Re, customElements.define(e, t);
+		t.joeVersion = ze, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.11" && Be();
+	n.joeVersion !== "0.9.12" && Ve();
 }
-var ze = !1;
-function Be() {
-	if (ze || typeof document > "u") return;
-	ze = !0;
+var Be = !1;
+function Ve() {
+	if (Be || typeof document > "u") return;
+	Be = !0;
 	let e = (document.documentElement.lang || navigator.language || "").toLowerCase().startsWith("de"), t = document.createElement("div");
 	t.setAttribute("role", "alert"), t.style.cssText = [
 		"position:fixed",
@@ -4416,7 +4831,7 @@ function Be() {
 }
 //#endregion
 //#region src/styles/shared.ts
-var Ve = o`
+var He = o`
   :host {
     font-family: var(--joe-ui);
   }
@@ -4936,18 +5351,23 @@ function U(e, t, n, r) {
 }
 //#endregion
 //#region src/entities.ts
-var He = [
+var Ue = [
 	"W",
 	"kW",
 	"MW"
-], Ue = [
+], We = [
 	"Wh",
 	"kWh",
 	"MWh"
-], We = {
-	power: (e) => W(e) === "sensor" && He.includes(G(e)),
+], Ge = (e) => [
+	"binary_sensor",
+	"input_boolean",
+	"switch",
+	"schedule"
+].includes(W(e)), Ke = {
+	power: (e) => W(e) === "sensor" && Ue.includes(G(e)),
 	soc: (e) => W(e) === "sensor" && G(e) === "%",
-	energy: (e) => W(e) === "sensor" && Ue.includes(G(e)),
+	energy: (e) => W(e) === "sensor" && We.includes(G(e)),
 	price: (e) => [
 		"sensor",
 		"number",
@@ -4988,16 +5408,12 @@ var He = [
 		"number",
 		"input_number"
 	].includes(W(e)) && [
-		...Ue,
+		...We,
 		"kJ",
 		"MJ"
 	].includes(G(e)),
-	night: (e) => [
-		"binary_sensor",
-		"input_boolean",
-		"switch",
-		"schedule"
-	].includes(W(e)),
+	night: Ge,
+	toggle_like: Ge,
 	presence: (e) => [
 		"group",
 		"input_boolean",
@@ -5014,16 +5430,16 @@ function W(e) {
 function G(e) {
 	return String(e.attributes.unit_of_measurement ?? "");
 }
-function Ge(e, t) {
-	return We[t](e);
+function qe(e, t) {
+	return Ke[t](e);
 }
-function Ke(e, t) {
+function Je(e, t) {
 	let n = e.states[t]?.attributes.friendly_name;
 	return typeof n == "string" && n ? n : t.split(".", 2)[1]?.replace(/_/g, " ") ?? t;
 }
-function qe(e, t) {
+function Ye(e, t) {
 	let n = e.entities?.[t], r = n?.device_id ? e.devices?.[n.device_id] : void 0, i = n?.area_id ?? r?.area_id, a = i ? e.areas?.[i]?.name : void 0, o = r?.name_by_user || r?.name || void 0;
-	return [o && Ke(e, t).toLowerCase().startsWith(o.toLowerCase()) ? void 0 : o, a].filter(Boolean).join(" · ");
+	return [o && Je(e, t).toLowerCase().startsWith(o.toLowerCase()) ? void 0 : o, a].filter(Boolean).join(" · ");
 }
 function K(e, t) {
 	if (!t) return null;
@@ -5033,41 +5449,41 @@ function K(e, t) {
 function q(e, t, n) {
 	return new Intl.NumberFormat(e, { maximumFractionDigits: n }).format(t);
 }
-function Je(e, t, n) {
+function Xe(e, t, n) {
 	let r = e.states[t];
 	if (!r) return "–";
 	if (e.formatEntityState) return e.formatEntityState(r);
 	let i = K(e, t);
 	return i === null ? r.state : `${q(n, i, Math.abs(i) >= 100 ? 0 : Math.abs(i) >= 10 ? 1 : 2)} ${G(r)}`.trim();
 }
-function Ye(e, t) {
+function Ze(e, t) {
 	return t === "W" ? e / 1e3 : t === "MW" ? e * 1e3 : e;
 }
-function Xe(e, t) {
+function Qe(e, t) {
 	if (!t) return null;
 	let n = K(e, t.entity_id);
 	if (n === null) return null;
-	let r = Ye(n, G(e.states[t.entity_id]));
+	let r = Ze(n, G(e.states[t.entity_id]));
 	if (t.invert && (r = -r), t.minus_entity_id) {
 		let n = K(e, t.minus_entity_id);
 		if (n === null) return null;
-		r -= Ye(n, G(e.states[t.minus_entity_id]));
+		r -= Ze(n, G(e.states[t.minus_entity_id]));
 	}
 	return r;
 }
-function Ze(e, t) {
+function $e(e, t) {
 	let n = K(e, t);
 	if (n === null || !t) return null;
 	let r = G(e.states[t]);
 	return r === "Wh" ? n / 1e3 : r === "MWh" ? n * 1e3 : n;
 }
-function Qe(e, t) {
-	let n = t.map((t) => Xe(e, t)).filter((e) => e !== null);
+function et(e, t) {
+	let n = t.map((t) => Qe(e, t)).filter((e) => e !== null);
 	return n.length ? n.reduce((e, t) => e + t, 0) : null;
 }
 //#endregion
 //#region src/components/tip.ts
-var $e = 120, et = 220, J = 8, tt = 10, Y, X = class extends R {
+var tt = 120, nt = 220, J = 8, rt = 10, Y, X = class extends R {
 	constructor(...e) {
 		super(...e), this.label = "", this.open = !1, this.pinned = !1, this.keepOnBlur = !1, this.onOutside = (e) => {
 			e.composedPath().includes(this) || this.close();
@@ -5254,7 +5670,7 @@ var $e = 120, et = 220, J = 8, tt = 10, Y, X = class extends R {
         @pointerdown=${this.onBubbleDown}
       >
         <span class="h">${e.heading}</span>
-        ${nt(e.text)}
+        ${it(e.text)}
         ${e.facts?.length ? k`<dl>${e.facts.map(([e, t]) => k`<dt>${e}</dt><dd>${t}</dd>`)}</dl>` : j}
         <span class="arrow"></span>
       </div>` : j;
@@ -5274,10 +5690,10 @@ var $e = 120, et = 220, J = 8, tt = 10, Y, X = class extends R {
 		this.open && this.pinned ? this.close() : this.show(!0);
 	}
 	onEnter(e) {
-		e.pointerType === "mouse" && (this.cancelTimer(), this.open || (this.timer = window.setTimeout(() => this.show(), $e)));
+		e.pointerType === "mouse" && (this.cancelTimer(), this.open || (this.timer = window.setTimeout(() => this.show(), tt)));
 	}
 	onLeave(e) {
-		e.pointerType === "mouse" && (this.cancelTimer(), this.open && !this.pinned && (this.timer = window.setTimeout(() => this.close(), et)));
+		e.pointerType === "mouse" && (this.cancelTimer(), this.open && !this.pinned && (this.timer = window.setTimeout(() => this.close(), nt)));
 	}
 	onFocus() {
 		this.button?.matches(":focus-visible") && this.show();
@@ -5305,19 +5721,19 @@ var $e = 120, et = 220, J = 8, tt = 10, Y, X = class extends R {
 			this.close();
 			return;
 		}
-		let r = t.getBoundingClientRect(), i = document.documentElement.clientWidth, a = n.top - r.height - tt, o = "top";
-		a < J && (a = n.bottom + tt, o = "bottom");
+		let r = t.getBoundingClientRect(), i = document.documentElement.clientWidth, a = n.top - r.height - rt, o = "top";
+		a < J && (a = n.bottom + rt, o = "bottom");
 		let s = n.left + n.width / 2, c = Math.max(J, Math.min(s - r.width / 2, i - r.width - J)), l = Math.max(14, Math.min(s - c, r.width - 14));
 		t.style.left = `${Math.round(c)}px`, t.style.top = `${Math.round(a)}px`, t.style.setProperty("--arrow", `${Math.round(l)}px`), t.dataset.place = o;
 	}
 };
 U([z({ attribute: !1 })], X.prototype, "tip", void 0), U([z()], X.prototype, "label", void 0), U([B()], X.prototype, "open", void 0), U([V("button")], X.prototype, "button", void 0), U([V(".bubble")], X.prototype, "bubble", void 0);
-function nt(e) {
+function it(e) {
 	return e.split("\n").map((e) => k`<p>
         ${e.split(/\*\*(.+?)\*\*/).map((e, t) => t % 2 ? k`<strong>${e}</strong>` : e)}
       </p>`);
 }
-function rt(e, t, n, r = []) {
+function at(e, t, n, r = []) {
 	let i = e.optional(`tip.${t}.hint`, n);
 	return {
 		heading: e(`tip.${t}.title`, n),
@@ -5326,7 +5742,7 @@ function rt(e, t, n, r = []) {
 	};
 }
 function Z(e, t, n, r) {
-	return k`<joe-tip .tip=${rt(e, t, n, r)} label=${e("tip.label")}></joe-tip>`;
+	return k`<joe-tip .tip=${at(e, t, n, r)} label=${e("tip.label")}></joe-tip>`;
 }
 H("joe-tip", X);
 //#endregion
@@ -5334,10 +5750,10 @@ H("joe-tip", X);
 function Q(e) {
 	return e ? e.slice(11, 16) : "";
 }
-function it(e) {
+function ot(e) {
 	return e.slice(0, 10);
 }
-function at(e) {
+function st(e) {
 	switch (e?.kind) {
 		case "charge": return "plug";
 		case "hold": return "switch";
@@ -5345,22 +5761,22 @@ function at(e) {
 		default: return "sleep";
 	}
 }
-function ot(e) {
+function ct(e) {
 	return (e.charge_slots ?? []).map((e) => `${Q(e.start)}–${Q(e.end)}`).join(", ");
 }
-function st(e, t) {
+function lt(e, t) {
 	if (!t.window) return "";
 	let n = [`${Q(t.window.start)}–${Q(t.window.end)}`];
 	return t.prices && n.push(`${q(e.lang, t.prices.night * 100, 1)} ct/kWh`), n.join(" · ");
 }
-function ct(e, t) {
+function ut(e, t) {
 	if (t.kind === "unavailable") {
 		let n = t.reasons.find((t) => e.optional(`plan.why.${t}`)) ?? "failed";
 		return e.optional(`plan.why.${n}`) ?? "";
 	}
 	let n = [], r = q(e.lang, t.target ?? 0, 0), i = t.sun_takes_over;
 	return t.reasons.includes("balance") && n.push(e("plan.say.balance")), t.kind === "charge" && t.tariff === "dynamic" && t.charge_slots?.length ? n.push(e("plan.say.charge_slots", {
-		slots: ot(t),
+		slots: ct(t),
 		target: r
 	})) : t.kind === "charge" ? n.push(e("plan.say.charge", {
 		from: Q(t.charge_from),
@@ -5368,18 +5784,18 @@ function ct(e, t) {
 	})) : t.kind === "hold" ? (n.push(e("plan.say.hold", { target: r })), t.empty_without && n.push(e("plan.say.empty", { time: Q(t.empty_without) }))) : t.reasons.includes("small_saving") ? n.push(e("plan.say.small_saving")) : n.push(i ? e("plan.say.none", { time: Q(i) }) : e("plan.say.none_nosun")), t.reasons.includes("max_price") && t.kind !== "charge" && n.push(e("plan.say.max_price")), t.day && (n.push(e("plan.day", {
 		time: Q(t.day.defer_until),
 		kwh: q(e.lang, t.day.held_kwh, 0)
-	})), t.day.cost && t.day.cost >= .01 && n.push(e("plan.day.cost", { cost: `${q(e.lang, t.day.cost * 100, 0)} ct` }))), t.kind !== "none" && (i && t.full_at && it(t.full_at) === it(i) ? n.push(e("plan.say.sun_full", {
+	})), t.day.cost && t.day.cost >= .01 && n.push(e("plan.day.cost", { cost: `${q(e.lang, t.day.cost * 100, 0)} ct` }))), t.kind !== "none" && (i && t.full_at && ot(t.full_at) === ot(i) ? n.push(e("plan.say.sun_full", {
 		sun: Q(i),
 		full: Q(t.full_at)
 	})) : i ? n.push(e("plan.say.sun", { sun: Q(i) })) : n.push(e("plan.say.nosun"))), n.join(" ");
 }
-function lt(e, t) {
+function dt(e, t) {
 	return (t.batteries ?? []).map((n) => {
 		let r = [n.name];
 		return t.kind === "charge" ? r.push(`${q(e.lang, n.soc_start, 0)} → ${q(e.lang, n.target, 0)} %`, `${q(e.lang, n.charge_kwh, 1)} kWh`, `${q(e.lang, n.power_kw, 1)} kW`) : t.kind === "hold" ? r.push(e("plan.line.hold", { target: q(e.lang, n.target, 0) })) : r.push(e("plan.line.now", { soc: q(e.lang, n.soc, 0) })), n.controllable || r.push(e("plan.line.watch_only")), r.join(" · ");
 	});
 }
-function ut(e, t, n = "EUR") {
+function ft(e, t, n = "EUR") {
 	if (!t.cost) return "";
 	let r = (t) => new Intl.NumberFormat(e.lang, {
 		style: "currency",
@@ -5394,7 +5810,7 @@ var $ = class extends R {
 		super(...e), this.values = {}, this.failed = !1;
 	}
 	static {
-		this.styles = [Ve, o`
+		this.styles = [He, o`
       :host {
         display: block;
       }
@@ -5569,7 +5985,7 @@ var $ = class extends R {
 U([z({ attribute: !1 })], $.prototype, "hass", void 0), U([z({ attribute: !1 })], $.prototype, "t", void 0), U([z({ attribute: !1 })], $.prototype, "state", void 0), U([z({ attribute: !1 })], $.prototype, "action", void 0), U([B()], $.prototype, "values", void 0), U([B()], $.prototype, "unit", void 0), U([B()], $.prototype, "failed", void 0), H("joe-car-charge", $);
 //#endregion
 //#region src/styles/tokens.ts
-var dt = o`
+var pt = o`
   :host {
     --joe-bg: #fbf6ec;
     --joe-surface: #ffffff;
@@ -5658,4 +6074,4 @@ var dt = o`
   }
 `;
 //#endregion
-export { _e as A, Ie as C, R as D, z as E, j as O, Le as S, B as T, K as _, ct as a, Ve as b, st as c, Ke as d, qe as f, Xe as g, Je as h, at as i, o as j, k, Z as l, q as m, ut as n, ot as o, Ge as p, lt as r, Q as s, dt as t, Ze as u, Qe as v, V as w, H as x, U as y };
+export { k as A, Le as C, R as D, z as E, _e as M, o as N, j as O, Re as S, B as T, K as _, ut as a, He as b, lt as c, Je as d, Ye as f, Qe as g, Xe as h, st as i, Ee as j, A as k, Z as l, q as m, ft as n, ct as o, qe as p, dt as r, Q as s, pt as t, $e as u, et as v, V as w, H as x, U as y };

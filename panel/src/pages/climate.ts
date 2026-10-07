@@ -1,6 +1,7 @@
-import { LitElement, css, html, nothing, type TemplateResult } from "lit";
+import { LitElement, css, html, nothing, type PropertyValues, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
 import { deviceLink, displayTitle, swoosh } from "../components/bits";
+import { dayText } from "../components/look-back";
 import "../components/pose";
 import { tip } from "../components/tip";
 import { pickEntity, saveConfig } from "../config";
@@ -8,21 +9,26 @@ import { define } from "../define";
 import { formatNumber } from "../entities";
 import type { Translate } from "../i18n";
 import { shared } from "../styles/shared";
-import type { ClimateMeter, ClimateRoomConfig, HomeAssistant, JoeState } from "../types";
+import {
+  WEEK_TAGS,
+  type ClimateDevice,
+  type ClimateHold,
+  type ClimateLogEntry,
+  type ClimateMeter,
+  type ClimateRoomConfig,
+  type ClimateRoomStatus,
+  type ClimateWeekConfig,
+  type DeviceProfileConfig,
+  type HomeAssistant,
+  type JoeState,
+  type WeekProfile,
+  type WeekTag,
+  type WeekValue,
+} from "../types";
+import { TAG_ICONS, profileLabel } from "../week";
 
-interface ClimateDevice {
-  entity_id: string;
-  name: string;
-  device_id: string | null;
-  device_name: string | null;
-  area: string | null;
-  state: string;
-  hvac_modes: string[];
-  preset_modes: string[];
-  temperature: number | null;
-  current_temperature: number | null;
-  platform: string | null;
-}
+/** A change to one room: only the keys that change, so the week profiles stay. */
+type RoomChange = Partial<Omit<ClimateRoomConfig, "week">> & { week?: Partial<ClimateWeekConfig> };
 
 /** A device with a power or energy sensor, e.g. a channel of a Shelly Pro 3EM. */
 interface MeterOption extends ClimateMeter {
@@ -51,9 +57,30 @@ const DEFAULT_ROOM: ClimateRoomConfig = {
   night_off: false,
   night_from: "23:00",
   night_until: "06:30",
+  week: { enabled: false, modes: {} },
+  device_profiles: {},
 };
 
+/** How long the house must be empty before it counts as away (model.py). */
+const AWAY_AFTER_DEFAULT = 15;
+const AWAY_AFTER_MAX = 240;
+
+/** "Profil 3" for week_program_3, else by position. */
+function presetNumber(preset: string, index: number): number {
+  const match = /^week_program_(\d+)$/.exec(preset);
+  return match ? Number(match[1]) : index + 1;
+}
+
 const PROXIMITY_URL = "https://my.home-assistant.io/redirect/config_flow_start/?domain=proximity";
+
+/** A device's tags in a fixed order, to tell whether two states are the same. */
+function profilesKey(profiles: Record<string, DeviceProfileConfig>): string {
+  return JSON.stringify(
+    Object.keys(profiles)
+      .sort()
+      .map((preset) => [preset, profiles[preset]?.name ?? "", profiles[preset]?.tags ?? []]),
+  );
+}
 
 /** Heating and air conditioning by presence: every thermostat on its own. */
 export class JoeClimatePage extends LitElement {
@@ -68,6 +95,16 @@ export class JoeClimatePage extends LitElement {
   /** The air conditioner whose meter is being searched, and the search text. */
   @state() private picking?: string;
   @state() private query = "";
+  /** Per device: how long the next profile by hand holds (while none holds). */
+  @state() private holdUntil: Record<string, "midnight" | "forever"> = {};
+  /** Per device: the device profiles last sent, until the config has them (or saving failed). */
+  @state() private pending: Record<string, Record<string, DeviceProfileConfig>> = {};
+  /** The log is folded by default. */
+  @state() private logOpen = false;
+  /** Per device: a note that a tag moved to another device profile. */
+  @state() private moved: Record<string, string> = {};
+  /** Per device: a week command that failed. */
+  @state() private weekError: Record<string, string> = {};
 
   static styles = [
     shared,
@@ -281,9 +318,122 @@ export class JoeClimatePage extends LitElement {
         color: var(--joe-muted);
         font-size: 12.5px;
       }
+      .sub {
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid var(--joe-line);
+      }
+      .sub > .row:first-child {
+        margin-top: 0;
+      }
+      .sub-title {
+        flex: 1 1 140px;
+        min-width: 0;
+        font-weight: 700;
+      }
+      .week-now {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 8px;
+        margin: 10px 0 0;
+        font-weight: 600;
+      }
+      .week-now .chip {
+        font-weight: 600;
+      }
+      .card .note {
+        margin-top: 10px;
+      }
+      .note-body {
+        display: grid;
+        gap: 8px;
+        justify-items: start;
+        min-width: 0;
+      }
+      .row select.input {
+        flex: 1 1 160px;
+      }
+      .row.hold,
+      .row.tight {
+        margin-top: 6px;
+      }
+      .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .tag-btn[aria-pressed="true"] {
+        background: var(--joe-amber-soft);
+        box-shadow: inset 0 0 0 2px var(--joe-amber);
+      }
+      .tag-btn[aria-pressed="true"]:hover:not([disabled]) {
+        background: var(--joe-amber-soft);
+      }
+      .preset {
+        display: grid;
+        gap: 8px;
+        padding: 10px 0;
+      }
+      .preset + .preset {
+        border-top: 1px solid var(--joe-line);
+      }
+      .preset-name {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+      .preset-name code {
+        flex: none;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12px;
+        color: var(--joe-muted);
+      }
+      .preset-name .input {
+        flex: 1;
+        min-width: 0;
+      }
+      .log {
+        list-style: none;
+        margin: 10px 0 0;
+        padding: 0;
+        display: grid;
+        gap: 2px;
+        font-size: 14px;
+      }
+      .log li {
+        display: grid;
+        grid-template-columns: 110px minmax(0, 1fr);
+        gap: 10px;
+        padding: 6px 0;
+        border-top: 1px solid var(--joe-line);
+      }
+      .log li:first-child {
+        border-top: 0;
+      }
+      .log time {
+        color: var(--joe-muted);
+        font-variant-numeric: tabular-nums;
+      }
+      .log b {
+        font-weight: 600;
+        overflow-wrap: anywhere;
+      }
+      .chips-line {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        flex: 1 1 140px;
+        min-width: 0;
+      }
       @media (max-width: 760px) {
         .line {
           grid-template-columns: 1fr;
+        }
+        .log li {
+          grid-template-columns: 1fr;
+          gap: 0;
         }
       }
       @media (max-width: 760px) {
@@ -301,6 +451,31 @@ export class JoeClimatePage extends LitElement {
   connectedCallback(): void {
     super.connectedCallback();
     void this.load();
+  }
+
+  protected willUpdate(changed: PropertyValues<this>): void {
+    if (changed.has("state") && Object.keys(this.pending).length) {
+      // The config caught up with what was sent: it counts again.
+      const rooms = this.state?.config.climate?.rooms ?? {};
+      const rest = Object.fromEntries(
+        Object.entries(this.pending).filter(
+          ([entity, profiles]) => profilesKey(rooms[entity]?.device_profiles ?? {}) !== profilesKey(profiles),
+        ),
+      );
+      if (Object.keys(rest).length !== Object.keys(this.pending).length) {
+        this.pending = rest;
+      }
+    }
+  }
+
+  /** A device's profiles: what was sent last, else the config. */
+  private profilesOf(entity: string): Record<string, DeviceProfileConfig> {
+    return this.pending[entity] ?? this.state?.config.climate?.rooms?.[entity]?.device_profiles ?? {};
+  }
+
+  /** A device's operating mode in the user's language ("heat_cool" → "Heizen/Kühlen"). */
+  private hvacText(t: Translate, mode: string): string {
+    return t.optional(`climate.hvac.${mode}`) ?? mode;
   }
 
   private async load(): Promise<void> {
@@ -328,7 +503,8 @@ export class JoeClimatePage extends LitElement {
         </div>
         <joe-pose name="relax"></joe-pose>
       </div>
-      ${this.renderMain(t, joe, climate.enabled)} ${this.renderPresence(t, joe)} ${this.renderNightSource(t, joe)}
+      ${this.renderMain(t, joe, climate.enabled)} ${this.renderPresence(t, joe)} ${this.renderToday(t, joe)}
+      ${this.renderNightSource(t, joe)}
       ${devices.length ? this.renderMeters(t, joe, devices) : nothing}
       ${this.failed ? html`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${t("climate.failed")}</span></div>` : nothing}
       ${this.found && !devices.length ? html`<p class="hint">${t("climate.none")}</p>` : nothing}
@@ -338,7 +514,37 @@ export class JoeClimatePage extends LitElement {
             ${devices.filter((d) => (d.area ?? t("climate.no_area")) === area).map((d) => this.renderDevice(t, joe, d))}
           </div>`,
       )}
+      ${joe.climate?.log?.length ? this.renderLog(t, joe.climate.log, devices) : nothing}
     </div>`;
+  }
+
+  /** What Joe switched last, newest first; folded by default. */
+  private renderLog(t: Translate, log: ClimateLogEntry[], devices: ClimateDevice[]): TemplateResult {
+    const entries = [...log].reverse();
+    const names = Object.fromEntries(devices.map((d) => [d.entity_id, d.name]));
+    return html`<section class="card" data-tipped>
+      <div class="head">
+        <button type="button" class="fold" aria-expanded=${String(this.logOpen)} @click=${() => (this.logOpen = !this.logOpen)}>
+          <ha-icon icon=${this.logOpen ? "mdi:chevron-down" : "mdi:chevron-right"}></ha-icon>
+          <span class="eyebrow"><ha-icon icon="mdi:clipboard-text-clock-outline"></ha-icon>${t("climate.log")}</span>
+          <span class="chip">${entries.length}</span>
+        </button>
+        ${tip(t, "climate_log")}
+      </div>
+      ${this.logOpen
+        ? html`<ul class="log">
+            ${entries.map(
+              (entry) => html`<li>
+                <time>${dayText(t.lang, entry.at, "short")} ${entry.at.slice(11, 16)}</time>
+                <span>
+                  <b>${names[entry.entity] ?? this.hass?.states[entry.entity]?.attributes.friendly_name ?? entry.entity}</b>
+                  · ${t.optional(`climate.log.${entry.what}`) ?? entry.what}
+                </span>
+              </li>`,
+            )}
+          </ul>`
+        : nothing}
+    </section>`;
   }
 
   private renderMain(t: Translate, joe: JoeState, enabled: boolean): TemplateResult {
@@ -409,7 +615,33 @@ export class JoeClimatePage extends LitElement {
             <a href=${PROXIMITY_URL} target="_blank" rel="noreferrer noopener">${t("climate.add_proximity")}</a>
           </p>`
         : nothing}
-      ${status?.free_day ? html`<p class="hint">${t("climate.free_day")}</p>` : nothing}
+      ${status?.free_day && !status.day ? html`<p class="hint">${t("climate.free_day")}</p>` : nothing}
+      <div class="row" data-tipped>
+        <span>${t("climate.away_after")}</span>
+        <input
+          class="input short"
+          type="number"
+          inputmode="numeric"
+          min="0"
+          max=${AWAY_AFTER_MAX}
+          step="1"
+          aria-label=${t("climate.away_after")}
+          .value=${String(joe.config.climate?.away_after_min ?? AWAY_AFTER_DEFAULT)}
+          @change=${(ev: Event) => {
+            const input = ev.target as HTMLInputElement;
+            const value = Math.round(Number.parseFloat(input.value.replace(",", ".")));
+            if (!Number.isFinite(value)) {
+              input.value = String(joe.config.climate?.away_after_min ?? AWAY_AFTER_DEFAULT);
+              return;
+            }
+            const minutes = Math.min(AWAY_AFTER_MAX, Math.max(0, value));
+            input.value = String(minutes);
+            void saveConfig(this, { climate: { away_after_min: minutes } });
+          }}
+        />
+        <span>${t("climate.away_after.unit")}</span>
+        ${tip(t, "climate_away_after")}
+      </div>
       <div class="row" data-tipped>
         ${presence
           ? html`<span>${t("climate.presence_from")}</span>
@@ -423,6 +655,93 @@ export class JoeClimatePage extends LitElement {
         ${tip(t, "climate_presence_entity")}
       </div>
     </section>`;
+  }
+
+  /** What kind of day today is, who works from home, and what else makes a day off. */
+  private renderToday(t: Translate, joe: JoeState): TemplateResult {
+    const day = joe.climate?.day;
+    const free = joe.config.context.free_day_entities ?? [];
+    const kind = !day ? null : day.holiday ? "holiday" : day.weekend && day.free ? "weekend" : "workday";
+    // Only calendars that answered tell who works from home.
+    const labels = day?.labels_state ?? (day?.labels_at ? "ok" : "unread");
+    const read = labels === "ok" && day?.labels_at ? this.clockOf(t, day.labels_at) : null;
+    return html`<section class="card" data-tipped>
+      <div class="head">
+        <div class="eyebrow"><ha-icon icon="mdi:calendar-today"></ha-icon>${t("climate.today")}</div>
+        ${tip(t, "climate_today")}
+      </div>
+      ${kind ? html`<p class="now">${t(`climate.today.${kind}`)}</p>` : nothing}
+      ${day
+        ? html`<p class="hint">
+            ${day.home_office_available
+              ? labels !== "ok"
+                ? t(`climate.today.labels_${labels}`)
+                : day.home_office.length
+                  ? t("climate.today.ho", { names: day.home_office.join(", ") })
+                  : t("climate.today.ho_none")
+              : t(`week.ho.${day.home_office_reason ?? "no_calendar"}`)}
+            ${read ? t("climate.today.read_at", { time: read }) : nothing}
+          </p>`
+        : nothing}
+      <div data-tipped>
+        <div class="row">
+          <span>${t("climate.today.free_by")}</span>
+          ${tip(t, "climate_free_entities")}
+        </div>
+        <div class="row tight">
+          <span class="chips-line">
+            ${free.length
+              ? free.map((entity) => {
+                  const on = ["on", "true", "home"].includes(this.hass?.states[entity]?.state ?? "");
+                  return html`<span class="chip ${on ? "ok" : ""}" title=${entity}>
+                    ${this.hass?.states[entity]?.attributes.friendly_name ?? entity}
+                  </span>`;
+                })
+              : html`<small class="hint">${t("climate.today.free_none")}</small>`}
+          </span>
+          <button type="button" class="btn btn-secondary" @click=${() => void this.pickFree()}>
+            ${t(free.length ? "climate.today.free_change" : "climate.today.free_pick")}
+          </button>
+        </div>
+      </div>
+      <p class="hint">${t("climate.today.rules")}</p>
+      <div class="row">
+        <button type="button" class="mini-btn quiet" @click=${this.toLearn}>
+          <ha-icon icon="mdi:calendar-text-outline"></ha-icon>${t("week.ho.rules")}
+        </button>
+      </div>
+    </section>`;
+  }
+
+  /** "08:05" in Home Assistant's time zone, or null. */
+  private clockOf(t: Translate, iso: string): string | null {
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return null;
+    const options: Intl.DateTimeFormatOptions = { hour: "2-digit", minute: "2-digit" };
+    try {
+      return date.toLocaleTimeString(t.lang, { ...options, timeZone: this.hass?.config?.time_zone });
+    } catch {
+      return date.toLocaleTimeString(t.lang, options);
+    }
+  }
+
+  private async pickFree(): Promise<void> {
+    const t = this.t;
+    if (!t) return;
+    const picked = await pickEntity(this, {
+      heading: t("pick.free_day.title"),
+      tip: "pick_free_day",
+      filter: "toggle_like",
+      multiple: true,
+      selected: this.state?.config.context.free_day_entities ?? [],
+    });
+    if (picked) {
+      void saveConfig(this, { context: { free_day_entities: picked.selected } });
+    }
+  }
+
+  private toLearn(): void {
+    this.dispatchEvent(new CustomEvent("joe-navigate", { detail: { page: "learn" }, bubbles: true, composed: true }));
   }
 
   private editHousehold(): void {
@@ -496,6 +815,22 @@ export class JoeClimatePage extends LitElement {
     const presets = device.preset_modes.filter((p) => !["none", "boost"].includes(p));
     const now = joe.climate?.rooms?.[device.entity_id];
     const rate = joe.climate?.rates?.[device.entity_id];
+    // Air conditioners get week profiles; devices with week programs of their own get tags.
+    const programs = device.week_presets ?? [];
+    const sets = Object.values(room.week?.modes ?? {}).filter((set): set is WeekProfile[] => !!set?.length);
+    const weekOn = cooling && !programs.length && !!room.week?.enabled;
+    const weekRuns = weekOn && sets.length > 0 && now?.kind !== "legacy";
+    // The device's profiles count once one of them is "Normal"; until then the old settings apply.
+    const deviceProfiles = this.profilesOf(device.entity_id);
+    const tagged = programs.some((preset) => deviceProfiles[preset]?.tags.includes("normal"));
+    const deviceRuns = tagged && now?.kind !== "legacy";
+    const legacy = !weekRuns && !deviceRuns;
+    // Without a profile tagged "away", the room's own away setting still applies.
+    const awayTagged = weekRuns
+      ? sets.every((set) => set.some((p) => p.tags.includes("away")))
+      : programs.some((preset) => deviceProfiles[preset]?.tags.includes("away"));
+    const awayWays = (legacy ? ["setback", "off", ...(presets.length ? ["preset"] : [])] : ["setback", "off"]) as ClimateRoomConfig["away"][];
+    const away = legacy ? room.away : room.away === "off" ? "off" : "setback";
     return html`<section class="card" data-tipped>
       <div class="head">
         <b>${deviceLink(device.device_id, device.name, t("climate.open_device", { id: device.entity_id }))}</b>
@@ -514,49 +849,403 @@ export class JoeClimatePage extends LitElement {
       </div>
       <details class="ent"><summary>${t("climate.entity")}</summary><code>${device.entity_id}</code></details>
       ${room.enabled
-        ? html`<div class="row" data-tipped>
-              <span>${t("climate.away")}</span>
-              <span class="seg" role="group" aria-label=${t("climate.away")}>
-                ${(["setback", "off", ...(presets.length ? ["preset"] : [])] as ClimateRoomConfig["away"][]).map(
-                  (way) => html`<button type="button" aria-pressed=${String(room.away === way)} @click=${() => this.save(device, { away: way })}>
-                    ${t(`climate.away.${way}`)}
-                  </button>`,
-                )}
-              </span>
-              ${tip(t, "climate_away")}
-            </div>
-            ${room.away === "setback"
-              ? html`<div class="row">
-                  <span>${t(cooling && device.state === "cool" ? "climate.setback.cool" : "climate.setback.heat")}</span>
-                  <input
-                    class="input short"
-                    type="number"
-                    min="0.5"
-                    max="10"
-                    step="0.5"
-                    aria-label=${t("climate.setback.heat")}
-                    .value=${String(room.setback_k)}
-                    @change=${(ev: Event) => {
-                      const value = Number.parseFloat((ev.target as HTMLInputElement).value.replace(",", "."));
-                      if (Number.isFinite(value)) this.save(device, { setback_k: Math.min(10, Math.max(0.5, value)) });
-                    }}
-                  />
-                  <span>°C</span>
-                </div>`
+        ? html`${cooling && !programs.length ? this.renderWeek(t, device, room, sets, now) : nothing}
+            ${programs.length ? this.renderPrograms(t, device, programs, now) : nothing}
+            ${!awayTagged || legacy
+              ? html`<div class="row" data-tipped>
+                    <span>${t("climate.away")}</span>
+                    <span class="seg" role="group" aria-label=${t("climate.away")}>
+                      ${awayWays.map(
+                        (way) => html`<button type="button" aria-pressed=${String(away === way)} @click=${() => this.save(device, { away: way })}>
+                          ${t(deviceRuns && way === "setback" ? "devprof.away_keep" : `climate.away.${way}`)}
+                        </button>`,
+                      )}
+                    </span>
+                    ${tip(t, legacy ? "climate_away" : deviceRuns ? "devprof_away" : "week_away")}
+                  </div>
+                  ${legacy ? nothing : html`<p class="hint">${t("week.away_fallback")}</p>`}
+                  ${away === "setback" && !deviceRuns
+                    ? html`<div class="row">
+                        <span>${t(cooling && device.state === "cool" ? "climate.setback.cool" : "climate.setback.heat")}</span>
+                        <input
+                          class="input short"
+                          type="number"
+                          min="0.5"
+                          max="10"
+                          step="0.5"
+                          aria-label=${t("climate.setback.heat")}
+                          .value=${String(room.setback_k)}
+                          @change=${(ev: Event) => {
+                            const value = Number.parseFloat((ev.target as HTMLInputElement).value.replace(",", "."));
+                            if (Number.isFinite(value)) this.save(device, { setback_k: Math.min(10, Math.max(0.5, value)) });
+                          }}
+                        />
+                        <span>°C</span>
+                      </div>`
+                    : nothing}
+                  ${legacy && room.away === "preset"
+                    ? this.presetRow(t, device, presets, "away_preset", room.away_preset, "climate.away_preset")
+                    : nothing}`
               : nothing}
-            ${room.away === "preset" ? this.presetRow(t, device, presets, "away_preset", room.away_preset, "climate.away_preset") : nothing}
-            ${presets.length
+            ${legacy && presets.length
               ? html`<div data-tipped>
                   ${this.presetRow(t, device, presets, "free_day_preset", room.free_day_preset, "climate.free_day_preset", true)}
                 </div>`
               : nothing}
             ${cooling ? this.renderNight(t, device, room) : nothing}
             <p class="hint">
-              ${now ? (t.optional(`climate.now.${now.why}`) ?? "") : nothing}
+              ${now && legacy ? (t.optional(`climate.now.${now.why}`, { min: this.awayAfter }) ?? "") : nothing}
               ${rate ? t("climate.rate", { rate: formatNumber(t.lang, rate, 1) }) : t("climate.rate_default")}
             </p>`
         : html`<p class="hint">${t("climate.room.off")}</p>`}
     </section>`;
+  }
+
+  private get awayAfter(): number {
+    return this.state?.config.climate?.away_after_min ?? AWAY_AFTER_DEFAULT;
+  }
+
+  /** Week profiles of an air conditioner: the switch, what runs now, editing and a profile by hand. */
+  private renderWeek(
+    t: Translate,
+    device: ClimateDevice,
+    room: ClimateRoomConfig,
+    sets: WeekProfile[][],
+    now: ClimateRoomStatus | undefined,
+  ): TemplateResult {
+    const on = !!room.week?.enabled;
+    return html`<div class="sub" data-tipped>
+      <div class="row">
+        <span class="sub-title">${t("week.row")}</span>
+        <button
+          type="button"
+          class="switch"
+          role="switch"
+          aria-checked=${String(on)}
+          aria-label=${t("week.row")}
+          @click=${() => this.save(device, { week: { enabled: !on } })}
+        ></button>
+        ${tip(t, "climate_week")}
+      </div>
+      ${now?.pending
+        ? html`<p class="hint">${t(now.pending === "start" ? "week.pending.start" : "week.pending.end")}</p>`
+        : nothing}
+      ${on
+        ? html`${!sets.length
+              ? html`<p class="hint">${t("week.no_sets")}</p>`
+              : now?.pending === "start"
+                ? nothing
+                : now?.kind === "legacy"
+                ? html`<p class="hint">
+                    ${t("week.legacy_now", { state: this.hvacText(t, this.hass?.states[device.entity_id]?.state ?? device.state) })}
+                  </p>`
+                : this.renderNow(t, device, now)}
+            <div class="row">
+              <button type="button" class="btn btn-secondary" @click=${() => this.editWeek(device)}>
+                <ha-icon icon="mdi:calendar-clock"></ha-icon>${t("week.edit")}
+              </button>
+            </div>
+            ${sets.length ? this.renderHold(t, device, room, sets, now) : nothing}`
+        : nothing}
+    </div>`;
+  }
+
+  /** What Joe does with a device right now: profile, value, next switching point, or why not. */
+  private renderNow(t: Translate, device: ClimateDevice, now: ClimateRoomStatus | undefined): TemplateResult {
+    if (!now || !now.kind || now.kind === "legacy") {
+      return html``;
+    }
+    const error = this.weekError[device.entity_id] ?? now.error;
+    const failed = error
+      ? html`<div class="note warn" role="alert">
+          <ha-icon icon="mdi:alert-outline"></ha-icon>
+          <span>${t.optional(`week.error.${error}`) ?? t("week.error", { error })}</span>
+        </div>`
+      : nothing;
+    const override = now.override;
+    if (override?.reason === "off") {
+      return html`<div class="note"><ha-icon icon="mdi:power"></ha-icon><span>${t("week.override.off")}</span></div>${failed}`;
+    }
+    if (override) {
+      const text =
+        override.reason === "preset"
+          ? override.until
+            ? t("week.override.preset", { time: override.until })
+            : t("week.override.preset_open")
+          : override.until
+            ? t("week.override.manual", { time: override.until })
+            : t("week.override.manual_open");
+      return html`<div class="note" data-tipped>
+          <ha-icon icon="mdi:hand-back-right-outline"></ha-icon>
+          <span class="note-body">
+            <span>${text}</span>
+            <span class="with-tip">
+              <button type="button" class="mini-btn" @click=${() => void this.resume(device)}>${t("week.resume")}</button>
+              ${tip(t, "week_resume")}
+            </span>
+          </span>
+        </div>
+        ${failed}`;
+    }
+    const target = now.target;
+    const parts: string[] = [];
+    if (now.kind === "device") {
+      const preset = target?.preset;
+      if (!target) {
+        parts.push(t("week.as_is"));
+      } else if (target.hvac === "off") {
+        parts.push(t("week.state_off"));
+      } else if (preset) {
+        const index = (device.week_presets ?? []).indexOf(preset);
+        const number = t("week.profile", { n: presetNumber(preset, Math.max(0, index)) });
+        parts.push(profileLabel(number, this.profilesOf(device.entity_id)[preset]?.name));
+      }
+    } else {
+      parts.push(
+        !target ? t("week.as_is") : target.hvac === "off" ? t("week.state_off") : t(`week.mode.${now.mode === "heat" ? "heat" : "cool"}`),
+      );
+      if (now.profile?.index != null) {
+        const name = profileLabel(t("week.profile", { n: now.profile.index + 1 }), now.profile.name);
+        // "held" as the reason says it already.
+        parts.push(now.profile.held && now.why !== "held" ? `${name} (${t("week.held")})` : name);
+      }
+      if (target && target.hvac !== "off" && target.temperature != null) {
+        parts.push(`${formatNumber(t.lang, target.temperature, 1)}\u00a0°C`);
+      }
+      if (now.next) {
+        parts.push(t("week.next", { time: now.next.at, value: this.valueText(t, now.next.value) }));
+      }
+    }
+    const why = t.optional(`week.why.${now.why}`, { min: this.awayAfter });
+    return html`<p class="week-now">
+        <span>${t(now.would ? "week.would" : "week.now", { text: parts.join(" · ") || "–" })}</span>
+        ${why ? html`<span class="chip">${why}</span>` : nothing}
+      </p>
+      ${failed}`;
+  }
+
+  private valueText(t: Translate, value: WeekValue): string {
+    return value === "off" ? t("week.off") : `${formatNumber(t.lang, value, 1)}\u00a0°C`;
+  }
+
+  /** A profile by hand: one of the six until midnight or until further notice; "Automatik" gives back. */
+  private renderHold(
+    t: Translate,
+    device: ClimateDevice,
+    room: ClimateRoomConfig,
+    sets: WeekProfile[][],
+    now: ClimateRoomStatus | undefined,
+  ): TemplateResult {
+    const entity = device.entity_id;
+    const mode = now?.mode ?? (this.hass?.states[entity]?.state ?? device.state);
+    const profiles = room.week?.modes?.[mode === "heat" ? "heat" : "cool"] ?? sets[0];
+    // The choice and how long it holds come from Joe's hold only; one for the other mode waits for it.
+    const hold = now?.hold ?? null;
+    const here = hold && hold.mode === mode ? hold : null;
+    const held = here ? here.profile : null;
+    const until = here ? (here.until ? "midnight" : "forever") : (this.holdUntil[entity] ?? "midnight");
+    const label = (which: ClimateHold) =>
+      profileLabel(t("week.profile", { n: which.profile + 1 }), room.week?.modes?.[which.mode]?.[which.profile]?.name);
+    // The night and nobody home come first: the profile waits.
+    const want = now?.want;
+    const first = here && (want === "night" || want === "away") ? want : null;
+    return html`<div data-tipped>
+      <div class="row">
+        <span>${t("week.hold")}</span>
+        ${tip(t, "week_hold")}
+      </div>
+      <div class="row hold">
+        <select
+          class="input"
+          aria-label=${t("week.hold")}
+          .value=${held == null ? "" : String(held)}
+          @change=${(ev: Event) => {
+            const value = (ev.target as HTMLSelectElement).value;
+            void this.hold(device, value === "" ? null : Number(value), until);
+          }}
+        >
+          <option value="" ?selected=${held == null}>${t("week.hold.auto")}</option>
+          ${profiles.map(
+            (p, i) => html`<option value=${String(i)} ?selected=${held === i}>${profileLabel(t("week.profile", { n: i + 1 }), p.name)}</option>`,
+          )}
+        </select>
+        <span class="seg" role="group" aria-label=${t("week.hold.until")}>
+          ${(["midnight", "forever"] as const).map(
+            (way) => html`<button
+              type="button"
+              aria-pressed=${String(until === way)}
+              @click=${() => {
+                if (here) {
+                  if (way !== until) void this.hold(device, here.profile, way);
+                } else {
+                  this.holdUntil = { ...this.holdUntil, [entity]: way };
+                }
+              }}
+            >
+              ${t(`week.hold.${way}`)}
+            </button>`,
+          )}
+        </span>
+      </div>
+      ${first && here ? html`<p class="hint">${t(`week.hold.later_${first}`, { profile: label(here) })}</p>` : nothing}
+      ${hold && !here
+        ? html`<div class="note" role="status">
+            <ha-icon icon="mdi:information-outline"></ha-icon>
+            <span class="note-body">
+              <span>
+                ${t("week.hold.other_mode", {
+                  profile: label(hold),
+                  mode: t(`week.mode.${hold.mode}`),
+                  until: t(`week.hold.${hold.until ? "midnight" : "forever"}`),
+                })}
+              </span>
+              <button type="button" class="mini-btn" @click=${() => void this.hold(device, null, until)}>${t("week.hold.lift")}</button>
+            </span>
+          </div>`
+        : nothing}
+    </div>`;
+  }
+
+  /** Tags on the device's own week programs (e.g. Homematic IP); times stay in the device. */
+  private renderPrograms(t: Translate, device: ClimateDevice, programs: string[], now: ClimateRoomStatus | undefined): TemplateResult {
+    const profiles = this.profilesOf(device.entity_id);
+    const tags = programs.flatMap((preset) => profiles[preset]?.tags ?? []);
+    const day = this.state?.climate?.day;
+    const homeOffice = day ? day.home_office_available : true;
+    const reason = day?.home_office_reason ?? "no_calendar";
+    const mode = this.hass?.states[device.entity_id]?.state ?? device.state;
+    return html`<div class="sub" data-tipped>
+      <div class="row">
+        <span class="sub-title">${t("devprof.title")}</span>
+        ${tip(t, "climate_device_profiles")}
+      </div>
+      ${now?.pending
+        ? html`<p class="hint">${t(now.pending === "start" ? "devprof.pending.start" : "devprof.pending.end")}</p>`
+        : nothing}
+      ${programs.map((preset, i) => {
+        const profile = profiles[preset] ?? { name: "", tags: [] };
+        const number = t("week.profile", { n: presetNumber(preset, i) });
+        return html`<div class="preset">
+          <div class="preset-name">
+            <input
+              class="input"
+              type="text"
+              maxlength="30"
+              placeholder=${number}
+              aria-label=${t("devprof.name", { preset: number })}
+              .value=${profile.name}
+              @change=${(ev: Event) =>
+                this.savePrograms(device, programs, preset, { name: (ev.target as HTMLInputElement).value.trim().slice(0, 30) })}
+            />
+            <code>${preset}</code>
+          </div>
+          <div class="tags" role="group" aria-label=${t("devprof.tags", { preset: number })}>
+            ${WEEK_TAGS.map((tag) => {
+              const on = profile.tags.includes(tag);
+              const blocked = tag === "home_office" && !homeOffice && !on;
+              return html`<button
+                type="button"
+                class="mini-btn tag-btn"
+                aria-pressed=${String(on)}
+                ?disabled=${blocked}
+                title=${blocked ? t(`week.ho.${reason}`) : ""}
+                @click=${() => this.toggleProgramTag(t, device, programs, preset, tag)}
+              >
+                <ha-icon icon=${TAG_ICONS[tag]}></ha-icon>${t(`week.tag.${tag}`)}
+              </button>`;
+            })}
+          </div>
+        </div>`;
+      })}
+      ${this.moved[device.entity_id]
+        ? html`<div class="note" role="status"><ha-icon icon="mdi:information-outline"></ha-icon><span>${this.moved[device.entity_id]}</span></div>`
+        : nothing}
+      ${tags.length && !tags.includes("normal")
+        ? html`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${t("devprof.need_normal")}</span></div>`
+        : nothing}
+      ${now?.why === "manual_mode"
+        ? html`<div class="note warn">
+            <ha-icon icon="mdi:alert-outline"></ha-icon><span>${t("devprof.not_auto", { state: this.hvacText(t, mode) })}</span>
+          </div>`
+        : nothing}
+      ${homeOffice
+        ? nothing
+        : html`<p class="hint">${t(`week.ho.${reason}`)}</p>
+            <div class="row">
+              <button type="button" class="mini-btn quiet" @click=${this.toLearn}>
+                <ha-icon icon="mdi:calendar-text-outline"></ha-icon>${t("week.ho.rules")}
+              </button>
+            </div>`}
+      ${tags.length && now?.kind === "device" ? this.renderNow(t, device, now) : nothing}
+    </div>`;
+  }
+
+  /** A tag sits on one program only: setting it moves it here. */
+  private toggleProgramTag(t: Translate, device: ClimateDevice, programs: string[], preset: string, tag: WeekTag): void {
+    const profiles = this.profilesOf(device.entity_id);
+    const on = (profiles[preset]?.tags ?? []).includes(tag);
+    const from = on ? undefined : programs.find((p) => p !== preset && profiles[p]?.tags.includes(tag));
+    const label = (p: string) => profiles[p]?.name || t("week.profile", { n: presetNumber(p, programs.indexOf(p)) });
+    this.moved = {
+      ...this.moved,
+      [device.entity_id]: from ? t("devprof.moved", { tag: t(`week.tag.${tag}`), to: label(preset), from: label(from) }) : "",
+    };
+    const tags = on ? profiles[preset].tags.filter((x) => x !== tag) : WEEK_TAGS.filter((x) => x === tag || profiles[preset]?.tags.includes(x));
+    this.savePrograms(device, programs, preset, { tags });
+  }
+
+  /**
+   * Saves all of a device's programs at once (they replace each other as a
+   * whole), on top of what was sent last: a name and a tag right after it
+   * must not overwrite each other.
+   */
+  private savePrograms(device: ClimateDevice, programs: string[], preset: string, change: Partial<DeviceProfileConfig>): void {
+    const entity = device.entity_id;
+    const base = this.profilesOf(entity);
+    // Programs the device no longer has are dropped.
+    const all: Record<string, DeviceProfileConfig> = Object.fromEntries(
+      Object.entries(structuredClone(base)).filter(([key]) => programs.includes(key)),
+    );
+    const own = { ...(all[preset] ?? { name: "", tags: [] }), ...change };
+    all[preset] = own;
+    // Its tags leave every other program.
+    for (const [key, value] of Object.entries(all)) {
+      if (key !== preset) all[key] = { ...value, tags: value.tags.filter((x) => !own.tags.includes(x)) };
+    }
+    // Programs without a name or tag need no entry.
+    for (const [key, value] of Object.entries(all)) {
+      if (!value.name && !value.tags.length) delete all[key];
+    }
+    if (profilesKey(all) === profilesKey(base)) return;
+    this.pending = { ...this.pending, [entity]: all };
+    void saveConfig(this, { climate: { rooms: { [entity]: { device_profiles: all } } } }).then((ok) => {
+      if (!ok && this.pending[entity] === all) {
+        const { [entity]: _, ...rest } = this.pending;
+        this.pending = rest;
+      }
+    });
+  }
+
+  private editWeek(device: ClimateDevice): void {
+    this.dispatchEvent(new CustomEvent("joe-edit", { detail: { editor: "week", id: device.entity_id }, bubbles: true, composed: true }));
+  }
+
+  private async hold(device: ClimateDevice, profile: number | null, until: "midnight" | "forever"): Promise<void> {
+    await this.weekCommand(device, { type: "energy_joe/climate/week/hold", entity_id: device.entity_id, profile, until });
+  }
+
+  private async resume(device: ClimateDevice): Promise<void> {
+    await this.weekCommand(device, { type: "energy_joe/climate/week/resume", entity_id: device.entity_id });
+  }
+
+  private async weekCommand(device: ClimateDevice, msg: { type: string; [key: string]: unknown }): Promise<void> {
+    const { [device.entity_id]: _, ...rest } = this.weekError;
+    this.weekError = rest;
+    try {
+      await this.hass?.callWS(msg);
+    } catch (err) {
+      this.weekError = { ...this.weekError, [device.entity_id]: String((err as { message?: string })?.message ?? err) };
+    }
   }
 
   /** One line per climate device and the device that measures it; several may share one. */
@@ -791,9 +1480,9 @@ export class JoeClimatePage extends LitElement {
       : nothing}`;
   }
 
-  private save(device: ClimateDevice, change: Partial<ClimateRoomConfig>): void {
-    const room = { ...DEFAULT_ROOM, ...(this.state?.config.climate?.rooms?.[device.entity_id] ?? {}), ...change };
-    void saveConfig(this, { climate: { rooms: { [device.entity_id]: room } } });
+  /** Sends only what changed: a whole room would overwrite its week profiles. */
+  private save(device: ClimateDevice, change: RoomChange): void {
+    void saveConfig(this, { climate: { rooms: { [device.entity_id]: change } } });
   }
 }
 

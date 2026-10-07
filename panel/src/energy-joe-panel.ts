@@ -15,6 +15,7 @@ import "./editors/battery-editor";
 import "./editors/consumers";
 import "./editors/household";
 import "./editors/tariff-editor";
+import "./editors/week-editor";
 import { ensureFonts } from "./fonts";
 import { translator, type Translate } from "./i18n";
 import "./pages/climate";
@@ -480,8 +481,29 @@ export class EnergyJoePanel extends LitElement {
             <button type="button" class="btn btn-secondary" data-notip @click=${close}>${t("mode.close")}</button>
           </div>`;
         break;
+      case "week":
+        label = t("week.label");
+        wide = true;
+        content = html`<joe-week-editor
+          .hass=${this.hass}
+          .t=${t}
+          .config=${config}
+          .status=${this.joe?.climate}
+          .entityId=${editor.id ?? ""}
+        ></joe-week-editor>`;
+        break;
     }
-    return html`<joe-sheet label=${label} closeLabel=${t("common.close")} ?wide=${wide} @joe-close=${close}>
+    // A link inside an editor leaves it for another page.
+    return html`<joe-sheet
+      label=${label}
+      closeLabel=${t("common.close")}
+      ?wide=${wide}
+      @joe-close=${close}
+      @joe-navigate=${(ev: CustomEvent<{ page: Page }>) => {
+        close();
+        this.go(ev.detail.page);
+      }}
+    >
       ${content}
     </joe-sheet>`;
   }

@@ -96,8 +96,18 @@ async def async_day_labels(
     hass: HomeAssistant, config: dict[str, Any], day: date, workday: bool
 ) -> dict[str, str]:
     """A label per person for a day, from their calendars and the rules."""
+    found = await async_day_label_sources(hass, config, day, workday)
+    return {person: entry["label"] for person, entry in found.items()}
+
+
+async def async_day_label_sources(
+    hass: HomeAssistant, config: dict[str, Any], day: date, workday: bool
+) -> dict[str, dict[str, str]]:
+    """Per person a day's label and where it comes from: "calendar" (an entry
+    matched a rule), "default" (no match, or no calendar) or "error" (the
+    calendar did not answer; the label is the default then)."""
     calendar = config["calendar"]
-    result: dict[str, str] = {}
+    result: dict[str, dict[str, str]] = {}
     start = dt_util.start_of_local_day(day)
     end = start + timedelta(days=1)
     for person in config["persons"]:
@@ -105,7 +115,13 @@ async def async_day_labels(
         mine = person.get("calendar") or calendar
         default = mine["default_workday"] if workday else mine["default_day_off"]
         label = None
-        if person["calendars"] and hass.services.has_service("calendar", "get_events"):
+        source = "default"
+        if person["calendars"] and not hass.services.has_service(
+            "calendar", "get_events"
+        ):
+            # Calendars chosen, but none can be asked right now (not loaded yet).
+            source = "error"
+        elif person["calendars"]:
             try:
                 response = await hass.services.async_call(
                     "calendar",
@@ -123,6 +139,7 @@ async def async_day_labels(
                     "Calendar of %s did not answer", person["id"], exc_info=True
                 )
                 response = {}
+                source = "error"
             events = [
                 event
                 for entry in (response or {}).values()
@@ -131,7 +148,9 @@ async def async_day_labels(
             # All-day events first: "vacation" beats a meeting.
             events.sort(key=lambda e: "T" in str(e.get("start", "")))
             label = _label(events, mine["rules"])
-        result[person["id"]] = label or default
+            if label:
+                source = "calendar"
+        result[person["id"]] = {"label": label or default, "source": source}
     return result
 
 

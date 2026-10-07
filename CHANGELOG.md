@@ -3,6 +3,17 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.12
+
+- Wochenprofile für Klimaanlagen (Klima → Gerät → „Wochenprofile“), wie bei Homematic IP: je Betriebsart (Heizen, Kühlen) sechs Profile mit Temperaturverlauf über den Tag – alle Tage gleich, Mo–Fr und Sa–So oder jeder Tag einzeln. Ein Schaltpunkt darf auch „aus“ sein. Bearbeitet wird als Entwurf, erst „Speichern“ übernimmt.
+- Haken je Profil: Normal, Feiertag, Abwesend, Homeoffice. Joe schaltet selbst um – aufs Abwesenheitsprofil, wenn seit 15 Minuten niemand da ist (einstellbar), aufs Feiertagsprofil an freien Werktagen, aufs Homeoffice-Profil, wenn der Kalender es sagt (nur wenn Homeoffice bei euch nicht der Normalfall ist). Kommt jemand heim, fährt er rechtzeitig zurück.
+- Joe folgt der Betriebsart, die an der Klimaanlage eingestellt ist. Von Hand Verstelltes gilt bis zum nächsten Schaltpunkt; eine von Hand ausgeschaltete Anlage schaltet Joe nie selbst wieder ein. „Profil von Hand“ (bis heute 24:00 oder bis auf Weiteres) und „Zurück zum Plan“ gibt es direkt auf der Karte.
+- Homematic IP: Dieselben Haken für die Heizprogramme deiner Thermostate (week_program). Joe wechselt nur das Programm, und nur im Automatik-Betrieb – die Zeiten bleiben im Gerät. Ein Programm, das du von Hand wählst (auch beim Zurückschalten auf Automatik), gilt, bis sich die Lage ändert – jemand geht oder kommt, ein freier Tag beginnt. Wirksam, sobald ein Programm den Haken „Normal“ hat; bisherige Einstellungen „Profil bei Abwesenheit“ und „an freien Tagen“ laufen bis dahin unverändert weiter.
+- Neue Karte „Heute“: Arbeitstag, Wochenende oder Feiertag, wer laut Kalender im Homeoffice ist, und „Zusätzlich frei, wenn … an ist“ (z. B. CCU-Variablen für Brückentag oder Urlaub).
+- Abwesend gilt jetzt für alle Klimageräte erst, wenn seit 15 Minuten niemand da ist (einstellbar unter „Wer ist da?“) – kurz weg schaltet nichts mehr um. Endet die Nacht in dieser Zeit, bleibt es erst einmal wie in der Nacht.
+- Behoben: Bei Räumen mit „Nachts aus“ schaltete Joe beim Wiederhochfahren am Morgen unter Umständen minutenlang im Minutentakt an und aus.
+- Wochenprofile und Haken übernehmen, sobald eine gerade laufende Nacht oder Abwesenheit vorbei ist (die Karte sagt das); werden sie während einer Nacht oder Abwesenheit abgeschaltet, läuft diese noch zu Ende. So wird nie mittendrin hin- und hergeschaltet.
+
 ## 0.9.11
 
 - Klima: Ein Klick auf den Namen eines Klimageräts oder eines Messgeräts öffnet seine Geräteseite in Home Assistant (in den Messgeräten und auf den Raumkarten).
