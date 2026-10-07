@@ -1,6 +1,6 @@
 import { LitElement, css, html, nothing, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
-import { displayTitle, swoosh } from "../components/bits";
+import { deviceLink, displayTitle, swoosh } from "../components/bits";
 import "../components/pose";
 import { tip } from "../components/tip";
 import { pickEntity, saveConfig } from "../config";
@@ -146,6 +146,15 @@ export class JoeClimatePage extends LitElement {
       }
       .row.chips > span:first-child {
         flex: 0 1 auto;
+      }
+      a.ha-link {
+        color: inherit;
+        text-decoration: underline;
+        text-decoration-color: var(--joe-line-2);
+        text-underline-offset: 3px;
+      }
+      a.ha-link:hover {
+        text-decoration-color: var(--joe-amber);
       }
       details.ent {
         margin-top: 4px;
@@ -489,7 +498,7 @@ export class JoeClimatePage extends LitElement {
     const rate = joe.climate?.rates?.[device.entity_id];
     return html`<section class="card" data-tipped>
       <div class="head">
-        <b title=${device.entity_id}>${device.name}</b>
+        <b>${deviceLink(device.device_id, device.name, t("climate.open_device", { id: device.entity_id }))}</b>
         ${current != null
           ? html`<span class="chip">${formatNumber(t.lang, Number(current), 1)} °C${target != null ? ` → ${formatNumber(t.lang, Number(target), 1)} °C` : ""}</span>`
           : nothing}
@@ -604,7 +613,8 @@ export class JoeClimatePage extends LitElement {
     const picking = this.picking === device.entity_id;
     return html`<div class="line">
       <div class="dev">
-        <b title=${device.entity_id}>${device.name}</b><small>${device.area ?? t("climate.no_area")}</small>
+        <b>${deviceLink(device.device_id, device.name, t("climate.open_device", { id: device.entity_id }))}</b
+        ><small>${device.area ?? t("climate.no_area")}</small>
         <details class="ent">
           <summary>${t("climate.entities")}</summary>
           <code>${device.entity_id}</code>
@@ -617,10 +627,10 @@ export class JoeClimatePage extends LitElement {
           ? this.meterSearch(t, device)
           : html`<span class="picked">
               ${shown
-                ? html`<b>${shown.name ?? shown.device_id}${shown.sensor ? ` · ${shown.sensor}` : ""}</b>
+                ? html`<b>${deviceLink(shown.device_id, `${shown.name ?? shown.device_id}${shown.sensor ? ` · ${shown.sensor}` : ""}`, t("climate.open_meter"))}</b>
                     ${shown.via ? html`<small class="via">${shown.via}</small>` : nothing}`
                 : chosen
-                  ? html`<b>${chosen.power ?? chosen.energy ?? chosen.device_id}</b>`
+                  ? html`<b>${deviceLink(chosen.device_id, chosen.power ?? chosen.energy ?? chosen.device_id, t("climate.open_meter"))}</b>`
                   : html`<small>${t(meter === "none" ? "climate.meter.without_long" : "climate.meter.open_long")}</small>`}
             </span>`}
       </div>

@@ -145,6 +145,8 @@ export const en: Record<Key, string> = {
   "climate.night.time_say": "Set from when to when for each air conditioner below.",
   "climate.entity": "Entity",
   "climate.entities": "Entities",
+  "climate.open_device": "Open the device in Home Assistant ({id})",
+  "climate.open_meter": "Open the meter in Home Assistant",
   "pick.night.title": "What tells you that you are in bed?",
   "tip.climate_night.text":
     "The air conditioner goes off at night and comes back early enough to be comfortable at the morning time you set. When night starts is set above under “When is night?”: fixed times or an entity. How long the room takes to cool, I learn over time.",

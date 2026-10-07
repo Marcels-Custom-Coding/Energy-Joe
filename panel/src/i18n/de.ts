@@ -149,6 +149,8 @@ export const de = {
   "climate.night.time_say": "Von wann bis wann, stellst du je Klimaanlage unten ein.",
   "climate.entity": "Entität",
   "climate.entities": "Entitäten",
+  "climate.open_device": "Gerät in Home Assistant öffnen ({id})",
+  "climate.open_meter": "Messgerät in Home Assistant öffnen",
   "pick.night.title": "Was sagt dir, dass ihr im Bett seid?",
   "tip.climate_night.text":
     "Die Klimaanlage geht nachts aus und so früh wieder an, dass es zur eingestellten Morgen-Zeit wieder angenehm ist. Wann die Nacht beginnt, steht oben unter „Wann ist nachts?“: feste Uhrzeit oder eine Entität. Wie lange der Raum zum Abkühlen braucht, lerne ich mit der Zeit.",

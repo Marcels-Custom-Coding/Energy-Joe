@@ -711,6 +711,8 @@ var Me = {
 	"climate.night.time_say": "Von wann bis wann, stellst du je Klimaanlage unten ein.",
 	"climate.entity": "Entität",
 	"climate.entities": "Entitäten",
+	"climate.open_device": "Gerät in Home Assistant öffnen ({id})",
+	"climate.open_meter": "Messgerät in Home Assistant öffnen",
 	"pick.night.title": "Was sagt dir, dass ihr im Bett seid?",
 	"tip.climate_night.text": "Die Klimaanlage geht nachts aus und so früh wieder an, dass es zur eingestellten Morgen-Zeit wieder angenehm ist. Wann die Nacht beginnt, steht oben unter „Wann ist nachts?“: feste Uhrzeit oder eine Entität. Wie lange der Raum zum Abkühlen braucht, lerne ich mit der Zeit.",
 	"tip.climate_night_source.title": "Woran erkennt Joe die Nacht?",
@@ -2596,6 +2598,8 @@ var Me = {
 	"climate.night.time_say": "Set from when to when for each air conditioner below.",
 	"climate.entity": "Entity",
 	"climate.entities": "Entities",
+	"climate.open_device": "Open the device in Home Assistant ({id})",
+	"climate.open_meter": "Open the meter in Home Assistant",
 	"pick.night.title": "What tells you that you are in bed?",
 	"tip.climate_night.text": "The air conditioner goes off at night and comes back early enough to be comfortable at the morning time you set. When night starts is set above under “When is night?”: fixed times or an entity. How long the room takes to cool, I learn over time.",
 	"tip.climate_night_source.title": "How does Joe tell night?",
@@ -4371,14 +4375,14 @@ function Le(e) {
 }
 //#endregion
 //#region src/define.ts
-var Re = "0.9.10";
+var Re = "0.9.11";
 function H(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Re, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.10" && Be();
+	n.joeVersion !== "0.9.11" && Be();
 }
 var ze = !1;
 function Be() {

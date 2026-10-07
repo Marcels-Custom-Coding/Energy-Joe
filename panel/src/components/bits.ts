@@ -66,3 +66,28 @@ export function reasonText(t: Translate, reason: Reason): string {
   }
   return t.optional(`reason.${reason.code}`, vars) ?? reason.code;
 }
+
+/** Open a page of Home Assistant itself (e.g. a device) without reloading. */
+export function openInHa(path: string): void {
+  history.pushState(null, "", path);
+  window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: false } }));
+}
+
+/** A link to a device's page in Home Assistant; a middle click still opens a new tab. */
+export function deviceLink(deviceId: string | null | undefined, label: TemplateResult | string, title?: string): TemplateResult {
+  if (!deviceId) {
+    return html`<span title=${title ?? ""}>${label}</span>`;
+  }
+  const path = `/config/devices/device/${deviceId}`;
+  return html`<a
+    class="ha-link"
+    href=${path}
+    title=${title ?? ""}
+    @click=${(ev: MouseEvent) => {
+      if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button !== 0) return;
+      ev.preventDefault();
+      openInHa(path);
+    }}
+    >${label}</a
+  >`;
+}

@@ -3,6 +3,10 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.11
+
+- Klima: Ein Klick auf den Namen eines Klimageräts oder eines Messgeräts öffnet seine Geräteseite in Home Assistant (in den Messgeräten und auf den Raumkarten).
+
 ## 0.9.10
 
 - Übersicht: Joe ist auf breiten Karten größer zu sehen (bis 240 statt 160 Pixel); auf schmalen Karten und am Handy bleibt er so, dass die Überschrift Platz hat.
