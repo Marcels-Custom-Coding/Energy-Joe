@@ -282,7 +282,20 @@ export interface Rules {
 export type DayCaution = "tight" | "normal" | "careful";
 
 /** Why a battery does (not) take part in the daytime surplus. */
-export type SurplusBatteryState = "takes_part" | "capped" | "would" | "left_out" | "cannot" | "not_tested";
+export type SurplusBatteryState =
+  | "takes_part"
+  | "capped"
+  | "would"
+  | "left_out"
+  | "not_tested"
+  /** No charge limit Joe could set (e.g. Marstek via Omnibattery). */
+  | "no_limit"
+  /** A charge limit in % or A: a share of a power the device does not tell. */
+  | "unit"
+  /** Its entities are not available right now. */
+  | "unavailable"
+  /** Charge level or capacity unknown. */
+  | "unknown";
 
 /** An evcc loadpoint as Joe reads it (control/evcc.py). */
 export interface EvccLoadpoint {
@@ -317,7 +330,7 @@ export interface DaySurplus {
   /** Not live: Joe only shows what he would do. */
   dry?: boolean;
   caution?: DayCaution;
-  batteries?: Record<string, { name: string; state: SurplusBatteryState; soc: number; cap_kw: number | null; problem: string | null }>;
+  batteries?: Record<string, { name: string; state: SurplusBatteryState; soc: number | null; cap_kw: number | null; problem: string | null }>;
   loadpoints?: EvccLoadpoint[];
   evcc?: { priority_soc?: number | null; buffer_soc?: number | null; buffer_start_soc?: number | null };
   conflicts?: { code: "buffer_soc" | "buffer_start_soc" | "battery_boost"; value?: number; loadpoint?: string }[];

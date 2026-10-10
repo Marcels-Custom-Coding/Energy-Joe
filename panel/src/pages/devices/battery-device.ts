@@ -3,7 +3,7 @@ import { property, state } from "lit/decorators.js";
 import "../../components/battery-automations";
 import { automationsOf, loadBatteryAutomations, type BatteryAutomation } from "../../components/battery-automations";
 import { displayTitle } from "../../components/bits";
-import { daySurplus } from "../../components/day-surplus";
+import { daySurplus, surplusAbility } from "../../components/day-surplus";
 import { dayText } from "../../components/look-back";
 import { timeOf } from "../../components/plan-text";
 import "../../components/sheet";
@@ -432,19 +432,24 @@ export class JoeBatteryDevice extends DeviceSection {
     const rules = joe.config.rules;
     const surplus = daySurplus(joe);
     const mine = surplus?.batteries?.[battery.id];
-    const capable = Boolean(battery.controls?.charge_limit) && battery.adapter !== "steps";
+    const ability = surplusAbility(this.hass, battery);
+    const capable = ability === "ok";
     const on = battery.day_surplus !== false;
     const kw = (value: number | null | undefined) => formatNumber(t.lang, value ?? 0, 1);
     const ruleTo: Route = { tab: "settings", section: "rules", id: "day_surplus" };
     let text: string;
-    if (!capable || mine?.state === "cannot") {
-      text = t("battery.surplus.cannot");
+    if (!capable) {
+      text = t(`battery.surplus.${ability}`);
+    } else if (mine && (mine.state === "no_limit" || mine.state === "unit")) {
+      text = t(`battery.surplus.${mine.state}`);
     } else if (!rules.day_surplus) {
       text = t("battery.surplus.rule_off");
     } else if (mine?.state === "capped") {
       text = t("battery.surplus.capped", { kw: kw(mine.cap_kw), time: timeOf(surplus?.pv_end) });
     } else if (mine?.state === "would") {
       text = t("battery.surplus.would", { kw: kw(mine.cap_kw), time: timeOf(surplus?.pv_end) });
+    } else if (mine?.state === "unavailable" || mine?.state === "unknown") {
+      text = t(`battery.surplus.${mine.state}`);
     } else if (mine?.state === "not_tested" || joe.control?.ready[battery.id] !== "ready") {
       text = t("battery.surplus.not_tested");
     } else {

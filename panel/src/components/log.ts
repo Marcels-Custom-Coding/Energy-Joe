@@ -99,6 +99,8 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
     unit: typeof entry.unit === "string" ? entry.unit : "%",
     until: typeof entry.until === "string" ? entry.until.slice(11, 16) : "–",
     loadpoint: typeof entry.loadpoint === "string" ? entry.loadpoint : "evcc",
+    remaining: typeof entry.remaining === "number" ? formatNumber(t.lang, entry.remaining, 1) : "–",
+    headroom: typeof entry.headroom === "number" ? formatNumber(t.lang, entry.headroom, 1) : "–",
   };
   if (entry.kind === "surplus_end") {
     return t.optional(`log.surplus_end.${String(entry.reason)}`, vars) ?? t("log.surplus_end", vars);

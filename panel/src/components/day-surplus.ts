@@ -1,7 +1,7 @@
 import { html, nothing, type TemplateResult } from "lit";
 import { formatNumber } from "../entities";
 import type { Translate } from "../i18n";
-import type { DaySurplus, JoeState } from "../types";
+import type { BatteryConfig, DaySurplus, HomeAssistant, JoeState } from "../types";
 import { timeOf } from "./plan-text";
 
 // "Tagsüber Überschuss abgeben" (control/executor.py _async_surplus): the
@@ -12,6 +12,25 @@ import { timeOf } from "./plan-text";
 /** The daytime surplus, when the rule is on and the backend tells it. */
 export function daySurplus(joe: JoeState | undefined): DaySurplus | undefined {
   return joe?.config.rules.day_surplus ? joe.control?.surplus : undefined;
+}
+
+/**
+ * Whether Joe can cap this battery's charging at a power, as the backend
+ * decides it (RoleAdapter.limit_problem): only a charge limit in W or kW.
+ * A limit in % (Fronius: % of a reference the inverter does not show) or A
+ * would need a reference Joe cannot know, so such a battery does not take part.
+ */
+export function surplusAbility(hass: HomeAssistant | undefined, battery: BatteryConfig): "ok" | "no_limit" | "unit" {
+  const entity = battery.controls?.charge_limit;
+  if (!entity || battery.adapter === "steps" || battery.adapter === "none") {
+    return "no_limit";
+  }
+  const state = hass?.states[entity];
+  if (!state || state.state === "unavailable" || state.state === "unknown") {
+    return "ok";
+  }
+  const unit = state.attributes.unit_of_measurement;
+  return unit === "W" || unit === "kW" ? "ok" : "unit";
 }
 
 /** The loadpoint that gets the sun, by its name in evcc ("den Ladepunkt „Fußbodenheizung“"). */

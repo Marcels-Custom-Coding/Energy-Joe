@@ -31,7 +31,7 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 
 from .profiles import GENERIC, MODE_METHODS, PROFILES, Profile, profile_for
-from .writes import Write, available, fit, matches
+from .writes import Write, available, fit, matches, read
 
 # Charging power when neither the plan nor the battery says (W).
 DEFAULT_CHARGE_W = 1000
@@ -226,37 +226,66 @@ class RoleAdapter(Adapter):
         writes.append(Write(self.controls["charge_limit"], 0))
         return self._paced(writes)
 
-    def can_limit(self, hass: HomeAssistant) -> bool:
-        """Whether Joe can cap charging at a power (daytime surplus).
+    def limit_problem(self, hass: HomeAssistant) -> str | None:
+        """Why Joe cannot cap charging at a power (daytime surplus), or None.
 
-        A limit in W or kW is a power; one in % or A is a share of the
-        battery's highest charging power, which must be known then.
+        Only a charge limit in W or kW is a power Joe can trust. One in % or A
+        is a share of a reference the device does not tell: Fronius counts
+        its % of WChaMax (SunSpec model 124), which Home Assistant does not
+        show and which need not be the battery's highest charging power. A
+        wrong reference would cap too low, so such batteries do not take part.
         """
         if not self.can_defer():
-            return False
-        unit = self._limit_unit(hass)
-        return unit in ("W", "kW") or bool(self.battery.get("max_charge_w"))
+            return "no_limit"
+        state = hass.states.get(self.controls["charge_limit"])
+        if not available(state):
+            return "unavailable"
+        assert state is not None
+        # No unit at all: not sure it is a power, so no.
+        if state.attributes.get("unit_of_measurement") not in ("W", "kW"):
+            return "unit"
+        return None
 
-    def limit(self, hass: HomeAssistant, kw: float) -> list[Write]:
-        """Cap charging (from the sun, too) at a power; discharging stays free."""
+    def can_limit(self, hass: HomeAssistant) -> bool:
+        """Whether Joe can cap charging at a power (daytime surplus)."""
+        return self.limit_problem(hass) is None
+
+    def limit(
+        self, hass: HomeAssistant, kw: float, saved: dict[str, Any] | None = None
+    ) -> list[Write]:
+        """Cap charging (from the sun, too) at a power; discharging stays free.
+
+        Never above a limit that was in force before Joe (the owner's own).
+        """
         entity_id = self.controls["charge_limit"]
         watts = max(0.0, kw * 1000)
-        unit = self._limit_unit(hass)
-        maximum_w = self.battery.get("max_charge_w") or watts or 1
-        low, high = _range(hass, entity_id, 0, math.inf)
-        if unit == "kW":
+        if self._limit_unit(hass) == "kW":
             value: float = math.ceil(watts / 10) / 100
-        elif unit == "%":
-            value = math.ceil(100 * watts / maximum_w)
-        elif unit == "A":
-            value = math.ceil(min(high, 50) * watts / maximum_w * 10) / 10
         else:
             value = math.ceil(watts / 10) * 10
+        own = self._own_limit(hass, saved or {})
+        if own is not None:
+            value = min(value, own)
+        low, high = _range(hass, entity_id, 0, math.inf)
         writes = []
         if "charge_limit_enabled" in self.controls:
             writes.append(Write(self.controls["charge_limit_enabled"], True))
         writes.append(Write(entity_id, max(low, min(high, value))))
         return self._paced(writes)
+
+    def _own_limit(self, hass: HomeAssistant, saved: dict[str, Any]) -> float | None:
+        """The charge limit in force before Joe changed it, if any (entity's unit)."""
+        entity_id = self.controls["charge_limit"]
+        switch = self.controls.get("charge_limit_enabled")
+        if switch:
+            on = saved[switch] if switch in saved else read(hass, switch)
+            if on is not True:
+                return None
+        value = saved[entity_id] if entity_id in saved else read(hass, entity_id)
+        # 0 may mean "no limit" on devices without a switch: not a cap to keep.
+        if isinstance(value, bool) or not isinstance(value, int | float) or value <= 0:
+            return None
+        return float(value)
 
     def unlimit(self, saved: dict[str, Any]) -> list[Write]:
         """The charge limit back as it was: its switch first, then the value."""

@@ -95,6 +95,8 @@ Sechs Reiter, links die Zeit, rechts die Dinge:
 | **Haushalt** | Wer wohnt hier, Wer ist da, Tage & Kalender, Nachtruhe, Unterwegs & Wetter |
 | **Einstellungen** | Betrieb, Regeln, Benachrichtigungen, Wartung & Sichern, Über Joe – oben ein Wegweiser, der auch alte Namen wie „Historie“ oder „Für Profis“ findet |
 
+Unter **Einstellungen › Regeln** steht auch „Tagsüber Überschuss abgeben“ (Standard: aus): An sonnigen Tagen laden die Speicher nur so schnell, dass sie vor dem Abend trotzdem voll sind; den Rest der Sonne bekommt ein evcc-Ladepunkt im PV-Modus, z. B. das Auto oder die Fußbodenheizung. Nur im Live-Betrieb und nur für Speicher mit einer Ladegrenze in W oder kW; abends stellt Joe die Ladegrenze zurück.
+
 Jede Seite hat ihre eigene Adresse, zum Beispiel `/energy-joe/devices/battery`, `/energy-joe/review/days` oder `/energy-joe/household/people`. Zurück im Browser, Lesezeichen und die Dashboard-Karten führen genau dorthin.
 
 ## Betriebsarten

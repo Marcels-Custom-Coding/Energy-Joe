@@ -66,6 +66,10 @@ class Slot:
     def surplus(self) -> float:
         return max(0.0, self.solar - self.home)
 
+    @property
+    def deficit(self) -> float:
+        return max(0.0, self.home - self.solar)
+
 
 def slots(
     plan_hours: list[dict[str, Any]],
@@ -160,8 +164,27 @@ def day_cap(found: list[Slot], stores: list[Store], now: datetime) -> dict[str, 
 
     Batteries Joe does not cap take the surplus first (at their full power);
     the capped ones share the cap by the room they have left, so they fill up
-    at about the same time.
+    at about the same time. Hours before the end in which the cautious sun
+    does not cover the house (the early morning, a cloudy hour at noon) drain
+    the batteries: that energy has to come in on top.
+
+    A battery whose share would be close to its own maximum is not capped:
+    it is worked out again as one that takes the sun at full power.
     """
+    result = _day_cap(found, stores, now)
+    while result["state"] == "cap" and result.get("uncapped"):
+        stores = [
+            Store(b.id, b.capacity, b.soc, b.max_kw, False)
+            if b.id in result["uncapped"]
+            else b
+            for b in stores
+        ]
+        result = _day_cap(found, stores, now)
+    result.pop("uncapped", None)
+    return result
+
+
+def _day_cap(found: list[Slot], stores: list[Store], now: datetime) -> dict[str, Any]:
     end = pv_end(found, now)
     result: dict[str, Any] = {
         "state": "no_sun",
@@ -190,7 +213,9 @@ def day_cap(found: list[Slot], stores: list[Store], now: datetime) -> dict[str, 
         rest.append(Slot(slot.start, slot.hours, slot.solar - take, slot.home))
     capped = [b for b in stores if b.capped]
     room = sum(b.room for b in capped)
-    need = room * MARGIN + MARGIN_KWH if room > FULL_KWH else 0.0
+    # What the house takes from the batteries before the end (cautious sun).
+    drain = sum(s.deficit for s in rest)
+    need = (room + drain) * MARGIN + MARGIN_KWH if room > FULL_KWH else 0.0
     surplus = sum(s.surplus for s in rest)
     result.update(need_kwh=round(need, 2), surplus_kwh=round(surplus, 2))
     if not capped:
@@ -209,6 +234,7 @@ def day_cap(found: list[Slot], stores: list[Store], now: datetime) -> dict[str, 
         result["state"] = "no_need"
         return result
     caps: dict[str, float] = {}
+    uncapped: list[str] = []
     for battery in capped:
         if battery.room <= FULL_KWH:
             continue
@@ -216,8 +242,14 @@ def day_cap(found: list[Slot], stores: list[Store], now: datetime) -> dict[str, 
         value = max(MIN_CAP_KW, _step(share))
         if value < battery.max_kw * NO_CAP_SHARE:
             caps[battery.id] = round(value, 1)
+        else:
+            uncapped.append(battery.id)
     if not caps:
         result["state"] = "no_need"
+        return result
+    if uncapped:
+        # Worked out again with these taking the sun at full power.
+        result.update(state="cap", uncapped=uncapped)
         return result
     result.update(
         state="cap",

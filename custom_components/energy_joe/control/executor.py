@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable
+from copy import deepcopy
 from datetime import datetime, timedelta
 import logging
 import math
@@ -73,6 +74,8 @@ DAY_CAUTION = 0.8
 SURPLUS_LOWER_EVERY = timedelta(minutes=15)
 SURPLUS_LOWER_KW = 0.2
 SURPLUS_LATEST = 22
+# A cap that rises is logged again only once it rose by this much (kW).
+SURPLUS_LOG_KW = 0.3
 
 DEFAULT_DATA: dict[str, Any] = {
     "saved": {},
@@ -110,7 +113,7 @@ DEFAULT_DATA: dict[str, Any] = {
     "day_released": None,
     # Daytime surplus (see _async_surplus): the caps in force (battery -> kW),
     # when they last changed, and the day it was let go for good.
-    "surplus": {"caps": {}, "changed": None, "released": None},
+    "surplus": {"caps": {}, "changed": None, "released": None, "logged": None},
 }
 
 type Changed = Callable[[], None]
@@ -179,6 +182,11 @@ class JoeExecutor:
     async def async_load(self) -> None:
         if stored := await self._store.async_load():
             self.data = {**_fresh(), **stored}
+            # Older data: the daytime surplus' keys filled in.
+            self.data["surplus"] = {
+                **deepcopy(DEFAULT_DATA["surplus"]),
+                **(stored.get("surplus") or {}),
+            }
 
     @property
     def active(self) -> bool:
@@ -283,10 +291,17 @@ class JoeExecutor:
         reason, night = self._why(now, config, plan, mode)
         boosts, keep, ended = await self._async_boosts(config, mode, now)
         if reason != "steering":
+            before = self._written_state()
             day, held = await self._async_day(config, plan, mode, now)
             keep |= held
             was_capped = bool(self.data["surplus"]["caps"])
-            capped = await self._async_surplus(config, plan, mode, now, bool(day))
+            try:
+                capped = await self._async_surplus(config, plan, mode, now, bool(day))
+            except Exception:
+                # Never keep a cap Joe cannot work out: give it back.
+                _LOGGER.exception("Daytime surplus failed")
+                capped = set()
+                self._surplus_forget("error")
             keep |= capped
             if self._dirty_except(keep):
                 # The grid-friendly morning is over: its own reason, no second
@@ -309,7 +324,8 @@ class JoeExecutor:
                 self._end_night()
             self._set_status("day" if day else reason, night, day, boosts, keep)
             self._watch([])
-            if boosts or ended or day:
+            # Originals and caps survive a crash: saved whenever they change.
+            if boosts or ended or day or self._written_state() != before:
                 await self._async_save()
             return
         assert plan is not None and night is not None
@@ -729,6 +745,17 @@ class JoeExecutor:
             )
         return want
 
+    def _written_state(self) -> tuple[Any, ...]:
+        """What must be on disk before Joe relies on it (originals, caps)."""
+        return (
+            dict(self.data["saved"]),
+            list(self.data["active"]),
+            dict(self.data["surplus"]["caps"]),
+            self.data["surplus"].get("released"),
+            self.data.get("day"),
+            self.data.get("day_released"),
+        )
+
     def _mark_active(self, key: str) -> None:
         if key not in self.data["active"]:
             self.data["active"].append(key)
@@ -758,8 +785,12 @@ class JoeExecutor:
 
         Only batteries with a charge limit and a passed test run, only in the
         modes "suggest" (with a yes for the night) and "live". When the sun
-        stays behind the forecast, Joe lets go early.
+        stays behind the forecast, Joe lets go early. After the window the
+        planner shows the next night's preview with last night's plan as
+        "morning" until its defer_until.
         """
+        if plan and not plan.get("fixed"):
+            plan = plan.get("morning")
         info = (plan or {}).get("day")
         if (
             not info
@@ -852,6 +883,10 @@ class JoeExecutor:
         takes a power, a passed test run and "takes part" on; the
         grid-friendly morning goes first. In the simulation and "suggest" Joe
         shows what he would do. Returns the entities to leave as they are.
+
+        The originals go into "saved" like every other write, so the release
+        (end of the day, mode change, "Sofort freigeben", stop, a restart
+        after a crash) puts them back.
         """
         rules = config["rules"]
         local = dt_util.as_local(now)
@@ -888,16 +923,23 @@ class JoeExecutor:
                 soc = number(self._hass.states.get(battery["soc_entity"]))
                 size = sizes.get(battery["id"]) or battery.get("capacity_kwh")
                 if soc is None or not size:
+                    info["batteries"][battery["id"]] = {
+                        "name": battery["name"],
+                        "state": "unknown",
+                        "soc": None if soc is None else round(soc, 1),
+                        "cap_kw": None,
+                        "problem": None,
+                    }
                     continue
                 adapter = make_adapter(battery)
                 role = adapter if isinstance(adapter, RoleAdapter) else None
                 why = "takes_part"
-                if (
-                    role is None
-                    or not role.can_limit(self._hass)
-                    or role.missing(self._hass)
-                ):
-                    why = "cannot"
+                if role is None:
+                    why = "no_limit"
+                elif problem := role.limit_problem(self._hass):
+                    why = problem
+                elif role.missing(self._hass):
+                    why = "unavailable"
                 elif not self.tested(battery):
                     why = "not_tested"
                 elif not battery.get("day_surplus", True):
@@ -964,35 +1006,39 @@ class JoeExecutor:
         if state == "cap" and mode == "live":
             caps = self._surplus_steady(caps, now)
             started = not store["caps"]
-            raised = any(kw > store["caps"].get(k, kw) for k, kw in caps.items())
+            total = round(sum(caps.values()), 1)
+            logged = store.get("logged") or 0.0
             for key, kw in caps.items():
                 battery, role = items[key]
                 assert role is not None
-                writes = role.limit(self._hass, kw)
+                writes = role.limit(self._hass, kw, self.data["saved"])
                 problem = await self._async_write(role, writes, now, None)
                 keep |= {w.entity_id for w in writes} | {key}
                 info["batteries"][key].update(
                     state="capped", cap_kw=kw, problem=problem
                 )
-            if started or raised or set(caps) != set(store["caps"]):
+            if started or set(caps) != set(store["caps"]):
                 self._log(
-                    "surplus_cap" if started else "surplus_raise",
-                    power=round(sum(caps.values()), 1),
+                    "surplus_cap",
+                    power=total,
                     caps=caps,
                     until=info.get("pv_end"),
                     loadpoint=next(
                         (p["name"] for p in info["loadpoints"] if p["wants"]), None
                     ),
                 )
+                store["logged"] = total
+            elif total >= logged + SURPLUS_LOG_KW:
+                # Raised as the sun lags: written at once, logged in larger steps.
+                self._log("surplus_raise", power=total, caps=caps)
+                store["logged"] = total
             store["caps"] = caps
         else:
             if state == "cap":
                 for key, kw in caps.items():
                     info["batteries"][key].update(state="would", cap_kw=kw)
             if store["caps"]:
-                self._log("surplus_end", reason=state)
-                store["caps"] = {}
-                store["changed"] = None
+                self._surplus_forget(state)
                 if state in ("full", "not_reachable", "after_pv"):
                     # Let go for good today (no back and forth with the clouds).
                     store["released"] = today
@@ -1052,6 +1098,15 @@ class JoeExecutor:
             store["changed"] = now.isoformat(timespec="seconds")
         return result
 
+    def _surplus_forget(self, reason: str) -> None:
+        """No cap any more (the release puts the originals back)."""
+        store = self.data["surplus"]
+        if store["caps"]:
+            self._log("surplus_end", reason=reason)
+        store.update(caps={}, changed=None, logged=None)
+        if self.surplus.get("state") == "cap":
+            self.surplus = {**self.surplus, "state": reason}
+
     async def _async_surplus_off(
         self, config: dict[str, Any], now: datetime, reason: str
     ) -> None:
@@ -1064,8 +1119,7 @@ class JoeExecutor:
             if battery["id"] in caps and isinstance(adapter, RoleAdapter):
                 writes = adapter.unlimit(self.data["saved"])
                 await self._async_write(adapter, writes, now, None)
-        self.data["surplus"].update(caps={}, changed=None)
-        self._log("surplus_end", reason=reason)
+        self._surplus_forget(reason)
         self.surplus = {**self.surplus, "state": reason}
 
     # --- charging to a level by hand ----------------------------------------
@@ -1211,11 +1265,8 @@ class JoeExecutor:
                 self.data["skip"] = plan["window"]["start"]
             self._log("emergency")
             # No daytime cap again today either.
-            self.data["surplus"].update(
-                caps={},
-                changed=None,
-                released=dt_util.now().date().isoformat(),
-            )
+            self._surplus_forget("emergency")
+            self.data["surplus"]["released"] = dt_util.now().date().isoformat()
             await self._async_release("emergency")
             self._set_status("skipped", self.status.get("night"), {}, {})
             await self._async_save()
@@ -1307,6 +1358,10 @@ class JoeExecutor:
                 k for k in self.data["active"] if _kept(k, keep, self._config())
             ]
             self.data["calls"] = {}
+            # A daytime cap given back is no cap any more (a stop, a reload).
+            caps = self.data["surplus"]["caps"]
+            if any(k not in keep for k in caps):
+                self._surplus_forget(reason)
         if errors:
             self.data["failures"] += 1
             self._log("release_failed", reason=reason, entities=errors)
@@ -1787,10 +1842,7 @@ def _kept(key: str, keep: set[str], config: dict[str, Any]) -> bool:
 
 
 def _fresh() -> dict[str, Any]:
-    return {
-        key: (value.copy() if isinstance(value, dict | list) else value)
-        for key, value in DEFAULT_DATA.items()
-    }
+    return deepcopy(DEFAULT_DATA)
 
 
 def _action(want: Desired | None) -> str | None:
