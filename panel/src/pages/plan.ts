@@ -4,17 +4,31 @@ import { displayTitle, swoosh } from "../components/bits";
 import "../components/car-need";
 import "../components/chart";
 import type { ChartBand, ChartMarker, ChartSeries } from "../components/chart";
-import { planCostLine, planLines, planPose, planSentence, slotsText, timeOf, windowText } from "../components/plan-text";
+import { planCostLine, planPose, planSentence, slotsText, timeOf, windowText } from "../components/plan-text";
+import { mirrorRow } from "../components/mirror";
 import "../components/pose";
+import "../components/steer-tonight";
 import { tip } from "../components/tip";
 import { define } from "../define";
+import { GROUP_ICONS, actionPlace, deviceRoute, findDevice, type DeviceEntry } from "../device-model";
 import { formatNumber } from "../entities";
 import type { Translate } from "../i18n";
-import { PANEL, type Route } from "../router";
+import { PANEL, href, onLink, type Route } from "../router";
 import { shared } from "../styles/shared";
-import type { HomeAssistant, JoeState, Plan, PlanHour } from "../types";
+import type { BatteryConfig, HomeAssistant, JoeState, Plan, PlanAction, PlanBattery, PlanHour } from "../types";
 
 const HOUR_MS = 3600 * 1000;
+/** Homes of the plan's inputs (Netz & Sonne anchors). */
+const SOLAR: Route = { tab: "devices", section: "grid", id: "solar" };
+const TARIFF: Route = { tab: "devices", section: "grid", id: "tariff" };
+
+/** One line of "So habe ich gerechnet"; with `to` it gets "Ändern →". */
+interface MathRow {
+  label: string;
+  value: string;
+  hint?: string;
+  to?: Route;
+}
 
 /** Tonight's plan in full: what Joe does, the curves and how he got there. */
 export class JoePlanPage extends LitElement {
@@ -23,6 +37,8 @@ export class JoePlanPage extends LitElement {
   @property({ attribute: false }) state?: JoeState;
   @property({ attribute: false }) route?: Route;
   @property({ attribute: false }) prefix = PANEL;
+  /** Joe's devices (device-model): every row of the plan jumps to its device page (findDevice). */
+  @property({ attribute: false }) devices: DeviceEntry[] = [];
 
   @state() private refreshing = false;
 
@@ -83,12 +99,6 @@ export class JoePlanPage extends LitElement {
         color: var(--joe-ink-2);
         max-width: 60ch;
       }
-      .lines {
-        display: grid;
-        gap: 2px;
-        margin-top: 12px;
-        font-variant-numeric: tabular-nums;
-      }
       .cost {
         margin: 10px 0 0;
         font-weight: 600;
@@ -133,33 +143,46 @@ export class JoePlanPage extends LitElement {
       .legend i.dash {
         background: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 7px) !important;
       }
-      dl {
-        display: grid;
-        grid-template-columns: minmax(140px, auto) 1fr;
-        gap: 8px 16px;
-        margin: 6px 0 0;
+      .tonight {
+        list-style: none;
+        margin: 0;
+        padding: 0;
       }
-      dt {
+      .tonight li {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 4px 12px;
+        padding: 10px 0;
+        border-top: 1px solid var(--joe-line);
+      }
+      .tonight li:first-child {
+        border-top: 0;
+      }
+      .tonight li > ha-icon {
+        --mdc-icon-size: 22px;
+        color: var(--joe-ink-2);
+        align-self: start;
+        margin-top: 1px;
+      }
+      .tonight .what {
+        display: grid;
+        gap: 1px;
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .tonight .what span {
         color: var(--joe-ink-2);
       }
-      dd {
-        margin: 0;
-        font-weight: 600;
-      }
-      dd small {
-        display: block;
-        font-weight: 400;
-        color: var(--joe-muted);
+      .tonight .what small {
         font-size: 13px;
+        color: var(--joe-muted);
+      }
+      .tonight .more {
+        grid-column: 2 / -1;
       }
       .note {
         margin-top: 10px;
-      }
-      .steer .actions {
-        margin-top: 12px;
-      }
-      .steer .chart-head {
-        font-size: 16px;
       }
       .empty {
         display: grid;
@@ -174,18 +197,23 @@ export class JoePlanPage extends LitElement {
         width: 100%;
         justify-self: center;
       }
+      /* On the phone the button goes below the text, so the text keeps the width. */
+      @media (max-width: 480px) {
+        .tonight li {
+          grid-template-columns: auto minmax(0, 1fr);
+        }
+        .tonight li > a {
+          grid-column: 2;
+          justify-self: start;
+        }
+      }
       @media (max-width: 760px) {
+        /* Floats on narrow screens, so the sentence wraps around Joe instead of running under him. */
         .hero joe-pose {
-          right: 12px;
-          top: 12px;
+          position: static;
+          float: right;
+          margin: -8px -10px 4px 8px;
           width: 112px;
-        }
-        dl {
-          grid-template-columns: 1fr;
-          gap: 2px;
-        }
-        dd {
-          margin-bottom: 8px;
         }
         .empty {
           grid-template-columns: 1fr;
@@ -206,7 +234,6 @@ export class JoePlanPage extends LitElement {
     if (!plan || plan.kind === "unavailable" || !plan.hours) {
       return this.renderEmpty(t, plan);
     }
-    const lines = planLines(t, plan);
     const cost = planCostLine(t, plan, this.hass?.config?.currency);
     return html`<div class="wrap">
       <div class="eyebrow"><ha-icon icon="mdi:weather-night"></ha-icon>${t("overview.night")} · ${windowText(t, plan)}</div>
@@ -231,107 +258,115 @@ export class JoePlanPage extends LitElement {
             : html`${formatNumber(t.lang, plan.target ?? 0, 0)}<small>%</small>`}
         </div>
         <p class="say">${planSentence(t, plan)} ${tip(t, "plan_target")}</p>
-        ${lines.length ? html`<div class="lines">${lines.map((line) => html`<div>${line}</div>`)}</div>` : nothing}
         ${cost ? html`<p class="cost">${cost}</p>` : nothing}
       </section>
-      ${this.renderSteer(t, plan)} ${this.renderActions(t, plan)} ${this.renderEnergy(t, plan, plan.hours)}
+      <joe-steer-tonight .t=${t} .hass=${this.hass} .state=${this.state} .prefix=${this.prefix}></joe-steer-tonight>
+      ${this.renderTonight(t, plan)} ${this.renderEnergy(t, plan, plan.hours)}
       ${this.renderPrices(t, plan, plan.hours)} ${this.renderSoc(t, plan, plan.hours)}
       ${this.renderMath(t, plan)}
     </div>`;
   }
 
-  /** Whether Joe steers tonight: the question in "suggest", skipping in "live". */
-  private renderSteer(t: Translate, plan: Plan): TemplateResult | typeof nothing {
-    const joe = this.state;
-    const control = joe?.control;
-    if (!joe || !control || !["advisory", "live"].includes(joe.mode) || !plan.window || plan.kind === "none") {
+  /**
+   * "Was heute Nacht läuft": every battery of the plan and every device Joe
+   * plans for tonight, each with "Ändern →" to its device page.
+   */
+  private renderTonight(t: Translate, plan: Plan): TemplateResult | typeof nothing {
+    const batteries = plan.batteries ?? [];
+    const actions = plan.actions ?? [];
+    if (!batteries.length && !actions.length) {
       return nothing;
     }
-    const night = plan.window.start;
-    const skipped = control.skip === night;
-    const answer = control.answer?.night === night ? control.answer.yes : null;
-    const untested = joe.config.batteries.filter(
-      (b) => b.adapter !== "none" && control.ready[b.id] && control.ready[b.id] !== "ready",
-    );
-    let text: string;
-    let buttons: TemplateResult;
-    if (joe.mode === "advisory" && !skipped) {
-      text = answer === true ? t("plan.steer.answered_yes") : answer === false ? t("plan.steer.answered_no") : t("plan.steer.advisory");
-      buttons = html`${answer !== true
-        ? html`<button type="button" class="btn btn-primary" @click=${() => this.answer(night, true)}>${t("plan.steer.yes")}</button>`
-        : nothing}
-      ${answer !== false
-        ? html`<button type="button" class="btn btn-secondary" @click=${() => this.answer(night, false)}>${t("plan.steer.no")}</button>`
-        : nothing}`;
-    } else {
-      text = skipped ? t("plan.steer.skipped") : t("plan.steer.live");
-      buttons = html`<button type="button" class="btn btn-secondary" @click=${() => this.skip(!skipped)}>
-        ${t(skipped ? "plan.steer.unskip" : "plan.steer.skip")}
-      </button>`;
-    }
-    return html`<section class="chart-card steer" data-tipped>
-      <div class="chart-head">${text} ${tip(t, "plan_steer")}</div>
-      ${untested.length
-        ? html`<div class="note warn">
-            <ha-icon icon="mdi:alert-outline"></ha-icon><span>${t("plan.steer.untested", { names: untested.map((b) => b.name).join(", ") })}</span>
-          </div>`
-        : nothing}
-      <div class="actions">${buttons}</div>
+    return html`<section class="chart-card" data-tipped>
+      <div class="chart-head">${t("plan.tonight")} ${tip(t, "plan_actions")}</div>
+      <ul class="tonight">
+        ${batteries.map((battery) => this.batteryRow(t, plan, battery))} ${actions.map((action) => this.actionRow(t, plan, action))}
+      </ul>
     </section>`;
   }
 
-  /** The night actions tonight: what runs, when, and why the others don't. */
-  private renderActions(t: Translate, plan: Plan): TemplateResult | typeof nothing {
-    const actions = plan.actions ?? [];
-    if (!actions.length) {
-      return nothing;
+  /** One row of "Was heute Nacht läuft". */
+  private tonightRow(
+    t: Translate,
+    row: { icon: string; name: string; text: string; extra?: string; to: Route; more?: TemplateResult },
+  ): TemplateResult {
+    return html`<li>
+      <ha-icon icon=${row.icon}></ha-icon>
+      <div class="what">
+        <b>${row.name}</b>
+        <span>${row.text}</span>
+        ${row.extra ? html`<small>${row.extra}</small>` : nothing}
+      </div>
+      <a class="mini-btn go mirror-go" href=${href(this.prefix, row.to)} @click=${onLink(row.to)}>${t("mirror.change")}</a>
+      ${row.more ? html`<div class="more">${row.more}</div>` : nothing}
+    </li>`;
+  }
+
+  private batteryRow(t: Translate, plan: Plan, battery: PlanBattery): TemplateResult {
+    const entry = findDevice(this.devices, "battery", battery.id);
+    const pct = (value: number) => formatNumber(t.lang, value, 0);
+    const time = timeOf(plan.charge_slots?.[0]?.start ?? plan.charge_from);
+    let text: string;
+    let extra = "";
+    if (plan.kind === "charge" && battery.charge_kwh >= 0.05) {
+      text = t(time ? "plan.tonight.charge" : "plan.tonight.charge_any", {
+        time,
+        from: pct(battery.soc_start),
+        target: pct(battery.target),
+      });
+      extra = t("plan.tonight.charge.energy", {
+        kwh: formatNumber(t.lang, battery.charge_kwh, 1),
+        kw: formatNumber(t.lang, battery.power_kw, 1),
+      });
+    } else if (plan.kind === "hold") {
+      text = t("plan.tonight.hold", { target: pct(battery.target) });
+    } else {
+      text = t("plan.tonight.idle", { soc: pct(battery.soc) });
     }
+    if (!battery.controllable) {
+      extra = [extra, t("plan.line.watch_only")].filter(Boolean).join(" · ");
+    }
+    return this.tonightRow(t, {
+      icon: entry?.icon ?? GROUP_ICONS.battery,
+      name: battery.name,
+      text,
+      extra,
+      to: entry ? deviceRoute(entry) : { tab: "devices", section: "battery" },
+    });
+  }
+
+  private actionRow(t: Translate, plan: Plan, action: PlanAction): TemplateResult {
     const currency = this.hass?.config?.currency ?? "EUR";
     const money = (value: number) => new Intl.NumberFormat(t.lang, { style: "currency", currency }).format(value);
-    return html`<section class="chart-card" data-tipped>
-      <div class="chart-head">${t("plan.actions")} ${tip(t, "plan_actions")}</div>
-      <dl>
-        ${actions.map((action) => {
-          const target = action.target != null ? formatNumber(t.lang, action.target, 0) : "";
-          const text = action.run
-            ? action.kind === "target"
-              ? t("plan.actions.target", { start: timeOf(action.start), end: timeOf(action.end), target })
-              : t("plan.actions.run", { start: timeOf(action.start), end: timeOf(action.end) })
-            : (t.optional(`devices.action.why.${action.reasons[action.reasons.length - 1] ?? "manual_only"}`, {
-                kwh: formatNumber(t.lang, plan.meta?.tomorrow_kwh ?? 0, 0),
-                temperature: formatNumber(t.lang, action.temperature ?? 0, 0),
-              }) ?? "");
-          const extra =
-            action.run && action.energy_kwh
-              ? t("plan.actions.energy", { kwh: formatNumber(t.lang, action.energy_kwh, 1), cost: money(action.cost ?? 0) })
-              : "";
-          const config = this.state?.config.actions.find((a) => a.id === action.id);
-          return html`<dt>${action.name}</dt>
-            <dd>
-              ${text}${extra ? html`<small>${extra}</small>` : nothing}
-              ${action.need
-                ? html`<joe-car-need .hass=${this.hass} .t=${t} .action=${action} .roundTrip=${config?.need?.round_trip ?? true}></joe-car-need>`
-                : nothing}
-            </dd>`;
-        })}
-      </dl>
-    </section>`;
-  }
-
-  private async answer(night: string, yes: boolean): Promise<void> {
-    try {
-      await this.hass?.callWS({ type: "energy_joe/control/answer", night, yes });
-    } catch {
-      // The state stays as it was; the next try works.
-    }
-  }
-
-  private async skip(skip: boolean): Promise<void> {
-    try {
-      await this.hass?.callWS({ type: "energy_joe/control/skip", skip });
-    } catch {
-      // As above.
-    }
+    const target = action.target != null ? formatNumber(t.lang, action.target, 0) : "";
+    const text = action.run
+      ? action.kind === "target"
+        ? t("plan.actions.target", { start: timeOf(action.start), end: timeOf(action.end), target })
+        : t("plan.actions.run", { start: timeOf(action.start), end: timeOf(action.end) })
+      : (t.optional(`devices.action.why.${action.reasons[action.reasons.length - 1] ?? "manual_only"}`, {
+          kwh: formatNumber(t.lang, plan.meta?.tomorrow_kwh ?? 0, 0),
+          temperature: formatNumber(t.lang, action.temperature ?? 0, 0),
+        }) ?? "");
+    const extra =
+      action.run && action.energy_kwh
+        ? t("plan.actions.energy", { kwh: formatNumber(t.lang, action.energy_kwh, 1), cost: money(action.cost ?? 0) })
+        : "";
+    const config = this.state?.config;
+    const own = config?.actions.find((a) => a.id === action.id);
+    const place = config && own ? actionPlace(config, own) : undefined;
+    const entry = place ? findDevice(this.devices, place.group, place.id) : undefined;
+    const group = place?.group ?? (action.need ? "car" : action.kind === "target" ? "hot_water" : "other");
+    return this.tonightRow(t, {
+      icon: entry?.icon ?? GROUP_ICONS[group],
+      name: action.name,
+      text,
+      extra,
+      // A device the list does not know (yet): its address all the same; gone from the settings: the group.
+      to: entry ? deviceRoute(entry) : place ? { tab: "devices", section: place.group, id: place.id } : { tab: "devices", section: group },
+      more: action.need
+        ? html`<joe-car-need .hass=${this.hass} .t=${t} .action=${action} .roundTrip=${own?.need?.round_trip ?? true}></joe-car-need>`
+        : undefined,
+    });
   }
 
   private renderEmpty(t: Translate, plan: Plan | null | undefined): TemplateResult {
@@ -502,6 +537,7 @@ export class JoePlanPage extends LitElement {
     </div>`;
   }
 
+  /** "So habe ich gerechnet": every input, with "Ändern →" to where it is set. */
   private renderMath(t: Translate, plan: Plan): TemplateResult {
     const kwh = (value: number | undefined, digits = 1) => (value == null ? "–" : `${formatNumber(t.lang, value, digits)} kWh`);
     const ct = (value: number | undefined) => (value == null ? "–" : `${formatNumber(t.lang, value * 100, 1)} ct`);
@@ -511,103 +547,184 @@ export class JoePlanPage extends LitElement {
     const factor = tomorrow?.solar_factor ?? plan.meta?.solar_factor ?? 1;
     const consumption = plan.meta?.consumption;
     const persons = this.state?.config.persons ?? [];
-    const rows: [string, TemplateResult | string][] = [
-      [
-        t("plan.math.battery_now"),
-        html`${formatNumber(t.lang, plan.soc_now ?? 0, 0)} %<small
-            >${t("plan.math.battery_now.sub", {
-              stored: formatNumber(t.lang, ((plan.soc_now ?? 0) / 100) * (plan.capacity_kwh ?? 0), 1),
-              capacity: formatNumber(t.lang, plan.capacity_kwh ?? 0, 1),
-            })}</small
-          >`,
-      ],
-      [t("plan.math.battery_start"), `${formatNumber(t.lang, plan.soc_start ?? 0, 0)} %`],
-      [
-        t("plan.math.solar"),
-        html`${kwh(plan.solar_kwh)}<small
-            >${t(`plan.math.solar.${source}`)}${factor !== 1
-              ? ` · ${t(
-                  tomorrow?.solar_source === "combined"
-                    ? "plan.math.solar.combined"
-                    : tomorrow?.solar_source === "weather" && tomorrow.weather
-                      ? "plan.math.solar.weather"
-                      : "plan.math.solar.factor",
-                  {
-                    value: formatNumber(t.lang, factor, 2),
-                    weather: tomorrow?.weather ? t(`learn.weather.${tomorrow.weather}`) : "",
-                  },
-                )}`
-              : ""}</small
-          >`,
-      ],
-      [
-        t("plan.math.home"),
-        html`${kwh(plan.home_kwh)}<small
-            >${consumption?.source === "history"
-              ? t("plan.math.home.history", {
-                  days: consumption.days,
-                  kind: t(plan.meta?.workday === false ? "plan.math.day_off" : "plan.math.workday"),
-                })
-              : t("plan.math.home.default")}</small
-          >`,
-      ],
-      ...(tomorrow && (tomorrow.temp != null || Object.keys(tomorrow.labels).length)
-        ? [
-            [
-              t("plan.math.tomorrow"),
-              html`${[
-                  tomorrow.temp != null ? `${formatNumber(t.lang, tomorrow.temp, 0)} °C` : "",
-                  ...Object.entries(tomorrow.labels).map(([id, label]) =>
-                    t("plan.math.tomorrow.person", {
-                      name: persons.find((p) => p.id === id)?.name ?? id,
-                      label: t(`label.${label}`),
-                    }),
-                  ),
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}<small
-                  >${tomorrow.expected_kwh != null
-                    ? t("plan.math.tomorrow.scaled", {
-                        expected: formatNumber(t.lang, tomorrow.expected_kwh, 1),
-                        usual: formatNumber(t.lang, tomorrow.profile_kwh, 1),
-                      })
-                    : t("plan.math.tomorrow.usual")}</small
-                >`,
-            ] as [string, TemplateResult | string],
-          ]
-        : []),
-      [
-        t("plan.math.target"),
-        html`${formatNumber(t.lang, plan.target ?? 0, 0)} %<small
-            >${t("plan.math.target.sub", {
-              optimum: formatNumber(t.lang, plan.optimum ?? 0, 0),
-              buffer: formatNumber(t.lang, (plan.rules?.buffer ?? 0) * 100, 0),
-            })}</small
-          >`,
-      ],
-      [
-        t("plan.math.prices"),
-        html`${t("plan.math.prices.value", {
-            night: ct(plan.prices?.night),
-            day: ct(plan.prices?.day),
-            feed: ct(plan.prices?.feed_in),
-          })}${plan.prices?.assumed ? html`<small>${t("plan.math.prices.assumed")}</small>` : nothing}`,
-      ],
-      [
-        t("plan.math.rules"),
-        t("plan.math.rules.value", {
+    const rows: MathRow[] = [
+      {
+        label: t("plan.math.battery_now"),
+        value: `${formatNumber(t.lang, plan.soc_now ?? 0, 0)} %`,
+        hint: t("plan.math.battery_now.sub", {
+          stored: formatNumber(t.lang, ((plan.soc_now ?? 0) / 100) * (plan.capacity_kwh ?? 0), 1),
+          capacity: formatNumber(t.lang, plan.capacity_kwh ?? 0, 1),
+        }),
+        to: { tab: "devices", section: "battery" },
+      },
+      { label: t("plan.math.battery_start"), value: `${formatNumber(t.lang, plan.soc_start ?? 0, 0)} %` },
+      {
+        label: t("plan.math.solar"),
+        value: kwh(plan.solar_kwh),
+        hint: `${t(`plan.math.solar.${source}`)}${
+          factor !== 1
+            ? ` · ${t(
+                tomorrow?.solar_source === "combined"
+                  ? "plan.math.solar.combined"
+                  : tomorrow?.solar_source === "weather" && tomorrow.weather
+                    ? "plan.math.solar.weather"
+                    : "plan.math.solar.factor",
+                {
+                  value: formatNumber(t.lang, factor, 2),
+                  weather: tomorrow?.weather ? t(`learn.weather.${tomorrow.weather}`) : "",
+                },
+              )}`
+            : ""
+        }`,
+        to: SOLAR,
+      },
+      {
+        label: t("plan.math.home"),
+        value: kwh(plan.home_kwh),
+        hint:
+          consumption?.source === "history"
+            ? t("plan.math.home.history", {
+                days: consumption.days,
+                kind: t(plan.meta?.workday === false ? "plan.math.day_off" : "plan.math.workday"),
+              })
+            : t("plan.math.home.default"),
+      },
+    ];
+    if (tomorrow && (tomorrow.temp != null || tomorrow.weather)) {
+      rows.push({
+        label: t("plan.math.weather"),
+        value: [tomorrow.temp != null ? `${formatNumber(t.lang, tomorrow.temp, 0)} °C` : "", tomorrow.weather ? t(`learn.weather.${tomorrow.weather}`) : ""]
+          .filter(Boolean)
+          .join(" · "),
+        to: { tab: "household", section: "travel" },
+      });
+    }
+    if (tomorrow) {
+      rows.push({
+        label: t("plan.math.day"),
+        value: [
+          t(tomorrow.workday ? "plan.math.day.workday" : "plan.math.day.off"),
+          ...Object.entries(tomorrow.labels).map(([id, label]) =>
+            t("plan.math.tomorrow.person", { name: persons.find((p) => p.id === id)?.name ?? id, label: t(`label.${label}`) }),
+          ),
+        ].join(" · "),
+        hint:
+          tomorrow.expected_kwh != null
+            ? t("plan.math.tomorrow.scaled", {
+                expected: formatNumber(t.lang, tomorrow.expected_kwh, 1),
+                usual: formatNumber(t.lang, tomorrow.profile_kwh, 1),
+              })
+            : t("plan.math.tomorrow.usual"),
+        to: { tab: "household", section: "days" },
+      });
+    }
+    rows.push(
+      {
+        label: t("plan.math.target"),
+        value: `${formatNumber(t.lang, plan.target ?? 0, 0)} %`,
+        hint: t("plan.math.target.sub", {
+          optimum: formatNumber(t.lang, plan.optimum ?? 0, 0),
+          buffer: formatNumber(t.lang, (plan.rules?.buffer ?? 0) * 100, 0),
+        }),
+        to: { tab: "settings", section: "rules", id: "buffer_factor" },
+      },
+      {
+        label: t("plan.math.prices"),
+        value: t("plan.math.prices.value", { night: ct(plan.prices?.night), day: ct(plan.prices?.day), feed: ct(plan.prices?.feed_in) }),
+        hint: plan.prices?.assumed ? t("plan.math.prices.assumed") : undefined,
+        to: TARIFF,
+      },
+      {
+        label: t("plan.math.rules"),
+        value: t("plan.math.rules.value", {
           reserve: formatNumber(t.lang, plan.rules?.reserve ?? 0, 0),
           max: formatNumber(t.lang, plan.rules?.max_target ?? 100, 0),
           mode: t.optional(`rule.discharge.${plan.rules?.discharge_mode}`) ?? "",
         }),
-      ],
-    ];
-    const notes = [...new Set(plan.notes ?? [])].map((n) => t.optional(`plan.note.${n}`)).filter(Boolean);
+        to: { tab: "settings", section: "rules" },
+      },
+    );
+    const notes = [...new Set(plan.notes ?? [])].filter((n) => t.optional(`plan.note.${n}`));
     return html`<div class="chart-card" data-tipped>
       <div class="chart-head">${t("plan.math")} ${tip(t, "plan_math")}</div>
-      <dl>${rows.map(([label, value]) => html`<dt>${label}</dt><dd>${value}</dd>`)}</dl>
-      ${notes.map((note) => html`<div class="note"><ha-icon icon="mdi:information-outline"></ha-icon><span>${note}</span></div>`)}
+      <div class="mirrors">
+        ${rows.map((row) =>
+          row.to
+            ? mirrorRow(t, this.prefix, { label: row.label, value: row.value, hint: row.hint, to: row.to })
+            : html`<div class="mirror">
+                <div class="mirror-text">
+                  <span class="mirror-label">${row.label}</span><span class="mirror-sep" aria-hidden="true">·</span
+                  ><span class="mirror-value">${row.value}</span>
+                  ${row.hint ? html`<small class="mirror-hint">${row.hint}</small>` : nothing}
+                </div>
+              </div>`,
+        )}
+      </div>
+      ${notes.map((note) => this.renderNote(t, plan, note))}
     </div>`;
+  }
+
+  /** A hint below the calculation, with a jump to where it can be fixed. */
+  private renderNote(t: Translate, plan: Plan, note: string): TemplateResult {
+    const jumps = this.noteJumps(t, plan, note);
+    return html`<div class="note">
+      <ha-icon icon="mdi:information-outline"></ha-icon>
+      <div>
+        <span>${t.optional(`plan.note.${note}`)}</span>
+        ${jumps.length
+          ? html`<div class="note-actions">
+              ${jumps.map((jump) => html`<a class="mini-btn go mirror-go" href=${href(this.prefix, jump.to)} @click=${onLink(jump.to)}>${jump.label}</a>`)}
+            </div>`
+          : nothing}
+      </div>
+    </div>`;
+  }
+
+  /** Where a hint can be fixed: the battery it is about (each one, if several), the solar forecast, the tariff, a rule. */
+  private noteJumps(t: Translate, plan: Plan, note: string): { to: Route; label: string }[] {
+    const set = t("mirror.set");
+    const config = this.state?.config;
+    const batteries = config?.batteries ?? [];
+    const planned = new Set((plan.batteries ?? []).map((b) => b.id));
+    const missing = batteries.filter((b) => !planned.has(b.id));
+    let about: BatteryConfig[] | undefined;
+    switch (note) {
+      case "capacity_unknown": {
+        const unsized = missing.filter((b) => !b.capacity_kwh);
+        about = unsized.length ? unsized : missing;
+        break;
+      }
+      case "soc_unknown": {
+        const sized = missing.filter((b) => b.capacity_kwh);
+        about = sized.length ? sized : missing;
+        break;
+      }
+      case "floor_unknown":
+        about = batteries.filter((b) => planned.has(b.id) && b.floor_soc == null);
+        break;
+      case "not_controllable":
+        about = batteries.filter((b) => b.adapter === "none");
+        break;
+      case "no_forecast":
+        return [{ to: SOLAR, label: set }];
+      case "prices_partly":
+        return [{ to: TARIFF, label: t("mirror.change") }];
+      case "balance_due":
+        return [{ to: { tab: "settings", section: "rules", id: "balance_days" }, label: t("mirror.change") }];
+      default:
+        return [];
+    }
+    const route = (battery: BatteryConfig): Route => {
+      const entry = findDevice(this.devices, "battery", battery.id);
+      return entry ? deviceRoute(entry) : { tab: "devices", section: "battery", id: battery.id };
+    };
+    if (about.length === 1) {
+      return [{ to: route(about[0]), label: set }];
+    }
+    if (!about.length) {
+      return [{ to: { tab: "devices", section: "battery" }, label: set }];
+    }
+    return about.map((battery) => ({ to: route(battery), label: `${battery.name} →` }));
   }
 
   private async refresh(): Promise<void> {

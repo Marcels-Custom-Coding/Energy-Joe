@@ -66,6 +66,15 @@ export class JoeCarNeed extends LitElement {
         font-variant-numeric: tabular-nums;
         color: var(--joe-ink-2);
       }
+      .mini-btn.edit {
+        justify-content: center;
+        padding: 6px 10px;
+      }
+      @media (pointer: coarse) {
+        .mini-btn.edit {
+          min-width: 44px;
+        }
+      }
       li .unknown {
         color: var(--joe-warn, var(--joe-crit));
       }
@@ -158,7 +167,7 @@ export class JoeCarNeed extends LitElement {
                   </span>
                   <button
                     type="button"
-                    class="mini-btn quiet"
+                    class="mini-btn quiet edit"
                     aria-label=${t("need.km_edit", { place: trip.location })}
                     @click=${() => (this.editing = trip.location)}
                   >

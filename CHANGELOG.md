@@ -3,6 +3,13 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.15
+
+- **Übersicht als Startseite:** oben „Gerade jetzt“ mit „Joe tut gerade …“ und „Sofort freigeben“, darunter „Joe braucht dich“ – nur wenn etwas offen ist: Warnungen der Prüfungen, fehlender Testlauf, fehlende Benachrichtigungen, neue Funde, Tagesfragen; jede Zeile springt an ihren Ort, Erledigtes verschwindet, „Brauch ich nicht“ blendet aus. Dazu „Heute Nacht“ mit „Ja, mach“ / „Heute aussetzen“, „Schnell“ (Auto laden, Gastmodus), Heizung & Klima je Raum, „Wer ist da“ als eine Zeile, die letzten 7 Tage und „Was es gebracht hätte“ als eine Zeile.
+- **Plan:** „Was heute Nacht läuft“ zeigt Speicher, Autos, Warmwasser und eigene Geräte, jede Zeile mit Sprung zur Geräteseite. Unter „So habe ich gerechnet“ führt „Ändern →“ zu jeder Quelle (Sonne, Wetter, Tagesarten, Puffer, Preise, Regeln).
+- **Einstellungen enthalten nur noch Joes eigenes Verhalten:** Betrieb (erklärt, öffnet den Betriebsart-Dialog oben), Regeln (bisher „Für Profis“, gegliedert in Speicher · Netz & Preis · Planung), Benachrichtigungen, Wartung & Sichern und Über Joe (mit Joes HA-Entitäten und den Dashboard-Karten). Ganz oben der Wegweiser „Suchst du …?“, der auch die alten Begriffe kennt.
+- „Deine Antworten“ entfällt – die Folgeschritte stehen jetzt beim jeweiligen Gerät.
+
 ## 0.9.14
 
 - **Geräte komplett:** Unter Geräte steht jetzt alles mit Strom nach Art sortiert – Alle · Speicher · Heizung & Klima · Auto & Laden · Warmwasser · Weitere Geräte · Netz & Sonne (Bereiche erscheinen nur, wenn es bei dir so ein Gerät gibt). Jedes Gerät hat eine eigene Seite in immer derselben Reihenfolge: Jetzt · Steuern · Strom · Gelernt · Protokoll · Störenfriede · Weglassen, dazu den Knopf „In HA öffnen“.

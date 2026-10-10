@@ -29,11 +29,11 @@ var e = globalThis, t = e.ShadowRoot && (e.ShadyCSS === void 0 || e.ShadyCSS.nat
 	let t = "";
 	for (let n of e.cssRules) t += n.cssText;
 	return a(t);
-})(e) : e, { is: l, defineProperty: u, getOwnPropertyDescriptor: d, getOwnPropertyNames: f, getOwnPropertySymbols: p, getPrototypeOf: m } = Object, h = globalThis, ee = h.trustedTypes, te = ee ? ee.emptyScript : "", ne = h.reactiveElementPolyfillSupport, g = (e, t) => e, _ = {
+})(e) : e, { is: l, defineProperty: u, getOwnPropertyDescriptor: d, getOwnPropertyNames: f, getOwnPropertySymbols: p, getPrototypeOf: ee } = Object, m = globalThis, te = m.trustedTypes, ne = te ? te.emptyScript : "", re = m.reactiveElementPolyfillSupport, h = (e, t) => e, g = {
 	toAttribute(e, t) {
 		switch (t) {
 			case Boolean:
-				e = e ? te : null;
+				e = e ? ne : null;
 				break;
 			case Object:
 			case Array: e = e == null ? e : JSON.stringify(e);
@@ -58,15 +58,15 @@ var e = globalThis, t = e.ShadowRoot && (e.ShadyCSS === void 0 || e.ShadyCSS.nat
 		}
 		return n;
 	}
-}, re = (e, t) => !l(e, t), ie = {
+}, _ = (e, t) => !l(e, t), ie = {
 	attribute: !0,
 	type: String,
-	converter: _,
+	converter: g,
 	reflect: !1,
 	useDefault: !1,
-	hasChanged: re
+	hasChanged: _
 };
-Symbol.metadata ??= Symbol("metadata"), h.litPropertyMetadata ??= /* @__PURE__ */ new WeakMap();
+Symbol.metadata ??= Symbol("metadata"), m.litPropertyMetadata ??= /* @__PURE__ */ new WeakMap();
 var v = class extends HTMLElement {
 	static addInitializer(e) {
 		this._$Ei(), (this.l ??= []).push(e);
@@ -103,13 +103,13 @@ var v = class extends HTMLElement {
 		return this.elementProperties.get(e) ?? ie;
 	}
 	static _$Ei() {
-		if (this.hasOwnProperty(g("elementProperties"))) return;
-		let e = m(this);
+		if (this.hasOwnProperty(h("elementProperties"))) return;
+		let e = ee(this);
 		e.finalize(), e.l !== void 0 && (this.l = [...e.l]), this.elementProperties = new Map(e.elementProperties);
 	}
 	static finalize() {
-		if (this.hasOwnProperty(g("finalized"))) return;
-		if (this.finalized = !0, this._$Ei(), this.hasOwnProperty(g("properties"))) {
+		if (this.hasOwnProperty(h("finalized"))) return;
+		if (this.finalized = !0, this._$Ei(), this.hasOwnProperty(h("properties"))) {
 			let e = this.properties, t = [...f(e), ...p(e)];
 			for (let n of t) this.createProperty(n, e[n]);
 		}
@@ -171,14 +171,14 @@ var v = class extends HTMLElement {
 	_$ET(e, t) {
 		let n = this.constructor.elementProperties.get(e), r = this.constructor._$Eu(e, n);
 		if (r !== void 0 && !0 === n.reflect) {
-			let i = (n.converter?.toAttribute === void 0 ? _ : n.converter).toAttribute(t, n.type);
+			let i = (n.converter?.toAttribute === void 0 ? g : n.converter).toAttribute(t, n.type);
 			this._$Em = e, i == null ? this.removeAttribute(r) : this.setAttribute(r, i), this._$Em = null;
 		}
 	}
 	_$AK(e, t) {
 		let n = this.constructor, r = n._$Eh.get(e);
 		if (r !== void 0 && this._$Em !== r) {
-			let e = n.getPropertyOptions(r), i = typeof e.converter == "function" ? { fromAttribute: e.converter } : e.converter?.fromAttribute === void 0 ? _ : e.converter;
+			let e = n.getPropertyOptions(r), i = typeof e.converter == "function" ? { fromAttribute: e.converter } : e.converter?.fromAttribute === void 0 ? g : e.converter;
 			this._$Em = r;
 			let a = i.fromAttribute(t, e.type);
 			this[r] = a ?? this._$Ej?.get(r) ?? a, this._$Em = null;
@@ -187,7 +187,7 @@ var v = class extends HTMLElement {
 	requestUpdate(e, t, n, r = !1, i) {
 		if (e !== void 0) {
 			let a = this.constructor;
-			if (!1 === r && (i = this[e]), n ??= a.getPropertyOptions(e), !((n.hasChanged ?? re)(i, t) || n.useDefault && n.reflect && i === this._$Ej?.get(e) && !this.hasAttribute(a._$Eu(e, n)))) return;
+			if (!1 === r && (i = this[e]), n ??= a.getPropertyOptions(e), !((n.hasChanged ?? _)(i, t) || n.useDefault && n.reflect && i === this._$Ej?.get(e) && !this.hasAttribute(a._$Eu(e, n)))) return;
 			this.C(e, t, n);
 		}
 		!1 === this.isUpdatePending && (this._$ES = this._$EP());
@@ -251,37 +251,37 @@ var v = class extends HTMLElement {
 	updated(e) {}
 	firstUpdated(e) {}
 };
-v.elementStyles = [], v.shadowRootOptions = { mode: "open" }, v[g("elementProperties")] = /* @__PURE__ */ new Map(), v[g("finalized")] = /* @__PURE__ */ new Map(), ne?.({ ReactiveElement: v }), (h.reactiveElementVersions ??= []).push("2.1.2");
+v.elementStyles = [], v.shadowRootOptions = { mode: "open" }, v[h("elementProperties")] = /* @__PURE__ */ new Map(), v[h("finalized")] = /* @__PURE__ */ new Map(), re?.({ ReactiveElement: v }), (m.reactiveElementVersions ??= []).push("2.1.2");
 //#endregion
 //#region node_modules/lit-html/lit-html.js
-var y = globalThis, ae = (e) => e, b = y.trustedTypes, oe = b ? b.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, x = "$lit$", S = `lit$${Math.random().toFixed(9).slice(2)}$`, C = "?" + S, se = `<${C}>`, w = document, T = () => w.createComment(""), E = (e) => e === null || typeof e != "object" && typeof e != "function", ce = Array.isArray, le = (e) => ce(e) || typeof e?.[Symbol.iterator] == "function", ue = "[ 	\n\f\r]", D = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, de = /-->/g, fe = />/g, O = RegExp(`>|${ue}(?:([^\\s"'>=/]+)(${ue}*=${ue}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`, "g"), pe = /'/g, me = /"/g, he = /^(?:script|style|textarea|title)$/i, ge = (e) => (t, ...n) => ({
+var y = globalThis, ae = (e) => e, b = y.trustedTypes, oe = b ? b.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, x = "$lit$", S = `lit$${Math.random().toFixed(9).slice(2)}$`, C = "?" + S, se = `<${C}>`, w = document, T = () => w.createComment(""), E = (e) => e === null || typeof e != "object" && typeof e != "function", D = Array.isArray, ce = (e) => D(e) || typeof e?.[Symbol.iterator] == "function", le = "[ 	\n\f\r]", O = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, ue = /-->/g, de = />/g, k = RegExp(`>|${le}(?:([^\\s"'>=/]+)(${le}*=${le}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`, "g"), fe = /'/g, pe = /"/g, me = /^(?:script|style|textarea|title)$/i, he = (e) => (t, ...n) => ({
 	_$litType$: e,
 	strings: t,
 	values: n
-}), k = ge(1), _e = ge(2), A = Symbol.for("lit-noChange"), j = Symbol.for("lit-nothing"), ve = /* @__PURE__ */ new WeakMap(), M = w.createTreeWalker(w, 129);
-function ye(e, t) {
-	if (!ce(e) || !e.hasOwnProperty("raw")) throw Error("invalid template strings array");
+}), A = he(1), ge = he(2), j = Symbol.for("lit-noChange"), M = Symbol.for("lit-nothing"), _e = /* @__PURE__ */ new WeakMap(), N = w.createTreeWalker(w, 129);
+function ve(e, t) {
+	if (!D(e) || !e.hasOwnProperty("raw")) throw Error("invalid template strings array");
 	return oe === void 0 ? t : oe.createHTML(t);
 }
-var be = (e, t) => {
-	let n = e.length - 1, r = [], i, a = t === 2 ? "<svg>" : t === 3 ? "<math>" : "", o = D;
+var ye = (e, t) => {
+	let n = e.length - 1, r = [], i, a = t === 2 ? "<svg>" : t === 3 ? "<math>" : "", o = O;
 	for (let t = 0; t < n; t++) {
 		let n = e[t], s, c, l = -1, u = 0;
-		for (; u < n.length && (o.lastIndex = u, c = o.exec(n), c !== null);) u = o.lastIndex, o === D ? c[1] === "!--" ? o = de : c[1] === void 0 ? c[2] === void 0 ? c[3] !== void 0 && (o = O) : (he.test(c[2]) && (i = RegExp("</" + c[2], "g")), o = O) : o = fe : o === O ? c[0] === ">" ? (o = i ?? D, l = -1) : c[1] === void 0 ? l = -2 : (l = o.lastIndex - c[2].length, s = c[1], o = c[3] === void 0 ? O : c[3] === "\"" ? me : pe) : o === me || o === pe ? o = O : o === de || o === fe ? o = D : (o = O, i = void 0);
-		let d = o === O && e[t + 1].startsWith("/>") ? " " : "";
-		a += o === D ? n + se : l >= 0 ? (r.push(s), n.slice(0, l) + x + n.slice(l) + S + d) : n + S + (l === -2 ? t : d);
+		for (; u < n.length && (o.lastIndex = u, c = o.exec(n), c !== null);) u = o.lastIndex, o === O ? c[1] === "!--" ? o = ue : c[1] === void 0 ? c[2] === void 0 ? c[3] !== void 0 && (o = k) : (me.test(c[2]) && (i = RegExp("</" + c[2], "g")), o = k) : o = de : o === k ? c[0] === ">" ? (o = i ?? O, l = -1) : c[1] === void 0 ? l = -2 : (l = o.lastIndex - c[2].length, s = c[1], o = c[3] === void 0 ? k : c[3] === "\"" ? pe : fe) : o === pe || o === fe ? o = k : o === ue || o === de ? o = O : (o = k, i = void 0);
+		let d = o === k && e[t + 1].startsWith("/>") ? " " : "";
+		a += o === O ? n + se : l >= 0 ? (r.push(s), n.slice(0, l) + x + n.slice(l) + S + d) : n + S + (l === -2 ? t : d);
 	}
-	return [ye(e, a + (e[n] || "<?>") + (t === 2 ? "</svg>" : t === 3 ? "</math>" : "")), r];
-}, N = class e {
+	return [ve(e, a + (e[n] || "<?>") + (t === 2 ? "</svg>" : t === 3 ? "</math>" : "")), r];
+}, be = class e {
 	constructor({ strings: t, _$litType$: n }, r) {
 		let i;
 		this.parts = [];
-		let a = 0, o = 0, s = t.length - 1, c = this.parts, [l, u] = be(t, n);
-		if (this.el = e.createElement(l, r), M.currentNode = this.el.content, n === 2 || n === 3) {
+		let a = 0, o = 0, s = t.length - 1, c = this.parts, [l, u] = ye(t, n);
+		if (this.el = e.createElement(l, r), N.currentNode = this.el.content, n === 2 || n === 3) {
 			let e = this.el.content.firstChild;
 			e.replaceWith(...e.childNodes);
 		}
-		for (; (i = M.nextNode()) !== null && c.length < s;) {
+		for (; (i = N.nextNode()) !== null && c.length < s;) {
 			if (i.nodeType === 1) {
 				if (i.hasAttributes()) for (let e of i.getAttributeNames()) if (e.endsWith(x)) {
 					let t = u[o++], n = i.getAttribute(e).split(S), r = /([.?@])?(.*)/.exec(t);
@@ -296,11 +296,11 @@ var be = (e, t) => {
 					type: 6,
 					index: a
 				}), i.removeAttribute(e));
-				if (he.test(i.tagName)) {
+				if (me.test(i.tagName)) {
 					let e = i.textContent.split(S), t = e.length - 1;
 					if (t > 0) {
 						i.textContent = b ? b.emptyScript : "";
-						for (let n = 0; n < t; n++) i.append(e[n], T()), M.nextNode(), c.push({
+						for (let n = 0; n < t; n++) i.append(e[n], T()), N.nextNode(), c.push({
 							type: 2,
 							index: ++a
 						});
@@ -329,7 +329,7 @@ var be = (e, t) => {
 	}
 };
 function P(e, t, n = e, r) {
-	if (t === A) return t;
+	if (t === j) return t;
 	let i = r === void 0 ? n._$Cl : n._$Co?.[r], a = E(t) ? void 0 : t._$litDirective$;
 	return i?.constructor !== a && (i?._$AO?.(!1), a === void 0 ? i = void 0 : (i = new a(e), i._$AT(e, n, r)), r === void 0 ? n._$Cl = i : (n._$Co ??= [])[r] = i), i !== void 0 && (t = P(e, i._$AS(e, t.values), i, r)), t;
 }
@@ -345,16 +345,16 @@ var xe = class {
 	}
 	u(e) {
 		let { el: { content: t }, parts: n } = this._$AD, r = (e?.creationScope ?? w).importNode(t, !0);
-		M.currentNode = r;
-		let i = M.nextNode(), a = 0, o = 0, s = n[0];
+		N.currentNode = r;
+		let i = N.nextNode(), a = 0, o = 0, s = n[0];
 		for (; s !== void 0;) {
 			if (a === s.index) {
 				let t;
 				s.type === 2 ? t = new F(i, i.nextSibling, this, e) : s.type === 1 ? t = new s.ctor(i, s.name, s.strings, this, e) : s.type === 6 && (t = new Te(i, this, e)), this._$AV.push(t), s = n[++o];
 			}
-			a !== s?.index && (i = M.nextNode(), a++);
+			a !== s?.index && (i = N.nextNode(), a++);
 		}
-		return M.currentNode = w, r;
+		return N.currentNode = w, r;
 	}
 	p(e) {
 		let t = 0;
@@ -365,7 +365,7 @@ var xe = class {
 		return this._$AM?._$AU ?? this._$Cv;
 	}
 	constructor(e, t, n, r) {
-		this.type = 2, this._$AH = j, this._$AN = void 0, this._$AA = e, this._$AB = t, this._$AM = n, this.options = r, this._$Cv = r?.isConnected ?? !0;
+		this.type = 2, this._$AH = M, this._$AN = void 0, this._$AA = e, this._$AB = t, this._$AM = n, this.options = r, this._$Cv = r?.isConnected ?? !0;
 	}
 	get parentNode() {
 		let e = this._$AA.parentNode, t = this._$AM;
@@ -378,7 +378,7 @@ var xe = class {
 		return this._$AB;
 	}
 	_$AI(e, t = this) {
-		e = P(this, e, t), E(e) ? e === j || e == null || e === "" ? (this._$AH !== j && this._$AR(), this._$AH = j) : e !== this._$AH && e !== A && this._(e) : e._$litType$ === void 0 ? e.nodeType === void 0 ? le(e) ? this.k(e) : this._(e) : this.T(e) : this.$(e);
+		e = P(this, e, t), E(e) ? e === M || e == null || e === "" ? (this._$AH !== M && this._$AR(), this._$AH = M) : e !== this._$AH && e !== j && this._(e) : e._$litType$ === void 0 ? e.nodeType === void 0 ? ce(e) ? this.k(e) : this._(e) : this.T(e) : this.$(e);
 	}
 	O(e) {
 		return this._$AA.parentNode.insertBefore(e, this._$AB);
@@ -387,10 +387,10 @@ var xe = class {
 		this._$AH !== e && (this._$AR(), this._$AH = this.O(e));
 	}
 	_(e) {
-		this._$AH !== j && E(this._$AH) ? this._$AA.nextSibling.data = e : this.T(w.createTextNode(e)), this._$AH = e;
+		this._$AH !== M && E(this._$AH) ? this._$AA.nextSibling.data = e : this.T(w.createTextNode(e)), this._$AH = e;
 	}
 	$(e) {
-		let { values: t, _$litType$: n } = e, r = typeof n == "number" ? this._$AC(e) : (n.el === void 0 && (n.el = N.createElement(ye(n.h, n.h[0]), this.options)), n);
+		let { values: t, _$litType$: n } = e, r = typeof n == "number" ? this._$AC(e) : (n.el === void 0 && (n.el = be.createElement(ve(n.h, n.h[0]), this.options)), n);
 		if (this._$AH?._$AD === r) this._$AH.p(t);
 		else {
 			let e = new xe(r, this), n = e.u(this.options);
@@ -398,11 +398,11 @@ var xe = class {
 		}
 	}
 	_$AC(e) {
-		let t = ve.get(e.strings);
-		return t === void 0 && ve.set(e.strings, t = new N(e)), t;
+		let t = _e.get(e.strings);
+		return t === void 0 && _e.set(e.strings, t = new be(e)), t;
 	}
 	k(t) {
-		ce(this._$AH) || (this._$AH = [], this._$AR());
+		D(this._$AH) || (this._$AH = [], this._$AR());
 		let n = this._$AH, r, i = 0;
 		for (let a of t) i === n.length ? n.push(r = new e(this.O(T()), this.O(T()), this, this.options)) : r = n[i], r._$AI(a), i++;
 		i < n.length && (this._$AR(r && r._$AB.nextSibling, i), n.length = i);
@@ -424,41 +424,41 @@ var xe = class {
 		return this._$AM._$AU;
 	}
 	constructor(e, t, n, r, i) {
-		this.type = 1, this._$AH = j, this._$AN = void 0, this.element = e, this.name = t, this._$AM = r, this.options = i, n.length > 2 || n[0] !== "" || n[1] !== "" ? (this._$AH = Array(n.length - 1).fill(/* @__PURE__ */ new String()), this.strings = n) : this._$AH = j;
+		this.type = 1, this._$AH = M, this._$AN = void 0, this.element = e, this.name = t, this._$AM = r, this.options = i, n.length > 2 || n[0] !== "" || n[1] !== "" ? (this._$AH = Array(n.length - 1).fill(/* @__PURE__ */ new String()), this.strings = n) : this._$AH = M;
 	}
 	_$AI(e, t = this, n, r) {
 		let i = this.strings, a = !1;
-		if (i === void 0) e = P(this, e, t, 0), a = !E(e) || e !== this._$AH && e !== A, a && (this._$AH = e);
+		if (i === void 0) e = P(this, e, t, 0), a = !E(e) || e !== this._$AH && e !== j, a && (this._$AH = e);
 		else {
 			let r = e, o, s;
-			for (e = i[0], o = 0; o < i.length - 1; o++) s = P(this, r[n + o], t, o), s === A && (s = this._$AH[o]), a ||= !E(s) || s !== this._$AH[o], s === j ? e = j : e !== j && (e += (s ?? "") + i[o + 1]), this._$AH[o] = s;
+			for (e = i[0], o = 0; o < i.length - 1; o++) s = P(this, r[n + o], t, o), s === j && (s = this._$AH[o]), a ||= !E(s) || s !== this._$AH[o], s === M ? e = M : e !== M && (e += (s ?? "") + i[o + 1]), this._$AH[o] = s;
 		}
 		a && !r && this.j(e);
 	}
 	j(e) {
-		e === j ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, e ?? "");
+		e === M ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, e ?? "");
 	}
 }, Se = class extends I {
 	constructor() {
 		super(...arguments), this.type = 3;
 	}
 	j(e) {
-		this.element[this.name] = e === j ? void 0 : e;
+		this.element[this.name] = e === M ? void 0 : e;
 	}
 }, Ce = class extends I {
 	constructor() {
 		super(...arguments), this.type = 4;
 	}
 	j(e) {
-		this.element.toggleAttribute(this.name, !!e && e !== j);
+		this.element.toggleAttribute(this.name, !!e && e !== M);
 	}
 }, we = class extends I {
 	constructor(e, t, n, r, i) {
 		super(e, t, n, r, i), this.type = 5;
 	}
 	_$AI(e, t = this) {
-		if ((e = P(this, e, t, 0) ?? j) === A) return;
-		let n = this._$AH, r = e === j && n !== j || e.capture !== n.capture || e.once !== n.once || e.passive !== n.passive, i = e !== j && (n === j || r);
+		if ((e = P(this, e, t, 0) ?? M) === j) return;
+		let n = this._$AH, r = e === M && n !== M || e.capture !== n.capture || e.once !== n.once || e.passive !== n.passive, i = e !== M && (n === M || r);
 		r && this.element.removeEventListener(this.name, this, n), i && this.element.addEventListener(this.name, this, e), this._$AH = e;
 	}
 	handleEvent(e) {
@@ -479,9 +479,9 @@ var xe = class {
 	P: S,
 	A: C,
 	C: 1,
-	L: be,
+	L: ye,
 	R: xe,
-	D: le,
+	D: ce,
 	V: P,
 	I: F,
 	H: I,
@@ -490,7 +490,7 @@ var xe = class {
 	B: Se,
 	F: Te
 }, De = y.litHtmlPolyfillSupport;
-De?.(N, F), (y.litHtmlVersions ??= []).push("3.3.3");
+De?.(be, F), (y.litHtmlVersions ??= []).push("3.3.3");
 var Oe = (e, t, n) => {
 	let r = n?.renderBefore ?? t, i = r._$litPart$;
 	if (i === void 0) {
@@ -517,7 +517,7 @@ var Oe = (e, t, n) => {
 		super.disconnectedCallback(), this._$Do?.setConnected(!1);
 	}
 	render() {
-		return A;
+		return j;
 	}
 };
 R._$litElement$ = !0, R.finalized = !0, L.litElementHydrateSupport?.({ LitElement: R });
@@ -528,9 +528,9 @@ ke?.({ LitElement: R }), (L.litElementVersions ??= []).push("4.2.2");
 var Ae = {
 	attribute: !0,
 	type: String,
-	converter: _,
+	converter: g,
 	reflect: !1,
-	hasChanged: re
+	hasChanged: _
 }, je = (e = Ae, t, n) => {
 	let { kind: r, metadata: i } = n, a = globalThis.litPropertyMetadata.get(i);
 	if (a === void 0 && globalThis.litPropertyMetadata.set(i, a = /* @__PURE__ */ new Map()), r === "setter" && ((e = Object.create(e)).wrapped = !0), a.set(n.name, e), r === "accessor") {
@@ -574,7 +574,7 @@ function B(e) {
 var Me = (e, t, n) => (n.configurable = !0, n.enumerable = !0, Reflect.decorate && typeof t != "object" && Object.defineProperty(e, t, n), n);
 //#endregion
 //#region node_modules/@lit/reactive-element/decorators/query.js
-function V(e, t) {
+function Ne(e, t) {
 	return (n, r, i) => {
 		let a = (t) => t.renderRoot?.querySelector(e) ?? null;
 		if (t) {
@@ -601,7 +601,7 @@ function V(e, t) {
 }
 //#endregion
 //#region src/i18n/de.ts
-var Ne = {
+var Pe = {
 	"tab.overview": "Übersicht",
 	"tab.plan": "Plan",
 	"tab.review": "Rückblick",
@@ -1026,6 +1026,110 @@ var Ne = {
 	"nav.household.days": "Tage & Kalender",
 	"nav.household.night": "Nachtruhe",
 	"nav.household.travel": "Unterwegs & Wetter",
+	"nav.settings.operation": "Betrieb",
+	"nav.settings.rules": "Regeln",
+	"nav.settings.notify": "Benachrichtigungen",
+	"nav.settings.maintenance": "Wartung & Sichern",
+	"nav.settings.about": "Über Joe",
+	"signpost.title": "Suchst du …?",
+	"signpost.placeholder": "z. B. Speicher, Strompreis, Gastmodus",
+	"signpost.none": "Dazu finde ich nichts. Versuch ein anderes Wort – oder schau in die Reiter oben.",
+	"signpost.more": "Noch {count} weitere – schreib ein Wort mehr dazu.",
+	"tip.signpost.title": "Wo finde ich was?",
+	"tip.signpost.text": "Tipp ein, was du suchst – auch mit alten Namen wie Historie, Lernen oder Für Profis. Ich zeige dir, wo es jetzt wohnt, und ein Tipp auf den Treffer bringt dich hin.",
+	"tip.signpost.hint": "Unter Einstellungen steht nur noch, wie ich selbst arbeite. Alles mit Strom steht unter Geräte, Menschen und Alltag unter Haushalt.",
+	"signpost.overview": "Übersicht",
+	"signpost.overview.terms": "Start, Startseite, Gerade jetzt, Joe tut gerade, Joe braucht dich, Noch offen, So geht's weiter, Schnell, Die letzten 7 Tage",
+	"signpost.plan": "Plan für heute Nacht",
+	"signpost.plan.terms": "Plan, heute Nacht, Nacht, Ladeplan, Ziel, Neu rechnen, So habe ich gerechnet, Was heute Nacht läuft, Nacht-Aktionen, Preise",
+	"signpost.steer": "Steuern heute Nacht",
+	"signpost.steer.terms": "Ja mach, Heute nicht, Heute aussetzen, aussetzen, Doch steuern, Abendfrage, Testlauf fehlt",
+	"signpost.result": "Was es gebracht hätte",
+	"signpost.result.terms": "Ergebnis, Ersparnis, gespart, Simulation, Wie gut ich lag, Kosten, Geld",
+	"signpost.days": "Jeder Tag",
+	"signpost.days.terms": "Historie, Verlauf, Tage, Tag, Stunden, Tagesfrage, Nachgespielt, Ladezustand, Gestern",
+	"signpost.learned": "Was Joe gelernt hat",
+	"signpost.learned.terms": "Lernen, Gelernt, Gedächtnis, Prognose-Faktor, Zeitversatz, Verbrauch und Wetter, Aufheizrate, Wer wann zu Hause ist",
+	"signpost.learned_reset": "Neu anfangen",
+	"signpost.learned_reset.terms": "Gelerntes löschen, vergessen, zurücksetzen, von vorn lernen",
+	"signpost.log": "Protokoll",
+	"signpost.log.terms": "Log, Was ich geschaltet habe, geschaltet, Klima-Protokoll, Befehle",
+	"signpost.devices": "Alle Geräte",
+	"signpost.devices.terms": "Geräte, Was Joe nutzt, Neu gefunden, Sofort freigeben, Deine Antworten, Prüfhinweise, Nacht-Aktion, Nacht-Aktionen",
+	"signpost.add": "Gerät hinzufügen",
+	"signpost.add.terms": "Hinzufügen, neues Gerät, Nacht-Aktion anlegen, Aktion, Nochmal umschauen, Gerät suchen",
+	"signpost.battery": "Speicher",
+	"signpost.battery.terms": "Akku, Batterie, Hausspeicher, Testlauf, Regler, Regler einrichten, Kapazität, Akkugröße, Entladegrenze, Störenfriede, Automationen am Speicher",
+	"signpost.climate": "Heizung & Klima",
+	"signpost.climate.terms": "Klima, Heizung, Klimaanlage, Thermostat, Heizkörper, Wochenprofil, Heizprofil, Raum, Absenken, Wenn keiner da ist, Messgeräte",
+	"signpost.car": "Auto & Laden",
+	"signpost.car.terms": "E-Auto, Elektroauto, Auto, Wallbox, Laden, Ladestand, Reichweite, Laden nach Bedarf, Termine des Autos, Postfach, Konto, Einladungen, Jetzt laden",
+	"signpost.hot_water": "Warmwasser",
+	"signpost.hot_water.terms": "Boiler, Heizstab, Warmwasser-Wärmepumpe, Duschen, Speichertemperatur",
+	"signpost.other": "Weitere Geräte",
+	"signpost.other.terms": "Deine Geräte, Verbraucher, Steckdose, Zwischenstecker, Waschmaschine, Trockner, Spülmaschine, Geräte zuordnen, Pool",
+	"signpost.energy": "Netz & Sonne",
+	"signpost.energy.terms": "Energie-Dashboard, Energie, Zähler, Strom",
+	"signpost.connection": "Netzanschluss",
+	"signpost.connection.terms": "Netz, Netzzähler, Einspeisung, Bezug, Umdrehen, Vorzeichen",
+	"signpost.tariff": "Stromtarif",
+	"signpost.tariff.terms": "Strompreis, Tarif, Preis, Börsenpreis, dynamischer Tarif, Tibber, Aufschlag, Einspeisevergütung, Netzentgelt, Arbeitspreis",
+	"signpost.solar": "Solaranlage",
+	"signpost.solar.terms": "PV, Photovoltaik, Solar, Sonne, Solarprognose, Prognose, Forecast.Solar, Solcast, Prognosen kombinieren, PV-Leistung, Wechselrichter",
+	"signpost.home": "Hausverbrauch",
+	"signpost.home.terms": "Verbrauch, Haus, Grundlast, Verbrauchssensor",
+	"signpost.people": "Wer wohnt hier",
+	"signpost.people.terms": "Haushalt, Personen, Person, Familie, Bewohner, Kalender einer Person, Weggelassen",
+	"signpost.presence": "Wer ist da",
+	"signpost.presence.terms": "Anwesenheit, zu Hause, abwesend, Jemand zu Hause, Anwesenheitsgruppe, Helfer, Als abwesend nach",
+	"signpost.guest": "Gastmodus",
+	"signpost.guest.terms": "Gast, Gäste, Besuch, Babysitter",
+	"signpost.way": "Heimweg",
+	"signpost.way.terms": "Fahrzeit, nach Hause, Proximity, Ankunft, übliche Heimkehr",
+	"signpost.calendar": "Tage & Kalender",
+	"signpost.calendar.terms": "Feiertage, Homeoffice, Arbeitstag, freier Tag, Urlaub, Ferien, Schule, Kalender-Regeln, Stichwörter, Tagesart, Heute",
+	"signpost.night": "Nachtruhe",
+	"signpost.night.terms": "Schlafen, nachts, Wann ist nachts, Schlafenszeit, Nachts aus",
+	"signpost.travel": "Unterwegs & Wetter",
+	"signpost.travel.terms": "Wetter, Entfernungen, Entfernungen zu Terminen, Routendienst, Waze, Google, OpenStreetMap, Strecke",
+	"signpost.mode": "Betriebsart",
+	"signpost.mode.terms": "Modus, Simulation, Vorschlagen, Live, Aus, Pause, anhalten, steuern lassen, Betrieb",
+	"signpost.grid_friendly": "Netzdienlich verhalten",
+	"signpost.grid_friendly.terms": "netzdienlich, Was geht vor, Mittagssonne",
+	"signpost.rules": "Regeln",
+	"signpost.rules.terms": "Für Profis, Profi, Experte, Feinheiten, Startwert",
+	"signpost.rule_reserve_soc.terms": "Mindestladung, nie unter, Reserve im Speicher",
+	"signpost.rule_max_target_soc.terms": "Ladegrenze, maximal laden, höchstens bis",
+	"signpost.rule_evening_min_soc.terms": "abends voll, Abendreserve",
+	"signpost.rule_balance_days.terms": "Kalibrieren, voll laden, Balancing, Zellausgleich",
+	"signpost.rule_discharge_in_window.terms": "entladen, günstige Zeit, Entladen sperren",
+	"signpost.rule_converter_losses.terms": "Wechselrichter, Verluste, Wirkungsgrad",
+	"signpost.rule_grid_limit_w.terms": "Anschlussleistung, Leistungsgrenze",
+	"signpost.rule_max_night_kwh.terms": "kWh pro Nacht, Menge pro Nacht",
+	"signpost.rule_guard_grid.terms": "Hauptsicherung, Sicherung, Überlast",
+	"signpost.rule_max_price.terms": "zu teuer, Preisgrenze",
+	"signpost.rule_min_saving.terms": "lohnt sich, Mindestgewinn",
+	"signpost.rule_priority.terms": "Reihenfolge, Vorrang",
+	"signpost.rule_buffer_factor.terms": "Puffer, Wieder selbst lernen, Aufschlag",
+	"signpost.rule_plan_offset_min.terms": "fester Plan, Uhrzeit",
+	"signpost.rule_reset_lead_min.terms": "Vorlauf, zurückschalten",
+	"signpost.notify": "Benachrichtigungen",
+	"signpost.notify.terms": "Handy, Nachricht, Push, App, Abends fragen, Probleme melden, Morgens berichten, Mitteilung",
+	"signpost.ask_time.terms": "Uhrzeit der Frage, abends fragen um, Fragezeit",
+	"signpost.observe": "Beobachten",
+	"signpost.observe.terms": "Aufzeichnung, Verlauf neu einlesen, Neu einlesen, Recorder",
+	"signpost.backup": "Sichern",
+	"signpost.backup.terms": "Export, Import, Sicherung, Datei, Umzug, Backup",
+	"signpost.setup": "Einrichtung neu starten",
+	"signpost.setup.terms": "Ersteinrichtung, Assistent, von vorn, Neustart, Einrichtung",
+	"signpost.diagnostics": "Diagnose",
+	"signpost.diagnostics.terms": "Fehler melden, Fehlerbericht, Diagnose herunterladen, Debug, Problem",
+	"signpost.about": "Über Joe",
+	"signpost.about.terms": "Version, Home-Assistant-Version, Update, Info",
+	"signpost.entities": "Joes Entitäten",
+	"signpost.entities.terms": "Entitäten, Sensoren, Automationen, Schalter, eigene Automationen, Skripte",
+	"signpost.cards": "Dashboard-Karten",
+	"signpost.cards.terms": "Karte, Karten, Lovelace, Dashboard, eigenes Dashboard",
 	"ha.open.device": "{name} in Home Assistant öffnen",
 	"ha.open.entity": "{name} in Home Assistant anzeigen",
 	"mirror.change": "Ändern →",
@@ -1157,27 +1261,12 @@ var Ne = {
 	"overview.night": "Heute Nacht",
 	"overview.night.empty.title": "Noch kein |Plan",
 	"overview.night.empty.text": "Sobald ich deine Speicher und deinen Tarif kenne, rechne ich hier jede Nacht aus, wie viel ich lade – und warum.",
-	"overview.sim": "Simulation",
-	"overview.sim.empty.title": "Ich schau |erstmal zu",
-	"overview.sim.empty.text": "Nach der ersten Nacht zeige ich dir hier, was es gebracht hätte, wenn ich gesteuert hätte.",
-	"overview.next": "So geht's weiter",
-	"overview.next.1.title": "Alles eingerichtet",
-	"overview.next.1.text": "Speicher, Tarif und Prognose kenne ich. Ändern kannst du alles dort, wo es hingehört – unter Geräte, Haushalt oder Einstellungen.",
-	"overview.next.2.title": "Ich beobachte",
-	"overview.next.2.text": "Jede Stunde schreibe ich auf, was passiert – und lese die letzten Wochen aus deinem Home Assistant.",
-	"overview.next.3.title": "Ich plane jede Nacht",
-	"overview.next.3.text": "Wie weit ich laden würde – als Simulation, ohne etwas zu schalten.",
-	"overview.next.4.title": "Was es gebracht hätte",
-	"overview.next.4.text": "Plan gegen Wirklichkeit – Tag für Tag, in Euro.",
-	"status.done": "erledigt",
 	"plan.day": "Netzdienlich: Bis {time} Uhr geht die Morgensonne ins Netz (etwa {kwh} kWh), dann lädt der Speicher in der Mittagsspitze.",
 	"plan.day.cost": "Kostet etwa {cost}.",
 	"plan.title": "Hier |rechne ich",
 	"history.title": "Jeder Tag |unter der Lupe",
 	"settings.operation": "Betrieb",
 	"settings.mode": "Betriebsart",
-	"settings.mode.hint": "Simulation plant und lernt, ohne etwas zu schalten. Vorschlagen fragt jeden Abend, Live steuert selbst.",
-	"settings.live.unavailable": "Live kommt, sobald Joe steuern kann.",
 	"settings.setup": "Einrichtung",
 	"settings.setup.hint": "Den Assistenten noch einmal von vorn durchgehen.",
 	"settings.setup.restart": "Neu starten",
@@ -1203,7 +1292,40 @@ var Ne = {
 	"settings.version": "Version",
 	"settings.ha": "Home Assistant",
 	"settings.energy": "Energie-Dashboard",
+	"settings.energy.sources": "Netz: {grid} · PV-Anlagen: {solar} · Speicher: {battery} · Geräte: {devices}",
 	"settings.energy.none": "nicht eingerichtet",
+	"settings.mode.now": "Gerade läuft: {mode}.",
+	"settings.mode.open": "Betriebsart ändern …",
+	"tip.mode_open.title": "Wo stelle ich um?",
+	"tip.mode_open.text": "Umschalten geht an einer Stelle: über den Knopf oben in der Kopfzeile. Dieser Knopf hier öffnet denselben Dialog. Dort siehst du auch, welche Speicher noch einen Testlauf brauchen.",
+	"settings.rules.intro": "Feinheiten für die Nacht. Die Startwerte passen für die meisten – ändern musst du hier nichts. Hast du einen Wert geändert, holt „Startwert“ den alten zurück.",
+	"settings.rules.group.battery": "Speicher",
+	"settings.rules.group.grid": "Netz & Preis",
+	"settings.rules.group.plan": "Planung",
+	"settings.setup.again": "Einrichtung neu starten",
+	"settings.maintenance.diagnostics": "Diagnose für eine Fehlermeldung",
+	"settings.maintenance.diagnostics.hint": "Die Datei holst du in Home Assistant: Einstellungen › Geräte & Dienste › Energy Joe, dann im Menü ⋮ „Diagnose herunterladen“.",
+	"settings.maintenance.diagnostics.open": "Energy Joe in HA öffnen",
+	"tip.diagnostics.title": "Wozu die Diagnose?",
+	"tip.diagnostics.text": "Wenn etwas nicht klappt und du einen Fehler meldest, hilft diese Datei beim Suchen. Sie zeigt, was ich weiß und vorhabe. Namen von Personen, Kalender und Postfach-Adressen ersetze ich vorher durch Platzhalter.",
+	"tip.diagnostics.hint": "Schau die Datei kurz durch, bevor du sie weitergibst.",
+	"settings.about.entities": "Joes Entitäten",
+	"settings.about.entities.intro": "Diese Entitäten lege ich in Home Assistant an. Du kannst sie in eigenen Automationen, Skripten und Dashboards nutzen.",
+	"settings.about.entities.none": "In Home Assistant gibt es noch keine Entitäten von mir. Sie kommen, sobald die Integration läuft.",
+	"settings.about.group.control": "Schalter & Auswahl",
+	"settings.about.group.button": "Knöpfe",
+	"settings.about.group.value": "Werte",
+	"settings.about.group.calendar": "Kalender",
+	"settings.about.group.other": "Weitere",
+	"tip.about_entities.title": "Was kann ich damit machen?",
+	"tip.about_entities.text": "Mit „Betriebsart“ schaltest du mich aus einer Automation um, mit „Heute Nacht aussetzen“ lässt du eine Nacht aus. „Status“, „Ziel heute Nacht“ und „Hätte gespart“ kannst du anzeigen oder als Auslöser nutzen. „Neu planen“ und „Sofort freigeben“ sind Knöpfe für Skripte und Dashboards.",
+	"tip.about_entities.hint": "Der Knopf mit dem Pfeil zeigt die Entität in Home Assistant, mit ihrem Verlauf.",
+	"settings.about.cards": "Dashboard-Karten",
+	"settings.about.cards.intro": "Zwei Karten für deine eigenen Dashboards. Im Dashboard auf „Bearbeiten“, dann „Karte hinzufügen“ und nach „Energy Joe“ suchen – oder den Typ unten im Code-Editor eintragen.",
+	"settings.about.cards.night": "Joe heute Nacht",
+	"settings.about.cards.night.hint": "Was ich heute Nacht vorhabe und was es kostet, mit dem Schalter „Heute aussetzen“. Ein Tipp auf den Kopf öffnet den Plan.",
+	"settings.about.cards.car": "Auto laden",
+	"settings.about.cards.car.hint": "Ladestand und Reichweite deiner Autos, mit „Jetzt laden“ und „Heute Nacht laden bis“. Ein Tipp auf den Kopf öffnet die Autoseite.",
 	"tip.label": "Erklärung",
 	"tip.hint": "Tipp",
 	"tip.ha_open.title": "Wozu ist der Knopf mit dem Pfeil?",
@@ -1475,12 +1597,6 @@ var Ne = {
 	"sum.unknown": "weiß ich nicht",
 	"sum.open": "noch offen",
 	"sum.from_sensor": "vom Sensor",
-	"settings.answers": "Deine Antworten",
-	"settings.answer.heating": "Heizen mit Strom",
-	"settings.answer.hot_water": "Warmwasser",
-	"settings.answer.ev": "E-Auto",
-	"settings.pro": "Für Profis",
-	"settings.pro.intro": "Feinheiten für die Nacht. Die Startwerte passen für die meisten – ändern musst du hier nichts.",
 	"rule.reserve_soc": "Reserve",
 	"rule.converter_losses": "Wandlerverluste beim Netzladen mitrechnen",
 	"rule.converter_losses.hint": "Am Netzzähler gemessen – für Speicher, deren eigene Messung hinter dem Wechselrichter sitzt.",
@@ -1517,7 +1633,7 @@ var Ne = {
 	"rule.balance_days.hint": "Alle so viele Tage einmal ganz voll laden. Leer = aus.",
 	"rule.balance_days.unit": "Tage",
 	"rule.buffer_factor": "Sicherheitspuffer",
-	"rule.buffer_factor.hint": "Aufschlag auf meine Rechnung, solange ich noch lerne.",
+	"rule.buffer_factor.hint": "Aufschlag auf meine Rechnung. Den lerne ich selbst – „Startwert“ lässt mich wieder selbst lernen.",
 	"rule.plan_offset_min": "Plan festlegen",
 	"rule.plan_offset_min.hint": "Minuten vor Beginn der günstigen Zeit.",
 	"rule.reset_lead_min": "Zurückstellen",
@@ -1693,6 +1809,69 @@ var Ne = {
 	"overview.now.grid.out.sub": "geht ins Netz",
 	"overview.now.grid.idle": "fast nichts",
 	"overview.now.none": "kein Sensor",
+	"overview.inbox": "Joe braucht dich",
+	"overview.inbox.count": "{count} offen",
+	"overview.todo.dismiss": "Brauch ich nicht",
+	"overview.inbox.more": "{count} weitere zeigen",
+	"overview.inbox.less": "Weniger zeigen",
+	"overview.ask.one": "Ich habe eine Frage zu einem Tag",
+	"overview.ask.many": "Ich habe Fragen zu {count} Tagen",
+	"overview.ask.text": "Tipp hier – eine kurze Antwort reicht, dann lerne ich richtig.",
+	"overview.todo.car_setup_many": "Laden ist noch nicht eingerichtet: {names}",
+	"overview.todo.test": "Testlauf für {name} fehlt",
+	"overview.todo.test.text": "Ohne Testlauf schaue ich diesen Speicher nur an. Der Test dauert ein paar Minuten.",
+	"overview.todo.test.outdated": "Seit dem letzten Testlauf hat sich am Speicher etwas geändert. Bis zum nächsten schaue ich nur zu.",
+	"overview.todo.test_many": "Testlauf fehlt: {names}",
+	"overview.todo.test_many.text": "Ohne Testlauf schaue ich diese Speicher nur an. Jeder Test dauert ein paar Minuten.",
+	"overview.todo.car_many": "Laden nicht nach Bedarf: {names}",
+	"overview.todo.notify": "Benachrichtigungen fehlen",
+	"overview.todo.notify.text": "Sag mir, wohin ich schreiben darf – dann frage ich abends nach und sage Bescheid, wenn etwas klemmt.",
+	"overview.todo.climate": "Heizung & Klima ist noch nicht eingerichtet",
+	"overview.todo.climate.text": "Ich habe Geräte zum Heizen oder Kühlen gefunden. Sag mir, welche ich regeln darf.",
+	"overview.todo.car": "{name} lädt nicht nach Bedarf",
+	"overview.todo.car.setup": "{name}: Laden ist noch nicht eingerichtet",
+	"overview.todo.car.text": "Mit deinen Terminen lade ich nachts nur so viel, wie du am nächsten Tag brauchst.",
+	"overview.todo.new": "Neu gefunden: {names}",
+	"overview.todo.new.text": "Das nutze ich noch nicht. Schau es dir unter Geräte an.",
+	"overview.doing": "Joe tut gerade",
+	"overview.doing.battery": "{name}: {what}",
+	"overview.doing.action": "{name} läuft bis {time} Uhr",
+	"overview.doing.away": "{count} Räume auf Abwesend, weil niemand da ist",
+	"overview.doing.away_one": "{name} auf Abwesend, weil niemand da ist",
+	"overview.doing.night": "{count} Räume in Nachtruhe",
+	"overview.doing.night_one": "{name} in Nachtruhe",
+	"overview.quick": "Schnell",
+	"overview.climate": "Heizung & Klima",
+	"overview.climate.all": "Alle anzeigen →",
+	"overview.climate.would": "Vorschau",
+	"overview.who": "Wer ist da",
+	"overview.who.home": "Zu Hause: {names}",
+	"overview.who.nobody": "Niemand zu Hause",
+	"overview.who.coming": "{name} in {minutes} min",
+	"overview.who.coming_soon": "{name} kommt heim",
+	"overview.who.guest": "Gast da",
+	"overview.who.day.workday": "heute Arbeitstag",
+	"overview.who.day.weekend": "Wochenende",
+	"overview.who.day.holiday": "heute frei",
+	"overview.who.day.home_office": "Homeoffice: {names}",
+	"overview.result": "Was es gebracht hätte",
+	"overview.result.saved": "{night}: {value} gespart",
+	"overview.result.cost": "{night}: {value} teurer",
+	"overview.result.same": "{night}: kein Unterschied",
+	"overview.result.total": "Seit {since}: {value} an {nights}",
+	"overview.result.provisional": "vorläufig, Stand {time} Uhr",
+	"overview.result.last": "Letzte Nacht",
+	"overview.result.night": "Nacht zum {day}",
+	"overview.result.none": "Nach der ersten geplanten Nacht rechne ich nach, was mein Plan gebracht hätte.",
+	"tip.inbox.title": "Was steht hier?",
+	"tip.inbox.text": "Alles, wobei ich dich brauche: deine Antwort für heute Nacht, Hinweise zu deinen Geräten, was noch nicht eingerichtet ist, neu gefundene Geräte und Fragen zu auffälligen Tagen. Hinweise auf Fehler stehen oben und bleiben, bis der Fehler behoben ist. Ich zeige erst drei Zeilen, den Rest unter „weitere zeigen“. Ein Tipp auf eine Zeile bringt dich dorthin, wo du es erledigst. Ist nichts offen, verschwindet dieser Kasten.",
+	"tip.todo_dismiss.title": "Was macht „Brauch ich nicht“?",
+	"tip.todo_dismiss.text": "Die Zeile verschwindet, und ich zeige sie nicht wieder. Geändert wird nichts – einstellen kannst du es jederzeit dort, wo die Zeile hinführt.",
+	"tip.quick.title": "Wofür ist „Schnell“?",
+	"tip.quick.text": "Abkürzungen für den Moment: ein Auto jetzt oder heute Nacht laden, den Gastmodus an- oder ausschalten. Dauerhaft eingestellt wird hier nichts – das geht auf der Seite des Geräts und unter Haushalt.",
+	"tip.overview_climate.title": "Was zeigt die Liste?",
+	"tip.overview_climate.text": "Jedes Gerät, das ich regle: wie warm es ist und sein soll, welches Profil läuft und warum. Ein Tipp öffnet die Seite des Geräts.",
+	"tip.overview_climate.hint": "„Vorschau“ heißt: Ich zeige nur, was ich tun würde. Geschaltet wird erst im Live-Betrieb.",
 	"overview.week": "Die letzten 7 Tage",
 	"overview.week.known": "{days} Tage im Gedächtnis",
 	"overview.week.none": "Noch nichts aufgezeichnet – nach der ersten vollen Stunde geht's los.",
@@ -1749,7 +1928,7 @@ var Ne = {
 	"settings.observe.failed": "Beim letzten Lesen ging etwas schief",
 	"settings.observe.rebuild": "Neu einlesen",
 	"tip.now.title": "Was sehe ich hier?",
-	"tip.now.text": "Was gerade fließt: was die Sonne erzeugt, was das Haus verbraucht, ob die Speicher laden oder entladen und ob Strom aus dem Netz kommt oder hineingeht. Live aus deinen Sensoren.",
+	"tip.now.text": "Was gerade fließt: was die Sonne erzeugt, was das Haus verbraucht, ob die Speicher laden oder entladen und ob Strom aus dem Netz kommt oder hineingeht. Live aus deinen Sensoren. Darunter steht, was ich gerade mit deinen Geräten tue.",
 	"tip.week.title": "Was sehe ich hier?",
 	"tip.week.text": "Pro Tag dein **Verbrauch** und was die **Sonne** geliefert hat. Tipp auf einen Tag für die genauen Werte.",
 	"tip.chart_energy.title": "Was sehe ich hier?",
@@ -1826,10 +2005,13 @@ var Ne = {
 	"plan.math.solar.factor": "× {value}, so trifft die Prognose bei dir",
 	"plan.math.solar.combined": "× {value} aus mehreren Prognosen kombiniert",
 	"plan.math.solar.weather": "× {value}, so trifft sie bei Wetterlage „{weather}“",
-	"plan.math.tomorrow": "Morgen",
 	"plan.math.tomorrow.person": "{name}: {label}",
 	"plan.math.tomorrow.scaled": "für den ganzen Tag erwarte ich {expected} kWh statt der üblichen {usual} kWh",
 	"plan.math.tomorrow.usual": "ich rechne wie an einem üblichen Tag",
+	"plan.math.weather": "Wetter morgen",
+	"plan.math.day": "Morgen ist",
+	"plan.math.day.workday": "Arbeitstag",
+	"plan.math.day.off": "Wochenende oder Feiertag",
 	"plan.math.home": "Verbrauch morgen",
 	"plan.math.home.history": "aus {days} Tagen, {kind}",
 	"plan.math.home.default": "Startwert eines typischen Haushalts",
@@ -1849,7 +2031,7 @@ var Ne = {
 	"tip.plan_refresh.title": "Wann rechne ich neu?",
 	"tip.plan_refresh.text": "Jede Stunde von allein, mit der neuesten Prognose. Kurz vor der günstigen Zeit lege ich den Plan fest, danach bleibt er bis zum Morgen. Mit **Neu rechnen** rechne ich sofort.",
 	"tip.plan_math.title": "Wie entscheide ich?",
-	"tip.plan_math.text": "Ich spiele die Stunden bis zur nächsten Nacht durch – für jedes mögliche Ziel – und nehme das, bei dem du am wenigsten bezahlst. Weil ich noch lerne, lege ich einen Puffer drauf.",
+	"tip.plan_math.text": "Ich spiele die Stunden bis zur nächsten Nacht durch – für jedes mögliche Ziel – und nehme das, bei dem du am wenigsten bezahlst. Weil ich noch lerne, lege ich einen Puffer drauf. **Ändern →** bringt dich dorthin, wo ein Wert eingestellt wird.",
 	"tip.chart_plan_energy.title": "Was sehe ich hier?",
 	"tip.chart_plan_energy.text": "Was ich pro Stunde erwarte: **Sonne** laut Prognose, deinen **Verbrauch** aus ähnlichen Tagen und wann ich **aus dem Netz lade**. Hinterlegt ist die günstige Zeit.",
 	"tip.chart_plan_prices.title": "Was sehe ich hier?",
@@ -2294,14 +2476,6 @@ var Ne = {
 	"devices.action.why.enough_range": "Das Auto hat genug für morgen – heute Nacht lade ich es nicht.",
 	"devices.action.why.sun_before_trip": "Die erste Fahrt ist erst am Nachmittag, und es kommt genug Sonne – sie lädt das Auto vorher.",
 	"devices.action.why.need_unknown": "Den Ladestand des Autos kenne ich nicht – ich entscheide nach der Sonne.",
-	"overview.sim.last": "Letzte Nacht",
-	"overview.sim.night": "Nacht zum {day}",
-	"overview.sim.saved": "Hätte ich gesteuert, hättest du {value} gespart: {day} kWh weniger zum vollen Preis, dafür {night} kWh günstig in der Nacht.",
-	"overview.sim.cost": "Mein Plan hätte {value} mehr gekostet. Daraus lerne ich – der Puffer passt sich an.",
-	"overview.sim.same": "Mein Plan hätte keinen Unterschied gemacht – die Speicher hätten auch so gereicht.",
-	"overview.sim.total": "Seit {since}: {value} an {nights}",
-	"overview.sim.more": "Zum Ergebnis",
-	"overview.sim.provisional": "vorläufig, Stand {time} Uhr",
 	"history.eval": "Nachgespielt: Was mein Plan gebracht hätte",
 	"history.eval.saved": "gespart",
 	"history.eval.cost": "mehr gekostet",
@@ -2875,10 +3049,15 @@ var Ne = {
 	"devices.action.why.tonight": "Läuft heute Nacht – du hast es eingeschaltet.",
 	"devices.action.why.little_sun": "Läuft heute Nacht – morgen kommt zu wenig Sonne.",
 	"devices.action.why.every_night": "Läuft jede Nacht.",
-	"plan.actions": "Geräte heute Nacht",
 	"plan.actions.run": "läuft von {start} bis {end} Uhr",
 	"plan.actions.target": "heizt ab {start} Uhr auf {target} °C, bis spätestens {end} Uhr",
 	"plan.actions.energy": "≈ {kwh} kWh, {cost} günstig in der Nacht",
+	"plan.tonight": "Was heute Nacht läuft",
+	"plan.tonight.charge": "lädt ab {time} Uhr von {from} auf {target} %",
+	"plan.tonight.charge_any": "lädt von {from} auf {target} %",
+	"plan.tonight.charge.energy": "≈ {kwh} kWh aus dem Netz, mit bis zu {kw} kW",
+	"plan.tonight.hold": "lädt nicht, hält in der günstigen Zeit aber {target} %",
+	"plan.tonight.idle": "muss heute Nacht nichts tun, jetzt {soc} %",
 	"log.boost": "{battery}: einfach laden bis {target} {unit}",
 	"log.boost_end.reached": "{battery}: einfach laden – Ziel erreicht",
 	"log.boost_end.stopped": "{battery}: einfach laden beendet",
@@ -2928,12 +3107,12 @@ var Ne = {
 	"tip.action_tonight.title": "Was macht „Heute Nacht“?",
 	"tip.action_tonight.text": "Ich schalte das Gerät in der kommenden Nacht ein, egal was die Prognose sagt – praktisch, wenn du weißt, dass du es morgen früh brauchst. Nach der Nacht schaltet sich der Schalter von selbst wieder aus.",
 	"tip.plan_actions.title": "Was sehe ich hier?",
-	"tip.plan_actions.text": "Welche Geräte ich heute Nacht einschalten würde, wann – und warum die anderen nicht.",
+	"tip.plan_actions.text": "Was ich heute Nacht mit jedem Speicher und jedem Gerät vorhabe, wann – und warum manches nicht läuft. **Einstellen →** bringt dich zur Seite des Geräts.",
 	"error.title": "Joe antwortet |nicht",
 	"error.text": "Ich erreiche die Integration nicht. Lade die Seite neu – hilft das nicht, schau unter Einstellungen → System → Protokolle nach.",
 	"error.action": "Fehler beim Speichern",
 	loading: "Joe sattelt auf …"
-}, Pe = {
+}, Fe = {
 	"tab.overview": "Overview",
 	"tab.plan": "Plan",
 	"tab.review": "Review",
@@ -3358,6 +3537,110 @@ var Ne = {
 	"nav.household.days": "Days & calendars",
 	"nav.household.night": "Bedtime",
 	"nav.household.travel": "Travel & weather",
+	"nav.settings.operation": "Operation",
+	"nav.settings.rules": "Rules",
+	"nav.settings.notify": "Notifications",
+	"nav.settings.maintenance": "Maintenance & backup",
+	"nav.settings.about": "About Joe",
+	"signpost.title": "Looking for …?",
+	"signpost.placeholder": "e.g. battery, electricity price, guest mode",
+	"signpost.none": "I can't find anything for that. Try another word – or look through the tabs above.",
+	"signpost.more": "{count} more – add another word.",
+	"tip.signpost.title": "Where is what?",
+	"tip.signpost.text": "Type what you're looking for – old names like History, Learning or For pros work too. I show you where it lives now, and tapping a hit takes you there.",
+	"tip.signpost.hint": "Settings now only hold how I work myself. Everything with power is under Devices, people and everyday life under Household.",
+	"signpost.overview": "Overview",
+	"signpost.overview.terms": "Start, home page, Right now, What Joe is doing, Joe needs you, Still open, What's next, Quick, The last 7 days",
+	"signpost.plan": "Plan for tonight",
+	"signpost.plan.terms": "Plan, tonight, night, charging plan, target, recalculate, How I worked it out, What runs tonight, Night actions, prices",
+	"signpost.steer": "Steering tonight",
+	"signpost.steer.terms": "Yes do it, Not today, Skip tonight, skip, Steer after all, evening question, test run missing",
+	"signpost.result": "What it would have saved",
+	"signpost.result.terms": "Result, savings, saved, simulation, How well I did, costs, money",
+	"signpost.days": "Every day",
+	"signpost.days.terms": "History, days, day, hours, day question, replayed, state of charge, yesterday",
+	"signpost.learned": "What Joe has learned",
+	"signpost.learned.terms": "Learn, Learning, learned, memory, forecast factor, time shift, consumption and weather, heating rate, who is home when",
+	"signpost.learned_reset": "Start over",
+	"signpost.learned_reset.terms": "delete what was learned, forget, reset, learn from scratch",
+	"signpost.log": "Log",
+	"signpost.log.terms": "What I switched, switched, climate log, commands",
+	"signpost.devices": "All devices",
+	"signpost.devices.terms": "Devices, What Joe uses, Newly found, Release now, Your answers, check notes, night action, Night actions",
+	"signpost.add": "Add a device",
+	"signpost.add.terms": "Add, new device, create night action, action, look around again, find device",
+	"signpost.battery": "Batteries",
+	"signpost.battery.terms": "Battery, storage, home battery, test run, control, set up control, capacity, battery size, discharge limit, troublemakers, automations at the battery",
+	"signpost.climate": "Heating & cooling",
+	"signpost.climate.terms": "Climate, heating, air conditioning, thermostat, radiator, week profile, heating profile, room, setback, When nobody is home, meters",
+	"signpost.car": "Car & charging",
+	"signpost.car.terms": "EV, electric car, car, wallbox, charging, charge level, range, charge as needed, car appointments, mailbox, account, invitations, charge now",
+	"signpost.hot_water": "Hot water",
+	"signpost.hot_water.terms": "Boiler, immersion heater, hot water heat pump, showers, tank temperature",
+	"signpost.other": "More devices",
+	"signpost.other.terms": "Other devices, your devices, consumers, socket, smart plug, washing machine, dryer, dishwasher, assign devices, pool",
+	"signpost.energy": "Grid & sun",
+	"signpost.energy.terms": "Energy dashboard, energy, meters, electricity",
+	"signpost.connection": "Grid connection",
+	"signpost.connection.terms": "Grid, grid meter, feed-in, import, flip, sign",
+	"signpost.tariff": "Electricity tariff",
+	"signpost.tariff.terms": "Electricity price, tariff, price, spot price, dynamic tariff, Tibber, surcharge, feed-in tariff, grid fee, unit price",
+	"signpost.solar": "Solar system",
+	"signpost.solar.terms": "PV, photovoltaics, solar, sun, solar forecast, forecast, Forecast.Solar, Solcast, combine forecasts, PV power, inverter",
+	"signpost.home": "Home consumption",
+	"signpost.home.terms": "Consumption, house, base load, consumption sensor",
+	"signpost.people": "Who lives here",
+	"signpost.people.terms": "Household, people, person, family, residents, a person's calendar, left out",
+	"signpost.presence": "Who's home",
+	"signpost.presence.terms": "Presence, at home, away, Someone at home, presence group, helper, Away after",
+	"signpost.guest": "Guest mode",
+	"signpost.guest.terms": "Guest, guests, visitors, babysitter",
+	"signpost.way": "Way home",
+	"signpost.way.terms": "Drive time, home, proximity, arrival, usual return",
+	"signpost.calendar": "Days & calendars",
+	"signpost.calendar.terms": "Holidays, home office, working day, day off, vacation, school holidays, school, calendar rules, keywords, kind of day, today",
+	"signpost.night": "Bedtime",
+	"signpost.night.terms": "Night rest, sleep, at night, When is night, bedtime, Off at night",
+	"signpost.travel": "Travel & weather",
+	"signpost.travel.terms": "Weather, distances, distances to appointments, routing service, Waze, Google, OpenStreetMap, route",
+	"signpost.mode": "Operating mode",
+	"signpost.mode.terms": "Mode, simulation, suggest, live, off, pause, stop, let Joe steer, operation",
+	"signpost.grid_friendly": "Be grid-friendly",
+	"signpost.grid_friendly.terms": "grid-friendly, What comes first, midday sun",
+	"signpost.rules": "Rules",
+	"signpost.rules.terms": "For pros, pro, expert, fine-tuning, default value",
+	"signpost.rule_reserve_soc.terms": "minimum charge, never below, battery reserve",
+	"signpost.rule_max_target_soc.terms": "charge limit, charge at most, up to",
+	"signpost.rule_evening_min_soc.terms": "full in the evening, evening reserve",
+	"signpost.rule_balance_days.terms": "calibrate, charge full, balancing, cell balancing",
+	"signpost.rule_discharge_in_window.terms": "discharge, cheap hours, block discharging",
+	"signpost.rule_converter_losses.terms": "inverter, losses, efficiency",
+	"signpost.rule_grid_limit_w.terms": "connection power, power limit",
+	"signpost.rule_max_night_kwh.terms": "kWh per night, amount per night",
+	"signpost.rule_guard_grid.terms": "main fuse, fuse, overload",
+	"signpost.rule_max_price.terms": "too expensive, price limit",
+	"signpost.rule_min_saving.terms": "worth it, minimum gain",
+	"signpost.rule_priority.terms": "order, precedence",
+	"signpost.rule_buffer_factor.terms": "buffer, learn again by itself, margin",
+	"signpost.rule_plan_offset_min.terms": "fixed plan, time",
+	"signpost.rule_reset_lead_min.terms": "lead time, switch back",
+	"signpost.notify": "Notifications",
+	"signpost.notify.terms": "Phone, message, push, app, Ask in the evening, Report problems, Morning report",
+	"signpost.ask_time.terms": "time of the question, ask in the evening at",
+	"signpost.observe": "Watching",
+	"signpost.observe.terms": "Recording, read history again, read again, recorder",
+	"signpost.backup": "Backup",
+	"signpost.backup.terms": "Export, import, save, file, move",
+	"signpost.setup": "Start the setup over",
+	"signpost.setup.terms": "first setup, assistant, from the start, restart, setup",
+	"signpost.diagnostics": "Diagnostics",
+	"signpost.diagnostics.terms": "report a bug, bug report, download diagnostics, debug, problem",
+	"signpost.about": "About Joe",
+	"signpost.about.terms": "Version, Home Assistant version, update, info",
+	"signpost.entities": "Joe's entities",
+	"signpost.entities.terms": "Entities, sensors, automations, switches, own automations, scripts",
+	"signpost.cards": "Dashboard cards",
+	"signpost.cards.terms": "card, cards, Lovelace, dashboard, own dashboard",
 	"ha.open.device": "Open {name} in Home Assistant",
 	"ha.open.entity": "Show {name} in Home Assistant",
 	"mirror.change": "Change →",
@@ -3489,27 +3772,12 @@ var Ne = {
 	"overview.night": "Tonight",
 	"overview.night.empty.title": "No plan |yet",
 	"overview.night.empty.text": "Once I know your batteries and your tariff, I'll work out here every night how much to charge – and why.",
-	"overview.sim": "Simulation",
-	"overview.sim.empty.title": "Just |watching",
-	"overview.sim.empty.text": "After the first night I'll show you here what it would have saved if I had been in control.",
-	"overview.next": "What happens next",
-	"overview.next.1.title": "All set up",
-	"overview.next.1.text": "I know your batteries, tariff and forecast. You can change everything where it belongs – under Devices, Household or Settings.",
-	"overview.next.2.title": "I'm watching",
-	"overview.next.2.text": "Every hour I write down what happens – and I read the last weeks from your Home Assistant.",
-	"overview.next.3.title": "I plan every night",
-	"overview.next.3.text": "How far I would charge – as a simulation, without switching anything.",
-	"overview.next.4.title": "What it would have saved",
-	"overview.next.4.text": "Plan against reality – day by day, in money.",
-	"status.done": "done",
 	"plan.day": "Grid-friendly: until {time} the morning sun goes to the grid (about {kwh} kWh), then the battery charges at the midday peak.",
 	"plan.day.cost": "Costs about {cost}.",
 	"plan.title": "Where I |do the math",
 	"history.title": "Every day |up close",
 	"settings.operation": "Operation",
 	"settings.mode": "Operating mode",
-	"settings.mode.hint": "Simulation plans and learns without switching anything. Suggest asks every evening, live steers by itself.",
-	"settings.live.unavailable": "Live arrives once Joe can control devices.",
 	"settings.setup": "Setup",
 	"settings.setup.hint": "Go through the assistant again from the start.",
 	"settings.setup.restart": "Start over",
@@ -3535,7 +3803,40 @@ var Ne = {
 	"settings.version": "Version",
 	"settings.ha": "Home Assistant",
 	"settings.energy": "Energy dashboard",
+	"settings.energy.sources": "Grid: {grid} · Solar: {solar} · Batteries: {battery} · Devices: {devices}",
 	"settings.energy.none": "not set up",
+	"settings.mode.now": "Running now: {mode}.",
+	"settings.mode.open": "Change mode …",
+	"tip.mode_open.title": "Where do I switch?",
+	"tip.mode_open.text": "There is one place to switch: the button at the top in the header. This button opens the same dialog. It also shows which batteries still need a test run.",
+	"settings.rules.intro": "Fine-tuning for the night. The defaults suit most homes – you don't have to change anything here. If you changed a value, “Default” brings the old one back.",
+	"settings.rules.group.battery": "Batteries",
+	"settings.rules.group.grid": "Grid & price",
+	"settings.rules.group.plan": "Planning",
+	"settings.setup.again": "Start the setup over",
+	"settings.maintenance.diagnostics": "Diagnostics for a bug report",
+	"settings.maintenance.diagnostics.hint": "You get the file in Home Assistant: Settings › Devices & services › Energy Joe, then “Download diagnostics” in the ⋮ menu.",
+	"settings.maintenance.diagnostics.open": "Open Energy Joe in HA",
+	"tip.diagnostics.title": "What are diagnostics for?",
+	"tip.diagnostics.text": "If something doesn't work and you report a bug, this file helps find it. It shows what I know and plan. I replace names of people, calendars and mailbox addresses with placeholders first.",
+	"tip.diagnostics.hint": "Take a quick look at the file before you pass it on.",
+	"settings.about.entities": "Joe's entities",
+	"settings.about.entities.intro": "I create these entities in Home Assistant. You can use them in your own automations, scripts and dashboards.",
+	"settings.about.entities.none": "There are no entities of mine in Home Assistant yet. They come once the integration is running.",
+	"settings.about.group.control": "Switches & selects",
+	"settings.about.group.button": "Buttons",
+	"settings.about.group.value": "Values",
+	"settings.about.group.calendar": "Calendars",
+	"settings.about.group.other": "More",
+	"tip.about_entities.title": "What can I do with them?",
+	"tip.about_entities.text": "With “Operating mode” you switch me from an automation, with “Skip tonight” you skip a night. You can show “Status”, “Target tonight” and “Would have saved” or use them as triggers. “Plan again” and “Release now” are buttons for scripts and dashboards.",
+	"tip.about_entities.hint": "The button with the arrow shows the entity in Home Assistant, with its history.",
+	"settings.about.cards": "Dashboard cards",
+	"settings.about.cards.intro": "Two cards for your own dashboards. In the dashboard choose “Edit”, then “Add card” and search for “Energy Joe” – or enter the type below in the code editor.",
+	"settings.about.cards.night": "Joe tonight",
+	"settings.about.cards.night.hint": "What I plan for tonight and what it costs, with the “Skip tonight” switch. Tapping the head opens the plan.",
+	"settings.about.cards.car": "Car charging",
+	"settings.about.cards.car.hint": "Charge level and range of your cars, with “Charge now” and “Charge tonight up to”. Tapping the head opens the car's page.",
 	"tip.label": "Explanation",
 	"tip.hint": "Tip",
 	"tip.ha_open.title": "What is the button with the arrow for?",
@@ -3807,12 +4108,6 @@ var Ne = {
 	"sum.unknown": "don't know",
 	"sum.open": "still open",
 	"sum.from_sensor": "from the sensor",
-	"settings.answers": "Your answers",
-	"settings.answer.heating": "Heating with electricity",
-	"settings.answer.hot_water": "Hot water",
-	"settings.answer.ev": "Electric car",
-	"settings.pro": "For pros",
-	"settings.pro.intro": "Fine-tuning for the night. The defaults suit most homes – you don't have to change anything here.",
 	"rule.reserve_soc": "Reserve",
 	"rule.converter_losses": "Count inverter losses when charging from the grid",
 	"rule.converter_losses.hint": "Measured at the grid meter – for batteries whose own meter sits behind the inverter.",
@@ -3849,7 +4144,7 @@ var Ne = {
 	"rule.balance_days.hint": "Charge full once every so many days. Empty = off.",
 	"rule.balance_days.unit": "days",
 	"rule.buffer_factor": "Safety buffer",
-	"rule.buffer_factor.hint": "Added to my calculation while I'm still learning.",
+	"rule.buffer_factor.hint": "Added to my calculation. I learn it myself – “Default” lets me learn it myself again.",
 	"rule.plan_offset_min": "Fix the plan",
 	"rule.plan_offset_min.hint": "Minutes before the cheap hours begin.",
 	"rule.reset_lead_min": "Put things back",
@@ -4025,6 +4320,69 @@ var Ne = {
 	"overview.now.grid.out.sub": "going to the grid",
 	"overview.now.grid.idle": "almost nothing",
 	"overview.now.none": "no sensor",
+	"overview.inbox": "Joe needs you",
+	"overview.inbox.count": "{count} open",
+	"overview.todo.dismiss": "Don't need it",
+	"overview.inbox.more": "Show {count} more",
+	"overview.inbox.less": "Show less",
+	"overview.ask.one": "I have a question about one day",
+	"overview.ask.many": "I have questions about {count} days",
+	"overview.ask.text": "Tap here – a short answer is enough, then I learn the right thing.",
+	"overview.todo.car_setup_many": "Charging isn't set up yet: {names}",
+	"overview.todo.test": "{name} needs a test run",
+	"overview.todo.test.text": "Without a test run I only watch this battery. The test takes a few minutes.",
+	"overview.todo.test.outdated": "Something changed at this battery since the last test run. Until the next one I only watch.",
+	"overview.todo.test_many": "Test run missing: {names}",
+	"overview.todo.test_many.text": "Without a test run I only watch these batteries. Each test takes a few minutes.",
+	"overview.todo.car_many": "Not charging by need: {names}",
+	"overview.todo.notify": "No notifications yet",
+	"overview.todo.notify.text": "Tell me where I may write – then I ask in the evening and let you know when something is stuck.",
+	"overview.todo.climate": "Heating & cooling isn't set up yet",
+	"overview.todo.climate.text": "I found devices for heating or cooling. Tell me which ones I may control.",
+	"overview.todo.car": "{name} doesn't charge by need",
+	"overview.todo.car.setup": "{name}: charging isn't set up yet",
+	"overview.todo.car.text": "With your appointments I charge at night just as much as you need the next day.",
+	"overview.todo.new": "Newly found: {names}",
+	"overview.todo.new.text": "I don't use it yet. Have a look under Devices.",
+	"overview.doing": "What Joe is doing",
+	"overview.doing.battery": "{name}: {what}",
+	"overview.doing.action": "{name} runs until {time}",
+	"overview.doing.away": "{count} rooms set to away because nobody is home",
+	"overview.doing.away_one": "{name} set to away because nobody is home",
+	"overview.doing.night": "{count} rooms at bedtime",
+	"overview.doing.night_one": "{name} at bedtime",
+	"overview.quick": "Quick",
+	"overview.climate": "Heating & cooling",
+	"overview.climate.all": "Show all →",
+	"overview.climate.would": "Preview",
+	"overview.who": "Who's home",
+	"overview.who.home": "Home: {names}",
+	"overview.who.nobody": "Nobody home",
+	"overview.who.coming": "{name} in {minutes} min",
+	"overview.who.coming_soon": "{name} is heading home",
+	"overview.who.guest": "guest home",
+	"overview.who.day.workday": "workday today",
+	"overview.who.day.weekend": "weekend",
+	"overview.who.day.holiday": "day off today",
+	"overview.who.day.home_office": "Working from home: {names}",
+	"overview.result": "What it would have saved",
+	"overview.result.saved": "{night}: saved {value}",
+	"overview.result.cost": "{night}: {value} more",
+	"overview.result.same": "{night}: no difference",
+	"overview.result.total": "Since {since}: {value} over {nights}",
+	"overview.result.provisional": "provisional, as of {time}",
+	"overview.result.last": "Last night",
+	"overview.result.night": "Night to {day}",
+	"overview.result.none": "After the first planned night I work out what my plan would have saved.",
+	"tip.inbox.title": "What is this?",
+	"tip.inbox.text": "Everything I need you for: your answer for tonight, notes about your devices, what isn't set up yet, newly found devices and questions about unusual days. Notes about faults come first and stay until the fault is gone. I show three rows first, the rest under “Show more”. Tap a row to go where you sort it out. When nothing is open, this box disappears.",
+	"tip.todo_dismiss.title": "What does “Don't need it” do?",
+	"tip.todo_dismiss.text": "The row disappears and I won't show it again. Nothing else changes – you can still set it up any time where the row leads.",
+	"tip.quick.title": "What is “Quick” for?",
+	"tip.quick.text": "Shortcuts for the moment: charge a car now or tonight, switch guest mode on or off. Nothing here is set for good – that happens on the device's page and under Household.",
+	"tip.overview_climate.title": "What does the list show?",
+	"tip.overview_climate.text": "Every device I control: how warm it is and should be, which profile runs and why. Tap one to open its page.",
+	"tip.overview_climate.hint": "“Preview” means: I only show what I would do. I switch only in Live mode.",
 	"overview.week": "The last 7 days",
 	"overview.week.known": "{days} days remembered",
 	"overview.week.none": "Nothing recorded yet – it starts after the first full hour.",
@@ -4081,7 +4439,7 @@ var Ne = {
 	"settings.observe.failed": "Something went wrong the last time I read it",
 	"settings.observe.rebuild": "Read again",
 	"tip.now.title": "What am I looking at?",
-	"tip.now.text": "What's flowing right now: what the sun produces, what the home uses, whether the batteries charge or discharge and whether power comes from or goes to the grid. Live from your sensors.",
+	"tip.now.text": "What's flowing right now: what the sun produces, what the home uses, whether the batteries charge or discharge and whether power comes from or goes to the grid. Live from your sensors. Below it: what I'm doing with your devices right now.",
 	"tip.week.title": "What am I looking at?",
 	"tip.week.text": "Your **consumption** per day and what the **sun** delivered. Tap a day for the exact values.",
 	"tip.chart_energy.title": "What am I looking at?",
@@ -4158,10 +4516,13 @@ var Ne = {
 	"plan.math.solar.factor": "× {value}, how well the forecast fits your home",
 	"plan.math.solar.combined": "× {value}, several forecasts combined",
 	"plan.math.solar.weather": "× {value}, how it fits on “{weather}” days",
-	"plan.math.tomorrow": "Tomorrow",
 	"plan.math.tomorrow.person": "{name}: {label}",
 	"plan.math.tomorrow.scaled": "for the whole day I expect {expected} kWh instead of the usual {usual} kWh",
 	"plan.math.tomorrow.usual": "I calculate as for a usual day",
+	"plan.math.weather": "Weather tomorrow",
+	"plan.math.day": "Tomorrow is",
+	"plan.math.day.workday": "working day",
+	"plan.math.day.off": "weekend or holiday",
 	"plan.math.home": "Consumption tomorrow",
 	"plan.math.home.history": "from {days} days, {kind}",
 	"plan.math.home.default": "default of a typical household",
@@ -4181,7 +4542,7 @@ var Ne = {
 	"tip.plan_refresh.title": "When do I plan again?",
 	"tip.plan_refresh.text": "Every hour by myself, with the latest forecast. Shortly before the cheap hours I fix the plan, then it stays until the morning. **Plan again** calculates right away.",
 	"tip.plan_math.title": "How do I decide?",
-	"tip.plan_math.text": "I play through the hours until the next night – for every possible target – and take the one that costs you least. Since I'm still learning, I add a buffer.",
+	"tip.plan_math.text": "I play through the hours until the next night – for every possible target – and take the one that costs you least. Since I'm still learning, I add a buffer. **Change →** takes you to where a value is set.",
 	"tip.chart_plan_energy.title": "What am I looking at?",
 	"tip.chart_plan_energy.text": "What I expect per hour: **sun** from the forecast, your **consumption** from similar days and when I **charge from the grid**. The cheap hours are shaded.",
 	"tip.chart_plan_prices.title": "What am I looking at?",
@@ -4626,14 +4987,6 @@ var Ne = {
 	"devices.action.why.enough_range": "The car has enough for tomorrow – I won't charge it tonight.",
 	"devices.action.why.sun_before_trip": "The first trip is only in the afternoon and enough sun comes – it charges the car first.",
 	"devices.action.why.need_unknown": "I don't know the car's charge level – I decide by the sun.",
-	"overview.sim.last": "Last night",
-	"overview.sim.night": "Night to {day}",
-	"overview.sim.saved": "Had I been in control, you would have saved {value}: {day} kWh less at the full price, {night} kWh more at the cheap night rate.",
-	"overview.sim.cost": "My plan would have cost {value} more. I learn from it – the buffer adapts.",
-	"overview.sim.same": "My plan would have made no difference – the batteries would have lasted anyway.",
-	"overview.sim.total": "Since {since}: {value} over {nights}",
-	"overview.sim.more": "See the result",
-	"overview.sim.provisional": "provisional, as of {time}",
 	"history.eval": "Replayed: what my plan would have saved",
 	"history.eval.saved": "saved",
 	"history.eval.cost": "cost more",
@@ -5207,10 +5560,15 @@ var Ne = {
 	"devices.action.why.tonight": "Runs tonight – you switched it on.",
 	"devices.action.why.little_sun": "Runs tonight – too little sun tomorrow.",
 	"devices.action.why.every_night": "Runs every night.",
-	"plan.actions": "Devices tonight",
 	"plan.actions.run": "runs from {start} to {end}",
 	"plan.actions.target": "heats from {start} to {target} °C, until {end} at the latest",
 	"plan.actions.energy": "≈ {kwh} kWh, {cost} at the cheap night rate",
+	"plan.tonight": "What runs tonight",
+	"plan.tonight.charge": "charges from {from} to {target} %, starting at {time}",
+	"plan.tonight.charge_any": "charges from {from} to {target} %",
+	"plan.tonight.charge.energy": "≈ {kwh} kWh from the grid, at up to {kw} kW",
+	"plan.tonight.hold": "doesn't charge, but holds {target} % during the cheap hours",
+	"plan.tonight.idle": "nothing to do tonight, now at {soc} %",
 	"log.boost": "{battery}: just charge to {target} {unit}",
 	"log.boost_end.reached": "{battery}: just charge – target reached",
 	"log.boost_end.stopped": "{battery}: just charge stopped",
@@ -5260,27 +5618,27 @@ var Ne = {
 	"tip.action_tonight.title": "What does “Tonight” do?",
 	"tip.action_tonight.text": "I switch the device on in the coming night, whatever the forecast says – handy when you know you'll need it tomorrow morning. After the night the switch turns itself off again.",
 	"tip.plan_actions.title": "What am I looking at?",
-	"tip.plan_actions.text": "Which devices I would switch on tonight, when – and why the others don't run.",
+	"tip.plan_actions.text": "What I plan for each battery and each device tonight, when – and why some don't run. **Set up →** takes you to the device's page.",
 	"error.title": "Joe isn't |answering",
 	"error.text": "I can't reach the integration. Reload the page – if that doesn't help, check Settings → System → Logs.",
 	"error.action": "Saving failed",
 	loading: "Joe is saddling up …"
-}, Fe = /* @__PURE__ */ new Map();
-function Ie(e, t) {
+}, Ie = /* @__PURE__ */ new Map();
+function Le(e, t) {
 	return e.replace(/\{(\w+)\}/g, (e, n) => String(t?.[n] ?? ""));
 }
-function Le(e) {
-	let t = e || "en", n = Fe.get(t);
-	if (n) return n;
-	let r = t.startsWith("de") ? Ne : Pe, i = ((e, t) => Ie(r[e], t));
-	return i.optional = (e, t) => e in r ? Ie(r[e], t) : void 0, Object.defineProperty(i, "lang", { value: t }), Fe.set(t, i), i;
-}
 function Re(e) {
+	let t = e || "en", n = Ie.get(t);
+	if (n) return n;
+	let r = t.startsWith("de") ? Pe : Fe, i = ((e, t) => Le(r[e], t));
+	return i.optional = (e, t) => e in r ? Le(r[e], t) : void 0, Object.defineProperty(i, "lang", { value: t }), Ie.set(t, i), i;
+}
+function ze(e) {
 	return e.split("|");
 }
 //#endregion
 //#region src/components/bits.ts
-var ze = k`<svg
+var Be = A`<svg
   class="swoosh"
   viewBox="0 0 300 16"
   preserveAspectRatio="none"
@@ -5288,69 +5646,69 @@ var ze = k`<svg
 >
   <path d="M2 13 C 70 5, 190 1, 298 3 L 298 6 C 190 5, 80 9, 4 15 Z" fill="currentColor" />
 </svg>`;
-function Be(e, t = "h2", n) {
-	let r = Re(e), i = r.length - 1, a = r.map((e, t) => t === i && r.length > 1 ? k`<span class="hl">${e}</span>` : e.endsWith("!") ? k`${e}<br />` : k`${e}`), o = n ? k`<span class="title-tip">${n}</span>` : "";
-	return t === "h1" ? k`<h1 class="display">${a}${o}</h1>` : k`<h2 class="display">${a}${o}</h2>`;
+function Ve(e, t = "h2", n) {
+	let r = ze(e), i = r.length - 1, a = r.map((e, t) => t === i && r.length > 1 ? A`<span class="hl">${e}</span>` : e.endsWith("!") ? A`${e}<br />` : A`${e}`), o = n ? A`<span class="title-tip">${n}</span>` : "";
+	return t === "h1" ? A`<h1 class="display">${a}${o}</h1>` : A`<h2 class="display">${a}${o}</h2>`;
 }
-function Ve(e, t) {
+function He(e, t) {
 	let n = t >= .85 ? 4 : t >= .65 ? 3 : t >= .45 ? 2 : 1, r = e(`conf.${n}`);
-	return k`<span class="conf" role="img" aria-label=${r} title=${r}>
+	return A`<span class="conf" role="img" aria-label=${r} title=${r}>
     ${[
 		1,
 		2,
 		3,
 		4
-	].map((e) => k`<i class=${e <= n ? "on" : ""}></i>`)}
+	].map((e) => A`<i class=${e <= n ? "on" : ""}></i>`)}
   </span>`;
 }
-var He = {
+var Ue = {
 	read: "mdi:eye-outline",
 	learned: "mdi:auto-fix",
 	user: "mdi:account-edit-outline",
 	default: "mdi:tune-variant"
 };
-function Ue(e, t) {
+function We(e, t) {
 	let n = t?.source ?? "default";
-	return k`<span class="chip ${n}"
-    ><ha-icon icon=${He[n]}></ha-icon>${e(`source.${n}`)}</span
+	return A`<span class="chip ${n}"
+    ><ha-icon icon=${Ue[n]}></ha-icon>${e(`source.${n}`)}</span
   >`;
 }
-function We(e, t) {
+function Ge(e, t) {
 	let n = {};
 	for (let [e, r] of Object.entries(t)) (typeof r == "string" || typeof r == "number") && (n[e] = r);
 	return e.optional(`reason.${t.code}`, n) ?? t.code;
 }
-function Ge(e) {
+function Ke(e) {
 	history.pushState(null, "", e), window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: !1 } }));
 }
-function Ke(e, t, n) {
-	if (!e) return k`<span title=${n ?? ""}>${t}</span>`;
+function qe(e, t, n) {
+	if (!e) return A`<span title=${n ?? ""}>${t}</span>`;
 	let r = `/config/devices/device/${e}`;
-	return k`<a
+	return A`<a
     class="ha-link"
     href=${r}
     title=${n ?? ""}
     @click=${(e) => {
-		e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0 || (e.preventDefault(), Ge(r));
+		e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0 || (e.preventDefault(), Ke(r));
 	}}
     >${t}</a
   >`;
 }
 //#endregion
 //#region src/define.ts
-var qe = "0.9.14";
-function H(e, t) {
+var Je = "0.9.15";
+function Ye(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
-		t.joeVersion = qe, customElements.define(e, t);
+		t.joeVersion = Je, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.14" && Ye();
+	n.joeVersion !== "0.9.15" && Ze();
 }
-var Je = !1;
-function Ye() {
-	if (Je || typeof document > "u") return;
-	Je = !0;
+var Xe = !1;
+function Ze() {
+	if (Xe || typeof document > "u") return;
+	Xe = !0;
 	let e = (document.documentElement.lang || navigator.language || "").toLowerCase().startsWith("de"), t = document.createElement("div");
 	t.setAttribute("role", "alert"), t.style.cssText = [
 		"position:fixed",
@@ -5379,7 +5737,7 @@ function Ye() {
 }
 //#endregion
 //#region src/styles/shared.ts
-var Xe = o`
+var Qe = o`
   :host {
     font-family: var(--joe-ui);
   }
@@ -6249,7 +6607,7 @@ var Xe = o`
 `;
 //#endregion
 //#region \0@oxc-project+runtime@0.152.0/helpers/esm/decorate.js
-function U(e, t, n, r) {
+function V(e, t, n, r) {
 	var i = arguments.length, a = i < 3 ? t : r === null ? r = Object.getOwnPropertyDescriptor(t, n) : r, o;
 	if (typeof Reflect == "object" && typeof Reflect.decorate == "function") a = Reflect.decorate(e, t, n, r);
 	else for (var s = e.length - 1; s >= 0; s--) (o = e[s]) && (a = (i < 3 ? o(a) : i > 3 ? o(t, n, a) : o(t, n)) || a);
@@ -6257,41 +6615,41 @@ function U(e, t, n, r) {
 }
 //#endregion
 //#region src/entities.ts
-var Ze = [
+var $e = [
 	"W",
 	"kW",
 	"MW"
-], Qe = [
+], et = [
 	"Wh",
 	"kWh",
 	"MWh"
-], $e = (e) => [
+], tt = (e) => [
 	"binary_sensor",
 	"input_boolean",
 	"switch",
 	"schedule"
-].includes(W(e)), et = {
-	power: (e) => W(e) === "sensor" && Ze.includes(G(e)),
-	soc: (e) => W(e) === "sensor" && G(e) === "%",
-	energy: (e) => W(e) === "sensor" && Qe.includes(G(e)),
+].includes(H(e)), nt = {
+	power: (e) => H(e) === "sensor" && $e.includes(U(e)),
+	soc: (e) => H(e) === "sensor" && U(e) === "%",
+	energy: (e) => H(e) === "sensor" && et.includes(U(e)),
 	price: (e) => [
 		"sensor",
 		"number",
 		"input_number"
-	].includes(W(e)) && (e.attributes.device_class === "monetary" || /\/\s*kwh/i.test(G(e))),
-	weather: (e) => W(e) === "weather",
-	workday: (e) => W(e) === "binary_sensor",
-	calendar: (e) => W(e) === "calendar",
-	person: (e) => W(e) === "person",
-	level: (e) => ["number", "input_number"].includes(W(e)) && G(e) === "%",
+	].includes(H(e)) && (e.attributes.device_class === "monetary" || /\/\s*kwh/i.test(U(e))),
+	weather: (e) => H(e) === "weather",
+	workday: (e) => H(e) === "binary_sensor",
+	calendar: (e) => H(e) === "calendar",
+	person: (e) => H(e) === "person",
+	level: (e) => ["number", "input_number"].includes(H(e)) && U(e) === "%",
 	temperature: (e) => [
 		"sensor",
 		"number",
 		"input_number"
-	].includes(W(e)) && ["°C", "°F"].includes(G(e)),
-	setpoint: (e) => ["number", "input_number"].includes(W(e)),
-	toggle: (e) => ["switch", "input_boolean"].includes(W(e)),
-	option: (e) => ["select", "input_select"].includes(W(e)),
+	].includes(H(e)) && ["°C", "°F"].includes(U(e)),
+	setpoint: (e) => ["number", "input_number"].includes(H(e)),
+	toggle: (e) => ["switch", "input_boolean"].includes(H(e)),
+	option: (e) => ["select", "input_select"].includes(H(e)),
 	writable: (e) => [
 		"number",
 		"input_number",
@@ -6302,24 +6660,24 @@ var Ze = [
 		"script",
 		"button",
 		"input_button"
-	].includes(W(e)),
-	distance: (e) => W(e) === "sensor" && [
+	].includes(H(e)),
+	distance: (e) => H(e) === "sensor" && [
 		"km",
 		"mi",
 		"m"
-	].includes(G(e)),
-	consumption: (e) => W(e) === "sensor" && /kwh\/100|wh\/km|km\/kwh|mi\/kwh/i.test(G(e).replace(/\s/g, "")),
+	].includes(U(e)),
+	consumption: (e) => H(e) === "sensor" && /kwh\/100|wh\/km|km\/kwh|mi\/kwh/i.test(U(e).replace(/\s/g, "")),
 	car_energy: (e) => [
 		"sensor",
 		"number",
 		"input_number"
-	].includes(W(e)) && [
-		...Qe,
+	].includes(H(e)) && [
+		...et,
 		"kJ",
 		"MJ"
-	].includes(G(e)),
-	night: $e,
-	toggle_like: $e,
+	].includes(U(e)),
+	night: tt,
+	toggle_like: tt,
 	presence: (e) => [
 		"group",
 		"input_boolean",
@@ -6327,69 +6685,69 @@ var Ze = [
 		"switch",
 		"person",
 		"device_tracker"
-	].includes(W(e)),
+	].includes(H(e)),
 	any: () => !0
 };
-function W(e) {
+function H(e) {
 	return e.entity_id.split(".", 1)[0];
 }
-function G(e) {
+function U(e) {
 	return String(e.attributes.unit_of_measurement ?? "");
 }
-function tt(e, t) {
-	return et[t](e);
+function rt(e, t) {
+	return nt[t](e);
 }
-function nt(e, t) {
+function it(e, t) {
 	let n = e.states[t]?.attributes.friendly_name;
 	return typeof n == "string" && n ? n : t.split(".", 2)[1]?.replace(/_/g, " ") ?? t;
 }
-function rt(e, t) {
+function at(e, t) {
 	let n = e.entities?.[t], r = n?.device_id ? e.devices?.[n.device_id] : void 0, i = n?.area_id ?? r?.area_id, a = i ? e.areas?.[i]?.name : void 0, o = r?.name_by_user || r?.name || void 0;
-	return [o && nt(e, t).toLowerCase().startsWith(o.toLowerCase()) ? void 0 : o, a].filter(Boolean).join(" · ");
+	return [o && it(e, t).toLowerCase().startsWith(o.toLowerCase()) ? void 0 : o, a].filter(Boolean).join(" · ");
 }
-function K(e, t) {
+function W(e, t) {
 	if (!t) return null;
 	let n = Number.parseFloat(e.states[t]?.state ?? "");
 	return Number.isFinite(n) ? n : null;
 }
-function q(e, t, n) {
+function G(e, t, n) {
 	return new Intl.NumberFormat(e, { maximumFractionDigits: n }).format(t);
 }
-function it(e, t, n) {
+function ot(e, t, n) {
 	let r = e.states[t];
 	if (!r) return "–";
 	if (e.formatEntityState) return e.formatEntityState(r);
-	let i = K(e, t);
-	return i === null ? r.state : `${q(n, i, Math.abs(i) >= 100 ? 0 : Math.abs(i) >= 10 ? 1 : 2)} ${G(r)}`.trim();
+	let i = W(e, t);
+	return i === null ? r.state : `${G(n, i, Math.abs(i) >= 100 ? 0 : Math.abs(i) >= 10 ? 1 : 2)} ${U(r)}`.trim();
 }
-function at(e, t) {
+function st(e, t) {
 	return t === "W" ? e / 1e3 : t === "MW" ? e * 1e3 : e;
 }
-function ot(e, t) {
+function ct(e, t) {
 	if (!t) return null;
-	let n = K(e, t.entity_id);
+	let n = W(e, t.entity_id);
 	if (n === null) return null;
-	let r = at(n, G(e.states[t.entity_id]));
+	let r = st(n, U(e.states[t.entity_id]));
 	if (t.invert && (r = -r), t.minus_entity_id) {
-		let n = K(e, t.minus_entity_id);
+		let n = W(e, t.minus_entity_id);
 		if (n === null) return null;
-		r -= at(n, G(e.states[t.minus_entity_id]));
+		r -= st(n, U(e.states[t.minus_entity_id]));
 	}
 	return r;
 }
-function st(e, t) {
-	let n = K(e, t);
+function lt(e, t) {
+	let n = W(e, t);
 	if (n === null || !t) return null;
-	let r = G(e.states[t]);
+	let r = U(e.states[t]);
 	return r === "Wh" ? n / 1e3 : r === "MWh" ? n * 1e3 : n;
 }
-function ct(e, t) {
-	let n = t.map((t) => ot(e, t)).filter((e) => e !== null);
+function ut(e, t) {
+	let n = t.map((t) => ct(e, t)).filter((e) => e !== null);
 	return n.length ? n.reduce((e, t) => e + t, 0) : null;
 }
 //#endregion
 //#region src/components/tip.ts
-var lt = 120, ut = 220, dt = 8, ft = 10, J, Y = class extends R {
+var dt = 120, ft = 220, K = 8, pt = 10, q, J = class extends R {
 	constructor(...e) {
 		super(...e), this.label = "", this.open = !1, this.pinned = !1, this.keepOnBlur = !1, this.onOutside = (e) => {
 			e.composedPath().includes(this) || this.close();
@@ -6548,7 +6906,7 @@ var lt = 120, ut = 220, dt = 8, ft = 10, J, Y = class extends R {
 	}
 	render() {
 		let e = this.tip;
-		return e ? k`<button
+		return e ? A`<button
         type="button"
         class=${this.open ? "open" : ""}
         aria-label=${this.label}
@@ -6576,13 +6934,13 @@ var lt = 120, ut = 220, dt = 8, ft = 10, J, Y = class extends R {
         @pointerdown=${this.onBubbleDown}
       >
         <span class="h">${e.heading}</span>
-        ${pt(e.text)}
-        ${e.facts?.length ? k`<dl>${e.facts.map(([e, t]) => k`<dt>${e}</dt><dd>${t}</dd>`)}</dl>` : j}
+        ${mt(e.text)}
+        ${e.facts?.length ? A`<dl>${e.facts.map(([e, t]) => A`<dt>${e}</dt><dd>${t}</dd>`)}</dl>` : M}
         <span class="arrow"></span>
-      </div>` : j;
+      </div>` : M;
 	}
 	show(e = !1) {
-		this.cancelTimer(), this.pinned = this.pinned || e, !this.open && (J && J !== this && J.close(), J = this, this.open = !0, window.addEventListener("pointerdown", this.onOutside, !0), window.addEventListener("keydown", this.onKey, !0), this.updateComplete.then(() => {
+		this.cancelTimer(), this.pinned = this.pinned || e, !this.open && (q && q !== this && q.close(), q = this, this.open = !0, window.addEventListener("pointerdown", this.onOutside, !0), window.addEventListener("keydown", this.onKey, !0), this.updateComplete.then(() => {
 			let e = this.bubble;
 			this.open && e && (typeof e.showPopover == "function" && !e.matches(":popover-open") && e.showPopover(), this.follow());
 		}));
@@ -6590,16 +6948,16 @@ var lt = 120, ut = 220, dt = 8, ft = 10, J, Y = class extends R {
 	close() {
 		this.cancelTimer(), this.pinned = !1, this.frame !== void 0 && (cancelAnimationFrame(this.frame), this.frame = void 0), window.removeEventListener("pointerdown", this.onOutside, !0), window.removeEventListener("keydown", this.onKey, !0);
 		let e = this.bubble;
-		e && typeof e.hidePopover == "function" && e.matches(":popover-open") && e.hidePopover(), J === this && (J = void 0), this.open = !1;
+		e && typeof e.hidePopover == "function" && e.matches(":popover-open") && e.hidePopover(), q === this && (q = void 0), this.open = !1;
 	}
 	onClick() {
 		this.open && this.pinned ? this.close() : this.show(!0);
 	}
 	onEnter(e) {
-		e.pointerType === "mouse" && (this.cancelTimer(), this.open || (this.timer = window.setTimeout(() => this.show(), lt)));
+		e.pointerType === "mouse" && (this.cancelTimer(), this.open || (this.timer = window.setTimeout(() => this.show(), dt)));
 	}
 	onLeave(e) {
-		e.pointerType === "mouse" && (this.cancelTimer(), this.open && !this.pinned && (this.timer = window.setTimeout(() => this.close(), ut)));
+		e.pointerType === "mouse" && (this.cancelTimer(), this.open && !this.pinned && (this.timer = window.setTimeout(() => this.close(), ft)));
 	}
 	onFocus() {
 		this.button?.matches(":focus-visible") && this.show();
@@ -6627,19 +6985,19 @@ var lt = 120, ut = 220, dt = 8, ft = 10, J, Y = class extends R {
 			this.close();
 			return;
 		}
-		let r = t.getBoundingClientRect(), i = document.documentElement.clientWidth, a = n.top - r.height - ft, o = "top";
-		a < dt && (a = n.bottom + ft, o = "bottom");
-		let s = n.left + n.width / 2, c = Math.max(dt, Math.min(s - r.width / 2, i - r.width - dt)), l = Math.max(14, Math.min(s - c, r.width - 14));
+		let r = t.getBoundingClientRect(), i = document.documentElement.clientWidth, a = n.top - r.height - pt, o = "top";
+		a < K && (a = n.bottom + pt, o = "bottom");
+		let s = n.left + n.width / 2, c = Math.max(K, Math.min(s - r.width / 2, i - r.width - K)), l = Math.max(14, Math.min(s - c, r.width - 14));
 		t.style.left = `${Math.round(c)}px`, t.style.top = `${Math.round(a)}px`, t.style.setProperty("--arrow", `${Math.round(l)}px`), t.dataset.place = o;
 	}
 };
-U([z({ attribute: !1 })], Y.prototype, "tip", void 0), U([z()], Y.prototype, "label", void 0), U([B()], Y.prototype, "open", void 0), U([V("button")], Y.prototype, "button", void 0), U([V(".bubble")], Y.prototype, "bubble", void 0);
-function pt(e) {
-	return e.split("\n").map((e) => k`<p>
-        ${e.split(/\*\*(.+?)\*\*/).map((e, t) => t % 2 ? k`<strong>${e}</strong>` : e)}
+V([z({ attribute: !1 })], J.prototype, "tip", void 0), V([z()], J.prototype, "label", void 0), V([B()], J.prototype, "open", void 0), V([Ne("button")], J.prototype, "button", void 0), V([Ne(".bubble")], J.prototype, "bubble", void 0);
+function mt(e) {
+	return e.split("\n").map((e) => A`<p>
+        ${e.split(/\*\*(.+?)\*\*/).map((e, t) => t % 2 ? A`<strong>${e}</strong>` : e)}
       </p>`);
 }
-function mt(e, t, n, r = []) {
+function ht(e, t, n, r = []) {
 	let i = e.optional(`tip.${t}.hint`, n);
 	return {
 		heading: e(`tip.${t}.title`, n),
@@ -6647,19 +7005,19 @@ function mt(e, t, n, r = []) {
 		facts: i ? [...r, [e("tip.hint"), i]] : r
 	};
 }
-function X(e, t, n, r) {
-	return k`<joe-tip .tip=${mt(e, t, n, r)} label=${e("tip.label")}></joe-tip>`;
+function Y(e, t, n, r) {
+	return A`<joe-tip .tip=${ht(e, t, n, r)} label=${e("tip.label")}></joe-tip>`;
 }
-H("joe-tip", Y);
+Ye("joe-tip", J);
 //#endregion
 //#region src/components/plan-text.ts
-function Z(e) {
+function X(e) {
 	return e ? e.slice(11, 16) : "";
 }
-function ht(e) {
+function gt(e) {
 	return e.slice(0, 10);
 }
-function gt(e) {
+function _t(e) {
 	switch (e?.kind) {
 		case "charge": return "plug";
 		case "hold": return "switch";
@@ -6667,41 +7025,41 @@ function gt(e) {
 		default: return "sleep";
 	}
 }
-function _t(e) {
-	return (e.charge_slots ?? []).map((e) => `${Z(e.start)}–${Z(e.end)}`).join(", ");
-}
-function vt(e, t) {
-	if (!t.window) return "";
-	let n = [`${Z(t.window.start)}–${Z(t.window.end)}`];
-	return t.prices && n.push(`${q(e.lang, t.prices.night * 100, 1)} ct/kWh`), n.join(" · ");
+function vt(e) {
+	return (e.charge_slots ?? []).map((e) => `${X(e.start)}–${X(e.end)}`).join(", ");
 }
 function yt(e, t) {
+	if (!t.window) return "";
+	let n = [`${X(t.window.start)}–${X(t.window.end)}`];
+	return t.prices && n.push(`${G(e.lang, t.prices.night * 100, 1)} ct/kWh`), n.join(" · ");
+}
+function bt(e, t) {
 	if (t.kind === "unavailable") {
 		let n = t.reasons.find((t) => e.optional(`plan.why.${t}`)) ?? "failed";
 		return e.optional(`plan.why.${n}`) ?? "";
 	}
-	let n = [], r = q(e.lang, t.target ?? 0, 0), i = t.sun_takes_over;
+	let n = [], r = G(e.lang, t.target ?? 0, 0), i = t.sun_takes_over;
 	return t.reasons.includes("balance") && n.push(e("plan.say.balance")), t.kind === "charge" && t.tariff === "dynamic" && t.charge_slots?.length ? n.push(e("plan.say.charge_slots", {
-		slots: _t(t),
+		slots: vt(t),
 		target: r
 	})) : t.kind === "charge" ? n.push(e("plan.say.charge", {
-		from: Z(t.charge_from),
+		from: X(t.charge_from),
 		target: r
-	})) : t.kind === "hold" ? (n.push(e("plan.say.hold", { target: r })), t.empty_without && n.push(e("plan.say.empty", { time: Z(t.empty_without) }))) : t.reasons.includes("small_saving") ? n.push(e("plan.say.small_saving")) : n.push(i ? e("plan.say.none", { time: Z(i) }) : e("plan.say.none_nosun")), t.reasons.includes("max_price") && t.kind !== "charge" && n.push(e("plan.say.max_price")), t.day && (n.push(e("plan.day", {
-		time: Z(t.day.defer_until),
-		kwh: q(e.lang, t.day.held_kwh, 0)
-	})), t.day.cost && t.day.cost >= .01 && n.push(e("plan.day.cost", { cost: `${q(e.lang, t.day.cost * 100, 0)} ct` }))), t.kind !== "none" && (i && t.full_at && ht(t.full_at) === ht(i) ? n.push(e("plan.say.sun_full", {
-		sun: Z(i),
-		full: Z(t.full_at)
-	})) : i ? n.push(e("plan.say.sun", { sun: Z(i) })) : n.push(e("plan.say.nosun"))), n.join(" ");
+	})) : t.kind === "hold" ? (n.push(e("plan.say.hold", { target: r })), t.empty_without && n.push(e("plan.say.empty", { time: X(t.empty_without) }))) : t.reasons.includes("small_saving") ? n.push(e("plan.say.small_saving")) : n.push(i ? e("plan.say.none", { time: X(i) }) : e("plan.say.none_nosun")), t.reasons.includes("max_price") && t.kind !== "charge" && n.push(e("plan.say.max_price")), t.day && (n.push(e("plan.day", {
+		time: X(t.day.defer_until),
+		kwh: G(e.lang, t.day.held_kwh, 0)
+	})), t.day.cost && t.day.cost >= .01 && n.push(e("plan.day.cost", { cost: `${G(e.lang, t.day.cost * 100, 0)} ct` }))), t.kind !== "none" && (i && t.full_at && gt(t.full_at) === gt(i) ? n.push(e("plan.say.sun_full", {
+		sun: X(i),
+		full: X(t.full_at)
+	})) : i ? n.push(e("plan.say.sun", { sun: X(i) })) : n.push(e("plan.say.nosun"))), n.join(" ");
 }
-function bt(e, t) {
+function xt(e, t) {
 	return (t.batteries ?? []).map((n) => {
 		let r = [n.name];
-		return t.kind === "charge" ? r.push(`${q(e.lang, n.soc_start, 0)} → ${q(e.lang, n.target, 0)} %`, `${q(e.lang, n.charge_kwh, 1)} kWh`, `${q(e.lang, n.power_kw, 1)} kW`) : t.kind === "hold" ? r.push(e("plan.line.hold", { target: q(e.lang, n.target, 0) })) : r.push(e("plan.line.now", { soc: q(e.lang, n.soc, 0) })), n.controllable || r.push(e("plan.line.watch_only")), r.join(" · ");
+		return t.kind === "charge" ? r.push(`${G(e.lang, n.soc_start, 0)} → ${G(e.lang, n.target, 0)} %`, `${G(e.lang, n.charge_kwh, 1)} kWh`, `${G(e.lang, n.power_kw, 1)} kW`) : t.kind === "hold" ? r.push(e("plan.line.hold", { target: G(e.lang, n.target, 0) })) : r.push(e("plan.line.now", { soc: G(e.lang, n.soc, 0) })), n.controllable || r.push(e("plan.line.watch_only")), r.join(" · ");
 	});
 }
-function xt(e, t, n = "EUR") {
+function St(e, t, n = "EUR") {
 	if (!t.cost) return "";
 	let r = (t) => new Intl.NumberFormat(e.lang, {
 		style: "currency",
@@ -6711,18 +7069,18 @@ function xt(e, t, n = "EUR") {
 }
 //#endregion
 //#region src/router.ts
-var St = "/energy-joe", Ct = [
+var Ct = "/energy-joe", wt = [
 	"overview",
 	"plan",
 	"review",
 	"devices",
 	"household",
 	"settings"
-], wt = [
+], Tt = [
 	"overview",
 	"plan",
 	"review"
-], Tt = {
+], Z = {
 	review: [
 		"result",
 		"days",
@@ -6764,7 +7122,7 @@ var St = "/energy-joe", Ct = [
 	climate: "/devices/climate"
 };
 function Dt(e) {
-	return e in Tt;
+	return e in Z;
 }
 function Ot(e) {
 	try {
@@ -6789,11 +7147,11 @@ function kt(e) {
 		redirect: "/plan"
 	} : { route: { tab: "plan" } };
 	let c = n;
-	if (!Ct.includes(c) || !Dt(c)) return {
+	if (!wt.includes(c) || !Dt(c)) return {
 		route: { tab: "overview" },
 		redirect: "/"
 	};
-	if (r && !Tt[c].includes(r)) return {
+	if (r && !Z[c].includes(r)) return {
 		route: {
 			tab: c,
 			section: Q[c]
@@ -6831,21 +7189,24 @@ function Nt(e, t) {
 		n.defaultPrevented || n.metaKey || n.ctrlKey || n.shiftKey || n.altKey || n.button !== 0 || (n.preventDefault(), Mt(n.currentTarget ?? window, e, t));
 	};
 }
-function Pt(e, t) {
+function Pt(e, t, n, r) {
+	return A`<a class=${r ?? ""} href=${jt(e, t)} @click=${Nt(t)}>${n}</a>`;
+}
+function Ft(e, t) {
 	if (history.state?.joeSheet) {
 		history.back();
 		return;
 	}
 	Mt(e, t, { replace: !0 });
 }
-function Ft(e, t) {
+function It(e, t) {
 	let n = e.querySelector(`[data-anchor="${CSS.escape(t)}"]`);
 	return n ? (n.scrollIntoView({
 		block: "start",
 		behavior: "smooth"
-	}), n.classList.remove("flash"), n.offsetWidth, n.classList.add("flash"), window.setTimeout(() => n.classList.remove("flash"), 1500), It(n), !0) : !1;
+	}), n.classList.remove("flash"), n.offsetWidth, n.classList.add("flash"), window.setTimeout(() => n.classList.remove("flash"), 1500), Lt(n), !0) : !1;
 }
-function It(e) {
+function Lt(e) {
 	let t = !1, n = () => {
 		t = !0;
 	}, r = [
@@ -6871,7 +7232,7 @@ var $ = class extends R {
 		super(...e), this.flush = !1, this.values = {}, this.failed = !1;
 	}
 	static {
-		this.styles = [Xe, o`
+		this.styles = [Qe, o`
       :host {
         display: block;
       }
@@ -6933,49 +7294,49 @@ var $ = class extends R {
     `];
 	}
 	render() {
-		return k`${this.renderBody()}
-    ${this.failed && this.t ? k`<p class="bad" role="status">${this.t("devices.charge.failed")}</p>` : j}`;
+		return A`${this.renderBody()}
+    ${this.failed && this.t ? A`<p class="bad" role="status">${this.t("devices.charge.failed")}</p>` : M}`;
 	}
 	renderBody() {
 		let { t: e, state: t, action: n } = this;
-		if (!e || !t || !n) return j;
+		if (!e || !t || !n) return M;
 		let r = t.plan?.window?.start, i = !!r && t.control?.tonight?.[n.id] === r, a = t.control?.boost?.[n.id], o = t.control?.actions?.[n.id], s = t.control?.tonight_target?.[n.id], c = n.need, l = (t, n, r) => r === "km" ? e("devices.charge.km", {
-			target: q(e.lang, t, 0),
-			reserve: q(e.lang, n - t, 0)
-		}) : e("devices.charge.percent", { target: q(e.lang, t, 0) });
+			target: G(e.lang, t, 0),
+			reserve: G(e.lang, n - t, 0)
+		}) : e("devices.charge.percent", { target: G(e.lang, t, 0) });
 		if (a) {
 			let t = o?.value;
-			return k`<div class="boost on" data-tipped>
+			return A`<div class="boost on" data-tipped>
         <span>
           ${e("devices.charge.now_running", {
 				amount: l(a.chosen, a.target, a.unit),
-				now: t == null ? "–" : `${q(e.lang, t, 0)} ${a.unit}`
+				now: t == null ? "–" : `${G(e.lang, t, 0)} ${a.unit}`
 			})}
         </span>
         <button type="button" class="mini-btn quiet" @click=${() => this.boost(null)}>${e("devices.boost.stop")}</button>
-        ${X(e, "boost")}
+        ${Y(e, "boost")}
       </div>`;
 		}
 		if (i) {
 			let t = s && s.night === r ? s : null;
-			return k`<div class="boost on" data-tipped>
+			return A`<div class="boost on" data-tipped>
         <span>
           ${o?.reason === "reached" ? e(t ? "devices.charge.tonight_done" : "devices.action.reached_plain", { amount: t ? l(t.chosen, t.target, t.unit) : "" }) : t ? e("devices.charge.tonight_set", { amount: l(t.chosen, t.target, t.unit) }) : e("devices.charge.tonight_window")}
         </span>
         <button type="button" class="mini-btn quiet" @click=${() => this.tonight(!1)}>${e("devices.boost.stop")}</button>
-        ${X(e, "boost")}
+        ${Y(e, "boost")}
       </div>`;
 		}
-		let u = [...c.soc_entity ? ["%"] : [], ...c.range_entity ? ["km"] : []], d = this.unit && u.includes(this.unit) ? this.unit : u[0], f = this.values[d] ?? (d === "%" ? 80 : 200), p = d === "%" ? 100 : 1500, m = (e) => {
+		let u = [...c.soc_entity ? ["%"] : [], ...c.range_entity ? ["km"] : []], d = this.unit && u.includes(this.unit) ? this.unit : u[0], f = this.values[d] ?? (d === "%" ? 80 : 200), p = d === "%" ? 100 : 1500, ee = (e) => {
 			let t = e?.querySelector("input"), n = Number.parseFloat((t?.value ?? "").replace(",", "."));
 			return Math.round(Math.min(p, Math.max(1, Number.isFinite(n) ? n : f)));
 		};
-		return k`<form
+		return A`<form
       class="boost"
       data-tipped
       novalidate
       @submit=${(e) => {
-			e.preventDefault(), this.boost(m(e.target), d);
+			e.preventDefault(), this.boost(ee(e.target), d);
 		}}
     >
       <label class="toggle-label" for="boost-${n.id}">${e("devices.charge.label")}</label>
@@ -6997,17 +7358,17 @@ var $ = class extends R {
 			});
 		}}
         />
-        ${u.length > 1 ? k`<span class="seg unit-seg" role="group" aria-label=${e("devices.boost.unit")}>
-              ${u.map((e) => k`<button
+        ${u.length > 1 ? A`<span class="seg unit-seg" role="group" aria-label=${e("devices.boost.unit")}>
+              ${u.map((e) => A`<button
                   type="button"
                   aria-pressed=${String(e === d)}
                   @click=${() => this.unit = e}
                 >
                   ${e}
                 </button>`)}
-            </span>` : k`<span class="unit">${d}</span>`}
+            </span>` : A`<span class="unit">${d}</span>`}
       </span>
-      ${X(e, "boost")}
+      ${Y(e, "boost")}
       <span class="charge-buttons">
         <button type="submit" class="mini-btn go" ?disabled=${t.mode === "off" || !n.enabled}>
           <ha-icon icon="mdi:ev-plug-type2"></ha-icon>${e("devices.charge.now")}
@@ -7016,13 +7377,13 @@ var $ = class extends R {
           type="button"
           class="mini-btn"
           ?disabled=${!r || !n.enabled}
-          @click=${(e) => this.tonight(!0, m(e.target.closest("form")), d)}
+          @click=${(e) => this.tonight(!0, ee(e.target.closest("form")), d)}
         >
           <ha-icon icon="mdi:weather-night"></ha-icon>${e("devices.charge.tonight")}
         </button>
       </span>
-      ${d === "km" ? k`<small class="hint">${e("devices.boost.reserve", { reserve: q(e.lang, c.reserve_km ?? 50, 0) })}</small>` : j}
-      ${r ? j : k`<small class="hint">${e("devices.charge.no_night")}</small>`}
+      ${d === "km" ? A`<small class="hint">${e("devices.boost.reserve", { reserve: G(e.lang, c.reserve_km ?? 50, 0) })}</small>` : M}
+      ${r ? M : A`<small class="hint">${e("devices.charge.no_night")}</small>`}
     </form>`;
 	}
 	async boost(e, t = "%") {
@@ -7053,13 +7414,13 @@ var $ = class extends R {
 		}
 	}
 };
-U([z({ attribute: !1 })], $.prototype, "hass", void 0), U([z({ attribute: !1 })], $.prototype, "t", void 0), U([z({ attribute: !1 })], $.prototype, "state", void 0), U([z({ attribute: !1 })], $.prototype, "action", void 0), U([z({
+V([z({ attribute: !1 })], $.prototype, "hass", void 0), V([z({ attribute: !1 })], $.prototype, "t", void 0), V([z({ attribute: !1 })], $.prototype, "state", void 0), V([z({ attribute: !1 })], $.prototype, "action", void 0), V([z({
 	type: Boolean,
 	reflect: !0
-})], $.prototype, "flush", void 0), U([B()], $.prototype, "values", void 0), U([B()], $.prototype, "unit", void 0), U([B()], $.prototype, "failed", void 0), H("joe-car-charge", $);
+})], $.prototype, "flush", void 0), V([B()], $.prototype, "values", void 0), V([B()], $.prototype, "unit", void 0), V([B()], $.prototype, "failed", void 0), Ye("joe-car-charge", $);
 //#endregion
 //#region src/styles/tokens.ts
-var Lt = o`
+var Rt = o`
   :host {
     --joe-bg: #fbf6ec;
     --joe-surface: #ffffff;
@@ -7148,4 +7509,4 @@ var Lt = o`
   }
 `;
 //#endregion
-export { ct as A, ze as B, nt as C, it as D, q as E, Ke as F, R as G, V as H, Be as I, k as J, j as K, Ge as L, Xe as M, H as N, ot as O, Ve as P, We as R, st as S, tt as T, B as U, Le as V, z as W, _e as X, Ee as Y, o as Z, yt as _, Ct as a, vt as b, At as c, Nt as d, kt as f, gt as g, bt as h, Tt as i, U as j, K as k, jt as l, xt as m, Q as n, wt as o, Ft as p, A as q, St as r, Pt as s, Lt as t, Mt as u, _t as v, rt as w, X as x, Z as y, Ue as z };
+export { W as A, We as B, lt as C, G as D, rt as E, He as F, z as G, Re as H, qe as I, j as J, R as K, Ve as L, V as M, Qe as N, ot as O, Ye as P, o as Q, Ke as R, Y as S, at as T, Ne as U, Be as V, B as W, Ee as X, A as Y, ge as Z, _t as _, wt as a, X as b, At as c, Mt as d, Nt as f, xt as g, St as h, Z as i, ut as j, ct as k, jt as l, It as m, Q as n, Tt as o, kt as p, M as q, Ct as r, Ft as s, Rt as t, Pt as u, bt as v, it as w, yt as x, vt as y, Ge as z };

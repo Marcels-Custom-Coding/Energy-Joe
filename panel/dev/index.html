@@ -28,6 +28,10 @@
       ?override=manual|off (Klimaanlage Büro von Hand verstellt bzw. ausgeschaltet)
       ?away=1 (niemand da)  ?labels=unread|error (Kalender noch nicht gelesen bzw. nicht erreichbar)
       ?manual=1 (Heizgruppe Kinderzimmer von Hand auf „Heizen“)
+      ?steer=1 (Joe steuert gerade: Speicher laden/halten, Auto läuft, „Sofort freigeben“ auf der Übersicht)
+      ?climate=profiles (Büro mit Wochenprofilen, Kinderzimmer mit Geräteprogrammen, Wohnzimmer alt: Übersicht › Heizung & Klima)
+      ?pnotes=1 (Plan: alle Hinweise mit Sprung, Warmwasser und eigene Geräte heute Nacht, ein Speicher ohne Größe)
+      ?joe_entities=0|1 (Joes eigene Entitäten in HA für Einstellungen › Über Joe; mit ?done=1 schon an)
       sample-*.json kommen aus scripts/make_dev_samples.py (erfundene Haushalte aus tests/snapshots.py):
       Funde, die Konfiguration nach dem Übernehmen, ihre Prüfungen, Zustände und Register sowie
       zwei Wochen erfundener Verlauf mit festen Plänen, nachgespielten Nächten und dem, was Joe
@@ -263,6 +267,19 @@
           "climate.schlafzimmer": { ...room, night_off: true, night_from: "22:30" },
         };
       }
+      // ?climate=profiles (Übersicht › Heizung & Klima): three rooms with what runs and why – the office on
+      // week profiles, the children's room on the device's own programs, the living room on the old settings.
+      if (params.get("climate") === "profiles") {
+        const room = { enabled: true, away: "setback", setback_k: 3, away_preset: null, free_day_preset: null, night_off: false, night_from: "23:00", night_until: "06:30", week: { enabled: false, modes: {} }, device_profiles: {} };
+        const profile = (name, tags, value) => ({ name, tags, split: "all", curves: [[[0, value]]] });
+        const cool = [profile("Normal", ["normal"], 24), profile("Feiertag", ["holiday"], 24), profile("Abwesend", ["away"], 27), profile("Home Office", ["home_office"], 23), profile("Profil 5", [], 24), profile("Profil 6", [], 24)];
+        state.config.climate.enabled = true;
+        state.config.climate.rooms = {
+          "climate.wohnzimmer": { ...room },
+          "climate.buero": { ...room, week: { enabled: true, modes: { cool } } },
+          "climate.kinderzimmer": { ...room, device_profiles: { week_program_1: { name: "Schule", tags: ["normal"] }, week_program_2: { name: "Ferien", tags: ["holiday"] }, week_program_3: { name: "Weg", tags: ["away"] } } },
+        };
+      }
       // ?done=1: tonight's plan already knows tomorrow (household preview "Heute und morgen").
       if (done && history.plan?.meta?.tomorrow) {
         history.plan.meta.tomorrow.date = new Date(Date.now() + 2 * 3600e3 + 86400e3).toISOString().slice(0, 10);
@@ -339,6 +356,21 @@
           { at: dayAt(0, "06:00"), kind: "released" },
         );
       }
+      // ?steer=1 (Übersicht › Gerade jetzt): Joe steers right now – the first battery charges, the second holds,
+      // the car charges; "Sofort freigeben" shows up.
+      if (params.get("steer") === "1") {
+        const [first, second] = state.config.batteries;
+        const car = state.config.actions.find((a) => a.kind === "switch");
+        Object.assign(control, {
+          steering: true,
+          reason: "steering",
+          batteries: {
+            ...(first ? { [first.id]: { action: "charge", floor: 10, target: 80, soc: 46, problem: null } } : {}),
+            ...(second ? { [second.id]: { action: "hold", floor: 35, target: 35, soc: 35, problem: null } } : {}),
+          },
+          actions: car ? { [car.id]: { on: true, reason: "plan", start: dayAt(0, "01:00"), end: dayAt(0, "05:30"), problem: null } } : {},
+        });
+      }
       const watching = () => ({
         active: true,
         since: "2026-10-01T09:12:00+02:00",
@@ -356,6 +388,18 @@
           if (action.kind === "switch" && action.need) action.need.enabled = true;
         }
         state.config.routing = { ...state.config.routing, service: "waze" };
+      }
+      // ?pnotes=1 (Plan): every plan note with its jump, hot water + own devices in tonight's plan, a battery without size.
+      if (params.get("pnotes") === "1" && history.plan) {
+        const p = history.plan;
+        p.notes = ["capacity_unknown", "soc_unknown", "floor_unknown", "not_controllable", "no_forecast", "default_profile", "prices_partly", "balance_due"];
+        const s0 = p.actions?.[0]?.start ?? p.window?.start, e0 = p.actions?.[0]?.end ?? p.window?.end;
+        p.actions = [...(p.actions ?? []),
+          { id: "hot_water_tank", name: "Warmwasser", kind: "target", run: true, manual: false, reasons: ["cheap"], start: s0, end: e0, power_kw: 0.5, energy_kwh: 1.5, cost: 0.4, priority: 2, target: 55, temperature: 42 },
+          { id: "custom_dishwasher", name: "Spülmaschine nachts", kind: "switch", run: true, manual: false, reasons: ["cheap"], start: s0, end: e0, power_kw: 1.2, energy_kwh: 1.1, cost: 0.3, priority: 3 },
+          { id: "custom_pool", name: "Poolpumpe", kind: "switch", run: false, manual: true, reasons: ["manual_only"], start: s0, end: e0, power_kw: null, energy_kwh: 0, priority: 3 },
+          { id: "gone_action", name: "Altes Gerät mit sehr langem Namen zum Umbrechen", kind: "switch", run: false, manual: false, reasons: ["sun_enough"], start: s0, end: e0, power_kw: null, energy_kwh: 0, priority: 3 }];
+        state.config.batteries.push({ ...structuredClone(state.config.batteries[1]), id: "nosize", name: "Speicher ohne Größe", capacity_kwh: null, capacity_entity: null, priority: 3 });
       }
       state.plan = done && state.mode !== "off" ? history.plan : null;
       let adopted = done;
@@ -532,6 +576,23 @@
 
       // 0.9.14: the air conditioner's meter sits on its HA device (device-model.ts puts it to the climate device).
       sample.hass.entities["sensor.ac_office_energy"] = { entity_id: "sensor.ac_office_energy", device_id: "ac1", area_id: null };
+      // 0.9.15 Einstellungen › Über Joe: Joe's own entities in HA (with ?done=1 or ?joe_entities=1, off with ?joe_entities=0).
+      if (params.get("joe_entities") === "1" || (done && params.get("joe_entities") !== "0")) {
+        const own = [
+          ["select.energy_joe_betriebsart", "Energy Joe Betriebsart", params.get("mode") || "simulation"],
+          ["switch.energy_joe_heute_nacht_aussetzen", "Energy Joe Heute Nacht aussetzen", "off"],
+          ["button.energy_joe_sofort_freigeben", "Energy Joe Sofort freigeben", "unknown"],
+          ["button.energy_joe_neu_planen", "Energy Joe Neu planen", "unknown"],
+          ["sensor.energy_joe_status", "Energy Joe Status", "Wartet auf die Nacht"],
+          ["sensor.energy_joe_ziel_heute_nacht", "Energy Joe Ziel heute Nacht", "80", "%"],
+          ["sensor.energy_joe_hatte_gespart_summe", "Energy Joe Hätte gespart (Summe)", "12.34", "EUR"],
+          ["calendar.energy_joe_kalender_auto", "Energy Joe Kalender Auto", "off"],
+        ];
+        for (const [id, name, value, unit] of own) {
+          sample.hass.entities[id] = { entity_id: id, device_id: "joe", area_id: null, platform: "energy_joe" };
+          sample.hass.states[id] = { entity_id: id, state: value, attributes: { friendly_name: name, ...(unit ? { unit_of_measurement: unit } : {}) } };
+        }
+      }
       const hass = {
         ...sample.hass,
         language: params.get("lang") || "de",

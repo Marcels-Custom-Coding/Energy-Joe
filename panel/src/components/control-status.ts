@@ -7,15 +7,29 @@ import type { HomeAssistant, JoeState } from "../types";
 import { timeOf } from "./plan-text";
 import { tip } from "./tip";
 
+/** What Joe does with the devices right now, in one sentence ("Ich steuere heute Nacht ab 01:00 Uhr."). */
+export function controlText(t: Translate, joe: JoeState): string {
+  const plan = joe.plan;
+  const reason = joe.control?.reason ?? "off";
+  return reason === "waiting" && plan?.window
+    ? t("devices.status.waiting", { time: timeOf(plan.window.start) })
+    : reason === "day"
+      ? t("devices.status.day", { time: plan?.day ? timeOf(plan.day.defer_until) : "–" })
+      : t(`devices.status.${reason}`);
+}
+
 /**
  * "Gerade": what Joe does with the devices right now, and the emergency
  * button "Sofort freigeben" while he steers or still puts things back.
- * Used on Geräte › Alle and Speicher (and later on the overview).
+ * Used on Geräte › Alle and Speicher; the overview shows it `compact`
+ * (only the note and the button, nothing while Joe does not steer).
  */
 export class JoeControlStatus extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) t?: Translate;
   @property({ attribute: false }) state?: JoeState;
+  /** Without card, head and sentence (the overview says what Joe does itself). */
+  @property({ type: Boolean, reflect: true }) compact = false;
 
   @state() private notice = "";
 
@@ -50,6 +64,15 @@ export class JoeControlStatus extends LitElement {
       .actions {
         margin-top: 14px;
       }
+      :host([compact]) .card {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        box-shadow: none;
+      }
+      :host([compact]) .actions {
+        margin-top: 10px;
+      }
     `,
   ];
 
@@ -60,28 +83,32 @@ export class JoeControlStatus extends LitElement {
     if (!t || !joe || !control) {
       return nothing;
     }
-    const plan = joe.plan;
-    const reason = control.reason;
-    const text =
-      reason === "waiting" && plan?.window
-        ? t("devices.status.waiting", { time: timeOf(plan.window.start) })
-        : reason === "day"
-          ? t("devices.status.day", { time: plan?.day ? timeOf(plan.day.defer_until) : "–" })
-          : t(`devices.status.${reason}`);
+    const canRelease = control.steering || control.pending;
+    if (this.compact) {
+      return canRelease || this.notice
+        ? html`<section class="card status" ?data-tipped=${canRelease}>${this.renderRelease(t, control.pending, canRelease)}</section>`
+        : nothing;
+    }
+    const text = controlText(t, joe);
     const pill =
       joe.mode === "simulation"
         ? html`<span class="pill-sim">${t("mode.simulation")}</span>`
         : html`<span class="chip ${joe.mode === "live" ? "ok" : joe.mode === "advisory" ? "learned" : ""}"
             >${t(`mode.${joe.mode}`)}</span
           >`;
-    const canRelease = control.steering || control.pending;
     return html`<section class="card status" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:pulse"></ha-icon>${t("devices.now")}</div>
         ${pill} ${tip(t, "plan_steer")}
       </div>
       <p class="status-text">${text}</p>
-      ${control.pending
+      ${this.renderRelease(t, control.pending, canRelease)}
+    </section>`;
+  }
+
+  /** The note while values are not back yet, "Sofort freigeben" and what came of it. */
+  private renderRelease(t: Translate, pending: boolean, canRelease: boolean) {
+    return html`${pending
         ? html`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${t("devices.pending")}</span></div>`
         : nothing}
       ${canRelease
@@ -92,8 +119,7 @@ export class JoeControlStatus extends LitElement {
             ${tip(t, "devices_release")}
           </div>`
         : nothing}
-      ${this.notice ? html`<div class="note" role="status"><ha-icon icon="mdi:check"></ha-icon>${this.notice}</div>` : nothing}
-    </section>`;
+      ${this.notice ? html`<div class="note" role="status"><ha-icon icon="mdi:check"></ha-icon>${this.notice}</div>` : nothing}`;
   }
 
   private async release(): Promise<void> {

@@ -3,25 +3,54 @@ import { property, state } from "lit/decorators.js";
 import { displayTitle, swoosh } from "../components/bits";
 import "../components/chart";
 import type { ChartSeries } from "../components/chart";
-import "../components/day-questions";
+import "../components/control-status";
+import { controlText } from "../components/control-status";
 import "../components/pose";
+import "../components/steer-tonight";
+import { steerAsks, steerShown } from "../components/steer-tonight";
 import { tip } from "../components/tip";
 import { define } from "../define";
 import { formatNumber, measurementKw, numberState, sumKw } from "../entities";
 import { dayText, money, nights, today } from "../components/look-back";
-import { planCostLine, planLines, planPose, planSentence, windowText } from "../components/plan-text";
+import { planCostLine, planLines, planPose, planSentence, timeOf, windowText } from "../components/plan-text";
 import type { Translate } from "../i18n";
-import { PANEL, href, onLink } from "../router";
+import type { DeviceEntry } from "../device-model";
+import { PANEL, href, onLink, type Route } from "../router";
 import { shared } from "../styles/shared";
-import type { DaySummary, HistoryDays, HomeAssistant, JoeState } from "../types";
+import type { Check, ClimateFound, DaySummary, Discovery, HistoryDays, HomeAssistant, JoeState } from "../types";
+import { batteryNow } from "./devices/battery-device";
+import "./overview/climate-list";
+import { climateRooms } from "./overview/climate-list";
+import "./overview/inbox";
+import { inboxItems } from "./overview/inbox";
+import "./overview/quick";
+import { quickShown } from "./overview/quick";
 
-/** Overview: what happens right now, the last days, tonight and the simulation. */
+const PLAN: Route = { tab: "plan" };
+const DAYS: Route = { tab: "review", section: "days" };
+const RESULT: Route = { tab: "review", section: "result" };
+const PRESENCE: Route = { tab: "household", section: "presence" };
+
+/**
+ * Overview, the daily start page: what runs and what Joe does right now,
+ * does Joe need you (short, the rest behind "N weitere"), tonight, shortcuts for the moment, heating by room, who is home, the last
+ * days and what steering would have brought. It sets nothing for good; every
+ * part leads to its home.
+ */
 export class JoeOverview extends LitElement {
   @property({ attribute: false }) t?: Translate;
   @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) state?: JoeState;
   /** Where the panel lives, for links between its pages. */
-  @property() prefix = PANEL;
+  @property({ attribute: false }) prefix = PANEL;
+  @property({ attribute: false }) route?: Route;
+  /** Climate devices (names, rooms) from the panel's central load. */
+  @property({ attribute: false }) climateFound?: ClimateFound;
+  /** What Joe would find (new devices for "Joe braucht dich"). */
+  @property({ attribute: false }) discovery?: Discovery;
+  @property({ attribute: false }) checks: Check[] = [];
+  /** Joe's devices (device-model), for jumps to their pages. */
+  @property({ attribute: false }) devices: DeviceEntry[] = [];
 
   @state() private week?: DaySummary[];
 
@@ -68,8 +97,15 @@ export class JoeOverview extends LitElement {
         padding-right: clamp(126px, calc(30cqw + 8px), 248px);
       }
       .figure-card .head .eyebrow {
-        flex: none;
-        max-width: calc(100% - 210px);
+        flex: 0 1 auto;
+        min-width: 0;
+      }
+      .figure-card .when {
+        margin: 4px 0 0;
+        max-width: 60%;
+        font-size: 13.5px;
+        color: var(--joe-ink-2);
+        font-variant-numeric: tabular-nums;
       }
       .figure-card .big {
         font-family: var(--joe-display);
@@ -80,12 +116,6 @@ export class JoeOverview extends LitElement {
         margin-top: 12px;
         max-width: 62%;
         font-variant-numeric: tabular-nums;
-      }
-      .figure-card .big.good {
-        color: var(--joe-good);
-      }
-      .figure-card .big.bad {
-        color: var(--joe-crit);
       }
       .figure-card .big small {
         font-size: 0.5em;
@@ -121,6 +151,22 @@ export class JoeOverview extends LitElement {
       }
       .head .eyebrow {
         flex: 1;
+      }
+      /* A card that leads somewhere as a whole: its link stretches over it; tips, buttons and the chart stay on top. */
+      a.stretch::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 14px;
+      }
+      .card:has(a.stretch) joe-tip,
+      .card:has(a.stretch) joe-steer-tonight,
+      .card:has(a.stretch) joe-chart {
+        position: relative;
+        z-index: 1;
+      }
+      .card:has(a.stretch:hover) {
+        box-shadow: inset 0 0 0 1.5px var(--joe-line-2);
       }
       .now {
         display: grid;
@@ -187,6 +233,24 @@ export class JoeOverview extends LitElement {
         font-size: 13px;
         color: var(--joe-ink-2);
       }
+      /* "Joe tut gerade …" below the tiles. */
+      .doing {
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid var(--joe-line);
+      }
+      .doing-text {
+        margin: 6px 0 0;
+        font-size: 16px;
+        font-weight: 600;
+      }
+      .doing ul {
+        margin: 6px 0 0;
+        padding-left: 20px;
+        color: var(--joe-ink-2);
+        font-size: 14.5px;
+        line-height: 1.5;
+      }
       .status {
         margin: 6px 0 0;
         color: var(--joe-ink-2);
@@ -194,6 +258,11 @@ export class JoeOverview extends LitElement {
       }
       joe-chart {
         margin-top: 10px;
+      }
+      joe-steer-tonight {
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid var(--joe-line);
       }
       .legend {
         display: flex;
@@ -220,69 +289,58 @@ export class JoeOverview extends LitElement {
         flex-wrap: wrap;
         margin-top: 8px;
       }
-      .next {
+      /* One line that leads to its home ("Wer ist da", "Was es gebracht hätte"). */
+      a.line {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 12px;
-        list-style: none;
-        margin: 14px 0 0;
-        padding: 0;
-        counter-reset: step;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 4px 14px;
+        padding: 14px 16px 14px 18px;
+        min-height: 44px;
+        color: inherit;
+        text-decoration: none;
+        transition: box-shadow 0.12s, background 0.12s;
       }
-      .next li {
-        counter-increment: step;
-        display: grid;
-        gap: 4px;
-        align-content: start;
-        padding: 14px;
-        border-radius: 12px;
-        background: var(--joe-surface-2);
+      a.line:hover {
+        box-shadow: inset 0 0 0 1.5px var(--joe-line-2);
       }
-      .next li::before {
-        content: counter(step);
-        display: grid;
-        place-items: center;
-        width: 30px;
-        height: 30px;
-        margin-bottom: 4px;
-        border-radius: 50%;
-        font-family: var(--joe-display);
-        font-style: italic;
-        font-weight: 800;
-        font-size: 17px;
-        background: var(--joe-surface);
+      a.line > ha-icon {
+        --mdc-icon-size: 22px;
         color: var(--joe-ink-2);
-        box-shadow: inset 0 0 0 2px var(--joe-line-2);
       }
-      .next li.done::before {
-        background: var(--joe-amber);
-        color: var(--joe-amber-ink);
-        box-shadow: none;
+      a.line .go {
+        --mdc-icon-size: 20px;
+        color: var(--joe-muted);
       }
-      .next b {
-        font-weight: 700;
+      .line-text {
+        display: grid;
+        gap: 3px;
+        min-width: 0;
       }
-      .next span {
+      .line-text b {
+        font-weight: 600;
+        line-height: 1.4;
+        overflow-wrap: anywhere;
+      }
+      .line-text b.good {
+        color: var(--joe-good);
+      }
+      .line-text b.bad {
+        color: var(--joe-crit);
+      }
+      .line-text small {
+        font-size: 13px;
         color: var(--joe-ink-2);
-        font-size: 14px;
-      }
-      .next .chip {
-        justify-self: start;
-        margin-top: 6px;
       }
       @media (max-width: 900px) {
         .grid {
           grid-template-columns: 1fr;
         }
-        .now,
-        .next {
+        .now {
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
       }
       @media (max-width: 480px) {
-        .next {
-          grid-template-columns: 1fr;
-        }
         .card > joe-pose {
           right: 12px;
           top: 12px;
@@ -294,9 +352,6 @@ export class JoeOverview extends LitElement {
         .card .display {
           max-width: 64%;
         }
-        .figure-card .head .eyebrow {
-          max-width: calc(100% - 150px);
-        }
         .flow {
           padding: 10px;
           gap: 2px 8px;
@@ -307,6 +362,10 @@ export class JoeOverview extends LitElement {
         }
         .flow b {
           font-size: 24px;
+        }
+        a.line {
+          padding-inline: 14px 10px;
+          gap: 4px 10px;
         }
       }
     `,
@@ -337,160 +396,64 @@ export class JoeOverview extends LitElement {
 
   protected render() {
     const t = this.t;
-    if (!t) {
+    const joe = this.state;
+    if (!t || !joe) {
       return nothing;
     }
-    const observing = Boolean(this.state?.observe?.active);
-    const planning = Boolean(this.state?.plan && this.state.plan.kind !== "unavailable");
-    const evaluated = (this.state?.results?.days ?? 0) > 0;
-    const questions = this.state?.questions ?? [];
+    const items = inboxItems(t, joe, {
+      climateFound: this.climateFound,
+      discovery: this.discovery,
+      checks: this.checks,
+      devices: this.devices,
+    });
+    // Tonight's yes/no in Vorschlagen leads "Joe braucht dich" instead of sitting in the night card.
+    const ask = steerAsks(joe);
+    const inbox = ask || items.length > 0 || (joe.questions?.length ?? 0) > 0;
+    // The missing test run has its own row; the night card does not repeat it.
+    const untestedRow = items.some((item) => item.id.startsWith("test:"));
+    const quick = quickShown(joe);
+    const climate = climateRooms(joe).length > 0;
+    const who = this.renderWho(t, joe);
+    // Two halves side by side on a wide screen; one alone spans the row.
+    const half = (other: boolean) => (other ? "" : "wide");
+    // "Gerade jetzt" first: in ten seconds you see that it runs and what Joe does, then whether he needs you.
     return html`<div class="grid">
-      ${questions.length
-        ? html`<joe-day-questions class="wide" .hass=${this.hass} .t=${t} .questions=${questions}></joe-day-questions>`
+      ${this.renderNow(t, joe)}
+      ${inbox
+        ? html`<joe-overview-inbox
+            class="wide"
+            .t=${t}
+            .hass=${this.hass}
+            .state=${joe}
+            .prefix=${this.prefix}
+            .items=${items}
+            .steer=${ask}
+          ></joe-overview-inbox>`
         : nothing}
-      ${this.renderNow(t)} ${this.renderWeek(t)}
-      ${this.renderNight(t)} ${this.renderSim(t)}
-      <section class="card wide">
-        <div class="eyebrow"><ha-icon icon="mdi:map-marker-path"></ha-icon>${t("overview.next")}</div>
-        <ol class="next">
-          <li class="done">
-            <b>${t("overview.next.1.title")}</b><span>${t("overview.next.1.text")}</span>
-            <span class="chip ok"><ha-icon icon="mdi:check"></ha-icon>${t("status.done")}</span>
-          </li>
-          <li class=${observing ? "done" : ""}>
-            <b>${t("overview.next.2.title")}</b><span>${t("overview.next.2.text")}</span>
-            ${this.stepChip(t, observing)}
-          </li>
-          <li class=${planning ? "done" : ""}>
-            <b>${t("overview.next.3.title")}</b><span>${t("overview.next.3.text")}</span>
-            ${this.stepChip(t, planning)}
-          </li>
-          <li class=${evaluated ? "done" : ""}>
-            <b>${t("overview.next.4.title")}</b><span>${t("overview.next.4.text")}</span>
-            ${this.stepChip(t, evaluated)}
-          </li>
-        </ol>
-      </section>
+      ${this.renderNight(t, joe, half(quick), !ask, untestedRow)}
+      ${quick
+        ? html`<joe-overview-quick .t=${t} .hass=${this.hass} .state=${joe} .prefix=${this.prefix}></joe-overview-quick>`
+        : nothing}
+      ${climate
+        ? html`<joe-overview-climate
+            class="wide"
+            .t=${t}
+            .hass=${this.hass}
+            .state=${joe}
+            .prefix=${this.prefix}
+            .climateFound=${this.climateFound}
+          ></joe-overview-climate>`
+        : nothing}
+      ${who ? this.line(PRESENCE, "mdi:home-account", t("overview.who"), who, "", "") : nothing}
+      ${this.renderResult(t, joe, half(Boolean(who)))} ${this.renderWeek(t)}
     </div>`;
   }
 
-  private stepChip(t: Translate, running: boolean): TemplateResult {
-    return running
-      ? html`<span class="chip ok"><ha-icon icon="mdi:check"></ha-icon>${t("status.running")}</span>`
-      : html`<span class="chip">${t(this.state?.mode === "off" ? "status.paused" : "status.waiting")}</span>`;
-  }
-
-  private renderNight(t: Translate): TemplateResult {
-    const plan = this.state?.plan;
-    if (!plan) {
-      return html`<section class="card">
-        <joe-pose name="relax"></joe-pose>
-        <div class="eyebrow"><ha-icon icon="mdi:weather-night"></ha-icon>${t("overview.night")}</div>
-        ${displayTitle(t("overview.night.empty.title"))} ${swoosh}
-        <p class="lead">${t("overview.night.empty.text")}</p>
-      </section>`;
-    }
-    const lines = planLines(t, plan);
-    const cost = planCostLine(t, plan, this.hass?.config?.currency);
-    const big =
-      plan.kind === "charge" || plan.kind === "hold"
-        ? html`${formatNumber(t.lang, plan.target ?? 0, 0)}<small>%</small>`
-        : html`${t(plan.kind === "none" ? "plan.big.none" : "plan.big.unavailable")}`;
-    return html`<section class="card figure-card" data-tipped>
-      <joe-pose name=${planPose(plan)}></joe-pose>
-      <div class="head">
-        <div class="eyebrow">
-          <ha-icon icon="mdi:weather-night"></ha-icon>${t("overview.night")}${plan.window ? ` · ${windowText(t, plan)}` : ""}
-        </div>
-        ${tip(t, "plan_target")}
-      </div>
-      <div class="big">${big}</div>
-      ${swoosh}
-      <p class="say">${planSentence(t, plan)}</p>
-      ${lines.length ? html`<div class="lines">${lines.map((line) => html`<div>${line}</div>`)}</div>` : nothing}
-      ${cost ? html`<p class="cost">${cost}</p>` : nothing}
-      <div class="bottom">
-        <span class="chip ${plan.fixed ? "ok" : ""}">
-          ${plan.fixed
-            ? t("plan.fixed_at", { time: plan.created.slice(11, 16) })
-            : t("plan.preview_at", { time: plan.created.slice(11, 16) })}
-        </span>
-        <a class="btn btn-secondary" data-notip href=${href(this.prefix, "/plan")} @click=${onLink("/plan")}
-          >${t("overview.night.more")}</a
-        >
-      </div>
-    </section>`;
-  }
-
-  /** What steering would have saved last night, and in total. */
-  private renderSim(t: Translate): TemplateResult {
-    const results = this.state?.results;
-    const last = results?.last;
-    if (!results || !last) {
-      return html`<section class="card">
-        <joe-pose name="plan"></joe-pose>
-        <div class="eyebrow"><ha-icon icon="mdi:calculator-variant-outline"></ha-icon>${t("overview.sim")}</div>
-        ${displayTitle(t("overview.sim.empty.title"))} ${swoosh}
-        <p class="lead">${t("overview.sim.empty.text")}</p>
-      </section>`;
-    }
-    const currency = this.hass?.config?.currency;
-    // The night is named after the morning it ends on.
-    const end = last.window?.end.slice(0, 10) ?? last.date;
-    const night =
-      end === today(this.hass?.config?.time_zone)
-        ? t("overview.sim.last")
-        : t("overview.sim.night", { day: dayText(t.lang, end, "weekday") });
-    const saving = last.saving;
-    const tone = saving > 0.005 ? "good" : saving < -0.005 ? "bad" : "";
-    const say =
-      tone === "good"
-        ? t("overview.sim.saved", {
-            value: money(t, saving, currency),
-            day: formatNumber(t.lang, Math.max(0, last.day_kwh_without - last.day_kwh), 1),
-            night: formatNumber(t.lang, Math.max(0, last.night_kwh - last.night_kwh_without), 1),
-          })
-        : tone === "bad"
-          ? t("overview.sim.cost", { value: money(t, -saving, currency) })
-          : t("overview.sim.same");
-    const since = results.since ?? results.first;
-    return html`<section class="card figure-card" data-tipped>
-      <joe-pose name=${tone === "good" ? "relax" : "inspect"}></joe-pose>
-      <div class="head">
-        <div class="eyebrow"><ha-icon icon="mdi:calculator-variant-outline"></ha-icon>${t("overview.sim")} · ${night}</div>
-        ${tip(t, "sim_result")}
-      </div>
-      <div class="big ${tone}">${money(t, saving, currency, true)}</div>
-      ${swoosh}
-      <p class="say">${say}</p>
-      <p class="cost">
-        ${t("overview.sim.total", {
-          since: since ? dayText(t.lang, since) : "–",
-          value: money(t, results.saving, currency, true),
-          nights: nights(t, results.days),
-        })}
-      </p>
-      <div class="bottom">
-        ${last.final || !last.until
-          ? html`<span class="chip">
-              ${t("learn.results.split", {
-            better: results.better,
-            worse: results.worse,
-                same: Math.max(0, results.days - results.better - results.worse),
-              })}
-            </span>`
-          : html`<span class="chip warn">${t("overview.sim.provisional", { time: last.until.slice(11, 16) })}</span>`}
-        <a class="btn btn-secondary" data-notip href=${href(this.prefix, "/review/result")} @click=${onLink("/review/result")}
-          >${t("overview.sim.more")}</a
-        >
-      </div>
-    </section>`;
-  }
-
-  private renderNow(t: Translate): TemplateResult {
+  /** "Gerade jetzt": sun, home, batteries and grid, then what Joe does with the devices. */
+  private renderNow(t: Translate, joe: JoeState): TemplateResult {
     const hass = this.hass;
-    const config = this.state?.config;
-    if (!hass || !config) {
+    const config = joe.config;
+    if (!hass) {
       return html``;
     }
     const m = config.measurements;
@@ -552,9 +515,207 @@ export class JoeOverview extends LitElement {
           grid == null ? t("overview.now.none") : idle(grid) ? t("overview.now.grid.idle") : grid > 0 ? t("overview.now.grid.in.sub") : t("overview.now.grid.out.sub"),
         )}
       </div>
+      ${this.renderDoing(t, joe)}
     </section>`;
   }
 
+  /** "Joe tut gerade …": one sentence, the details (batteries, devices running, rooms) and "Sofort freigeben". */
+  private renderDoing(t: Translate, joe: JoeState): TemplateResult | typeof nothing {
+    const control = joe.control;
+    const details = this.doingLines(t, joe);
+    if (!control && !details.length) {
+      return nothing;
+    }
+    return html`<div class="doing">
+      <div class="eyebrow"><ha-icon icon="mdi:robot-outline"></ha-icon>${t("overview.doing")}</div>
+      ${control ? html`<p class="doing-text">${controlText(t, joe)}</p>` : nothing}
+      ${details.length ? html`<ul>${details.map((line) => html`<li>${line}</li>`)}</ul>` : nothing}
+      <joe-control-status compact .t=${t} .hass=${this.hass} .state=${joe}></joe-control-status>
+    </div>`;
+  }
+
+  /** What Joe holds or switches right now: steered batteries, night actions on, rooms set to away or night. */
+  private doingLines(t: Translate, joe: JoeState): string[] {
+    const control = joe.control;
+    const config = joe.config;
+    const lines: string[] = [];
+    if (control?.steering) {
+      for (const battery of config.batteries) {
+        const action = control.batteries[battery.id]?.action;
+        if (battery.adapter !== "none" && action && ["charge", "hold", "block", "defer"].includes(action)) {
+          lines.push(t("overview.doing.battery", { name: battery.name, what: batteryNow(t, battery, control) }));
+        }
+      }
+    }
+    for (const action of config.actions) {
+      const now = control?.actions?.[action.id];
+      if (now?.on) {
+        lines.push(t("overview.doing.action", { name: action.name, time: timeOf(now.end) }));
+      }
+    }
+    const status = joe.climate;
+    if (status?.live) {
+      const rooms = climateRooms(joe)
+        .map((entity) => ({ entity, now: status.rooms[entity] }))
+        .filter((room) => room.now && !room.now.would);
+      const name = (entity: string) =>
+        this.climateFound?.devices.find((d) => d.entity_id === entity)?.area ??
+        this.devices.find((d) => d.group === "climate" && d.id === entity)?.name ??
+        entity;
+      for (const why of ["away", "night"] as const) {
+        const hit = rooms.filter((room) => room.now?.why === why);
+        if (hit.length === 1) {
+          lines.push(t(`overview.doing.${why}_one`, { name: name(hit[0].entity) }));
+        } else if (hit.length > 1) {
+          lines.push(t(`overview.doing.${why}`, { count: hit.length }));
+        }
+      }
+    }
+    return lines;
+  }
+
+  /**
+   * "Heute Nacht": target, cost, fixed or preview; the card leads to the plan,
+   * the decision stays a button (`steer`: not while "Joe braucht dich" asks it).
+   */
+  private renderNight(t: Translate, joe: JoeState, cls: string, steer: boolean, untestedRow: boolean): TemplateResult {
+    const plan = joe.plan;
+    if (!plan) {
+      return html`<section class="card ${cls}">
+        <joe-pose name="relax"></joe-pose>
+        <div class="eyebrow"><ha-icon icon="mdi:weather-night"></ha-icon>${t("overview.night")}</div>
+        ${displayTitle(t("overview.night.empty.title"))} ${swoosh}
+        <p class="lead">${t("overview.night.empty.text")}</p>
+      </section>`;
+    }
+    const lines = planLines(t, plan);
+    const cost = planCostLine(t, plan, this.hass?.config?.currency);
+    const big =
+      plan.kind === "charge" || plan.kind === "hold"
+        ? html`${formatNumber(t.lang, plan.target ?? 0, 0)}<small>%</small>`
+        : html`${t(plan.kind === "none" ? "plan.big.none" : "plan.big.unavailable")}`;
+    return html`<section class="card figure-card ${cls}" data-tipped>
+      <joe-pose name=${planPose(plan)}></joe-pose>
+      <div class="head">
+        <div class="eyebrow"><ha-icon icon="mdi:weather-night"></ha-icon>${t("overview.night")}</div>
+        ${tip(t, "plan_target")}
+      </div>
+      ${plan.window ? html`<p class="when">${windowText(t, plan)}</p>` : nothing}
+      <div class="big">${big}</div>
+      ${swoosh}
+      <p class="say">${planSentence(t, plan)}</p>
+      ${lines.length ? html`<div class="lines">${lines.map((line) => html`<div>${line}</div>`)}</div>` : nothing}
+      ${cost ? html`<p class="cost">${cost}</p>` : nothing}
+      ${steer && steerShown(joe)
+        ? html`<joe-steer-tonight
+            compact
+            .hideUntested=${untestedRow}
+            .t=${t}
+            .hass=${this.hass}
+            .state=${joe}
+            .prefix=${this.prefix}
+          ></joe-steer-tonight>`
+        : nothing}
+      <div class="bottom">
+        <span class="chip ${plan.fixed ? "ok" : ""}">
+          ${plan.fixed
+            ? t("plan.fixed_at", { time: plan.created.slice(11, 16) })
+            : t("plan.preview_at", { time: plan.created.slice(11, 16) })}
+        </span>
+        <a class="btn btn-secondary stretch" href=${href(this.prefix, PLAN)} @click=${onLink(PLAN)}>${t("overview.night.more")}</a>
+      </div>
+    </section>`;
+  }
+
+  /** "Wer ist da" in one line: who is home, who heads home, guests, and what kind of day it is. */
+  private renderWho(t: Translate, joe: JoeState): string | undefined {
+    const status = joe.climate;
+    if (!status || (!joe.config.persons.length && !status.home.length)) {
+      return undefined;
+    }
+    const names = Object.fromEntries(joe.config.persons.map((p) => [p.person_entity, p.name]));
+    // The guest tracker is in Joe's list of who is home under its own name; here it is "Gast da" once.
+    const tracker = joe.config.context.guest_tracker;
+    const guest = tracker ? this.hass?.states[tracker] : undefined;
+    const guestHome = guest?.state === "home";
+    const guestName = guestHome ? String(guest?.attributes.friendly_name ?? tracker!.split(".")[1].replace(/_/g, " ")) : undefined;
+    const home = status.home.filter((name) => name !== guestName);
+    const parts = home.length
+      ? [t("overview.who.home", { names: home.join(", ") })]
+      : guestHome
+        ? []
+        : [t("overview.who.nobody")];
+    for (const [person, way] of Object.entries(status.arrivals ?? {})) {
+      if (way.direction === "towards") {
+        const name = names[person] ?? String(this.hass?.states[person]?.attributes.friendly_name ?? person);
+        parts.push(way.minutes != null ? t("overview.who.coming", { name, minutes: way.minutes }) : t("overview.who.coming_soon", { name }));
+      }
+    }
+    if (guestHome) {
+      parts.push(t("overview.who.guest"));
+    }
+    const day = status.day;
+    if (day) {
+      parts.push(
+        day.holiday
+          ? t("overview.who.day.holiday")
+          : day.weekend && day.free
+            ? t("overview.who.day.weekend")
+            : day.home_office.length && !day.free
+              ? t("overview.who.day.home_office", { names: day.home_office.join(", ") })
+              : t("overview.who.day.workday"),
+      );
+    }
+    return parts.join(" · ");
+  }
+
+  /** A card that is one line and leads to its home. */
+  private line(to: Route, icon: string, label: string, text: string, tone: string, cls: string, sub?: string): TemplateResult {
+    return html`<a class="card line ${cls}" href=${href(this.prefix, to)} @click=${onLink(to)}>
+      <ha-icon icon=${icon}></ha-icon>
+      <span class="line-text">
+        <span class="eyebrow">${label}</span>
+        <b class=${tone}>${text}</b>
+        ${sub ? html`<small>${sub}</small>` : nothing}
+      </span>
+      <ha-icon class="go" icon="mdi:chevron-right"></ha-icon>
+    </a>`;
+  }
+
+  /** "Was es gebracht hätte" as one line; the whole story is under Rückblick › Ergebnis. */
+  private renderResult(t: Translate, joe: JoeState, cls: string): TemplateResult {
+    const results = joe.results;
+    const last = results?.last;
+    const label = t("overview.result");
+    if (!results || !last) {
+      return this.line(RESULT, "mdi:calculator-variant-outline", label, t("overview.result.none"), "", cls);
+    }
+    const currency = this.hass?.config?.currency;
+    // The night is named after the morning it ends on.
+    const end = last.window?.end.slice(0, 10) ?? last.date;
+    const night =
+      end === today(this.hass?.config?.time_zone)
+        ? t("overview.result.last")
+        : t("overview.result.night", { day: dayText(t.lang, end, "weekday") });
+    const saving = last.saving;
+    const tone = saving > 0.005 ? "good" : saving < -0.005 ? "bad" : "";
+    const text =
+      tone === "good"
+        ? t("overview.result.saved", { night, value: money(t, saving, currency) })
+        : tone === "bad"
+          ? t("overview.result.cost", { night, value: money(t, -saving, currency) })
+          : t("overview.result.same", { night });
+    const since = results.since ?? results.first;
+    const total = t("overview.result.total", {
+      since: since ? dayText(t.lang, since) : "–",
+      value: money(t, results.saving, currency, true),
+      nights: nights(t, results.days),
+    });
+    const provisional = !last.final && last.until ? ` · ${t("overview.result.provisional", { time: last.until.slice(11, 16) })}` : "";
+    return this.line(RESULT, "mdi:calculator-variant-outline", label, text, tone, cls, `${total}${provisional}`);
+  }
+
+  /** The last 7 days as small bars; the card leads to Rückblick › Tage. */
   private renderWeek(t: Translate): TemplateResult {
     const days = [...(this.week ?? [])].reverse();
     const observe = this.state?.observe;
@@ -581,24 +742,24 @@ export class JoeOverview extends LitElement {
       <p class="status">${status}</p>
       ${days.length
         ? html`<joe-chart
-              .labels=${labels}
-              .ticks=${ticks}
-              .series=${series}
-              centerTicks
-              unit="kWh"
-              height="190"
-              lang=${t.lang}
-              label=${t("overview.week")}
-            ></joe-chart>
-            <div class="bottom">
-              <div class="legend">
-                ${series.map((s) => html`<span><i style="background:${s.color}"></i>${s.label}</span>`)}
-              </div>
-              <a class="btn btn-secondary" data-notip href=${href(this.prefix, "/review/days")} @click=${onLink("/review/days")}
-                >${t("overview.week.more")}</a
-              >
-            </div>`
+            .labels=${labels}
+            .ticks=${ticks}
+            .series=${series}
+            centerTicks
+            unit="kWh"
+            height="120"
+            lang=${t.lang}
+            label=${t("overview.week")}
+          ></joe-chart>`
         : nothing}
+      <div class="bottom">
+        ${days.length
+          ? html`<div class="legend">
+              ${series.map((s) => html`<span><i style="background:${s.color}"></i>${s.label}</span>`)}
+            </div>`
+          : html`<span></span>`}
+        <a class="btn btn-secondary stretch" href=${href(this.prefix, DAYS)} @click=${onLink(DAYS)}>${t("overview.week.more")}</a>
+      </div>
     </section>`;
   }
 }

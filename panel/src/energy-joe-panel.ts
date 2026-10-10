@@ -10,6 +10,7 @@ import "./components/sim-switch";
 import { tip } from "./components/tip";
 import type { ConfigChange, PickEvent, PickResult } from "./config";
 import { define } from "./define";
+import { buildDevices, type DeviceEntry } from "./device-model";
 import "./editors/action-editor";
 import "./editors/battery-editor";
 import { ensureFonts } from "./fonts";
@@ -21,7 +22,7 @@ import "./pages/lookback/index";
 import "./pages/onboarding";
 import "./pages/overview";
 import "./pages/plan";
-import "./pages/settings";
+import "./pages/settings/index";
 import {
   PANEL,
   TABS,
@@ -69,7 +70,7 @@ const TAB_ICONS: Record<Tab, string> = {
   settings: "mdi:cog-outline",
 };
 /** Tabs that need the findings (suggestions, people to bring back, calendars to take over). */
-const DISCOVERY_TABS: Tab[] = ["devices", "household", "settings"];
+const DISCOVERY_TABS: Tab[] = ["overview", "devices", "household", "settings"];
 /** Editors that need the findings, wherever they open. */
 const DISCOVERY_EDITORS = ["action", "battery"];
 /** Tabs that show climate devices, their names or who heads home. */
@@ -106,6 +107,8 @@ export class EnergyJoePanel extends LitElement {
   /** The next route change comes from go(); any other one is the back or forward button. */
   private jumped = false;
   private lastPath?: string;
+  /** The device list for the overview and the plan, rebuilt only when one of its inputs changes. */
+  private deviceCache?: { inputs: unknown[]; devices: DeviceEntry[] };
 
   constructor() {
     super();
@@ -119,6 +122,11 @@ export class EnergyJoePanel extends LitElement {
     });
     // Jumps come from the tabs, pages and sheets alike (sheets close themselves first).
     this.addEventListener("joe-navigate", (ev) => this.onNavigate(ev as NavigateEvent));
+    // Einstellungen › Betrieb explains the modes and opens the header's dialog (the only switch).
+    this.addEventListener("joe-mode-dialog", (ev) => {
+      ev.stopPropagation();
+      this.modeDialog = true;
+    });
     // Anything that adds or renames climate devices asks for a fresh list (no sender yet).
     this.addEventListener("joe-climate-reload", (ev) => {
       ev.stopPropagation();
@@ -366,7 +374,6 @@ export class EnergyJoePanel extends LitElement {
       <main
         @joe-onboarding=${this.onOnboarding}
         @joe-rediscover=${() => this.scan()}
-        @joe-set-mode=${(ev: CustomEvent<{ mode: JoeMode }>) => this.setMode(ev.detail.mode)}
       >
         ${onboarding
           ? html`<joe-onboarding
@@ -453,9 +460,19 @@ export class EnergyJoePanel extends LitElement {
           .prefix=${prefix}
           .route=${route}
           .climateFound=${this.climateFound}
+          .discovery=${this.discovery}
+          .checks=${this.checks}
+          .devices=${this.devices(t)}
         ></joe-overview>`;
       case "plan":
-        return html`<joe-plan-page .t=${t} .hass=${this.hass} .state=${this.joe} .prefix=${prefix} .route=${route}></joe-plan-page>`;
+        return html`<joe-plan-page
+          .t=${t}
+          .hass=${this.hass}
+          .state=${this.joe}
+          .prefix=${prefix}
+          .route=${route}
+          .devices=${this.devices(t)}
+        ></joe-plan-page>`;
       case "review":
         return html`<joe-lookback-page
           .t=${t}
@@ -490,7 +507,7 @@ export class EnergyJoePanel extends LitElement {
           .climateFound=${this.climateFound}
         ></joe-household-page>`;
       case "settings":
-        return html`<joe-settings
+        return html`<joe-settings-page
           .t=${t}
           .hass=${this.hass}
           .state=${this.joe}
@@ -499,8 +516,23 @@ export class EnergyJoePanel extends LitElement {
           .info=${this.info}
           .discovery=${this.discovery}
           .checks=${this.checks}
-        ></joe-settings>`;
+        ></joe-settings-page>`;
     }
+  }
+
+  /** Joe's devices (device-model) for the overview's and plan's jumps; same list as on Geräte. */
+  private devices(t: Translate): DeviceEntry[] {
+    const joe = this.joe;
+    if (!joe) {
+      return [];
+    }
+    const inputs = [t, joe, this.hass, this.climateFound, this.discovery, this.checks];
+    const cache = this.deviceCache;
+    if (!cache || inputs.some((value, i) => value !== cache.inputs[i])) {
+      const devices = buildDevices(t, joe, this.hass, { climateFound: this.climateFound, discovery: this.discovery, checks: this.checks });
+      this.deviceCache = { inputs, devices };
+    }
+    return this.deviceCache!.devices;
   }
 
   private renderModeDialog(t: Translate): TemplateResult {

@@ -22,6 +22,8 @@ export class JoeDayQuestions extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) t?: Translate;
   @property({ attribute: false }) questions: DayQuestion[] = [];
+  /** Inside another card (the overview's "Joe braucht dich"): no card of its own. */
+  @property({ type: Boolean, reflect: true }) bare = false;
 
   @state() private busy?: string;
   @state() private failed = false;
@@ -35,6 +37,11 @@ export class JoeDayQuestions extends LitElement {
       }
       .card {
         padding: 18px 20px;
+      }
+      :host([bare]) .card {
+        padding: 0;
+        background: transparent;
+        box-shadow: none;
       }
       .head {
         display: flex;

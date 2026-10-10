@@ -7,8 +7,8 @@ import { formatNumber } from "./entities";
 import type { Translate, TranslationKey } from "./i18n";
 import type { DischargeMode, JoeConfig, JoeInfo, PriorityItem, Rules } from "./types";
 
-// Joe's rules for pros: one row per rule (Einstellungen › Für Profis) and the
-// same formatting for mirrors elsewhere ("Sicherheitspuffer · 120 %").
+// Joe's rules: one row per rule (Einstellungen › Regeln) and the same
+// formatting for mirrors elsewhere ("Sicherheitspuffer · 120 %").
 
 export type NumberRuleKey =
   | "reserve_soc"
@@ -55,29 +55,22 @@ export const NUMBER_RULES: Record<NumberRuleKey, NumberRule> = {
   balance_days: { key: "balance_days", unit: "", min: 3, max: 90, step: 1, optional: true, integer: true },
 };
 
-/** The order of the rows in Für Profis. */
-export const PRO_RULES: readonly RuleKey[] = [
-  "reserve_soc",
-  "max_target_soc",
-  "evening_min_soc",
-  "grid_limit_w",
-  "max_night_kwh",
-  "max_price",
-  "min_saving",
-  "guard_grid",
-  "balance_days",
-  "priority",
-  "discharge_in_window",
-  "converter_losses",
-  "buffer_factor",
-  "plan_offset_min",
-  "reset_lead_min",
-];
+/** The groups of Einstellungen › Regeln, in their order. */
+export type RuleGroup = "battery" | "grid" | "plan";
+
+export const RULE_GROUPS: Record<RuleGroup, readonly RuleKey[]> = {
+  battery: ["reserve_soc", "max_target_soc", "evening_min_soc", "balance_days", "discharge_in_window", "converter_losses"],
+  grid: ["grid_limit_w", "max_night_kwh", "guard_grid", "max_price", "min_saving"],
+  plan: ["priority", "buffer_factor", "plan_offset_min", "reset_lead_min"],
+};
+
+/** All rules, in the order of Einstellungen › Regeln. */
+export const RULE_ORDER: readonly RuleKey[] = [...RULE_GROUPS.battery, ...RULE_GROUPS.grid, ...RULE_GROUPS.plan];
 
 const DISCHARGE: DischargeMode[] = ["until_target", "block", "free"];
 
 export function isRuleKey(key: string): key is RuleKey {
-  return (PRO_RULES as readonly string[]).includes(key);
+  return (RULE_ORDER as readonly string[]).includes(key);
 }
 
 function isNumberRule(key: RuleKey): key is NumberRuleKey {
