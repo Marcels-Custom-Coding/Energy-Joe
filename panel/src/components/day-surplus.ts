@@ -16,12 +16,13 @@ export function daySurplus(joe: JoeState | undefined): DaySurplus | undefined {
 
 /**
  * Whether Joe can cap this battery's charging at a power, as the backend
- * decides it (RoleAdapter.limit_problem): only a charge limit in W or kW.
- * A limit in % (Fronius: % of a reference the inverter does not show) or A
- * would need a reference Joe cannot know, so such a battery does not take part.
+ * decides it (RoleAdapter.limit_problem): a charge limit in W or kW, the
+ * system's power limits (Omnibattery), or a limit in % once Joe knows what
+ * 100 % stand for (limit_ref_w: Fronius counts its % of a power the inverter
+ * does not show). A limit in A (or without a unit) never.
  */
-export function surplusAbility(hass: HomeAssistant | undefined, battery: BatteryConfig): "ok" | "no_limit" | "unit" {
-  const entity = battery.controls?.charge_limit;
+export function surplusAbility(hass: HomeAssistant | undefined, battery: BatteryConfig): "ok" | "no_limit" | "unit" | "need_ref" {
+  const entity = battery.controls?.charge_limit ?? battery.controls?.system_charge_limit;
   if (!entity || battery.adapter === "steps" || battery.adapter === "none") {
     return "no_limit";
   }
@@ -30,7 +31,19 @@ export function surplusAbility(hass: HomeAssistant | undefined, battery: Battery
     return "ok";
   }
   const unit = state.attributes.unit_of_measurement;
-  return unit === "W" || unit === "kW" ? "ok" : "unit";
+  if (unit === "W" || unit === "kW") {
+    return "ok";
+  }
+  if (unit === "%") {
+    return battery.limit_ref_w ? "ok" : "need_ref";
+  }
+  return "unit";
+}
+
+/** Whether the battery's cap limit is in % (it needs "Wofür stehen 100 %?"). */
+export function limitInPercent(hass: HomeAssistant | undefined, battery: BatteryConfig): boolean {
+  const entity = battery.controls?.charge_limit;
+  return Boolean(entity && battery.adapter !== "none" && hass?.states[entity]?.attributes.unit_of_measurement === "%");
 }
 
 /** The loadpoint that gets the sun, by its name in evcc ("den Ladepunkt „Fußbodenheizung“"). */
@@ -74,25 +87,42 @@ export function surplusDoing(t: Translate, surplus: DaySurplus | undefined): str
   });
 }
 
-/** evcc settings that work against it, each in plain words. */
-export function surplusConflicts(t: Translate, surplus: DaySurplus | undefined): string[] {
-  return (surplus?.conflicts ?? []).map(
-    (c) =>
-      t.optional(`surplus.conflict.${c.code}`, {
-        value: formatNumber(t.lang, c.value ?? 0, 0),
-        loadpoint: c.loadpoint ?? "",
-      }) ?? c.code,
-  );
+/** Conflicts of evcc's settings, or of the batteries' own settings (Omnibattery). */
+const DEVICE_CONFLICTS = ["charge_delay", "predictive_charging"];
+
+/** evcc settings (or with `device`, the batteries' own settings) that work against it, each in plain words. */
+export function surplusConflicts(t: Translate, surplus: DaySurplus | undefined, device = false): string[] {
+  return (surplus?.conflicts ?? [])
+    .filter((c) => DEVICE_CONFLICTS.includes(c.code) === device)
+    .map(
+      (c) =>
+        t.optional(`surplus.conflict.${c.code}`, {
+          value: formatNumber(t.lang, c.value ?? 0, 0),
+          loadpoint: c.loadpoint ?? "",
+          battery: c.battery ?? "",
+        }) ?? c.code,
+    );
 }
 
-/** The warning box about evcc's settings (nothing when all is well). */
+/** The warning boxes about evcc's and the batteries' own settings (nothing when all is well). */
 export function surplusConflictNote(t: Translate, surplus: DaySurplus | undefined): TemplateResult | typeof nothing {
-  const lines = surplusConflicts(t, surplus);
-  if (!lines.length) {
+  const evcc = surplusConflicts(t, surplus);
+  const device = surplusConflicts(t, surplus, true);
+  if (!evcc.length && !device.length) {
     return nothing;
   }
-  return html`<div class="note warn" role="status">
-    <ha-icon icon="mdi:alert-outline"></ha-icon>
-    <span><b>${t("surplus.conflict.title")}</b> ${lines.join(" ")} ${t("surplus.conflict.hint")}</span>
+  return html`<div class="conflicts">
+    ${evcc.length
+    ? html`<div class="note warn" role="status">
+        <ha-icon icon="mdi:alert-outline"></ha-icon>
+        <span><b>${t("surplus.conflict.title")}</b> ${evcc.join(" ")} ${t("surplus.conflict.hint")}</span>
+      </div>`
+    : nothing}
+  ${device.length
+    ? html`<div class="note warn" role="status">
+        <ha-icon icon="mdi:alert-outline"></ha-icon>
+        <span><b>${t("surplus.device_conflict.title")}</b> ${device.join(" ")} ${t("surplus.device_conflict.hint")}</span>
+      </div>`
+    : nothing}
   </div>`;
 }

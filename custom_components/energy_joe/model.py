@@ -109,6 +109,9 @@ MEASUREMENT = vol.Schema(
         vol.Optional("minus_entity_id", default=None): _ENTITY,
     }
 )
+# A solar reading: "sleeps" when the inverter switches off without sun (its
+# entity is unavailable then, which is normal and counts as 0 W at night).
+SOLAR_MEASUREMENT = MEASUREMENT.extend({vol.Optional("sleeps", default=False): bool})
 
 # One step of a battery Joe steers through entities the user assigned: an entity
 # and its value; "{floor}", "{target}" and "{power}" stand for the values of the moment.
@@ -153,6 +156,12 @@ BATTERY = vol.Schema(
         vol.Optional("priority", default=1): vol.All(int, vol.Range(min=1, max=9)),
         # Takes part when Joe leaves daytime surplus to evcc (rules.day_surplus).
         vol.Optional("day_surplus", default=True): bool,
+        # What 100 % of a charge limit in % stand for (W): Fronius counts its %
+        # of the inverter's highest battery charging power, which Home
+        # Assistant does not show. None: not known (yet), Joe may learn it.
+        vol.Optional("limit_ref_w", default=None): vol.Any(
+            None, vol.All(vol.Coerce(float), vol.Range(min=100, max=100000))
+        ),
     }
 )
 
@@ -618,7 +627,7 @@ CONFIG = vol.Schema(
             {
                 vol.Optional("grid_power", default=None): vol.Any(None, MEASUREMENT),
                 vol.Optional("home_power", default=None): vol.Any(None, MEASUREMENT),
-                vol.Optional("solar_power", default=list): [MEASUREMENT],
+                vol.Optional("solar_power", default=list): [SOLAR_MEASUREMENT],
             }
         ),
         vol.Optional("batteries", default=list): [BATTERY],

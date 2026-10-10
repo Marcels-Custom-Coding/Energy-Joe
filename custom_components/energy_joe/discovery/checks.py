@@ -7,6 +7,19 @@ from typing import Any
 from .snapshot import Snapshot
 
 STALE_SECONDS = 6 * 3600
+# Below this the sun gives too little for an inverter to stay awake (degrees).
+SUN_LOW_DEGREES = 8
+
+
+def sun_low(snap: Snapshot) -> bool:
+    """Whether the sun is too low for the panels (always, without sun.sun)."""
+    sun = snap.get("sun.sun")
+    if sun is None or not sun.available:
+        return True
+    if sun.state == "below_horizon":
+        return True
+    elevation = sun.attributes.get("elevation")
+    return isinstance(elevation, int | float) and elevation < SUN_LOW_DEGREES
 
 
 def kw(snap: Snapshot, measurement: dict[str, Any] | None) -> float | None:
@@ -49,12 +62,20 @@ def run_checks(snap: Snapshot, result: dict[str, Any]) -> list[dict[str, Any]]:
     if not solar:
         checks.append({"code": "missing", "level": "info", "role": "solar_power"})
     else:
+        low = sun_low(snap)
         for measurement in solar["measurements"]:
-            checks.extend(
-                _entity_checks(
-                    snap, measurement["entity_id"], "solar_power", night_ok=True
-                )
+            found = _entity_checks(
+                snap, measurement["entity_id"], "solar_power", night_ok=True
             )
+            if measurement.get("sleeps") and low:
+                # An inverter that is off without sun: normal while the sun is low.
+                found = [c for c in found if c["code"] not in ("unavailable", "stale")]
+            elif measurement.get("sleeps") is False:
+                for check in found:
+                    if check["code"] in ("unavailable", "stale"):
+                        # The panel offers "Ist ohne Sonne aus" for this one.
+                        check["can_sleep"] = True
+            checks.extend(found)
 
     home = (
         kw(snap, measurements["home_power"]["measurement"])

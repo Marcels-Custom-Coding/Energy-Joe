@@ -9,7 +9,7 @@ dashboard give exact hourly import, export, solar and battery energy.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 import logging
@@ -18,7 +18,14 @@ from typing import Any
 from homeassistant.core import HomeAssistant, State
 from homeassistant.util import dt as dt_util
 
-from .readings import Integrator, measurement_entities, number, to_kw, unit
+from .readings import (
+    SUN_LOW_DEGREES,
+    Integrator,
+    measurement_entities,
+    number,
+    to_kw,
+    unit,
+)
 from .records import Flow, HourParts, compose, hour_starts
 
 _LOGGER = logging.getLogger(__name__)
@@ -199,12 +206,30 @@ def measurement_flow(
     return Flow(max(value, 0.0), max(-value, 0.0), coverage)
 
 
+def solar_flow(
+    measurement: dict[str, Any],
+    data: dict[str, Series],
+    hour: datetime,
+    sun_low: Callable[[datetime], bool] | None,
+) -> Flow | None:
+    """Like measurement_flow; an inverter that sleeps without sun counts as 0 W
+    while it has no value in an hour the sun was low throughout."""
+    flow = measurement_flow(measurement, data, hour)
+    if not measurement.get("sleeps") or sun_low is None or not sun_low(hour):
+        return flow
+    if flow is None:
+        return Flow(0.0, 0.0, 1.0)
+    # The mean holds for the covered part; the rest of the hour it slept.
+    return Flow(flow.positive * flow.coverage, flow.negative * flow.coverage, 1.0)
+
+
 def build_records(
     inputs: Inputs,
     hours: list[datetime],
     means: dict[str, Series],
     changes: dict[str, Series],
     from_history: set[str],
+    sun_low: Callable[[datetime], bool] | None = None,
 ) -> list[dict[str, Any]]:
     """Hour records from hourly means of power and changes of counters."""
     records = []
@@ -236,7 +261,7 @@ def build_records(
         parts = HourParts(
             grid=measurement_flow(inputs.measurements.get("grid"), means, hour),
             home=measurement_flow(inputs.measurements.get("home"), means, hour),
-            solar=[measurement_flow(m, means, hour) for m in inputs.solar],
+            solar=[solar_flow(m, means, hour, sun_low) for m in inputs.solar],
             batteries={
                 battery_id: measurement_flow(power, means, hour)
                 for battery_id, power in inputs.batteries.items()
@@ -341,7 +366,36 @@ async def async_backfill(
         len(means) - len(from_history),
         len(from_history),
     )
-    return build_records(inputs, hours, means, changes, from_history)
+    sleeping = any(m.get("sleeps") for m in inputs.solar)
+    return build_records(
+        inputs,
+        hours,
+        means,
+        changes,
+        from_history,
+        _sun_low_hours(hass) if sleeping else None,
+    )
+
+
+def _sun_low_hours(hass: HomeAssistant) -> Callable[[datetime], bool] | None:
+    """Whether the sun was low throughout an hour at home (None: unknown)."""
+    try:
+        from homeassistant.helpers.sun import get_astral_location  # noqa: PLC0415
+
+        location, elevation = get_astral_location(hass)
+    except Exception:  # noqa: BLE001 - without the sun's position nothing counts as asleep
+        _LOGGER.debug("No sun position for the history")
+        return None
+
+    def low(hour: datetime) -> bool:
+        start = dt_util.as_utc(hour)
+        return all(
+            location.solar_elevation(start + timedelta(minutes=m), elevation)
+            < SUN_LOW_DEGREES
+            for m in (0, 30, 60)
+        )
+
+    return low
 
 
 def missing_hours(

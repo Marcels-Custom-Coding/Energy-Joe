@@ -82,6 +82,8 @@ export interface Measurement {
   entity_id: string;
   invert: boolean;
   minus_entity_id: string | null;
+  /** Solar only: the inverter is off without sun (unavailable at night is normal, counts as 0 W). */
+  sleeps?: boolean;
 }
 
 /** A profile of a known integration (e.g. "fronius"), "generic" (assigned levers), "steps" or "none". */
@@ -98,7 +100,10 @@ export type ControlRole =
   | "discharge_limit"
   | "discharge_limit_enabled"
   | "charge_limit"
-  | "charge_limit_enabled";
+  | "charge_limit_enabled"
+  /** On the integration's system device, only for the daytime cap (Omnibattery's power limits). */
+  | "system_charge_limit"
+  | "system_charge_limit_enabled";
 export const CONTROL_ROLES: ControlRole[] = [
   "min_soc",
   "grid_charge",
@@ -142,6 +147,8 @@ export interface BatteryConfig {
   priority: number;
   /** Takes part when Joe leaves daytime surplus to evcc (rules.day_surplus); default true. */
   day_surplus?: boolean;
+  /** What 100 % of a charge limit in % stand for (W; Fronius); null: not known yet, Joe may learn it. */
+  limit_ref_w?: number | null;
 }
 
 export type TariffKind = "fixed_window" | "dynamic" | "flat" | "unknown";
@@ -290,8 +297,14 @@ export type SurplusBatteryState =
   | "not_tested"
   /** No charge limit Joe could set (e.g. Marstek via Omnibattery). */
   | "no_limit"
-  /** A charge limit in % or A: a share of a power the device does not tell. */
+  /** A charge limit in A (or without a unit): no power Joe can trust. */
   | "unit"
+  /** A charge limit in %: Joe needs to know what 100 % stand for (limit_ref_w). */
+  | "need_ref"
+  /** Joe is finding out right now what 100 % stand for (a test limit for a few minutes). */
+  | "learning"
+  /** An automation that is switched on writes the same limit. */
+  | "automation"
   /** Its entities are not available right now. */
   | "unavailable"
   /** Charge level or capacity unknown. */
@@ -330,10 +343,28 @@ export interface DaySurplus {
   /** Not live: Joe only shows what he would do. */
   dry?: boolean;
   caution?: DayCaution;
-  batteries?: Record<string, { name: string; state: SurplusBatteryState; soc: number | null; cap_kw: number | null; problem: string | null }>;
+  batteries?: Record<
+    string,
+    {
+      name: string;
+      state: SurplusBatteryState;
+      soc: number | null;
+      cap_kw: number | null;
+      problem: string | null;
+      /** state "automation": the automations that write the same limit. */
+      automations?: string[];
+    }
+  >;
   loadpoints?: EvccLoadpoint[];
   evcc?: { priority_soc?: number | null; buffer_soc?: number | null; buffer_start_soc?: number | null };
-  conflicts?: { code: "buffer_soc" | "buffer_start_soc" | "battery_boost"; value?: number; loadpoint?: string }[];
+  /** evcc's settings, and the batteries' own (Omnibattery's charge delay, predictive charging), that work against it. */
+  conflicts?: {
+    code: "buffer_soc" | "buffer_start_soc" | "battery_boost" | "charge_delay" | "predictive_charging";
+    value?: number;
+    loadpoint?: string;
+    entity_id?: string;
+    battery?: string;
+  }[];
   /** When the cautious sun stops covering the house (ISO). */
   pv_end?: string | null;
   cap_kw?: number | null;

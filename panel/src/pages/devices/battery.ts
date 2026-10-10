@@ -140,8 +140,13 @@ export class JoeBatteryGroup extends DeviceSection {
         gap: 8px;
         margin-top: 14px;
       }
-      .evcc .note {
+      .evcc .conflicts {
         flex: 1;
+        min-width: 0;
+        display: grid;
+        gap: 8px;
+      }
+      .evcc .note {
         margin: 0;
       }
       .dcards {

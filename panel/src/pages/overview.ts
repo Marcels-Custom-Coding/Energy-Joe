@@ -402,6 +402,7 @@ export class JoeOverview extends LitElement {
       return nothing;
     }
     const items = inboxItems(t, joe, {
+      hass: this.hass,
       climateFound: this.climateFound,
       discovery: this.discovery,
       checks: this.checks,

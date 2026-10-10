@@ -37,7 +37,13 @@ ROLES = (
     "charge_limit",
     "charge_limit_enabled",
     "command_timeout",
+    "system_charge_limit",
+    "system_charge_limit_enabled",
 )
+# Levers only for the daytime cap, on the integration's system device (all its
+# batteries at once): no part of the night's steering, its test run or its
+# signature, and a lever that is gone keeps no battery from being steered.
+SYSTEM_ROLES = ("system_charge_limit", "system_charge_limit_enabled")
 # Meanings of mode options.
 MODE_OPTIONS = ("normal", "force_charge", "hold", "force_discharge")
 # Entity domains per role.
@@ -53,6 +59,8 @@ ROLE_DOMAINS: dict[str, tuple[str, ...]] = {
     "charge_limit": ("number", "input_number"),
     "charge_limit_enabled": ("switch", "input_boolean"),
     "command_timeout": ("number", "input_number"),
+    "system_charge_limit": ("number", "input_number"),
+    "system_charge_limit_enabled": ("switch", "input_boolean"),
 }
 
 # Ways to charge from the grid:
@@ -95,6 +103,12 @@ class Profile:
     name: str
     # role -> stable keys of the entity (end of unique id or translation key)
     roles: dict[str, tuple[str, ...]] = field(default_factory=dict)
+    # Roles looked for in the whole integration entry (a system device that
+    # steers all its batteries at once, see SYSTEM_ROLES).
+    entry_roles: dict[str, tuple[str, ...]] = field(default_factory=dict)
+    # Keys of switches in the integration entry that work against a daytime
+    # cap while they are on (the panel warns about them).
+    day_conflicts: tuple[str, ...] = ()
     # meaning -> option texts of the mode select (the first one present counts)
     options: dict[str, tuple[str, ...]] = field(default_factory=dict)
     charge: tuple[str, ...] = CHARGE_METHODS
@@ -183,6 +197,16 @@ PROFILES: dict[str, Profile] = {
             # Omnibattery runs its own control loop and refuses force mode and
             # power setpoints until the battery is switched to manual mode.
             prepare=(Set("battery_manual_mode", True),),
+            # The daytime cap: the system's power limits, in automatic mode
+            # (manual mode would stop Omnibattery's own grid-zero control).
+            # Unique ids "marstek_venus_system_system_power_limits" and
+            # "…_system_max_charge_power" on the system device (October 2026).
+            entry_roles={
+                "system_charge_limit": ("system_max_charge_power",),
+                "system_charge_limit_enabled": ("system_power_limits",),
+            },
+            # Its own charge delay and predictive charging hold charging back, too.
+            day_conflicts=("charge_delay", "predictive_charging"),
             limits={
                 "max_charge_w": ("max_charge_power",),
                 "max_discharge_w": ("max_discharge_power",),

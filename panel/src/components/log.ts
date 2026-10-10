@@ -105,6 +105,9 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
   if (entry.kind === "surplus_end") {
     return t.optional(`log.surplus_end.${String(entry.reason)}`, vars) ?? t("log.surplus_end", vars);
   }
+  if (entry.kind === "limit_ref_failed") {
+    return t.optional(`log.limit_ref_failed.${String(entry.reason)}`, vars) ?? t("log.limit_ref_failed", vars);
+  }
   if (entry.kind === "boost_end") {
     return t.optional(`log.boost_end.${String(entry.reason)}`, vars) ?? t("log.boost_end.stopped", vars);
   }

@@ -20,6 +20,7 @@ from .find import (
     find_tariff,
     find_wallboxes,
     find_weather,
+    profile_controls,
     profile_prepare,
 )
 from .proposal import build_proposal
@@ -51,17 +52,31 @@ async def async_profile_updates(
 ) -> dict[str, Any] | None:
     """What newer profiles know about batteries set up before (a config patch).
 
-    So far the prepare steps (e.g. a battery's manual mode); what the user set
-    stays as it is.
+    So far the prepare steps (e.g. a battery's manual mode) and the levers on
+    the integration's system device (e.g. Omnibattery's power limits for the
+    daytime cap); what the user set stays as it is.
     """
     snap = await async_collect(hass)
     patch: dict[str, Any] = {}
     for battery in config["batteries"]:
-        if model.source_of(config, f"batteries[{battery['id']}].prepare") == "user":
-            continue
-        found = profile_prepare(snap, battery)
-        if found and found != (battery.get("prepare") or []):
-            patch[battery["id"]] = {"prepare": found}
+        path = f"batteries[{battery['id']}]"
+        if model.source_of(config, f"{path}.prepare") != "user":
+            found = profile_prepare(snap, battery)
+            if found and found != (battery.get("prepare") or []):
+                patch.setdefault(battery["id"], {})["prepare"] = found
+        if model.source_of(config, f"{path}.controls") != "user":
+            controls = battery.get("controls") or {}
+            levers = {
+                role: entity_id
+                for role, entity_id in profile_controls(snap, battery).items()
+                if controls.get(role) != entity_id
+            }
+            if levers:
+                # Controls are replaced as a whole.
+                patch.setdefault(battery["id"], {})["controls"] = {
+                    **controls,
+                    **levers,
+                }
     return {"batteries": patch} if patch else None
 
 

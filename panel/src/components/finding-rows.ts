@@ -648,7 +648,22 @@ export function solarRow(ctx: RowContext): FindingRow {
     notes: checks.map((c) => checkNote(t, c)),
     state: checks.some((c) => c.level === "warn") ? "flag" : undefined,
     aside: single ? ctx.aside?.(single, entityName(hass, single)) : undefined,
-    actions: [pick(t("review.change"))],
+    actions: [
+      pick(t("review.change")),
+      // An inverter that is off without sun: one tap says that is normal.
+      ...checks
+        .filter((c) => c.can_sleep && list.some((m) => m.entity_id === c.entity_id && !m.sleeps))
+        .map((c) =>
+          rowButton(
+            list.length > 1 ? t("solar.sleeps.quick_named", { name: entityName(hass, String(c.entity_id)) }) : t("solar.sleeps.quick"),
+            "mdi:weather-night",
+            () =>
+              void saveConfig(from, {
+                measurements: { solar_power: list.map((m) => (m.entity_id === c.entity_id ? { ...m, sleeps: true } : m)) },
+              }),
+          ),
+        ),
+    ],
   };
 }
 

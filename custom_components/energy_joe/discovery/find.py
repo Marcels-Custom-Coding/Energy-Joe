@@ -19,6 +19,7 @@ from ..control.profiles import (
     ROLE_DOMAINS,
     ROLE_WORDS as CONTROL_WORDS,
     Call,
+    Profile,
 )
 from ..observe.readings import to_km, to_kwh
 from . import knowledge as kb
@@ -304,6 +305,7 @@ def _profile_steering(
         for role, keys in profile.roles.items():
             if found := _find_key(scope, ROLE_DOMAINS[role], keys):
                 controls[role] = found.entity_id
+        controls.update(entry_controls(snap, profile, soc.config_entry_id))
         for name, keys in profile.limits.items():
             found = _find_key(scope, (), keys)
             limits[name] = _control_value(snap, found.entity_id if found else None)
@@ -525,6 +527,27 @@ def suggest_controls(snap: Snapshot, soc: EntityInfo) -> dict[str, Any] | None:
         "mode_options": mode_options,
         "complete": bool(adapter.charge_methods() and adapter.hold_methods()),
     }
+
+
+def entry_controls(
+    snap: Snapshot, profile: Profile | None, entry_id: str | None
+) -> dict[str, str]:
+    """Levers on the integration's system device (e.g. Omnibattery's power limits)."""
+    if not profile or not profile.entry_roles:
+        return {}
+    scope = snap.of_config_entry(entry_id)
+    found = {}
+    for role, keys in profile.entry_roles.items():
+        if entity := _find_key(scope, ROLE_DOMAINS[role], keys):
+            found[role] = entity.entity_id
+    return found
+
+
+def profile_controls(snap: Snapshot, battery: dict[str, Any]) -> dict[str, str]:
+    """The system levers a battery's profile knows, as found in Home Assistant."""
+    profile = PROFILES.get(battery.get("adapter") or "")
+    soc = snap.get(battery.get("soc_entity"))
+    return entry_controls(snap, profile, soc.config_entry_id if soc else None)
 
 
 def profile_prepare(snap: Snapshot, battery: dict[str, Any]) -> list[dict[str, Any]]:

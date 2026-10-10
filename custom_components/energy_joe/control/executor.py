@@ -24,6 +24,7 @@ from typing import Any
 
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import (
     async_track_state_change_event,
     async_track_time_change,
@@ -33,12 +34,13 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from ..const import DOMAIN
-from ..observe.readings import distance_km, measurement_kw, number
+from ..observe.readings import distance_km, measurement_kw, number, solar_kw
 from ..plan import surplus as day_surplus
 from ..plan.actions import condition_met
-from . import evcc
+from . import automations as battery_automations, evcc
 from .actions import ActionAdapter
 from .adapters import Adapter, Desired, RoleAdapter, make_adapter
+from .profiles import profile_for
 from .writes import Write, WriteError, async_apply, fit, matches, read
 
 _LOGGER = logging.getLogger(__name__)
@@ -76,6 +78,19 @@ SURPLUS_LOWER_KW = 0.2
 SURPLUS_LATEST = 22
 # A cap that rises is logged again only once it rose by this much (kW).
 SURPLUS_LOG_KW = 0.3
+# Learning what 100 % of a charge limit in % stand for (limit_ref_w): a test
+# limit for a few minutes while the battery charges fast and unrestricted in
+# plenty of sun, at most once a day. The battery's power must drop clearly
+# below what it took before; the sun must stay.
+LEARN_SPAN = timedelta(minutes=3)
+LEARN_GIVE_UP = timedelta(minutes=10)
+LEARN_PERCENT = 50
+LEARN_MIN_PERCENT = 10
+LEARN_MIN_W = 1000
+LEARN_MAX_SOC = 85
+LEARN_DROP = 0.85
+LEARN_SUN_KEEP = 0.8
+LEARN_REF_RANGE = (500, 30000)
 
 DEFAULT_DATA: dict[str, Any] = {
     "saved": {},
@@ -113,7 +128,16 @@ DEFAULT_DATA: dict[str, Any] = {
     "day_released": None,
     # Daytime surplus (see _async_surplus): the caps in force (battery -> kW),
     # when they last changed, and the day it was let go for good.
-    "surplus": {"caps": {}, "changed": None, "released": None, "logged": None},
+    "surplus": {
+        "caps": {},
+        "changed": None,
+        "released": None,
+        "logged": None,
+        # A test limit to learn a battery's reference (see _async_learn_ref),
+        # and per battery the day of the last try and its test percent.
+        "learn": None,
+        "learn_tried": {},
+    },
 }
 
 type Changed = Callable[[], None]
@@ -165,6 +189,8 @@ class JoeExecutor:
         self._watched: tuple[str, ...] = ()
         self._last_release_try: datetime | None = None
         self.notifier: Any = None
+        # Called with a battery id and the reference Joe learned (W).
+        self.on_learned: Callable[[str, float], None] | None = None
         self.testing: dict[str, Any] | None = None
         # What the daytime surplus does (or would do) now, for the panel.
         self.surplus: dict[str, Any] = {"state": "off"}
@@ -914,11 +940,16 @@ class JoeExecutor:
             info.update(
                 loadpoints=points,
                 evcc=found,
-                conflicts=evcc.conflicts(found, points),
+                conflicts=[
+                    *evcc.conflicts(found, points),
+                    *self._device_conflicts(config),
+                ],
             )
+        learn_keep: set[str] = set()
         if state is None:
             assert plan is not None
             sizes = {b["id"]: b.get("capacity") for b in plan.get("batteries") or []}
+            foreign = self._cap_automations(config)
             for battery in config["batteries"]:
                 soc = number(self._hass.states.get(battery["soc_entity"]))
                 size = sizes.get(battery["id"]) or battery.get("capacity_kwh")
@@ -934,11 +965,15 @@ class JoeExecutor:
                 adapter = make_adapter(battery)
                 role = adapter if isinstance(adapter, RoleAdapter) else None
                 why = "takes_part"
-                if role is None:
-                    why = "no_limit"
-                elif problem := role.limit_problem(self._hass):
+                problem = role.limit_problem(self._hass) if role else "no_limit"
+                if problem in ("no_limit", "unit", "unavailable"):
+                    why = problem or "no_limit"
+                elif battery["id"] in foreign:
+                    # An automation writes the same limit: it would fight Joe.
+                    why = "automation"
+                elif problem:
                     why = problem
-                elif role.missing(self._hass):
+                elif role is None or role.missing(self._hass):
                     why = "unavailable"
                 elif not self.tested(battery):
                     why = "not_tested"
@@ -963,6 +998,12 @@ class JoeExecutor:
                     "cap_kw": None,
                     "problem": None,
                 }
+                if why == "automation":
+                    info["batteries"][battery["id"]]["automations"] = foreign[
+                        battery["id"]
+                    ]
+            if mode == "live":
+                learn_keep = await self._async_learn_ref(config, info["batteries"], now)
             caution = day_surplus.CAUTION.get(rules["day_caution"], 0.8)
             hours = plan.get("hours") or []
             created = (
@@ -971,7 +1012,7 @@ class JoeExecutor:
             ratio = None
             forecast = day_surplus.forecast_kw(hours, created, now)
             solar = [
-                measurement_kw(self._hass.states.get, m)
+                solar_kw(self._hass.states.get, m)
                 for m in config["measurements"]["solar_power"]
             ]
             if forecast and forecast > 0.2 and solar and None not in solar:
@@ -1008,15 +1049,26 @@ class JoeExecutor:
             started = not store["caps"]
             total = round(sum(caps.values()), 1)
             logged = store.get("logged") or 0.0
-            for key, kw in caps.items():
-                battery, role = items[key]
-                assert role is not None
+            for lever, members in self._cap_levers(caps, items).items():
+                role = members[0][1]
+                # A system limit is for all its batteries: the sum of their caps,
+                # and the full power of those Joe does not cap.
+                kw = sum(caps.get(key, 0.0) for key, _ in members)
+                kw += sum(
+                    store_.max_kw
+                    for store_ in stores
+                    if store_.id not in caps
+                    and store_.id in self._lever_members(lever, items)
+                    and store_.room > day_surplus.FULL_KWH
+                )
                 writes = role.limit(self._hass, kw, self.data["saved"])
                 problem = await self._async_write(role, writes, now, None)
-                keep |= {w.entity_id for w in writes} | {key}
-                info["batteries"][key].update(
-                    state="capped", cap_kw=kw, problem=problem
-                )
+                keep |= {w.entity_id for w in writes}
+                for key, _ in members:
+                    keep.add(key)
+                    info["batteries"][key].update(
+                        state="capped", cap_kw=caps[key], problem=problem
+                    )
             if started or set(caps) != set(store["caps"]):
                 self._log(
                     "surplus_cap",
@@ -1045,7 +1097,271 @@ class JoeExecutor:
         if self.surplus != info:
             self.surplus = info
             self._changed()
-        return keep
+        return keep | learn_keep
+
+    def _cap_levers(
+        self,
+        caps: dict[str, float],
+        items: dict[str, tuple[dict[str, Any], RoleAdapter | None]],
+    ) -> dict[str, list[tuple[str, RoleAdapter]]]:
+        """The capped batteries by the limit they are capped with (one write each)."""
+        result: dict[str, list[tuple[str, RoleAdapter]]] = {}
+        for key in caps:
+            role = items[key][1]
+            assert role is not None
+            result.setdefault(role.limit_key() or key, []).append((key, role))
+        return result
+
+    @staticmethod
+    def _lever_members(
+        lever: str, items: dict[str, tuple[dict[str, Any], RoleAdapter | None]]
+    ) -> set[str]:
+        """Every battery behind a limit (a system limit has several)."""
+        return {
+            key
+            for key, (_, role) in items.items()
+            if role is not None and role.limit_key() == lever
+        }
+
+    def _cap_automations(self, config: dict[str, Any]) -> dict[str, list[str]]:
+        """Automations (switched on) that write a battery's cap limit: battery -> names.
+
+        Found the same way as the "Störenfriede" (control/automations.py); once
+        they are switched off there, the battery takes part.
+        """
+        levers: dict[str, set[str]] = {}
+        for battery in config["batteries"]:
+            adapter = make_adapter(battery)
+            if isinstance(adapter, RoleAdapter) and adapter.limit_roles():
+                levers[battery["id"]] = set(adapter.limit_entities())
+        if not levers:
+            return {}
+        try:
+            found = battery_automations.find(
+                self._hass, config, self.data["automations_off"]
+            )
+        except Exception:
+            _LOGGER.exception("Looking for automations failed")
+            return {}
+        result: dict[str, list[str]] = {}
+        for automation in found:
+            if not automation["on"]:
+                continue
+            written = {w["entity_id"] for w in automation["writes"]}
+            for battery_id, entities in levers.items():
+                names = result.setdefault(battery_id, [])
+                if written & entities and automation["name"] not in names:
+                    names.append(automation["name"])
+        return {k: v for k, v in result.items() if v}
+
+    def _device_conflicts(self, config: dict[str, Any]) -> list[dict[str, Any]]:
+        """The batteries' own settings that hold charging back (Omnibattery's
+        charge delay and predictive charging), while they are on."""
+        registry = er.async_get(self._hass)
+        result: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for battery in config["batteries"]:
+            profile = profile_for(battery.get("adapter"))
+            adapter = make_adapter(battery)
+            if (
+                not profile
+                or not profile.day_conflicts
+                or not isinstance(adapter, RoleAdapter)
+                or not adapter.limit_roles()
+            ):
+                continue
+            soc = registry.async_get(battery["soc_entity"])
+            if not soc or not soc.config_entry_id:
+                continue
+            for item in er.async_entries_for_config_entry(
+                registry, soc.config_entry_id
+            ):
+                if item.domain != "switch" or item.entity_id in seen:
+                    continue
+                uid = item.unique_id or ""
+                for key in profile.day_conflicts:
+                    if item.translation_key == key or any(
+                        uid.endswith(f"{sep}{key}") for sep in ("-", "_", ".")
+                    ):
+                        seen.add(item.entity_id)
+                        state = self._hass.states.get(item.entity_id)
+                        if state and state.state == "on":
+                            result.append(
+                                {
+                                    "code": key,
+                                    "entity_id": item.entity_id,
+                                    "battery": battery["name"],
+                                }
+                            )
+                        break
+        return result
+
+    def _drop_foreign(self, entity_ids: list[str]) -> None:
+        """Values someone else set after Joe (an automation): Joe does not put
+        his originals back over them; he forgets them and says so."""
+        saved: dict[str, Any] = self.data["saved"]
+        written: dict[str, Any] = self.data["written"]
+        for entity_id in entity_ids:
+            entry = written.get(entity_id)
+            if not entry or entity_id not in saved:
+                continue
+            state = self._hass.states.get(entity_id)
+            if state is None or state.state in ("unavailable", "unknown"):
+                continue
+            if matches(self._hass, Write(entity_id, entry["value"])) or matches(
+                self._hass, fit(self._hass, Write(entity_id, saved[entity_id]))
+            ):
+                continue
+            saved.pop(entity_id, None)
+            written.pop(entity_id, None)
+            self._log(
+                "external",
+                battery=entry.get("battery"),
+                entity=entity_id,
+                value=read(self._hass, entity_id),
+            )
+
+    async def _async_unlimit(self, adapter: RoleAdapter, now: datetime) -> None:
+        """A cap's limit back as it was (what an automation set meanwhile stays);
+        what is back is no longer Joe's to restore."""
+        entities = adapter.limit_entities()
+        self._drop_foreign(entities)
+        saved: dict[str, Any] = self.data["saved"]
+        await self._async_write(adapter, adapter.unlimit(saved), now, None)
+        for entity_id in entities:
+            if entity_id in saved and matches(
+                self._hass, fit(self._hass, Write(entity_id, saved[entity_id]))
+            ):
+                saved.pop(entity_id, None)
+                self.data["written"].pop(entity_id, None)
+        if not any(e in saved for e in adapter.entities()):
+            key = adapter.battery["id"]
+            self.data["active"] = [k for k in self.data["active"] if k != key]
+
+    # --- learning what 100 % stand for ---------------------------------------
+
+    async def _async_learn_ref(
+        self, config: dict[str, Any], states: dict[str, Any], now: datetime
+    ) -> set[str]:
+        """Learn what 100 % of a charge limit in % stand for (Fronius).
+
+        While the battery charges fast and unrestricted in plenty of sun, Joe
+        sets a test limit (50 %) for a few minutes and measures the battery's
+        power: if it settles clearly below what it took before, 100 % stand
+        for twice that. The originals go back right after; a try that tells
+        nothing is made again another day (with half the test limit when it
+        did not bite). Returns the entities to leave as they are meanwhile.
+        """
+        store = self.data["surplus"]
+        learn = store.get("learn")
+        today = dt_util.as_local(now).date().isoformat()
+        tried: dict[str, Any] = store.setdefault("learn_tried", {})
+        batteries = {b["id"]: b for b in config["batteries"]}
+        if learn:
+            battery = batteries.get(learn["battery"])
+            adapter = make_adapter(battery) if battery else None
+            if (
+                battery is None
+                or not isinstance(adapter, RoleAdapter)
+                or states.get(battery["id"], {}).get("state") != "need_ref"
+            ):
+                return await self._async_learn_end(adapter, learn, None, "stopped")
+            since = datetime.fromisoformat(learn["since"])
+            if now - since > LEARN_GIVE_UP:
+                return await self._async_learn_end(adapter, learn, None, "late")
+            if now - since < LEARN_SPAN:
+                states[battery["id"]]["state"] = "learning"
+                return set(adapter.limit_entities()) | {battery["id"]}
+            power = _charge_w(self._hass, battery)
+            solar = _solar_kw(self._hass, config)
+            reason = None
+            if power is None or solar is None:
+                reason = "unknown"
+            elif learn.get("solar_kw") and solar < learn["solar_kw"] * LEARN_SUN_KEEP:
+                reason = "sun"
+            elif power > learn["before_w"] * LEARN_DROP:
+                reason = "no_effect"
+            ref = None
+            if reason is None and power is not None:
+                ref = round(power * 100 / learn["percent"], -1)
+                low, high = LEARN_REF_RANGE
+                if not low <= ref <= high or ref < learn["before_w"] * 0.9:
+                    reason = "implausible"
+                    ref = None
+            return await self._async_learn_end(adapter, learn, ref, reason)
+        for battery_id, entry in states.items():
+            if entry.get("state") != "need_ref":
+                continue
+            battery = batteries[battery_id]
+            last = tried.get(battery_id) or {}
+            if last.get("day") == today or not battery.get("day_surplus", True):
+                continue
+            adapter = make_adapter(battery)
+            if not isinstance(adapter, RoleAdapter) or not self.tested(battery):
+                continue
+            if adapter.missing(self._hass) or not adapter.limit_roles():
+                continue
+            power = _charge_w(self._hass, battery)
+            solar = _solar_kw(self._hass, config)
+            soc = entry.get("soc")
+            if (
+                power is None
+                or solar is None
+                or soc is None
+                or soc > LEARN_MAX_SOC
+                or power < max(LEARN_MIN_W, 0.5 * (battery.get("max_charge_w") or 0))
+                # More sun than the battery takes: it takes all it can.
+                or solar * 1000 < power + 500
+                # Unrestricted: no limit of the owner's in force.
+                or adapter._own_limit(self._hass, {}) not in (None, 100.0)
+            ):
+                continue
+            percent = int(last.get("next") or LEARN_PERCENT)
+            switch, role = adapter.limit_roles()  # type: ignore[misc]
+            writes = []
+            if switch in adapter.controls:
+                writes.append(Write(adapter.controls[switch], True))
+            writes.append(Write(adapter.controls[role], percent))
+            tried[battery_id] = {"day": today, "next": percent}
+            store["learn"] = {
+                "battery": battery_id,
+                "since": now.isoformat(timespec="seconds"),
+                "before_w": round(power),
+                "solar_kw": round(solar, 2),
+                "percent": percent,
+            }
+            await self._async_write(adapter, adapter._paced(writes), now, None)
+            self._log(
+                "limit_ref_test", battery=battery_id, value=percent, power=power / 1000
+            )
+            entry["state"] = "learning"
+            return set(adapter.limit_entities()) | {battery_id}
+        return set()
+
+    async def _async_learn_end(
+        self,
+        adapter: RoleAdapter | None,
+        learn: dict[str, Any],
+        ref: float | None,
+        reason: str | None,
+    ) -> set[str]:
+        """The test limit back as it was; the reference noted, or why not."""
+        store = self.data["surplus"]
+        store["learn"] = None
+        battery_id = learn["battery"]
+        if adapter is not None:
+            await self._async_unlimit(adapter, dt_util.now())
+        if ref is not None:
+            self._log("limit_ref", battery=battery_id, power=ref / 1000)
+            if self.on_learned:
+                self.on_learned(battery_id, ref)
+            return set()
+        if reason == "no_effect":
+            # The test limit was above what the battery took: smaller next time.
+            tried = store.setdefault("learn_tried", {}).setdefault(battery_id, {})
+            tried["next"] = max(LEARN_MIN_PERCENT, learn["percent"] // 2)
+        self._log("limit_ref_failed", battery=battery_id, reason=reason)
+        return set()
 
     def _surplus_gate(
         self,
@@ -1110,15 +1426,26 @@ class JoeExecutor:
     async def _async_surplus_off(
         self, config: dict[str, Any], now: datetime, reason: str
     ) -> None:
-        """Put the charge limits of a daytime cap back right away."""
+        """Put the charge limits of a daytime cap (or a test limit) back right away."""
+        learn = self.data["surplus"].get("learn")
+        if learn:
+            battery = next(
+                (b for b in config["batteries"] if b["id"] == learn["battery"]), None
+            )
+            adapter = make_adapter(battery) if battery else None
+            await self._async_learn_end(
+                adapter if isinstance(adapter, RoleAdapter) else None,
+                learn,
+                None,
+                reason,
+            )
         caps = self.data["surplus"]["caps"]
         if not caps:
             return
         for battery in config["batteries"]:
             adapter = make_adapter(battery)
             if battery["id"] in caps and isinstance(adapter, RoleAdapter):
-                writes = adapter.unlimit(self.data["saved"])
-                await self._async_write(adapter, writes, now, None)
+                await self._async_unlimit(adapter, now)
         self._surplus_forget(reason)
         self.surplus = {**self.surplus, "state": reason}
 
@@ -1299,6 +1626,17 @@ class JoeExecutor:
         ]
         for adapter in adapters:
             self._settle_loop_owned(adapter)
+        # The limits of the daytime cap: what an automation set after Joe stays,
+        # whether Joe saw his own value taken or not.
+        self._drop_foreign(
+            [
+                e
+                for a in adapters
+                if isinstance(a, RoleAdapter)
+                for e in a.limit_entities()
+                if e not in keep
+            ]
+        )
         for adapter in adapters:
             battery = adapter.battery
             for write in adapter.release(saved):
@@ -1861,3 +2199,19 @@ def _test_power(battery: dict[str, Any]) -> float:
     """A small charging power for the test run (W)."""
     maximum = battery.get("max_charge_w") or 2000
     return max(100.0, min(1000.0, maximum / 4))
+
+
+def _charge_w(hass: HomeAssistant, battery: dict[str, Any]) -> float | None:
+    """The battery's charging power now (W, positive while charging)."""
+    value = measurement_kw(hass.states.get, battery.get("power"))
+    return None if value is None else value * 1000
+
+
+def _solar_kw(hass: HomeAssistant, config: dict[str, Any]) -> float | None:
+    """What the panels give now (kW), if every solar measurement is known."""
+    values = [
+        solar_kw(hass.states.get, m) for m in config["measurements"]["solar_power"]
+    ]
+    if not values or None in values:
+        return None
+    return sum(v or 0.0 for v in values)

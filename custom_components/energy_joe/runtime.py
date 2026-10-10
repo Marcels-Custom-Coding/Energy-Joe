@@ -105,6 +105,7 @@ class JoeRuntime:
             hass, lambda: self._config, self.executor.async_answer_tonight
         )
         self.executor.notifier = self.notifier
+        self.executor.on_learned = self._learned_limit_ref
         # Joe's calendar for each car whose mailbox has none.
         self.calendars = CarCalendarStore(hass)
         self.planner.calendars = self.calendars
@@ -208,6 +209,19 @@ class JoeRuntime:
         self.inbox.async_apply()
         self.climate.async_start()
         self._hass.async_create_task(self._async_profile_updates(), eager_start=False)
+
+    def _learned_limit_ref(self, battery_id: str, watts: float) -> None:
+        """What 100 % of a battery's charge limit stand for, as Joe measured it."""
+        if not any(b["id"] == battery_id for b in self._config["batteries"]):
+            return
+        try:
+            self.async_update_config(
+                {"batteries": {battery_id: {"limit_ref_w": watts}}},
+                "learned",
+                "limit_ref",
+            )
+        except Exception:
+            _LOGGER.exception("Keeping the learned reference failed")
 
     async def _async_profile_updates(self) -> None:
         """Batteries set up before a profile learned more (e.g. a manual mode)."""

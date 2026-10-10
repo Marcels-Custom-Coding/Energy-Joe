@@ -172,11 +172,15 @@ def test_a_power_cap_in_the_unit_of_the_limit(
 
 def test_only_a_limit_in_watts_takes_part(hass: HomeAssistant) -> None:
     """Fronius counts its % of WChaMax, which Home Assistant does not show: a %
-    (or A, or no unit) is never turned into a power, even with a known maximum."""
+    is turned into a power only with a known reference (never from the
+    battery's maximum); A or no unit never."""
     install_devices(hass)
     battery = limited_fronius()
     assert battery["max_charge_w"] == 5000
-    for attrs in ({"unit_of_measurement": "%"}, {"unit_of_measurement": "A"}, {}):
+    hass.states.async_set("number.charge_limit", "100", {"unit_of_measurement": "%"})
+    assert make_adapter(battery).limit_problem(hass) == "need_ref"
+    assert make_adapter({**battery, "limit_ref_w": 6000}).limit_problem(hass) is None
+    for attrs in ({"unit_of_measurement": "A"}, {}):
         hass.states.async_set("number.charge_limit", "100", attrs)
         assert make_adapter(battery).limit_problem(hass) == "unit"
     hass.states.async_set("number.charge_limit", "unavailable", {})
@@ -615,7 +619,7 @@ async def test_a_percent_limit_takes_no_part(hass: HomeAssistant, freezer) -> No
     assert hass.states.get("number.charge_limit").state == "100"
     view = executor.view["surplus"]
     assert view["state"] == "no_battery"
-    assert view["batteries"]["byd"]["state"] == "unit"
+    assert view["batteries"]["byd"]["state"] == "need_ref"
     assert executor.data["saved"] == {}
 
 
