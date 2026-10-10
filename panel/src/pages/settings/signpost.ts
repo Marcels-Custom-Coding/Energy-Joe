@@ -34,6 +34,7 @@ export const SIGNPOST = [
   { id: "devices", to: { tab: "devices", section: "all" } },
   { id: "add", to: { tab: "devices", section: "add" } },
   { id: "battery", to: { tab: "devices", section: "battery" } },
+  { id: "battery_team", to: { tab: "devices", section: "battery", id: "together" } },
   { id: "climate", to: { tab: "devices", section: "climate" } },
   { id: "car", to: { tab: "devices", section: "car" } },
   { id: "hot_water", to: { tab: "devices", section: "hot_water" } },

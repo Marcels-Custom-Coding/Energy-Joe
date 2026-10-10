@@ -479,6 +479,8 @@ export class JoeBatteryDevice extends DeviceSection {
       text = t("battery.surplus.learning");
     } else if (mine?.state === "need_ref" || ability === "need_ref") {
       text = t("battery.surplus.need_ref");
+    } else if (mine?.state === "team_wait") {
+      text = t("battery.surplus.team_wait");
     } else if (mine?.state === "capped") {
       text = t("battery.surplus.capped", { kw: kw(mine.cap_kw), time: timeOf(surplus?.pv_end) });
     } else if (mine?.state === "would") {

@@ -250,9 +250,13 @@ class RoleAdapter(Adapter):
         return None
 
     def limit_entities(self) -> list[str]:
-        """The entities the daytime cap writes (its switch, its value)."""
+        """The entities the daytime cap writes (its switch, its value; with the
+        system's shared switch also its discharge limit)."""
         roles = self.limit_roles()
-        return [self.controls[r] for r in roles or () if r in self.controls]
+        result = [self.controls[r] for r in roles or () if r in self.controls]
+        if self.limit_shared() and "system_discharge_limit" in self.controls:
+            result.append(self.controls["system_discharge_limit"])
+        return result
 
     def limit_key(self) -> str | None:
         """The value entity of the cap; batteries with the same one are capped together."""
@@ -326,9 +330,11 @@ class RoleAdapter(Adapter):
             return self._paced([Write(entity_id, value)])
         if role == "system_charge_limit":
             # The value first: the system's limits take it at once when on.
-            return self._paced(
-                [Write(entity_id, value), Write(self.controls[switch], True)]
-            )
+            # The same switch makes its discharge limit count, too: open wide.
+            writes = [Write(entity_id, value)]
+            if "system_discharge_limit" in self.controls:
+                writes.append(self._open_wide(hass, "system_discharge_limit"))
+            return self._paced([*writes, Write(self.controls[switch], True)])
         return self._paced(
             [Write(self.controls[switch], True), Write(entity_id, value)]
         )
@@ -367,7 +373,111 @@ class RoleAdapter(Adapter):
         roles = self.limit_roles()
         if roles is None:
             return []
-        return self._paced(self._restore(saved, *roles))
+        extra = ("system_discharge_limit",) if self.limit_shared() else ()
+        return self._paced(self._restore(saved, *roles, *extra))
+
+    # --- several batteries one after the other ------------------------------------
+
+    def discharge_roles(self) -> tuple[str, str] | None:
+        """The lever that blocks discharging by day: (its switch role, its value role).
+
+        The battery's own discharge limit (Fronius), else the system's discharge
+        limit, which shares its switch with the system's charge limit
+        (Omnibattery, in automatic mode).
+        """
+        if self._has("discharge_limit"):
+            return "discharge_limit_enabled", "discharge_limit"
+        if self._has("system_discharge_limit", "system_charge_limit_enabled"):
+            return "system_charge_limit_enabled", "system_discharge_limit"
+        return None
+
+    def team_shared(self) -> bool:
+        """Whether charging and discharging are blocked with one switch (the system's)."""
+        charge, discharge = self.limit_roles(), self.discharge_roles()
+        return bool(charge and discharge and charge[0] == discharge[0])
+
+    def team_entities(self) -> list[str]:
+        """Every entity Joe writes to block charging or discharging by day."""
+        roles = [*(self.limit_roles() or ()), *(self.discharge_roles() or ())]
+        return list(
+            dict.fromkeys(self.controls[r] for r in roles if r in self.controls)
+        )
+
+    def team_problem(self, hass: HomeAssistant) -> str | None:
+        """Why Joe cannot block this battery's charging and discharging by day."""
+        if self.limit_roles() is None:
+            return "no_charge_lever"
+        if self.discharge_roles() is None:
+            return "no_discharge_lever"
+        for entity_id in self.team_entities():
+            if not available(hass.states.get(entity_id)):
+                return "unavailable"
+        return None
+
+    def team_block(
+        self, hass: HomeAssistant, charge: bool, discharge: bool, charge_taken: bool
+    ) -> tuple[list[Write], list[str]]:
+        """Writes that block charging and/or discharging, and the roles to give back.
+
+        A block is the limit at 0, written before its switch goes on (Fronius
+        ignores the limit while its switch is off; R2/R3 of the owner's
+        automations learned it so). Giving back is the switch off first, then
+        the value (see free). With the system's shared switch the direction
+        that stays free is opened wide while the switch is on. `charge_taken`:
+        the charge limit is someone else's now (the daytime cap, the
+        grid-friendly morning, a test limit): left as it is.
+        """
+        charge_roles = self.limit_roles()
+        discharge_roles = self.discharge_roles()
+        assert charge_roles is not None and discharge_roles is not None
+        writes: list[Write] = []
+        give_back: list[str] = []
+        if self.team_shared():
+            switch = charge_roles[0]
+            if charge or discharge:
+                if not charge_taken:
+                    writes.append(
+                        Write(self.controls[charge_roles[1]], 0)
+                        if charge
+                        else self._open_wide(hass, charge_roles[1])
+                    )
+                writes.append(
+                    Write(self.controls[discharge_roles[1]], 0)
+                    if discharge
+                    else self._open_wide(hass, discharge_roles[1])
+                )
+                writes.append(Write(self.controls[switch], True))
+            elif not charge_taken:
+                give_back = [switch, charge_roles[1], discharge_roles[1]]
+            return self._paced(writes), give_back
+        for blocked, roles, taken in (
+            (charge, charge_roles, charge_taken),
+            (discharge, discharge_roles, False),
+        ):
+            if taken:
+                continue
+            switch, value = roles
+            if blocked:
+                writes.append(Write(self.controls[value], 0))
+                if switch in self.controls:
+                    writes.append(Write(self.controls[switch], True))
+            else:
+                give_back += [r for r in (switch, value) if r in self.controls]
+        return self._paced(writes), give_back
+
+    def team_free(self, saved: dict[str, Any], roles: list[str]) -> list[Write]:
+        """These levers back as they were: each switch first, then its value."""
+        switches = [r for r in roles if r.endswith("_enabled")]
+        values = [r for r in roles if not r.endswith("_enabled")]
+        return self._paced(self._restore(saved, *switches, *values))
+
+    def _open_wide(self, hass: HomeAssistant, role: str) -> Write:
+        """A limit at its highest (no limit while the shared switch is on)."""
+        entity_id = self.controls[role]
+        key = "max_discharge_w" if "discharge" in role else "max_charge_w"
+        fallback = float(self.battery.get(key) or 10000)
+        _, high = _range(hass, entity_id, 0, fallback)
+        return Write(entity_id, high)
 
     def _limit_unit(self, hass: HomeAssistant) -> str:
         state = hass.states.get(self.limit_key() or "")

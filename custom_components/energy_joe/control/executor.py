@@ -37,7 +37,7 @@ from ..const import DOMAIN
 from ..observe.readings import distance_km, measurement_kw, number, solar_kw
 from ..plan import surplus as day_surplus
 from ..plan.actions import condition_met
-from . import automations as battery_automations, evcc
+from . import automations as battery_automations, evcc, team as team_rules
 from .actions import ActionAdapter
 from .adapters import Adapter, Desired, RoleAdapter, make_adapter
 from .profiles import profile_for
@@ -138,6 +138,34 @@ DEFAULT_DATA: dict[str, Any] = {
         "learn": None,
         "learn_tried": {},
     },
+    # Several batteries one after the other (see _async_team and control/team.py).
+    "team": {
+        # The battery that may work now, and since when.
+        "active": None,
+        "since": None,
+        # The flow (surplus or deficit) Joe goes by, and the one just seen.
+        "flow": None,
+        "flow_since": None,
+        "raw": None,
+        "raw_since": None,
+        # Batteries marked empty and full (id -> the level it was marked at).
+        "empty": {},
+        "full": {},
+        # The day they charge side by side (the sun would not fill them one
+        # after the other).
+        "parallel": None,
+        # The blocks in force: battery -> {"charge": bool, "discharge": bool}.
+        "blocks": {},
+        # Watching for the real cutoff (and fullness) per battery, and the
+        # levels it stopped discharging at.
+        "watch": {},
+        "cutoffs": {},
+        # Two batteries running against each other (see _team_transfer).
+        "transfer": None,
+        "told": None,
+        # The day "Sofort freigeben" paused it.
+        "paused": None,
+    },
 }
 
 type Changed = Callable[[], None]
@@ -192,8 +220,13 @@ class JoeExecutor:
         # Called with a battery id and the reference Joe learned (W).
         self.on_learned: Callable[[str, float], None] | None = None
         self.testing: dict[str, Any] | None = None
+        # Called with a battery id and the cutoff Joe learned (%).
+        self.on_cutoff: Callable[[str, float], None] | None = None
         # What the daytime surplus does (or would do) now, for the panel.
         self.surplus: dict[str, Any] = {"state": "off"}
+        # What several batteries do together now, for the panel.
+        self.team: dict[str, Any] = {"state": "off", "batteries": {}}
+        self._team_shown: dict[str, Any] = {}
         self.status: dict[str, Any] = {
             "steering": False,
             "reason": "simulation",
@@ -212,6 +245,10 @@ class JoeExecutor:
             self.data["surplus"] = {
                 **deepcopy(DEFAULT_DATA["surplus"]),
                 **(stored.get("surplus") or {}),
+            }
+            self.data["team"] = {
+                **deepcopy(DEFAULT_DATA["team"]),
+                **(stored.get("team") or {}),
             }
 
     @property
@@ -322,13 +359,27 @@ class JoeExecutor:
             keep |= held
             was_capped = bool(self.data["surplus"]["caps"])
             try:
-                capped = await self._async_surplus(config, plan, mode, now, bool(day))
+                want, hint = await self._async_team(config, plan, mode, now)
+            except Exception:
+                # Never keep a block Joe cannot work out: give them back.
+                _LOGGER.exception("Coordinating the batteries failed")
+                want, hint = {}, None
+                await self._async_team_off(config, now, "error")
+            try:
+                capped = await self._async_surplus(
+                    config, plan, mode, now, bool(day), hint
+                )
             except Exception:
                 # Never keep a cap Joe cannot work out: give it back.
                 _LOGGER.exception("Daytime surplus failed")
                 capped = set()
                 self._surplus_forget("error")
             keep |= capped
+            try:
+                keep |= await self._async_team_apply(config, want, keep, now)
+            except Exception:
+                _LOGGER.exception("Blocking the batteries failed")
+                await self._async_team_off(config, now, "error")
             if self._dirty_except(keep):
                 # The grid-friendly morning is over: its own reason, no second
                 # morning message.
@@ -355,8 +406,14 @@ class JoeExecutor:
                 await self._async_save()
             return
         assert plan is not None and night is not None
-        # The night begins: no daytime cap may stay (its originals go back).
+        # The night begins: no daytime cap may stay (its originals go back),
+        # and the night's plan steers the batteries, not their order by day.
         await self._async_surplus_off(config, now, "night")
+        try:
+            await self._async_team(config, plan, mode, now, night=True)
+        except Exception:
+            _LOGGER.exception("Watching the batteries failed")
+        await self._async_team_off(config, now, "night")
         if self.data["night"] != night:
             self._start_night(night)
         items = self._steerable(config, plan)
@@ -780,6 +837,11 @@ class JoeExecutor:
             self.data["surplus"].get("released"),
             self.data.get("day"),
             self.data.get("day_released"),
+            deepcopy(self.data["team"]["blocks"]),
+            self.data["team"]["active"],
+            dict(self.data["team"]["empty"]),
+            dict(self.data["team"]["full"]),
+            self.data["team"]["parallel"],
         )
 
     def _mark_active(self, key: str) -> None:
@@ -900,6 +962,7 @@ class JoeExecutor:
         mode: str,
         now: datetime,
         morning: bool,
+        team: dict[str, Any] | None = None,
     ) -> set[str]:
         """On sunny days: cap charging so the surplus shows at the grid meter.
 
@@ -913,6 +976,11 @@ class JoeExecutor:
         The originals go into "saved" like every other write, so the release
         (end of the day, mode change, "Sofort freigeben", stop, a restart
         after a crash) puts them back.
+
+        Several batteries one after the other (`team`, see _async_team): one
+        whose charging is blocked waits; its room counts for the active one,
+        which takes the whole cap. Batteries charging side by side are left
+        free (their own control takes what the capped one leaves).
         """
         rules = config["rules"]
         local = dt_util.as_local(now)
@@ -950,6 +1018,9 @@ class JoeExecutor:
             assert plan is not None
             sizes = {b["id"]: b.get("capacity") for b in plan.get("batteries") or []}
             foreign = self._cap_automations(config)
+            waiting = set(team["blocked"]) if team else set()
+            side = set(team["parallel"]) if team else set()
+            waiting_room = 0.0
             for battery in config["batteries"]:
                 soc = number(self._hass.states.get(battery["soc_entity"]))
                 size = sizes.get(battery["id"]) or battery.get("capacity_kwh")
@@ -958,6 +1029,17 @@ class JoeExecutor:
                         "name": battery["name"],
                         "state": "unknown",
                         "soc": None if soc is None else round(soc, 1),
+                        "cap_kw": None,
+                        "problem": None,
+                    }
+                    continue
+                if battery["id"] in waiting:
+                    # Its turn comes after the active one: its room counts there.
+                    waiting_room += max(0.0, size * (100 - soc) / 100)
+                    info["batteries"][battery["id"]] = {
+                        "name": battery["name"],
+                        "state": "team_wait",
+                        "soc": round(soc, 1),
                         "cap_kw": None,
                         "problem": None,
                     }
@@ -987,7 +1069,7 @@ class JoeExecutor:
                         soc=max(0.0, min(100.0, soc)),
                         max_kw=(battery.get("max_charge_w") or default_kw * 1000)
                         / 1000,
-                        capped=why == "takes_part",
+                        capped=why == "takes_part" and battery["id"] not in side,
                     )
                 )
                 items[battery["id"]] = (battery, role)
@@ -1002,6 +1084,13 @@ class JoeExecutor:
                     info["batteries"][battery["id"]]["automations"] = foreign[
                         battery["id"]
                     ]
+            if waiting_room and team:
+                stores = [
+                    _with_room(store_, waiting_room)
+                    if store_.id == team["active"]
+                    else store_
+                    for store_ in stores
+                ]
             if mode == "live":
                 learn_keep = await self._async_learn_ref(config, info["batteries"], now)
             caution = day_surplus.CAUTION.get(rules["day_caution"], 0.8)
@@ -1449,6 +1538,632 @@ class JoeExecutor:
         self._surplus_forget(reason)
         self.surplus = {**self.surplus, "state": reason}
 
+    # --- several batteries one after the other ---------------------------------
+
+    async def _async_team(
+        self,
+        config: dict[str, Any],
+        plan: dict[str, Any] | None,
+        mode: str,
+        now: datetime,
+        night: bool = False,
+    ) -> tuple[dict[str, tuple[bool, bool]], dict[str, Any] | None]:
+        """Which battery may work now, and the blocks for the others.
+
+        Batteries that regulate themselves to 0 W at the grid meter (Fronius,
+        Omnibattery in automatic mode) shift energy between each other when
+        both work. With "Nacheinander" (rules.battery_team) exactly one is
+        free, the others are blocked ahead of time (see control/team.py).
+        Only by day and only live; the simulation and "suggest" show what Joe
+        would do. During the night's plan it only watches: the night's
+        steering comes first (it blocks the others itself while one charges
+        from the grid), and the blocks are given back as the night begins.
+        Automations that write to these batteries (the owner's own interlock)
+        keep Joe's hands off until they are switched off.
+
+        Returns per battery (charge blocked, discharge blocked) and, for the
+        daytime cap, the active battery with the ones waiting or charging
+        side by side (None while Joe does not coordinate).
+        """
+        rules = config["rules"]
+        store: dict[str, Any] = self.data["team"]
+        today = dt_util.as_local(now).date().isoformat()
+        ids = {b["id"] for b in config["batteries"]}
+        # Forget what belongs to batteries that are gone.
+        for key in ("empty", "full", "watch", "cutoffs"):
+            store[key] = {k: v for k, v in (store[key] or {}).items() if k in ids}
+        info: dict[str, Any] = {
+            "state": "on",
+            "mode": rules.get("battery_team"),
+            "dry": mode != "live",
+            "active": None,
+            "flow": None,
+            "parallel": False,
+            "batteries": {},
+            "automations": [],
+            "transfer": None,
+            "proposal": False,
+        }
+        candidates: list[tuple[dict[str, Any], RoleAdapter | None]] = []
+        powers: dict[str, float] = {}
+        for battery in config["batteries"]:
+            adapter = make_adapter(battery)
+            role = adapter if isinstance(adapter, RoleAdapter) else None
+            proposed = self._proposed_regulating(battery)
+            own = battery.get("self_regulating")
+            regulating = proposed if own is None else bool(own)
+            soc = number(self._hass.states.get(battery["soc_entity"]))
+            power = _charge_w(self._hass, battery)
+            if power is not None:
+                powers[battery["id"]] = power
+            info["batteries"][battery["id"]] = {
+                "name": battery["name"],
+                "self_regulating": regulating,
+                "proposed": proposed,
+                "soc": None if soc is None else round(soc, 1),
+                "power_w": None if power is None else round(power),
+                "cutoff": battery.get("cutoff_soc"),
+                "floor": self._team_floor(battery, role),
+                "charge": None,
+                "discharge": None,
+                "why": None,
+                "problem": None,
+            }
+            if regulating:
+                candidates.append((battery, role))
+        info["proposal"] = len(candidates) >= 2 and rules.get("battery_team") is None
+        deficit = self._team_deficit(config, powers)
+        if mode != "off" and not night:
+            self._team_learn(candidates, powers, deficit, now)
+        state = self._team_gate(config, candidates, mode, today, night, info)
+        info["state"] = state
+        want: dict[str, tuple[bool, bool]] = {}
+        hint: dict[str, Any] | None = None
+        if state == "on":
+            want, hint = self._team_choose(
+                config, plan, candidates, deficit, powers, now, today, info
+            )
+        else:
+            store.update(active=None, since=None)
+        await self._async_team_transfer(config, info, powers, now, today)
+        self.team = info
+        if state != "on":
+            self._team_publish()
+        return want, hint
+
+    def _team_publish(self) -> None:
+        """Tell the panel when what the batteries do together changed."""
+        if self.team != self._team_shown:
+            self._team_shown = deepcopy(self.team)
+            self._changed()
+
+    def _team_gate(
+        self,
+        config: dict[str, Any],
+        candidates: list[tuple[dict[str, Any], RoleAdapter | None]],
+        mode: str,
+        today: str,
+        night: bool,
+        info: dict[str, Any],
+    ) -> str:
+        """Why Joe does not coordinate now, or "on"."""
+        choice = config["rules"].get("battery_team")
+        if choice != "sequence":
+            return "unset" if choice is None else "together"
+        if mode == "off":
+            return "off"
+        if len(candidates) < 2:
+            return "single"
+        if night:
+            return "night"
+        if self.data["team"]["paused"] == today:
+            return "paused"
+        seen: dict[str, str] = {}
+        state = "on"
+        for battery, role in candidates:
+            entry = info["batteries"][battery["id"]]
+            problem = (
+                role.team_problem(self._hass) if role is not None else "no_charge_lever"
+            )
+            if problem:
+                entry["problem"] = problem
+                state = "levers"
+                continue
+            assert role is not None
+            for entity_id in role.team_entities():
+                if seen.setdefault(entity_id, battery["id"]) != battery["id"]:
+                    # Two batteries behind one limit cannot take turns.
+                    entry["problem"] = "shared"
+                    state = "levers"
+            if state == "on" and not self.tested(battery):
+                entry["problem"] = "not_tested"
+                state = "not_tested"
+            if state == "on" and entry["soc"] is None:
+                entry["problem"] = "soc_unknown"
+                state = "unknown"
+        if state != "on":
+            return state
+        names = self._team_automations(config, {b["id"] for b, _ in candidates})
+        if names:
+            info["automations"] = names
+            return "automation"
+        if (
+            measurement_kw(self._hass.states.get, config["measurements"]["grid_power"])
+            is None
+        ):
+            return "no_grid"
+        return "on"
+
+    def _team_choose(
+        self,
+        config: dict[str, Any],
+        plan: dict[str, Any] | None,
+        candidates: list[tuple[dict[str, Any], RoleAdapter | None]],
+        deficit: float | None,
+        powers: dict[str, float],
+        now: datetime,
+        today: str,
+        info: dict[str, Any],
+    ) -> tuple[dict[str, tuple[bool, bool]], dict[str, Any]]:
+        """The active battery, the blocks for the others and the hint for the cap."""
+        rules = config["rules"]
+        store: dict[str, Any] = self.data["team"]
+        sizes = {
+            b["id"]: b.get("capacity") for b in (plan or {}).get("batteries") or []
+        }
+        members: list[team_rules.Member] = []
+        for battery, role in candidates:
+            entry = info["batteries"][battery["id"]]
+            size = sizes.get(battery["id"]) or battery.get("capacity_kwh") or 5.0
+            member = team_rules.Member(
+                id=battery["id"],
+                soc=entry["soc"],
+                cutoff=battery.get("cutoff_soc"),
+                floor=entry["floor"],
+                capacity=size,
+                max_kw=(battery.get("max_charge_w") or min(5.0, size * 0.5) * 1000)
+                / 1000,
+                full_at=self._team_full_at(role),
+                empty=battery["id"] in store["empty"],
+                full=battery["id"] in store["full"],
+            )
+            empty, full = team_rules.mark(
+                member, store["empty"].get(member.id), store["full"].get(member.id)
+            )
+            if empty and not member.empty:
+                store["empty"][member.id] = entry["soc"]
+            elif not empty:
+                store["empty"].pop(member.id, None)
+            if full and not member.full:
+                store["full"][member.id] = entry["soc"]
+            elif not full:
+                store["full"].pop(member.id, None)
+            member.empty, member.full = empty, full
+            members.append(member)
+        flow, steady, raw = self._team_flow(deficit, now)
+        info["flow"] = flow
+        active = store["active"]
+        # A battery free to charge that takes nothing while the house gives
+        # to the grid is as full as it goes (its own target, a BMS limit);
+        # not while the grid-friendly morning holds its charging back.
+        current = next((m for m in members if m.id == active), None)
+        if (
+            current is not None
+            and not current.full
+            and deficit is not None
+            and current.id in powers
+            and not self.data.get("day")
+        ):
+            watch = store["watch"].setdefault(current.id, {})
+            if team_rules.watch_full(watch, powers[current.id], -deficit * 1000, now):
+                current.full = True
+                store["full"][current.id] = current.soc
+        charge_order = team_rules.ordered(members, rules.get("team_charge_order") or [])
+        discharge_order = team_rules.ordered(
+            members, rules.get("team_discharge_order") or []
+        )
+        chosen, why = team_rules.choose(
+            charge_order, discharge_order, active, flow, steady
+        )
+        if chosen != active:
+            if active is not None:
+                self._log(
+                    "team_handover",
+                    battery=chosen,
+                    previous=active,
+                    reason=why,
+                    soc=next((m.soc for m in members if m.id == active), None),
+                )
+            store.update(active=chosen, since=now.isoformat(timespec="seconds"))
+        info["active"] = chosen
+        info["since"] = store["since"]
+        parallel = self._team_parallel(config, plan, charge_order, now, today)
+        info["parallel"] = parallel
+        side: set[str] = set()
+        if parallel and flow == "surplus" and raw == "surplus":
+            side = {m.id for m in members if m.id != chosen and not m.full}
+        want: dict[str, tuple[bool, bool]] = {}
+        for member in members:
+            entry = info["batteries"][member.id]
+            if member.id == chosen:
+                # Side by side, nobody may discharge into the others: on a
+                # cloud they are blocked again and the active one is free.
+                want[member.id] = (False, bool(side))
+                entry.update(
+                    charge="free",
+                    discharge="blocked" if side else "free",
+                    why="active",
+                )
+            elif member.id in side:
+                want[member.id] = (False, True)
+                entry.update(charge="free", discharge="blocked", why="parallel")
+            else:
+                want[member.id] = (True, True)
+                entry.update(charge="blocked", discharge="blocked")
+                if flow == "surplus":
+                    entry["why"] = "full" if member.full else "waits_full"
+                else:
+                    entry["why"] = "empty" if member.empty else "waits_empty"
+            entry["empty"] = member.empty
+            entry["full"] = member.full
+        hint = {
+            "active": chosen,
+            "blocked": [k for k, (charge, _) in want.items() if charge],
+            "parallel": sorted(side),
+        }
+        return want, hint
+
+    def _team_flow(
+        self, deficit: float | None, now: datetime
+    ) -> tuple[str | None, bool, str | None]:
+        """The flow Joe goes by (once seen for a while), whether it has lasted
+        long enough for the order to count, and the flow seen right now."""
+        store: dict[str, Any] = self.data["team"]
+        raw = None
+        if deficit is not None:
+            if deficit > team_rules.FLOW_KW:
+                raw = "deficit"
+            elif deficit < -team_rules.FLOW_KW:
+                raw = "surplus"
+        stamp = now.isoformat(timespec="seconds")
+        if raw is not None:
+            if store["raw"] != raw or not store["raw_since"]:
+                store.update(raw=raw, raw_since=stamp)
+            dwell = team_rules.FLOW_DWELL if store["flow"] else timedelta(0)
+            if (
+                raw != store["flow"]
+                and now - datetime.fromisoformat(store["raw_since"]) >= dwell
+            ):
+                store.update(flow=raw, flow_since=stamp)
+        since = store.get("flow_since")
+        steady = bool(
+            since and now - datetime.fromisoformat(since) >= team_rules.PREFER_DWELL
+        )
+        return store["flow"], steady, raw
+
+    def _team_deficit(
+        self, config: dict[str, Any], powers: dict[str, float]
+    ) -> float | None:
+        """What the house needs on top of the sun (kW; negative: it gives).
+
+        From the grid meter and the batteries: what comes from the grid plus
+        what the batteries give.
+        """
+        grid = measurement_kw(
+            self._hass.states.get, config["measurements"]["grid_power"]
+        )
+        if grid is None:
+            return None
+        return grid - sum(powers.values()) / 1000
+
+    def _team_learn(
+        self,
+        candidates: list[tuple[dict[str, Any], RoleAdapter | None]],
+        powers: dict[str, float],
+        deficit: float | None,
+        now: datetime,
+    ) -> None:
+        """Watch for the level each battery really stops discharging at."""
+        store: dict[str, Any] = self.data["team"]
+        if deficit is None:
+            return
+        for battery, _ in candidates:
+            key = battery["id"]
+            power = powers.get(key)
+            soc = number(self._hass.states.get(battery["soc_entity"]))
+            if power is None or soc is None:
+                continue
+            blocked = (store["blocks"].get(key) or {}).get("discharge", False)
+            watch = store["watch"].setdefault(key, {})
+            found = team_rules.watch_cutoff(
+                watch, soc, power, deficit * 1000, not blocked, now
+            )
+            if found is None:
+                continue
+            seen: list[float] = store["cutoffs"].setdefault(key, [])
+            seen.append(found)
+            del seen[: -team_rules.KEEP]
+            store["empty"][key] = found
+            value = team_rules.learned(seen)
+            self._log("team_cutoff", battery=key, soc=found, value=value)
+            known = battery.get("cutoff_soc")
+            if (
+                value is not None
+                and self.on_cutoff
+                and (known is None or abs(known - value) >= 0.2)
+            ):
+                self.on_cutoff(key, value)
+
+    def _team_parallel(
+        self,
+        config: dict[str, Any],
+        plan: dict[str, Any] | None,
+        members: list[team_rules.Member],
+        now: datetime,
+        today: str,
+    ) -> bool:
+        """Whether the batteries charge side by side today: the cautious sun
+        would not fill them one after the other before it goes. Once decided,
+        for the rest of the day (no back and forth with the clouds)."""
+        store: dict[str, Any] = self.data["team"]
+        if store["parallel"] == today:
+            return True
+        hours = (plan or {}).get("hours")
+        if not plan or not hours or all(m.full for m in members):
+            return False
+        caution = day_surplus.CAUTION.get(config["rules"]["day_caution"], 0.8)
+        created = (
+            datetime.fromisoformat(plan["created"]) if plan.get("created") else None
+        )
+        found = day_surplus.slots(hours, created, now, caution)
+        end = day_surplus.pv_end(found, now)
+        if end is None or now >= end:
+            return False
+        if not any(s.surplus > 0 for s in found if s.start < end):
+            return False
+        if team_rules.sequential_fills(found, members, end):
+            return False
+        store["parallel"] = today
+        self._log("team_parallel", until=end.isoformat(timespec="minutes"))
+        return True
+
+    async def _async_team_apply(
+        self,
+        config: dict[str, Any],
+        want: dict[str, tuple[bool, bool]],
+        taken: set[str],
+        now: datetime,
+    ) -> set[str]:
+        """Write the blocks (live only); give back what is free again.
+
+        A charge limit someone else holds right now (the daytime cap, the
+        grid-friendly morning, a test limit) stays theirs. Returns the
+        entities (and batteries) to leave as they are.
+        """
+        store: dict[str, Any] = self.data["team"]
+        if not want or self.team.get("state") != "on" or self.team.get("dry"):
+            reason = "dry" if self.team.get("dry") else self.team.get("state")
+            await self._async_team_off(config, now, reason or "off")
+            self._team_publish()
+            return set()
+        keep: set[str] = set()
+        batteries = {b["id"]: b for b in config["batteries"]}
+        for key, (charge, discharge) in want.items():
+            adapter = make_adapter(batteries[key])
+            assert isinstance(adapter, RoleAdapter)
+            charge_taken = any(e in taken for e in adapter.limit_entities())
+            writes, give_back = adapter.team_block(
+                self._hass, charge, discharge, charge_taken
+            )
+            if give_back:
+                await self._async_team_free(adapter, give_back, now)
+            problem = None
+            if writes:
+                problem = await self._async_write(adapter, writes, now, None)
+                keep |= {w.entity_id for w in writes} | {key}
+            entry = self.team["batteries"][key]
+            entry["problem"] = problem
+            blocks = {"charge": charge and not charge_taken, "discharge": discharge}
+            if store["blocks"].get(key, {"charge": False, "discharge": False}) != (
+                blocks
+            ):
+                self._log("team_block", battery=key, **blocks)
+            if blocks["charge"] or blocks["discharge"]:
+                store["blocks"][key] = blocks
+            else:
+                store["blocks"].pop(key, None)
+        # Batteries no longer in the team (no longer regulating themselves).
+        for key in [k for k in store["blocks"] if k not in want]:
+            await self._async_team_release(config, key, now)
+        self._team_publish()
+        return keep
+
+    async def _async_team_off(
+        self, config: dict[str, Any], now: datetime, reason: str
+    ) -> None:
+        """Every block back as it was (a charge limit held by a daytime cap or
+        the morning stays theirs; the release puts it back after them)."""
+        store: dict[str, Any] = self.data["team"]
+        if not store["blocks"]:
+            return
+        for key in list(store["blocks"]):
+            await self._async_team_release(config, key, now)
+        self._log("team_end", reason=reason)
+
+    async def _async_team_release(
+        self, config: dict[str, Any], key: str, now: datetime
+    ) -> None:
+        """One battery's blocks back (a battery that is gone: the release does it)."""
+        store: dict[str, Any] = self.data["team"]
+        battery = next((b for b in config["batteries"] if b["id"] == key), None)
+        adapter = make_adapter(battery) if battery else None
+        if isinstance(adapter, RoleAdapter):
+            roles = [
+                *(adapter.limit_roles() or ()),
+                *(adapter.discharge_roles() or ()),
+            ]
+            if key in self.data["surplus"]["caps"] or self.data.get("day"):
+                # The cap or the morning holds the charge limit (with the
+                # system's shared switch all of it): theirs to give back.
+                roles = (
+                    []
+                    if adapter.team_shared()
+                    else [*(adapter.discharge_roles() or ())]
+                )
+            await self._async_team_free(adapter, list(dict.fromkeys(roles)), now)
+            self._log("team_block", battery=key, charge=False, discharge=False)
+        store["blocks"].pop(key, None)
+
+    async def _async_team_free(
+        self, adapter: RoleAdapter, roles: list[str], now: datetime
+    ) -> None:
+        """These levers back as they were (what an automation set meanwhile
+        stays); what is back is no longer Joe's to restore."""
+        entities = [adapter.controls[r] for r in roles if r in adapter.controls]
+        saved: dict[str, Any] = self.data["saved"]
+        if not any(e in saved for e in entities):
+            return
+        self._drop_foreign(entities)
+        writes = adapter.team_free(saved, roles)
+        if writes:
+            await self._async_write(adapter, writes, now, None)
+        for entity_id in entities:
+            if entity_id in saved and matches(
+                self._hass, fit(self._hass, Write(entity_id, saved[entity_id]))
+            ):
+                saved.pop(entity_id, None)
+                self.data["written"].pop(entity_id, None)
+        if not any(e in saved for e in adapter.entities()):
+            key = adapter.battery["id"]
+            self.data["active"] = [k for k in self.data["active"] if k != key]
+
+    async def _async_team_transfer(
+        self,
+        config: dict[str, Any],
+        info: dict[str, Any],
+        powers: dict[str, float],
+        now: datetime,
+        today: str,
+    ) -> None:
+        """The watchdog: two batteries running against each other for a while.
+
+        Logged once per time it happens; while Joe blocks for real it should
+        not happen at all: then "Joe braucht dich" and, if wanted, a push
+        (once a day).
+        """
+        store: dict[str, Any] = self.data["team"]
+        names = {b["id"]: b["name"] for b in config["batteries"]}
+        charging, discharging = team_rules.opposite(powers)
+        last = store.get("transfer")
+        if charging:
+            stamp = now.isoformat(timespec="seconds")
+            if not last or not last.get("active"):
+                last = {"since": stamp, "active": True, "logged": False}
+            last.update(
+                charging=[names.get(k, k) for k in charging],
+                discharging=[names.get(k, k) for k in discharging],
+                at=stamp,
+            )
+            if (
+                now - datetime.fromisoformat(last["since"]) >= team_rules.TRANSFER_SPAN
+                and not last["logged"]
+            ):
+                last["logged"] = True
+                live = info["state"] == "on" and not info["dry"]
+                last["despite"] = live
+                if info["state"] in ("together", "off"):
+                    # Left to themselves on purpose: nothing to tell.
+                    store["transfer"] = last
+                    return
+                self._log(
+                    "team_transfer",
+                    battery=charging[0],
+                    charging=charging,
+                    discharging=discharging,
+                    blocked=live,
+                )
+                if live and store["told"] != today and self.notifier:
+                    store["told"] = today
+                    await self.notifier.async_problem(
+                        "battery_transfer",
+                        charging=", ".join(last["charging"]),
+                        discharging=", ".join(last["discharging"]),
+                    )
+            store["transfer"] = last
+        elif last and last.get("active"):
+            last["active"] = False
+            store["transfer"] = last
+        if last and last.get("logged") and last.get("at", "")[:10] == today:
+            info["transfer"] = {
+                k: last.get(k)
+                for k in ("since", "at", "active", "charging", "discharging", "despite")
+            }
+
+    def _team_automations(self, config: dict[str, Any], ids: set[str]) -> list[str]:
+        """Automations (switched on) that write to these batteries: the owner's
+        own interlock does Joe's job so far. Found as the "Störenfriede"
+        (control/automations.py); one that only reads or tells is none."""
+        try:
+            found = battery_automations.find(
+                self._hass, config, self.data["automations_off"]
+            )
+        except Exception:
+            _LOGGER.exception("Looking for automations failed")
+            return []
+        return [
+            a["name"]
+            for a in found
+            if a["on"] and any(w["battery_id"] in ids for w in a["writes"])
+        ]
+
+    def _proposed_regulating(self, battery: dict[str, Any]) -> bool:
+        """Whether a battery regulates itself to 0 W at the grid meter, as its
+        profile says: Fronius always, Omnibattery in automatic mode."""
+        adapter = battery.get("adapter")
+        if adapter == "fronius":
+            return True
+        if adapter != "omnibattery":
+            return False
+        for step in battery.get("prepare") or []:
+            entity_id = step["entity_id"]
+            # Joe's own manual mode at night does not count: its original does.
+            value = (
+                self.data["saved"][entity_id]
+                if entity_id in self.data["saved"]
+                else read(self._hass, entity_id)
+            )
+            if value is True or value == step.get("value"):
+                return False
+        return True
+
+    def _team_floor(self, battery: dict[str, Any], role: RoleAdapter | None) -> float:
+        """The level Joe counts on without a learned cutoff: the battery's own
+        floor (as set in Joe, else on the device), else a typical one."""
+        if battery.get("floor_soc") is not None:
+            return float(battery["floor_soc"])
+        value = self._original(role, "min_soc")
+        if role is not None and value is not None:
+            return float(role._level("min_soc", value))
+        return team_rules.DEFAULT_CUTOFF
+
+    def _team_full_at(self, role: RoleAdapter | None) -> float:
+        """Full at its own charge target, if lower."""
+        value = self._original(role, "charge_target")
+        if value is not None and 50 <= value < team_rules.FULL:
+            return float(value)
+        return team_rules.FULL
+
+    def _original(self, role: RoleAdapter | None, name: str) -> float | None:
+        """A lever's value as it was before Joe changed it."""
+        entity_id = role.controls.get(name) if role is not None else None
+        if not entity_id:
+            return None
+        saved = self.data["saved"]
+        value = saved[entity_id] if entity_id in saved else read(self._hass, entity_id)
+        if isinstance(value, bool) or not isinstance(value, int | float):
+            return None
+        return float(value)
+
     # --- charging to a level by hand ----------------------------------------
 
     async def async_boost(
@@ -1591,9 +2306,11 @@ class JoeExecutor:
             if plan and plan.get("window"):
                 self.data["skip"] = plan["window"]["start"]
             self._log("emergency")
-            # No daytime cap again today either.
+            # No daytime cap again today either, and no blocks.
             self._surplus_forget("emergency")
-            self.data["surplus"]["released"] = dt_util.now().date().isoformat()
+            today = dt_util.now().date().isoformat()
+            self.data["surplus"]["released"] = today
+            self.data["team"]["paused"] = today
             await self._async_release("emergency")
             self._set_status("skipped", self.status.get("night"), {}, {})
             await self._async_save()
@@ -1700,6 +2417,10 @@ class JoeExecutor:
             caps = self.data["surplus"]["caps"]
             if any(k not in keep for k in caps):
                 self._surplus_forget(reason)
+            # Blocks given back are no blocks any more.
+            blocks = self.data["team"]["blocks"]
+            for key in [k for k in blocks if k not in keep]:
+                del blocks[key]
         if errors:
             self.data["failures"] += 1
             self._log("release_failed", reason=reason, entities=errors)
@@ -2160,6 +2881,7 @@ class JoeExecutor:
             "tonight_target": self.data["tonight_target"],
             "boost": self.data["boost"],
             "surplus": self.surplus,
+            "team": self.team,
         }
 
     async def async_forget(self) -> None:
@@ -2215,3 +2937,10 @@ def _solar_kw(hass: HomeAssistant, config: dict[str, Any]) -> float | None:
     if not values or None in values:
         return None
     return sum(v or 0.0 for v in values)
+
+
+def _with_room(store: day_surplus.Store, room: float) -> day_surplus.Store:
+    """A battery for the daytime cap with the room of those waiting behind it."""
+    capacity = store.capacity + room
+    soc = 100 - (store.room + room) / capacity * 100
+    return day_surplus.Store(store.id, capacity, soc, store.max_kw, store.capped)

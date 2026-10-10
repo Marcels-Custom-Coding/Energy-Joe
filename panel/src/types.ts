@@ -103,7 +103,9 @@ export type ControlRole =
   | "charge_limit_enabled"
   /** On the integration's system device, only for the daytime cap (Omnibattery's power limits). */
   | "system_charge_limit"
-  | "system_charge_limit_enabled";
+  | "system_charge_limit_enabled"
+  /** On the system device too: blocks discharging by day (several batteries one after the other). */
+  | "system_discharge_limit";
 export const CONTROL_ROLES: ControlRole[] = [
   "min_soc",
   "grid_charge",
@@ -149,6 +151,10 @@ export interface BatteryConfig {
   day_surplus?: boolean;
   /** What 100 % of a charge limit in % stand for (W; Fronius); null: not known yet, Joe may learn it. */
   limit_ref_w?: number | null;
+  /** Regulates itself to 0 W at the grid meter (Fronius, Omnibattery in automatic mode); null: as Joe proposes. */
+  self_regulating?: boolean | null;
+  /** The level it really stops discharging at (learned or set); null: not known yet. */
+  cutoff_soc?: number | null;
 }
 
 export type TariffKind = "fixed_window" | "dynamic" | "flat" | "unknown";
@@ -284,6 +290,71 @@ export interface Rules {
   day_surplus: boolean;
   /** How much of the forecast Joe counts on: 90 / 80 / 65 %. */
   day_caution: DayCaution;
+  /** Several batteries that regulate themselves: one after the other, or left to themselves; null: not chosen. */
+  battery_team?: BatteryTeamMode | null;
+  /** Battery ids in the order they charge and discharge (the others follow). */
+  team_charge_order?: string[];
+  team_discharge_order?: string[];
+}
+
+export type BatteryTeamMode = "sequence" | "together";
+
+/** What several batteries do together now (executor._async_team). */
+export interface BatteryTeam {
+  /** on: Joe coordinates (or would, when dry); the others say why not. */
+  state:
+    | "off"
+    | "on"
+    | "unset"
+    | "together"
+    | "single"
+    | "night"
+    | "paused"
+    | "levers"
+    | "not_tested"
+    | "unknown"
+    | "automation"
+    | "no_grid";
+  mode: BatteryTeamMode | null;
+  /** Not live: Joe only shows what he would do. */
+  dry: boolean;
+  /** The battery that may work now. */
+  active: string | null;
+  since?: string | null;
+  flow: "surplus" | "deficit" | null;
+  /** They charge side by side today (the sun would not fill them one after the other). */
+  parallel: boolean;
+  batteries: Record<
+    string,
+    {
+      name: string;
+      self_regulating: boolean;
+      proposed: boolean;
+      soc: number | null;
+      power_w: number | null;
+      cutoff: number | null;
+      floor: number;
+      charge: "free" | "blocked" | null;
+      discharge: "free" | "blocked" | null;
+      why: "active" | "parallel" | "waits_full" | "waits_empty" | "full" | "empty" | null;
+      problem: string | null;
+      empty?: boolean;
+      full?: boolean;
+    }
+  >;
+  /** state "automation": the owner's automations that do it so far. */
+  automations: string[];
+  /** Two batteries ran against each other today (despite: while Joe blocked for real). */
+  transfer: {
+    since: string;
+    at: string;
+    active: boolean;
+    charging: string[];
+    discharging: string[];
+    despite: boolean;
+  } | null;
+  /** Two or more regulate themselves and nothing is chosen yet: Joe proposes "Nacheinander". */
+  proposal: boolean;
 }
 
 export type DayCaution = "tight" | "normal" | "careful";
@@ -308,7 +379,9 @@ export type SurplusBatteryState =
   /** Its entities are not available right now. */
   | "unavailable"
   /** Charge level or capacity unknown. */
-  | "unknown";
+  | "unknown"
+  /** Several batteries one after the other: its turn comes after the active one. */
+  | "team_wait";
 
 /** An evcc loadpoint as Joe reads it (control/evcc.py). */
 export interface EvccLoadpoint {
@@ -1062,6 +1135,8 @@ export interface ControlView {
   boost?: Record<string, { target: number; chosen: number; unit: "%" | "km"; sensor: string; since: string; until: string }>;
   /** Daytime surplus for evcc (older backends: missing). */
   surplus?: DaySurplus;
+  /** Several batteries one after the other (older backends: missing). */
+  team?: BatteryTeam;
   /** Per battery: ready to steer, or why not. */
   ready: Record<string, "ready" | "not_tested" | "outdated" | "not_controllable" | "controls_missing">;
 }

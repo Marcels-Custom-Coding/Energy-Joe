@@ -40,6 +40,7 @@ const ROLE_FILTER: Record<ControlRole, FilterName> = {
   charge_limit_enabled: "toggle",
   system_charge_limit: "setpoint",
   system_charge_limit_enabled: "toggle",
+  system_discharge_limit: "setpoint",
 };
 const STEP_NAMES: StepName[] = ["charge", "hold", "release"];
 

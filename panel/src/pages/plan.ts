@@ -3,6 +3,7 @@ import { property, state } from "lit/decorators.js";
 import { displayTitle, swoosh } from "../components/bits";
 import "../components/car-need";
 import "../components/chart";
+import { batteryTeam, teamText } from "../components/battery-team";
 import { daySurplus, surplusExtra, surplusText } from "../components/day-surplus";
 import type { ChartBand, ChartMarker, ChartSeries } from "../components/chart";
 import { planCostLine, planPose, planSentence, slotsText, timeOf, windowText } from "../components/plan-text";
@@ -288,14 +289,17 @@ export class JoePlanPage extends LitElement {
 
   /**
    * "Heute tagsüber": the batteries charge only as fast as they must, so an
-   * evcc loadpoint in PV mode gets the rest of the sun (only with the rule on).
+   * evcc loadpoint in PV mode gets the rest of the sun (only with the rule on),
+   * and several batteries work one after the other ("Nacheinander").
    */
   private renderDaySurplus(t: Translate): TemplateResult | typeof nothing {
     const surplus = daySurplus(this.state);
-    if (!surplus || surplus.state === "off") {
+    const team = batteryTeam(this.state);
+    const teamShown = team && team.mode === "sequence";
+    if ((!surplus || surplus.state === "off") && !teamShown) {
       return nothing;
     }
-    const caps = Object.values(surplus.batteries ?? {}).filter((b) => b.cap_kw != null);
+    const caps = Object.values(surplus?.batteries ?? {}).filter((b) => b.cap_kw != null);
     const each =
       caps.length > 1
         ? caps.map((b) => t("plan.day_surplus.battery", { name: b.name, kw: formatNumber(t.lang, b.cap_kw ?? 0, 1) })).join(" · ")
@@ -303,13 +307,24 @@ export class JoePlanPage extends LitElement {
     return html`<section class="chart-card" data-tipped>
       <div class="chart-head">${t("plan.day_surplus")} ${tip(t, "plan_day_surplus")}</div>
       <ul class="tonight">
-        ${this.tonightRow(t, {
-          icon: "mdi:solar-power-variant-outline",
-          name: t("rule.day_surplus"),
-          text: surplusText(t, surplus),
-          extra: [surplusExtra(t, surplus), each].filter(Boolean).join(" · "),
-          to: { tab: "settings", section: "rules", id: "day_surplus" },
-        })}
+        ${surplus && surplus.state !== "off"
+          ? this.tonightRow(t, {
+              icon: "mdi:solar-power-variant-outline",
+              name: t("rule.day_surplus"),
+              text: surplusText(t, surplus),
+              extra: [surplusExtra(t, surplus), each].filter(Boolean).join(" · "),
+              to: { tab: "settings", section: "rules", id: "day_surplus" },
+            })
+          : nothing}
+        ${teamShown
+          ? this.tonightRow(t, {
+              icon: "mdi:battery-sync-outline",
+              name: t("team.title"),
+              text: teamText(t, team),
+              extra: team.parallel ? t("team.parallel") : "",
+              to: { tab: "devices", section: "battery", id: "together" },
+            })
+          : nothing}
       </ul>
     </section>`;
   }
