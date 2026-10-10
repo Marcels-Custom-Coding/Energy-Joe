@@ -299,9 +299,15 @@ class JoeRuntime:
 
     async def async_reset_learning(self, scope: str = "all") -> bool:
         """Forget what Joe learned, everything or one area (the panel's reset buttons)."""
+        if scope == "climate":
+            # The warm-up rates live with the heating, not in what the learner keeps.
+            await self.climate.async_reset_rates()
+            return True
         if not self.learner.active:
             return False
         await self.learner.async_reset(scope)
+        if scope == "all":
+            await self.climate.async_reset_rates()
         return True
 
     async def async_answer_day(self, day: str, answer: str) -> bool:

@@ -204,6 +204,9 @@ def test_summary_of_a_day(hass: HomeAssistant) -> None:
     assert summary["temp"]["max"] == 21.5
     assert summary["sun_covers"] == "2026-10-03T10:00:00+02:00"
     assert summary["cov"] == 1.0
+    assert summary["answer"] is None
+    answered = summarize("2026-10-03", {"hours": hours, "answer": "guests"}, None)
+    assert answered["answer"] == "guests"
 
 
 def config_with(**patch: Any) -> dict[str, Any]:
@@ -396,6 +399,9 @@ def test_day_view_places_hours_on_slots(hass: HomeAssistant) -> None:
     assert view["window_slots"] == [[0, 7], [23, 25]]
     assert view["fc_slots"][13] == 1.5
     assert view["sun"]["sunrise_slot"] == 8.5
+    assert view["answer"] is None
+    view = day_view("2026-10-25", {**data, "answer": "away"}, None, {})
+    assert view["answer"] == "away" and view["summary"]["answer"] == "away"
 
 
 async def test_counters_survive_resets_and_naps(

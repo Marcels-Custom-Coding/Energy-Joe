@@ -208,6 +208,14 @@ class ClimateController:
     async def async_remove(self) -> None:
         await self._store.async_remove()
 
+    async def async_reset_rates(self) -> None:
+        """Forget the learned warm-up rates; every room starts at the default again."""
+        self.data["rates"] = {}
+        if self.status:
+            self.status = {**self.status, "rates": self.data["rates"]}
+        await self._store.async_save(self.data)
+        self._changed()
+
     @callback
     def async_start(self) -> None:
         self.async_stop()

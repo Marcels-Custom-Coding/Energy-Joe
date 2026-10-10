@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any
 
 import voluptuous as vol
@@ -27,7 +27,8 @@ from .calendar import unique_id as calendar_unique_id
 from .calendar_feed import feed_path
 from .const import DOMAIN
 from .control import week
-from .control.climate import arrivals as climate_arrivals
+from .control.climate import LOG_SIZE as CLIMATE_LOG_SIZE, arrivals as climate_arrivals
+from .control.executor import LOG_SIZE as CONTROL_LOG_SIZE
 from .control.meters import meter_options, suggest as suggest_meter
 from .control.profiles import PROFILES
 from .discovery import async_check, async_collect, async_discover, discover
@@ -76,6 +77,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_learning)
     websocket_api.async_register_command(hass, ws_learning_reset)
     websocket_api.async_register_command(hass, ws_learning_answer)
+    websocket_api.async_register_command(hass, ws_log)
     websocket_api.async_register_command(hass, ws_control_test)
     websocket_api.async_register_command(hass, ws_control_release)
     websocket_api.async_register_command(hass, ws_control_skip)
@@ -535,9 +537,12 @@ async def ws_learning(
     for day, data in days.items():
         evaluation = data.get("evaluation") or {}
         if evaluation.get("complete") and evaluation.get("final", True):
+            # The night is kept on the day it starts; the days page shows it on the day it ends.
+            window = (data.get("plan") or {}).get("window") or {}
             accuracy.append(
                 {
                     "date": day,
+                    "end": (window.get("end") or day)[:10],
                     "saving": evaluation["saving"],
                     "solar": evaluation["solar"],
                     "home": evaluation["home"],
@@ -578,7 +583,8 @@ async def ws_learning(
 @websocket_api.websocket_command(
     {
         vol.Required("type"): f"{DOMAIN}/learning/reset",
-        vol.Optional("scope", default="all"): vol.In(("all", *SCOPES)),
+        # "climate": the warm-up rates the heating learned (kept with it).
+        vol.Optional("scope", default="all"): vol.In(("all", *SCOPES, "climate")),
     }
 )
 @websocket_api.require_admin
@@ -618,6 +624,41 @@ async def ws_learning_answer(
         connection.send_error(msg["id"], "not_learning", "Joe is not learning.")
         return
     connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/log"})
+@websocket_api.require_admin
+@callback
+def ws_log(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Everything Joe did, steering and heating together, newest first.
+
+    The state only carries the latest entries; this is the whole kept log.
+    """
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    # Each log is oldest first; reversed, entries of the same second stay newest first.
+    entries = [
+        {**entry, "area": "control"}
+        for entry in reversed(runtime.executor.data["log"][-CONTROL_LOG_SIZE:])
+    ] + [
+        {**entry, "area": "climate"}
+        for entry in reversed(runtime.climate.data["log"][-CLIMATE_LOG_SIZE:])
+    ]
+    entries.sort(key=lambda entry: _moment(entry["at"]), reverse=True)
+    connection.send_result(msg["id"], {"entries": entries})
+
+
+def _moment(text: str) -> datetime:
+    """When a log entry happened (entries without a zone count as local)."""
+    if (moment := dt_util.parse_datetime(text)) is None:
+        return datetime.min.replace(tzinfo=dt_util.UTC)
+    if moment.tzinfo is None:
+        return moment.replace(tzinfo=dt_util.get_default_time_zone())
+    return moment
 
 
 @websocket_api.websocket_command(

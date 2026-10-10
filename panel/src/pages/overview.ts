@@ -11,6 +11,7 @@ import { formatNumber, measurementKw, numberState, sumKw } from "../entities";
 import { dayText, money, nights, today } from "../components/look-back";
 import { planCostLine, planLines, planPose, planSentence, windowText } from "../components/plan-text";
 import type { Translate } from "../i18n";
+import { PANEL, href, onLink } from "../router";
 import { shared } from "../styles/shared";
 import type { DaySummary, HistoryDays, HomeAssistant, JoeState } from "../types";
 
@@ -20,7 +21,7 @@ export class JoeOverview extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) state?: JoeState;
   /** Where the panel lives, for links between its pages. */
-  @property() prefix = "/energy-joe";
+  @property() prefix = PANEL;
 
   @state() private week?: DaySummary[];
 
@@ -414,7 +415,7 @@ export class JoeOverview extends LitElement {
             ? t("plan.fixed_at", { time: plan.created.slice(11, 16) })
             : t("plan.preview_at", { time: plan.created.slice(11, 16) })}
         </span>
-        <a class="btn btn-secondary" data-notip href=${`${this.prefix}/plan`} @click=${(ev: MouseEvent) => this.open(ev, "plan")}
+        <a class="btn btn-secondary" data-notip href=${href(this.prefix, "/plan")} @click=${onLink("/plan")}
           >${t("overview.night.more")}</a
         >
       </div>
@@ -479,7 +480,7 @@ export class JoeOverview extends LitElement {
               })}
             </span>`
           : html`<span class="chip warn">${t("overview.sim.provisional", { time: last.until.slice(11, 16) })}</span>`}
-        <a class="btn btn-secondary" data-notip href=${`${this.prefix}/learn`} @click=${(ev: MouseEvent) => this.open(ev, "learn")}
+        <a class="btn btn-secondary" data-notip href=${href(this.prefix, "/review/result")} @click=${onLink("/review/result")}
           >${t("overview.sim.more")}</a
         >
       </div>
@@ -593,28 +594,12 @@ export class JoeOverview extends LitElement {
               <div class="legend">
                 ${series.map((s) => html`<span><i style="background:${s.color}"></i>${s.label}</span>`)}
               </div>
-              <a class="btn btn-secondary" data-notip href=${this.historyHref()} @click=${this.openHistory}
+              <a class="btn btn-secondary" data-notip href=${href(this.prefix, "/review/days")} @click=${onLink("/review/days")}
                 >${t("overview.week.more")}</a
               >
             </div>`
         : nothing}
     </section>`;
-  }
-
-  private historyHref(): string {
-    return `${this.prefix}/history`;
-  }
-
-  private openHistory(ev: MouseEvent): void {
-    this.open(ev, "history");
-  }
-
-  private open(ev: MouseEvent, page: "history" | "plan" | "learn"): void {
-    if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button !== 0) {
-      return;
-    }
-    ev.preventDefault();
-    this.dispatchEvent(new CustomEvent("joe-navigate", { detail: { page }, bubbles: true, composed: true }));
   }
 }
 

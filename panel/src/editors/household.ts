@@ -1,29 +1,31 @@
 import { LitElement, css, html, nothing, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
+import { haOpen, haTarget } from "../components/ha-open";
 import { tip } from "../components/tip";
 import { isIgnored, pickEntity, saveConfig, withIgnored } from "../config";
 import { define } from "../define";
 import { entityName } from "../entities";
+import { createGuest, presenceGroups } from "../household-helpers";
 import type { Translate } from "../i18n";
 import { shared } from "../styles/shared";
 import type { Discovery, HomeAssistant, JoeConfig, PersonConfig } from "../types";
 
-/**
- * The household: people with their presence and any number of calendars.
- * Every change is saved right away.
- */
-export class JoeHousehold extends LitElement {
+// The household in two parts that the Haushalt pages and the setup share:
+// <joe-household-people> (who lives here) and <joe-household-presence> (the
+// helper "someone is home" and guest mode). <joe-household> shows both, one
+// below the other, for the setup question. Every change is saved right away.
+
+/** The people with their presence and any number of calendars. */
+export class JoeHouseholdPeople extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) t?: Translate;
   @property({ attribute: false }) config?: JoeConfig;
   @property({ attribute: false }) discovery?: Discovery;
-
-  /** For the proposed helper: persons left out (all others are in), a guest switch. */
-  @state() private leftOut: string[] = [];
-  @state() private guest = true;
-  @state() private creating = false;
-  @state() private failed?: string;
-  @state() private offerNew = false;
+  /**
+   * On the Haushalt page: each person gets an anchor (their id), the button to
+   * open them in Home Assistant, and a slot "p:<id>" for more about them.
+   */
+  @property({ type: Boolean }) detailed = false;
 
   static styles = [
     shared,
@@ -47,7 +49,8 @@ export class JoeHousehold extends LitElement {
       .top {
         display: flex;
         align-items: center;
-        gap: 12px;
+        flex-wrap: wrap;
+        gap: 8px 12px;
       }
       .avatar {
         width: 40px;
@@ -64,12 +67,13 @@ export class JoeHousehold extends LitElement {
         font-size: 20px;
       }
       .who {
-        flex: 1;
+        flex: 1 1 120px;
         min-width: 0;
       }
       .who b {
         display: block;
         font-weight: 700;
+        overflow-wrap: anywhere;
       }
       .who small {
         color: var(--joe-ink-2);
@@ -78,6 +82,12 @@ export class JoeHousehold extends LitElement {
       .home {
         color: var(--joe-good) !important;
         font-weight: 600;
+      }
+      .top-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-left: auto;
       }
       .cals {
         display: flex;
@@ -90,16 +100,19 @@ export class JoeHousehold extends LitElement {
         display: inline-flex;
         align-items: center;
         gap: 6px;
+        max-width: 100%;
         padding: 4px 6px 4px 10px;
         border-radius: 999px;
         background: var(--joe-info-soft);
         color: var(--joe-ink);
         font-size: 13px;
         font-weight: 600;
+        overflow-wrap: anywhere;
       }
       .cal button {
         width: 24px;
         height: 24px;
+        flex: none;
         border: 0;
         border-radius: 50%;
         display: grid;
@@ -140,11 +153,200 @@ export class JoeHousehold extends LitElement {
         color: var(--joe-muted);
         margin: 0;
       }
+      @media (pointer: coarse) {
+        .cal {
+          padding-block: 0;
+        }
+        .cal button {
+          width: 44px;
+          height: 44px;
+          margin: 0 -6px 0 -8px;
+        }
+      }
+    `,
+  ];
+
+  protected render() {
+    const { t, hass, config } = this;
+    if (!t || !hass || !config) {
+      return nothing;
+    }
+    const outside = (this.discovery?.persons ?? []).filter(
+      (p) => isIgnored(config, `person:${p.entity_id}`) && !config.persons.some((c) => c.id === p.entity_id),
+    );
+    return html`${config.persons.length
+        ? html`<ul>
+            ${config.persons.map((person) => this.renderPerson(t, hass, person))}
+          </ul>`
+        : html`<p class="empty">${t("household.empty")}</p>`}
+      <div class="with-tip add" data-tipped>
+        <button type="button" class="mini-btn" @click=${this.addPerson}>
+          <ha-icon icon="mdi:account-plus-outline"></ha-icon>${t("household.add")}
+        </button>
+        ${tip(t, "f_person_add")}
+      </div>
+      ${outside.length
+        ? html`<div class="others" data-tipped>
+            <span>${t("household.left_out")}</span>
+            ${outside.map(
+              (p) => html`<button type="button" class="mini-btn quiet" @click=${() => this.bringBack(p)}>
+                <ha-icon icon="mdi:undo-variant"></ha-icon>${p.name}
+              </button>`,
+            )}
+            ${tip(t, "household_left_out")}
+          </div>`
+        : nothing}`;
+  }
+
+  private renderPerson(t: Translate, hass: HomeAssistant, person: PersonConfig): TemplateResult {
+    const state = person.person_entity ? hass.states[person.person_entity]?.state : undefined;
+    const presence =
+      state === "home"
+        ? html`<small class="home">${t("household.home")}</small>`
+        : state === "not_home"
+          ? html`<small>${t("household.away")}</small>`
+          : state
+            ? html`<small>${t("household.zone", { zone: state })}</small>`
+            : html`<small>${t("household.no_presence")}</small>`;
+    return html`<li class="person" data-anchor=${this.detailed ? person.id : nothing}>
+      <div class="top" data-tipped>
+        <span class="avatar" aria-hidden="true">${person.name.slice(0, 1).toUpperCase()}</span>
+        <div class="who"><b>${person.name}</b>${presence}</div>
+        <span class="top-actions">
+          ${this.detailed ? haOpen(t, haTarget(hass, person.person_entity, person.name)) : nothing}
+          <button type="button" class="mini-btn quiet" @click=${() => this.removePerson(person)}>
+            ${t("household.remove")}
+          </button>
+          ${tip(t, "household_remove")}
+        </span>
+      </div>
+      <div class="cals" data-tipped>
+        <span class="cals-label">${t("household.calendars")}</span>
+        ${person.calendars.map(
+          (calendar) => html`<span class="cal">
+            ${entityName(hass, calendar)}
+            <button
+              type="button"
+              aria-label=${t("household.calendar_remove", { name: entityName(hass, calendar) })}
+              @click=${() => this.setCalendars(person, person.calendars.filter((c) => c !== calendar))}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+          </span>`,
+        )}
+        <button type="button" class="mini-btn" @click=${() => this.addCalendars(person)}>
+          <ha-icon icon="mdi:calendar-plus"></ha-icon>${t("household.calendar_add")}
+        </button>
+        ${tip(t, "f_calendars")}
+      </div>
+      ${this.detailed ? html`<slot name=${`p:${person.id}`}></slot>` : nothing}
+    </li>`;
+  }
+
+  private async addPerson(): Promise<void> {
+    const { t, config } = this;
+    if (!t || !config) {
+      return;
+    }
+    const picked = await pickEntity(this, {
+      heading: t("pick.person.title"),
+      tip: "pick_person",
+      filter: "person",
+      selected: [],
+      exclude: config.persons.map((p) => p.person_entity).filter((id): id is string => Boolean(id)),
+    });
+    const entity = picked?.selected[0];
+    if (!entity || !this.hass) {
+      return;
+    }
+    const found = this.discovery?.persons.find((p) => p.entity_id === entity);
+    saveConfig(this, {
+      persons: { [entity]: { name: entityName(this.hass, entity), person_entity: entity, calendars: found?.calendars ?? [] } },
+      answers: { ignored: withIgnored(config, `person:${entity}`, false) },
+    });
+  }
+
+  private bringBack(found: { entity_id: string; name: string; calendars: string[] }): void {
+    saveConfig(this, {
+      persons: { [found.entity_id]: { name: found.name, person_entity: found.entity_id, calendars: found.calendars } },
+      answers: { ignored: withIgnored(this.config!, `person:${found.entity_id}`, false) },
+    });
+  }
+
+  private removePerson(person: PersonConfig): void {
+    saveConfig(this, {
+      persons: { [person.id]: null },
+      answers: { ignored: withIgnored(this.config!, `person:${person.id}`, true) },
+    });
+  }
+
+  private async addCalendars(person: PersonConfig): Promise<void> {
+    const t = this.t;
+    if (!t) {
+      return;
+    }
+    const picked = await pickEntity(this, {
+      heading: t("pick.calendar.title", { name: person.name }),
+      tip: "pick_calendar",
+      filter: "calendar",
+      multiple: true,
+      selected: person.calendars,
+    });
+    if (picked) {
+      this.setCalendars(person, picked.selected);
+    }
+  }
+
+  private setCalendars(person: PersonConfig, calendars: string[]): void {
+    saveConfig(this, { persons: { [person.id]: { calendars } } });
+  }
+}
+
+/** "Someone is home": one helper of Home Assistant – Joe proposes to create it – and guest mode. */
+export class JoeHouseholdPresence extends LitElement {
+  @property({ attribute: false }) hass?: HomeAssistant;
+  @property({ attribute: false }) t?: Translate;
+  @property({ attribute: false }) config?: JoeConfig;
+  @property({ attribute: false }) discovery?: Discovery;
+  /** On the Haushalt page it is a card of its own. */
+  @property({ type: Boolean, reflect: true }) card = false;
+
+  /** For the proposed helper: persons left out (all others are in), a guest switch. */
+  @state() private leftOut: string[] = [];
+  @state() private guest = true;
+  @state() private creating = false;
+  @state() private failed?: string;
+  @state() private offerNew = false;
+
+  static styles = [
+    shared,
+    css`
+      :host {
+        display: block;
+      }
       .presence {
         margin-top: 16px;
         padding: 14px;
         border-radius: 12px;
         background: var(--joe-surface-2);
+      }
+      :host([card]) .presence {
+        margin-top: 14px;
+        padding: 18px 20px;
+        border-radius: 14px;
+        background: var(--joe-surface);
+        box-shadow: inset 0 0 0 1px var(--joe-line);
+      }
+      .head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .head .eyebrow {
+        flex: 1;
+        min-width: 0;
       }
       .presence p {
         margin: 6px 0 0;
@@ -162,13 +364,27 @@ export class JoeHousehold extends LitElement {
         font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
         font-size: 12.5px;
         user-select: all;
+        overflow-wrap: anywhere;
       }
-      .presence .row {
+      .row {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
         gap: 8px;
         margin-top: 10px;
+      }
+      .row .chip {
+        white-space: normal;
+        overflow-wrap: anywhere;
+      }
+      .row small {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      @media (max-width: 760px) {
+        :host([card]) .presence {
+          padding: 16px;
+        }
       }
     `,
   ];
@@ -178,39 +394,13 @@ export class JoeHousehold extends LitElement {
     if (!t || !hass || !config) {
       return nothing;
     }
-    const outside = (this.discovery?.persons ?? []).filter(
-      (p) => isIgnored(config, `person:${p.entity_id}`) && !config.persons.some((c) => c.id === p.entity_id),
-    );
-    return html`<div data-tipped>
-      ${config.persons.length
-        ? html`<ul>
-            ${config.persons.map((person) => this.renderPerson(t, hass, person))}
-          </ul>`
-        : html`<p class="empty">${t("household.empty")}</p>`}
-      <div class="with-tip add">
-        <button type="button" class="mini-btn" @click=${this.addPerson}>
-          <ha-icon icon="mdi:account-plus-outline"></ha-icon>${t("household.add")}
-        </button>
-        ${tip(t, "f_person_add")}
-      </div>
-      ${this.renderPresence(t, hass, config)}
-      ${outside.length
-        ? html`<div class="others">
-            <span>${t("household.left_out")}</span>
-            ${outside.map(
-              (p) => html`<button type="button" class="mini-btn quiet" @click=${() => this.bringBack(p)}>
-                <ha-icon icon="mdi:undo-variant"></ha-icon>${p.name}
-              </button>`,
-            )}
-          </div>`
-        : nothing}
-    </div>`;
-  }
-
-  /** "Someone is home": one helper of Home Assistant – Joe proposes to create it. */
-  private renderPresence(t: Translate, hass: HomeAssistant, config: JoeConfig): TemplateResult {
     const entity = config.context.presence_entity;
-    const head = html`<div class="with-tip"><b>${t("household.presence")}</b>${tip(t, "household_presence")}</div>`;
+    const head = this.card
+      ? html`<div class="head">
+          <div class="eyebrow"><ha-icon icon="mdi:account-check-outline"></ha-icon>${t("household.presence")}</div>
+          ${tip(t, "household_presence")}
+        </div>`
+      : html`<div class="with-tip"><b>${t("household.presence")}</b>${tip(t, "household_presence")}</div>`;
     if (entity) {
       const on = ["on", "home"].includes(hass.states[entity]?.state ?? "");
       return html`<div class="presence" data-tipped>
@@ -218,6 +408,7 @@ export class JoeHousehold extends LitElement {
         <div class="row">
           <span class="chip ${on ? "ok" : ""}" title=${entity}>${entityName(hass, entity)}</span>
           <small>${t(on ? "household.presence.on" : "household.presence.off")}</small>
+          ${haOpen(t, haTarget(hass, entity, entityName(hass, entity)))}
         </div>
         <p>${t(entity.startsWith("group.") ? "household.presence.yours_group" : "household.presence.yours")}</p>
         ${this.renderGuest(t, hass, config, entity)}
@@ -337,55 +528,15 @@ export class JoeHousehold extends LitElement {
     </div>`;
   }
 
-  /** The switch, the tracker following it and the automation that links them – all Home Assistant's own. */
-  private async createGuest(): Promise<string> {
-    const { t, hass } = this;
-    if (!t || !hass?.callApi || !hass.callService) throw new Error("no api");
-    const created = await hass.callWS<{ id: string }>({
-      type: "input_boolean/create",
-      name: t("household.guest.name"),
-      icon: "mdi:account-child-outline",
-    });
-    const guest = `input_boolean.${created.id}`;
-    const tracker = `device_tracker.${GUEST_ID}`;
-    await hass.callApi("POST", `config/automation/config/energy_joe_${GUEST_ID}`, {
-      alias: t("household.guest.automation"),
-      description: t("household.guest.automation_text", { guest, tracker }),
-      triggers: [
-        { trigger: "state", entity_id: guest },
-        // Trackers like this one fall back to "not_home" after a few minutes without news.
-        { trigger: "time_pattern", minutes: "/1" },
-        { trigger: "homeassistant", event: "start" },
-      ],
-      conditions: [],
-      actions: [
-        {
-          action: "device_tracker.see",
-          data: {
-            dev_id: GUEST_ID,
-            host_name: t("household.guest.tracker_name"),
-            location_name: `{{ 'home' if is_state('${guest}', 'on') else 'not_home' }}`,
-          },
-        },
-      ],
-      mode: "queued",
-    });
-    await hass.callService("device_tracker", "see", {
-      dev_id: GUEST_ID,
-      host_name: t("household.guest.tracker_name"),
-      location_name: "not_home",
-    });
-    saveConfig(this, { context: { guest_switch: guest, guest_tracker: tracker } });
-    return tracker;
-  }
-
   private async addGuest(): Promise<void> {
+    const { t, hass } = this;
+    if (!t || !hass) return;
     this.creating = true;
     this.failed = undefined;
     try {
-      await this.createGuest();
+      await createGuest(this, hass, t);
     } catch (err) {
-      this.failed = this.t!("household.presence.failed", { error: String((err as { message?: string })?.message ?? err) });
+      this.failed = t("household.presence.failed", { error: String((err as { message?: string })?.message ?? err) });
     } finally {
       this.creating = false;
     }
@@ -397,7 +548,7 @@ export class JoeHousehold extends LitElement {
     this.creating = true;
     this.failed = undefined;
     try {
-      const guest = this.guest ? (this.config?.context.guest_tracker ?? (await this.createGuest())) : null;
+      const guest = this.guest ? (this.config?.context.guest_tracker ?? (await createGuest(this, hass, t))) : null;
       await hass.callWS({ type: "energy_joe/presence/create", name: t("household.presence.name"), persons, guest });
     } catch (err) {
       this.failed = t("household.presence.failed", { error: String((err as { message?: string })?.message ?? err) });
@@ -420,122 +571,37 @@ export class JoeHousehold extends LitElement {
       saveConfig(this, { context: { presence_entity: picked.selected[0] } });
     }
   }
+}
 
-  private renderPerson(t: Translate, hass: HomeAssistant, person: PersonConfig): TemplateResult {
-    const state = person.person_entity ? hass.states[person.person_entity]?.state : undefined;
-    const presence =
-      state === "home"
-        ? html`<small class="home">${t("household.home")}</small>`
-        : state === "not_home"
-          ? html`<small>${t("household.away")}</small>`
-          : state
-            ? html`<small>${t("household.zone", { zone: state })}</small>`
-            : html`<small>${t("household.no_presence")}</small>`;
-    return html`<li class="person">
-      <div class="top">
-        <span class="avatar" aria-hidden="true">${person.name.slice(0, 1).toUpperCase()}</span>
-        <div class="who"><b>${person.name}</b>${presence}</div>
-        <button type="button" class="mini-btn quiet" @click=${() => this.removePerson(person)}>
-          ${t("household.remove")}
-        </button>
-      </div>
-      <div class="cals">
-        <span class="cals-label">${t("household.calendars")}</span>
-        ${person.calendars.map(
-          (calendar) => html`<span class="cal">
-            ${entityName(hass, calendar)}
-            <button
-              type="button"
-              aria-label=${t("household.calendar_remove", { name: entityName(hass, calendar) })}
-              @click=${() => this.setCalendars(person, person.calendars.filter((c) => c !== calendar))}
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round">
-                <path d="M6 6l12 12M18 6L6 18" />
-              </svg>
-            </button>
-          </span>`,
-        )}
-        <button type="button" class="mini-btn" @click=${() => this.addCalendars(person)}>
-          <ha-icon icon="mdi:calendar-plus"></ha-icon>${t("household.calendar_add")}
-        </button>
-        ${tip(t, "f_calendars")}
-      </div>
-    </li>`;
-  }
+/** The whole household for the setup question: the people, then the helper "someone is home". */
+export class JoeHousehold extends LitElement {
+  @property({ attribute: false }) hass?: HomeAssistant;
+  @property({ attribute: false }) t?: Translate;
+  @property({ attribute: false }) config?: JoeConfig;
+  @property({ attribute: false }) discovery?: Discovery;
 
-  private async addPerson(): Promise<void> {
-    const { t, config } = this;
-    if (!t || !config) {
-      return;
+  static styles = css`
+    :host {
+      display: block;
     }
-    const picked = await pickEntity(this, {
-      heading: t("pick.person.title"),
-      tip: "pick_person",
-      filter: "person",
-      selected: [],
-      exclude: config.persons.map((p) => p.person_entity).filter((id): id is string => Boolean(id)),
-    });
-    const entity = picked?.selected[0];
-    if (!entity || !this.hass) {
-      return;
-    }
-    const found = this.discovery?.persons.find((p) => p.entity_id === entity);
-    saveConfig(this, {
-      persons: { [entity]: { name: entityName(this.hass, entity), person_entity: entity, calendars: found?.calendars ?? [] } },
-      answers: { ignored: withIgnored(config, `person:${entity}`, false) },
-    });
-  }
+  `;
 
-  private bringBack(found: { entity_id: string; name: string; calendars: string[] }): void {
-    saveConfig(this, {
-      persons: { [found.entity_id]: { name: found.name, person_entity: found.entity_id, calendars: found.calendars } },
-      answers: { ignored: withIgnored(this.config!, `person:${found.entity_id}`, false) },
-    });
-  }
-
-  private removePerson(person: PersonConfig): void {
-    saveConfig(this, {
-      persons: { [person.id]: null },
-      answers: { ignored: withIgnored(this.config!, `person:${person.id}`, true) },
-    });
-  }
-
-  private async addCalendars(person: PersonConfig): Promise<void> {
-    const t = this.t;
-    if (!t) {
-      return;
-    }
-    const picked = await pickEntity(this, {
-      heading: t("pick.calendar.title", { name: person.name }),
-      tip: "pick_calendar",
-      filter: "calendar",
-      multiple: true,
-      selected: person.calendars,
-    });
-    if (picked) {
-      this.setCalendars(person, picked.selected);
-    }
-  }
-
-  private setCalendars(person: PersonConfig, calendars: string[]): void {
-    saveConfig(this, { persons: { [person.id]: { calendars } } });
+  protected render() {
+    return html`<joe-household-people
+        .hass=${this.hass}
+        .t=${this.t}
+        .config=${this.config}
+        .discovery=${this.discovery}
+      ></joe-household-people>
+      <joe-household-presence
+        .hass=${this.hass}
+        .t=${this.t}
+        .config=${this.config}
+        .discovery=${this.discovery}
+      ></joe-household-presence>`;
   }
 }
 
-/** The guest tracker's id: device_tracker.gast. */
-const GUEST_ID = "gast";
-
-/** Groups the user already has for "someone is home": members are persons or trackers. */
-function presenceGroups(hass: HomeAssistant): { entity_id: string; name: string; members: string[] }[] {
-  return Object.values(hass.states)
-    .filter((state) => state.entity_id.startsWith("group."))
-    .map((state) => ({ state, members: (state.attributes.entity_id as string[] | undefined) ?? [] }))
-    .filter(({ members }) => members.length && members.every((m) => /^(person|device_tracker)\./.test(m)))
-    .map(({ state, members }) => ({
-      entity_id: state.entity_id,
-      name: entityName(hass, state.entity_id),
-      members: members.map((m) => entityName(hass, m)),
-    }));
-}
-
+define("joe-household-people", JoeHouseholdPeople);
+define("joe-household-presence", JoeHouseholdPresence);
 define("joe-household", JoeHousehold);

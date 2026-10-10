@@ -10,6 +10,7 @@ import { tip } from "../components/tip";
 import { define } from "../define";
 import { formatNumber } from "../entities";
 import type { Translate } from "../i18n";
+import { PANEL, type Route } from "../router";
 import { shared } from "../styles/shared";
 import type { HomeAssistant, JoeState, Plan, PlanHour } from "../types";
 
@@ -20,6 +21,8 @@ export class JoePlanPage extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) t?: Translate;
   @property({ attribute: false }) state?: JoeState;
+  @property({ attribute: false }) route?: Route;
+  @property({ attribute: false }) prefix = PANEL;
 
   @state() private refreshing = false;
 

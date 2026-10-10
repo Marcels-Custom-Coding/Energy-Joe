@@ -1,23 +1,24 @@
 import { LitElement, css, html, nothing, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
-import { displayTitle, swoosh } from "../components/bits";
-import { dayText } from "../components/look-back";
-import { timeOf } from "../components/plan-text";
-import "../components/battery-automations";
-import "../components/car-charge";
-import "../components/car-need";
-import "../components/pose";
-import "../components/sheet";
-import { tip } from "../components/tip";
-import { saveConfig } from "../config";
-import { define } from "../define";
-import { entityName, formatNumber, measurementKw, numberState } from "../entities";
-import type { Translate } from "../i18n";
-import { shared } from "../styles/shared";
+import { displayTitle, swoosh } from "../../components/bits";
+import { dayText } from "../../components/look-back";
+import { timeOf } from "../../components/plan-text";
+import "../../components/battery-automations";
+import "../../components/car-charge";
+import "../../components/car-need";
+import "../../components/pose";
+import "../../components/sheet";
+import { tip } from "../../components/tip";
+import { saveConfig } from "../../config";
+import { define } from "../../define";
+import { entityName, formatNumber, measurementKw, numberState } from "../../entities";
+import type { Translate } from "../../i18n";
+import { PANEL, href, onLink, type Route } from "../../router";
+import { shared } from "../../styles/shared";
 import type {
   ActionConfig,
   BatteryConfig,
-  ControlLogEntry,
+  ClimateFound,
   ControlView,
   Discovery,
   HomeAssistant,
@@ -26,17 +27,20 @@ import type {
   PlanAction,
   TestResult,
   TestStep,
-} from "../types";
+} from "../../types";
 
 const STEPS = ["hold", "charge", "release"] as const;
 
-/** The devices Joe steers: what he does with them now, the test run and his log. */
-export class JoeDevicesPage extends LitElement {
+/** Geräte › Alle: what Joe does with his devices now, the test run, night actions and Heizung & Klima in short. */
+export class JoeDevicesAll extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) t?: Translate;
   @property({ attribute: false }) state?: JoeState;
+  @property({ attribute: false }) route?: Route;
+  @property({ attribute: false }) prefix = PANEL;
   @property({ attribute: false }) discovery?: Discovery;
   @property({ attribute: false }) info?: JoeInfo;
+  @property({ attribute: false }) climateFound?: ClimateFound;
 
   @state() private confirm?: BatteryConfig;
   @state() private notice = "";
@@ -214,27 +218,32 @@ export class JoeDevicesPage extends LitElement {
       .card.add .actions {
         margin-top: 12px;
       }
-      .log {
-        list-style: none;
-        margin: 10px 0 0;
-        padding: 0;
+      a.climate-link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 44px;
+        color: inherit;
+        text-decoration: none;
+        transition: box-shadow 0.12s;
+      }
+      a.climate-link:hover {
+        box-shadow: inset 0 0 0 1.5px var(--joe-amber);
+      }
+      a.climate-link > span {
+        flex: 1;
+        min-width: 0;
         display: grid;
-        gap: 2px;
-        font-size: 14px;
       }
-      .log li {
-        display: grid;
-        grid-template-columns: 110px 1fr;
-        gap: 10px;
-        padding: 6px 0;
-        border-top: 1px solid var(--joe-line);
+      a.climate-link b {
+        font-weight: 600;
       }
-      .log li:first-child {
-        border-top: 0;
-      }
-      .log time {
+      a.climate-link small {
         color: var(--joe-muted);
-        font-variant-numeric: tabular-nums;
+        font-size: 13px;
+      }
+      a.climate-link .chevron {
+        color: var(--joe-muted);
       }
       .empty {
         margin: 10px 0 0;
@@ -259,10 +268,6 @@ export class JoeDevicesPage extends LitElement {
           order: -1;
           justify-self: start;
           max-width: 200px;
-        }
-        .log li {
-          grid-template-columns: 1fr;
-          gap: 0;
         }
       }
     `,
@@ -300,9 +305,34 @@ export class JoeDevicesPage extends LitElement {
           ${joe.config.actions.map((action) => this.renderAction(t, joe, action))} ${this.renderLonelyCars(t, joe)}
           ${this.renderAddAction(t)}
         </div>
-        ${control ? this.renderLog(t, control) : nothing}
+        ${this.renderClimate(t, joe)}
       </div>
       ${this.confirm ? this.renderConfirm(t, this.confirm) : nothing}`;
+  }
+
+  /** Heizung & Klima in one line, with the way to its own section. */
+  private renderClimate(t: Translate, joe: JoeState): TemplateResult | typeof nothing {
+    const climate = joe.config.climate;
+    const rooms = climate?.rooms ?? {};
+    const devices = this.climateFound?.devices.map((d) => d.entity_id) ?? Object.keys(rooms);
+    if (!devices.length && !climate?.enabled) {
+      return nothing;
+    }
+    const steered = devices.filter((entity) => rooms[entity]?.enabled).length;
+    const [one, other] = t("word.device").split("|");
+    const to: Route = { tab: "devices", section: "climate" };
+    return html`<div class="group-label">${t("climate.title")}</div>
+      <a class="card climate-link" href=${href(this.prefix, to)} @click=${onLink(to)}>
+        <ha-icon icon="mdi:thermostat"></ha-icon>
+        <span>
+          <b>${t("devices.climate.summary", {
+            devices: `${formatNumber(t.lang, devices.length, 0)} ${devices.length === 1 ? one : other}`,
+            steered: formatNumber(t.lang, steered, 0),
+          })}</b>
+          <small>${t(climate?.enabled ? "devices.climate.on" : "devices.climate.off")}</small>
+        </span>
+        <ha-icon class="chevron" icon="mdi:chevron-right"></ha-icon>
+      </a>`;
   }
 
   private renderStatus(t: Translate, joe: JoeState, control: ControlView): TemplateResult {
@@ -713,53 +743,6 @@ export class JoeDevicesPage extends LitElement {
     return parts.join(" · ");
   }
 
-  private renderLog(t: Translate, control: ControlView): TemplateResult {
-    const entries = [...control.log].reverse().slice(0, 30);
-    return html`<section class="card">
-      <div class="eyebrow"><ha-icon icon="mdi:clipboard-text-clock-outline"></ha-icon>${t("devices.log")}</div>
-      ${entries.length
-        ? html`<ul class="log">
-            ${entries.map(
-              (entry) => html`<li>
-                <time>${dayText(t.lang, entry.at, "short")} ${entry.at.slice(11, 16)}</time>
-                <span>${this.logText(t, entry)}</span>
-              </li>`,
-            )}
-          </ul>`
-        : html`<p class="empty">${t("devices.log.empty")}</p>`}
-    </section>`;
-  }
-
-  private logText(t: Translate, entry: ControlLogEntry): string {
-    const hass = this.hass!;
-    const config = this.state?.config;
-    const battery =
-      config?.batteries.find((b) => b.id === entry.battery)?.name ??
-      config?.actions.find((a) => `action:${a.id}` === entry.battery)?.name ??
-      entry.battery ??
-      "";
-    const entity = entry.entity ? entityName(hass, entry.entity) : "";
-    const vars: Record<string, string | number> = {
-      battery,
-      entity,
-      value: entry.value == null ? "–" : String(entry.value),
-      target: String(entry.target ?? ""),
-      power: typeof entry.power === "number" ? formatNumber(t.lang, entry.power, 1) : "–",
-      soc: typeof entry.soc === "number" ? formatNumber(t.lang, entry.soc, 0) : "–",
-      unit: typeof entry.unit === "string" ? entry.unit : "%",
-    };
-    if (entry.kind === "boost_end") {
-      return t.optional(`log.boost_end.${String(entry.reason)}`, vars) ?? t("log.boost_end.stopped", vars);
-    }
-    if (entry.kind === "answer") {
-      return t(entry.yes ? "log.answer.yes" : "log.answer.no");
-    }
-    if (entry.kind === "test") {
-      return t(entry.ok ? "log.test.ok" : "log.test.failed", vars);
-    }
-    return t.optional(`log.${entry.kind}`, vars) ?? entry.kind;
-  }
-
   private renderConfirm(t: Translate, battery: BatteryConfig): TemplateResult {
     const close = () => {
       this.confirm = undefined;
@@ -802,4 +785,4 @@ export class JoeDevicesPage extends LitElement {
   }
 }
 
-define("joe-devices-page", JoeDevicesPage);
+define("joe-devices-all", JoeDevicesAll);

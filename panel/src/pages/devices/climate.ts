@@ -1,20 +1,23 @@
 import { LitElement, css, html, nothing, type PropertyValues, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
-import { deviceLink, displayTitle, swoosh } from "../components/bits";
-import { dayText } from "../components/look-back";
-import "../components/pose";
-import { tip } from "../components/tip";
-import { pickEntity, saveConfig } from "../config";
-import { define } from "../define";
-import { formatNumber } from "../entities";
-import type { Translate } from "../i18n";
-import { shared } from "../styles/shared";
+import { deviceLink, displayTitle, swoosh } from "../../components/bits";
+import { haOpen, type HaTarget } from "../../components/ha-open";
+import { mirrorRow } from "../../components/mirror";
+import "../../components/pose";
+import { tip } from "../../components/tip";
+import { saveConfig } from "../../config";
+import { define } from "../../define";
+import { formatNumber } from "../../entities";
+import type { Translate } from "../../i18n";
+import { PANEL, format, href, onLink, revealAnchor, type Route } from "../../router";
+import { shared } from "../../styles/shared";
 import {
   WEEK_TAGS,
   type ClimateDevice,
+  type ClimateFound,
   type ClimateHold,
-  type ClimateLogEntry,
   type ClimateMeter,
+  type ClimateMeterOption,
   type ClimateRoomConfig,
   type ClimateRoomStatus,
   type ClimateWeekConfig,
@@ -24,29 +27,11 @@ import {
   type WeekProfile,
   type WeekTag,
   type WeekValue,
-} from "../types";
-import { TAG_ICONS, profileLabel } from "../week";
+} from "../../types";
+import { TAG_ICONS, profileLabel } from "../../week";
 
 /** A change to one room: only the keys that change, so the week profiles stay. */
 type RoomChange = Partial<Omit<ClimateRoomConfig, "week">> & { week?: Partial<ClimateWeekConfig> };
-
-/** A device with a power or energy sensor, e.g. a channel of a Shelly Pro 3EM. */
-interface MeterOption extends ClimateMeter {
-  name: string | null;
-  /** The sensor's name when the device has several. */
-  sensor: string | null;
-  /** The device it is connected via. */
-  via: string | null;
-  area: string | null;
-}
-
-interface Devices {
-  devices: ClimateDevice[];
-  meters?: MeterOption[];
-  suggested?: Record<string, MeterOption>;
-  arrivals: Record<string, { km?: number; direction?: string; minutes?: number; source?: string }>;
-  proximity: boolean;
-}
 
 const DEFAULT_ROOM: ClimateRoomConfig = {
   enabled: false,
@@ -63,15 +48,15 @@ const DEFAULT_ROOM: ClimateRoomConfig = {
 
 /** How long the house must be empty before it counts as away (model.py). */
 const AWAY_AFTER_DEFAULT = 15;
-const AWAY_AFTER_MAX = 240;
+
+/** Haushalt › Tage & Kalender: the calendar rules that tell home office days. */
+const DAYS: Route = { tab: "household", section: "days" };
 
 /** "Profil 3" for week_program_3, else by position. */
 function presetNumber(preset: string, index: number): number {
   const match = /^week_program_(\d+)$/.exec(preset);
   return match ? Number(match[1]) : index + 1;
 }
-
-const PROXIMITY_URL = "https://my.home-assistant.io/redirect/config_flow_start/?domain=proximity";
 
 /** A device's tags in a fixed order, to tell whether two states are the same. */
 function profilesKey(profiles: Record<string, DeviceProfileConfig>): string {
@@ -82,16 +67,26 @@ function profilesKey(profiles: Record<string, DeviceProfileConfig>): string {
   );
 }
 
-/** Heating and air conditioning by presence: every thermostat on its own. */
-export class JoeClimatePage extends LitElement {
+/**
+ * Geräte › Heizung & Klima: every thermostat and air conditioner on its own,
+ * by room. Who is home, the kind of day and the night come from Haushalt.
+ */
+export class JoeClimateGroup extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) t?: Translate;
   @property({ attribute: false }) state?: JoeState;
+  @property({ attribute: false }) route?: Route;
+  @property({ attribute: false }) prefix = PANEL;
+  /** Loaded once by the panel for all pages; this section only loads it itself when that fails. */
+  @property({ attribute: false }) climateFound?: ClimateFound;
+  /** A device's address (/devices/climate/<entity>): scroll to its room card. */
+  @property({ attribute: false }) entity?: string;
 
-  @state() private found?: Devices;
+  /** Own load, only while the panel has none. */
+  @state() private own?: ClimateFound;
   @state() private failed = false;
-  /** The meters section is folded by default. */
-  @state() private metersOpen = false;
+  /** The meters section starts open. */
+  @state() private metersOpen = true;
   /** The air conditioner whose meter is being searched, and the search text. */
   @state() private picking?: string;
   @state() private query = "";
@@ -99,12 +94,15 @@ export class JoeClimatePage extends LitElement {
   @state() private holdUntil: Record<string, "midnight" | "forever"> = {};
   /** Per device: the device profiles last sent, until the config has them (or saving failed). */
   @state() private pending: Record<string, Record<string, DeviceProfileConfig>> = {};
-  /** The log is folded by default. */
-  @state() private logOpen = false;
   /** Per device: a note that a tag moved to another device profile. */
   @state() private moved: Record<string, string> = {};
   /** Per device: a week command that failed. */
   @state() private weekError: Record<string, string> = {};
+  /** The device the address points to, until its card is on screen. */
+  private anchor?: string;
+  /** The address last revealed. */
+  private revealed?: string;
+  private fallback?: number;
 
   static styles = [
     shared,
@@ -137,14 +135,30 @@ export class JoeClimatePage extends LitElement {
         gap: 8px;
         flex-wrap: wrap;
       }
-      .head .eyebrow,
-      .head b {
+      .head .eyebrow {
         flex: 1;
         min-width: 0;
       }
       .head b {
+        /* Narrow cards put the name on a line of its own, the controls below. */
+        flex: 1 1 150px;
+        min-width: 0;
         font-weight: 700;
-        overflow-wrap: anywhere;
+        overflow-wrap: break-word;
+      }
+      /* Name and temperature wrap as one block; the Home Assistant button stays top right. */
+      .device-head {
+        flex-wrap: nowrap;
+        align-items: flex-start;
+      }
+      .device-name {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 8px;
+        min-height: 44px;
       }
       .grid {
         display: grid;
@@ -177,21 +191,8 @@ export class JoeClimatePage extends LitElement {
         color: var(--joe-muted);
         font-size: 13px;
       }
-      .now {
-        margin: 10px 0 0;
-        font-weight: 600;
-      }
-      .row.chips > span:first-child {
-        flex: 0 1 auto;
-      }
-      a.ha-link {
-        color: inherit;
-        text-decoration: underline;
-        text-decoration-color: var(--joe-line-2);
-        text-underline-offset: 3px;
-      }
-      a.ha-link:hover {
-        text-decoration-color: var(--joe-amber);
+      a.mini-btn {
+        text-decoration: none;
       }
       details.ent {
         margin-top: 4px;
@@ -202,6 +203,11 @@ export class JoeClimatePage extends LitElement {
         cursor: pointer;
         width: fit-content;
       }
+      @media (pointer: coarse) {
+        details.ent summary {
+          line-height: 44px;
+        }
+      }
       details.ent code {
         display: block;
         margin-top: 2px;
@@ -211,6 +217,7 @@ export class JoeClimatePage extends LitElement {
         overflow-wrap: anywhere;
       }
       .fold {
+        min-height: 44px;
         display: flex;
         align-items: center;
         gap: 8px;
@@ -354,8 +361,7 @@ export class JoeClimatePage extends LitElement {
       .row select.input {
         flex: 1 1 160px;
       }
-      .row.hold,
-      .row.tight {
+      .row.hold {
         margin-top: 6px;
       }
       .tags {
@@ -394,46 +400,45 @@ export class JoeClimatePage extends LitElement {
         flex: 1;
         min-width: 0;
       }
-      .log {
-        list-style: none;
-        margin: 10px 0 0;
-        padding: 0;
-        display: grid;
-        gap: 2px;
-        font-size: 14px;
+      .household {
+        padding-top: 10px;
+        padding-bottom: 10px;
       }
-      .log li {
-        display: grid;
-        grid-template-columns: 110px minmax(0, 1fr);
-        gap: 10px;
-        padding: 6px 0;
+      .household .mirror + .mirror {
         border-top: 1px solid var(--joe-line);
       }
-      .log li:first-child {
-        border-top: 0;
-      }
-      .log time {
-        color: var(--joe-muted);
-        font-variant-numeric: tabular-nums;
-      }
-      .log b {
-        font-weight: 600;
-        overflow-wrap: anywhere;
-      }
-      .chips-line {
-        display: flex;
-        flex-wrap: wrap;
+      .intro .with-tip {
+        display: inline-flex;
+        align-items: center;
         gap: 6px;
-        flex: 1 1 140px;
+        color: var(--joe-muted);
+        font-size: 13px;
+      }
+      .dev-name {
+        display: flex;
+        align-items: center;
+        gap: 8px;
         min-width: 0;
+      }
+      .dev-name b {
+        flex: 1;
+        min-width: 0;
+      }
+      .hit-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .hit-row .hit {
+        flex: 1;
+        min-width: 0;
+      }
+      .hit {
+        min-height: 44px;
       }
       @media (max-width: 760px) {
         .line {
           grid-template-columns: 1fr;
-        }
-        .log li {
-          grid-template-columns: 1fr;
-          gap: 0;
         }
       }
       @media (max-width: 760px) {
@@ -450,10 +455,30 @@ export class JoeClimatePage extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
-    void this.load();
+    // The panel loads the devices; when they are still missing after a moment, ask once here.
+    this.fallback = window.setTimeout(() => {
+      if (!this.climateFound && !this.own) void this.load();
+    }, 3000);
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    window.clearTimeout(this.fallback);
+  }
+
+  private get found(): ClimateFound | undefined {
+    return this.climateFound ?? this.own;
   }
 
   protected willUpdate(changed: PropertyValues<this>): void {
+    if (changed.has("entity") || changed.has("route")) {
+      // A new address with a device scrolls to it once; a new state does not.
+      const path = this.route ? format(this.route) : (this.entity ?? "");
+      if (path !== this.revealed) {
+        this.revealed = path;
+        this.anchor = this.entity || undefined;
+      }
+    }
     if (changed.has("state") && Object.keys(this.pending).length) {
       // The config caught up with what was sent: it counts again.
       const rooms = this.state?.config.climate?.rooms ?? {};
@@ -480,10 +505,24 @@ export class JoeClimatePage extends LitElement {
 
   private async load(): Promise<void> {
     try {
-      this.found = await this.hass?.callWS<Devices>({ type: "energy_joe/climate/devices" });
+      this.own = await this.hass?.callWS<ClimateFound>({ type: "energy_joe/climate/devices" });
       this.failed = false;
     } catch {
-      this.failed = true;
+      this.failed = !this.climateFound;
+    }
+  }
+
+  protected async updated(): Promise<void> {
+    const anchor = this.anchor;
+    if (!anchor || !this.found) {
+      return;
+    }
+    // The sticky header's height (the scroll offset) is measured after the first paint.
+    for (let i = 0; i < 10 && !getComputedStyle(this).getPropertyValue("--joe-head-h"); i++) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    }
+    if (this.anchor === anchor && revealAnchor(this.renderRoot, anchor)) {
+      this.anchor = undefined;
     }
   }
 
@@ -493,58 +532,78 @@ export class JoeClimatePage extends LitElement {
       return nothing;
     }
     const climate = joe.config.climate ?? { enabled: false, rooms: {} };
-    const devices = this.found?.devices ?? [];
+    const found = this.found;
+    const devices = found?.devices ?? [];
     const areas = [...new Set(devices.map((d) => d.area ?? t("climate.no_area")))];
+    // A device renamed in Home Assistant keeps its old address: say so instead of an empty jump.
+    const lost = Boolean(this.entity && found && !devices.some((d) => d.entity_id === this.entity));
     return html`<div class="wrap">
       <div class="intro">
         <div>
           ${displayTitle(t("climate.title"))} ${swoosh}
           <p class="lead">${t("climate.lead")}</p>
+          ${devices.length ? html`<p class="with-tip" data-tipped>${t("climate.ha_open")} ${tip(t, "ha_open")}</p>` : nothing}
         </div>
         <joe-pose name="relax"></joe-pose>
       </div>
-      ${this.renderMain(t, joe, climate.enabled)} ${this.renderPresence(t, joe)} ${this.renderToday(t, joe)}
-      ${this.renderNightSource(t, joe)}
+      ${lost ? html`<div class="note warn" role="status"><ha-icon icon="mdi:help-circle-outline"></ha-icon><span>${t("nav.not_found")}</span></div>` : nothing}
+      ${this.renderMain(t, joe, climate.enabled)} ${this.renderHousehold(t, joe)}
       ${devices.length ? this.renderMeters(t, joe, devices) : nothing}
-      ${this.failed ? html`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${t("climate.failed")}</span></div>` : nothing}
-      ${this.found && !devices.length ? html`<p class="hint">${t("climate.none")}</p>` : nothing}
+      ${this.failed && !found ? html`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${t("climate.failed")}</span></div>` : nothing}
+      ${found && !devices.length ? html`<p class="hint">${t("climate.none")}</p>` : nothing}
       ${areas.map(
         (area) => html`<div class="group-label">${area}</div>
           <div class="grid">
             ${devices.filter((d) => (d.area ?? t("climate.no_area")) === area).map((d) => this.renderDevice(t, joe, d))}
           </div>`,
       )}
-      ${joe.climate?.log?.length ? this.renderLog(t, joe.climate.log, devices) : nothing}
     </div>`;
   }
 
-  /** What Joe switched last, newest first; folded by default. */
-  private renderLog(t: Translate, log: ClimateLogEntry[], devices: ClimateDevice[]): TemplateResult {
-    const entries = [...log].reverse();
-    const names = Object.fromEntries(devices.map((d) => [d.entity_id, d.name]));
-    return html`<section class="card" data-tipped>
-      <div class="head">
-        <button type="button" class="fold" aria-expanded=${String(this.logOpen)} @click=${() => (this.logOpen = !this.logOpen)}>
-          <ha-icon icon=${this.logOpen ? "mdi:chevron-down" : "mdi:chevron-right"}></ha-icon>
-          <span class="eyebrow"><ha-icon icon="mdi:clipboard-text-clock-outline"></ha-icon>${t("climate.log")}</span>
-          <span class="chip">${entries.length}</span>
-        </button>
-        ${tip(t, "climate_log")}
-      </div>
-      ${this.logOpen
-        ? html`<ul class="log">
-            ${entries.map(
-              (entry) => html`<li>
-                <time>${dayText(t.lang, entry.at, "short")} ${entry.at.slice(11, 16)}</time>
-                <span>
-                  <b>${names[entry.entity] ?? this.hass?.states[entry.entity]?.attributes.friendly_name ?? entry.entity}</b>
-                  · ${t.optional(`climate.log.${entry.what}`) ?? entry.what}
-                </span>
-              </li>`,
-            )}
-          </ul>`
-        : nothing}
+  /** What comes from Haushalt: who is home, the kind of day, the night. Read here, changed there. */
+  private renderHousehold(t: Translate, joe: JoeState): TemplateResult {
+    const presence = joe.config.context.presence_entity ?? null;
+    const helper = presence ? (this.hass?.states[presence]?.attributes.friendly_name ?? presence) : null;
+    const day = joe.climate?.day;
+    const kind = !day ? null : day.holiday ? "holiday" : day.weekend && day.free ? "weekend" : "workday";
+    const today = kind
+      ? [
+          t(`climate.mirror.today.${kind}`),
+          day?.home_office_available && day.home_office.length ? t("climate.mirror.today.ho", { names: day.home_office.join(", ") }) : "",
+        ]
+          .filter(Boolean)
+          .join(", ")
+      : t("climate.mirror.unknown");
+    const climate = joe.config.climate;
+    const byEntity = climate?.night_by === "entity";
+    const night = climate?.night_entity ?? null;
+    const nightText = byEntity
+      ? night
+        ? (this.hass?.states[night]?.attributes.friendly_name ?? night)
+        : t("climate.mirror.night.no_entity")
+      : t("climate.mirror.night.time");
+    return html`<section class="card household">
+      ${mirrorRow(t, this.prefix, {
+        label: t("climate.mirror.presence"),
+        value: helper ? html`<span title=${presence ?? ""}>${helper}</span>` : t("climate.mirror.presence.none"),
+        to: { tab: "household", section: "presence" },
+        action: helper ? "change" : "set",
+      })}
+      ${mirrorRow(t, this.prefix, { label: t("climate.mirror.today"), value: today, to: DAYS })}
+      ${mirrorRow(t, this.prefix, {
+        label: t("climate.mirror.night"),
+        value: nightText,
+        to: { tab: "household", section: "night" },
+        action: byEntity && !night ? "set" : "change",
+      })}
     </section>`;
+  }
+
+  /** "Kalender-Regeln im Haushalt →": where home office days are told. */
+  private daysLink(t: Translate): TemplateResult {
+    return html`<a class="mini-btn quiet" href=${href(this.prefix, DAYS)} @click=${onLink(DAYS)}>
+      <ha-icon icon="mdi:calendar-text-outline"></ha-icon>${t("week.ho.rules")}
+    </a>`;
   }
 
   private renderMain(t: Translate, joe: JoeState, enabled: boolean): TemplateResult {
@@ -563,247 +622,6 @@ export class JoeClimatePage extends LitElement {
       </div>
       <p class="hint">${t(joe.mode === "live" ? "climate.live" : "climate.not_live")}</p>
     </section>`;
-  }
-
-  private renderPresence(t: Translate, joe: JoeState): TemplateResult {
-    const status = joe.climate;
-    const home = status?.home ?? [];
-    const arrivals = Object.entries(status?.arrivals ?? this.found?.arrivals ?? {});
-    const names = Object.fromEntries(joe.config.persons.map((p) => [p.person_entity, p.name]));
-    const presence = joe.config.context.presence_entity ?? null;
-    const presenceOn = !!presence && ["home", "on"].includes(this.hass?.states[presence]?.state ?? "");
-    return html`<section class="card" data-tipped>
-      <div class="head">
-        <div class="eyebrow"><ha-icon icon="mdi:home-account"></ha-icon>${t("climate.presence")}</div>
-        ${tip(t, "climate_presence")}
-      </div>
-      <p class="now">${home.length ? t("climate.home", { names: home.join(", ") }) : t("climate.nobody")}</p>
-      ${arrivals.map(
-        ([person, info]) => html`<p class="hint">
-          ${t(`climate.way.${info.direction === "towards" ? "towards" : info.direction === "away_from" ? "away" : "other"}`, {
-            name: names[person] ?? this.hass?.states[person]?.attributes.friendly_name ?? person,
-            km: info.km != null ? formatNumber(t.lang, info.km, 1) : "–",
-          })}
-          ${info.direction === "towards" && info.minutes != null
-            ? t(info.source ? "climate.way.minutes_route" : "climate.way.minutes_guess", { minutes: info.minutes })
-            : nothing}
-        </p>`,
-      )}
-      ${Object.entries(status?.usual ?? {}).map(
-        ([person, minute]) => html`<p class="hint">
-          ${t("climate.usual", {
-            name: names[person] ?? this.hass?.states[person]?.attributes.friendly_name ?? person,
-            time: `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`,
-          })}
-        </p>`,
-      )}
-      <div class="row" data-tipped>
-        <span id="route-eta">${t("climate.route_eta")}</span>
-        <button
-          type="button"
-          class="switch"
-          role="switch"
-          aria-checked=${String(joe.config.climate?.route_eta ?? true)}
-          aria-labelledby="route-eta"
-          @click=${() => saveConfig(this, { climate: { route_eta: !(joe.config.climate?.route_eta ?? true) } })}
-        ></button>
-        ${tip(t, "climate_route_eta")}
-      </div>
-      ${this.found && !this.found.proximity
-        ? html`<p class="hint">
-            ${t("climate.no_proximity")}
-            <a href=${PROXIMITY_URL} target="_blank" rel="noreferrer noopener">${t("climate.add_proximity")}</a>
-          </p>`
-        : nothing}
-      ${status?.free_day && !status.day ? html`<p class="hint">${t("climate.free_day")}</p>` : nothing}
-      <div class="row" data-tipped>
-        <span>${t("climate.away_after")}</span>
-        <input
-          class="input short"
-          type="number"
-          inputmode="numeric"
-          min="0"
-          max=${AWAY_AFTER_MAX}
-          step="1"
-          aria-label=${t("climate.away_after")}
-          .value=${String(joe.config.climate?.away_after_min ?? AWAY_AFTER_DEFAULT)}
-          @change=${(ev: Event) => {
-            const input = ev.target as HTMLInputElement;
-            const value = Math.round(Number.parseFloat(input.value.replace(",", ".")));
-            if (!Number.isFinite(value)) {
-              input.value = String(joe.config.climate?.away_after_min ?? AWAY_AFTER_DEFAULT);
-              return;
-            }
-            const minutes = Math.min(AWAY_AFTER_MAX, Math.max(0, value));
-            input.value = String(minutes);
-            void saveConfig(this, { climate: { away_after_min: minutes } });
-          }}
-        />
-        <span>${t("climate.away_after.unit")}</span>
-        ${tip(t, "climate_away_after")}
-      </div>
-      <div class="row" data-tipped>
-        ${presence
-          ? html`<span>${t("climate.presence_from")}</span>
-              <span class="chip ${presenceOn ? "ok" : ""}" title=${presence}>
-                ${this.hass?.states[presence]?.attributes.friendly_name ?? presence}
-              </span>`
-          : html`<span>${t("climate.presence_missing")}</span>`}
-        <button type="button" class="btn btn-secondary" @click=${() => this.editHousehold()}>
-          ${t(presence ? "climate.presence_change" : "climate.presence_create")}
-        </button>
-        ${tip(t, "climate_presence_entity")}
-      </div>
-    </section>`;
-  }
-
-  /** What kind of day today is, who works from home, and what else makes a day off. */
-  private renderToday(t: Translate, joe: JoeState): TemplateResult {
-    const day = joe.climate?.day;
-    const free = joe.config.context.free_day_entities ?? [];
-    const kind = !day ? null : day.holiday ? "holiday" : day.weekend && day.free ? "weekend" : "workday";
-    // Only calendars that answered tell who works from home.
-    const labels = day?.labels_state ?? (day?.labels_at ? "ok" : "unread");
-    const read = labels === "ok" && day?.labels_at ? this.clockOf(t, day.labels_at) : null;
-    return html`<section class="card" data-tipped>
-      <div class="head">
-        <div class="eyebrow"><ha-icon icon="mdi:calendar-today"></ha-icon>${t("climate.today")}</div>
-        ${tip(t, "climate_today")}
-      </div>
-      ${kind ? html`<p class="now">${t(`climate.today.${kind}`)}</p>` : nothing}
-      ${day
-        ? html`<p class="hint">
-            ${day.home_office_available
-              ? labels !== "ok"
-                ? t(`climate.today.labels_${labels}`)
-                : day.home_office.length
-                  ? t("climate.today.ho", { names: day.home_office.join(", ") })
-                  : t("climate.today.ho_none")
-              : t(`week.ho.${day.home_office_reason ?? "no_calendar"}`)}
-            ${read ? t("climate.today.read_at", { time: read }) : nothing}
-          </p>`
-        : nothing}
-      <div data-tipped>
-        <div class="row">
-          <span>${t("climate.today.free_by")}</span>
-          ${tip(t, "climate_free_entities")}
-        </div>
-        <div class="row tight">
-          <span class="chips-line">
-            ${free.length
-              ? free.map((entity) => {
-                  const on = ["on", "true", "home"].includes(this.hass?.states[entity]?.state ?? "");
-                  return html`<span class="chip ${on ? "ok" : ""}" title=${entity}>
-                    ${this.hass?.states[entity]?.attributes.friendly_name ?? entity}
-                  </span>`;
-                })
-              : html`<small class="hint">${t("climate.today.free_none")}</small>`}
-          </span>
-          <button type="button" class="btn btn-secondary" @click=${() => void this.pickFree()}>
-            ${t(free.length ? "climate.today.free_change" : "climate.today.free_pick")}
-          </button>
-        </div>
-      </div>
-      <p class="hint">${t("climate.today.rules")}</p>
-      <div class="row">
-        <button type="button" class="mini-btn quiet" @click=${this.toLearn}>
-          <ha-icon icon="mdi:calendar-text-outline"></ha-icon>${t("week.ho.rules")}
-        </button>
-      </div>
-    </section>`;
-  }
-
-  /** "08:05" in Home Assistant's time zone, or null. */
-  private clockOf(t: Translate, iso: string): string | null {
-    const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) return null;
-    const options: Intl.DateTimeFormatOptions = { hour: "2-digit", minute: "2-digit" };
-    try {
-      return date.toLocaleTimeString(t.lang, { ...options, timeZone: this.hass?.config?.time_zone });
-    } catch {
-      return date.toLocaleTimeString(t.lang, options);
-    }
-  }
-
-  private async pickFree(): Promise<void> {
-    const t = this.t;
-    if (!t) return;
-    const picked = await pickEntity(this, {
-      heading: t("pick.free_day.title"),
-      tip: "pick_free_day",
-      filter: "toggle_like",
-      multiple: true,
-      selected: this.state?.config.context.free_day_entities ?? [],
-    });
-    if (picked) {
-      void saveConfig(this, { context: { free_day_entities: picked.selected } });
-    }
-  }
-
-  private toLearn(): void {
-    this.dispatchEvent(new CustomEvent("joe-navigate", { detail: { page: "learn" }, bubbles: true, composed: true }));
-  }
-
-  private editHousehold(): void {
-    this.dispatchEvent(new CustomEvent("joe-edit", { detail: { editor: "household" }, bubbles: true, composed: true }));
-  }
-
-  /** When night is: fixed times per room, or an entity that says people are in bed. */
-  private renderNightSource(t: Translate, joe: JoeState): TemplateResult {
-    const climate = joe.config.climate;
-    const by = climate?.night_by ?? "time";
-    const entity = climate?.night_entity ?? null;
-    const live = entity ? this.hass?.states[entity] : undefined;
-    return html`<section class="card" data-tipped>
-      <div class="head">
-        <div class="eyebrow"><ha-icon icon="mdi:weather-night"></ha-icon>${t("climate.night")}</div>
-        ${tip(t, "climate_night_source")}
-      </div>
-      <p class="hint">${t("climate.night.say")}</p>
-      <div class="row">
-        <span>${t("climate.night.by")}</span>
-        <span class="seg" role="group" aria-label=${t("climate.night.by")}>
-          ${(["time", "entity"] as const).map(
-            (way) => html`<button type="button" aria-pressed=${String(by === way)} @click=${() => this.setNightBy(way)}>
-              ${t(`climate.night.by.${way}`)}
-            </button>`,
-          )}
-        </span>
-      </div>
-      ${by === "entity"
-        ? html`<div class="row">
-              <span>${entity ? html`<b title=${entity}>${live?.attributes.friendly_name ?? entity}</b>` : t("climate.night.no_entity")}</span>
-              ${live ? html`<span class="chip ${live.state === "on" ? "ok" : ""}">${t(live.state === "on" ? "climate.night.now_on" : "climate.night.now_off")}</span>` : nothing}
-              <button type="button" class="btn btn-secondary" @click=${() => void this.pickNight()}>
-                ${t(entity ? "climate.night.change" : "climate.night.pick")}
-              </button>
-            </div>
-            ${entity ? html`<details class="ent"><summary>${t("climate.entity")}</summary><code>${entity}</code></details>` : nothing}
-            <p class="hint">${t("climate.night.entity_say")}</p>`
-        : html`<p class="hint">${t("climate.night.time_say")}</p>`}
-    </section>`;
-  }
-
-  private setNightBy(way: "time" | "entity"): void {
-    void saveConfig(this, { climate: { night_by: way } });
-    if (way === "entity" && !this.state?.config.climate?.night_entity) {
-      void this.pickNight();
-    }
-  }
-
-  private async pickNight(): Promise<void> {
-    const t = this.t;
-    if (!t) return;
-    const entity = this.state?.config.climate?.night_entity;
-    const picked = await pickEntity(this, {
-      heading: t("pick.night.title"),
-      tip: "pick_night",
-      filter: "night",
-      selected: entity ? [entity] : [],
-    });
-    if (picked) {
-      void saveConfig(this, { climate: { night_by: "entity", night_entity: picked.selected[0] ?? null } });
-    }
   }
 
   private renderDevice(t: Translate, joe: JoeState, device: ClimateDevice): TemplateResult {
@@ -831,12 +649,19 @@ export class JoeClimatePage extends LitElement {
       : programs.some((preset) => deviceProfiles[preset]?.tags.includes("away"));
     const awayWays = (legacy ? ["setback", "off", ...(presets.length ? ["preset"] : [])] : ["setback", "off"]) as ClimateRoomConfig["away"][];
     const away = legacy ? room.away : room.away === "off" ? "off" : "setback";
-    return html`<section class="card" data-tipped>
-      <div class="head">
-        <b>${deviceLink(device.device_id, device.name, t("climate.open_device", { id: device.entity_id }))}</b>
-        ${current != null
-          ? html`<span class="chip">${formatNumber(t.lang, Number(current), 1)} °C${target != null ? ` → ${formatNumber(t.lang, Number(target), 1)} °C` : ""}</span>`
-          : nothing}
+    return html`<section class="card" data-tipped data-anchor=${device.entity_id}>
+      <div class="head device-head">
+        <div class="device-name">
+          <b>${deviceLink(device.device_id, device.name, t("climate.open_device", { id: device.entity_id }))}</b>
+          ${current != null
+            ? html`<span class="chip">${formatNumber(t.lang, Number(current), 1)} °C${target != null ? ` → ${formatNumber(t.lang, Number(target), 1)} °C` : ""}</span>`
+            : nothing}
+        </div>
+        ${haOpen(t, { deviceId: device.device_id, entityId: device.entity_id, name: device.name })}
+      </div>
+      <details class="ent"><summary>${t("climate.entity")}</summary><code>${device.entity_id}</code></details>
+      <div class="row">
+        <span>${t("climate.room.steer")}</span>
         <button
           type="button"
           class="switch"
@@ -847,7 +672,6 @@ export class JoeClimatePage extends LitElement {
         ></button>
         ${tip(t, "climate_room")}
       </div>
-      <details class="ent"><summary>${t("climate.entity")}</summary><code>${device.entity_id}</code></details>
       ${room.enabled
         ? html`${cooling && !programs.length ? this.renderWeek(t, device, room, sets, now) : nothing}
             ${programs.length ? this.renderPrograms(t, device, programs, now) : nothing}
@@ -1171,11 +995,7 @@ export class JoeClimatePage extends LitElement {
       ${homeOffice
         ? nothing
         : html`<p class="hint">${t(`week.ho.${reason}`)}</p>
-            <div class="row">
-              <button type="button" class="mini-btn quiet" @click=${this.toLearn}>
-                <ha-icon icon="mdi:calendar-text-outline"></ha-icon>${t("week.ho.rules")}
-              </button>
-            </div>`}
+            <div class="row">${this.daysLink(t)}</div>`}
       ${tags.length && now?.kind === "device" ? this.renderNow(t, device, now) : nothing}
     </div>`;
   }
@@ -1302,8 +1122,11 @@ export class JoeClimatePage extends LitElement {
     const picking = this.picking === device.entity_id;
     return html`<div class="line">
       <div class="dev">
-        <b>${deviceLink(device.device_id, device.name, t("climate.open_device", { id: device.entity_id }))}</b
-        ><small>${device.area ?? t("climate.no_area")}</small>
+        <span class="dev-name">
+          <b>${deviceLink(device.device_id, device.name, t("climate.open_device", { id: device.entity_id }))}</b>
+          ${haOpen(t, { deviceId: device.device_id, entityId: device.entity_id, name: device.name })}
+        </span>
+        <small>${device.area ?? t("climate.no_area")}</small>
         <details class="ent">
           <summary>${t("climate.entities")}</summary>
           <code>${device.entity_id}</code>
@@ -1314,13 +1137,16 @@ export class JoeClimatePage extends LitElement {
       <div class="meter-pick">
         ${picking
           ? this.meterSearch(t, device)
-          : html`<span class="picked">
-              ${shown
-                ? html`<b>${deviceLink(shown.device_id, `${shown.name ?? shown.device_id}${shown.sensor ? ` · ${shown.sensor}` : ""}`, t("climate.open_meter"))}</b>
-                    ${shown.via ? html`<small class="via">${shown.via}</small>` : nothing}`
-                : chosen
-                  ? html`<b>${deviceLink(chosen.device_id, chosen.power ?? chosen.energy ?? chosen.device_id, t("climate.open_meter"))}</b>`
-                  : html`<small>${t(meter === "none" ? "climate.meter.without_long" : "climate.meter.open_long")}</small>`}
+          : html`<span class="dev-name">
+              <span class="picked">
+                ${shown
+                  ? html`<b>${deviceLink(shown.device_id, `${shown.name ?? shown.device_id}${shown.sensor ? ` · ${shown.sensor}` : ""}`, t("climate.open_meter"))}</b>
+                      ${shown.via ? html`<small class="via">${shown.via}</small>` : nothing}`
+                  : chosen
+                    ? html`<b>${deviceLink(chosen.device_id, chosen.power ?? chosen.energy ?? chosen.device_id, t("climate.open_meter"))}</b>`
+                    : html`<small>${t(meter === "none" ? "climate.meter.without_long" : "climate.meter.open_long")}</small>`}
+              </span>
+              ${shown ? haOpen(t, this.meterTarget(shown)) : chosen ? haOpen(t, this.meterTarget(chosen)) : nothing}
             </span>`}
       </div>
       <div class="state">
@@ -1369,10 +1195,13 @@ export class JoeClimatePage extends LitElement {
       />
       <div class="hits" role="listbox" aria-label=${t("climate.meter.pick", { name: device.name })}>
         ${hits.map(
-          (m) => html`<button type="button" role="option" class="hit" @click=${() => this.pickMeter(device, this.key(m))}>
-            <b>${m.name ?? m.device_id}${m.sensor ? ` · ${m.sensor}` : ""}</b>
-            <small>${[m.via, m.area, m.power ? this.readingOf(t, m.power) : ""].filter(Boolean).join(" · ")}</small>
-          </button>`,
+          (m) => html`<div class="hit-row">
+            <button type="button" role="option" class="hit" @click=${() => this.pickMeter(device, this.key(m))}>
+              <b>${m.name ?? m.device_id}${m.sensor ? ` · ${m.sensor}` : ""}</b>
+              <small>${[m.via, m.area, m.power ? this.readingOf(t, m.power) : ""].filter(Boolean).join(" · ")}</small>
+            </button>
+            ${haOpen(t, this.meterTarget(m))}
+          </div>`,
         )}
         ${!hits.length ? html`<small class="none">${t("climate.meter.no_hits")}</small>` : nothing}
         <div class="hit-actions">
@@ -1380,6 +1209,13 @@ export class JoeClimatePage extends LitElement {
           <button type="button" class="mini-btn quiet" @click=${() => (this.picking = undefined)}>${t("climate.meter.cancel")}</button>
         </div>
       </div>`;
+  }
+
+  /** A meter in Home Assistant: its device (every meter has one). */
+  private meterTarget(meter: ClimateMeter | ClimateMeterOption): HaTarget {
+    const option = "name" in meter ? meter : this.option(meter);
+    const name = [option?.name ?? meter.device_id, option?.sensor].filter(Boolean).join(" · ");
+    return { deviceId: meter.device_id, entityId: meter.power ?? meter.energy, name };
   }
 
   private readingOf(t: Translate, entity: string): string {
@@ -1391,7 +1227,7 @@ export class JoeClimatePage extends LitElement {
     return [meter.device_id, meter.power ?? "", meter.energy ?? ""].join("|");
   }
 
-  private option(meter: ClimateMeter): MeterOption | undefined {
+  private option(meter: ClimateMeter): ClimateMeterOption | undefined {
     return (this.found?.meters ?? []).find((m) => this.key(m) === this.key(meter));
   }
 
@@ -1486,4 +1322,4 @@ export class JoeClimatePage extends LitElement {
   }
 }
 
-define("joe-climate-page", JoeClimatePage);
+define("joe-climate-group", JoeClimateGroup);

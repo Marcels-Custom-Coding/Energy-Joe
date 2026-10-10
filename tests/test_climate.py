@@ -140,6 +140,25 @@ async def test_heading_home_warms_up_in_time(
     assert joe.status["rooms"][ROOM]["why"] == "arriving"
 
 
+async def test_forgetting_the_warm_up_rates(hass: HomeAssistant) -> None:
+    """After a reset every room warms up at the default rate again."""
+    install(hass)
+    cfg = config()
+    changed: list[bool] = []
+    joe = ClimateController(
+        hass, lambda: cfg, lambda: "live", lambda: changed.append(True)
+    )
+    await joe.async_load()
+    await joe.async_check()
+    joe.data["rates"][ROOM] = 3.0
+    assert joe._rate(ROOM) == 3.0
+    changed.clear()
+    await joe.async_reset_rates()
+    assert joe.data["rates"] == {} and joe.status["rates"] == {}
+    assert joe._rate(ROOM) == climate_module.DEFAULT_RATE_K_H
+    assert changed == [True]
+
+
 async def test_switching_joe_off_puts_rooms_back(hass: HomeAssistant) -> None:
     install(hass)
     cfg = config()

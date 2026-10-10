@@ -5,34 +5,18 @@ import { define } from "../define";
 import { energyKwh, entityName, formatNumber, formatState, measurementKw, numberState, sumKw } from "../entities";
 import type { TipName, Translate } from "../i18n";
 import { shared } from "../styles/shared";
-import type {
-  BatteryFinding,
-  Check,
-  Discovery,
-  HomeAssistant,
-  JoeConfig,
-  Measurement,
-  Reason,
-} from "../types";
+import type { BatteryFinding, Check, Discovery, HomeAssistant, JoeConfig, Measurement } from "../types";
 import { flexibleConsumers } from "../types";
-import { confidenceDots, reasonText, sourceChip } from "./bits";
-import { tip } from "./tip";
+import { confidenceDots, sourceChip } from "./bits";
+import { contextRow, findingRow, findingStyles, infoNote, rowButton, type FindingRow } from "./finding-rows";
 import { checkText, tariffText } from "./texts";
 
-interface Row {
-  key: string;
-  icon: string;
-  title: string;
-  detail: string;
-  chips?: TemplateResult[];
-  reasons?: Reason[];
-  notes?: TemplateResult[];
-  actions?: TemplateResult[];
-  tip?: TipName;
-  state?: "missing" | "ignored" | "flag";
-}
+type Row = FindingRow;
 
 const HEATING_KINDS = new Set(["climate", "heat_pump", "electric_heating", "hot_water"]);
+
+/** Rows that live under Haushalt (Wer wohnt hier, Tage & Kalender, Unterwegs & Wetter). */
+const HOUSEHOLD_ROWS = ["people", "weather", "holiday"];
 
 /** What Joe found and now uses, with "change" and "leave out" for each part. */
 export class JoeReview extends LitElement {
@@ -41,114 +25,20 @@ export class JoeReview extends LitElement {
   @property({ attribute: false }) config?: JoeConfig;
   @property({ attribute: false }) discovery?: Discovery;
   @property({ attribute: false }) checks: Check[] = [];
-  /** In the settings, household and devices are edited here instead of asked later. */
+  /** In the settings, devices are edited here instead of asked later. */
   @property() context: "setup" | "settings" = "setup";
+  /**
+   * Rows left out (by key). In the settings the household rows (people,
+   * weather, holiday) are always left out: they live under Haushalt now.
+   */
+  @property({ attribute: false }) omit: string[] = [];
 
   static styles = [
     shared,
+    findingStyles,
     css`
       :host {
         display: block;
-      }
-      ul.found {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: grid;
-        gap: 8px;
-      }
-      li.item {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        padding: 12px 14px;
-        border-radius: 12px;
-        background: var(--joe-surface);
-        box-shadow: inset 0 0 0 1px var(--joe-line);
-      }
-      li.item.missing,
-      li.item.ignored {
-        background: transparent;
-        box-shadow: inset 0 0 0 1.5px var(--joe-line-2);
-      }
-      li.item.flag {
-        box-shadow: inset 0 0 0 2px var(--joe-warn);
-      }
-      .ico-box {
-        width: 38px;
-        height: 38px;
-        border-radius: 10px;
-        background: var(--joe-surface-2);
-        display: grid;
-        place-items: center;
-        flex: none;
-        color: var(--joe-ink);
-      }
-      .missing .ico-box,
-      .ignored .ico-box {
-        color: var(--joe-muted);
-      }
-      .text {
-        min-width: 0;
-        flex: 1;
-      }
-      .head {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 8px 12px;
-        flex-wrap: wrap;
-      }
-      .t {
-        font-weight: 700;
-        line-height: 1.3;
-      }
-      .ignored .t {
-        color: var(--joe-ink-2);
-      }
-      .chips {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-      }
-      .d {
-        font-size: 13.5px;
-        color: var(--joe-ink-2);
-        margin-top: 2px;
-        overflow-wrap: anywhere;
-      }
-      .missing .d,
-      .ignored .d {
-        color: var(--joe-muted);
-      }
-      details {
-        margin-top: 6px;
-        font-size: 13px;
-        color: var(--joe-ink-2);
-      }
-      summary {
-        cursor: pointer;
-        font-weight: 600;
-        color: var(--joe-ink);
-        width: fit-content;
-      }
-      details ul {
-        margin: 4px 0 0;
-        padding-left: 18px;
-      }
-      .note {
-        margin-top: 8px;
-      }
-      .row-actions {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        flex-wrap: wrap;
-        margin-top: 10px;
-      }
-      .row-actions joe-tip {
-        margin-left: 2px;
       }
     `,
   ];
@@ -158,8 +48,11 @@ export class JoeReview extends LitElement {
     if (!hass || !t || !config) {
       return nothing;
     }
+    const omit = new Set([...this.omit, ...(this.context === "settings" ? HOUSEHOLD_ROWS : [])]);
     return html`<ul class="found">
-      ${this.rows(hass, t, config).map((row) => this.renderRow(t, row))}
+      ${this.rows(hass, t, config)
+        .filter((row) => !omit.has(row.key))
+        .map((row) => findingRow(t, row))}
     </ul>`;
   }
 
@@ -225,27 +118,20 @@ export class JoeReview extends LitElement {
         chips: [confidenceDots(t, car.confidence), used(charged)],
       });
     }
-    rows.push(this.contextRow(hass, t, config, "weather"));
-    rows.push(this.contextRow(hass, t, config, "holiday"));
+    rows.push(contextRow(this, hass, t, config, d, "weather"));
+    rows.push(contextRow(this, hass, t, config, d, "holiday"));
     const settings = this.context === "settings";
     const later = [html`<span class="chip soon">${t("review.ask_later")}</span>`];
-    if (settings || config.persons.length || d?.calendars.length) {
-      const calendars = settings
-        ? config.persons.reduce((sum, p) => sum + p.calendars.length, 0)
-        : (d?.calendars.length ?? 0);
+    if (!settings && (config.persons.length || d?.calendars.length)) {
       rows.push({
         key: "people",
         icon: "mdi:account-group-outline",
         title: t("find.people"),
         detail: t("find.people.detail", {
           persons: this.count(t, config.persons.length, "word.person"),
-          calendars: this.count(t, calendars, "word.calendar"),
+          calendars: this.count(t, d?.calendars.length ?? 0, "word.calendar"),
         }),
-        chips: settings ? [] : later,
-        tip: settings ? "q_household" : undefined,
-        actions: settings
-          ? [this.button(t("review.change"), "mdi:account-edit-outline", () => this.edit("household"))]
-          : undefined,
+        chips: later,
       });
     }
     const consumers = config.consumers.filter((c) => c.kind !== "submeter");
@@ -709,74 +595,6 @@ export class JoeReview extends LitElement {
     saveConfig(this, patch);
   }
 
-  // --- Weather and holidays ---
-
-  private contextRow(hass: HomeAssistant, t: Translate, config: JoeConfig, kind: "weather" | "holiday"): Row {
-    const key = kind === "weather" ? "weather_entity" : "holiday_entity";
-    const entity = config.context[key];
-    const found = this.discovery?.[kind] ?? null;
-    const base = {
-      key: kind,
-      icon: kind === "weather" ? "mdi:weather-partly-cloudy" : "mdi:calendar-star",
-      title: t(kind === "weather" ? "find.weather" : "find.holiday"),
-      tip: (kind === "weather" ? "review_weather" : "review_holiday") as TipName,
-    };
-    const pick = () => this.pickContext(kind);
-    if (entity) {
-      const same = found?.entity.entity_id === entity;
-      return {
-        ...base,
-        detail: entityName(hass, entity),
-        chips: [sourceChip(t, sourceOf(config, `context.${key}`)), ...(found && same ? [confidenceDots(t, found.confidence)] : [])],
-        reasons: same ? found?.reasons : undefined,
-        actions: [
-          this.button(t("review.change"), "mdi:magnify", pick),
-          this.button(t("review.ignore"), "", () => this.ignore(kind, { context: { [key]: null } }), true),
-        ],
-      };
-    }
-    if (isIgnored(config, kind)) {
-      return {
-        ...base,
-        detail: t("review.ignored"),
-        state: "ignored",
-        actions: [this.button(t("review.use"), "mdi:undo-variant", pick)],
-      };
-    }
-    return {
-      ...base,
-      detail: t("find.none"),
-      state: "missing",
-      notes: [this.info(t(kind === "weather" ? "review.weather.none" : "review.holiday.none"))],
-      actions: [this.button(t("review.choose"), "mdi:magnify", pick)],
-    };
-  }
-
-  private async pickContext(kind: "weather" | "holiday"): Promise<void> {
-    const { t, config } = this;
-    if (!t || !config) {
-      return;
-    }
-    const key = kind === "weather" ? "weather_entity" : "holiday_entity";
-    const found = this.discovery?.[kind];
-    const current = config.context[key];
-    const picked = await pickEntity(this, {
-      heading: t(kind === "weather" ? "pick.weather.title" : "pick.holiday.title"),
-      tip: kind === "weather" ? "pick_weather" : "pick_holiday",
-      filter: kind === "weather" ? "weather" : "workday",
-      selected: current ? [current] : found ? [found.entity.entity_id] : [],
-      suggestions: suggestions(found ? [suggestion(found)] : [], found?.alternatives),
-    });
-    const entity = picked?.selected[0];
-    if (!entity) {
-      return;
-    }
-    saveConfig(this, {
-      context: { [key]: entity },
-      answers: { ignored: withIgnored(config, kind, false) },
-    });
-  }
-
   // --- Helpers ---
 
   private ignore(key: string, patch: Record<string, unknown>): void {
@@ -788,18 +606,16 @@ export class JoeReview extends LitElement {
     saveConfig(this, { answers: { confirmed: [...confirmed, key] } });
   }
 
-  private edit(editor: "battery" | "tariff" | "household" | "consumers", id?: string): void {
+  private edit(editor: "battery" | "tariff" | "consumers", id?: string): void {
     this.dispatchEvent(new CustomEvent("joe-edit", { detail: { editor, id }, bubbles: true, composed: true }));
   }
 
   private button(label: string, icon: string, onClick: () => void, quiet = false): TemplateResult {
-    return html`<button type="button" class="mini-btn ${quiet ? "quiet" : ""}" @click=${onClick}>
-      ${icon ? html`<ha-icon icon=${icon}></ha-icon>` : nothing}${label}
-    </button>`;
+    return rowButton(label, icon, onClick, quiet);
   }
 
   private info(text: string): TemplateResult {
-    return html`<div class="note"><ha-icon icon="mdi:information-outline"></ha-icon><span>${text}</span></div>`;
+    return infoNote(text);
   }
 
   private note(t: Translate, check: Check, actions: TemplateResult[] = []): TemplateResult {
@@ -815,31 +631,6 @@ export class JoeReview extends LitElement {
   private count(t: Translate, n: number, wordKey: "word.grid" | "word.solar" | "word.battery" | "word.device" | "word.plane" | "word.sensor" | "word.person" | "word.calendar"): string {
     const [one, other] = t(wordKey).split("|");
     return `${formatNumber(t.lang, n, 0)} ${n === 1 ? one : other}`;
-  }
-
-  private renderRow(t: Translate, row: Row): TemplateResult {
-    return html`<li class="item ${row.state ?? ""}" ?data-tipped=${Boolean(row.actions?.length && row.tip)}>
-      <span class="ico-box"><ha-icon icon=${row.icon}></ha-icon></span>
-      <div class="text">
-        <div class="head">
-          <span class="t">${row.title}</span>
-          ${row.chips?.length ? html`<span class="chips">${row.chips}</span>` : nothing}
-        </div>
-        <div class="d">${row.detail}</div>
-        ${row.reasons?.length
-          ? html`<details data-notip>
-              <summary>${t("scan.why")}</summary>
-              <ul>
-                ${row.reasons.map((reason) => html`<li>${reasonText(t, reason)}</li>`)}
-              </ul>
-            </details>`
-          : nothing}
-        ${row.notes ?? nothing}
-        ${row.actions?.length
-          ? html`<div class="row-actions">${row.actions}${row.tip ? tip(t, row.tip) : nothing}</div>`
-          : nothing}
-      </div>
-    </li>`;
   }
 }
 

@@ -59,6 +59,11 @@ export class JoeChoice extends LitElement {
       min-height: 40px;
       padding: 8px 12px;
     }
+    @media (pointer: coarse) {
+      :host([compact]) button {
+        min-height: 44px;
+      }
+    }
     button:hover:not([disabled]) {
       background: var(--joe-line);
     }

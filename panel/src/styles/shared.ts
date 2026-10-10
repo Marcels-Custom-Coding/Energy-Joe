@@ -455,6 +455,22 @@ export const shared = css`
     cursor: not-allowed;
     opacity: 0.45;
   }
+  /* On touch screens switch and inputs grow to 44 px; the track still looks 28 px high. */
+  @media (pointer: coarse) {
+    .switch,
+    .switch[aria-checked="true"] {
+      height: 44px;
+      padding: 8px 0;
+      background-clip: content-box;
+      border-radius: 14px / 22px;
+    }
+    .switch::after {
+      top: 11px;
+    }
+    .input {
+      min-height: 44px;
+    }
+  }
 
   .sheet-title {
     padding-right: 40px;
@@ -509,5 +525,228 @@ export const shared = css`
     letter-spacing: 0.09em;
     text-transform: uppercase;
     color: var(--joe-muted);
+  }
+
+  /* Navigation building blocks (components/section-chips, ha-open, mirror, used-by) */
+  .section-chips {
+    position: sticky;
+    top: var(--joe-head-h, 0px);
+    z-index: 1;
+    display: flex;
+    gap: 8px;
+    margin: -8px 0 16px;
+    /* The chips line up with the pages, which are centred at 1100 px. */
+    padding: 8px max(0px, calc((100% - 1100px) / 2));
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    background: var(--joe-bg);
+  }
+  .section-chips::-webkit-scrollbar {
+    display: none;
+  }
+  /* A fade at an edge where more chips are hidden: the row scrolls. */
+  .section-chips::before,
+  .section-chips::after {
+    content: "";
+    position: sticky;
+    z-index: 1;
+    flex: none;
+    width: 36px;
+    align-self: stretch;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .section-chips::before {
+    left: 0;
+    order: -1;
+    margin-right: -44px;
+    background: linear-gradient(to left, transparent, var(--joe-bg));
+  }
+  .section-chips::after {
+    right: 0;
+    margin-left: -44px;
+    background: linear-gradient(to right, transparent, var(--joe-bg));
+  }
+  .section-chips[data-more~="left"]::before,
+  .section-chips[data-more~="right"]::after {
+    opacity: 1;
+  }
+  .section-chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+    min-height: 44px;
+    padding: 0 16px 0 12px;
+    border-radius: 999px;
+    scroll-snap-align: start;
+    font-weight: 600;
+    font-size: 14px;
+    white-space: nowrap;
+    text-decoration: none;
+    background: var(--joe-surface-2);
+    color: var(--joe-ink-2);
+    transition: background 0.12s, color 0.12s, transform 0.12s;
+  }
+  @media (max-width: 400px) {
+    .section-chips {
+      gap: 6px;
+    }
+    .section-chip {
+      gap: 4px;
+      padding: 0 12px 0 9px;
+    }
+  }
+  .section-chip:hover {
+    background: var(--joe-line);
+    color: var(--joe-ink);
+  }
+  .section-chip:active {
+    transform: scale(0.97);
+  }
+  .section-chip.on,
+  .section-chip.on:hover {
+    background: var(--joe-ink);
+    color: var(--joe-bg);
+  }
+  .section-count {
+    font-size: 12px;
+    opacity: 0.75;
+  }
+  .section-problem {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--joe-crit);
+  }
+  .ha-open {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1.5px solid var(--joe-line);
+    border-radius: 50%;
+    background: var(--joe-surface);
+    color: var(--joe-ink-2);
+    cursor: pointer;
+    text-decoration: none;
+    transition: border-color 0.12s, color 0.12s, transform 0.12s;
+  }
+  .ha-open:hover {
+    border-color: var(--joe-amber);
+    color: var(--joe-ink);
+  }
+  .ha-open:active {
+    transform: scale(0.94);
+  }
+  .ha-open:focus-visible {
+    border-radius: 50%;
+  }
+  .ha-open ha-icon {
+    --mdc-icon-size: 20px;
+  }
+  a.ha-link {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: var(--joe-line-2);
+    text-underline-offset: 3px;
+  }
+  a.ha-link:hover {
+    text-decoration-color: var(--joe-amber);
+  }
+  .mirror {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+    padding: 8px 0;
+  }
+  /* Label · value flow as text, so a value never ends up alone on a line; the button fits beside it on the phone. */
+  .mirror-text {
+    flex: 1 1 140px;
+    min-width: 0;
+    line-height: 1.5;
+  }
+  .mirror-label,
+  .mirror-sep {
+    color: var(--joe-ink-2);
+  }
+  .mirror-sep {
+    margin-inline: 6px;
+  }
+  .mirror-text .chip {
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .mirror-value {
+    font-weight: 600;
+  }
+  .mirror-hint {
+    display: block;
+    margin-top: 2px;
+    font-size: 12.5px;
+    color: var(--joe-muted);
+  }
+  a.mirror-go {
+    min-height: 44px;
+    text-decoration: none;
+  }
+  .used-by {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 14px;
+    margin: 8px 0 0;
+    padding-block: 6px;
+    font-size: 13.5px;
+    color: var(--joe-ink-2);
+  }
+  /* Wider gaps keep the uses apart; the icon and the label stay close to what follows. */
+  .used-by-label,
+  .used-by ha-icon {
+    margin-right: -6px;
+  }
+  .used-by ha-icon {
+    --mdc-icon-size: 16px;
+    color: var(--joe-muted);
+  }
+  .used-by a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    /* 44 px to tap, but wrapped lines stay close together. */
+    margin-block: -6px;
+    font-weight: 600;
+    color: var(--joe-ink);
+    text-decoration: underline;
+    text-decoration-color: var(--joe-line-2);
+    text-underline-offset: 3px;
+  }
+  .used-by a:hover {
+    text-decoration-color: var(--joe-amber);
+  }
+  .used-by.none {
+    min-height: 44px;
+  }
+  /* An address with an anchor lights up its target briefly (router.ts revealAnchor). */
+  [data-anchor] {
+    scroll-margin-top: calc(var(--joe-head-h, 0px) + 72px);
+  }
+  .flash {
+    animation: joe-flash 1.5s ease-out;
+  }
+  @keyframes joe-flash {
+    0%,
+    40% {
+      box-shadow: 0 0 0 3px var(--joe-amber);
+    }
+    100% {
+      box-shadow: 0 0 0 3px transparent;
+    }
   }
 `;

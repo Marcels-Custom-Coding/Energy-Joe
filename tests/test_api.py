@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.typing import WebSocketGenerator
 
 from custom_components.energy_joe.const import DOMAIN
-from homeassistant.const import __version__ as HA_VERSION
+from homeassistant.const import UnitOfPower, __version__ as HA_VERSION
 from homeassistant.core import HomeAssistant
 
 
@@ -240,3 +241,79 @@ async def test_week_suggestion_within_the_devices_limits(
     profiles = msg["result"]["profiles"]
     assert profiles[0]["curves"] == [[[0, 30.0]]]
     assert profiles[2]["curves"] == [[[0, 30.0]]]
+
+
+async def test_review_reads_answers_rates_and_the_whole_log(
+    ready_hass: HomeAssistant, hass_ws_client: WebSocketGenerator
+) -> None:
+    """The review shows each day's answer, forgets warm-up rates, reads both logs."""
+    hass = ready_hass
+    await hass.config.async_set_time_zone("Europe/Berlin")
+    hass.states.async_set(
+        "sensor.grid",
+        "800",
+        {"unit_of_measurement": UnitOfPower.WATT, "device_class": "power"},
+    )
+    entry = MockConfigEntry(domain=DOMAIN, data={})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    runtime = hass.data[DOMAIN]
+    runtime.async_update_config(
+        {"measurements": {"grid_power": {"entity_id": "sensor.grid"}}}, "user"
+    )
+    runtime.async_set_onboarding(step="done", completed=True)
+    await hass.async_block_till_done()
+    client = await hass_ws_client(hass)
+
+    async def send(**msg: Any) -> dict[str, Any]:
+        await client.send_json_auto_id(msg)
+        return await client.receive_json()
+
+    # A day someone answered, and one still open.
+    await runtime.history.async_update_day("2026-10-01", answer="guests")
+    await runtime.history.async_update_day("2026-10-02", workday=True)
+    msg = await send(type=f"{DOMAIN}/history/days", days=3, until="2026-10-02")
+    answers = {day["date"]: day["answer"] for day in msg["result"]["days"]}
+    assert answers == {"2026-10-02": None, "2026-10-01": "guests"}
+    msg = await send(type=f"{DOMAIN}/history/day", date="2026-10-01")
+    assert msg["result"]["answer"] == "guests"
+
+    # Only the heating's rates go; what the learner keeps stays.
+    runtime.climate.data["rates"]["climate.wohnzimmer"] = 2.4
+    runtime.async_update_config({"learned": {"solar_factor": 0.8}}, "learned")
+    msg = await send(type=f"{DOMAIN}/learning/reset", scope="climate")
+    assert msg["success"]
+    assert runtime.climate.data["rates"] == {}
+    assert runtime.config["learned"]["solar_factor"] == 0.8
+    runtime.climate.data["rates"]["climate.wohnzimmer"] = 2.4
+    assert (await send(type=f"{DOMAIN}/learning/reset"))["success"]
+    assert runtime.climate.data["rates"] == {}
+    assert runtime.config["learned"]["solar_factor"] is None
+    msg = await send(type=f"{DOMAIN}/learning/reset", scope="garden")
+    assert not msg["success"]
+
+    # Both logs in full, newest first, each entry with its area.
+    runtime.executor.data["log"][:] = [
+        {"at": f"2026-10-01T{hour:02d}:00:00+02:00", "kind": "charge"}
+        for hour in range(0, 24, 2)
+    ] * 9
+    runtime.climate.data["log"][:] = [
+        {"at": "2026-10-01T05:00:00+02:00", "entity": "climate.wz", "what": "away"},
+        {"at": "2026-10-01T03:30:00+00:00", "entity": "climate.wz", "what": "back"},
+    ]
+    msg = await send(type=f"{DOMAIN}/log")
+    entries = msg["result"]["entries"]
+    assert len(entries) == 102
+    assert entries[0] == {
+        "at": "2026-10-01T22:00:00+02:00",
+        "kind": "charge",
+        "area": "control",
+    }
+    climate = [e for e in entries if e["area"] == "climate"]
+    assert [e["what"] for e in climate] == ["back", "away"]
+    # 03:30 UTC is 05:30 here: after the climate entry at 05:00, before 06:00.
+    index = entries.index(climate[0])
+    assert entries[index - 1]["at"] == "2026-10-01T06:00:00+02:00"
+    assert entries[index + 1]["what"] == "away"
+    assert await hass.config_entries.async_unload(entry.entry_id)

@@ -1,19 +1,24 @@
 import { LitElement, css, html, nothing, type PropertyValues, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
-import { displayTitle, swoosh } from "../components/bits";
-import "../components/chart";
-import type { ChartBand, ChartMarker, ChartSeries } from "../components/chart";
-import "../components/pose";
-import { tip } from "../components/tip";
-import { define } from "../define";
-import { fixed, money } from "../components/look-back";
-import { formatNumber } from "../entities";
-import type { Translate } from "../i18n";
-import { shared } from "../styles/shared";
-import type { DayDetail, DaySummary, HistoryDays, HomeAssistant, JoeState } from "../types";
+import { displayTitle, swoosh } from "../../components/bits";
+import "../../components/chart";
+import type { ChartBand, ChartMarker, ChartSeries } from "../../components/chart";
+import "../../components/day-answer";
+import { fixed, money } from "../../components/look-back";
+import "../../components/pose";
+import { tip } from "../../components/tip";
+import { define } from "../../define";
+import { formatNumber } from "../../entities";
+import type { Translate } from "../../i18n";
+import { PANEL, href, onLink, type Route } from "../../router";
+import { shared } from "../../styles/shared";
+import type { ClimateFound, DayAnswer, DayDetail, DaySummary, HistoryDays, HomeAssistant, JoeState } from "../../types";
 
 const DAYS = 14;
 const SOC_COLORS = ["var(--joe-c-soc)", "var(--joe-c-soc-2)", "var(--joe-c-grid)", "var(--joe-c-ist)"];
+
+/** A day as history/day sends it, with the answer to Joe's question about it. */
+type DayView = DayDetail & { answer?: DayAnswer | null };
 
 /** Today's date in Home Assistant's time zone is the last day Joe reports. */
 function dayLabel(lang: string, day: string, style: "long" | "short"): string {
@@ -23,18 +28,28 @@ function dayLabel(lang: string, day: string, style: "long" | "short"): string {
     : new Intl.DateTimeFormat(lang, { weekday: "short", timeZone: "UTC" }).format(date);
 }
 
-/** The history: every day Joe watched or read, with its hours. */
-export class JoeHistory extends LitElement {
+/** Rückblick › Tage: every day Joe watched or read, with its hours. The chosen day is the address. */
+export class JoeLookbackDays extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) t?: Translate;
   @property({ attribute: false }) state?: JoeState;
+  @property({ attribute: false }) prefix = PANEL;
+  @property({ attribute: false }) route?: Route;
+  @property({ attribute: false }) climateFound?: ClimateFound;
+  /** The day in the address (YYYY-MM-DD); without one the newest day shows. */
+  @property({ attribute: false }) day?: string;
 
   @state() private days?: HistoryDays;
-  @state() private selected?: string;
-  @state() private detail?: DayDetail;
+  @state() private detail?: DayView;
   @state() private failed = false;
 
   private lastHour?: string;
+  /** The day whose detail is loaded or loading. */
+  private loading?: string;
+  /** A tap on the strip: the page stays where it is. */
+  private fromStrip = false;
+  /** Scroll to the day once it is rendered (a jump from elsewhere). */
+  private reveal = false;
 
   static styles = [
     shared,
@@ -54,40 +69,53 @@ export class JoeHistory extends LitElement {
         color: var(--joe-ink-2);
         font-size: 14px;
       }
+      a.more {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--joe-ink);
+        text-decoration: underline;
+        text-decoration-color: var(--joe-line-2);
+        text-underline-offset: 3px;
+      }
+      a.more:hover {
+        text-decoration-color: var(--joe-amber);
+      }
       .strip {
         display: flex;
         gap: 6px;
         overflow-x: auto;
-        padding: 18px 2px 6px;
+        padding: 12px 2px 6px;
         scrollbar-width: thin;
       }
-      .strip button {
+      .strip > a,
+      .strip > span {
         flex: none;
         display: grid;
         justify-items: center;
         gap: 4px;
         width: 62px;
         padding: 8px 4px 6px;
-        border: 0;
         border-radius: 12px;
-        cursor: pointer;
         background: var(--joe-surface);
         box-shadow: inset 0 0 0 1px var(--joe-line);
         color: var(--joe-ink);
+        text-decoration: none;
         transition: background 0.12s, box-shadow 0.12s, transform 0.12s;
       }
-      .strip button:hover:not([disabled]) {
+      .strip > a:hover {
         background: var(--joe-surface-2);
       }
-      .strip button:active:not([disabled]) {
+      .strip > a:active {
         transform: scale(0.97);
       }
-      .strip button[aria-pressed="true"] {
+      .strip > a[aria-current] {
         background: var(--joe-amber-soft);
         box-shadow: inset 0 0 0 2px var(--joe-amber);
       }
-      .strip button[disabled] {
-        cursor: default;
+      .strip > span {
         opacity: 0.45;
       }
       .strip small {
@@ -121,6 +149,7 @@ export class JoeHistory extends LitElement {
         flex-wrap: wrap;
         gap: 8px 12px;
         margin-top: 18px;
+        border-radius: 12px;
       }
       .day-head h3 {
         margin: 0;
@@ -130,6 +159,9 @@ export class JoeHistory extends LitElement {
         text-transform: uppercase;
         font-size: 26px;
         line-height: 1;
+      }
+      joe-day-answer {
+        margin-top: 12px;
       }
       .tiles {
         display: grid;
@@ -174,6 +206,7 @@ export class JoeHistory extends LitElement {
       .chart-head {
         display: flex;
         align-items: center;
+        flex-wrap: wrap;
         gap: 8px;
         font-weight: 700;
         margin-bottom: 6px;
@@ -286,6 +319,8 @@ export class JoeHistory extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
+    // A day in the address on arrival: show it, not the top of the page.
+    this.reveal = Boolean(this.day);
     this.load();
   }
 
@@ -297,6 +332,11 @@ export class JoeHistory extends LitElement {
       this.load();
     }
     this.lastHour = marker;
+    if (changed.has("day") && this.days) {
+      this.reveal = !this.fromStrip;
+      this.fromStrip = false;
+      this.showSelected();
+    }
   }
 
   private async load(): Promise<void> {
@@ -306,30 +346,93 @@ export class JoeHistory extends LitElement {
     try {
       this.days = await this.hass.callWS<HistoryDays>({ type: "energy_joe/history/days", days: DAYS });
       this.failed = false;
-      const known = this.days.days.map((d) => d.date);
-      const day = this.selected && known.includes(this.selected) ? this.selected : known[0];
-      if (day) {
-        await this.select(day);
+      this.loading = undefined;
+      await this.showSelected();
+    } catch {
+      this.failed = true;
+    }
+  }
+
+  /** The day to show: the one in the address if Joe knows it, else the newest. */
+  private get selected(): string | undefined {
+    const known = this.days?.days.map((d) => d.date) ?? [];
+    if (this.day) {
+      if (known.includes(this.day)) {
+        return this.day;
+      }
+      // Older than the strip (a link from the results): Joe may still have it.
+      const first = this.days?.first_day;
+      const last = this.days?.last_day;
+      return /^\d{4}-\d{2}-\d{2}$/.test(this.day) && first && last && this.day >= first && this.day <= last
+        ? this.day
+        : undefined;
+    }
+    return known[0];
+  }
+
+  /** A day outside the strip that turned out to have nothing recorded. */
+  private get blank(): boolean {
+    const detail = this.detail;
+    return Boolean(
+      detail &&
+        detail.date === this.day &&
+        !this.days?.days.some((d) => d.date === detail.date) &&
+        !detail.hours.length &&
+        !detail.evaluation,
+    );
+  }
+
+  private async showSelected(): Promise<void> {
+    const day = this.selected;
+    if (!day) {
+      this.detail = undefined;
+      return;
+    }
+    if (day === this.loading) {
+      return;
+    }
+    this.loading = day;
+    try {
+      const detail = await this.hass?.callWS<DayView>({ type: "energy_joe/history/day", date: day });
+      if (this.loading === day) {
+        this.detail = detail;
       }
     } catch {
       this.failed = true;
     }
   }
 
-  protected updated(changed: PropertyValues<this>): void {
-    if ((changed as Map<string, unknown>).has("days")) {
-      // Show the newest days first on narrow screens.
-      const strip = this.renderRoot.querySelector(".strip");
-      strip?.scrollTo({ left: strip.scrollWidth });
-    }
+  /** The day's answer changed: fetch the day again so the backend's word counts. */
+  private async reloadDay(): Promise<void> {
+    this.loading = undefined;
+    await this.showSelected();
   }
 
-  private async select(day: string): Promise<void> {
-    this.selected = day;
-    try {
-      this.detail = await this.hass?.callWS<DayDetail>({ type: "energy_joe/history/day", date: day });
-    } catch {
-      this.failed = true;
+  protected updated(changed: PropertyValues<this>): void {
+    const strip = this.renderRoot.querySelector<HTMLElement>(".strip");
+    if (strip && ((changed as Map<string, unknown>).has("days") || changed.has("day"))) {
+      // Newest days on the right; keep the chosen day in view on narrow screens.
+      const current = strip.querySelector<HTMLElement>("[aria-current]");
+      if (current) {
+        const left = current.offsetLeft - strip.offsetLeft;
+        if (left < strip.scrollLeft || left + current.offsetWidth > strip.scrollLeft + strip.clientWidth) {
+          strip.scrollTo({ left: left - strip.clientWidth + current.offsetWidth + 8 });
+        }
+      } else if ((changed as Map<string, unknown>).has("days")) {
+        strip.scrollTo({ left: strip.scrollWidth });
+      }
+    }
+    if (this.reveal && this.detail && this.detail.date === this.day) {
+      this.reveal = false;
+      const head = this.renderRoot.querySelector<HTMLElement>("[data-anchor='day']");
+      head?.scrollIntoView({ block: "start", behavior: "smooth" });
+      // The header's height may not be known yet on arrival: look again once the page has settled.
+      window.setTimeout(() => {
+        const margin = head ? parseFloat(getComputedStyle(head).scrollMarginTop) || 0 : 0;
+        if (head?.isConnected && Math.abs(head.getBoundingClientRect().top - margin) > 24) {
+          head.scrollIntoView({ block: "start" });
+        }
+      }, 900);
     }
   }
 
@@ -341,11 +444,33 @@ export class JoeHistory extends LitElement {
     if (!this.days?.days.length) {
       return this.renderEmpty(t);
     }
+    const selected = this.selected;
+    // The previous day stays until the next one has arrived, so the page does not jump.
     return html`<div class="wrap">
       ${displayTitle(t("history.title"))} ${swoosh}
       <p class="status">${this.statusText(t)}</p>
-      ${this.renderStrip(t, this.days.days)} ${this.detail ? this.renderDay(t, this.detail) : nothing}
+      ${this.rebuildLink(t)}
+      ${this.failed ? html`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon>${t("history.failed")}</div>` : nothing}
+      ${this.renderStrip(t, this.days.days, selected)}
+      ${this.day && (!selected || this.blank)
+        ? html`<div class="note"><ha-icon icon="mdi:calendar-remove-outline"></ha-icon>${t("past.days.unknown", { day: this.dayName(t, this.day) })}</div>`
+        : nothing}
+      ${this.detail && selected && !this.blank ? this.renderDay(t, this.detail) : nothing}
     </div>`;
+  }
+
+  private dayName(t: Translate, day: string): string {
+    return /^\d{4}-\d{2}-\d{2}$/.test(day) ? dayLabel(t.lang, day, "long") : day;
+  }
+
+  /** "Verlauf neu einlesen →": the button lives in Einstellungen › Wartung. */
+  private rebuildLink(t: Translate): TemplateResult | typeof nothing {
+    const observe = this.state?.observe;
+    if (!observe?.active || observe.backfill.state === "running") {
+      return nothing;
+    }
+    const to: Route = { tab: "settings", section: "maintenance", id: "observe" };
+    return html`<a class="more" href=${href(this.prefix, to)} @click=${onLink(to)}>${t("past.days.rebuild")}</a>`;
   }
 
   private statusText(t: Translate): string {
@@ -401,7 +526,7 @@ export class JoeHistory extends LitElement {
     </div>`;
   }
 
-  private renderStrip(t: Translate, days: DaySummary[]): TemplateResult {
+  private renderStrip(t: Translate, days: DaySummary[], selected: string | undefined): TemplateResult {
     // The last 14 calendar days, oldest first; days without records stay greyed.
     const newest = days[0].date;
     const byDate = new Map(days.map((d) => [d.date, d]));
@@ -412,33 +537,48 @@ export class JoeHistory extends LitElement {
       dates.push(date.toISOString().slice(0, 10));
     }
     const top = Math.max(0.1, ...days.flatMap((d) => [d.home ?? 0, d.solar ?? 0]));
-    return html`<div class="strip" role="group" aria-label=${t("history.days")} data-notip>
+    return html`<nav class="strip" aria-label=${t("history.days")}>
       ${dates.map((date) => {
         const summary = byDate.get(date);
-        return html`<button
-          type="button"
-          aria-pressed=${String(date === this.selected)}
-          ?disabled=${!summary}
-          aria-label=${dayLabel(t.lang, date, "long")}
-          @click=${() => this.select(date)}
-        >
-          <small>${dayLabel(t.lang, date, "short")}</small>
+        const inner = html`<small>${dayLabel(t.lang, date, "short")}</small>
           <b>${Number(date.slice(8))}</b>
           <span class="mini" aria-hidden="true">
             <i style="height:${((summary?.home ?? 0) / top) * 26}px;background:var(--joe-c-load)"></i>
             <i style="height:${((summary?.solar ?? 0) / top) * 26}px;background:var(--joe-c-pv)"></i>
-          </span>
-        </button>`;
+          </span>`;
+        if (!summary) {
+          return html`<span aria-disabled="true" aria-label=${dayLabel(t.lang, date, "long")}>${inner}</span>`;
+        }
+        const to: Route = { tab: "review", section: "days", id: date };
+        const go = onLink(to);
+        return html`<a
+          href=${href(this.prefix, to)}
+          aria-current=${date === selected ? "date" : nothing}
+          aria-label=${dayLabel(t.lang, date, "long")}
+          @click=${(ev: MouseEvent) => {
+            if (date === this.day && !ev.metaKey && !ev.ctrlKey && !ev.shiftKey && !ev.altKey && ev.button === 0) {
+              // Already there: nothing to do (the panel would scroll to the top).
+              ev.preventDefault();
+              return;
+            }
+            this.fromStrip = true;
+            go(ev);
+            if (!ev.defaultPrevented) {
+              this.fromStrip = false;
+            }
+          }}
+          >${inner}</a
+        >`;
       })}
-    </div>`;
+    </nav>`;
   }
 
-  private renderDay(t: Translate, day: DayDetail): TemplateResult {
+  private renderDay(t: Translate, day: DayView): TemplateResult {
     const s = day.summary;
     const missing = Math.max(0, s.expected - day.hours.filter((h) => h.cov >= 0.9).length);
     const live = s.sources.live ?? 0;
     const read = (s.sources.stats ?? 0) + (s.sources.history ?? 0);
-    return html`<div class="day-head">
+    return html`<div class="day-head" data-anchor="day">
         <h3>${dayLabel(t.lang, day.date, "long")}</h3>
         ${day.workday === true
           ? html`<span class="chip">${t("history.workday")}</span>`
@@ -448,6 +588,14 @@ export class JoeHistory extends LitElement {
         ${live ? html`<span class="chip ok"><ha-icon icon="mdi:eye-outline"></ha-icon>${t("history.live")}</span>` : nothing}
         ${read ? html`<span class="chip read"><ha-icon icon="mdi:database-outline"></ha-icon>${t("history.read")}</span>` : nothing}
       </div>
+      <joe-day-answer
+        .hass=${this.hass}
+        .t=${t}
+        .date=${day.date}
+        .answer=${day.answer ?? null}
+        .question=${this.state?.questions?.find((q) => q.date === day.date)}
+        @joe-answered=${() => this.reloadDay()}
+      ></joe-day-answer>
       ${this.renderTiles(t, s)} ${this.renderEnergyChart(t, day)} ${this.renderSocChart(t, day)}
       ${this.renderEvaluation(t, day)}
       ${missing && s.date !== this.days?.days[0]?.date
@@ -590,11 +738,13 @@ export class JoeHistory extends LitElement {
         lang=${t.lang}
         label=${t("history.chart.energy")}
       ></joe-chart>
-      <div class="legend">
-        ${series.map(
-          (s) => html`<span><i class=${s.dashed ? "dash" : ""} style="background:${s.color};color:${s.color}"></i>${s.label}</span>`,
-        )}
-      </div>
+      ${this.legend(series)}
+    </div>`;
+  }
+
+  private legend(series: ChartSeries[]): TemplateResult {
+    return html`<div class="legend">
+      ${series.map((s) => html`<span><i class=${s.dashed ? "dash" : ""} style="background:${s.color};color:${s.color}"></i>${s.label}</span>`)}
     </div>`;
   }
 
@@ -637,11 +787,7 @@ export class JoeHistory extends LitElement {
         lang=${t.lang}
         label=${t("history.chart.soc")}
       ></joe-chart>
-      <div class="legend">
-        ${series.map(
-          (s) => html`<span><i class=${s.dashed ? "dash" : ""} style="background:${s.color};color:${s.color}"></i>${s.label}</span>`,
-        )}
-      </div>
+      ${this.legend(series)}
     </div>`;
   }
 
@@ -739,11 +885,7 @@ export class JoeHistory extends LitElement {
               lang=${t.lang}
               label=${t("history.eval")}
             ></joe-chart>
-            <div class="legend">
-              ${series.map(
-                (s) => html`<span><i class=${s.dashed ? "dash" : ""} style="background:${s.color};color:${s.color}"></i>${s.label}</span>`,
-              )}
-            </div>`
+            ${this.legend(series)}`
         : nothing}
     </div>`;
   }
@@ -754,4 +896,4 @@ export class JoeHistory extends LitElement {
   }
 }
 
-define("joe-history", JoeHistory);
+define("joe-lookback-days", JoeLookbackDays);

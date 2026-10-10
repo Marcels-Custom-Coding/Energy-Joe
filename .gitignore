@@ -9,3 +9,4 @@ node_modules/
 .DS_Store
 branding/*
 !branding/README.md
+panel/src/i18n/.lock

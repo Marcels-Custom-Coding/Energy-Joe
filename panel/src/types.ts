@@ -454,6 +454,33 @@ export interface ClimateMeter {
   energy: string | null;
 }
 
+/** A power meter Joe could pair with a climate device (energy_joe/climate/devices). */
+export interface ClimateMeterOption extends ClimateMeter {
+  name: string | null;
+  /** The sensor's name when the device has several. */
+  sensor: string | null;
+  /** The device it is connected via. */
+  via: string | null;
+  area: string | null;
+}
+
+/** Someone on the way home, by person entity. */
+export interface ClimateArrival {
+  km?: number;
+  direction?: string;
+  minutes?: number;
+  source?: string;
+}
+
+/** What energy_joe/climate/devices finds: thermostats and ACs by room, meters and who heads home. */
+export interface ClimateFound {
+  devices: ClimateDevice[];
+  meters?: ClimateMeterOption[];
+  suggested?: Record<string, ClimateMeterOption>;
+  arrivals: Record<string, ClimateArrival>;
+  proximity: boolean;
+}
+
 /** When a week profile applies (each tag sits on at most one profile of a set). */
 export type WeekTag = "normal" | "holiday" | "away" | "home_office";
 export const WEEK_TAGS: WeekTag[] = ["normal", "holiday", "away", "home_office"];
@@ -996,7 +1023,10 @@ export interface Learning {
   solar_profile: { actual: number[]; forecast: number[]; days: number } | null;
   consumption: { workday: number[]; day_off: number[]; source: "history" | "default"; days: number };
   accuracy: {
+    /** The day the night starts (where it is kept). */
     date: string;
+    /** The day the night ends: the days page shows it there. */
+    end?: string;
     saving: number;
     solar: { actual: number; forecast: number | null };
     home: { actual: number; forecast: number | null };
@@ -1111,8 +1141,9 @@ export interface JoeInfo {
   routing?: { waze: boolean; google: { entry_id: string; title: string }[] };
 }
 
-export type Page = "overview" | "plan" | "history" | "learn" | "devices" | "climate" | "settings";
-export const PAGES: Page[] = ["overview", "plan", "history", "learn", "devices", "climate", "settings"];
+// The tabs (Tab, TABS) and addresses live in router.ts.
+export type { Tab } from "./router";
+export { TABS } from "./router";
 
 // --- Discovery (what Joe found, see custom_components/energy_joe/discovery) ---
 

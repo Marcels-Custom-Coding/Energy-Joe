@@ -245,6 +245,8 @@ def summarize(
         "bat_out": total("bat_out"),
         "sources": {},
         "workday": data.get("workday"),
+        # What was special about the day, once someone answered (learner.py).
+        "answer": data.get("answer"),
     }
     for hour in hours:
         summary["sources"][hour["src"]] = summary["sources"].get(hour["src"], 0) + 1
@@ -397,6 +399,7 @@ def day_view(
         "fc_slots": on_slots(forecast.get("hours")),
         "fc_ahead_slots": on_slots(forecast.get("ahead_hours")),
         "workday": data.get("workday"),
+        "answer": data.get("answer"),
         "summary": summarize(day, data, window),
         "window": window,
         "window_slots": ranges,

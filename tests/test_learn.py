@@ -378,6 +378,32 @@ async def test_learning_api(
     assert result["solar_profile"] is None
     assert result["days"] == [] and result["questions"] == []
 
+    # A night over midnight is kept on its evening; the row also names the morning it ends on.
+    today = dt_util.now().date()
+    evening = today - timedelta(days=2)
+    start = local(evening, 22)
+    window = {
+        "start": start.isoformat(),
+        "end": (start + timedelta(hours=8)).isoformat(),
+    }
+    await runtime.history.async_update_day(
+        evening.isoformat(),
+        plan={"kind": "charge", "fixed": True, "window": window, "hours": []},
+        evaluation={
+            "complete": True,
+            "final": True,
+            "saving": 0.3,
+            "solar": {"actual": 4.0, "forecast": 5.0},
+            "home": {"actual": 9.0, "forecast": 8.0},
+            "bridge": {"planned": 3.0, "actual": 2.5},
+        },
+    )
+    await client.send_json_auto_id({"type": f"{DOMAIN}/learning"})
+    rows = (await client.receive_json())["result"]["accuracy"]
+    assert [(row["date"], row["end"]) for row in rows] == [
+        (evening.isoformat(), (evening + timedelta(days=1)).isoformat())
+    ]
+
     # One area only: the rest stays, the area counts again from now.
     runtime.async_update_config(
         {"learned": {"solar_factor": 0.8, "battery_models": {"b": {"days": 20}}}},

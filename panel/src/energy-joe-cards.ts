@@ -1,10 +1,12 @@
 import { LitElement, css, html, nothing, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
+import { openInHa } from "./components/bits";
 import "./components/car-charge";
 import { planCostLine, planLines, planSentence, timeOf } from "./components/plan-text";
 import { define } from "./define";
 import { formatState } from "./entities";
 import { translator, type Translate } from "./i18n";
+import { PANEL, href } from "./router";
 import { shared } from "./styles/shared";
 import { tokens } from "./styles/tokens";
 import type { ActionConfig, HomeAssistant, JoeState } from "./types";
@@ -82,6 +84,20 @@ abstract class JoeCard extends LitElement {
       .head .eyebrow {
         flex: 1;
         min-width: 0;
+      }
+      a.head {
+        min-height: 44px;
+        margin: -8px -8px 0;
+        padding: 0 8px;
+        border-radius: 10px;
+        color: inherit;
+        text-decoration: none;
+      }
+      a.head:hover {
+        background: var(--joe-surface-2);
+      }
+      .head .chev {
+        color: var(--joe-muted);
       }
       .big {
         margin: 10px 0 4px;
@@ -190,10 +206,20 @@ class EnergyJoeNightCard extends JoeCard {
           : reason
             ? t.optional(`devices.status.${reason}`) ?? ""
             : "";
-    return html`<div class="head">
+    const planPath = href(PANEL, { tab: "plan" });
+    return html`<a
+        class="head"
+        href=${planPath}
+        @click=${(ev: MouseEvent) => {
+          if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey || ev.button !== 0) return;
+          ev.preventDefault();
+          openInHa(planPath);
+        }}
+      >
         <div class="eyebrow"><ha-icon icon="energy-joe:joe"></ha-icon>${t("cards.night.title")}</div>
         <span class="chip ${state.mode === "live" ? "ok" : state.mode === "advisory" ? "learned" : ""}">${t(`mode.${state.mode}`)}</span>
-      </div>
+        <ha-icon class="chev" icon="mdi:chevron-right"></ha-icon>
+      </a>
       ${plan
         ? html`<p class="big">${planSentence(t, plan)}</p>
             <ul class="lines">

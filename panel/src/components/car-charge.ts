@@ -47,6 +47,11 @@ export class JoeCarCharge extends LitElement {
         min-height: 34px;
         padding: 4px 8px;
       }
+      @media (pointer: coarse) {
+        .boost .input {
+          min-height: 44px;
+        }
+      }
       .boost .unit {
         color: var(--joe-ink-2);
       }

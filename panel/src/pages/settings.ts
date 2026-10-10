@@ -1,70 +1,22 @@
-import { LitElement, css, html, nothing, type TemplateResult } from "lit";
+import { LitElement, css, html, nothing, type PropertyValues, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
 import { sourceChip } from "../components/bits";
-import "../components/choice";
 import "../components/review";
 import "../components/sheet";
 import { tip } from "../components/tip";
 import { saveConfig, sourceOf } from "../config";
 import { define } from "../define";
 import type { TipName, Translate, TranslationKey } from "../i18n";
+import { PANEL, format, revealAnchor, type Route } from "../router";
+import { PRO_RULES, isRuleKey, ruleRow, ruleStyles } from "../rules-view";
 import { shared } from "../styles/shared";
-import type {
-  Check,
-  Discovery,
-  DischargeMode,
-  HomeAssistant,
-  JoeInfo,
-  JoeMode,
-  JoeState,
-  PriorityItem,
-  Rules,
-} from "../types";
+import type { Check, Discovery, HomeAssistant, JoeInfo, JoeMode, JoeState, Rules } from "../types";
 import "./questions";
 
 const SELECTABLE: JoeMode[] = ["simulation", "advisory", "live", "off"];
 
-interface NumberRule {
-  key:
-    | "reserve_soc"
-    | "max_target_soc"
-    | "evening_min_soc"
-    | "grid_limit_w"
-    | "max_night_kwh"
-    | "plan_offset_min"
-    | "reset_lead_min"
-    | "buffer_factor"
-    | "max_price"
-    | "min_saving"
-    | "balance_days";
-  unit: string;
-  min: number;
-  max: number;
-  step: number;
-  /** Shown value = stored value × scale (W → kW, factor → %). */
-  scale?: number;
-  optional?: boolean;
-  /** Whole numbers only (minutes, days). */
-  integer?: boolean;
-}
-
-const NUMBER_RULES: NumberRule[] = [
-  { key: "reserve_soc", unit: "%", min: 0, max: 100, step: 1 },
-  { key: "max_target_soc", unit: "%", min: 0, max: 100, step: 1 },
-  { key: "evening_min_soc", unit: "%", min: 0, max: 100, step: 1, optional: true },
-  { key: "grid_limit_w", unit: "kW", min: 0.1, max: 1000, step: 0.1, scale: 0.001, optional: true },
-  { key: "max_night_kwh", unit: "kWh", min: 0.1, max: 1000, step: 0.1, optional: true },
-  { key: "buffer_factor", unit: "%", min: 0, max: 300, step: 1, scale: 100 },
-  { key: "plan_offset_min", unit: "min", min: 0, max: 180, step: 1, integer: true },
-  { key: "reset_lead_min", unit: "min", min: 0, max: 60, step: 1, integer: true },
-];
-
-// Safety limits and the maintenance charge (shown after the first rules).
-const SAFETY_RULES: NumberRule[] = [
-  { key: "max_price", unit: "ct/kWh", min: 0, max: 1000, step: 0.1, scale: 100, optional: true },
-  { key: "min_saving", unit: "ct", min: 0, max: 500, step: 1, scale: 100 },
-];
-const BALANCE_RULE: NumberRule = { key: "balance_days", unit: "", min: 3, max: 90, step: 1, optional: true, integer: true };
+/** Rows of "Was Joe nutzt" that live in Haushalt now. */
+const OMIT = ["weather", "holiday", "people"];
 
 const ANSWERS: { key: "heating" | "hot_water" | "ev"; tip: TipName }[] = [
   { key: "heating", tip: "q_heating" },
@@ -88,7 +40,7 @@ const ANSWER_LABELS: Record<string, Record<string, TranslationKey>> = {
   ev: { yes: "q.ev.yes", no: "q.ev.no" },
 };
 
-/** Settings: everything Joe uses, the answers, the rules for pros and version info. */
+/** Settings: how Joe works, what he uses, the rules for pros, upkeep and version info. */
 export class JoeSettings extends LitElement {
   @property({ attribute: false }) t?: Translate;
   @property({ attribute: false }) hass?: HomeAssistant;
@@ -96,6 +48,8 @@ export class JoeSettings extends LitElement {
   @property({ attribute: false }) info?: JoeInfo;
   @property({ attribute: false }) discovery?: Discovery;
   @property({ attribute: false }) checks: Check[] = [];
+  @property({ attribute: false }) route?: Route;
+  @property({ attribute: false }) prefix = PANEL;
 
   /** A backup file read and waiting for the user's yes. */
   @state() private backup?: { name: string; when: string; config: Record<string, unknown> };
@@ -105,8 +59,16 @@ export class JoeSettings extends LitElement {
   @state() private notifyTargets?: { service: string; name: string }[];
   @state() private question = "";
 
+  /** Where the address points (section, rule or maintenance part), until it is on screen. */
+  private anchor?: string;
+  /** The address last revealed, so a new state does not scroll again. */
+  private revealed?: string;
+  private anchorSince = 0;
+  private anchorRetry?: number;
+
   static styles = [
     shared,
+    ruleStyles,
     css`
       label.file {
         position: relative;
@@ -201,54 +163,10 @@ export class JoeSettings extends LitElement {
         font-variant-numeric: tabular-nums;
         color: var(--joe-ink-2);
       }
-      .unit-input {
-        width: 150px;
-      }
       select.input,
       .input.time {
         width: auto;
         min-width: 160px;
-      }
-      .order {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        min-width: 220px;
-      }
-      .order div {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 4px 4px 4px 12px;
-        border-radius: 9px;
-        background: var(--joe-surface-2);
-        font-weight: 600;
-      }
-      .order span {
-        flex: 1;
-      }
-      .order button {
-        width: 34px;
-        height: 34px;
-        border: 0;
-        border-radius: 8px;
-        cursor: pointer;
-        background: transparent;
-        color: var(--joe-ink-2);
-        display: grid;
-        place-items: center;
-      }
-      .order button:hover:not([disabled]) {
-        background: var(--joe-surface);
-        color: var(--joe-ink);
-      }
-      .order button[disabled] {
-        opacity: 0.3;
-        cursor: default;
-      }
-      .order svg {
-        width: 18px;
-        height: 18px;
       }
       .pro-toggle {
         display: flex;
@@ -273,12 +191,6 @@ export class JoeSettings extends LitElement {
       .pro-toggle[aria-expanded="true"] svg {
         transform: rotate(90deg);
       }
-      .row.stacked {
-        display: grid;
-        justify-content: stretch;
-        align-items: stretch;
-        gap: 10px;
-      }
       @media (pointer: coarse) {
         .seg button {
           min-height: 44px;
@@ -292,6 +204,53 @@ export class JoeSettings extends LitElement {
     `,
   ];
 
+  protected willUpdate(changed: PropertyValues<this>): void {
+    if (!changed.has("route")) {
+      return;
+    }
+    const path = this.route ? format(this.route) : "";
+    if (path === this.revealed) {
+      return;
+    }
+    this.revealed = path;
+    this.anchorSince = Date.now();
+    const { section, id } = this.route ?? {};
+    if (section === "rules") {
+      // The rules live in Für Profis: open it for the address.
+      this.pro = true;
+      this.anchor = id && isRuleKey(id) ? id : "rules";
+    } else if (section === "maintenance") {
+      this.anchor = id === "backup" || id === "setup" ? id : "maintenance";
+    } else {
+      // Betrieb is the top of the page: nothing to scroll to.
+      this.anchor = section && section !== "operation" ? section : undefined;
+    }
+  }
+
+  protected async updated(): Promise<void> {
+    const anchor = this.anchor;
+    if (!anchor) {
+      return;
+    }
+    // "Was Joe nutzt" above grows with the discovery: wait for it a moment, then scroll anyway.
+    if (!this.discovery && Date.now() - this.anchorSince < 3000) {
+      this.anchorRetry ??= window.setTimeout(() => {
+        this.anchorRetry = undefined;
+        this.requestUpdate();
+      }, 3000);
+      return;
+    }
+    const children = [...this.renderRoot.querySelectorAll<LitElement>("joe-review, joe-choice")];
+    await Promise.all(children.map((child) => child.updateComplete));
+    // The sticky header's height (the scroll offset) is measured after the first paint.
+    for (let i = 0; i < 10 && (i === 0 || !getComputedStyle(this).getPropertyValue("--joe-head-h")); i++) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    }
+    if (this.anchor === anchor && revealAnchor(this.renderRoot, anchor)) {
+      this.anchor = undefined;
+    }
+  }
+
   protected render() {
     const t = this.t;
     const joe = this.state;
@@ -300,7 +259,7 @@ export class JoeSettings extends LitElement {
     }
     const config = joe.config;
     return html`<div class="list">
-        <section class="group">
+        <section class="group" data-anchor="operation">
           <h2>${t("settings.operation")}</h2>
           <div class="row" data-tipped>
             <div>
@@ -321,7 +280,7 @@ export class JoeSettings extends LitElement {
             </div>
           </div>
           ${this.gridFriendlyRows(t, config.rules)}
-          <div class="row" data-tipped>
+          <div class="row" data-tipped data-anchor="setup">
             <div>
               <div class="name"><b>${t("settings.setup")}</b>${tip(t, "restart")}</div>
               <small>${t("settings.setup.hint")}</small>
@@ -336,7 +295,7 @@ export class JoeSettings extends LitElement {
           </div>
         </section>
 
-        ${this.renderNotify(t)} ${this.renderRouting(t)}
+        ${this.renderNotify(t)}
 
         <section class="group plain">
           <h2>${t("settings.uses")}</h2>
@@ -347,6 +306,7 @@ export class JoeSettings extends LitElement {
             .config=${config}
             .discovery=${this.discovery}
             .checks=${this.checks}
+            .omit=${OMIT}
             context="settings"
           ></joe-review>
         </section>
@@ -358,7 +318,7 @@ export class JoeSettings extends LitElement {
 
         ${this.renderObserve(t)}
 
-        <section class="group">
+        <section class="group" data-anchor="rules">
           <button
             type="button"
             class="pro-toggle"
@@ -381,18 +341,13 @@ export class JoeSettings extends LitElement {
           </button>
           ${this.pro
             ? html`<p class="intro">${t("settings.pro.intro")}</p>
-                ${NUMBER_RULES.slice(0, 5).map((rule) => this.numberRow(t, config.rules, rule))}
-                ${SAFETY_RULES.map((rule) => this.numberRow(t, config.rules, rule))} ${this.guardRow(t, config.rules)}
-                ${this.numberRow(t, config.rules, BALANCE_RULE)}
-                ${this.priorityRow(t, config.rules)} ${this.dischargeRow(t, config.rules)}
-                ${this.converterRow(t, config.rules)}
-                ${NUMBER_RULES.slice(5).map((rule) => this.numberRow(t, config.rules, rule))}`
+                ${PRO_RULES.map((key) => ruleRow(t, this, config, this.info, key))}`
             : nothing}
         </section>
 
         ${this.renderBackup(t)}
 
-        <section class="group">
+        <section class="group" data-anchor="about">
           <h2>${t("settings.about")}</h2>
           <div class="row"><b>${t("settings.version")}</b><span class="value">${this.info?.version ?? "–"}</span></div>
           <div class="row"><b>${t("settings.ha")}</b><span class="value">${this.info?.ha_version ?? "–"}</span></div>
@@ -404,7 +359,7 @@ export class JoeSettings extends LitElement {
 
   /** Export all settings (with what Joe learned) to a file, or take such a file back in. */
   private renderBackup(t: Translate): TemplateResult {
-    return html`<section class="group">
+    return html`<section class="group" data-anchor="backup">
       <h2>${t("settings.backup")}</h2>
       <div class="row" data-tipped>
         <div>
@@ -492,66 +447,18 @@ export class JoeSettings extends LitElement {
     }
   }
 
-  /** How Joe works out the distance to an appointment's place (for cars charged by need). */
-  private renderRouting(t: Translate): TemplateResult {
-    const routing = this.state!.config.routing;
-    const options = this.info?.routing;
-    const value = routing.service === "google" ? `google:${routing.google_entry ?? ""}` : (routing.service ?? "");
-    const choose = (raw: string) => {
-      if (raw.startsWith("google:")) {
-        saveConfig(this, { routing: { service: "google", google_entry: raw.slice(7) || null } });
-      } else {
-        saveConfig(this, { routing: { service: (raw || null) as "waze" | "osm" | null, google_entry: null } });
-      }
-    };
-    const url = (key: "geocoder_url" | "router_url") => html`<div class="row" data-tipped>
-      <div>
-        <div class="name"><label for="routing-${key}"><b>${t(`settings.routing.${key}`)}</b></label>${tip(t, "routing_osm")}</div>
-        <small>${t(`settings.routing.${key}.hint`)}</small>
-      </div>
-      <input
-        id="routing-${key}"
-        class="input"
-        type="url"
-        .value=${routing[key]}
-        @change=${(ev: Event) => {
-          const text = (ev.target as HTMLInputElement).value.trim();
-          if (text.startsWith("http")) saveConfig(this, { routing: { [key]: text } });
-        }}
-      />
-    </div>`;
-    return html`<section class="group">
-      <h2>${t("settings.routing")}</h2>
-      <p class="intro">${t("settings.routing.intro")}</p>
-      <div class="row" data-tipped>
-        <div>
-          <div class="name"><label for="routing-service"><b>${t("settings.routing.service")}</b></label>${tip(t, "routing_service")}</div>
-          <small>${t("settings.routing.service.hint")}</small>
-        </div>
-        <select id="routing-service" class="input" @change=${(ev: Event) => choose((ev.target as HTMLSelectElement).value)}>
-          <option value="" ?selected=${value === ""}>${t("settings.routing.none")}</option>
-          ${options?.waze !== false
-            ? html`<option value="waze" ?selected=${value === "waze"}>${t("settings.routing.waze")}</option>`
-            : nothing}
-          ${(options?.google ?? []).map(
-            (entry) =>
-              html`<option value=${`google:${entry.entry_id}`} ?selected=${value === `google:${entry.entry_id}`}>
-                ${t("settings.routing.google", { name: entry.title })}
-              </option>`,
-          )}
-          <option value="osm" ?selected=${value === "osm"}>${t("settings.routing.osm")}</option>
-        </select>
-      </div>
-      ${routing.service === "osm" ? html`${url("geocoder_url")} ${url("router_url")}` : nothing}
-    </section>`;
-  }
-
   connectedCallback(): void {
     super.connectedCallback();
     this.hass
       ?.callWS<{ service: string; name: string }[]>({ type: "energy_joe/notify/targets" })
       .then((targets) => (this.notifyTargets = targets))
       .catch(() => undefined);
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    window.clearTimeout(this.anchorRetry);
+    this.anchorRetry = undefined;
   }
 
   private renderNotify(t: Translate): TemplateResult {
@@ -582,7 +489,7 @@ export class JoeSettings extends LitElement {
           @click=${() => saveConfig(this, { notify: { [key]: !notify[key] } })}
         ></button>
       </div>`;
-    return html`<section class="group">
+    return html`<section class="group" data-anchor="notify">
       <h2>${t("settings.notify")}</h2>
       <p class="intro">${t("settings.notify.intro")}</p>
       <div class="row" data-tipped>
@@ -655,7 +562,7 @@ export class JoeSettings extends LitElement {
     } else if (backfill?.state === "failed") {
       parts.push(t("settings.observe.failed"));
     }
-    return html`<section class="group">
+    return html`<section class="group" data-anchor="maintenance">
       <h2>${t("settings.observe")}</h2>
       <div class="row" data-tipped>
         <div>
@@ -728,67 +635,6 @@ export class JoeSettings extends LitElement {
     </joe-sheet>`;
   }
 
-  private numberRow(t: Translate, rules: Rules, rule: NumberRule): TemplateResult {
-    const config = this.state!.config;
-    const stored = rules[rule.key];
-    const scale = rule.scale ?? 1;
-    const shown = stored == null ? "" : String(Math.round(stored * scale * 100) / 100);
-    const fallback = this.info?.defaults?.rules[rule.key];
-    const provenance = sourceOf(config, `rules.${rule.key}`);
-    const changed = provenance?.source === "user";
-    return html`<div class="row" data-tipped>
-      <div>
-        <div class="name"><b>${t(`rule.${rule.key}`)}</b>${tip(t, `r_${rule.key}`)}</div>
-        <small>${t(`rule.${rule.key}.hint`)}</small>
-      </div>
-      <div class="control">
-        ${sourceChip(t, provenance)}
-        <span class="unit-input">
-          <input
-            class="input"
-            type="number"
-            inputmode="decimal"
-            min=${rule.min}
-            max=${rule.max}
-            step=${rule.step}
-            aria-label=${t(`rule.${rule.key}`)}
-            placeholder=${rule.optional ? t("rule.off") : ""}
-            .value=${shown}
-            @change=${(ev: Event) => this.setNumber(rule, ev.target as HTMLInputElement)}
-          />
-          <span class="unit">${rule.unit || t(`rule.${rule.key}.unit` as TranslationKey)}</span>
-        </span>
-        ${changed && fallback !== undefined
-          ? html`<button
-              type="button"
-              class="mini-btn quiet"
-              @click=${() => saveConfig(this, { rules: { [rule.key]: fallback } }, "default")}
-            >
-              <ha-icon icon="mdi:restore"></ha-icon>${t("rule.reset")}
-            </button>`
-          : nothing}
-      </div>
-    </div>`;
-  }
-
-  private setNumber(rule: NumberRule, input: HTMLInputElement): void {
-    const raw = input.value.trim();
-    const scale = rule.scale ?? 1;
-    if (raw === "") {
-      if (rule.optional) {
-        saveConfig(this, { rules: { [rule.key]: null } });
-      }
-      return;
-    }
-    const value = Number.parseFloat(raw);
-    if (!Number.isFinite(value) || value < rule.min || value > rule.max) {
-      input.reportValidity();
-      return;
-    }
-    const stored = rule.integer ? Math.round(value) : Math.round((value / scale) * 10000) / 10000;
-    saveConfig(this, { rules: { [rule.key]: stored } });
-  }
-
   /** Grid-friendly: batteries take the midday sun; what comes first, saving or the grid. */
   private gridFriendlyRows(t: Translate, rules: Rules): TemplateResult {
     const config = this.state!.config;
@@ -829,133 +675,6 @@ export class JoeSettings extends LitElement {
             </div>
           </div>`
         : nothing}`;
-  }
-
-  /** Protect the main fuse: pause charging while the house draws more than the limit. */
-  private guardRow(t: Translate, rules: Rules): TemplateResult {
-    const config = this.state!.config;
-    const limit = rules.grid_limit_w;
-    return html`<div class="row" data-tipped>
-      <div>
-        <div class="name"><b id="guard-grid">${t("rule.guard_grid")}</b>${tip(t, "r_guard_grid")}</div>
-        <small>${t(limit ? "rule.guard_grid.hint" : "rule.guard_grid.no_limit")}</small>
-      </div>
-      <div class="control">
-        ${sourceChip(t, sourceOf(config, "rules.guard_grid"))}
-        <button
-          type="button"
-          class="switch"
-          role="switch"
-          aria-checked=${String(rules.guard_grid)}
-          aria-labelledby="guard-grid"
-          ?disabled=${!limit}
-          @click=${() => saveConfig(this, { rules: { guard_grid: !rules.guard_grid } })}
-        ></button>
-      </div>
-    </div>`;
-  }
-
-  /** Expert: the inverter's losses when charging from the grid, measured at the grid meter. */
-  private converterRow(t: Translate, rules: Rules): TemplateResult {
-    const config = this.state!.config;
-    return html`<div class="row" data-tipped>
-      <div>
-        <div class="name"><b id="converter-losses">${t("rule.converter_losses")}</b>${tip(t, "r_converter_losses")}</div>
-        <small>${t("rule.converter_losses.hint")}</small>
-      </div>
-      <div class="control">
-        ${sourceChip(t, sourceOf(config, "rules.converter_losses"))}
-        <button
-          type="button"
-          class="switch"
-          role="switch"
-          aria-checked=${String(rules.converter_losses)}
-          aria-labelledby="converter-losses"
-          @click=${() => saveConfig(this, { rules: { converter_losses: !rules.converter_losses } })}
-        ></button>
-      </div>
-    </div>`;
-  }
-
-  private priorityRow(t: Translate, rules: Rules): TemplateResult {
-    const config = this.state!.config;
-    const order = rules.priority;
-    const move = (index: number, step: number) => {
-      const next = [...order];
-      [next[index], next[index + step]] = [next[index + step], next[index]];
-      saveConfig(this, { rules: { priority: next } });
-    };
-    const arrow = (up: boolean) =>
-      html`<svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.6"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        <path d=${up ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6"} />
-      </svg>`;
-    return html`<div class="row" data-tipped>
-      <div>
-        <div class="name"><b>${t("rule.priority")}</b>${tip(t, "r_priority")}</div>
-        <small>${t("rule.priority.hint")}</small>
-      </div>
-      <div class="control">
-        ${sourceChip(t, sourceOf(config, "rules.priority"))}
-        <div class="order">
-          ${order.map(
-            (item: PriorityItem, index) => html`<div>
-              <span>${index + 1}. ${t(`rule.priority.${item}`)}</span>
-              <button
-                type="button"
-                aria-label=${t("rule.priority.up", { name: t(`rule.priority.${item}`) })}
-                ?disabled=${index === 0}
-                @click=${() => move(index, -1)}
-              >
-                ${arrow(true)}
-              </button>
-              <button
-                type="button"
-                aria-label=${t("rule.priority.down", { name: t(`rule.priority.${item}`) })}
-                ?disabled=${index === order.length - 1}
-                @click=${() => move(index, 1)}
-              >
-                ${arrow(false)}
-              </button>
-            </div>`,
-          )}
-        </div>
-      </div>
-    </div>`;
-  }
-
-  private dischargeRow(t: Translate, rules: Rules): TemplateResult {
-    const config = this.state!.config;
-    const modes: DischargeMode[] = ["until_target", "block", "free"];
-    return html`<div class="row stacked" data-tipped>
-      <div>
-        <div class="name">
-          <b>${t("rule.discharge_in_window")}</b>${tip(t, "r_discharge_in_window")}
-          ${sourceChip(t, sourceOf(config, "rules.discharge_in_window"))}
-        </div>
-        <small>${t("rule.discharge_in_window.hint")}</small>
-      </div>
-      <div>
-        <joe-choice
-          compact
-          label=${t("rule.discharge_in_window")}
-          .options=${modes.map((mode) => ({ value: mode, label: t(`rule.discharge.${mode}`) }))}
-          .value=${[rules.discharge_in_window]}
-          @joe-choice=${(ev: CustomEvent<{ value: string[] }>) => {
-            if (ev.detail.value[0]) {
-              saveConfig(this, { rules: { discharge_in_window: ev.detail.value[0] } });
-            }
-          }}
-        ></joe-choice>
-      </div>
-    </div>`;
   }
 
   private energyText(t: Translate): string {

@@ -3,6 +3,14 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.13
+
+- Neue Ordnung: Oben stehen jetzt sechs Reiter – links die Zeit (Übersicht · Plan · Rückblick), rechts die Dinge (Geräte · Haushalt · Einstellungen). Jede Seite und jeder Unterbereich hat eine eigene Adresse, der Zurück-Knopf funktioniert, alte Links leiten weiter.
+- Neuer Reiter **Haushalt**: Wer wohnt hier (Personen und Kalender), Wer ist da (Helfer „Jemand zu Hause“, Gastmodus, „Als abwesend erst nach …“, Heimweg mit Routendienst), Tage & Kalender (Arbeitstag-Sensor, Kalender-Regeln für alle oder je Person, „Zusätzlich frei, wenn …“, Vorschau heute und morgen), Nachtruhe und Unterwegs & Wetter. Jeder Bereich sagt, wer ihn nutzt.
+- Neuer Reiter **Rückblick** statt Historie und Lernen: Ergebnis („Was es gebracht hätte“, „Wie gut ich lag“ mit Sprung zum Tag), Tage (die Antwort auf die Tagesfrage steht jetzt am Tag und lässt sich ändern), Gelernt (neu: Aufheizrate je Klimagerät, auch zum Neu-Anfangen) und ein gemeinsames Protokoll für Speicher, Geräte und Klima mit Filtern.
+- Heizung & Klima ist jetzt ein Bereich unter **Geräte**. Jedes Klima- und Messgerät hat einen eigenen Knopf „In HA öffnen“; die Messgeräte sind gleich aufgeklappt. Anwesenheit, Tagesart und Nachtruhe stehen dort als Zeile mit „Ändern →“.
+- Behoben: Beim Ladefehler der Historie wurde der Fehler bei vorhandenen Tagen nicht angezeigt.
+
 ## 0.9.12
 
 - Wochenprofile für Klimaanlagen (Klima → Gerät → „Wochenprofile“), wie bei Homematic IP: je Betriebsart (Heizen, Kühlen) sechs Profile mit Temperaturverlauf über den Tag – alle Tage gleich, Mo–Fr und Sa–So oder jeder Tag einzeln. Ein Schaltpunkt darf auch „aus“ sein. Bearbeitet wird als Entwurf, erst „Speichern“ übernimmt.

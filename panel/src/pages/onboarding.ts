@@ -71,6 +71,11 @@ export class JoeOnboarding extends LitElement {
         font-weight: 600;
         color: var(--joe-ink);
       }
+      @media (pointer: coarse) {
+        summary {
+          padding: 11px 0;
+        }
+      }
       details p {
         margin: 8px 0 0;
         line-height: 1.5;

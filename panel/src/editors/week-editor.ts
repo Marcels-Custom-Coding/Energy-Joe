@@ -7,6 +7,7 @@ import "../components/week-bar";
 import { define } from "../define";
 import { formatNumber } from "../entities";
 import type { Translate } from "../i18n";
+import { PANEL, href, onLink, type Route } from "../router";
 import { shared } from "../styles/shared";
 import {
   WEEK_MODES,
@@ -45,6 +46,8 @@ const SPLITS: WeekSplit[] = ["all", "week_weekend", "each"];
 /** A room's night when not set yet (model.py). */
 const NIGHT_FROM = "23:00";
 const NIGHT_UNTIL = "06:30";
+/** Haushalt › Tage & Kalender: the calendar rules that tell home office days. */
+const DAYS: Route = { tab: "household", section: "days" };
 
 /** A weekday's name (0 = Monday); 1 January 2024 was a Monday. */
 export function weekdayName(lang: string, weekday: number, style: "long" | "short" = "long"): string {
@@ -104,14 +107,8 @@ export class JoeWeekEditor extends LitElement {
         font-weight: 700;
         overflow-wrap: anywhere;
       }
-      a.ha-link {
-        color: inherit;
-        text-decoration: underline;
-        text-decoration-color: var(--joe-line-2);
-        text-underline-offset: 3px;
-      }
-      a.ha-link:hover {
-        text-decoration-color: var(--joe-amber);
+      a.mini-btn {
+        text-decoration: none;
       }
       .seg .dot {
         display: inline-block;
@@ -759,9 +756,9 @@ export class JoeWeekEditor extends LitElement {
           ? nothing
           : html`<p class="field-hint">${t(`week.ho.${reason}`)}</p>
               <div>
-                <button type="button" class="mini-btn quiet" @click=${this.toLearn}>
+                <a class="mini-btn quiet" href=${href(PANEL, DAYS)} @click=${onLink(DAYS)}>
                   <ha-icon icon="mdi:calendar-text-outline"></ha-icon>${t("week.ho.rules")}
-                </button>
+                </a>
               </div>`}
         ${profile.tags.length ? nothing : html`<p class="field-hint">${t("week.untagged")}</p>`} ${this.noticeAt("tags")}
       </div>
@@ -1244,10 +1241,6 @@ export class JoeWeekEditor extends LitElement {
     }
     this.saving = false;
     this.close();
-  }
-
-  private toLearn(): void {
-    this.dispatchEvent(new CustomEvent("joe-navigate", { detail: { page: "learn" }, bubbles: true, composed: true }));
   }
 
   private close(): void {

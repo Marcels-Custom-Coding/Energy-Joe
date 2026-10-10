@@ -13,33 +13,43 @@ import { define } from "./define";
 import "./editors/action-editor";
 import "./editors/battery-editor";
 import "./editors/consumers";
-import "./editors/household";
 import "./editors/tariff-editor";
 import "./editors/week-editor";
 import { ensureFonts } from "./fonts";
 import { translator, type Translate } from "./i18n";
-import "./pages/climate";
-import "./pages/devices";
-import "./pages/history";
-import "./pages/learn";
+import "./pages/devices/index";
+import "./pages/household/index";
+import "./pages/lookback/index";
 import "./pages/onboarding";
 import "./pages/overview";
 import "./pages/plan";
 import "./pages/settings";
+import {
+  PANEL,
+  TABS,
+  TIME_TABS,
+  format,
+  href,
+  onLink,
+  parse,
+  type NavigateDetail,
+  type NavigateOptions,
+  type Route,
+  type Tab,
+} from "./router";
 import { shared } from "./styles/shared";
 import { tokens } from "./styles/tokens";
 import {
   ONBOARDING_STEPS,
-  PAGES,
   type AdoptResult,
   type Check,
+  type ClimateFound,
   type Discovery,
   type HomeAssistant,
   type JoeInfo,
   type JoeMode,
   type JoeState,
   type OnboardingStep,
-  type Page,
   type PanelRoute,
 } from "./types";
 
@@ -51,6 +61,24 @@ const MODE_ICONS: Record<JoeMode, string> = {
   off: "mdi:power",
 };
 const AVAILABLE: JoeMode[] = MODES;
+
+const TAB_ICONS: Record<Tab, string> = {
+  overview: "mdi:view-dashboard-outline",
+  plan: "mdi:weather-night",
+  review: "mdi:history",
+  devices: "mdi:power-plug-outline",
+  household: "mdi:account-group-outline",
+  settings: "mdi:cog-outline",
+};
+/** Tabs that need the findings (suggestions, people to bring back, calendars to take over). */
+const DISCOVERY_TABS: Tab[] = ["devices", "household", "settings"];
+/** Editors that need the findings, wherever they open. */
+const DISCOVERY_EDITORS = ["battery", "action", "consumers", "tariff"];
+/** Tabs that show climate devices, their names or who heads home. */
+const CLIMATE_TABS: Tab[] = ["devices", "household", "overview", "review"];
+
+/** Legacy joe-navigate detail from components that still send a page. */
+type NavigateEvent = CustomEvent<Partial<NavigateDetail> & { page?: string }>;
 
 
 export class EnergyJoePanel extends LitElement {
@@ -69,10 +97,17 @@ export class EnergyJoePanel extends LitElement {
   @state() private checks: Check[] = [];
   @state() private picker?: PickEvent;
   @state() private editor?: { editor: string; id?: string; focus?: string; consumer?: string };
+  @state() private climateFound?: ClimateFound;
 
   private unsubscribe?: Promise<() => Promise<void>>;
   private infoRequested = false;
   private adopted = false;
+  private parsed: { route: Route; redirect?: string } = parse("");
+  private climateRequested = false;
+  private headObserver?: ResizeObserver;
+  /** The next route change comes from go(); any other one is the back or forward button. */
+  private jumped = false;
+  private lastPath?: string;
 
   constructor() {
     super();
@@ -84,15 +119,26 @@ export class EnergyJoePanel extends LitElement {
     this.addEventListener("joe-edit", (ev) => {
       this.editor = (ev as CustomEvent<{ editor: string; id?: string; focus?: string; consumer?: string }>).detail;
     });
+    // Jumps come from the tabs, pages and sheets alike (sheets close themselves first).
+    this.addEventListener("joe-navigate", (ev) => this.onNavigate(ev as NavigateEvent));
+    // Anything that adds or renames climate devices asks for a fresh list (no sender yet).
+    this.addEventListener("joe-climate-reload", (ev) => {
+      ev.stopPropagation();
+      this.loadClimate();
+    });
   }
 
   private get t(): Translate {
     return translator(this.hass?.language);
   }
 
-  private get page(): Page {
-    const segment = (this.route?.path ?? "").split("/")[1] ?? "";
-    return (PAGES as string[]).includes(segment) ? (segment as Page) : "overview";
+  private get base(): string {
+    return this.route?.prefix ?? PANEL;
+  }
+
+  /** Where the address points (old addresses already resolved). */
+  private get current(): Route {
+    return this.parsed.route;
   }
 
   connectedCallback(): void {
@@ -105,6 +151,8 @@ export class EnergyJoePanel extends LitElement {
     super.disconnectedCallback();
     this.unsubscribe?.then((unsub) => unsub()).catch(() => undefined);
     this.unsubscribe = undefined;
+    this.headObserver?.disconnect();
+    this.headObserver = undefined;
   }
 
   protected willUpdate(changed: PropertyValues<this>): void {
@@ -121,10 +169,41 @@ export class EnergyJoePanel extends LitElement {
           .catch(() => undefined);
       }
     }
+    if (changed.has("route") && this.route?.path !== this.lastPath) {
+      const first = this.lastPath === undefined;
+      this.lastPath = this.route?.path;
+      if (!this.jumped) {
+        // Back or forward: the panel is the scroller, so the browser cannot restore it.
+        const top = (history.state as { joeScroll?: number } | null)?.joeScroll;
+        if (top !== undefined || !first) {
+          this.restoreScroll(top ?? 0);
+        }
+      }
+      this.jumped = false;
+      const before = this.parsed.route.tab;
+      this.parsed = parse(this.route?.path ?? "");
+      const { route, redirect } = this.parsed;
+      if (redirect !== undefined) {
+        // Old or unknown address: show where it lives now, without a history entry.
+        this.go(redirect, { replace: true });
+      }
+      this.remember(route);
+      if (route.tab !== before && this.joe?.onboarding.completed) {
+        // A new tab is a new try for whatever failed to load.
+        this.discoveryFailed = false;
+        if (!this.climateFound) {
+          this.climateRequested = false;
+        }
+      }
+    }
   }
 
   protected updated(): void {
+    this.observeHead();
     const joe = this.joe;
+    if (joe?.onboarding.completed && !this.climateRequested && CLIMATE_TABS.includes(this.current.tab)) {
+      this.loadClimate();
+    }
     if (!joe || this.discovering || this.discoveryFailed) {
       return;
     }
@@ -135,10 +214,38 @@ export class EnergyJoePanel extends LitElement {
       this.scan();
     } else if (
       !this.discovery &&
-      (joe.onboarding.completed ? ["settings", "devices"].includes(this.page) : joe.onboarding.step !== "welcome")
+      (joe.onboarding.completed
+        ? DISCOVERY_TABS.includes(this.current.tab) || DISCOVERY_EDITORS.includes(this.editor?.editor ?? "")
+        : joe.onboarding.step !== "welcome")
     ) {
       this.look();
     }
+  }
+
+  /** Climate devices, meters and who heads home: loaded once for all pages that show them. */
+  private async loadClimate(): Promise<void> {
+    if (!this.hass) {
+      return;
+    }
+    this.climateRequested = true;
+    try {
+      this.climateFound = await this.hass.callWS<ClimateFound>({ type: "energy_joe/climate/devices" });
+    } catch {
+      // Pages show what they can without it; the next tab change tries again.
+    }
+  }
+
+  /** Sticky rows below the header (section chips) need its height. */
+  private observeHead(): void {
+    const head = this.renderRoot.querySelector("header");
+    if (!head || this.headObserver) {
+      return;
+    }
+    const publish = () => this.style.setProperty("--joe-head-h", `${head.getBoundingClientRect().height}px`);
+    // Set once right away: a deep address scrolls to its anchor before the observer reports.
+    publish();
+    this.headObserver = new ResizeObserver(publish);
+    this.headObserver.observe(head);
   }
 
   /** Look around, take over the findings (user values stay) and check them. */
@@ -201,6 +308,10 @@ export class EnergyJoePanel extends LitElement {
       return false;
     }
     this.refreshChecks();
+    const climate = change.patch.climate as { rooms?: unknown } | undefined;
+    if (climate?.rooms) {
+      this.loadClimate();
+    }
     return true;
   }
 
@@ -258,7 +369,6 @@ export class EnergyJoePanel extends LitElement {
         @joe-onboarding=${this.onOnboarding}
         @joe-rediscover=${() => this.scan()}
         @joe-set-mode=${(ev: CustomEvent<{ mode: JoeMode }>) => this.setMode(ev.detail.mode)}
-        @joe-navigate=${(ev: CustomEvent<{ page: Page }>) => this.go(ev.detail.page)}
       >
         ${onboarding
           ? html`<joe-onboarding
@@ -280,18 +390,45 @@ export class EnergyJoePanel extends LitElement {
   }
 
   private renderTabs(t: Translate): TemplateResult {
-    return html`<nav class="tabs" aria-label=${t("nav.label")}>
-      ${PAGES.map(
-        (page) =>
-          html`<a
-            href=${this.href(page)}
-            class=${page === this.page ? "on" : ""}
-            aria-current=${page === this.page ? "page" : "false"}
-            @click=${(ev: MouseEvent) => this.navigate(ev, page)}
-            >${t(`tab.${page}`)}</a
-          >`,
-      )}
+    const current = this.current.tab;
+    return html`<nav class="tabs" aria-label=${t("nav.label")} lang=${t.lang}>
+      ${TABS.map((tab, i) => {
+        const to = this.tabPath(tab);
+        // A narrow gap parts time (overview, plan, review) from things.
+        const gap = i > 0 && TIME_TABS.includes(TABS[i - 1]) && !TIME_TABS.includes(tab);
+        return html`${gap ? html`<span class="gap" aria-hidden="true"></span>` : nothing}<a
+            href=${href(this.base, to)}
+            class=${tab === current ? "on" : ""}
+            aria-current=${tab === current ? "page" : "false"}
+            @click=${onLink(to)}
+            ><ha-icon icon=${TAB_ICONS[tab]}></ha-icon><span class="label">${t(`tab.${tab}`)}</span></a
+          >`;
+      })}
     </nav>`;
+  }
+
+  /** A tab leads back to where it was left; the active tab to its section's start. */
+  private tabPath(tab: Tab): string {
+    const current = this.current;
+    if (tab === current.tab) {
+      return format({ tab, section: current.section });
+    }
+    let last: string | null = null;
+    try {
+      last = sessionStorage.getItem(`joe.last.${tab}`);
+    } catch {
+      // Without storage every tab starts at its first section.
+    }
+    const own = tab === "overview" ? "/" : `/${tab}`;
+    return last && (last === own || last.startsWith(`${own}/`)) ? last : format({ tab });
+  }
+
+  private remember(route: Route): void {
+    try {
+      sessionStorage.setItem(`joe.last.${route.tab}`, format({ tab: route.tab, section: route.section, id: route.id }));
+    } catch {
+      // Remembering is a courtesy.
+    }
   }
 
   private renderSteps(t: Translate): TemplateResult {
@@ -307,47 +444,65 @@ export class EnergyJoePanel extends LitElement {
   }
 
   private renderPage(t: Translate): TemplateResult {
-    const page = this.page;
-    if (page === "overview") {
-      return html`<joe-overview
-        .t=${t}
-        .hass=${this.hass}
-        .state=${this.joe}
-        prefix=${this.route?.prefix ?? "/energy-joe"}
-      ></joe-overview>`;
+    const route = this.current;
+    const prefix = this.base;
+    switch (route.tab) {
+      case "overview":
+        return html`<joe-overview
+          .t=${t}
+          .hass=${this.hass}
+          .state=${this.joe}
+          .prefix=${prefix}
+          .route=${route}
+          .climateFound=${this.climateFound}
+        ></joe-overview>`;
+      case "plan":
+        return html`<joe-plan-page .t=${t} .hass=${this.hass} .state=${this.joe} .prefix=${prefix} .route=${route}></joe-plan-page>`;
+      case "review":
+        return html`<joe-lookback-page
+          .t=${t}
+          .hass=${this.hass}
+          .state=${this.joe}
+          .prefix=${prefix}
+          .route=${route}
+          .climateFound=${this.climateFound}
+        ></joe-lookback-page>`;
+      case "devices":
+        return html`<joe-devices-page
+          .t=${t}
+          .hass=${this.hass}
+          .state=${this.joe}
+          .prefix=${prefix}
+          .route=${route}
+          .discovery=${this.discovery}
+          .info=${this.info}
+          .checks=${this.checks}
+          .climateFound=${this.climateFound}
+        ></joe-devices-page>`;
+      case "household":
+        return html`<joe-household-page
+          .t=${t}
+          .hass=${this.hass}
+          .state=${this.joe}
+          .prefix=${prefix}
+          .route=${route}
+          .discovery=${this.discovery}
+          .info=${this.info}
+          .checks=${this.checks}
+          .climateFound=${this.climateFound}
+        ></joe-household-page>`;
+      case "settings":
+        return html`<joe-settings
+          .t=${t}
+          .hass=${this.hass}
+          .state=${this.joe}
+          .prefix=${prefix}
+          .route=${route}
+          .info=${this.info}
+          .discovery=${this.discovery}
+          .checks=${this.checks}
+        ></joe-settings>`;
     }
-    if (page === "history") {
-      return html`<joe-history .t=${t} .hass=${this.hass} .state=${this.joe}></joe-history>`;
-    }
-    if (page === "plan") {
-      return html`<joe-plan-page .t=${t} .hass=${this.hass} .state=${this.joe}></joe-plan-page>`;
-    }
-    if (page === "learn") {
-      return html`<joe-learn-page .t=${t} .hass=${this.hass} .state=${this.joe}></joe-learn-page>`;
-    }
-    if (page === "devices") {
-      return html`<joe-devices-page
-        .t=${t}
-        .hass=${this.hass}
-        .state=${this.joe}
-        .discovery=${this.discovery}
-        .info=${this.info}
-      ></joe-devices-page>`;
-    }
-    if (page === "climate") {
-      return html`<joe-climate-page .t=${t} .hass=${this.hass} .state=${this.joe}></joe-climate-page>`;
-    }
-    if (page === "settings") {
-      return html`<joe-settings
-        .t=${t}
-        .hass=${this.hass}
-        .state=${this.joe}
-        .info=${this.info}
-        .discovery=${this.discovery}
-        .checks=${this.checks}
-      ></joe-settings>`;
-    }
-    return html``;
   }
 
   private renderModeDialog(t: Translate): TemplateResult {
@@ -449,14 +604,6 @@ export class EnergyJoePanel extends LitElement {
           .discovery=${this.discovery}
         ></joe-tariff-editor>`;
         break;
-      case "household":
-        label = t("edit.household.label");
-        content = html`<div class="sheet-title">${displayTitle(t("edit.household.title"), "h2", tip(t, "q_household"))}</div>
-          <joe-household .hass=${this.hass} .t=${t} .config=${config} .discovery=${this.discovery}></joe-household>
-          <div class="actions">
-            <button type="button" class="btn btn-secondary" data-notip @click=${close}>${t("mode.close")}</button>
-          </div>`;
-        break;
       case "action":
         label = t("action.label");
         content = html`<joe-action-editor
@@ -499,9 +646,9 @@ export class EnergyJoePanel extends LitElement {
       closeLabel=${t("common.close")}
       ?wide=${wide}
       @joe-close=${close}
-      @joe-navigate=${(ev: CustomEvent<{ page: Page }>) => {
+      @joe-navigate=${(ev: NavigateEvent) => {
         close();
-        this.go(ev.detail.page);
+        this.onNavigate(ev);
       }}
     >
       ${content}
@@ -556,7 +703,7 @@ export class EnergyJoePanel extends LitElement {
     try {
       await this.hass?.callWS({ type: "energy_joe/onboarding", ...ev.detail });
       if (ev.detail.completed) {
-        this.go("overview");
+        this.go("/");
       }
     } catch {
       this.showNotice(this.t("error.action"));
@@ -570,22 +717,44 @@ export class EnergyJoePanel extends LitElement {
     }, 5000);
   }
 
-  private href(page: Page): string {
-    const prefix = this.route?.prefix ?? "/energy-joe";
-    return page === "overview" ? prefix : `${prefix}/${page}`;
+  /** joe-navigate from pages, sections and sheets ({path}; older components still send {page}). */
+  private onNavigate(ev: NavigateEvent): void {
+    ev.stopPropagation();
+    const { path, page, replace, sheet } = ev.detail;
+    this.go(path ?? (page && page !== "overview" ? `/${page}` : "/"), { replace, sheet });
   }
 
-  private navigate(ev: MouseEvent, page: Page): void {
-    if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button !== 0) {
+  /** Goes to an address inside the panel; HA hears "location-changed" and sets the new route. */
+  private go(path: string, opts: NavigateOptions = {}): void {
+    const target = parse(path).redirect ?? format(path);
+    const url = href(this.base, target);
+    if (!opts.replace && location.pathname === url) {
+      this.scrollTop = 0;
       return;
     }
-    ev.preventDefault();
-    this.go(page);
+    if (!opts.replace) {
+      // Remember where this page was, for the back button.
+      history.replaceState({ ...(history.state ?? {}), joeScroll: this.scrollTop }, "");
+    }
+    this.jumped = true;
+    history[opts.replace ? "replaceState" : "pushState"](opts.sheet ? { joeSheet: true } : null, "", url);
+    window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: Boolean(opts.replace) } }));
+    // An address with an id (device, day, anchor) scrolls itself; sheets keep the page where it is.
+    if (!opts.sheet && !parse(target).route.id) {
+      this.scrollTop = 0;
+    }
   }
 
-  private go(page: Page): void {
-    history.pushState(null, "", this.href(page));
-    window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: false } }));
+  /** Scrolls back to where a page was left; pages that load late get a few more tries. */
+  private restoreScroll(top: number): void {
+    let tries = 0;
+    const apply = () => {
+      this.scrollTop = top;
+      if (Math.abs(this.scrollTop - top) > 2 && tries++ < 12) {
+        window.setTimeout(apply, 150);
+      }
+    };
+    requestAnimationFrame(apply);
   }
 
   static styles = [
@@ -651,16 +820,28 @@ export class EnergyJoePanel extends LitElement {
       }
       .tabs {
         display: flex;
+        align-items: center;
         gap: 4px;
         flex: 1;
         min-width: 0;
         overflow-x: auto;
         scrollbar-width: none;
       }
+      .tabs .gap {
+        flex: none;
+        align-self: stretch;
+        width: 13px;
+        margin: 8px 0;
+        background: linear-gradient(var(--joe-line-2), var(--joe-line-2)) center / 1.5px 100% no-repeat;
+      }
       .tabs a {
         position: relative;
         isolation: isolate;
-        padding: 9px 14px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 44px;
+        padding: 0 12px;
         border-radius: 7px;
         font-weight: 600;
         font-size: 15px;
@@ -668,6 +849,9 @@ export class EnergyJoePanel extends LitElement {
         text-decoration: none;
         white-space: nowrap;
         transition: color 0.12s, background 0.12s;
+      }
+      .tabs a ha-icon {
+        --mdc-icon-size: 18px;
       }
       .tabs a:hover {
         background: var(--joe-surface-2);
@@ -866,6 +1050,16 @@ export class EnergyJoePanel extends LitElement {
         line-height: 1.35;
         margin-top: 2px;
       }
+      /* Six tabs with icons need the whole width below the brand. */
+      @media (max-width: 1100px) {
+        .bar {
+          flex-wrap: wrap;
+        }
+        .tabs {
+          order: 3;
+          flex-basis: 100%;
+        }
+      }
       @media (max-width: 760px) {
         .bar {
           flex-wrap: wrap;
@@ -883,6 +1077,61 @@ export class EnergyJoePanel extends LitElement {
         }
         main {
           padding: 16px 16px 40px;
+        }
+      }
+      /* Phone: six equal columns, icon over a short label, no sideways scrolling. */
+      @media (max-width: 600px) {
+        .bar {
+          row-gap: 4px;
+          padding-bottom: 0;
+        }
+        .tabs {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr)) 6px repeat(3, minmax(0, 1fr));
+          /* All tabs as tall as the tallest, icons on one line even if a label breaks. */
+          align-items: stretch;
+          gap: 0;
+          margin: 0 -8px;
+          overflow: visible;
+        }
+        .tabs .gap {
+          width: auto;
+          margin: 12px 0;
+        }
+        .tabs a {
+          flex-direction: column;
+          justify-content: flex-start;
+          gap: 2px;
+          min-width: 0;
+          min-height: 52px;
+          padding: 7px 0 6px;
+          border-radius: 0;
+          font-family: var(--joe-display);
+          font-size: 12px;
+          font-weight: 700;
+          line-height: 1.1;
+          text-align: center;
+        }
+        .tabs a ha-icon {
+          --mdc-icon-size: 20px;
+        }
+        /* A long word ("Einstellungen") breaks with a hyphen on the smallest phones. */
+        .tabs a .label {
+          max-width: 100%;
+          white-space: normal;
+          -webkit-hyphens: auto;
+          hyphens: auto;
+          overflow-wrap: anywhere;
+        }
+        .tabs a.on::before {
+          inset: 2px 2px 3px;
+        }
+      }
+      /* The smallest phones: a little tighter, so "Einstellungen" stays on one line. */
+      @media (max-width: 340px) {
+        .tabs a {
+          font-size: 11px;
+          letter-spacing: -0.02em;
         }
       }
     `,

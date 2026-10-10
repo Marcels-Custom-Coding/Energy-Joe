@@ -142,6 +142,11 @@ export class JoeQuestions extends LitElement {
         font-size: 13.5px;
         cursor: pointer;
       }
+      @media (pointer: coarse) {
+        .topic {
+          min-height: 44px;
+        }
+      }
       .topic:hover {
         border-color: var(--joe-amber);
       }

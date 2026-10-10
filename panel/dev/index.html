@@ -21,7 +21,10 @@
       Zeigt das gebaute Panel mit einem nachgeahmten Home Assistant.
       Aufruf über einen lokalen Webserver im Repo-Wurzelverzeichnis, z. B.
       python3 -m http.server 8767  →  http://localhost:8767/panel/dev/
-      Parameter: ?dark=1  ?lang=en  ?step=scan  ?done=1  ?page=settings  ?mode=off|advisory|live  ?sample=generic  ?audit=1  ?need=1
+      Parameter: ?dark=1  ?lang=en  ?step=scan  ?done=1  ?page=settings  ?mode=off|advisory|live  ?sample=generic  ?audit=1  ?need=1  ?presence=0  ?climate=1
+      ?page=<Adresse> ohne Präfix, z. B. review/days, devices/climate/climate.buero, household/people;
+      alte Werte (history, learn, climate) leiten um. Jeder Sprung im Panel schreibt die Adresse zurück in ?page=,
+      damit Neuladen und Zurück funktionieren.
       ?override=manual|off (Klimaanlage Büro von Hand verstellt bzw. ausgeschaltet)
       ?away=1 (niemand da)  ?labels=unread|error (Kalender noch nicht gelesen bzw. nicht erreichbar)
       ?manual=1 (Heizgruppe Kinderzimmer von Hand auf „Heizen“)
@@ -29,10 +32,14 @@
       Funde, die Konfiguration nach dem Übernehmen, ihre Prüfungen, Zustände und Register sowie
       zwei Wochen erfundener Verlauf mit festen Plänen, nachgespielten Nächten und dem, was Joe
       daraus gelernt hat (Seiten Übersicht, Plan, Historie, Lernen).
-      ?done=1 startet mit übernommener Konfiguration.
+      ?done=1 startet mit übernommener Konfiguration (mit Kalendern je Person und dem Helfer
+      „Jemand zu Hause“; ?presence=0 lässt den Helfer weg).
       ?audit=1 rahmt jedes Bedienelement rot ein, das keinen Tooltip hat; joeAudit() in der
       Konsole listet sie auf. Ein Element gilt als erklärt, wenn es oder ein Vorfahr
       data-tipped (Container mit <joe-tip>) oder data-notip (reine Navigation) trägt.
+      joeTargets() listet sichtbare Bedienelemente und Links unter 44×44 px (Links im Fließtext zählen nicht;
+      am Handy mit Touch-Emulation prüfen, dann gelten die größeren Ziele aus "pointer: coarse").
+      joeOverflow() ist true, wenn die Seite waagrecht scrollt.
     -->
     <energy-joe-panel></energy-joe-panel>
     <script type="module">
@@ -177,8 +184,48 @@
         return config;
       };
       withClimate(state.config);
+      // ?climate=1: heating & cooling switched on, the bedroom off at night (Haushalt › Nachtruhe lists it).
+      if (params.get("climate") === "1") {
+        const room = { enabled: true, away: "setback", setback_k: 3, away_preset: null, free_day_preset: null, night_from: "23:00", night_until: "06:30", week: { enabled: false, modes: {} }, device_profiles: {} };
+        state.config.climate.enabled = true;
+        state.config.climate.rooms = {
+          "climate.buero": { ...room, night_off: false },
+          "climate.schlafzimmer": { ...room, night_off: true, night_from: "22:30" },
+        };
+      }
+      // ?done=1: tonight's plan already knows tomorrow (household preview "Heute und morgen").
+      if (done && history.plan?.meta?.tomorrow) {
+        history.plan.meta.tomorrow.date = new Date(Date.now() + 2 * 3600e3 + 86400e3).toISOString().slice(0, 10);
+      }
       state.results = done ? history.results : null;
       state.questions = done ? structuredClone(history.learning.questions) : [];
+      // Each day carries its answer (observe/records.py): one answered, the asked one still open.
+      for (const day of history.days) day.answer ??= null;
+      const answerDay = (date, answer) => {
+        for (const day of [...history.days, ...history.learning.days]) {
+          if (day.date !== date) continue;
+          day.answer = answer;
+          if ("excluded" in day) day.excluded = answer !== "normal";
+        }
+      };
+      if (!history.learning.questions.some((q) => q.date === "2026-09-30")) answerDay("2026-09-30", "guests");
+      // ?done=1: everyone has a calendar, and the group "Jemand zu Hause" decides who is home.
+      if (done && state.config.persons.length) {
+        const calendars = Object.keys(sample.hass.states).filter((id) => id.startsWith("calendar."));
+        for (const person of state.config.persons) {
+          if (!person.calendars.length) person.calendars = calendars.filter((id) => id.endsWith("family")).slice(0, 1);
+        }
+        if (params.get("presence") !== "0") {
+          const members = state.config.persons.map((p) => p.person_entity).filter(Boolean);
+          const anyone = members.some((id) => sample.hass.states[id]?.state === "home");
+          sample.hass.states["group.jemand_zu_hause"] = {
+            entity_id: "group.jemand_zu_hause",
+            state: anyone ? "home" : "not_home",
+            attributes: { friendly_name: "Jemand zu Hause", entity_id: members },
+          };
+          state.config.context = { ...state.config.context, presence_entity: "group.jemand_zu_hause" };
+        }
+      }
       // Steering: test runs, log and why Joe steers or not (control/executor.py).
       const control = { tests: {}, log: [], skip: null, answer: null, testing: null, tonight: {} };
       const controlView = () => {
@@ -201,12 +248,27 @@
             b.adapter === "none" ? "not_controllable" : control.tests[b.id]?.ok ? "ready" : "not_tested",
           ]),
         );
-        return { steering: false, reason, night, batteries: {}, actions: {}, pending: false, ready, ...control };
+        return { steering: false, reason, night, batteries: {}, actions: {}, pending: false, ready, ...control, log: control.log.slice(-30) };
       };
       const log = (kind, detail = {}) => {
         control.log.push({ at: stamp(), kind, ...detail });
         control.log = control.log.slice(-100);
       };
+      // A day in Berlin (days back from today) at a time, as Home Assistant would send it.
+      const dayAt = (back, time) => `${new Date(Date.now() + 2 * 3600e3 - back * 86400e3).toISOString().slice(0, 10)}T${time}:00+02:00`;
+      // ?done=1: last night is in the log (control/executor.py keeps 100 entries).
+      if (done) {
+        const battery = state.config.batteries[0]?.id;
+        const car = state.config.actions.find((a) => a.kind === "switch")?.id;
+        control.log.push(
+          { at: dayAt(1, "22:00"), kind: "start" },
+          ...(battery ? [{ at: dayAt(1, "22:00"), kind: "set", battery, entity: state.config.batteries[0].controls?.grid_charge ?? state.config.batteries[0].soc_entity, value: "on" }] : []),
+          ...(car ? [{ at: dayAt(1, "23:30"), kind: "action_on", battery: `action:${car}`, value: "an" }] : []),
+          ...(battery ? [{ at: dayAt(0, "04:10"), kind: "reached", battery, target: 80 }] : []),
+          ...(car ? [{ at: dayAt(0, "05:45"), kind: "action_done", battery: `action:${car}` }] : []),
+          { at: dayAt(0, "06:00"), kind: "released" },
+        );
+      }
       const watching = () => ({
         active: true,
         since: "2026-10-01T09:12:00+02:00",
@@ -241,7 +303,11 @@
         holds: {},
         overrides: {},
         preset: { "climate.kinderzimmer": "week_program_1" },
+        // Learned warm-up rates in K/h (control/climate.py); learning/reset "climate" clears them.
+        rates: { "climate.buero": 1.4, "climate.wohnzimmer": 2.1 },
         log: [
+          { at: dayAt(1, "17:05"), entity: "climate.wohnzimmer", what: "normal" },
+          { at: dayAt(1, "22:30"), entity: "climate.kinderzimmer", what: "night" },
           { at: todayAt("06:30"), entity: "climate.buero", what: "normal" },
           { at: todayAt("08:12"), entity: "climate.buero", what: "away" },
           { at: todayAt("08:12"), entity: "climate.kinderzimmer", what: "failed" },
@@ -276,6 +342,11 @@
           labels_state: labels,
         };
       };
+      // Who is home and who is on the way (control/climate.py arrivals over proximity).
+      const personsAway = () =>
+        state.config.persons.filter((p) => p.person_entity && hass.states[p.person_entity]?.state !== "home");
+      const climateArrivals = () =>
+        Object.fromEntries(personsAway().map((p) => [p.person_entity, { km: 12.4, direction: "towards" }]));
       const climateView = () => {
         const climate = state.config.climate;
         const day = climateDay();
@@ -347,15 +418,20 @@
         }
         const { weekday, ...today } = day;
         return {
-          home: away ? [] : ["Alex"],
-          arrivals: { "person.marcel": { km: 12.4, direction: "towards" } },
-          usual: {},
+          home: away
+            ? []
+            : state.config.persons.filter((p) => hass.states[p.person_entity]?.state === "home").map((p) => p.name),
+          arrivals: Object.fromEntries(Object.entries(climateArrivals()).map(([id, info]) => [id, { ...info, minutes: 18, source: "waze" }])),
+          // Usual homecoming in minutes after midnight (homecoming.py), Alex 17:30, Sam 18:15.
+          usual: Object.fromEntries(
+            state.config.persons.filter((p) => p.person_entity).map((p, i) => [p.person_entity, 1050 + 45 * i]),
+          ),
           free_day: day.free,
           day: today,
           nobody_since: null,
           rooms,
           live: state.mode === "live",
-          rates: { "climate.buero": 1.4 },
+          rates: climateMock.rates,
           log: climateMock.log.slice(-20),
         };
       };
@@ -445,9 +521,11 @@
               return null;
             case "energy_joe/history/days":
               return { ...history, views: undefined, days: history.days.slice(0, msg.days || 14) };
-            case "energy_joe/history/day":
-              return (
-                history.views[msg.date] ?? {
+            case "energy_joe/history/day": {
+              const answer = history.days.find((d) => d.date === msg.date)?.answer ?? null;
+              return {
+                answer,
+                ...(history.views[msg.date] ?? {
                   date: msg.date,
                   slots: Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, "0")}:00`),
                   hours: [],
@@ -459,8 +537,23 @@
                   window: null,
                   window_slots: [],
                   sun: {},
-                }
-              );
+                }),
+              };
+            }
+            case "energy_joe/notify/targets":
+              // Notify services with the phone's current name (api.py ws_notify_targets).
+              return Object.keys(hass.services.notify)
+                .filter((name) => !["persistent_notification", "send_message", "notify"].includes(name))
+                .sort()
+                .map((service) => ({ service, name: service === "mobile_app_handy" ? "Pixel von Alex" : service.replaceAll("_", " ") }));
+            case "energy_joe/log": {
+              // Steering (up to 100) and heating (up to 50) together, newest first (api.py ws_log).
+              const entries = [
+                ...[...control.log.slice(-100)].reverse().map((e) => ({ ...e, area: "control" })),
+                ...[...climateMock.log.slice(-50)].reverse().map((e) => ({ ...e, area: "climate" })),
+              ];
+              return { entries: structuredClone(entries.sort((a, b) => Date.parse(b.at) - Date.parse(a.at))) };
+            }
             case "energy_joe/plan/refresh":
               if (!state.plan) throw { code: "not_planning" };
               state.plan = { ...history.plan, created: stamp() };
@@ -501,7 +594,13 @@
               return {
                 ...history.learning,
                 // After a reset Joe only learns from new days.
-                accuracy: state.config.learned.since ? [] : history.learning.accuracy,
+                // Each night ends on the next morning (api.py "end"): the days page shows it there.
+                accuracy: state.config.learned.since
+                  ? []
+                  : history.learning.accuracy.map((row) => ({
+                      ...row,
+                      end: row.end ?? new Date(Date.parse(`${row.date}T12:00:00Z`) + 864e5).toISOString().slice(0, 10),
+                    })),
                 solar: state.config.learned.since ? [] : history.learning.solar,
                 solar_profile: state.config.learned.since ? null : history.learning.solar_profile,
                 days: state.config.learned.since ? [] : history.learning.days,
@@ -667,7 +766,7 @@
                 meters,
                 suggested: { "climate.buero": meters[0], "climate.schlafzimmer": meters[1] },
                 devices: structuredClone(climateDevices),
-                arrivals: { "person.marcel": { km: 12.4, direction: "towards" } },
+                arrivals: climateArrivals(),
                 proximity: true,
               };
             }
@@ -755,15 +854,18 @@
             case "energy_joe/learning/answer": {
               if (!state.observe.active) throw { code: "not_learning" };
               state.questions = state.questions.filter((q) => q.date !== msg.date);
-              const day = history.learning.days.find((d) => d.date === msg.date);
-              if (day) {
-                day.answer = msg.answer;
-                day.excluded = msg.answer !== "normal";
-              }
+              answerDay(msg.date, msg.answer);
               push();
               return null;
             }
             case "energy_joe/learning/reset": {
+              const scope = msg.scope ?? "all";
+              // The warm-up rates live with the heating (control/climate.py), learning or not.
+              if (scope === "climate") {
+                climateMock.rates = {};
+                push();
+                return null;
+              }
               if (!state.observe.active) throw { code: "not_learning" };
               const now = stamp();
               // What a reset forgets, by area (learn/learner.py SCOPES).
@@ -774,7 +876,6 @@
                 hot_water: { action_models: {} },
                 car: { car_models: {} },
               };
-              const scope = msg.scope ?? "all";
               if (scope !== "all") {
                 const reset = { ...(state.config.learned.reset ?? {}), [scope]: now };
                 state.config = applyUpdate(state.config, { learned: { ...areas[scope], reset, updated: now } }, "default");
@@ -800,6 +901,7 @@
                 );
               }
               state.results = { since: now, first: null, days: 0, saving: 0, better: 0, worse: 0, last: null, daily: [] };
+              climateMock.rates = {};
               push();
               return null;
             }
@@ -826,13 +928,39 @@
 
       await import("../../custom_components/energy_joe/frontend/energy-joe-panel.js");
       const panel = document.querySelector("energy-joe-panel");
-      const routeFromPage = (page) => ({ prefix: "/energy-joe", path: page ? `/${page}` : "" });
+      const PREFIX = "/energy-joe";
+      const routeFromPage = (page) => ({ prefix: PREFIX, path: page ? `/${page.replace(/^\/+/, "")}` : "" });
+      // The harness lives at /panel/dev/; the panel's address travels in ?page= instead of the path.
+      const DEV_PATH = location.pathname;
+      const devUrl = (page) => {
+        // The other parameters stay as the harness was opened (the panel's own push has no query).
+        const next = new URLSearchParams(params);
+        if (page) next.set("page", page);
+        else next.delete("page");
+        const query = next.toString().replace(/%2F/g, "/");
+        return `${DEV_PATH}${query ? `?${query}` : ""}`;
+      };
       panel.hass = hass;
       panel.narrow = window.innerWidth < 870;
       panel.route = routeFromPage(params.get("page"));
       window.addEventListener("location-changed", () => {
-        const page = location.pathname.replace(/^\/energy-joe\/?/, "");
+        if (!location.pathname.startsWith(PREFIX)) {
+          // A jump into Home Assistant itself (e.g. "In HA öffnen"): note it and stay.
+          window.joeHaOpened = location.pathname;
+          console.info("Home Assistant would open", location.pathname);
+          window.history.back();
+          return;
+        }
+        const page = location.pathname.slice(PREFIX.length).replace(/^\/+/, "");
+        window.history.replaceState(window.history.state, "", devUrl(page));
         panel.route = routeFromPage(page);
+      });
+      window.addEventListener("popstate", () => {
+        panel.route = routeFromPage(new URLSearchParams(location.search).get("page"));
+      });
+      panel.addEventListener("hass-more-info", (ev) => {
+        window.joeMoreInfo = ev.detail.entityId;
+        console.info("Home Assistant would show", ev.detail.entityId);
       });
       window.joeState = state;
 
@@ -865,6 +993,30 @@
         marked.forEach((el) => (el.style.outline = "3px dashed #e00"));
         return { missing: missing.map(describe), empty: empty.map(describe) };
       };
+      // Touch targets: visible controls and links smaller than 44×44 px. Links inside running text
+      // are exempt; a hidden input counts with its label; joe-tip widens its own hit area on touch.
+      window.joeTargets = (min = 44) => {
+        const all = deep(panel.shadowRoot);
+        const small = [];
+        for (const el of all) {
+          if (!(el.matches(CONTROLS) || el.matches("a[href]")) || !el.getClientRects().length) continue;
+          if (el.getRootNode().host?.localName === "joe-tip") continue;
+          let box = el;
+          if (el.matches("input") && el.closest("label")) box = el.closest("label");
+          const style = getComputedStyle(box);
+          if (el.matches("a[href]") && style.display === "inline") continue;
+          if (style.visibility === "hidden" || style.display === "contents") continue;
+          const rect = box.getBoundingClientRect();
+          if (!rect.width || !rect.height) continue;
+          if (rect.width < min - 0.5 || rect.height < min - 0.5) {
+            small.push(`${describe(el)} (${Math.round(rect.width)}×${Math.round(rect.height)})`);
+          }
+        }
+        return small;
+      };
+      // The panel scrolls itself, so sideways scrolling shows up on the page or on the panel.
+      window.joeOverflow = () =>
+        document.scrollingElement.scrollWidth > window.innerWidth || panel.scrollWidth > panel.clientWidth;
       if (params.get("audit") === "1") {
         setInterval(window.joeAudit, 1000);
       }

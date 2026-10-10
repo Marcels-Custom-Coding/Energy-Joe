@@ -604,16 +604,30 @@ function V(e, t) {
 var Ne = {
 	"tab.overview": "Übersicht",
 	"tab.plan": "Plan",
-	"tab.history": "Historie",
-	"tab.learn": "Lernen",
+	"tab.review": "Rückblick",
 	"tab.devices": "Geräte",
-	"tab.climate": "Klima",
+	"tab.household": "Haushalt",
 	"climate.title": "Heizung & Klima",
 	"climate.lead": "Ist keiner da, drehe ich Heizung und Klimaanlage herunter – und rechtzeitig wieder hoch, wenn jemand heimkommt. Du entscheidest für jedes Gerät einzeln.",
+	"climate.ha_open": "Der runde Pfeil-Knopf öffnet ein Gerät in Home Assistant.",
+	"climate.mirror.presence": "Anwesenheit",
+	"climate.mirror.presence.none": "noch kein Helfer, ich schaue auf eure Personen",
+	"climate.mirror.today": "Heute",
+	"climate.mirror.today.workday": "Arbeitstag",
+	"climate.mirror.today.weekend": "Wochenende",
+	"climate.mirror.today.holiday": "freier Werktag",
+	"climate.mirror.today.ho": "Homeoffice: {names}",
+	"climate.mirror.unknown": "noch nicht bekannt",
+	"climate.mirror.night": "Nachtruhe",
+	"climate.mirror.night.time": "feste Uhrzeiten je Gerät",
+	"climate.mirror.night.no_entity": "noch keine Entität gewählt",
+	"devices.climate.summary": "{devices}, {steered} davon gesteuert",
+	"devices.climate.on": "Ich steuere sie danach, wer zu Hause ist.",
+	"devices.climate.off": "Die Steuerung ist aus, ich schaue nur zu.",
+	"rule.on": "an",
 	"climate.enabled": "Joe steuert Heizung und Klima",
 	"climate.live": "Ich steuere die Geräte, die du unten einschaltest.",
 	"climate.not_live": "Steuern tue ich erst im Modus „Live“ – bis dahin zeige ich bei jedem Gerät nur, was ich täte.",
-	"climate.presence": "Wer ist da?",
 	"climate.home": "Zu Hause: {names}",
 	"climate.nobody": "Gerade ist niemand zu Hause.",
 	"climate.way.towards": "{name} ist {km} km weg und kommt näher.",
@@ -621,21 +635,13 @@ var Ne = {
 	"climate.way.other": "{name} ist {km} km weg.",
 	"climate.way.minutes_route": "Noch etwa {minutes} Minuten Fahrt.",
 	"climate.way.minutes_guess": "Geschätzt etwa {minutes} Minuten.",
-	"climate.usual": "{name} kommt an solchen Tagen meist gegen {time} heim.",
 	"climate.route_eta": "Fahrzeit über den Routendienst",
 	"climate.now.arriving_usual": "Jetzt: gleich ist die übliche Heimkehrzeit – ich fahre schon hoch.",
 	"tip.climate_route_eta.title": "Wie weiß Joe, wann jemand heimkommt?",
-	"tip.climate_route_eta.text": "Zwei Wege: 1. Kommt jemand näher (Integration „Nähe“), frage ich den Routendienst aus den Einstellungen (OpenStreetMap, Waze oder Google), wie lange die Fahrt noch dauert – mit Stau, wo der Dienst ihn kennt. Dafür geht die Position der Person, auf etwa 100 m gerundet, an diesen Dienst. Schaltest du das aus, rechne ich mit 40 km/h. 2. Ich merke mir, wann ihr an Arbeits- und freien Tagen meist heimkommt, und fahre die Räume zu dieser Zeit schon vorher hoch. Wer zu einer ganz anderen Zeit nur in der Nähe vorbeifährt, zählt erst, wenn er stetig näher kommt.",
+	"tip.climate_route_eta.text": "Zwei Wege: 1. Kommt jemand näher (Integration „Nähe“), frage ich den Routendienst (Haushalt › Unterwegs & Wetter: OpenStreetMap, Waze oder Google), wie lange die Fahrt noch dauert – mit Stau, wo der Dienst ihn kennt. Dafür geht die Position der Person, auf etwa 100 m gerundet, an diesen Dienst. Schaltest du das aus, rechne ich mit 40 km/h. 2. Ich merke mir, wann ihr an Arbeits- und freien Tagen meist heimkommt, und fahre die Räume zu dieser Zeit schon vorher hoch. Wer zu einer ganz anderen Zeit nur in der Nähe vorbeifährt, zählt erst, wenn er stetig näher kommt.",
 	"tip.climate_route_eta.hint": "Die übliche Zeit kenne ich nach 4 Heimkehren an solchen Tagen, und nur, wenn sie nicht mehr als 45 Minuten schwankt.",
 	"climate.no_proximity": "Damit ich rechtzeitig vorheize, wenn jemand heimkommt, brauche ich die Integration „Nähe“ (Proximity) für eure Personen.",
 	"climate.add_proximity": "Nähe einrichten",
-	"climate.free_day": "Heute ist ein freier Tag.",
-	"climate.presence_from": "Ob jemand da ist, sagt mir",
-	"climate.presence_missing": "Noch kein Helfer „Jemand zu Hause“ – ich schaue solange auf eure Personen.",
-	"climate.presence_change": "Im Haushalt ändern",
-	"climate.presence_create": "Helfer anlegen",
-	"tip.climate_presence_entity.title": "Woher weiß Joe, ob jemand da ist?",
-	"tip.climate_presence_entity.text": "Aus einem einzigen Helfer in Home Assistant, z. B. „Jemand zu Hause“: an, sobald eine eurer Personen zu Hause ist oder der Gastmodus an ist. Den schlage ich dir im Haushalt vor und lege ihn auf Wunsch an. Er gehört dir und funktioniert auch ohne mich.",
 	"household.presence": "Ist jemand zu Hause?",
 	"household.presence.on": "gerade: jemand da",
 	"household.presence.off": "gerade: niemand da",
@@ -677,6 +683,7 @@ var Ne = {
 	"climate.none": "Ich habe keine Thermostate oder Klimaanlagen in Home Assistant gefunden.",
 	"climate.no_area": "Ohne Raum",
 	"climate.room.enabled": "Joe steuert {name}",
+	"climate.room.steer": "Joe steuert dieses Gerät",
 	"climate.room.off": "Steuere ich nicht.",
 	"climate.meter.pick": "Messgerät für {name} wählen",
 	"climate.meters.count": "{linked} von {all} gekoppelt",
@@ -712,8 +719,6 @@ var Ne = {
 	"climate.night_off": "Nachts aus",
 	"climate.night_span": "Aus von – bis",
 	"climate.night_back": "Spätestens wieder angenehm um",
-	"climate.night": "Wann ist nachts?",
-	"climate.night.say": "Nachts heißt für mich: Ihr liegt im Bett. Dann kann die Klimaanlage aus – und vor dem Morgen fahre ich sie so rechtzeitig wieder hoch, dass es beim Aufstehen angenehm ist.",
 	"climate.night.by": "Nacht erkenne ich",
 	"climate.night.by.time": "an festen Uhrzeiten",
 	"climate.night.by.entity": "an einer Entität",
@@ -723,13 +728,13 @@ var Ne = {
 	"climate.night.change": "Andere Entität",
 	"climate.night.pick": "Entität wählen",
 	"climate.night.entity_say": "Ist die Entität „an“, ist Nacht – z. B. ein Helfer, den deine Gute-Nacht-Routine einschaltet, ein Bettsensor oder ein Zeitplan. Die Uhrzeit für den Morgen stellst du je Raum ein.",
-	"climate.night.time_say": "Von wann bis wann, stellst du je Klimaanlage unten ein.",
+	"climate.night.time_say": "Von wann bis wann es nachts aus ist, stellst du je Gerät ein – unten stehen alle mit „Nachts aus“.",
 	"climate.entity": "Entität",
 	"climate.entities": "Entitäten",
 	"climate.open_device": "Gerät in Home Assistant öffnen ({id})",
 	"climate.open_meter": "Messgerät in Home Assistant öffnen",
 	"pick.night.title": "Was sagt dir, dass ihr im Bett seid?",
-	"tip.climate_night.text": "Die Klimaanlage geht nachts aus und so früh wieder an, dass es zur eingestellten Morgen-Zeit wieder angenehm ist. Wann die Nacht beginnt, steht oben unter „Wann ist nachts?“: feste Uhrzeit oder eine Entität. Wie lange der Raum zum Abkühlen braucht, lerne ich mit der Zeit.",
+	"tip.climate_night.text": "Die Klimaanlage geht nachts aus und so früh wieder an, dass es zur eingestellten Morgen-Zeit wieder angenehm ist. Woran ich die Nacht erkenne – feste Uhrzeit oder eine Entität –, stellst du unter Haushalt › Nachtruhe ein. Wie lange der Raum zum Abkühlen braucht, lerne ich mit der Zeit.",
 	"tip.climate_night_source.title": "Woran erkennt Joe die Nacht?",
 	"tip.climate_night_source.text": "„An festen Uhrzeiten“: jede Klimaanlage hat ihre Zeit von – bis. „An einer Entität“: Nacht ist, solange die gewählte Entität „an“ ist – etwa ein Helfer (input_boolean), den deine Gute-Nacht-Routine einschaltet und morgens wieder aus, ein Bettsensor oder ein Zeitplan.",
 	"tip.climate_night_source.hint": "Auch mit Entität fahre ich die Räume rechtzeitig zur Morgen-Zeit wieder hoch, falls morgens niemand ausschaltet.",
@@ -744,7 +749,6 @@ var Ne = {
 	"climate.now.night": "Jetzt: Nachtruhe.",
 	"climate.rate": "Erreicht etwa {rate} °C pro Stunde (gelernt).",
 	"climate.rate_default": "Wie schnell der Raum warm oder kühl wird, lerne ich noch.",
-	"climate.log": "Was ich zuletzt umgestellt habe",
 	"climate.log.normal": "auf Normal gestellt",
 	"climate.log.holiday": "auf Feiertag gestellt",
 	"climate.log.home_office": "auf Homeoffice gestellt",
@@ -754,13 +758,11 @@ var Ne = {
 	"climate.log.free_day": "auf das Profil für freie Tage gestellt",
 	"climate.log.back": "zurückgestellt, wie es vorher war",
 	"climate.log.failed": "Einstellen hat nicht geklappt",
-	"tip.climate_log.title": "Was hat Joe umgestellt?",
-	"tip.climate_log.text": "Meine letzten Einstellungen an den Klimageräten – mit Uhrzeit und Anlass, das Neueste oben. Was du selbst am Gerät änderst, steht hier nicht.",
 	"tip.climate_enabled.title": "Was macht Joe hier?",
-	"tip.climate_enabled.text": "Ich schaue, wer zu Hause ist (die Personen aus Home Assistant). Ist keiner da, stelle ich die Geräte, die du einschaltest, wie gewählt ein – absenken, aus oder ein Profil. Kommt jemand heim, stelle ich alles genau so zurück, wie es vorher war.",
+	"tip.climate_enabled.text": "Ich schaue, wer zu Hause ist (der Helfer „Jemand zu Hause“ unter Haushalt › Wer ist da). Ist keiner da, stelle ich die Geräte, die du einschaltest, wie gewählt ein – absenken, aus oder ein Profil. Kommt jemand heim, stelle ich alles genau so zurück, wie es vorher war.",
 	"tip.climate_enabled.hint": "Wie überall: In der Simulation schalte ich nichts, sondern zeige nur, was ich täte.",
 	"tip.climate_presence.title": "Woher weiß Joe, wer kommt?",
-	"tip.climate_presence.text": "Wer zu Hause ist, sehe ich an den Personen in Home Assistant. Wer heimkommt, sehe ich an der Integration „Nähe“ (Proximity): Sie meldet Entfernung und Richtung. Ich rechne mit 40 km/h und fange so früh an, dass der Raum rechtzeitig wieder angenehm ist.",
+	"tip.climate_presence.text": "Wer zu Hause ist, sagt mir der Helfer „Jemand zu Hause“ – gibt es ihn noch nicht, schaue ich auf eure Personen in Home Assistant. Wer heimkommt, sehe ich an der Integration „Nähe“ (Proximity): Sie meldet Entfernung und Richtung. Wie lange die Fahrt noch dauert, frage ich den Routendienst (ohne ihn rechne ich mit 40 km/h). So fange ich früh genug an, dass der Raum rechtzeitig wieder angenehm ist.",
 	"tip.climate_room.title": "Dieses Gerät steuern?",
 	"tip.climate_room.text": "Nur Geräte mit eingeschaltetem Schalter fasse ich an. So kannst du zum Beispiel das Bad oder das Kinderzimmer auslassen.",
 	"tip.climate_away.title": "Was passiert, wenn keiner da ist?",
@@ -775,9 +777,6 @@ var Ne = {
 	"tip.climate_away_after.text": "Erst wenn so viele Minuten niemand mehr da ist, schalte ich auf Abwesenheit. Gehst du nur kurz zum Bäcker oder verliert dein Handy kurz das WLAN, bleibt alles, wie es ist.",
 	"tip.climate_away_after.hint": "0 heißt sofort. Das gilt für alle Geräte.",
 	"climate.now.just_left": "Jetzt: Gerade sind alle gegangen – ich warte noch {min} Minuten, ob jemand zurückkommt.",
-	"climate.today": "Heute",
-	"tip.climate_today.title": "Was für ein Tag ist heute?",
-	"tip.climate_today.text": "Danach wähle ich die Profile: an Arbeitstagen und am Wochenende „Normal“, an freien Werktagen „Feiertag“ und an Tagen, an denen jemand laut Kalender zu Hause arbeitet, „Homeoffice“.\nFrei ist ein Tag laut deinem Arbeitstag-Sensor oder Feiertagskalender – oder wenn eine der Entitäten darunter an ist.",
 	"climate.today.workday": "Heute ist ein Arbeitstag.",
 	"climate.today.weekend": "Heute ist Wochenende.",
 	"climate.today.holiday": "Heute ist ein freier Werktag – Feiertag oder Brückentag.",
@@ -792,7 +791,6 @@ var Ne = {
 	"climate.today.free_change": "Ändern",
 	"tip.climate_free_entities.title": "Was macht einen Tag zusätzlich frei?",
 	"tip.climate_free_entities.text": "Zum Beispiel ein Helfer „Brückentag“ oder „Urlaub“, ein Zeitplan oder ein Schalter. Ist einer davon an, gilt heute als frei – an Werktagen nehme ich dann das Feiertagsprofil.",
-	"climate.today.rules": "Homeoffice-Tage erkenne ich an Kalender-Regeln, z. B. „Homeoffice“ im Titel eines Termins.",
 	"pick.free_day.title": "Was macht einen Tag frei?",
 	"tip.pick_free_day.title": "Welche Entitäten passen?",
 	"tip.pick_free_day.text": "Alles, was an einem freien Tag „an“ ist: ein Helfer (input_boolean) „Brückentag“, ein Zeitplan, ein Schalter oder ein Binärsensor. Du kannst mehrere wählen – einer reicht.",
@@ -880,7 +878,7 @@ var Ne = {
 	"week.tag.home_office": "Homeoffice",
 	"week.ho.default": "Homeoffice ist bei euch der normale Arbeitstag – dafür braucht es keinen eigenen Haken.",
 	"week.ho.no_calendar": "Homeoffice lese ich aus dem Kalender – dafür braucht jemand im Haushalt einen Kalender.",
-	"week.ho.rules": "Kalender-Regeln unter Lernen",
+	"week.ho.rules": "Haushalt › Tage & Kalender →",
 	"week.label": "Wochenprofile bearbeiten",
 	"week.title": "Wochen|profile",
 	"week.loading": "Lade das Gerät …",
@@ -959,6 +957,71 @@ var Ne = {
 	"week.problem.points": "Ein Verlauf hat ungültige Schaltpunkte.",
 	"tab.settings": "Einstellungen",
 	"nav.label": "Bereiche",
+	"nav.sections": "Unterbereiche",
+	"nav.not_found": "Dieses Gerät finde ich nicht mehr. Vielleicht wurde es in Home Assistant umbenannt oder entfernt.",
+	"nav.not_found.person": "Diese Person finde ich nicht mehr. Vielleicht wurde sie entfernt – hier stehen alle, die bei euch wohnen.",
+	"nav.review.result": "Ergebnis",
+	"nav.review.days": "Tage",
+	"nav.review.learned": "Gelernt",
+	"nav.review.log": "Protokoll",
+	"past.result.title": "Was es |gebracht hätte",
+	"past.result.lead": "Jeden Morgen spiele ich den Plan der Nacht mit dem echten Tag nach – einmal mit Plan, einmal ohne. Hier siehst du, was das Steuern gebracht hätte und wie gut ich jede Nacht lag.",
+	"past.result.total": "Alle Nächte zusammen",
+	"past.days.rebuild": "Verlauf neu einlesen →",
+	"past.days.unknown": "Für {day} habe ich nichts aufgezeichnet.",
+	"past.answer.given": "Eure Antwort: {answer}",
+	"past.answer.change": "Ändern",
+	"past.answer.ask": "Was war an diesem Tag?",
+	"past.learned.group.sun": "Sonne",
+	"past.learned.group.consumption": "Verbrauch",
+	"past.learned.group.devices": "Geräte",
+	"past.learned.group.household": "Haushalt",
+	"past.learned.weather": "Wetter-Entität",
+	"past.learned.weather.missing": "noch keine gewählt",
+	"past.learned.presence.usual": "kommt an Tagen wie heute meist gegen {time} heim",
+	"past.learned.presence.no_calendar": "Ohne Kalender weiß ich nicht, was für ein Tag für diese Person ansteht.",
+	"past.learned.climate": "Heizung & Klima",
+	"past.learned.climate.say": "So schnell wird ein Raum wieder warm (beim Kühlen: kühl), wenn ich ihn nach dem Absenken zurückstelle. Danach richte ich, wie früh ich anfange.",
+	"past.learned.climate.rate": "{rate} °C pro Stunde",
+	"past.learned.climate.none": "Sobald ich Heizung oder Klima steuere, lerne ich hier, wie schnell jeder Raum warm oder kühl wird.",
+	"past.learned.climate.open": "Zu Heizung & Klima →",
+	"tip.learn_climate.title": "Was ist die Aufheizrate?",
+	"tip.learn_climate.text": "Stelle ich einen Raum nach dem Absenken zurück, messe ich, wie lange er bis zur Wunschtemperatur braucht. Jede neue Messung fließt ins Mittel ein, die älteren zählen weiter mit. Bis ich einen Raum kenne, rechne ich mit 1,5 °C pro Stunde.",
+	"past.log.title": "Was ich |geschaltet habe",
+	"past.log.lead": "Alles, was ich an Speichern, Autos, Warmwasser, deinen Geräten und Klimageräten umgestellt habe – das Neueste oben. Tipp auf einen Bereich, um nur ihn zu sehen.",
+	"past.log.filters": "Bereiche",
+	"past.log.devices": "Geräte",
+	"past.log.all": "Alle",
+	"past.log.filter.battery": "Speicher",
+	"past.log.filter.climate": "Heizung & Klima",
+	"past.log.filter.car": "Autos",
+	"past.log.filter.hot_water": "Warmwasser",
+	"past.log.filter.other": "Weitere Geräte",
+	"past.log.filter.joe": "Joe selbst",
+	"past.log.empty": "Noch nichts – sobald ich steuere, teste oder ein Klimagerät umstelle, steht es hier.",
+	"past.log.empty_filter": "Hier habe ich noch nichts geschaltet.",
+	"past.log.partial": "Gerade sehe ich nur die letzten Einträge.",
+	"tip.past_log.title": "Was steht im Protokoll?",
+	"tip.past_log.text": "Jede Schaltung von mir mit Uhrzeit: an Speichern, Autos, Warmwasser, deinen Geräten und Klimageräten, dazu Testläufe, deine Antworten und wann eine Nacht beginnt. Was du selbst am Gerät änderst, steht nicht hier – außer ich bemerke es, während ich steuere.",
+	"nav.devices.all": "Alle",
+	"nav.devices.climate": "Heizung & Klima",
+	"nav.household.people": "Wer wohnt hier",
+	"nav.household.presence": "Wer ist da",
+	"nav.household.days": "Tage & Kalender",
+	"nav.household.night": "Nachtruhe",
+	"nav.household.travel": "Unterwegs & Wetter",
+	"ha.open.device": "{name} in Home Assistant öffnen",
+	"ha.open.entity": "{name} in Home Assistant anzeigen",
+	"mirror.change": "Ändern →",
+	"mirror.set": "Einstellen →",
+	"usedby.label": "Wird genutzt von:",
+	"usedby.none": "Wird noch von nichts genutzt.",
+	"usedby.climate": "Heizung & Klima",
+	"usedby.plan": "Plan",
+	"usedby.learn": "Gelernt – wer wann zu Hause ist",
+	"usedby.consumption": "Gelernt – Verbrauch",
+	"usedby.car": "Laden nach Bedarf – {name}",
+	"usedby.way": "Heimweg",
 	"mode.simulation": "Simulation",
 	"mode.simulation.sub": "Joe schaut nur zu und lernt",
 	"mode.simulation.desc": "Ich plane und lerne, schalte aber nichts.",
@@ -1085,7 +1148,7 @@ var Ne = {
 	"overview.sim.empty.text": "Nach der ersten Nacht zeige ich dir hier, was es gebracht hätte, wenn ich gesteuert hätte.",
 	"overview.next": "So geht's weiter",
 	"overview.next.1.title": "Alles eingerichtet",
-	"overview.next.1.text": "Speicher, Tarif und Prognose kenne ich. Ändern kannst du alles in den Einstellungen.",
+	"overview.next.1.text": "Speicher, Tarif und Prognose kenne ich. Ändern kannst du alles dort, wo es hingehört – unter Geräte, Haushalt oder Einstellungen.",
 	"overview.next.2.title": "Ich beobachte",
 	"overview.next.2.text": "Jede Stunde schreibe ich auf, was passiert – und lese die letzten Wochen aus deinem Home Assistant.",
 	"overview.next.3.title": "Ich plane jede Nacht",
@@ -1131,6 +1194,8 @@ var Ne = {
 	"settings.energy.none": "nicht eingerichtet",
 	"tip.label": "Erklärung",
 	"tip.hint": "Tipp",
+	"tip.ha_open.title": "Wozu ist der Knopf mit dem Pfeil?",
+	"tip.ha_open.text": "Der runde Knopf mit dem Pfeil nach außen öffnet das Gerät in Home Assistant. Dort benennst du es um, ordnest es einem Raum zu oder siehst alle seine Werte.\nHat es in Home Assistant keine eigene Geräteseite, zeigt der Knopf das Infofenster der Entität. In Joe ändert der Knopf nichts.",
 	"tip.source": "Woher",
 	"tip.mode.title": "Was soll Joe tun?",
 	"tip.mode.text": "**Simulation** – Ich plane und lerne wie im Ernstfall, schalte aber nichts. Du siehst, was ich getan hätte und was es gebracht hätte.\n**Vorschlagen** – Ich frage dich jeden Abend, ob ich die Nacht steuern darf. Ohne dein Ja schalte ich nichts.\n**Live** – Ich steuere jede Nacht selbst – nur Speicher mit bestandenem Testlauf – und stelle am Ende alles zurück.\n**Aus** – Ich mache Pause: kein Planen, kein Lernen, kein Schalten. Was ich schon weiß, bleibt.",
@@ -1142,7 +1207,7 @@ var Ne = {
 	"tip.rescan.title": "Warum nochmal suchen?",
 	"tip.rescan.text": "Ich schaue mich noch einmal um – praktisch, wenn du gerade etwas in Home Assistant eingerichtet hast. Auch dabei lese ich nur.",
 	"tip.start.title": "Was passiert, wenn ich Joe starte?",
-	"tip.start.text": "Ich plane ab heute jede Nacht – als Simulation, also ohne etwas zu schalten. Alles, was du eingegeben hast, kannst du jederzeit in den Einstellungen ändern.",
+	"tip.start.text": "Ich plane ab heute jede Nacht – als Simulation, also ohne etwas zu schalten. Alles, was du eingegeben hast, kannst du jederzeit ändern – dort, wo es hingehört: unter Geräte, Haushalt oder Einstellungen.",
 	"tip.start.hint": "Live schaltest du später selbst, wenn du gesehen hast, was ich kann.",
 	"common.save": "Speichern",
 	"common.cancel": "Abbrechen",
@@ -1310,8 +1375,6 @@ var Ne = {
 	"edit.battery.title": "Speicher |einstellen",
 	"edit.tariff.label": "Tarif bearbeiten",
 	"edit.tariff.title": "Dein |Stromtarif",
-	"edit.household.label": "Haushalt bearbeiten",
-	"edit.household.title": "Wer |wohnt hier?",
 	"edit.consumers.label": "Geräte zuordnen",
 	"edit.consumers.title": "Deine |Geräte",
 	"household.empty": "Noch niemand. Füg die Leute hinzu, die hier wohnen.",
@@ -1325,6 +1388,59 @@ var Ne = {
 	"household.calendars": "Kalender",
 	"household.calendar_add": "Kalender",
 	"household.calendar_remove": "Kalender {name} entfernen",
+	"household.people.title": "Wer |wohnt hier?",
+	"household.people.lead": "Die Leute, die hier wohnen, mit ihren Kalendern. Daraus weiß ich, wer zu Hause ist, was für ein Tag ist und für wen das Auto laden soll.",
+	"household.people.list": "Personen",
+	"household.people.today": "Heute: {label}",
+	"household.people.tomorrow": "Morgen: {label}",
+	"household.people.rules": "Kalender-Regeln",
+	"household.people.rules.own": "eigene",
+	"household.people.rules.shared": "wie für alle",
+	"household.people.counts": "Termine zählen für:",
+	"household.people.counts.none": "Die Termine zählen noch für kein Auto.",
+	"household.people.learned": "Gelernt",
+	"household.people.learned.none": "noch nichts – dafür braucht es ein paar Tage",
+	"household.people.usual": "kommt meist gegen {time} heim",
+	"household.people.more": "Mehr im Rückblick →",
+	"household.presence.title": "Wer ist |da?",
+	"household.presence.lead": "Wer gerade zu Hause ist und wer heimkommt. Das sagt mir ein einziger Helfer „Jemand zu Hause“ – mit Gastmodus auch für alle ohne Handy.",
+	"household.presence.now": "Gerade zu Hause",
+	"household.days.not_found": "Diese Person finde ich nicht mehr. Die Regeln unten gelten für alle.",
+	"household.presence.way": "Heimweg",
+	"household.presence.way.say": "Kommt jemand heim, fahre ich die Räume rechtzeitig wieder hoch. Dafür schaue ich, wie weit die Person weg ist und wie lange die Fahrt noch dauert.",
+	"household.presence.routing": "Routendienst",
+	"household.days.title": "Tage & |Kalender",
+	"household.days.lead": "Was für ein Tag ist – Arbeitstag, frei oder Homeoffice. Das lese ich aus deinem Arbeitstag-Sensor und aus euren Kalendern.",
+	"household.days.preview": "Heute und morgen",
+	"household.days.preview.today": "Heute",
+	"household.days.preview.tomorrow": "Morgen",
+	"household.days.preview.workday": "Morgen ist ein Arbeitstag.",
+	"household.days.preview.day_off": "Morgen ist frei.",
+	"household.days.preview.person": "{name}: {label}",
+	"household.days.preview.unknown": "Was für ein Tag heute ist, sehe ich noch nicht.",
+	"household.days.preview.no_plan": "Morgen sehe ich, sobald der Plan für heute Nacht steht.",
+	"household.days.free": "Freie Tage",
+	"household.days.no_calendars": "Noch hat niemand einen Kalender. Ohne Kalender greifen die Regeln nicht.",
+	"household.days.to_people": "Kalender zuordnen →",
+	"household.days.own_rules": "hat eigene Regeln",
+	"household.night.title": "Wann ist |Nachtruhe?",
+	"household.night.lead": "Nachtruhe heißt: Ihr liegt im Bett. Geräte mit „Nachts aus“ schalten dann ab und sind morgens rechtzeitig wieder angenehm.",
+	"household.night.source": "So erkenne ich die Nacht",
+	"household.night.devices": "Geräte mit „Nachts aus“",
+	"household.night.devices.none": "Noch hat kein Gerät „Nachts aus“ eingeschaltet. Das stellst du am Gerät unter Heizung & Klima ein.",
+	"household.night.span": "{from}–{until} Uhr",
+	"household.night.until": "spätestens um {until} Uhr wieder angenehm",
+	"household.night.not_steered": "steuere ich gerade nicht",
+	"household.night.to_climate": "Zu Heizung & Klima →",
+	"household.travel.title": "Unterwegs & |Wetter",
+	"household.travel.lead": "Das Wetter für Verbrauch und Heizung, und wie ich Entfernungen ausrechne – für Autofahrten und den Heimweg.",
+	"tip.household_days_preview.title": "Was zeigt die Vorschau?",
+	"tip.household_days_preview.text": "So sehe ich heute und morgen: Arbeitstag oder frei, wer laut Kalender im Homeoffice ist, und welche Situation gilt – Normal, Feiertag, Abwesend oder Homeoffice. Danach richten sich der Plan, das Laden nach Bedarf und die Profile der Heizung.\nMorgen kenne ich, sobald der Plan für heute Nacht gerechnet ist.",
+	"tip.household_days_preview.hint": "Weiter als bis morgen schaue ich noch nicht.",
+	"tip.household_remove.title": "Was heißt „Wohnt nicht hier“?",
+	"tip.household_remove.text": "Ich lasse die Person weg: Ihre Anwesenheit und ihre Kalender zählen dann nicht mehr. In Home Assistant ändert sich nichts.\nDu kannst sie jederzeit unter „Weggelassen“ zurückholen.",
+	"tip.household_left_out.title": "Wen habe ich weggelassen?",
+	"tip.household_left_out.text": "Personen aus Home Assistant, die du mit „Wohnt nicht hier“ weggelassen hast. Ein Tipp auf den Namen holt die Person mit ihren Kalendern zurück.",
 	"consumers.runs": "Wann läuft es?",
 	"consumers.runs_of": "Wann {name} läuft",
 	"runs.auto": "Wenn es gebraucht wird",
@@ -1582,7 +1698,7 @@ var Ne = {
 	"overview.week": "Die letzten 7 Tage",
 	"overview.week.known": "{days} Tage im Gedächtnis",
 	"overview.week.none": "Noch nichts aufgezeichnet – nach der ersten vollen Stunde geht's los.",
-	"overview.week.more": "Zur Historie",
+	"overview.week.more": "Alle Tage im Rückblick",
 	"status.running": "läuft",
 	"status.paused": "Pause",
 	"status.waiting": "wartet",
@@ -1597,7 +1713,7 @@ var Ne = {
 	"history.live": "live beobachtet",
 	"history.read": "aus Home Assistant gelesen",
 	"history.missing": "Für {hours} Stunden fehlen mir Daten – Home Assistant war aus oder ein Sensor hat nichts geliefert.",
-	"history.failed": "Die Historie konnte ich gerade nicht laden.",
+	"history.failed": "Den Verlauf konnte ich gerade nicht laden.",
 	"history.empty.off": "Ich mache gerade Pause. Stell mich wieder auf Simulation, dann beobachte ich weiter – und hole mir, was fehlt, aus deinem Home Assistant.",
 	"history.empty.reading": "Ich lese gerade die letzten Wochen aus deinem Home Assistant. Gleich siehst du hier jeden Tag.",
 	"history.empty.soon": "Ich beobachte. Nach der ersten vollen Stunde siehst du hier, was passiert ist.",
@@ -1752,7 +1868,6 @@ var Ne = {
 	"learn.failed": "Was ich gelernt habe, konnte ich gerade nicht laden.",
 	"learn.nights.one": "einer Nacht",
 	"learn.nights.many": "{count} Nächten",
-	"learn.results": "Was es gebracht hätte",
 	"learn.results.say": "So viel hättest du seit {since} gespart, wenn ich gesteuert hätte – an {nights}, nachgespielt mit dem echten Wetter und deinem echten Verbrauch.",
 	"learn.results.split": "{better} × besser · {worse} × teurer · {same} × gleich",
 	"learn.results.none": "Noch habe ich keinen Plan nachgespielt. Am Morgen nach der ersten geplanten Nacht siehst du hier, was es gebracht hätte.",
@@ -1785,7 +1900,6 @@ var Ne = {
 	"learn.buffer.default": "Mein Startwert, bewusst vorsichtig. Nach {need} nachgespielten Nächten weiß ich, wie viel Puffer du wirklich brauchst – {have} habe ich.",
 	"learn.buffer.user": "Den hast du selbst eingestellt – ich lasse ihn so.",
 	"learn.buffer.user_learned": "Den hast du selbst eingestellt. Ich hätte {value} % genommen.",
-	"learn.buffer.own": "Wieder selbst lernen",
 	"learn.buffer.chart": "Bis zur Sonne gebraucht",
 	"learn.buffer.chart.planned": "geplant",
 	"learn.buffer.chart.actual": "gebraucht",
@@ -1812,9 +1926,8 @@ var Ne = {
 	"ask.answer.away": "Wir waren weg",
 	"ask.answer.special": "Etwas anderes Besonderes",
 	"ask.answer.normal": "Ganz normaler Tag",
-	"learn.models": "Was ich über euer Zuhause weiß",
 	"learn.model": "Verbrauch und Wetter",
-	"learn.model.no_weather": "Ohne Wetter-Entität kenne ich die Außentemperatur nicht. Wähle in der Einrichtung eine aus, dann lerne ich, wie viel ihr bei Kälte mehr braucht.",
+	"learn.model.no_weather": "Ohne Wetter-Entität kenne ich die Außentemperatur nicht. Sobald du eine wählst, lerne ich, wie viel ihr bei Kälte mehr braucht.",
 	"learn.model.learning": "Ich vergleiche jeden Tag euren Verbrauch mit der Außentemperatur. Ab {need} vollständigen Tagen rechne ich damit – {have} habe ich.",
 	"learn.model.base": "An warmen Tagen braucht ihr etwa {value} kWh.",
 	"learn.model.workday_more": "An Arbeitstagen {value} kWh mehr.",
@@ -1865,7 +1978,7 @@ var Ne = {
 	"learn.presence.value": "{label}: {hours} h",
 	"learn.presence.no_person": "Ohne Personen-Entität sehe ich nicht, wann jemand zu Hause ist.",
 	"learn.presence.none": "Ordne Personen ihre Kalender zu, dann lerne ich, wie viele Stunden sie bei Büro, Homeoffice oder Urlaub zu Hause sind.",
-	"learn.presence.calendars": "Kalender zuordnen",
+	"learn.presence.calendars": "Kalender zuordnen →",
 	"learn.calendar": "Kalender-Regeln",
 	"learn.calendar.say": "Steht eines dieser Stichworte im Titel, Ort oder in der Beschreibung eines Termins, gilt der Tag für die Person als …",
 	"learn.calendar.remove": "Stichwort {keyword} entfernen",
@@ -1904,7 +2017,7 @@ var Ne = {
 	"learn.reset.label": "Lernen zurücksetzen",
 	"learn.reset.confirm.title": "Wirklich |neu anfangen?",
 	"learn.reset.confirm.forget": "Das vergesse ich",
-	"learn.reset.forget.all": "Prognose-Faktoren, Zeitversatz, Wetterlagen, Prognosequellen, den gelernten Puffer, alle Rechnungen zu Verbrauch, Speichern und Warmwasser und die Bilanz, was es gebracht hätte.",
+	"learn.reset.forget.all": "Prognose-Faktoren, Zeitversatz, Wetterlagen, Prognosequellen, den gelernten Puffer, alle Rechnungen zu Verbrauch, Speichern, Warmwasser und Autos, wie schnell jeder Raum warm wird, und die Bilanz, was es gebracht hätte.",
 	"learn.reset.forget.forecast": "Prognose-Faktor, Zeitversatz, die Faktoren je Wetterlage und wie gut die Prognosequellen treffen.",
 	"learn.reset.forget.consumption": "Die Rechnung zu Verbrauch und Wetter, die Rechnungen je Gerät, die Anwesenheit nach Kalender und den gelernten Puffer.",
 	"learn.reset.forget.battery": "Die gemessene Größe und den Wirkungsgrad deiner Speicher.",
@@ -1929,7 +2042,7 @@ var Ne = {
 	"action.need.daily": "Übliche Strecke am Tag",
 	"action.need.odometer": "Kilometerstand",
 	"action.need.persons": "Wessen Termine zählen",
-	"action.need.no_calendars": "Noch hat niemand einen Kalender. Unter Einstellungen → Haushalt ordnest du Kalender zu.",
+	"action.need.no_calendars": "Noch hat niemand einen Kalender. Unter Haushalt › Wer wohnt hier ordnest du Kalender zu.",
 	"action.need.calendars": "Kalender dieses Autos",
 	"calendar.own.after_save": "Nach dem Speichern lege ich in Home Assistant den Kalender „{name}“ an – Joes Kalender für dieses Auto. Jede Einladung, die ich annehme, steht dann dort, und du kannst ihn aufs Handy holen.",
 	"calendar.own.hint": "„{name}“ ist Joes Kalender für dieses Auto in Home Assistant. Hier stehen die angenommenen Einladungen; du kannst auch selbst Fahrten eintragen. Aufs Handy holen:",
@@ -2025,7 +2138,7 @@ var Ne = {
 	"tip.calendar_account_test.title": "Was macht „Kalender lesen“?",
 	"tip.calendar_account_test.text": "Ich lese einmal die Termine der nächsten Woche. So siehst du sofort, ob Anmeldung und Kalender stimmen.",
 	"action.need.round_trip": "Hin und zurück",
-	"action.need.no_routing": "Wie weit die Termine weg sind, kann ich erst ausrechnen, wenn du unter Einstellungen → Entfernungen einen Dienst wählst. Bis dahin zählen nur Termine an einer Zone und deine übliche Strecke.",
+	"action.need.no_routing": "Wie weit die Termine weg sind, kann ich erst ausrechnen, wenn du unter Haushalt › Unterwegs & Wetter einen Routendienst wählst. Bis dahin zählen nur Termine an einer Zone und deine übliche Strecke.",
 	"action.need.pick.soc": "Welcher Sensor zeigt den Ladestand des Autos?",
 	"action.need.pick.range": "Welcher Sensor zeigt die Reichweite?",
 	"action.need.pick.capacity": "Welcher Sensor zeigt die Akkugröße?",
@@ -2127,10 +2240,10 @@ var Ne = {
 	"flow.calendar.1": "Die Fahrten mit dem Auto stehen in **einem eigenen Kalender**.",
 	"flow.calendar.2": "Du **ordnest den Kalender** hier dem Auto zu.",
 	"flow.calendar.3": "**Joe liest** die Termine mit Ort.",
-	"settings.routing": "Entfernungen zu Terminen",
-	"settings.routing.intro": "Für das Laden nach Bedarf rechne ich aus, wie weit die Orte eurer Termine weg sind. Dafür schicke ich den Ort eines Termins und euren Standort aus Home Assistant als Start der Strecke an den Dienst, den du hier wählst – nie Titel oder Beschreibung.",
+	"settings.routing": "Routendienst",
+	"settings.routing.intro": "Für Autofahrten und den Heimweg rechne ich aus, wie weit ein Ort weg ist und wie lange die Fahrt dauert. Dafür schicke ich den Ort eines Termins oder die gerundete Position einer Person und euren Standort aus Home Assistant an den Dienst, den du hier wählst – nie Titel oder Beschreibung eines Termins.",
 	"settings.routing.service": "Dienst",
-	"settings.routing.service.hint": "Einmal je Ort, danach merke ich mir die Strecke.",
+	"settings.routing.service.hint": "Einmal je Ort eines Termins, danach merke ich mir die Strecke. Auf dem Heimweg frage ich öfter.",
 	"settings.routing.none": "Nicht berechnen",
 	"settings.routing.waze": "Waze (kostenlos)",
 	"settings.routing.google": "Google: {name}",
@@ -2178,6 +2291,8 @@ var Ne = {
 	"learn.car.none": "Schalte bei einer Nacht-Aktion fürs Auto „Laden nach Bedarf“ ein, dann lerne ich, wie viel es wirklich braucht.",
 	"learn.reset.scope.car": "Autos",
 	"learn.reset.forget.car": "Verbrauch und übliche Strecke deiner Autos.",
+	"learn.reset.scope.climate": "Heizung & Klima",
+	"learn.reset.forget.climate": "Wie schnell jeder Raum warm oder kühl wird. Bis ich es neu gelernt habe, rechne ich mit 1,5 °C pro Stunde.",
 	"devices.action.why.enough_range": "Das Auto hat genug für morgen – heute Nacht lade ich es nicht.",
 	"devices.action.why.sun_before_trip": "Die erste Fahrt ist erst am Nachmittag, und es kommt genug Sonne – sie lädt das Auto vorher.",
 	"devices.action.why.need_unknown": "Den Ladestand des Autos kenne ich nicht – ich entscheide nach der Sonne.",
@@ -2187,7 +2302,7 @@ var Ne = {
 	"overview.sim.cost": "Mein Plan hätte {value} mehr gekostet. Daraus lerne ich – der Puffer passt sich an.",
 	"overview.sim.same": "Mein Plan hätte keinen Unterschied gemacht – die Speicher hätten auch so gereicht.",
 	"overview.sim.total": "Seit {since}: {value} an {nights}",
-	"overview.sim.more": "Was ich lerne",
+	"overview.sim.more": "Zum Ergebnis",
 	"overview.sim.provisional": "vorläufig, Stand {time} Uhr",
 	"history.eval": "Nachgespielt: Was mein Plan gebracht hätte",
 	"history.eval.saved": "gespart",
@@ -2220,8 +2335,6 @@ var Ne = {
 	"tip.learn_buffer.title": "Wozu der Puffer?",
 	"tip.learn_buffer.text": "Ich lade etwas mehr, als nötig wäre – für Morgen, an denen ihr mehr braucht oder die Sonne später kommt. Wie viel, lerne ich aus den nachgespielten Nächten: so viel, dass es an 8 von 10 Morgen gereicht hätte. Zu viel Puffer kostet Geld, zu wenig auch.",
 	"tip.learn_buffer.hint": "Einen eigenen Wert stellst du unter Einstellungen → Regeln ein.",
-	"tip.learn_buffer_own.title": "Was passiert dann?",
-	"tip.learn_buffer_own.text": "Ich nehme wieder meinen gelernten Puffer und passe ihn jeden Morgen an. Habe ich noch keinen gelernt, fange ich mit meinem Startwert an.",
 	"tip.learn_home.title": "Was sehe ich hier?",
 	"tip.learn_home.text": "Wie viel ihr im Schnitt pro Stunde verbraucht – an Arbeitstagen und an freien Tagen. Damit rechne ich aus, wie viel die Speicher bis zur Sonne liefern müssen.",
 	"tip.learn_accuracy.title": "Was sehe ich hier?",
@@ -2250,7 +2363,7 @@ var Ne = {
 	"tip.cal_defaults.title": "Und ohne Termin?",
 	"tip.cal_defaults.text": "Findet sich kein passender Termin, nehme ich diese Art – je nachdem, ob der Tag ein Arbeitstag oder ein freier Tag ist.",
 	"tip.learn_reset_scope.title": "Welchen Bereich?",
-	"tip.learn_reset_scope.text": "**Sonne** nach neuen Modulen oder einer anderen Prognose, **Verbrauch** nach einem Umzug oder einer neuen Heizung, **Speicher** nach einem Tausch oder einer Erweiterung, **Warmwasser** nach einem neuen Boiler. **Alles**, wenn sich vieles geändert hat.",
+	"tip.learn_reset_scope.text": "**Sonne** nach neuen Modulen oder einer anderen Prognose, **Verbrauch** nach einem Umzug oder einer neuen Heizung, **Speicher** nach einem Tausch oder einer Erweiterung, **Warmwasser** nach einem neuen Boiler, **Autos** nach einem Autowechsel, **Heizung & Klima** nach neuen Heizkörpern, Thermostaten oder einer Dämmung. **Alles**, wenn sich vieles geändert hat.",
 	"tip.a_need.title": "Was heißt nach Bedarf?",
 	"tip.a_need.text": "Statt bei wenig Sonne einfach die ganze günstige Zeit zu laden, rechne ich: Kilometer morgen (Termine mit Ort hin und zurück oder deine übliche Strecke, je nachdem, was mehr ist) plus Reserve, mal Verbrauch bei der vorhergesagten Temperatur. Fehlt dem Auto etwas, lade ich genau das – und höre auf, sobald der Ladestand erreicht ist.\n**Aus**: wie bisher nach der Sonne.",
 	"tip.a_need.hint": "„Heute Nacht“ von Hand lädt immer die ganze günstige Zeit.",
@@ -2314,12 +2427,12 @@ var Ne = {
 	"tip.calendar_source.text": "**Fertiger Kalender**: Das Auto hat schon einen eigenen Kalender, in dem nur seine Fahrten stehen (z. B. einen geteilten Kalender „Auto“), und der ist in Home Assistant. Du ordnest ihn zu, Joe liest nur.\n**Postfach ohne Kalender**: Das Auto bekommt eine eigene E-Mail-Adresse, z. B. bei web.de oder GMX. Du lädst sie zu deinen Terminen ein; Joe holt die Einladung, sagt zu und trägt den Termin in seinen eigenen Kalender für das Auto ein.\n**Postfach mit Kalender**: Wie eben, aber das Konto hat selbst einen Kalender (Google, Microsoft, iCloud, Infomaniak). Die Einladung landet dort von selbst; Joe liest diesen Kalender und sagt dort zu.",
 	"tip.calendar_source.hint": "Dazu kommen immer die Kalender der Personen, die du oben auswählst.",
 	"tip.routing_service.title": "Welcher Dienst?",
-	"tip.routing_service.text": "**Waze**: kostenlos, ohne Anmeldung, über Home Assistants eigene Waze-Aktion.\n**Google**: braucht eine eingerichtete „Google Maps Travel Time“-Integration mit API-Schlüssel; schalte dort das Abfragen alle 10 Minuten aus, sonst sind die Freiabfragen schnell weg.\n**OpenStreetMap**: kostenlos, freie Karte; dafür findet Photon den Ort und OSRM die Strecke.\nIch frage jeden Ort nur einmal und merke mir die Strecke. Liegt ein Termin an einer Zone aus Home Assistant, brauche ich keinen Dienst.",
-	"tip.routing_service.hint": "Geschickt werden nur der Ort eines Termins und euer Standort als Start der Strecke, nie Titel oder Beschreibung.",
+	"tip.routing_service.text": "**Waze**: kostenlos, ohne Anmeldung, über Home Assistants eigene Waze-Aktion.\n**Google**: braucht eine eingerichtete „Google Maps Travel Time“-Integration mit API-Schlüssel; schalte dort das Abfragen alle 10 Minuten aus, sonst sind die Freiabfragen schnell weg.\n**OpenStreetMap**: kostenlos, freie Karte; dafür findet Photon den Ort und OSRM die Strecke.\nIch frage jeden Ort eines Termins nur einmal und merke mir die Strecke. Liegt ein Termin an einer Zone aus Home Assistant, brauche ich keinen Dienst. Nur für den Heimweg frage ich öfter, solange jemand auf dem Weg nach Hause ist.",
+	"tip.routing_service.hint": "Geschickt werden nur der Ort eines Termins oder die auf etwa 100 m gerundete Position einer Person auf dem Heimweg, dazu euer Standort als Start der Strecke – nie Titel oder Beschreibung.",
 	"tip.routing_osm.title": "Was ist das?",
 	"tip.routing_osm.text": "Die Adressen der freien OpenStreetMap-Dienste. Sie stehen hier, damit du auf einen eigenen oder anderen Server wechseln kannst, ohne auf ein Update zu warten.",
 	"tip.need_trips.title": "Woher kommen die Kilometer?",
-	"tip.need_trips.text": "Aus den Orten eurer Termine morgen, ausgerechnet mit dem Dienst aus den Einstellungen. Passt eine Strecke nicht, trag die einfache Strecke ein – die merke ich mir für diesen Ort.",
+	"tip.need_trips.text": "Aus den Orten eurer Termine morgen, ausgerechnet mit dem Routendienst unter Haushalt › Unterwegs & Wetter. Passt eine Strecke nicht, trag die einfache Strecke ein – die merke ich mir für diesen Ort.",
 	"tip.learn_car.title": "Was lerne ich am Auto?",
 	"tip.learn_car.text": "Aus Kilometerstand und Ladestand: wie viel Energie das Auto pro 100 km wirklich braucht, wie viel mehr bei Kälte und wie weit es an einem üblichen Werktag und freien Tag fährt. Daraus rechne ich, was es morgen braucht.",
 	"tip.chart_replay.title": "Was sehe ich hier?",
@@ -2407,8 +2520,6 @@ var Ne = {
 	"devices.test.confirm.go": "Testlauf starten",
 	"devices.setup": "Regler einrichten",
 	"devices.suggested": "Ich habe Regler gefunden, die passen könnten. Prüf sie unter „Regler einrichten“ und mach dann den Testlauf.",
-	"devices.log": "Was ich geschaltet habe",
-	"devices.log.empty": "Noch nichts – sobald ich steuere oder teste, steht es hier.",
 	"log.start": "Nacht beginnt",
 	"log.set": "{battery}: {entity} → {value}",
 	"log.reached": "{battery} hat {target} % erreicht",
@@ -2691,16 +2802,30 @@ var Ne = {
 }, Pe = {
 	"tab.overview": "Overview",
 	"tab.plan": "Plan",
-	"tab.history": "History",
-	"tab.learn": "Learning",
+	"tab.review": "Review",
 	"tab.devices": "Devices",
-	"tab.climate": "Climate",
+	"tab.household": "Household",
 	"climate.title": "Heating & cooling",
 	"climate.lead": "When nobody is home I turn heating and air conditioning down – and back up in time when someone comes home. You decide for each device.",
+	"climate.ha_open": "The round arrow button opens a device in Home Assistant.",
+	"climate.mirror.presence": "Presence",
+	"climate.mirror.presence.none": "no helper yet, I go by the people in Home Assistant",
+	"climate.mirror.today": "Today",
+	"climate.mirror.today.workday": "working day",
+	"climate.mirror.today.weekend": "weekend",
+	"climate.mirror.today.holiday": "day off during the week",
+	"climate.mirror.today.ho": "home office: {names}",
+	"climate.mirror.unknown": "not known yet",
+	"climate.mirror.night": "Bedtime",
+	"climate.mirror.night.time": "fixed times per device",
+	"climate.mirror.night.no_entity": "no entity chosen yet",
+	"devices.climate.summary": "{devices}, {steered} of them steered",
+	"devices.climate.on": "I steer them by who is home.",
+	"devices.climate.off": "Steering is off, I only watch.",
+	"rule.on": "on",
 	"climate.enabled": "Joe steers heating and cooling",
 	"climate.live": "I steer the devices you switch on below.",
 	"climate.not_live": "I only steer in the mode “Live” – until then I just show for each device what I would do.",
-	"climate.presence": "Who is home?",
 	"climate.home": "At home: {names}",
 	"climate.nobody": "Nobody is home right now.",
 	"climate.way.towards": "{name} is {km} km away and getting closer.",
@@ -2708,21 +2833,13 @@ var Ne = {
 	"climate.way.other": "{name} is {km} km away.",
 	"climate.way.minutes_route": "About {minutes} minutes' drive left.",
 	"climate.way.minutes_guess": "Estimated about {minutes} minutes.",
-	"climate.usual": "On days like this, {name} usually comes home around {time}.",
 	"climate.route_eta": "Drive time from the routing service",
 	"climate.now.arriving_usual": "Now: the usual homecoming is close – I'm warming up already.",
 	"tip.climate_route_eta.title": "How does Joe know when someone comes home?",
-	"tip.climate_route_eta.text": "Two ways: 1. When someone gets closer (Proximity integration), I ask the routing service from the settings (OpenStreetMap, Waze or Google) how long the drive still takes – with traffic where the service knows it. For that, the person's position, rounded to about 100 m, goes to that service. Switch it off and I assume 40 km/h. 2. I note when you usually come home on working days and days off, and bring the rooms back ahead of that time. Someone merely passing by at a quite different time only counts when getting steadily closer.",
+	"tip.climate_route_eta.text": "Two ways: 1. When someone gets closer (Proximity integration), I ask the routing service (Household › Travel & weather: OpenStreetMap, Waze or Google) how long the drive still takes – with traffic where the service knows it. For that, the person's position, rounded to about 100 m, goes to that service. Switch it off and I assume 40 km/h. 2. I note when you usually come home on working days and days off, and bring the rooms back ahead of that time. Someone merely passing by at a quite different time only counts when getting steadily closer.",
 	"tip.climate_route_eta.hint": "I know the usual time after 4 homecomings on such days, and only if it varies by no more than 45 minutes.",
 	"climate.no_proximity": "To warm up in time when someone comes home I need the Proximity integration for your persons.",
 	"climate.add_proximity": "Set up Proximity",
-	"climate.free_day": "Today is a day off.",
-	"climate.presence_from": "Whether someone is there, I learn from",
-	"climate.presence_missing": "No helper “someone home” yet – until then I look at your persons.",
-	"climate.presence_change": "Change in household",
-	"climate.presence_create": "Create helper",
-	"tip.climate_presence_entity.title": "How does Joe know whether someone is there?",
-	"tip.climate_presence_entity.text": "From one single helper in Home Assistant, e.g. “someone home”: on as soon as one of your persons is home or the guest mode is on. I propose it in the household and create it if you like. It is yours and works without me.",
 	"household.presence": "Is anyone home?",
 	"household.presence.on": "now: someone there",
 	"household.presence.off": "now: nobody there",
@@ -2764,6 +2881,7 @@ var Ne = {
 	"climate.none": "I found no thermostats or air conditioners in Home Assistant.",
 	"climate.no_area": "No room",
 	"climate.room.enabled": "Joe steers {name}",
+	"climate.room.steer": "Joe steers this device",
 	"climate.room.off": "Not steered by me.",
 	"climate.meter.pick": "Pick the meter for {name}",
 	"climate.meters.count": "{linked} of {all} linked",
@@ -2799,8 +2917,6 @@ var Ne = {
 	"climate.night_off": "Off at night",
 	"climate.night_span": "Off from – until",
 	"climate.night_back": "Comfortable again by",
-	"climate.night": "When is night?",
-	"climate.night.say": "Night to me means: you are in bed. The air conditioning can be off then – and before the morning I bring it back early enough to be comfortable when you get up.",
 	"climate.night.by": "I tell night",
 	"climate.night.by.time": "by fixed times",
 	"climate.night.by.entity": "by an entity",
@@ -2810,13 +2926,13 @@ var Ne = {
 	"climate.night.change": "Other entity",
 	"climate.night.pick": "Pick an entity",
 	"climate.night.entity_say": "While the entity is “on”, it is night – e.g. a helper your good-night routine switches on, a bed sensor or a schedule. Set the morning time per room.",
-	"climate.night.time_say": "Set from when to when for each air conditioner below.",
+	"climate.night.time_say": "You set from when to when on each device – all with “Off at night” are listed below.",
 	"climate.entity": "Entity",
 	"climate.entities": "Entities",
 	"climate.open_device": "Open the device in Home Assistant ({id})",
 	"climate.open_meter": "Open the meter in Home Assistant",
 	"pick.night.title": "What tells you that you are in bed?",
-	"tip.climate_night.text": "The air conditioner goes off at night and comes back early enough to be comfortable at the morning time you set. When night starts is set above under “When is night?”: fixed times or an entity. How long the room takes to cool, I learn over time.",
+	"tip.climate_night.text": "The air conditioner goes off at night and comes back early enough to be comfortable at the morning time you set. How I tell it's night – fixed times or an entity – you set under Household › Bedtime. How long the room takes to cool, I learn over time.",
 	"tip.climate_night_source.title": "How does Joe tell night?",
 	"tip.climate_night_source.text": "“By fixed times”: each air conditioner has its own from – to. “By an entity”: it is night while the chosen entity is “on” – e.g. a helper (input_boolean) your good-night routine switches on and off again in the morning, a bed sensor or a schedule.",
 	"tip.climate_night_source.hint": "With an entity too, I bring the rooms back in time for the morning in case nobody switches it off.",
@@ -2831,7 +2947,6 @@ var Ne = {
 	"climate.now.night": "Now: night.",
 	"climate.rate": "Gets about {rate} °C per hour (learned).",
 	"climate.rate_default": "I am still learning how fast the room warms up or cools down.",
-	"climate.log": "What I changed lately",
 	"climate.log.normal": "set to Normal",
 	"climate.log.holiday": "set to Holiday",
 	"climate.log.home_office": "set to Home office",
@@ -2841,13 +2956,11 @@ var Ne = {
 	"climate.log.free_day": "set to the day-off profile",
 	"climate.log.back": "put back as it was",
 	"climate.log.failed": "setting it did not work",
-	"tip.climate_log.title": "What did Joe change?",
-	"tip.climate_log.text": "My latest changes to the climate devices – with time and reason, newest first. What you change at the device yourself is not listed here.",
 	"tip.climate_enabled.title": "What does Joe do here?",
-	"tip.climate_enabled.text": "I watch who is home (the persons in Home Assistant). When nobody is, I set the devices you switch on as chosen – lower, off or a profile. When someone comes home I put everything back exactly as it was.",
+	"tip.climate_enabled.text": "I watch who is home (the “Someone home” helper under Household › Who's home). When nobody is, I set the devices you switch on as chosen – lower, off or a profile. When someone comes home I put everything back exactly as it was.",
 	"tip.climate_enabled.hint": "As everywhere: in the simulation I switch nothing and only show what I would do.",
 	"tip.climate_presence.title": "How does Joe know who is coming?",
-	"tip.climate_presence.text": "Who is home I see from the persons in Home Assistant. Who is coming home I see from the Proximity integration: it reports distance and direction. I count on 40 km/h and start early enough for the room to be comfortable in time.",
+	"tip.climate_presence.text": "Who is home I learn from the “Someone home” helper – until there is one, I look at the people in Home Assistant. Who is coming home I see from the Proximity integration: it reports distance and direction. How long the drive still takes I ask the routing service (without it I assume 40 km/h). That way I start early enough for the room to be comfortable in time.",
 	"tip.climate_room.title": "Steer this device?",
 	"tip.climate_room.text": "I only touch devices whose switch is on. So you can leave out the bathroom or a child's room, for example.",
 	"tip.climate_away.title": "What happens when nobody is home?",
@@ -2862,9 +2975,6 @@ var Ne = {
 	"tip.climate_away_after.text": "Only when nobody has been home for this many minutes do I switch to away. If you just pop out to the bakery or your phone briefly drops off the Wi-Fi, everything stays as it is.",
 	"tip.climate_away_after.hint": "0 means right away. This applies to all devices.",
 	"climate.now.just_left": "Now: everyone just left – I wait {min} minutes in case someone comes back.",
-	"climate.today": "Today",
-	"tip.climate_today.title": "What kind of day is today?",
-	"tip.climate_today.text": "This decides the profiles: “Normal” on working days and at weekends, “Holiday” on days off during the week, and “Home office” when someone works from home according to their calendar.\nA day is off according to your workday sensor or holiday calendar – or when one of the entities below is on.",
 	"climate.today.workday": "Today is a working day.",
 	"climate.today.weekend": "Today is the weekend.",
 	"climate.today.holiday": "Today is a day off during the week – a public holiday or a bridge day.",
@@ -2879,7 +2989,6 @@ var Ne = {
 	"climate.today.free_change": "Change",
 	"tip.climate_free_entities.title": "What else makes a day off?",
 	"tip.climate_free_entities.text": "For example a helper “Bridge day” or “Vacation”, a schedule or a switch. If one of them is on, today counts as a day off – on weekdays I then use the holiday profile.",
-	"climate.today.rules": "I recognise home office days by calendar rules, e.g. “home office” in an event's title.",
 	"pick.free_day.title": "What makes a day off?",
 	"tip.pick_free_day.title": "Which entities fit?",
 	"tip.pick_free_day.text": "Anything that is “on” on a day off: a helper (input_boolean) “Bridge day”, a schedule, a switch or a binary sensor. You can pick several – one is enough.",
@@ -2967,7 +3076,7 @@ var Ne = {
 	"week.tag.home_office": "Home office",
 	"week.ho.default": "Working from home is your normal working day – that needs no tag of its own.",
 	"week.ho.no_calendar": "I read home office days from the calendar – for that someone in the household needs a calendar.",
-	"week.ho.rules": "Calendar rules under Learning",
+	"week.ho.rules": "Household › Days & calendars →",
 	"week.label": "Edit week profiles",
 	"week.title": "Week |profiles",
 	"week.loading": "Loading the device …",
@@ -3046,6 +3155,71 @@ var Ne = {
 	"week.problem.points": "A curve has invalid switching points.",
 	"tab.settings": "Settings",
 	"nav.label": "Sections",
+	"nav.sections": "Sections of this page",
+	"nav.not_found": "I can't find this device any more. Maybe it was renamed or removed in Home Assistant.",
+	"nav.not_found.person": "I can't find this person any more. Maybe they were removed – everyone who lives here is listed below.",
+	"nav.review.result": "Result",
+	"nav.review.days": "Days",
+	"nav.review.learned": "Learned",
+	"nav.review.log": "Log",
+	"past.result.title": "What it |would have saved",
+	"past.result.lead": "Every morning I replay the night's plan with the real day – once with the plan, once without. Here you see what steering would have saved and how close I was each night.",
+	"past.result.total": "All nights together",
+	"past.days.rebuild": "Read the history again →",
+	"past.days.unknown": "I have no records for {day}.",
+	"past.answer.given": "Your answer: {answer}",
+	"past.answer.change": "Change",
+	"past.answer.ask": "What was this day like?",
+	"past.learned.group.sun": "Sun",
+	"past.learned.group.consumption": "Consumption",
+	"past.learned.group.devices": "Devices",
+	"past.learned.group.household": "Household",
+	"past.learned.weather": "Weather entity",
+	"past.learned.weather.missing": "none chosen yet",
+	"past.learned.presence.usual": "on days like today usually home around {time}",
+	"past.learned.presence.no_calendar": "Without a calendar I don't know what kind of day this person has ahead.",
+	"past.learned.climate": "Heating & cooling",
+	"past.learned.climate.say": "How fast a room gets warm again (when cooling: cool) once I put it back after a setback. That tells me how early to start.",
+	"past.learned.climate.rate": "{rate} °C per hour",
+	"past.learned.climate.none": "As soon as I control heating or cooling, I learn here how fast each room gets warm or cool.",
+	"past.learned.climate.open": "To heating & cooling →",
+	"tip.learn_climate.title": "What is the warm-up rate?",
+	"tip.learn_climate.text": "When I put a room back after a setback, I measure how long it takes to reach the wanted temperature. Every new measurement goes into the average, the older ones still count. Until I know a room, I assume 1.5 °C per hour.",
+	"past.log.title": "What I |switched",
+	"past.log.lead": "Everything I changed on batteries, cars, hot water, your devices and climate devices – newest first. Tap an area to see only that.",
+	"past.log.filters": "Areas",
+	"past.log.devices": "Devices",
+	"past.log.all": "All",
+	"past.log.filter.battery": "Batteries",
+	"past.log.filter.climate": "Heating & cooling",
+	"past.log.filter.car": "Cars",
+	"past.log.filter.hot_water": "Hot water",
+	"past.log.filter.other": "Other devices",
+	"past.log.filter.joe": "Joe himself",
+	"past.log.empty": "Nothing yet – as soon as I steer, test or change a climate device, it shows up here.",
+	"past.log.empty_filter": "I haven't switched anything here yet.",
+	"past.log.partial": "Right now I only see the latest entries.",
+	"tip.past_log.title": "What's in the log?",
+	"tip.past_log.text": "Everything I switched, with the time: batteries, cars, hot water, your devices and climate devices, plus test runs, your answers and when a night starts. What you change on a device yourself isn't listed – unless I notice it while I'm steering.",
+	"nav.devices.all": "All",
+	"nav.devices.climate": "Heating & cooling",
+	"nav.household.people": "Who lives here",
+	"nav.household.presence": "Who's home",
+	"nav.household.days": "Days & calendars",
+	"nav.household.night": "Bedtime",
+	"nav.household.travel": "Travel & weather",
+	"ha.open.device": "Open {name} in Home Assistant",
+	"ha.open.entity": "Show {name} in Home Assistant",
+	"mirror.change": "Change →",
+	"mirror.set": "Set up →",
+	"usedby.label": "Used by:",
+	"usedby.none": "Nothing uses this yet.",
+	"usedby.climate": "Heating & cooling",
+	"usedby.plan": "Plan",
+	"usedby.learn": "Learned – who is home when",
+	"usedby.consumption": "Learned – consumption",
+	"usedby.car": "Charging by need – {name}",
+	"usedby.way": "Way home",
 	"mode.simulation": "Simulation",
 	"mode.simulation.sub": "Joe only watches and learns",
 	"mode.simulation.desc": "I plan and learn, but don't switch anything.",
@@ -3172,7 +3346,7 @@ var Ne = {
 	"overview.sim.empty.text": "After the first night I'll show you here what it would have saved if I had been in control.",
 	"overview.next": "What happens next",
 	"overview.next.1.title": "All set up",
-	"overview.next.1.text": "I know your batteries, tariff and forecast. You can change everything in the settings.",
+	"overview.next.1.text": "I know your batteries, tariff and forecast. You can change everything where it belongs – under Devices, Household or Settings.",
 	"overview.next.2.title": "I'm watching",
 	"overview.next.2.text": "Every hour I write down what happens – and I read the last weeks from your Home Assistant.",
 	"overview.next.3.title": "I plan every night",
@@ -3218,6 +3392,8 @@ var Ne = {
 	"settings.energy.none": "not set up",
 	"tip.label": "Explanation",
 	"tip.hint": "Tip",
+	"tip.ha_open.title": "What is the button with the arrow for?",
+	"tip.ha_open.text": "The round button with the arrow pointing out opens the device in Home Assistant. There you rename it, put it in a room or see all its values.\nIf it has no device page in Home Assistant, the button shows the entity's info dialog instead. It changes nothing in Joe.",
 	"tip.source": "Source",
 	"tip.mode.title": "What should Joe do?",
 	"tip.mode.text": "**Simulation** – I plan and learn as if for real, but don't switch anything. You see what I would have done and what it would have saved.\n**Suggest** – I ask you every evening whether I may steer the night. Without your yes I switch nothing.\n**Live** – I steer every night myself – only batteries that passed the test run – and put everything back at the end.\n**Off** – I take a break: no planning, no learning, no switching. What I already know stays.",
@@ -3229,7 +3405,7 @@ var Ne = {
 	"tip.rescan.title": "Why look again?",
 	"tip.rescan.text": "I look around once more – handy if you just set something up in Home Assistant. Again, I only read.",
 	"tip.start.title": "What happens when I start Joe?",
-	"tip.start.text": "From tonight I plan every night – as a simulation, so without switching anything. You can change everything you entered in the settings at any time.",
+	"tip.start.text": "From tonight I plan every night – as a simulation, so without switching anything. You can change everything you entered at any time – where it belongs: under Devices, Household or Settings.",
 	"tip.start.hint": "You switch to live yourself later, once you've seen what I can do.",
 	"common.save": "Save",
 	"common.cancel": "Cancel",
@@ -3397,8 +3573,6 @@ var Ne = {
 	"edit.battery.title": "Battery |settings",
 	"edit.tariff.label": "Edit tariff",
 	"edit.tariff.title": "Your |tariff",
-	"edit.household.label": "Edit household",
-	"edit.household.title": "Who |lives here?",
 	"edit.consumers.label": "Assign devices",
 	"edit.consumers.title": "Your |devices",
 	"household.empty": "Nobody yet. Add the people who live here.",
@@ -3412,6 +3586,59 @@ var Ne = {
 	"household.calendars": "Calendars",
 	"household.calendar_add": "Calendar",
 	"household.calendar_remove": "Remove calendar {name}",
+	"household.people.title": "Who |lives here?",
+	"household.people.lead": "The people who live here, with their calendars. That tells me who is home, what kind of day it is and whom the car should charge for.",
+	"household.people.list": "People",
+	"household.people.today": "Today: {label}",
+	"household.people.tomorrow": "Tomorrow: {label}",
+	"household.people.rules": "Calendar rules",
+	"household.people.rules.own": "their own",
+	"household.people.rules.shared": "same as everyone",
+	"household.people.counts": "Appointments count for:",
+	"household.people.counts.none": "The appointments don't count for any car yet.",
+	"household.people.learned": "Learned",
+	"household.people.learned.none": "nothing yet – that takes a few days",
+	"household.people.usual": "usually comes home around {time}",
+	"household.people.more": "More in Review →",
+	"household.presence.title": "Who's |home?",
+	"household.presence.lead": "Who is home right now and who is on the way. One single helper “Someone home” tells me – with guest mode also for everyone without a phone.",
+	"household.presence.now": "Home right now",
+	"household.days.not_found": "I can't find this person any more. The rules below apply to everyone.",
+	"household.presence.way": "Way home",
+	"household.presence.way.say": "When someone comes home, I bring the rooms back in time. For that I look at how far away the person is and how long the drive still takes.",
+	"household.presence.routing": "Routing service",
+	"household.days.title": "Days & |calendars",
+	"household.days.lead": "What kind of day it is – working day, day off or home office. I read it from your workday sensor and your calendars.",
+	"household.days.preview": "Today and tomorrow",
+	"household.days.preview.today": "Today",
+	"household.days.preview.tomorrow": "Tomorrow",
+	"household.days.preview.workday": "Tomorrow is a working day.",
+	"household.days.preview.day_off": "Tomorrow is a day off.",
+	"household.days.preview.person": "{name}: {label}",
+	"household.days.preview.unknown": "I can't tell yet what kind of day today is.",
+	"household.days.preview.no_plan": "I'll see tomorrow once tonight's plan is ready.",
+	"household.days.free": "Days off",
+	"household.days.no_calendars": "Nobody has a calendar yet. Without calendars the rules have no effect.",
+	"household.days.to_people": "Assign calendars →",
+	"household.days.own_rules": "has their own rules",
+	"household.night.title": "When is |bedtime?",
+	"household.night.lead": "Bedtime means: you are in bed. Devices with “Off at night” switch off then and are comfortable again in time for the morning.",
+	"household.night.source": "How I recognise the night",
+	"household.night.devices": "Devices with “Off at night”",
+	"household.night.devices.none": "No device has “Off at night” switched on yet. You set that on the device under Heating & cooling.",
+	"household.night.span": "{from}–{until}",
+	"household.night.until": "comfortable again by {until}",
+	"household.night.not_steered": "not steered right now",
+	"household.night.to_climate": "To Heating & cooling →",
+	"household.travel.title": "Travel & |weather",
+	"household.travel.lead": "The weather for consumption and heating, and how I work out distances – for car trips and the way home.",
+	"tip.household_days_preview.title": "What does the preview show?",
+	"tip.household_days_preview.text": "How I see today and tomorrow: working day or day off, who works from home according to the calendar, and which situation applies – Normal, Holiday, Away or Home office. The plan, charging by need and the heating profiles follow it.\nI know tomorrow once tonight's plan is worked out.",
+	"tip.household_days_preview.hint": "I don't look further ahead than tomorrow yet.",
+	"tip.household_remove.title": "What does “Doesn't live here” do?",
+	"tip.household_remove.text": "I leave the person out: their presence and calendars no longer count. Nothing changes in Home Assistant.\nYou can bring them back any time under “Left out”.",
+	"tip.household_left_out.title": "Whom did I leave out?",
+	"tip.household_left_out.text": "People from Home Assistant you left out with “Doesn't live here”. Tap a name to bring the person back with their calendars.",
 	"consumers.runs": "When does it run?",
 	"consumers.runs_of": "When {name} runs",
 	"runs.auto": "When it is needed",
@@ -3669,7 +3896,7 @@ var Ne = {
 	"overview.week": "The last 7 days",
 	"overview.week.known": "{days} days remembered",
 	"overview.week.none": "Nothing recorded yet – it starts after the first full hour.",
-	"overview.week.more": "Open history",
+	"overview.week.more": "All days in Review",
 	"status.running": "running",
 	"status.paused": "paused",
 	"status.waiting": "waiting",
@@ -3684,7 +3911,7 @@ var Ne = {
 	"history.live": "watched live",
 	"history.read": "read from Home Assistant",
 	"history.missing": "I'm missing data for {hours} hours – Home Assistant was off or a sensor didn't report.",
-	"history.failed": "I couldn't load the history just now.",
+	"history.failed": "I couldn't load the past days just now.",
 	"history.empty.off": "I'm taking a break. Switch me back to simulation and I'll keep watching – and fetch what's missing from your Home Assistant.",
 	"history.empty.reading": "I'm reading the last weeks from your Home Assistant. You'll see every day here in a moment.",
 	"history.empty.soon": "I'm watching. After the first full hour you'll see here what happened.",
@@ -3839,7 +4066,6 @@ var Ne = {
 	"learn.failed": "I couldn't load what I've learned just now.",
 	"learn.nights.one": "one night",
 	"learn.nights.many": "{count} nights",
-	"learn.results": "What it would have saved",
 	"learn.results.say": "That's what you would have saved since {since} if I had been in control – over {nights}, replayed with the real weather and your real consumption.",
 	"learn.results.split": "{better} × better · {worse} × more expensive · {same} × the same",
 	"learn.results.none": "I haven't replayed a plan yet. The morning after the first planned night you'll see here what it would have saved.",
@@ -3872,7 +4098,6 @@ var Ne = {
 	"learn.buffer.default": "My starting value, cautious on purpose. After {need} replayed nights I know how much buffer you really need – I have {have}.",
 	"learn.buffer.user": "You set this yourself – I'll leave it.",
 	"learn.buffer.user_learned": "You set this yourself. I would have taken {value} %.",
-	"learn.buffer.own": "Let Joe learn it again",
 	"learn.buffer.chart": "Needed until the sun",
 	"learn.buffer.chart.planned": "planned",
 	"learn.buffer.chart.actual": "needed",
@@ -3899,9 +4124,8 @@ var Ne = {
 	"ask.answer.away": "We were away",
 	"ask.answer.special": "Something else special",
 	"ask.answer.normal": "A normal day",
-	"learn.models": "What I know about your home",
 	"learn.model": "Consumption and weather",
-	"learn.model.no_weather": "Without a weather entity I don't know the outdoor temperature. Pick one in the setup, then I learn how much more you need when it's cold.",
+	"learn.model.no_weather": "Without a weather entity I don't know the outdoor temperature. As soon as you pick one, I learn how much more you need when it's cold.",
 	"learn.model.learning": "Every day I compare your consumption with the outdoor temperature. From {need} complete days on I use it – I have {have}.",
 	"learn.model.base": "On warm days you need about {value} kWh.",
 	"learn.model.workday_more": "On working days {value} kWh more.",
@@ -3952,7 +4176,7 @@ var Ne = {
 	"learn.presence.value": "{label}: {hours} h",
 	"learn.presence.no_person": "Without a person entity I can't see when someone is at home.",
 	"learn.presence.none": "Assign calendars to people, then I learn how many hours they are at home on office, home office or vacation days.",
-	"learn.presence.calendars": "Assign calendars",
+	"learn.presence.calendars": "Assign calendars →",
 	"learn.calendar": "Calendar rules",
 	"learn.calendar.say": "If one of these keywords is in an event's title, place or description, the day counts for that person as …",
 	"learn.calendar.remove": "Remove keyword {keyword}",
@@ -3991,7 +4215,7 @@ var Ne = {
 	"learn.reset.label": "Reset learning",
 	"learn.reset.confirm.title": "Really |start over?",
 	"learn.reset.confirm.forget": "What I forget",
-	"learn.reset.forget.all": "Forecast factors, time shift, weather classes, forecast sources, the learned buffer, all calculations for consumption, batteries and hot water, and the record of what it would have brought.",
+	"learn.reset.forget.all": "Forecast factors, time shift, weather classes, forecast sources, the learned buffer, all calculations for consumption, batteries, hot water and cars, how fast each room warms up, and the record of what it would have brought.",
 	"learn.reset.forget.forecast": "Forecast factor, time shift, the factors per weather class and how well the forecast sources fit.",
 	"learn.reset.forget.consumption": "The consumption and weather calculation, the calculations per device, presence by calendar and the learned buffer.",
 	"learn.reset.forget.battery": "The measured size and efficiency of your batteries.",
@@ -4016,7 +4240,7 @@ var Ne = {
 	"action.need.daily": "Usual distance a day",
 	"action.need.odometer": "Odometer",
 	"action.need.persons": "Whose appointments count",
-	"action.need.no_calendars": "Nobody has a calendar yet. You assign calendars under Settings → Household.",
+	"action.need.no_calendars": "Nobody has a calendar yet. You assign calendars under Household › Who lives here.",
 	"action.need.calendars": "Calendars of this car",
 	"calendar.own.after_save": "Once saved, I create the calendar “{name}” in Home Assistant – Joe's calendar for this car. Every invitation I accept will be in it, and you can add it to your phone.",
 	"calendar.own.hint": "“{name}” is Joe's calendar for this car in Home Assistant. It holds the accepted invitations; you can add trips yourself too. Add it to your phone:",
@@ -4112,7 +4336,7 @@ var Ne = {
 	"tip.calendar_account_test.title": "What does “Read calendar” do?",
 	"tip.calendar_account_test.text": "I read the appointments of the next week once. That shows right away whether sign-in and calendar are right.",
 	"action.need.round_trip": "There and back",
-	"action.need.no_routing": "I can only work out how far appointments are once you pick a service under Settings → Distances. Until then only appointments at a zone and your usual distance count.",
+	"action.need.no_routing": "I can only work out how far appointments are once you pick a routing service under Household › Travel & weather. Until then only appointments at a zone and your usual distance count.",
 	"action.need.pick.soc": "Which sensor shows the car's charge level?",
 	"action.need.pick.range": "Which sensor shows the range?",
 	"action.need.pick.capacity": "Which sensor shows the battery size?",
@@ -4214,10 +4438,10 @@ var Ne = {
 	"flow.calendar.1": "The trips with the car are in **a calendar of its own**.",
 	"flow.calendar.2": "You **assign the calendar** to the car here.",
 	"flow.calendar.3": "**Joe reads** the appointments with a place.",
-	"settings.routing": "Distances to appointments",
-	"settings.routing.intro": "To charge by need I work out how far the places of your appointments are. For that I send an appointment's place and your home location from Home Assistant as the route's start to the service you pick here – never its title or description.",
+	"settings.routing": "Routing service",
+	"settings.routing.intro": "For car trips and the way home I work out how far a place is and how long the drive takes. For that I send an appointment's place or a person's rounded position, and your home location from Home Assistant, to the service you pick here – never an appointment's title or description.",
 	"settings.routing.service": "Service",
-	"settings.routing.service.hint": "Once per place, then I remember the distance.",
+	"settings.routing.service.hint": "Once per appointment place, then I remember the distance. On the way home I ask more often.",
 	"settings.routing.none": "Don't work it out",
 	"settings.routing.waze": "Waze (free)",
 	"settings.routing.google": "Google: {name}",
@@ -4265,6 +4489,8 @@ var Ne = {
 	"learn.car.none": "Switch on “Charge by need” for a car's night action, then I learn how much it really needs.",
 	"learn.reset.scope.car": "Cars",
 	"learn.reset.forget.car": "Consumption and usual distance of your cars.",
+	"learn.reset.scope.climate": "Heating & cooling",
+	"learn.reset.forget.climate": "How fast each room gets warm or cool. Until I've learned it again, I assume 1.5 °C per hour.",
 	"devices.action.why.enough_range": "The car has enough for tomorrow – I won't charge it tonight.",
 	"devices.action.why.sun_before_trip": "The first trip is only in the afternoon and enough sun comes – it charges the car first.",
 	"devices.action.why.need_unknown": "I don't know the car's charge level – I decide by the sun.",
@@ -4274,7 +4500,7 @@ var Ne = {
 	"overview.sim.cost": "My plan would have cost {value} more. I learn from it – the buffer adapts.",
 	"overview.sim.same": "My plan would have made no difference – the batteries would have lasted anyway.",
 	"overview.sim.total": "Since {since}: {value} over {nights}",
-	"overview.sim.more": "What I learn",
+	"overview.sim.more": "See the result",
 	"overview.sim.provisional": "provisional, as of {time}",
 	"history.eval": "Replayed: what my plan would have saved",
 	"history.eval.saved": "saved",
@@ -4307,8 +4533,6 @@ var Ne = {
 	"tip.learn_buffer.title": "Why a buffer?",
 	"tip.learn_buffer.text": "I charge a bit more than needed – for mornings when you use more or the sun comes later. How much I learn from the replayed nights: enough to have lasted on 8 out of 10 mornings. Too much buffer costs money, too little does too.",
 	"tip.learn_buffer.hint": "You can set your own value under Settings → Rules.",
-	"tip.learn_buffer_own.title": "What happens then?",
-	"tip.learn_buffer_own.text": "I go back to my learned buffer and adjust it every morning. If I haven't learned one yet, I start with my starting value.",
 	"tip.learn_home.title": "What am I looking at?",
 	"tip.learn_home.text": "How much you use per hour on average – on working days and on days off. With it I work out how much the batteries need to deliver until the sun.",
 	"tip.learn_accuracy.title": "What am I looking at?",
@@ -4337,7 +4561,7 @@ var Ne = {
 	"tip.cal_defaults.title": "And without an event?",
 	"tip.cal_defaults.text": "If there's no matching event, I take this kind – depending on whether the day is a working day or a day off.",
 	"tip.learn_reset_scope.title": "Which area?",
-	"tip.learn_reset_scope.text": "**Sun** after new panels or a different forecast, **Consumption** after moving or a new heating, **Batteries** after a replacement or an extension, **Hot water** after a new boiler. **Everything** when a lot has changed.",
+	"tip.learn_reset_scope.text": "**Sun** after new panels or a different forecast, **Consumption** after moving or a new heating, **Batteries** after a replacement or an extension, **Hot water** after a new boiler, **Cars** after changing cars, **Heating & cooling** after new radiators, thermostats or insulation. **Everything** when a lot has changed.",
 	"tip.a_need.title": "What does by need mean?",
 	"tip.a_need.text": "Instead of simply charging the whole cheap window when little sun comes, I work it out: kilometres tomorrow (appointments with a place there and back, or your usual distance, whichever is more) plus reserve, times consumption at the forecast temperature. If the car is missing something, I charge exactly that – and stop once the level is reached.\n**Off**: by the sun, as before.",
 	"tip.a_need.hint": "“Tonight” by hand always charges the whole cheap window.",
@@ -4401,12 +4625,12 @@ var Ne = {
 	"tip.calendar_source.text": "**Finished calendar**: the car already has a calendar of its own that holds only its trips (e.g. a shared calendar “Car”), and it is in Home Assistant. You assign it, Joe only reads.\n**Mailbox without calendar**: the car gets its own email address, e.g. at GMX. You invite it to your appointments; Joe fetches the invitation, accepts and puts the appointment into his own calendar for the car.\n**Mailbox with calendar**: like before, but the account has a calendar itself (Google, Microsoft, iCloud, Infomaniak). The invitation lands there by itself; Joe reads this calendar and accepts there.",
 	"tip.calendar_source.hint": "The calendars of the persons you choose above always count too.",
 	"tip.routing_service.title": "Which service?",
-	"tip.routing_service.text": "**Waze**: free, no sign-up, through Home Assistant's own Waze action.\n**Google**: needs a set-up “Google Maps Travel Time” integration with an API key; switch off its polling every 10 minutes there, or the free calls are gone quickly.\n**OpenStreetMap**: free, open map; Photon finds the place and OSRM the route.\nI ask about each place only once and remember the distance. If an appointment is at a Home Assistant zone, I need no service.",
-	"tip.routing_service.hint": "Only an appointment's place and your home location as the route's start are sent, never its title or description.",
+	"tip.routing_service.text": "**Waze**: free, no sign-up, through Home Assistant's own Waze action.\n**Google**: needs a set-up “Google Maps Travel Time” integration with an API key; switch off its polling every 10 minutes there, or the free calls are gone quickly.\n**OpenStreetMap**: free, open map; Photon finds the place and OSRM the route.\nI ask about each appointment's place only once and remember the distance. If an appointment is at a Home Assistant zone, I need no service. Only for the way home I ask more often, while someone is heading home.",
+	"tip.routing_service.hint": "Only an appointment's place, or a person's position on the way home rounded to about 100 m, plus your home location as the route's start are sent – never a title or description.",
 	"tip.routing_osm.title": "What is this?",
 	"tip.routing_osm.text": "The addresses of the free OpenStreetMap services. They are here so you can switch to your own or another server without waiting for an update.",
 	"tip.need_trips.title": "Where do the kilometres come from?",
-	"tip.need_trips.text": "From the places of your appointments tomorrow, worked out with the service from the settings. If a distance is wrong, enter the one-way distance – I remember it for this place.",
+	"tip.need_trips.text": "From the places of your appointments tomorrow, worked out with the routing service under Household › Travel & weather. If a distance is wrong, enter the one-way distance – I remember it for this place.",
 	"tip.learn_car.title": "What do I learn about the car?",
 	"tip.learn_car.text": "From odometer and charge level: how much energy the car really needs per 100 km, how much more in the cold, and how far it drives on a usual working day and day off. From that I work out what it needs tomorrow.",
 	"tip.chart_replay.title": "What am I looking at?",
@@ -4494,8 +4718,6 @@ var Ne = {
 	"devices.test.confirm.go": "Start test run",
 	"devices.setup": "Set up levers",
 	"devices.suggested": "I found levers that may fit. Check them under “Set up levers” and then do the test run.",
-	"devices.log": "What I switched",
-	"devices.log.empty": "Nothing yet – as soon as I steer or test, it shows up here.",
 	"log.start": "Night begins",
 	"log.set": "{battery}: {entity} → {value}",
 	"log.reached": "{battery} reached {target} %",
@@ -4789,20 +5011,78 @@ function Re(e) {
 	return e.split("|");
 }
 //#endregion
+//#region src/components/bits.ts
+var ze = k`<svg
+  class="swoosh"
+  viewBox="0 0 300 16"
+  preserveAspectRatio="none"
+  aria-hidden="true"
+>
+  <path d="M2 13 C 70 5, 190 1, 298 3 L 298 6 C 190 5, 80 9, 4 15 Z" fill="currentColor" />
+</svg>`;
+function Be(e, t = "h2", n) {
+	let r = Re(e), i = r.length - 1, a = r.map((e, t) => t === i && r.length > 1 ? k`<span class="hl">${e}</span>` : e.endsWith("!") ? k`${e}<br />` : k`${e}`), o = n ? k`<span class="title-tip">${n}</span>` : "";
+	return t === "h1" ? k`<h1 class="display">${a}${o}</h1>` : k`<h2 class="display">${a}${o}</h2>`;
+}
+function Ve(e, t) {
+	let n = t >= .85 ? 4 : t >= .65 ? 3 : t >= .45 ? 2 : 1, r = e(`conf.${n}`);
+	return k`<span class="conf" role="img" aria-label=${r} title=${r}>
+    ${[
+		1,
+		2,
+		3,
+		4
+	].map((e) => k`<i class=${e <= n ? "on" : ""}></i>`)}
+  </span>`;
+}
+var He = {
+	read: "mdi:eye-outline",
+	learned: "mdi:auto-fix",
+	user: "mdi:account-edit-outline",
+	default: "mdi:tune-variant"
+};
+function Ue(e, t) {
+	let n = t?.source ?? "default";
+	return k`<span class="chip ${n}"
+    ><ha-icon icon=${He[n]}></ha-icon>${e(`source.${n}`)}</span
+  >`;
+}
+function We(e, t) {
+	let n = {};
+	for (let [e, r] of Object.entries(t)) (typeof r == "string" || typeof r == "number") && (n[e] = r);
+	return e.optional(`reason.${t.code}`, n) ?? t.code;
+}
+function Ge(e) {
+	history.pushState(null, "", e), window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: !1 } }));
+}
+function Ke(e, t, n) {
+	if (!e) return k`<span title=${n ?? ""}>${t}</span>`;
+	let r = `/config/devices/device/${e}`;
+	return k`<a
+    class="ha-link"
+    href=${r}
+    title=${n ?? ""}
+    @click=${(e) => {
+		e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0 || (e.preventDefault(), Ge(r));
+	}}
+    >${t}</a
+  >`;
+}
+//#endregion
 //#region src/define.ts
-var ze = "0.9.12";
+var qe = "0.9.13";
 function H(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
-		t.joeVersion = ze, customElements.define(e, t);
+		t.joeVersion = qe, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.12" && Ve();
+	n.joeVersion !== "0.9.13" && Ye();
 }
-var Be = !1;
-function Ve() {
-	if (Be || typeof document > "u") return;
-	Be = !0;
+var Je = !1;
+function Ye() {
+	if (Je || typeof document > "u") return;
+	Je = !0;
 	let e = (document.documentElement.lang || navigator.language || "").toLowerCase().startsWith("de"), t = document.createElement("div");
 	t.setAttribute("role", "alert"), t.style.cssText = [
 		"position:fixed",
@@ -4831,7 +5111,7 @@ function Ve() {
 }
 //#endregion
 //#region src/styles/shared.ts
-var He = o`
+var Xe = o`
   :host {
     font-family: var(--joe-ui);
   }
@@ -5285,6 +5565,22 @@ var He = o`
     cursor: not-allowed;
     opacity: 0.45;
   }
+  /* On touch screens switch and inputs grow to 44 px; the track still looks 28 px high. */
+  @media (pointer: coarse) {
+    .switch,
+    .switch[aria-checked="true"] {
+      height: 44px;
+      padding: 8px 0;
+      background-clip: content-box;
+      border-radius: 14px / 22px;
+    }
+    .switch::after {
+      top: 11px;
+    }
+    .input {
+      min-height: 44px;
+    }
+  }
 
   .sheet-title {
     padding-right: 40px;
@@ -5340,6 +5636,229 @@ var He = o`
     text-transform: uppercase;
     color: var(--joe-muted);
   }
+
+  /* Navigation building blocks (components/section-chips, ha-open, mirror, used-by) */
+  .section-chips {
+    position: sticky;
+    top: var(--joe-head-h, 0px);
+    z-index: 1;
+    display: flex;
+    gap: 8px;
+    margin: -8px 0 16px;
+    /* The chips line up with the pages, which are centred at 1100 px. */
+    padding: 8px max(0px, calc((100% - 1100px) / 2));
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    background: var(--joe-bg);
+  }
+  .section-chips::-webkit-scrollbar {
+    display: none;
+  }
+  /* A fade at an edge where more chips are hidden: the row scrolls. */
+  .section-chips::before,
+  .section-chips::after {
+    content: "";
+    position: sticky;
+    z-index: 1;
+    flex: none;
+    width: 36px;
+    align-self: stretch;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .section-chips::before {
+    left: 0;
+    order: -1;
+    margin-right: -44px;
+    background: linear-gradient(to left, transparent, var(--joe-bg));
+  }
+  .section-chips::after {
+    right: 0;
+    margin-left: -44px;
+    background: linear-gradient(to right, transparent, var(--joe-bg));
+  }
+  .section-chips[data-more~="left"]::before,
+  .section-chips[data-more~="right"]::after {
+    opacity: 1;
+  }
+  .section-chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+    min-height: 44px;
+    padding: 0 16px 0 12px;
+    border-radius: 999px;
+    scroll-snap-align: start;
+    font-weight: 600;
+    font-size: 14px;
+    white-space: nowrap;
+    text-decoration: none;
+    background: var(--joe-surface-2);
+    color: var(--joe-ink-2);
+    transition: background 0.12s, color 0.12s, transform 0.12s;
+  }
+  @media (max-width: 400px) {
+    .section-chips {
+      gap: 6px;
+    }
+    .section-chip {
+      gap: 4px;
+      padding: 0 12px 0 9px;
+    }
+  }
+  .section-chip:hover {
+    background: var(--joe-line);
+    color: var(--joe-ink);
+  }
+  .section-chip:active {
+    transform: scale(0.97);
+  }
+  .section-chip.on,
+  .section-chip.on:hover {
+    background: var(--joe-ink);
+    color: var(--joe-bg);
+  }
+  .section-count {
+    font-size: 12px;
+    opacity: 0.75;
+  }
+  .section-problem {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--joe-crit);
+  }
+  .ha-open {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1.5px solid var(--joe-line);
+    border-radius: 50%;
+    background: var(--joe-surface);
+    color: var(--joe-ink-2);
+    cursor: pointer;
+    text-decoration: none;
+    transition: border-color 0.12s, color 0.12s, transform 0.12s;
+  }
+  .ha-open:hover {
+    border-color: var(--joe-amber);
+    color: var(--joe-ink);
+  }
+  .ha-open:active {
+    transform: scale(0.94);
+  }
+  .ha-open:focus-visible {
+    border-radius: 50%;
+  }
+  .ha-open ha-icon {
+    --mdc-icon-size: 20px;
+  }
+  a.ha-link {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: var(--joe-line-2);
+    text-underline-offset: 3px;
+  }
+  a.ha-link:hover {
+    text-decoration-color: var(--joe-amber);
+  }
+  .mirror {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+    padding: 8px 0;
+  }
+  /* Label · value flow as text, so a value never ends up alone on a line; the button fits beside it on the phone. */
+  .mirror-text {
+    flex: 1 1 140px;
+    min-width: 0;
+    line-height: 1.5;
+  }
+  .mirror-label,
+  .mirror-sep {
+    color: var(--joe-ink-2);
+  }
+  .mirror-sep {
+    margin-inline: 6px;
+  }
+  .mirror-text .chip {
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .mirror-value {
+    font-weight: 600;
+  }
+  .mirror-hint {
+    display: block;
+    margin-top: 2px;
+    font-size: 12.5px;
+    color: var(--joe-muted);
+  }
+  a.mirror-go {
+    min-height: 44px;
+    text-decoration: none;
+  }
+  .used-by {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 14px;
+    margin: 8px 0 0;
+    padding-block: 6px;
+    font-size: 13.5px;
+    color: var(--joe-ink-2);
+  }
+  /* Wider gaps keep the uses apart; the icon and the label stay close to what follows. */
+  .used-by-label,
+  .used-by ha-icon {
+    margin-right: -6px;
+  }
+  .used-by ha-icon {
+    --mdc-icon-size: 16px;
+    color: var(--joe-muted);
+  }
+  .used-by a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    /* 44 px to tap, but wrapped lines stay close together. */
+    margin-block: -6px;
+    font-weight: 600;
+    color: var(--joe-ink);
+    text-decoration: underline;
+    text-decoration-color: var(--joe-line-2);
+    text-underline-offset: 3px;
+  }
+  .used-by a:hover {
+    text-decoration-color: var(--joe-amber);
+  }
+  .used-by.none {
+    min-height: 44px;
+  }
+  /* An address with an anchor lights up its target briefly (router.ts revealAnchor). */
+  [data-anchor] {
+    scroll-margin-top: calc(var(--joe-head-h, 0px) + 72px);
+  }
+  .flash {
+    animation: joe-flash 1.5s ease-out;
+  }
+  @keyframes joe-flash {
+    0%,
+    40% {
+      box-shadow: 0 0 0 3px var(--joe-amber);
+    }
+    100% {
+      box-shadow: 0 0 0 3px transparent;
+    }
+  }
 `;
 //#endregion
 //#region \0@oxc-project+runtime@0.152.0/helpers/esm/decorate.js
@@ -5351,23 +5870,23 @@ function U(e, t, n, r) {
 }
 //#endregion
 //#region src/entities.ts
-var Ue = [
+var Ze = [
 	"W",
 	"kW",
 	"MW"
-], We = [
+], Qe = [
 	"Wh",
 	"kWh",
 	"MWh"
-], Ge = (e) => [
+], $e = (e) => [
 	"binary_sensor",
 	"input_boolean",
 	"switch",
 	"schedule"
-].includes(W(e)), Ke = {
-	power: (e) => W(e) === "sensor" && Ue.includes(G(e)),
+].includes(W(e)), et = {
+	power: (e) => W(e) === "sensor" && Ze.includes(G(e)),
 	soc: (e) => W(e) === "sensor" && G(e) === "%",
-	energy: (e) => W(e) === "sensor" && We.includes(G(e)),
+	energy: (e) => W(e) === "sensor" && Qe.includes(G(e)),
 	price: (e) => [
 		"sensor",
 		"number",
@@ -5408,12 +5927,12 @@ var Ue = [
 		"number",
 		"input_number"
 	].includes(W(e)) && [
-		...We,
+		...Qe,
 		"kJ",
 		"MJ"
 	].includes(G(e)),
-	night: Ge,
-	toggle_like: Ge,
+	night: $e,
+	toggle_like: $e,
 	presence: (e) => [
 		"group",
 		"input_boolean",
@@ -5430,16 +5949,16 @@ function W(e) {
 function G(e) {
 	return String(e.attributes.unit_of_measurement ?? "");
 }
-function qe(e, t) {
-	return Ke[t](e);
+function tt(e, t) {
+	return et[t](e);
 }
-function Je(e, t) {
+function nt(e, t) {
 	let n = e.states[t]?.attributes.friendly_name;
 	return typeof n == "string" && n ? n : t.split(".", 2)[1]?.replace(/_/g, " ") ?? t;
 }
-function Ye(e, t) {
+function rt(e, t) {
 	let n = e.entities?.[t], r = n?.device_id ? e.devices?.[n.device_id] : void 0, i = n?.area_id ?? r?.area_id, a = i ? e.areas?.[i]?.name : void 0, o = r?.name_by_user || r?.name || void 0;
-	return [o && Je(e, t).toLowerCase().startsWith(o.toLowerCase()) ? void 0 : o, a].filter(Boolean).join(" · ");
+	return [o && nt(e, t).toLowerCase().startsWith(o.toLowerCase()) ? void 0 : o, a].filter(Boolean).join(" · ");
 }
 function K(e, t) {
 	if (!t) return null;
@@ -5449,41 +5968,41 @@ function K(e, t) {
 function q(e, t, n) {
 	return new Intl.NumberFormat(e, { maximumFractionDigits: n }).format(t);
 }
-function Xe(e, t, n) {
+function it(e, t, n) {
 	let r = e.states[t];
 	if (!r) return "–";
 	if (e.formatEntityState) return e.formatEntityState(r);
 	let i = K(e, t);
 	return i === null ? r.state : `${q(n, i, Math.abs(i) >= 100 ? 0 : Math.abs(i) >= 10 ? 1 : 2)} ${G(r)}`.trim();
 }
-function Ze(e, t) {
+function at(e, t) {
 	return t === "W" ? e / 1e3 : t === "MW" ? e * 1e3 : e;
 }
-function Qe(e, t) {
+function ot(e, t) {
 	if (!t) return null;
 	let n = K(e, t.entity_id);
 	if (n === null) return null;
-	let r = Ze(n, G(e.states[t.entity_id]));
+	let r = at(n, G(e.states[t.entity_id]));
 	if (t.invert && (r = -r), t.minus_entity_id) {
 		let n = K(e, t.minus_entity_id);
 		if (n === null) return null;
-		r -= Ze(n, G(e.states[t.minus_entity_id]));
+		r -= at(n, G(e.states[t.minus_entity_id]));
 	}
 	return r;
 }
-function $e(e, t) {
+function st(e, t) {
 	let n = K(e, t);
 	if (n === null || !t) return null;
 	let r = G(e.states[t]);
 	return r === "Wh" ? n / 1e3 : r === "MWh" ? n * 1e3 : n;
 }
-function et(e, t) {
-	let n = t.map((t) => Qe(e, t)).filter((e) => e !== null);
+function ct(e, t) {
+	let n = t.map((t) => ot(e, t)).filter((e) => e !== null);
 	return n.length ? n.reduce((e, t) => e + t, 0) : null;
 }
 //#endregion
 //#region src/components/tip.ts
-var tt = 120, nt = 220, J = 8, rt = 10, Y, X = class extends R {
+var lt = 120, ut = 220, dt = 8, ft = 10, J, Y = class extends R {
 	constructor(...e) {
 		super(...e), this.label = "", this.open = !1, this.pinned = !1, this.keepOnBlur = !1, this.onOutside = (e) => {
 			e.composedPath().includes(this) || this.close();
@@ -5670,13 +6189,13 @@ var tt = 120, nt = 220, J = 8, rt = 10, Y, X = class extends R {
         @pointerdown=${this.onBubbleDown}
       >
         <span class="h">${e.heading}</span>
-        ${it(e.text)}
+        ${pt(e.text)}
         ${e.facts?.length ? k`<dl>${e.facts.map(([e, t]) => k`<dt>${e}</dt><dd>${t}</dd>`)}</dl>` : j}
         <span class="arrow"></span>
       </div>` : j;
 	}
 	show(e = !1) {
-		this.cancelTimer(), this.pinned = this.pinned || e, !this.open && (Y && Y !== this && Y.close(), Y = this, this.open = !0, window.addEventListener("pointerdown", this.onOutside, !0), window.addEventListener("keydown", this.onKey, !0), this.updateComplete.then(() => {
+		this.cancelTimer(), this.pinned = this.pinned || e, !this.open && (J && J !== this && J.close(), J = this, this.open = !0, window.addEventListener("pointerdown", this.onOutside, !0), window.addEventListener("keydown", this.onKey, !0), this.updateComplete.then(() => {
 			let e = this.bubble;
 			this.open && e && (typeof e.showPopover == "function" && !e.matches(":popover-open") && e.showPopover(), this.follow());
 		}));
@@ -5684,16 +6203,16 @@ var tt = 120, nt = 220, J = 8, rt = 10, Y, X = class extends R {
 	close() {
 		this.cancelTimer(), this.pinned = !1, this.frame !== void 0 && (cancelAnimationFrame(this.frame), this.frame = void 0), window.removeEventListener("pointerdown", this.onOutside, !0), window.removeEventListener("keydown", this.onKey, !0);
 		let e = this.bubble;
-		e && typeof e.hidePopover == "function" && e.matches(":popover-open") && e.hidePopover(), Y === this && (Y = void 0), this.open = !1;
+		e && typeof e.hidePopover == "function" && e.matches(":popover-open") && e.hidePopover(), J === this && (J = void 0), this.open = !1;
 	}
 	onClick() {
 		this.open && this.pinned ? this.close() : this.show(!0);
 	}
 	onEnter(e) {
-		e.pointerType === "mouse" && (this.cancelTimer(), this.open || (this.timer = window.setTimeout(() => this.show(), tt)));
+		e.pointerType === "mouse" && (this.cancelTimer(), this.open || (this.timer = window.setTimeout(() => this.show(), lt)));
 	}
 	onLeave(e) {
-		e.pointerType === "mouse" && (this.cancelTimer(), this.open && !this.pinned && (this.timer = window.setTimeout(() => this.close(), nt)));
+		e.pointerType === "mouse" && (this.cancelTimer(), this.open && !this.pinned && (this.timer = window.setTimeout(() => this.close(), ut)));
 	}
 	onFocus() {
 		this.button?.matches(":focus-visible") && this.show();
@@ -5721,19 +6240,19 @@ var tt = 120, nt = 220, J = 8, rt = 10, Y, X = class extends R {
 			this.close();
 			return;
 		}
-		let r = t.getBoundingClientRect(), i = document.documentElement.clientWidth, a = n.top - r.height - rt, o = "top";
-		a < J && (a = n.bottom + rt, o = "bottom");
-		let s = n.left + n.width / 2, c = Math.max(J, Math.min(s - r.width / 2, i - r.width - J)), l = Math.max(14, Math.min(s - c, r.width - 14));
+		let r = t.getBoundingClientRect(), i = document.documentElement.clientWidth, a = n.top - r.height - ft, o = "top";
+		a < dt && (a = n.bottom + ft, o = "bottom");
+		let s = n.left + n.width / 2, c = Math.max(dt, Math.min(s - r.width / 2, i - r.width - dt)), l = Math.max(14, Math.min(s - c, r.width - 14));
 		t.style.left = `${Math.round(c)}px`, t.style.top = `${Math.round(a)}px`, t.style.setProperty("--arrow", `${Math.round(l)}px`), t.dataset.place = o;
 	}
 };
-U([z({ attribute: !1 })], X.prototype, "tip", void 0), U([z()], X.prototype, "label", void 0), U([B()], X.prototype, "open", void 0), U([V("button")], X.prototype, "button", void 0), U([V(".bubble")], X.prototype, "bubble", void 0);
-function it(e) {
+U([z({ attribute: !1 })], Y.prototype, "tip", void 0), U([z()], Y.prototype, "label", void 0), U([B()], Y.prototype, "open", void 0), U([V("button")], Y.prototype, "button", void 0), U([V(".bubble")], Y.prototype, "bubble", void 0);
+function pt(e) {
 	return e.split("\n").map((e) => k`<p>
         ${e.split(/\*\*(.+?)\*\*/).map((e, t) => t % 2 ? k`<strong>${e}</strong>` : e)}
       </p>`);
 }
-function at(e, t, n, r = []) {
+function mt(e, t, n, r = []) {
 	let i = e.optional(`tip.${t}.hint`, n);
 	return {
 		heading: e(`tip.${t}.title`, n),
@@ -5741,19 +6260,19 @@ function at(e, t, n, r = []) {
 		facts: i ? [...r, [e("tip.hint"), i]] : r
 	};
 }
-function Z(e, t, n, r) {
-	return k`<joe-tip .tip=${at(e, t, n, r)} label=${e("tip.label")}></joe-tip>`;
+function X(e, t, n, r) {
+	return k`<joe-tip .tip=${mt(e, t, n, r)} label=${e("tip.label")}></joe-tip>`;
 }
-H("joe-tip", X);
+H("joe-tip", Y);
 //#endregion
 //#region src/components/plan-text.ts
-function Q(e) {
+function Z(e) {
 	return e ? e.slice(11, 16) : "";
 }
-function ot(e) {
+function ht(e) {
 	return e.slice(0, 10);
 }
-function st(e) {
+function gt(e) {
 	switch (e?.kind) {
 		case "charge": return "plug";
 		case "hold": return "switch";
@@ -5761,41 +6280,41 @@ function st(e) {
 		default: return "sleep";
 	}
 }
-function ct(e) {
-	return (e.charge_slots ?? []).map((e) => `${Q(e.start)}–${Q(e.end)}`).join(", ");
+function _t(e) {
+	return (e.charge_slots ?? []).map((e) => `${Z(e.start)}–${Z(e.end)}`).join(", ");
 }
-function lt(e, t) {
+function vt(e, t) {
 	if (!t.window) return "";
-	let n = [`${Q(t.window.start)}–${Q(t.window.end)}`];
+	let n = [`${Z(t.window.start)}–${Z(t.window.end)}`];
 	return t.prices && n.push(`${q(e.lang, t.prices.night * 100, 1)} ct/kWh`), n.join(" · ");
 }
-function ut(e, t) {
+function yt(e, t) {
 	if (t.kind === "unavailable") {
 		let n = t.reasons.find((t) => e.optional(`plan.why.${t}`)) ?? "failed";
 		return e.optional(`plan.why.${n}`) ?? "";
 	}
 	let n = [], r = q(e.lang, t.target ?? 0, 0), i = t.sun_takes_over;
 	return t.reasons.includes("balance") && n.push(e("plan.say.balance")), t.kind === "charge" && t.tariff === "dynamic" && t.charge_slots?.length ? n.push(e("plan.say.charge_slots", {
-		slots: ct(t),
+		slots: _t(t),
 		target: r
 	})) : t.kind === "charge" ? n.push(e("plan.say.charge", {
-		from: Q(t.charge_from),
+		from: Z(t.charge_from),
 		target: r
-	})) : t.kind === "hold" ? (n.push(e("plan.say.hold", { target: r })), t.empty_without && n.push(e("plan.say.empty", { time: Q(t.empty_without) }))) : t.reasons.includes("small_saving") ? n.push(e("plan.say.small_saving")) : n.push(i ? e("plan.say.none", { time: Q(i) }) : e("plan.say.none_nosun")), t.reasons.includes("max_price") && t.kind !== "charge" && n.push(e("plan.say.max_price")), t.day && (n.push(e("plan.day", {
-		time: Q(t.day.defer_until),
+	})) : t.kind === "hold" ? (n.push(e("plan.say.hold", { target: r })), t.empty_without && n.push(e("plan.say.empty", { time: Z(t.empty_without) }))) : t.reasons.includes("small_saving") ? n.push(e("plan.say.small_saving")) : n.push(i ? e("plan.say.none", { time: Z(i) }) : e("plan.say.none_nosun")), t.reasons.includes("max_price") && t.kind !== "charge" && n.push(e("plan.say.max_price")), t.day && (n.push(e("plan.day", {
+		time: Z(t.day.defer_until),
 		kwh: q(e.lang, t.day.held_kwh, 0)
-	})), t.day.cost && t.day.cost >= .01 && n.push(e("plan.day.cost", { cost: `${q(e.lang, t.day.cost * 100, 0)} ct` }))), t.kind !== "none" && (i && t.full_at && ot(t.full_at) === ot(i) ? n.push(e("plan.say.sun_full", {
-		sun: Q(i),
-		full: Q(t.full_at)
-	})) : i ? n.push(e("plan.say.sun", { sun: Q(i) })) : n.push(e("plan.say.nosun"))), n.join(" ");
+	})), t.day.cost && t.day.cost >= .01 && n.push(e("plan.day.cost", { cost: `${q(e.lang, t.day.cost * 100, 0)} ct` }))), t.kind !== "none" && (i && t.full_at && ht(t.full_at) === ht(i) ? n.push(e("plan.say.sun_full", {
+		sun: Z(i),
+		full: Z(t.full_at)
+	})) : i ? n.push(e("plan.say.sun", { sun: Z(i) })) : n.push(e("plan.say.nosun"))), n.join(" ");
 }
-function dt(e, t) {
+function bt(e, t) {
 	return (t.batteries ?? []).map((n) => {
 		let r = [n.name];
 		return t.kind === "charge" ? r.push(`${q(e.lang, n.soc_start, 0)} → ${q(e.lang, n.target, 0)} %`, `${q(e.lang, n.charge_kwh, 1)} kWh`, `${q(e.lang, n.power_kw, 1)} kW`) : t.kind === "hold" ? r.push(e("plan.line.hold", { target: q(e.lang, n.target, 0) })) : r.push(e("plan.line.now", { soc: q(e.lang, n.soc, 0) })), n.controllable || r.push(e("plan.line.watch_only")), r.join(" · ");
 	});
 }
-function ft(e, t, n = "EUR") {
+function xt(e, t, n = "EUR") {
 	if (!t.cost) return "";
 	let r = (t) => new Intl.NumberFormat(e.lang, {
 		style: "currency",
@@ -5804,13 +6323,152 @@ function ft(e, t, n = "EUR") {
 	return t.kind === "charge" && i.push(e("plan.cost.night", { value: r(t.cost.night_charge) })), t.cost.saving > .005 && i.push(e("plan.cost.saving", { value: r(t.cost.saving) })), i.join(" · ");
 }
 //#endregion
+//#region src/router.ts
+var St = "/energy-joe", Ct = [
+	"overview",
+	"plan",
+	"review",
+	"devices",
+	"household",
+	"settings"
+], wt = [
+	"overview",
+	"plan",
+	"review"
+], Tt = {
+	review: [
+		"result",
+		"days",
+		"learned",
+		"log"
+	],
+	devices: ["all", "climate"],
+	household: [
+		"people",
+		"presence",
+		"days",
+		"night",
+		"travel"
+	],
+	settings: [
+		"operation",
+		"rules",
+		"notify",
+		"maintenance",
+		"about"
+	]
+}, Q = {
+	review: "result",
+	devices: "all",
+	household: "people",
+	settings: "operation"
+}, Et = {
+	history: "/review/days",
+	learn: "/review/learned",
+	climate: "/devices/climate"
+};
+function Dt(e) {
+	return e in Tt;
+}
+function Ot(e) {
+	try {
+		return decodeURIComponent(e);
+	} catch {
+		return e;
+	}
+}
+function kt(e) {
+	let t = e.split(/[?#]/, 1)[0].split("/").filter(Boolean).map(Ot), [n, r, i, a, ...o] = t;
+	if (!n) return { route: { tab: "overview" } };
+	let s = Et[n];
+	if (s) {
+		let e = [s, ...t.slice(1).map(encodeURIComponent)].join("/");
+		return {
+			route: kt(e).route,
+			redirect: e
+		};
+	}
+	if (n === "plan") return t.length > 1 ? {
+		route: { tab: "plan" },
+		redirect: "/plan"
+	} : { route: { tab: "plan" } };
+	let c = n;
+	if (!Ct.includes(c) || !Dt(c)) return {
+		route: { tab: "overview" },
+		redirect: "/"
+	};
+	if (r && !Tt[c].includes(r)) return {
+		route: {
+			tab: c,
+			section: Q[c]
+		},
+		redirect: `/${c}`
+	};
+	let l = {
+		tab: c,
+		section: r ?? Q[c]
+	};
+	return i && (l.id = i), a && (l.sub = a), o.length && (l.rest = o), { route: l };
+}
+function At(e) {
+	if (typeof e == "string") return e.startsWith("/") ? e : `/${e}`;
+	if (e.tab === "overview") return "/";
+	let t = [e.tab], n = e.section ?? (e.id && Dt(e.tab) ? Q[e.tab] : void 0);
+	return n && (t.push(n), e.id && (t.push(e.id), e.sub && t.push(e.sub, ...e.rest ?? []))), `/${t.map(encodeURIComponent).join("/")}`;
+}
+function jt(e, t) {
+	let n = At(t);
+	return n === "/" ? e : `${e}${n}`;
+}
+function Mt(e, t, n = {}) {
+	e.dispatchEvent(new CustomEvent("joe-navigate", {
+		detail: {
+			path: At(t),
+			...n
+		},
+		bubbles: !0,
+		composed: !0
+	}));
+}
+function Nt(e, t) {
+	return (n) => {
+		n.defaultPrevented || n.metaKey || n.ctrlKey || n.shiftKey || n.altKey || n.button !== 0 || (n.preventDefault(), Mt(n.currentTarget ?? window, e, t));
+	};
+}
+function Pt(e, t) {
+	let n = e.querySelector(`[data-anchor="${CSS.escape(t)}"]`);
+	return n ? (n.scrollIntoView({
+		block: "start",
+		behavior: "smooth"
+	}), n.classList.remove("flash"), n.offsetWidth, n.classList.add("flash"), window.setTimeout(() => n.classList.remove("flash"), 1500), Ft(n), !0) : !1;
+}
+function Ft(e) {
+	let t = !1, n = () => {
+		t = !0;
+	}, r = [
+		"wheel",
+		"touchstart",
+		"keydown",
+		"pointerdown"
+	];
+	r.forEach((e) => window.addEventListener(e, n, {
+		passive: !0,
+		once: !0
+	}));
+	let i = (i) => {
+		let a = parseFloat(getComputedStyle(e).scrollMarginTop) || 0;
+		!t && e.isConnected && Math.abs(e.getBoundingClientRect().top - a) > 24 && e.scrollIntoView({ block: "start" }), i && r.forEach((e) => window.removeEventListener(e, n));
+	};
+	window.setTimeout(() => i(!1), 900), window.setTimeout(() => i(!0), 2200);
+}
+//#endregion
 //#region src/components/car-charge.ts
 var $ = class extends R {
 	constructor(...e) {
 		super(...e), this.values = {}, this.failed = !1;
 	}
 	static {
-		this.styles = [He, o`
+		this.styles = [Xe, o`
       :host {
         display: block;
       }
@@ -5832,6 +6490,11 @@ var $ = class extends R {
         width: 78px;
         min-height: 34px;
         padding: 4px 8px;
+      }
+      @media (pointer: coarse) {
+        .boost .input {
+          min-height: 44px;
+        }
       }
       .boost .unit {
         color: var(--joe-ink-2);
@@ -5882,7 +6545,7 @@ var $ = class extends R {
 			})}
         </span>
         <button type="button" class="mini-btn quiet" @click=${() => this.boost(null)}>${e("devices.boost.stop")}</button>
-        ${Z(e, "boost")}
+        ${X(e, "boost")}
       </div>`;
 		}
 		if (i) {
@@ -5892,7 +6555,7 @@ var $ = class extends R {
           ${o?.reason === "reached" ? e(t ? "devices.charge.tonight_done" : "devices.action.reached_plain", { amount: t ? l(t.chosen, t.target, t.unit) : "" }) : t ? e("devices.charge.tonight_set", { amount: l(t.chosen, t.target, t.unit) }) : e("devices.charge.tonight_window")}
         </span>
         <button type="button" class="mini-btn quiet" @click=${() => this.tonight(!1)}>${e("devices.boost.stop")}</button>
-        ${Z(e, "boost")}
+        ${X(e, "boost")}
       </div>`;
 		}
 		let u = [...c.soc_entity ? ["%"] : [], ...c.range_entity ? ["km"] : []], d = this.unit && u.includes(this.unit) ? this.unit : u[0], f = this.values[d] ?? (d === "%" ? 80 : 200), p = d === "%" ? 100 : 1500, m = (e) => {
@@ -5936,7 +6599,7 @@ var $ = class extends R {
                 </button>`)}
             </span>` : k`<span class="unit">${d}</span>`}
       </span>
-      ${Z(e, "boost")}
+      ${X(e, "boost")}
       <span class="charge-buttons">
         <button type="submit" class="mini-btn go" ?disabled=${t.mode === "off" || !n.enabled}>
           <ha-icon icon="mdi:ev-plug-type2"></ha-icon>${e("devices.charge.now")}
@@ -5985,7 +6648,7 @@ var $ = class extends R {
 U([z({ attribute: !1 })], $.prototype, "hass", void 0), U([z({ attribute: !1 })], $.prototype, "t", void 0), U([z({ attribute: !1 })], $.prototype, "state", void 0), U([z({ attribute: !1 })], $.prototype, "action", void 0), U([B()], $.prototype, "values", void 0), U([B()], $.prototype, "unit", void 0), U([B()], $.prototype, "failed", void 0), H("joe-car-charge", $);
 //#endregion
 //#region src/styles/tokens.ts
-var pt = o`
+var It = o`
   :host {
     --joe-bg: #fbf6ec;
     --joe-surface: #ffffff;
@@ -6074,4 +6737,4 @@ var pt = o`
   }
 `;
 //#endregion
-export { k as A, Le as C, R as D, z as E, _e as M, o as N, j as O, Re as S, B as T, K as _, ut as a, He as b, lt as c, Je as d, Ye as f, Qe as g, Xe as h, st as i, Ee as j, A as k, Z as l, q as m, ft as n, ct as o, qe as p, dt as r, Q as s, pt as t, $e as u, et as v, V as w, H as x, U as y };
+export { U as A, Le as B, rt as C, ot as D, it as E, Be as F, j as G, B as H, Ge as I, Ee as J, A as K, We as L, H as M, Ve as N, K as O, Ke as P, Ue as R, nt as S, q as T, z as U, V, R as W, o as X, _e as Y, _t as _, Ct as a, X as b, jt as c, kt as d, Pt as f, yt as g, gt as h, Tt as i, Xe as j, ct as k, Mt as l, bt as m, Q as n, wt as o, xt as p, k as q, St as r, At as s, It as t, Nt as u, Z as v, tt as w, st as x, vt as y, ze as z };
