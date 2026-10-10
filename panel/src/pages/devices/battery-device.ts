@@ -3,6 +3,7 @@ import { property, state } from "lit/decorators.js";
 import "../../components/battery-automations";
 import { automationsOf, loadBatteryAutomations, type BatteryAutomation } from "../../components/battery-automations";
 import { displayTitle } from "../../components/bits";
+import { daySurplus } from "../../components/day-surplus";
 import { dayText } from "../../components/look-back";
 import { timeOf } from "../../components/plan-text";
 import "../../components/sheet";
@@ -179,6 +180,10 @@ export class JoeBatteryDevice extends DeviceSection {
       }
       .control-text b {
         font-weight: 700;
+      }
+      .control-text .mini-btn {
+        justify-self: start;
+        margin-top: 6px;
       }
       a.btn {
         text-decoration: none;
@@ -418,7 +423,52 @@ export class JoeBatteryDevice extends DeviceSection {
         </a>
         ${tip(t, "devices_setup")}
       </div>
-      ${this.fields(battery, "steer")}`;
+      ${battery.adapter !== "none" ? this.renderDaySurplus(t, battery) : nothing} ${this.fields(battery, "steer")}`;
+  }
+
+  /** "Macht tagsüber mit": this battery's part in the daytime surplus for evcc, and what it does now. */
+  private renderDaySurplus(t: Translate, battery: BatteryConfig): TemplateResult {
+    const joe = this.state!;
+    const rules = joe.config.rules;
+    const surplus = daySurplus(joe);
+    const mine = surplus?.batteries?.[battery.id];
+    const capable = Boolean(battery.controls?.charge_limit) && battery.adapter !== "steps";
+    const on = battery.day_surplus !== false;
+    const kw = (value: number | null | undefined) => formatNumber(t.lang, value ?? 0, 1);
+    const ruleTo: Route = { tab: "settings", section: "rules", id: "day_surplus" };
+    let text: string;
+    if (!capable || mine?.state === "cannot") {
+      text = t("battery.surplus.cannot");
+    } else if (!rules.day_surplus) {
+      text = t("battery.surplus.rule_off");
+    } else if (mine?.state === "capped") {
+      text = t("battery.surplus.capped", { kw: kw(mine.cap_kw), time: timeOf(surplus?.pv_end) });
+    } else if (mine?.state === "would") {
+      text = t("battery.surplus.would", { kw: kw(mine.cap_kw), time: timeOf(surplus?.pv_end) });
+    } else if (mine?.state === "not_tested" || joe.control?.ready[battery.id] !== "ready") {
+      text = t("battery.surplus.not_tested");
+    } else {
+      text = t(on ? "battery.surplus.takes_part" : "battery.surplus.left_out");
+    }
+    return html`<div class="control-row" data-tipped>
+      <span class="control-text">
+        <b id="day-surplus-${battery.id}">${t("battery.surplus.label")}</b>
+        <small>${text}</small>
+        ${!rules.day_surplus && capable
+          ? html`<a class="mini-btn go" href=${href(this.prefix, ruleTo)} @click=${onLink(ruleTo)}>${t("battery.surplus.rule_go")}</a>`
+          : nothing}
+      </span>
+      ${tip(t, "f_battery_day_surplus")}
+      <button
+        type="button"
+        class="switch"
+        role="switch"
+        aria-checked=${String(on && capable)}
+        aria-labelledby="day-surplus-${battery.id}"
+        ?disabled=${!capable}
+        @click=${() => saveConfig(this, { batteries: { [battery.id]: { day_surplus: !on } } })}
+      ></button>
+    </div>`;
   }
 
   private renderPower(t: Translate, battery: BatteryConfig): TemplateResult {

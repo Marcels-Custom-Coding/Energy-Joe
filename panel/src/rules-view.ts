@@ -5,7 +5,7 @@ import { tip } from "./components/tip";
 import { saveConfig, sourceOf } from "./config";
 import { formatNumber } from "./entities";
 import type { Translate, TranslationKey } from "./i18n";
-import type { DischargeMode, JoeConfig, JoeInfo, PriorityItem, Rules } from "./types";
+import type { DayCaution, DischargeMode, JoeConfig, JoeInfo, PriorityItem, Rules } from "./types";
 
 // Joe's rules: one row per rule (Einstellungen › Regeln) and the same
 // formatting for mirrors elsewhere ("Sicherheitspuffer · 120 %").
@@ -24,7 +24,7 @@ export type NumberRuleKey =
   | "balance_days";
 
 /** Rules with a row of their own (switches, order, choice). */
-export type OtherRuleKey = "guard_grid" | "priority" | "discharge_in_window" | "converter_losses";
+export type OtherRuleKey = "guard_grid" | "priority" | "discharge_in_window" | "converter_losses" | "day_surplus";
 export type RuleKey = NumberRuleKey | OtherRuleKey;
 
 export interface NumberRule {
@@ -59,7 +59,7 @@ export const NUMBER_RULES: Record<NumberRuleKey, NumberRule> = {
 export type RuleGroup = "battery" | "grid" | "plan";
 
 export const RULE_GROUPS: Record<RuleGroup, readonly RuleKey[]> = {
-  battery: ["reserve_soc", "max_target_soc", "evening_min_soc", "balance_days", "discharge_in_window", "converter_losses"],
+  battery: ["reserve_soc", "max_target_soc", "evening_min_soc", "balance_days", "discharge_in_window", "converter_losses", "day_surplus"],
   grid: ["grid_limit_w", "max_night_kwh", "guard_grid", "max_price", "min_saving"],
   plan: ["priority", "buffer_factor", "plan_offset_min", "reset_lead_min"],
 };
@@ -68,6 +68,7 @@ export const RULE_GROUPS: Record<RuleGroup, readonly RuleKey[]> = {
 export const RULE_ORDER: readonly RuleKey[] = [...RULE_GROUPS.battery, ...RULE_GROUPS.grid, ...RULE_GROUPS.plan];
 
 const DISCHARGE: DischargeMode[] = ["until_target", "block", "free"];
+const CAUTIONS: DayCaution[] = ["tight", "normal", "careful"];
 
 export function isRuleKey(key: string): key is RuleKey {
   return (RULE_ORDER as readonly string[]).includes(key);
@@ -105,6 +106,8 @@ export function ruleValue(t: Translate, config: JoeConfig, key: RuleKey): string
       return rules.priority.map((item) => t(`rule.priority.${item}`)).join(" · ");
     case "discharge_in_window":
       return t(`rule.discharge.${rules.discharge_in_window}`);
+    case "day_surplus":
+      return rules.day_surplus ? `${t("rule.on")} · ${t(`rule.day_caution.${rules.day_caution}`)}` : t("rule.off");
     default:
       return t(rules[key] ? "rule.on" : "rule.off");
   }
@@ -127,6 +130,8 @@ export function ruleRow(t: Translate, host: HTMLElement, config: JoeConfig, info
       return priorityRow(t, host, config);
     case "discharge_in_window":
       return dischargeRow(t, host, config);
+    case "day_surplus":
+      return daySurplusRow(t, host, config);
   }
 }
 
@@ -310,6 +315,54 @@ function dischargeRow(t: Translate, host: HTMLElement, config: JoeConfig): Templ
       ></joe-choice>
     </div>
   </div>`;
+}
+
+/**
+ * Daytime surplus for evcc: the switch, and when it is on how careful Joe is
+ * with the forecast (control/executor.py _async_surplus).
+ */
+function daySurplusRow(t: Translate, host: HTMLElement, config: JoeConfig): TemplateResult {
+  const rules = config.rules;
+  return html`<div class="row" data-tipped data-anchor="day_surplus">
+      <div>
+        <div class="name"><b id="day-surplus">${t("rule.day_surplus")}</b>${tip(t, "r_day_surplus")}</div>
+        <small>${t("rule.day_surplus.hint")}</small>
+      </div>
+      <div class="control">
+        ${sourceChip(t, sourceOf(config, "rules.day_surplus"))}
+        <button
+          type="button"
+          class="switch"
+          role="switch"
+          aria-checked=${String(rules.day_surplus)}
+          aria-labelledby="day-surplus"
+          @click=${() => saveConfig(host, { rules: { day_surplus: !rules.day_surplus } })}
+        ></button>
+      </div>
+    </div>
+    ${rules.day_surplus
+      ? html`<div class="row stacked" data-tipped data-anchor="day_caution">
+          <div>
+            <div class="name">
+              <b>${t("rule.day_caution")}</b>${tip(t, "r_day_caution")} ${sourceChip(t, sourceOf(config, "rules.day_caution"))}
+            </div>
+            <small>${t(`rule.day_caution.${rules.day_caution}.hint`)}</small>
+          </div>
+          <div>
+            <joe-choice
+              compact
+              label=${t("rule.day_caution")}
+              .options=${CAUTIONS.map((value) => ({ value, label: t(`rule.day_caution.${value}`) }))}
+              .value=${[rules.day_caution]}
+              @joe-choice=${(ev: CustomEvent<{ value: string[] }>) => {
+                if (ev.detail.value[0]) {
+                  saveConfig(host, { rules: { day_caution: ev.detail.value[0] } });
+                }
+              }}
+            ></joe-choice>
+          </div>
+        </div>`
+      : nothing}`;
 }
 
 /** Styles of the rule controls; the page brings .row, .name and .control. */

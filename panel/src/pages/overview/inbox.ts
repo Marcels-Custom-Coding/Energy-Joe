@@ -2,6 +2,7 @@ import { LitElement, css, html, nothing } from "lit";
 import { property, state } from "lit/decorators.js";
 import "../../components/day-questions";
 import "../../components/steer-tonight";
+import { daySurplus, surplusConflicts } from "../../components/day-surplus";
 import { checkText } from "../../components/texts";
 import { tip } from "../../components/tip";
 import { isIgnored, saveConfig } from "../../config";
@@ -118,6 +119,27 @@ export function inboxItems(t: Translate, joe: JoeState, inputs: InboxInputs = {}
         title: battery.name,
         text: problem(code),
         to: deviceRoute({ group: "battery", id: battery.id }),
+      });
+    }
+  }
+  // The daytime surplus: evcc settings against it, a cap that does not take.
+  const surplus = daySurplus(joe);
+  const conflicts = surplusConflicts(t, surplus);
+  if (conflicts.length) {
+    warn({
+      id: `surplus:evcc:${(surplus?.conflicts ?? []).map((c) => c.code).join(",")}`,
+      title: t("surplus.conflict.title"),
+      text: conflicts.join(" "),
+      to: { tab: "devices", section: "battery" },
+    });
+  }
+  for (const [id, entry] of Object.entries(surplus?.batteries ?? {})) {
+    if (entry.problem) {
+      warn({
+        id: `problem:surplus:${id}:${entry.problem}`,
+        title: entry.name,
+        text: `${t("surplus.problem")} ${problem(entry.problem)}`,
+        to: deviceRoute({ group: "battery", id }),
       });
     }
   }

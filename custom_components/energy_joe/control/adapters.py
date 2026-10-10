@@ -226,6 +226,47 @@ class RoleAdapter(Adapter):
         writes.append(Write(self.controls["charge_limit"], 0))
         return self._paced(writes)
 
+    def can_limit(self, hass: HomeAssistant) -> bool:
+        """Whether Joe can cap charging at a power (daytime surplus).
+
+        A limit in W or kW is a power; one in % or A is a share of the
+        battery's highest charging power, which must be known then.
+        """
+        if not self.can_defer():
+            return False
+        unit = self._limit_unit(hass)
+        return unit in ("W", "kW") or bool(self.battery.get("max_charge_w"))
+
+    def limit(self, hass: HomeAssistant, kw: float) -> list[Write]:
+        """Cap charging (from the sun, too) at a power; discharging stays free."""
+        entity_id = self.controls["charge_limit"]
+        watts = max(0.0, kw * 1000)
+        unit = self._limit_unit(hass)
+        maximum_w = self.battery.get("max_charge_w") or watts or 1
+        low, high = _range(hass, entity_id, 0, math.inf)
+        if unit == "kW":
+            value: float = math.ceil(watts / 10) / 100
+        elif unit == "%":
+            value = math.ceil(100 * watts / maximum_w)
+        elif unit == "A":
+            value = math.ceil(min(high, 50) * watts / maximum_w * 10) / 10
+        else:
+            value = math.ceil(watts / 10) * 10
+        writes = []
+        if "charge_limit_enabled" in self.controls:
+            writes.append(Write(self.controls["charge_limit_enabled"], True))
+        writes.append(Write(entity_id, max(low, min(high, value))))
+        return self._paced(writes)
+
+    def unlimit(self, saved: dict[str, Any]) -> list[Write]:
+        """The charge limit back as it was: its switch first, then the value."""
+        return self._paced(self._restore(saved, "charge_limit_enabled", "charge_limit"))
+
+    def _limit_unit(self, hass: HomeAssistant) -> str:
+        state = hass.states.get(self.controls.get("charge_limit", ""))
+        unit = state.attributes.get("unit_of_measurement") if state else None
+        return unit or "W"
+
     def release(self, saved: dict[str, Any]) -> list[Write]:
         return self._paced(super().release(saved))
 

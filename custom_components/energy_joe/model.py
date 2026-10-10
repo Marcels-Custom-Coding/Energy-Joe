@@ -151,6 +151,8 @@ BATTERY = vol.Schema(
         vol.Optional("prepare", default=list): [_STEP_ENTITY],
         vol.Optional("steps", default=dict): STEPS,
         vol.Optional("priority", default=1): vol.All(int, vol.Range(min=1, max=9)),
+        # Takes part when Joe leaves daytime surplus to evcc (rules.day_surplus).
+        vol.Optional("day_surplus", default=True): bool,
     }
 )
 
@@ -455,6 +457,9 @@ ACTION = vol.Schema(
     }
 )
 
+# How much of the solar forecast Joe counts on for the daytime surplus.
+DAY_CAUTIONS = ("tight", "normal", "careful")
+
 RULES = vol.Schema(
     {
         vol.Optional("reserve_soc", default=10): _PERCENT,
@@ -491,6 +496,11 @@ RULES = vol.Schema(
         # with the sun. The saving comes first unless grid_first is set.
         vol.Optional("grid_friendly", default=True): bool,
         vol.Optional("grid_first", default=False): bool,
+        # Daytime surplus: on sunny days the batteries charge only as fast as
+        # they must to be full before the sun goes, the rest shows at the grid
+        # meter for evcc's PV mode (see control/surplus.py).
+        vol.Optional("day_surplus", default=False): bool,
+        vol.Optional("day_caution", default="normal"): vol.In(DAY_CAUTIONS),
         # Expert: count the inverter's losses when charging from the grid,
         # measured at the grid meter (a battery's own meter may sit behind it).
         vol.Optional("converter_losses", default=False): bool,

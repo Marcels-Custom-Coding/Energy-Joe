@@ -32,6 +32,8 @@
       ?climate=profiles (Büro mit Wochenprofilen, Kinderzimmer mit Geräteprogrammen, Wohnzimmer alt: Übersicht › Heizung & Klima)
       ?pnotes=1 (Plan: alle Hinweise mit Sprung, Warmwasser und eigene Geräte heute Nacht, ein Speicher ohne Größe)
       ?joe_entities=0|1 (Joes eigene Entitäten in HA für Einstellungen › Über Joe; mit ?done=1 schon an)
+      ?surplus=0|<Zustand> (Tagsüber Überschuss für evcc: mit ?done=1 an, gedrosselt für die Fußbodenheizung im PV-Modus;
+      0 schaltet die Regel aus, ein Zustand wie no_loadpoint oder full zeigt den Grund; ?evcc=ok ohne Warnung zu evcc)
       ?later=1 (die Frage zum Homeoffice wurde in der Einrichtung mit „Später“ übersprungen: Fragen, Los und Übersicht › Joe braucht dich)
       sample-*.json kommen aus scripts/make_dev_samples.py (erfundene Haushalte aus tests/snapshots.py):
       Funde, die Konfiguration nach dem Übernehmen, ihre Prüfungen, Zustände und Register sowie
@@ -193,6 +195,10 @@
         return config;
       };
       withClimate(state.config);
+      // 0.9.17: daytime surplus for evcc (model.py); the samples are older. With ?done=1 it is on.
+      const surplusParam = params.get("surplus");
+      state.config.rules = { day_surplus: done && surplusParam !== "0", day_caution: "normal", ...state.config.rules };
+      for (const battery of state.config.batteries) battery.day_surplus ??= true;
       // ?devices=rich: a car on the wallbox meter charging by need, hot water heating to a target on its meter,
       // a dishwasher running on cheap power and switched on at night, a pool pump without a meter.
       if (params.get("devices") === "rich") {
@@ -340,7 +346,57 @@
             b.adapter === "none" ? "not_controllable" : control.tests[b.id]?.ok ? "ready" : "not_tested",
           ]),
         );
-        return { steering: false, reason, night, batteries: {}, actions: {}, pending: false, ready, ...control, log: control.log.slice(-30) };
+        return {
+          steering: false,
+          reason,
+          night,
+          batteries: {},
+          actions: {},
+          pending: false,
+          ready,
+          surplus: surplusView(),
+          ...control,
+          log: control.log.slice(-30),
+        };
+      };
+      // "Tagsüber Überschuss" (executor._async_surplus): an evcc floor heating in PV mode, the first battery
+      // capped (or only "would" outside live), the others cannot; evcc's battery-assisted charging warns.
+      const surplusView = () => {
+        const rules = state.config.rules;
+        if (!rules.day_surplus) return { state: "off" };
+        const forced = surplusParam && surplusParam !== "1" ? surplusParam : null;
+        if (control.surplusReleased) return { state: "released" };
+        const dry = state.mode !== "live";
+        const evccOk = params.get("evcc") === "ok";
+        const cap = forced ? null : 1.8;
+        const batteries = Object.fromEntries(
+          state.config.batteries.map((b, i) => [
+            b.id,
+            {
+              name: b.name,
+              state: i > 0 || !b.controls?.charge_limit ? "cannot" : b.day_surplus === false ? "left_out" : cap ? (dry ? "would" : "capped") : "takes_part",
+              soc: 46 - 6 * i,
+              cap_kw: i === 0 && cap && b.day_surplus !== false ? cap : null,
+              problem: null,
+            },
+          ]),
+        );
+        return {
+          state: forced ?? "cap",
+          dry,
+          caution: rules.day_caution,
+          batteries,
+          loadpoints: [{ id: "lp1", name: "Fußbodenheizung", kind: "heating", mode: forced === "no_loadpoint" ? "now" : "pv", connected: false, boost: false, wants: forced !== "no_loadpoint" }],
+          evcc: { priority_soc: 50, buffer_soc: evccOk ? 0 : 80, buffer_start_soc: 0 },
+          conflicts: evccOk ? [] : [{ code: "buffer_soc", value: 80 }],
+          pv_end: dayAt(0, "19:00"),
+          cap_kw: cap,
+          need_kwh: 6.9,
+          surplus_kwh: 19.0,
+          expected_kwh: forced ? 0 : 12.1,
+          hours: [],
+          sun_ratio: 0.93,
+        };
       };
       const log = (kind, detail = {}) => {
         control.log.push({ at: stamp(), kind, ...detail });
@@ -359,6 +415,8 @@
           ...(battery ? [{ at: dayAt(0, "04:10"), kind: "reached", battery, target: 80 }] : []),
           ...(car ? [{ at: dayAt(0, "05:45"), kind: "action_done", battery: `action:${car}` }] : []),
           { at: dayAt(0, "06:00"), kind: "released" },
+          { at: dayAt(0, "09:12"), kind: "surplus_cap", power: 1.4, until: dayAt(0, "19:00"), loadpoint: "Fußbodenheizung" },
+          { at: dayAt(0, "11:40"), kind: "surplus_raise", power: 1.8, until: dayAt(0, "19:00"), loadpoint: "Fußbodenheizung" },
         );
       }
       // ?steer=1 (Übersicht › Gerade jetzt): Joe steers right now – the first battery charges, the second holds,
@@ -775,6 +833,7 @@
               return { started: true };
             }
             case "energy_joe/control/release":
+              control.surplusReleased = Boolean(state.config.rules.day_surplus);
               log("emergency");
               log("released", { reason: "emergency" });
               control.skip = state.plan?.window?.start ?? null;

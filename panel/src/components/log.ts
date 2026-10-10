@@ -97,7 +97,12 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
     power: typeof entry.power === "number" ? formatNumber(t.lang, entry.power, 1) : "–",
     soc: typeof entry.soc === "number" ? formatNumber(t.lang, entry.soc, 0) : "–",
     unit: typeof entry.unit === "string" ? entry.unit : "%",
+    until: typeof entry.until === "string" ? entry.until.slice(11, 16) : "–",
+    loadpoint: typeof entry.loadpoint === "string" ? entry.loadpoint : "evcc",
   };
+  if (entry.kind === "surplus_end") {
+    return t.optional(`log.surplus_end.${String(entry.reason)}`, vars) ?? t("log.surplus_end", vars);
+  }
   if (entry.kind === "boost_end") {
     return t.optional(`log.boost_end.${String(entry.reason)}`, vars) ?? t("log.boost_end.stopped", vars);
   }
