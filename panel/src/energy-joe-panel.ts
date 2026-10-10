@@ -12,12 +12,10 @@ import type { ConfigChange, PickEvent, PickResult } from "./config";
 import { define } from "./define";
 import "./editors/action-editor";
 import "./editors/battery-editor";
-import "./editors/consumers";
-import "./editors/tariff-editor";
-import "./editors/week-editor";
 import { ensureFonts } from "./fonts";
 import { translator, type Translate } from "./i18n";
 import "./pages/devices/index";
+import "./pages/devices/other-list";
 import "./pages/household/index";
 import "./pages/lookback/index";
 import "./pages/onboarding";
@@ -73,7 +71,7 @@ const TAB_ICONS: Record<Tab, string> = {
 /** Tabs that need the findings (suggestions, people to bring back, calendars to take over). */
 const DISCOVERY_TABS: Tab[] = ["devices", "household", "settings"];
 /** Editors that need the findings, wherever they open. */
-const DISCOVERY_EDITORS = ["battery", "action", "consumers", "tariff"];
+const DISCOVERY_EDITORS = ["action", "battery"];
 /** Tabs that show climate devices, their names or who heads home. */
 const CLIMATE_TABS: Tab[] = ["devices", "household", "overview", "review"];
 
@@ -570,7 +568,25 @@ export class EnergyJoePanel extends LitElement {
       untested.length === steerable.length
         ? t("mode.none_tested")
         : t("mode.untested", { names: untested.map((b) => b.name).join(", ") });
-    return html`<div class="note warn readiness"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${text}</span></div>`;
+    const to: Route = { tab: "devices", section: "battery" };
+    const follow = onLink(to);
+    return html`<div class="note warn readiness">
+      <ha-icon icon="mdi:alert-outline"></ha-icon>
+      <div>
+        <span>${text}</span>
+        <a
+          class="mini-btn go"
+          href=${href(this.base, to)}
+          @click=${(ev: MouseEvent) => {
+            follow(ev);
+            if (ev.defaultPrevented) {
+              this.modeDialog = false;
+            }
+          }}
+          >${t("mode.to_batteries")}</a
+        >
+      </div>
+    </div>`;
   }
 
   private renderEditor(t: Translate): TemplateResult {
@@ -584,7 +600,9 @@ export class EnergyJoePanel extends LitElement {
     let wide = false;
     switch (editor?.editor) {
       case "battery":
+        // The first setup only; afterwards a battery has its page under Geräte › Speicher.
         label = t("edit.battery.label");
+        wide = true;
         content = html`<joe-battery-editor
           .hass=${this.hass}
           .t=${t}
@@ -594,15 +612,6 @@ export class EnergyJoePanel extends LitElement {
           .floor=${this.joe?.floors?.[editor.id ?? ""]}
           batteryId=${editor.id ?? ""}
         ></joe-battery-editor>`;
-        break;
-      case "tariff":
-        label = t("edit.tariff.label");
-        content = html`<joe-tariff-editor
-          .hass=${this.hass}
-          .t=${t}
-          .config=${config}
-          .discovery=${this.discovery}
-        ></joe-tariff-editor>`;
         break;
       case "action":
         label = t("action.label");
@@ -617,27 +626,17 @@ export class EnergyJoePanel extends LitElement {
           actionId=${editor.id ?? ""}
           section=${editor.focus ?? ""}
           consumer=${editor.consumer ?? ""}
+          .prefix=${this.base}
         ></joe-action-editor>`;
         break;
       case "consumers":
         label = t("edit.consumers.label");
         wide = true;
         content = html`<div class="sheet-title">${displayTitle(t("edit.consumers.title"))}</div>
-          <joe-consumers .hass=${this.hass} .t=${t} .config=${config}></joe-consumers>
+          <joe-consumer-list .hass=${this.hass} .t=${t} .config=${config}></joe-consumer-list>
           <div class="actions">
             <button type="button" class="btn btn-secondary" data-notip @click=${close}>${t("mode.close")}</button>
           </div>`;
-        break;
-      case "week":
-        label = t("week.label");
-        wide = true;
-        content = html`<joe-week-editor
-          .hass=${this.hass}
-          .t=${t}
-          .config=${config}
-          .status=${this.joe?.climate}
-          .entityId=${editor.id ?? ""}
-        ></joe-week-editor>`;
         break;
     }
     // A link inside an editor leaves it for another page.
@@ -739,8 +738,11 @@ export class EnergyJoePanel extends LitElement {
     this.jumped = true;
     history[opts.replace ? "replaceState" : "pushState"](opts.sheet ? { joeSheet: true } : null, "", url);
     window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: Boolean(opts.replace) } }));
-    // An address with an id (device, day, anchor) scrolls itself; sheets keep the page where it is.
-    if (!opts.sheet && !parse(target).route.id) {
+    // An address with an id (day, anchor) scrolls itself, a device page starts at the top;
+    // sheets keep the page where it is.
+    const r = parse(target).route;
+    const device = r.tab === "devices" && r.section !== "grid" && r.section !== "add" && !r.sub;
+    if (!opts.sheet && (!r.id || device)) {
       this.scrollTop = 0;
     }
   }
@@ -1000,6 +1002,12 @@ export class EnergyJoePanel extends LitElement {
       }
       .readiness {
         margin-top: 14px;
+      }
+      .readiness .mini-btn {
+        display: flex;
+        width: fit-content;
+        margin-top: 10px;
+        text-decoration: none;
       }
       .mode .knob {
         width: 44px;

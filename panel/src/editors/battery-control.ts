@@ -57,6 +57,31 @@ export function methods(value: Pick<ControlValue, "controls" | "mode_options">):
   return { charge, hold };
 }
 
+/** The control fields of a battery (what "Regler einrichten" changes). */
+export function controlValue(battery: BatteryConfig): ControlValue {
+  return {
+    adapter: battery.adapter,
+    controls: structuredClone(battery.controls),
+    mode_options: structuredClone(battery.mode_options),
+    steps: structuredClone(battery.steps),
+  };
+}
+
+/**
+ * The fields to save for a control value: a known profile brings the switches
+ * it needs first ("prepare") and its service steps; other ways none.
+ */
+export function withPrepare(
+  battery: BatteryConfig | undefined,
+  value: ControlValue,
+  found: BatteryFinding | undefined,
+): ControlValue & { prepare: ControlStep[] } {
+  const profile = !["none", "generic", "steps"].includes(value.adapter);
+  const prepare = profile ? (battery?.adapter === value.adapter ? battery.prepare : (found?.prepare ?? [])) : [];
+  const steps = profile && !Object.keys(value.steps).length ? (found?.steps ?? value.steps) : value.steps;
+  return { ...value, steps, prepare: prepare ?? [] };
+}
+
 /** How Joe steers one battery: watch only, a known profile, assigned levers or own steps. */
 export class JoeBatteryControl extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;

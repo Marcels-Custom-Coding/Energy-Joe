@@ -7,7 +7,7 @@ import type { HomeAssistant } from "../types";
 import { dayText } from "./look-back";
 import { tip } from "./tip";
 
-interface BatteryAutomation {
+export interface BatteryAutomation {
   entity_id: string;
   name: string;
   on: boolean;
@@ -16,10 +16,26 @@ interface BatteryAutomation {
   switched_off: { at: string; reason: string } | null;
 }
 
+/** The automations that write to Joe's batteries (and the ones he switched off). */
+export async function loadBatteryAutomations(hass: HomeAssistant | undefined): Promise<BatteryAutomation[]> {
+  try {
+    return (await hass?.callWS<BatteryAutomation[]>({ type: "energy_joe/automations" })) ?? [];
+  } catch {
+    return [];
+  }
+}
+
+/** The automations that write to one battery (Speicherseite › Störenfriede). */
+export function automationsOf(items: BatteryAutomation[], batteryId: string): BatteryAutomation[] {
+  return items.filter((item) => item.writes.some((w) => w.battery_id === batteryId));
+}
+
 /**
  * Automations that write to the batteries Joe steers: they can overwrite his
  * values, so they are listed with a button to switch them all off – and the
  * ones Joe switched off back on, with when and why.
+ * With `batteryId` only the ones of that battery are shown and switched;
+ * `bare` leaves out the card and its head (a device page section has both).
  */
 export class JoeBatteryAutomations extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
@@ -29,8 +45,18 @@ export class JoeBatteryAutomations extends LitElement {
   /** Joe's mode and which batteries he may steer: only then do the automations get in the way. */
   @property() mode = "";
   @property({ attribute: false }) ready: Record<string, string> = {};
+  /** Only the automations of this battery (shown and switched). */
+  @property() batteryId = "";
+  /** Without the card and its head. */
+  @property({ type: Boolean }) bare = false;
+  /**
+   * The list, when the page loads it itself (to know whether there is any);
+   * otherwise the element looks itself. After switching it fires
+   * `joe-automations` with the new list.
+   */
+  @property({ attribute: false }) items: BatteryAutomation[] | null = null;
 
-  @state() private items: BatteryAutomation[] = [];
+  @state() private loaded: BatteryAutomation[] = [];
   @state() private busy = false;
   @state() private failed = false;
 
@@ -40,6 +66,9 @@ export class JoeBatteryAutomations extends LitElement {
       :host {
         display: block;
         margin-top: 12px;
+      }
+      :host([bare]) {
+        margin-top: 0;
       }
       .card {
         padding: 18px 20px;
@@ -101,17 +130,19 @@ export class JoeBatteryAutomations extends LitElement {
   ];
 
   protected willUpdate(changed: PropertyValues<this>): void {
-    if (changed.has("batteries") && this.hass) {
+    if (changed.has("batteries") && this.hass && this.items === null) {
       void this.load();
     }
   }
 
   private async load(): Promise<void> {
-    try {
-      this.items = (await this.hass?.callWS<BatteryAutomation[]>({ type: "energy_joe/automations" })) ?? [];
-    } catch {
-      this.items = [];
-    }
+    this.loaded = await loadBatteryAutomations(this.hass);
+  }
+
+  /** All automations as last seen, or only the battery's. */
+  private get shown(): BatteryAutomation[] {
+    const all = this.items ?? this.loaded;
+    return this.batteryId ? automationsOf(all, this.batteryId) : all;
   }
 
   /** On or off as Home Assistant shows it right now (the list is from the last look). */
@@ -122,23 +153,23 @@ export class JoeBatteryAutomations extends LitElement {
 
   protected render() {
     const t = this.t;
-    if (!t || !this.items.length) {
+    const items = this.shown;
+    if (!t || !items.length) {
       return nothing;
     }
-    const on = this.items.filter((item) => this.on(item));
-    const mine = this.items.filter((item) => item.switched_off && !this.on(item));
+    const on = items.filter((item) => this.on(item));
+    const mine = items.filter((item) => item.switched_off && !this.on(item));
     // They only get in the way where Joe may steer: a mode that steers and a tested battery.
     const steers =
       (this.mode === "advisory" || this.mode === "live") &&
-      on.some((item) => item.writes.some((w) => this.ready[w.battery_id] === "ready"));
-    return html`<section class="card" data-tipped>
-      <div class="head">
-        <div class="eyebrow"><ha-icon icon="mdi:robot-outline"></ha-icon>${t("automations.title")}</div>
-        ${tip(t, "battery_automations")}
-      </div>
-      <p class="now">${t(!on.length ? "automations.lead_off" : steers ? "automations.lead" : "automations.lead_idle")}</p>
+      on.some((item) =>
+        item.writes.some((w) => (!this.batteryId || w.battery_id === this.batteryId) && this.ready[w.battery_id] === "ready"),
+      );
+    const body = html`<p class="now">
+        ${t(!on.length ? "automations.lead_off" : steers ? "automations.lead" : "automations.lead_idle")}
+      </p>
       <ul>
-        ${this.items.map((item) => {
+        ${items.map((item) => {
           const active = this.on(item);
           const batteries = [...new Set(item.writes.map((w) => w.battery))].join(", ");
           return html`<li>
@@ -173,19 +204,39 @@ export class JoeBatteryAutomations extends LitElement {
             </button>`
           : nothing}
       </div>
-      ${this.failed ? html`<p class="bad">${t("automations.failed")}</p>` : nothing}
+      ${this.failed ? html`<p class="bad">${t("automations.failed")}</p>` : nothing}`;
+    if (this.bare) {
+      return body;
+    }
+    return html`<section class="card" data-tipped>
+      <div class="head">
+        <div class="eyebrow"><ha-icon icon="mdi:robot-outline"></ha-icon>${t("automations.title")}</div>
+        ${tip(t, "battery_automations")}
+      </div>
+      ${body}
     </section>`;
   }
 
   private async switch(on: boolean): Promise<void> {
     this.busy = true;
     this.failed = false;
+    // With a battery: only its automations (the backend switches what it is given).
+    const entityIds = this.batteryId
+      ? this.shown.filter((item) => (on ? item.switched_off && !this.on(item) : this.on(item))).map((item) => item.entity_id)
+      : undefined;
     try {
       const answer = await this.hass?.callWS<{ failed: string[]; automations: BatteryAutomation[] }>({
         type: "energy_joe/automations/switch",
         on,
+        ...(entityIds ? { entity_ids: entityIds } : {}),
       });
-      this.items = answer?.automations ?? this.items;
+      if (answer?.automations) {
+        this.loaded = answer.automations;
+        if (this.items !== null) {
+          this.items = answer.automations;
+        }
+        this.dispatchEvent(new CustomEvent("joe-automations", { detail: answer.automations }));
+      }
       this.failed = Boolean(answer?.failed.length);
     } catch {
       this.failed = true;

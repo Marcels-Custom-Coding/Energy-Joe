@@ -1,7 +1,6 @@
 import { LitElement, css, html, nothing, type PropertyValues, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
 import { sourceChip } from "../components/bits";
-import "../components/review";
 import "../components/sheet";
 import { tip } from "../components/tip";
 import { saveConfig, sourceOf } from "../config";
@@ -14,9 +13,6 @@ import type { Check, Discovery, HomeAssistant, JoeInfo, JoeMode, JoeState, Rules
 import "./questions";
 
 const SELECTABLE: JoeMode[] = ["simulation", "advisory", "live", "off"];
-
-/** Rows of "Was Joe nutzt" that live in Haushalt now. */
-const OMIT = ["weather", "holiday", "people"];
 
 const ANSWERS: { key: "heating" | "hot_water" | "ev"; tip: TipName }[] = [
   { key: "heating", tip: "q_heating" },
@@ -40,7 +36,7 @@ const ANSWER_LABELS: Record<string, Record<string, TranslationKey>> = {
   ev: { yes: "q.ev.yes", no: "q.ev.no" },
 };
 
-/** Settings: how Joe works, what he uses, the rules for pros, upkeep and version info. */
+/** Settings: how Joe works, the rules for pros, upkeep and version info. */
 export class JoeSettings extends LitElement {
   @property({ attribute: false }) t?: Translate;
   @property({ attribute: false }) hass?: HomeAssistant;
@@ -63,8 +59,6 @@ export class JoeSettings extends LitElement {
   private anchor?: string;
   /** The address last revealed, so a new state does not scroll again. */
   private revealed?: string;
-  private anchorSince = 0;
-  private anchorRetry?: number;
 
   static styles = [
     shared,
@@ -213,7 +207,6 @@ export class JoeSettings extends LitElement {
       return;
     }
     this.revealed = path;
-    this.anchorSince = Date.now();
     const { section, id } = this.route ?? {};
     if (section === "rules") {
       // The rules live in Für Profis: open it for the address.
@@ -232,15 +225,7 @@ export class JoeSettings extends LitElement {
     if (!anchor) {
       return;
     }
-    // "Was Joe nutzt" above grows with the discovery: wait for it a moment, then scroll anyway.
-    if (!this.discovery && Date.now() - this.anchorSince < 3000) {
-      this.anchorRetry ??= window.setTimeout(() => {
-        this.anchorRetry = undefined;
-        this.requestUpdate();
-      }, 3000);
-      return;
-    }
-    const children = [...this.renderRoot.querySelectorAll<LitElement>("joe-review, joe-choice")];
+    const children = [...this.renderRoot.querySelectorAll<LitElement>("joe-choice")];
     await Promise.all(children.map((child) => child.updateComplete));
     // The sticky header's height (the scroll offset) is measured after the first paint.
     for (let i = 0; i < 10 && (i === 0 || !getComputedStyle(this).getPropertyValue("--joe-head-h")); i++) {
@@ -296,20 +281,6 @@ export class JoeSettings extends LitElement {
         </section>
 
         ${this.renderNotify(t)}
-
-        <section class="group plain">
-          <h2>${t("settings.uses")}</h2>
-          <p class="intro">${t("settings.uses.intro")}</p>
-          <joe-review
-            .hass=${this.hass}
-            .t=${t}
-            .config=${config}
-            .discovery=${this.discovery}
-            .checks=${this.checks}
-            .omit=${OMIT}
-            context="settings"
-          ></joe-review>
-        </section>
 
         <section class="group">
           <h2>${t("settings.answers")}</h2>
@@ -453,12 +424,6 @@ export class JoeSettings extends LitElement {
       ?.callWS<{ service: string; name: string }[]>({ type: "energy_joe/notify/targets" })
       .then((targets) => (this.notifyTargets = targets))
       .catch(() => undefined);
-  }
-
-  disconnectedCallback(): void {
-    super.disconnectedCallback();
-    window.clearTimeout(this.anchorRetry);
-    this.anchorRetry = undefined;
   }
 
   private renderNotify(t: Translate): TemplateResult {

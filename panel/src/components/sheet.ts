@@ -73,6 +73,15 @@ export class JoeSheet extends LitElement {
       width: 18px;
       height: 18px;
     }
+    /* A finger needs 44 px; the corner keeps its place. */
+    @media (pointer: coarse) {
+      .close {
+        top: 8px;
+        right: 8px;
+        width: 44px;
+        height: 44px;
+      }
+    }
     @keyframes fade {
       from {
         opacity: 0;

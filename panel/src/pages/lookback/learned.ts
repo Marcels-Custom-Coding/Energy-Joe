@@ -8,7 +8,6 @@ import { mirrorRow } from "../../components/mirror";
 import "../../components/pose";
 import "../../components/sheet";
 import { tip } from "../../components/tip";
-import { saveConfig } from "../../config";
 import { define } from "../../define";
 import { entityName, formatNumber } from "../../entities";
 import type { Translate } from "../../i18n";
@@ -226,15 +225,6 @@ export class JoeLookbackLearned extends LitElement {
         display: flex;
         align-items: center;
         gap: 6px;
-      }
-      .toggle-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        margin-top: 12px;
-        padding-top: 12px;
-        border-top: 1px solid var(--joe-line);
       }
       .danger p {
         margin: 10px 0 0;
@@ -768,17 +758,11 @@ export class JoeLookbackLearned extends LitElement {
                 };
               }),
             )}
-            <div class="toggle-row">
-              <span class="with-tip"><span id="combine-label">${t("learn.sources.combine")}</span>${tip(t, "learn_combine")}</span>
-              <button
-                type="button"
-                class="switch"
-                role="switch"
-                aria-checked=${String(forecast.combine)}
-                aria-labelledby="combine-label"
-                @click=${() => saveConfig(this, { forecast: { combine: !forecast.combine } })}
-              ></button>
-            </div>`
+            ${mirrorRow(t, this.prefix, {
+              label: t("learn.sources.combine"),
+              value: t(forecast.combine ? "rule.on" : "rule.off"),
+              to: { tab: "devices", section: "grid", id: "solar" },
+            })}`
         : html`<p class="say">${t("learn.sources.single")}</p>`}
     </section>`;
   }

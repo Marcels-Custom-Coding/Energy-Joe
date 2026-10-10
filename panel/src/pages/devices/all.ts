@@ -1,90 +1,43 @@
-import { LitElement, css, html, nothing, type TemplateResult } from "lit";
-import { property, state } from "lit/decorators.js";
+import { css, html, nothing, type TemplateResult } from "lit";
+import { state } from "lit/decorators.js";
 import { displayTitle, swoosh } from "../../components/bits";
-import { dayText } from "../../components/look-back";
-import { timeOf } from "../../components/plan-text";
-import "../../components/battery-automations";
-import "../../components/car-charge";
-import "../../components/car-need";
+import "../../components/control-status";
+import { deviceCard, entryCard } from "../../components/device-card";
 import "../../components/pose";
-import "../../components/sheet";
 import { tip } from "../../components/tip";
-import { saveConfig } from "../../config";
 import { define } from "../../define";
-import { entityName, formatNumber, measurementKw, numberState } from "../../entities";
+import {
+  addRoute,
+  GROUP_ICONS,
+  GROUPS,
+  groupProblem,
+  groupsPresent,
+  newFindings,
+  type DeviceEntry,
+  type Group,
+  type NewFinding,
+} from "../../device-model";
 import type { Translate } from "../../i18n";
-import { PANEL, href, onLink, type Route } from "../../router";
+import { href, navigate, onLink, type Route } from "../../router";
 import { shared } from "../../styles/shared";
-import type {
-  ActionConfig,
-  BatteryConfig,
-  ClimateFound,
-  ControlView,
-  Discovery,
-  HomeAssistant,
-  JoeInfo,
-  JoeState,
-  PlanAction,
-  TestResult,
-  TestStep,
-} from "../../types";
+import { addLink, frameStyles } from "./device-frame";
+import { ignoreFinding, useBattery } from "./device-actions";
+import { DeviceSection } from "./section-base";
 
-const STEPS = ["hold", "charge", "release"] as const;
+const FOUND_ICONS: Record<NewFinding["kind"], string> = {
+  battery: "mdi:home-battery-outline",
+  wallbox: "mdi:ev-station",
+  car: "mdi:car-electric",
+};
 
-/** Geräte › Alle: what Joe does with his devices now, the test run, night actions and Heizung & Klima in short. */
-export class JoeDevicesAll extends LitElement {
-  @property({ attribute: false }) hass?: HomeAssistant;
-  @property({ attribute: false }) t?: Translate;
-  @property({ attribute: false }) state?: JoeState;
-  @property({ attribute: false }) route?: Route;
-  @property({ attribute: false }) prefix = PANEL;
-  @property({ attribute: false }) discovery?: Discovery;
-  @property({ attribute: false }) info?: JoeInfo;
-  @property({ attribute: false }) climateFound?: ClimateFound;
-
-  @state() private confirm?: BatteryConfig;
-  @state() private notice = "";
+/** Geräte › Alle: what Joe does now, every device by kind, what is new and what he cannot place. */
+export class JoeDevicesAll extends DeviceSection {
+  @state() private busy = "";
 
   static styles = [
     shared,
+    frameStyles,
     css`
-      .car-need {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-top: 10px;
-      }
-      .car-need span {
-        flex: 1;
-        min-width: 0;
-        display: grid;
-      }
-      .car-need small {
-        color: var(--joe-muted);
-        font-size: 12.5px;
-      }
-      .car-cal {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-top: 10px;
-        padding: 8px 10px;
-        border-radius: 10px;
-        background: var(--joe-surface-2);
-      }
-      .car-cal .grow {
-        flex: 1;
-        min-width: 0;
-        display: grid;
-      }
-      .car-cal b {
-        font-weight: 600;
-        overflow-wrap: anywhere;
-      }
-      .car-cal small {
-        color: var(--joe-muted);
-        font-size: 12.5px;
-      }
       :host {
         display: block;
       }
@@ -106,158 +59,80 @@ export class JoeDevicesAll extends LitElement {
       .display {
         font-size: clamp(30px, 4vw, 44px);
       }
-      .card {
-        padding: 18px 20px;
-        margin-top: 14px;
-      }
-      .head {
+      .lead-row {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         gap: 8px;
-        flex-wrap: wrap;
       }
-      .head .eyebrow {
+      .lead-row .lead {
         flex: 1;
         min-width: 0;
       }
-      .status-text {
-        margin: 10px 0 0;
-        font-size: 17px;
-        font-weight: 600;
-      }
-      .status .actions {
+      .toolbar {
         margin-top: 14px;
       }
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
+      .found {
+        margin-top: 14px;
+        padding: 16px 18px;
       }
-      .grid .card {
-        margin-top: 0;
-      }
-      .figures {
-        display: flex;
-        align-items: baseline;
-        flex-wrap: wrap;
-        gap: 4px 16px;
-        margin-top: 10px;
-      }
-      .figures b {
-        font-family: var(--joe-display);
-        font-style: italic;
-        font-weight: 800;
-        font-size: 40px;
-        line-height: 1;
-        font-variant-numeric: tabular-nums;
-      }
-      .figures b small {
-        font-size: 0.5em;
-        margin-left: 2px;
-      }
-      .figures span {
-        color: var(--joe-ink-2);
-        font-variant-numeric: tabular-nums;
-      }
-      .now {
-        margin: 8px 0 0;
-        font-weight: 600;
-      }
-      .note {
-        margin-top: 10px;
-      }
-      .test {
+      .found-head {
         display: flex;
         align-items: center;
         gap: 8px;
-        flex-wrap: wrap;
-        margin-top: 14px;
-        padding-top: 12px;
-        border-top: 1px solid var(--joe-line);
       }
-      .test .chip {
-        margin-right: auto;
+      .found-head .eyebrow {
+        flex: 1;
+        min-width: 0;
       }
-      .steps {
+      .found-lead {
+        margin: 8px 0 0;
+        color: var(--joe-ink-2);
+      }
+      .found ul {
         list-style: none;
         margin: 10px 0 0;
         padding: 0;
         display: grid;
-        gap: 6px;
+        gap: 4px;
       }
-      .steps li {
-        display: grid;
-        grid-template-columns: 22px auto 1fr;
-        gap: 8px;
-        align-items: start;
-        font-size: 14px;
-      }
-      .steps li ha-icon {
-        --mdc-icon-size: 18px;
-        margin-top: 1px;
-      }
-      .steps li.ok ha-icon {
-        color: var(--joe-good);
-      }
-      .steps li.bad ha-icon {
-        color: var(--joe-crit);
-      }
-      .steps li.wait ha-icon {
-        color: var(--joe-muted);
-      }
-      .steps small {
-        color: var(--joe-ink-2);
-      }
-      .setup {
-        margin-top: 12px;
-      }
-      .toggle-label {
-        margin-right: auto;
-        font-weight: 600;
-      }
-      .card.add .actions {
-        margin-top: 12px;
-      }
-      a.climate-link {
+      .found li {
         display: flex;
         align-items: center;
-        gap: 12px;
-        min-height: 44px;
-        color: inherit;
-        text-decoration: none;
-        transition: box-shadow 0.12s;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+        padding: 8px 0;
+        border-top: 1px solid var(--joe-line);
       }
-      a.climate-link:hover {
-        box-shadow: inset 0 0 0 1.5px var(--joe-amber);
+      .found li:first-child {
+        border-top: 0;
       }
-      a.climate-link > span {
-        flex: 1;
+      .found .what {
+        flex: 1 1 180px;
         min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .found .what span {
         display: grid;
+        min-width: 0;
       }
-      a.climate-link b {
+      .found b {
         font-weight: 600;
+        overflow-wrap: anywhere;
       }
-      a.climate-link small {
+      .found small {
         color: var(--joe-muted);
         font-size: 13px;
       }
-      a.climate-link .chevron {
-        color: var(--joe-muted);
+      .found .row-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
       }
-      .empty {
-        margin: 10px 0 0;
+      .unassigned-text {
+        margin: 0 0 10px;
         color: var(--joe-ink-2);
-      }
-      .sheet-text {
-        margin: 12px 0 0;
-        color: var(--joe-ink-2);
-        line-height: 1.55;
-      }
-      @media (max-width: 900px) {
-        .grid {
-          grid-template-columns: 1fr;
-        }
       }
       @media (max-width: 760px) {
         .intro {
@@ -279,509 +154,115 @@ export class JoeDevicesAll extends LitElement {
     if (!t || !joe) {
       return nothing;
     }
-    const control = joe.control;
+    const devices = this.devices;
+    const groups = groupsPresent(devices);
+    const unassigned = devices.filter((d) => d.unassigned);
     return html`<div class="wrap">
-        <div class="intro">
-          <div>
-            ${displayTitle(t("devices.page.title"))} ${swoosh}
+      <div class="intro">
+        <div>
+          ${displayTitle(t("devices.page.title"))} ${swoosh}
+          <div class="lead-row" data-tipped>
             <p class="lead">${t("devices.lead")}</p>
+            ${tip(t, "ha_open")}
           </div>
-          <joe-pose name="switch"></joe-pose>
         </div>
-        ${control ? this.renderStatus(t, joe, control) : nothing}
-        <div class="group-label">${t("devices.batteries")}</div>
-        ${joe.config.batteries.length
-          ? html`<div class="grid">${joe.config.batteries.map((battery) => this.renderBattery(t, battery, control))}</div>
-              <joe-battery-automations
-                .hass=${this.hass}
-                .t=${t}
-                batteries=${JSON.stringify(joe.config.batteries)}
-                mode=${joe.mode}
-                .ready=${control?.ready ?? {}}
-              ></joe-battery-automations>`
-          : html`<p class="empty">${t("devices.batteries.none")}</p>`}
-        <div class="group-label">${t("devices.actions")}</div>
-        <div class="grid">
-          ${joe.config.actions.map((action) => this.renderAction(t, joe, action))} ${this.renderLonelyCars(t, joe)}
-          ${this.renderAddAction(t)}
-        </div>
-        ${this.renderClimate(t, joe)}
+        <joe-pose name="switch"></joe-pose>
       </div>
-      ${this.confirm ? this.renderConfirm(t, this.confirm) : nothing}`;
-  }
-
-  /** Heizung & Klima in one line, with the way to its own section. */
-  private renderClimate(t: Translate, joe: JoeState): TemplateResult | typeof nothing {
-    const climate = joe.config.climate;
-    const rooms = climate?.rooms ?? {};
-    const devices = this.climateFound?.devices.map((d) => d.entity_id) ?? Object.keys(rooms);
-    if (!devices.length && !climate?.enabled) {
-      return nothing;
-    }
-    const steered = devices.filter((entity) => rooms[entity]?.enabled).length;
-    const [one, other] = t("word.device").split("|");
-    const to: Route = { tab: "devices", section: "climate" };
-    return html`<div class="group-label">${t("climate.title")}</div>
-      <a class="card climate-link" href=${href(this.prefix, to)} @click=${onLink(to)}>
-        <ha-icon icon="mdi:thermostat"></ha-icon>
-        <span>
-          <b>${t("devices.climate.summary", {
-            devices: `${formatNumber(t.lang, devices.length, 0)} ${devices.length === 1 ? one : other}`,
-            steered: formatNumber(t.lang, steered, 0),
-          })}</b>
-          <small>${t(climate?.enabled ? "devices.climate.on" : "devices.climate.off")}</small>
-        </span>
-        <ha-icon class="chevron" icon="mdi:chevron-right"></ha-icon>
-      </a>`;
-  }
-
-  private renderStatus(t: Translate, joe: JoeState, control: ControlView): TemplateResult {
-    const plan = joe.plan;
-    const reason = control.reason;
-    const text =
-      reason === "waiting" && plan?.window
-        ? t("devices.status.waiting", { time: timeOf(plan.window.start) })
-        : reason === "day"
-          ? t("devices.status.day", { time: plan?.day ? timeOf(plan.day.defer_until) : "–" })
-          : t(`devices.status.${reason}`);
-    const pill =
-      joe.mode === "simulation"
-        ? html`<span class="pill-sim">${t("mode.simulation")}</span>`
-        : html`<span class="chip ${joe.mode === "live" ? "ok" : joe.mode === "advisory" ? "learned" : ""}"
-            >${t(`mode.${joe.mode}`)}</span
-          >`;
-    const canRelease = control.steering || control.pending;
-    return html`<section class="card status" data-tipped>
-      <div class="head">
-        <div class="eyebrow"><ha-icon icon="mdi:pulse"></ha-icon>${t("devices.now")}</div>
-        ${pill} ${tip(t, "plan_steer")}
-      </div>
-      <p class="status-text">${text}</p>
-      ${control.pending
-        ? html`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${t("devices.pending")}</span></div>`
-        : nothing}
-      ${canRelease
-        ? html`<div class="actions">
-            <button type="button" class="btn btn-danger" @click=${this.release}>
-              <ha-icon icon="mdi:hand-back-left-outline"></ha-icon>${t("devices.release")}
-            </button>
-            ${tip(t, "devices_release")}
-          </div>`
-        : nothing}
-      ${this.notice ? html`<div class="note" role="status"><ha-icon icon="mdi:check"></ha-icon>${this.notice}</div>` : nothing}
-    </section>`;
-  }
-
-  private renderBattery(t: Translate, battery: BatteryConfig, control: ControlView | undefined): TemplateResult {
-    const hass = this.hass!;
-    const soc = numberState(hass, battery.soc_entity);
-    const power = measurementKw(hass, battery.power);
-    const ready = control?.ready[battery.id] ?? "not_controllable";
-    const now = control?.batteries[battery.id];
-    const testing = control?.testing?.battery === battery.id ? control.testing : null;
-    const test = control?.tests[battery.id];
-    const profile =
-      battery.adapter === "generic"
-        ? t("devices.battery.generic")
-        : battery.adapter === "steps"
-          ? t("devices.battery.steps")
-          : battery.adapter !== "none"
-            ? t("devices.battery.profile", { name: this.info?.profiles?.[battery.adapter] ?? battery.adapter })
-            : t("devices.battery.watch");
-    const action = now?.action
-      ? t(`devices.action.${now.action}`, {
-          target: formatNumber(t.lang, now.target ?? 0, 0),
-          floor: formatNumber(t.lang, now.floor ?? 0, 0),
-          until: now.until ? timeOf(now.until) : "",
-        })
-      : t("devices.action.idle");
-    const problem = now?.problem ?? (ready !== "ready" && ready !== "not_controllable" ? ready : null);
-    return html`<section class="card battery" data-tipped>
-      <div class="head">
-        <div class="eyebrow"><ha-icon icon="mdi:home-battery-outline"></ha-icon>${battery.name}</div>
-        <span class="chip ${battery.adapter !== "none" ? "read" : ""}">${profile}</span>
-      </div>
-      <div class="figures">
-        <b>${soc == null ? "–" : formatNumber(t.lang, soc, 0)}<small>%</small></b>
-        ${power == null
-          ? nothing
-          : html`<span
-              >${Math.abs(power) < 0.05
-                ? t("devices.power.idle")
-                : t(power > 0 ? "devices.power.charge" : "devices.power.discharge", {
-                    value: formatNumber(t.lang, Math.abs(power), 2),
-                  })}</span
-            >`}
-      </div>
-      <p class="now">${battery.adapter === "none" ? t("devices.action.watch") : action}</p>
-      ${problem && battery.adapter !== "none"
-        ? html`<div class="note warn">
-            <ha-icon icon="mdi:alert-outline"></ha-icon
-            ><span>${t.optional(`devices.problem.${problem === "outdated" ? "not_tested" : problem}`) ?? problem}</span>
-          </div>`
-        : nothing}
-      ${battery.adapter === "none" && this.hasSuggestion(battery)
-        ? html`<div class="note"><ha-icon icon="mdi:lightbulb-on-outline"></ha-icon><span>${t("devices.suggested")}</span></div>`
-        : nothing}
-      ${battery.adapter !== "none" ? this.renderTest(t, battery, ready, test, testing) : nothing}
-      <div class="setup">
-        <button type="button" class="mini-btn" @click=${() => this.edit(battery)}>
-          <ha-icon icon="mdi:tune-variant"></ha-icon>${t("devices.setup")}
-        </button>
-        ${tip(t, "devices_setup")}
-      </div>
-    </section>`;
-  }
-
-  private renderAction(t: Translate, joe: JoeState, action: ActionConfig): TemplateResult {
-    const plan = joe.plan;
-    const planned = plan?.actions?.find((a) => a.id === action.id);
-    const live = joe.control?.actions?.[action.id];
-    const night = plan?.window?.start;
-    const tonight = Boolean(night) && joe.control?.tonight?.[action.id] === night;
-    const icon = action.kind === "target" ? "mdi:water-boiler" : /ev|car|auto|wallbox/i.test(action.id + action.name) ? "mdi:car-electric" : "mdi:flash-outline";
-    return html`<section class="card action" data-tipped>
-      <div class="head">
-        <div class="eyebrow"><ha-icon icon=${icon}></ha-icon>${action.name}</div>
-        ${action.enabled ? nothing : html`<span class="chip">${t("devices.action.off")}</span>`}
-      </div>
-      <p class="now">${this.actionText(t, joe, action, planned, live)}</p>
-      ${action.kind === "switch" && this.isCar(action)
-        ? html`<div class="car-need" data-tipped>
-              <button
-                type="button"
-                class="switch"
-                role="switch"
-                aria-checked=${String(Boolean(action.need?.enabled))}
-                aria-labelledby="need-${action.id}"
-                @click=${() => this.toggleNeed(action)}
-              ></button>
-              <span id="need-${action.id}"><b>${t("action.need")}</b><small>${t(action.need?.enabled ? "action.need.on" : "action.need.off")}</small></span>
-              ${tip(t, "a_need")}
+      <joe-control-status .t=${t} .hass=${this.hass} .state=${joe}></joe-control-status>
+      <div class="actions toolbar" data-tipped>${addLink(t, this.prefix)} ${tip(t, "devices_add")}</div>
+      ${this.renderFound(t)}
+      ${GROUPS.filter((g) => groups.includes(g)).map((group) => this.renderGroup(t, group, devices))}
+      ${unassigned.length
+        ? html`<div class="group-head">
+              <span class="group-label">${t("devices.unassigned")}</span><i class="dcard-dot" aria-hidden="true"></i>
             </div>
-            ${this.renderCarCalendar(t, joe, action)}`
+            <p class="unassigned-text">${t("devices.unassigned.text")}</p>
+            <div class="dcards">
+              ${unassigned.map((entry) => deviceCard(t, this.prefix, entryCard(t, this.hass, joe, entry)))}
+            </div>`
         : nothing}
-      ${planned?.need
-        ? html`<joe-car-need .hass=${this.hass} .t=${t} .action=${planned} .roundTrip=${action.need?.round_trip ?? true}></joe-car-need>`
-        : nothing}
-      ${action.kind === "switch" && (action.need?.soc_entity || action.need?.range_entity)
-        ? html`<joe-car-charge .hass=${this.hass} .t=${t} .state=${joe} .action=${action}></joe-car-charge>`
-        : html`<div class="test">
-            <span class="toggle-label" id="tonight-${action.id}">${t("devices.action.tonight")}</span>
-            <button
-              type="button"
-              class="switch"
-              role="switch"
-              aria-checked=${String(tonight)}
-              aria-labelledby="tonight-${action.id}"
-              ?disabled=${!night || !action.enabled}
-              @click=${() => this.toggleTonight(action.id, !tonight)}
-            ></button>
-            ${tip(t, "action_tonight")}
-          </div>`}
-      <div class="setup">
-        <button type="button" class="mini-btn" @click=${() => this.editAction(action.id)}>
-          <ha-icon icon="mdi:pencil-outline"></ha-icon>${t("devices.action.edit")}
-        </button>
-      </div>
-    </section>`;
-  }
-
-
-
-  private actionText(
-    t: Translate,
-    joe: JoeState,
-    action: ActionConfig,
-    planned: PlanAction | undefined,
-    live: ControlView["actions"][string] | undefined,
-  ): string {
-    const target = planned?.target != null ? formatNumber(t.lang, planned.target, 0) : "";
-    if (!action.enabled) {
-      return t("devices.action.disabled");
-    }
-    if (live?.reason === "boost") {
-      return t("devices.action.boost");
-    }
-    if (live?.on) {
-      return action.kind === "target"
-        ? t("devices.action.heating", { target, end: timeOf(live.end) })
-        : t("devices.action.running", { end: timeOf(live.end) });
-    }
-    if (live?.reason === "reached") {
-      // A car stops at a level (%) or range (km), hot water at a temperature.
-      const chosen = joe.control?.tonight_target?.[action.id];
-      if (action.kind === "switch" && chosen && chosen.night === joe.plan?.window?.start) {
-        return t("devices.action.reached_need", { target: formatNumber(t.lang, chosen.chosen, 0), unit: chosen.unit });
-      }
-      if (action.kind === "switch") {
-        return planned?.need && target
-          ? t("devices.action.reached_need", { target, unit: planned.need.target_unit === "km" ? "km" : "%" })
-          : t("devices.action.reached_plain");
-      }
-      return t("devices.action.reached", { target });
-    }
-    if (!planned) {
-      return t("devices.action.no_plan");
-    }
-    const prefix = joe.mode === "simulation" ? t("devices.action.would") : "";
-    if (planned.run) {
-      const text =
-        action.kind === "target"
-          ? t("devices.action.plan_target", { start: timeOf(planned.start), target })
-          : t("devices.action.plan_run", { start: timeOf(planned.start), end: timeOf(planned.end) });
-      return `${prefix}${text}`;
-    }
-    const reason = planned.reasons[planned.reasons.length - 1] ?? "manual_only";
-    return t.optional(`devices.action.why.${reason}`, {
-      kwh: formatNumber(t.lang, joe.plan?.meta?.tomorrow_kwh ?? 0, 0),
-      temperature: formatNumber(t.lang, planned.temperature ?? 0, 0),
-    }) ?? reason;
-  }
-
-  /** Cars Joe knows as consumers (Energy dashboard) without a night action yet. */
-  private renderLonelyCars(t: Translate, joe: JoeState): TemplateResult[] {
-    const linked = new Set(joe.config.actions.map((a) => a.consumer_id).filter(Boolean));
-    return joe.config.consumers
-      .filter((c) => c.kind === "ev" && !linked.has(c.id))
-      .map(
-        (car) => html`<section class="card action" data-tipped>
-          <div class="head">
-            <div class="eyebrow"><ha-icon icon="mdi:car-electric"></ha-icon>${car.name}</div>
-            ${tip(t, "devices_lonely_car")}
-          </div>
-          <p class="now">${t("devices.car.lonely")}</p>
-          <div class="setup">
-            <button type="button" class="btn btn-primary" @click=${() => this.editAction(`new:ev`, "need", car.id)}>
-              ${t("devices.car.set_up")}
-            </button>
-          </div>
-        </section>`,
-      );
-  }
-
-  private renderAddAction(t: Translate): TemplateResult {
-    return html`<section class="card add" data-tipped>
-      <div class="head">
-        <div class="eyebrow"><ha-icon icon="mdi:plus-circle-outline"></ha-icon>${t("devices.action.add")}</div>
-        ${tip(t, "devices_actions")}
-      </div>
-      <p class="now">${t("devices.action.add.text")}</p>
-      <div class="actions">
-        ${(["ev", "hot_water", "custom"] as const).map(
-          (template) =>
-            html`<button type="button" class="mini-btn" @click=${() => this.editAction(`new:${template}`)}>
-              ${t(`action.template.${template}`)}
-            </button>`,
-        )}
-      </div>
-    </section>`;
-  }
-
-  private async toggleTonight(actionId: string, on: boolean): Promise<void> {
-    try {
-      await this.hass?.callWS({ type: "energy_joe/control/action_tonight", action_id: actionId, on });
-    } catch {
-      this.notice = this.t!("error.action");
-    }
-  }
-
-  /** Charging by need on or off right on the card; the first time, the car's sensors are chosen in the editor. */
-  private toggleNeed(action: ActionConfig): void {
-    const need = action.need;
-    if (need?.enabled) {
-      saveConfig(this, { actions: { [action.id]: { need: { ...need, enabled: false } } } });
-    } else if (need?.soc_entity || need?.range_entity) {
-      saveConfig(this, { actions: { [action.id]: { need: { ...need, enabled: true } } } });
-    } else {
-      // Nothing known about the car yet: the editor switches it on and fills in what Joe found.
-      this.editAction(action.id, "need");
-    }
-  }
-
-  private isCar(action: ActionConfig): boolean {
-    return Boolean(action.need?.enabled || action.need?.soc_entity || /ev|car|auto|wallbox/i.test(action.id + action.name));
-  }
-
-  private editAction(id: string, focus?: string, consumer?: string): void {
-    this.dispatchEvent(new CustomEvent("joe-edit", { detail: { editor: "action", id, focus, consumer }, bubbles: true, composed: true }));
-  }
-
-  /** A car's calendar on its card: which one, whether Joe read it lately; one click to change or connect. */
-  private renderCarCalendar(t: Translate, joe: JoeState, action: ActionConfig): TemplateResult {
-    const need = action.need;
-    const source = need?.enabled ? (need.source ?? "ha") : null;
-    let name = "";
-    let state: "ok" | "warn" | "none" = "none";
-    let when: string | null = null;
-    // Charging by need also reads the calendars of the persons chosen for the car.
-    const persons = need?.enabled
-      ? joe.config.persons.filter((p) => p.calendars.length && (need.persons == null || need.persons.includes(p.id)))
-      : [];
-    if (source === "ha" && (need?.calendars?.length || persons.length)) {
-      name = [
-        ...(need?.calendars ?? []).map((c) => entityName(this.hass!, c)),
-        ...(persons.length ? [t("devices.car.of_persons", { names: persons.map((p) => p.name).join(", ") })] : []),
-      ].join(" · ");
-      state = "ok";
-    } else if (source === "mailbox" && need?.mailbox?.address) {
-      const status = joe.mailbox?.[action.id];
-      name = need.mailbox.address;
-      state = status?.state === "ok" ? "ok" : "warn";
-      when = status?.checked ?? null;
-    } else if (source === "account" && need?.account?.address) {
-      const status = joe.accounts?.[action.id];
-      name = need.account.address;
-      state = status?.state === "ok" ? "ok" : "warn";
-      when = status?.checked ?? null;
-    }
-    return html`<div class="car-cal" data-tipped>
-      <ha-icon icon="mdi:calendar-month-outline"></ha-icon>
-      <span class="grow">
-        ${state === "none"
-          ? html`<b>${t("devices.car.no_calendar")}</b>`
-          : html`<b>${name}</b>
-              <small>
-                ${t(state === "ok" ? "devices.car.calendar_ok" : "devices.car.calendar_problem")}
-                ${when ? t("devices.car.checked", {
-                      when: new Date(when).toLocaleString(t.lang, { weekday: "short", hour: "2-digit", minute: "2-digit" }),
-                    }) : nothing}
-              </small>`}
-      </span>
-      <button type="button" class="mini-btn ${state === "none" ? "go" : ""}" @click=${() => this.editAction(action.id, "calendars")}>
-        ${t(state === "none" ? "devices.car.connect" : "devices.car.change")}
-      </button>
-      ${tip(t, "car_calendar_card")}
     </div>`;
   }
 
-  /** Joe found levers that may steer a battery he only watches. */
-  private hasSuggestion(battery: BatteryConfig): boolean {
-    const found = this.discovery?.batteries.find((b) => b.id === battery.id);
-    return Boolean(found?.suggested?.complete);
-  }
-
-  private renderTest(
-    t: Translate,
-    battery: BatteryConfig,
-    ready: string,
-    test: TestResult | undefined,
-    testing: ControlView["testing"],
-  ): TemplateResult {
-    const busy = Boolean(this.state?.control?.testing);
-    const steering = Boolean(this.state?.control?.steering);
-    const chip = testing
-      ? html`<span class="chip">${t("devices.test.running")}</span>`
-      : ready === "outdated"
-        ? html`<span class="chip warn">${t("devices.test.outdated")}</span>`
-        : test
-          ? html`<span class="chip ${test.ok ? "ok" : "warn"}"
-              >${t(test.ok ? "devices.test.ok" : "devices.test.failed", { day: dayText(t.lang, test.at, "short") })}</span
-            >`
-          : html`<span class="chip">${t("devices.test.none")}</span>`;
-    const steps = testing?.steps ?? test?.steps ?? [];
-    return html`<div class="test">
-        ${chip}
-        <button
-          type="button"
-          class="btn btn-secondary"
-          ?disabled=${busy || steering}
-          @click=${() => (this.confirm = battery)}
-        >
-          <ha-icon icon="mdi:play-circle-outline"></ha-icon>${t(test ? "devices.test.again" : "devices.test.start")}
-        </button>
-        ${tip(t, "devices_test")}
+  private renderGroup(t: Translate, group: Group, devices: DeviceEntry[]): TemplateResult | typeof nothing {
+    const list = devices.filter((d) => d.group === group && !d.unassigned);
+    if (!list.length) {
+      return nothing;
+    }
+    const to: Route = { tab: "devices", section: group };
+    return html`<div class="group-head">
+        <ha-icon icon=${GROUP_ICONS[group]}></ha-icon>
+        <span class="group-label">${t(`nav.devices.${group}`)}</span>
+        ${groupProblem(devices.filter((d) => !d.unassigned), group) ? html`<i class="dcard-dot" aria-hidden="true"></i>` : nothing}
+        <a class="mini-btn quiet group-go" href=${href(this.prefix, to)} @click=${onLink(to)}>${t("devices.group.go")}</a>
       </div>
-      ${testing || test ? this.renderSteps(t, steps, testing?.step ?? null, test) : nothing}`;
+      <div class="dcards">
+        ${list.map((entry) => deviceCard(t, this.prefix, entryCard(t, this.hass, this.state, entry)))}
+      </div>`;
   }
 
-  private renderSteps(t: Translate, done: TestStep[], running: string | null, test: TestResult | undefined): TemplateResult {
-    const byName = new Map(done.map((step) => [step.step, step]));
-    const problem =
-      !running && test?.problem
-        ? t.optional(`devices.test.problem.${test.problem}`, { missing: (test.missing ?? []).map((m) => t.optional(`role.${m}`) ?? m).join(", ") })
-        : null;
-    return html`<ul class="steps">
-      ${problem ? html`<li class="bad"><ha-icon icon="mdi:close-circle"></ha-icon><b>${t("devices.test.step.check")}</b><small>${problem}</small></li>` : nothing}
-      ${problem
-        ? nothing
-        : STEPS.map((name) => {
-            const step = byName.get(name);
-            const state = step ? (step.ok ? "ok" : "bad") : running === name ? "wait" : running ? "wait" : "wait";
-            const icon = step
-              ? step.ok
-                ? "mdi:check-circle"
-                : "mdi:close-circle"
-              : running === name
-                ? "mdi:progress-clock"
-                : "mdi:circle-outline";
-            return html`<li class=${state}>
-              <ha-icon icon=${icon}></ha-icon>
-              <b>${t(`devices.test.step.${name}`)}</b>
-              <small>${step ? this.stepText(t, step) : ""}</small>
-            </li>`;
-          })}
-    </ul>`;
-  }
-
-  private stepText(t: Translate, step: TestStep): string {
-    const hass = this.hass!;
-    const parts: string[] = [];
-    if (step.power != null) {
-      parts.push(
-        Math.abs(step.power) >= 0.05
-          ? t("devices.test.power", { value: formatNumber(t.lang, step.power, 2) })
-          : t("devices.test.no_power"),
-      );
+  /** "Neu gefunden": batteries, wallboxes and cars Joe found but does not use yet. */
+  private renderFound(t: Translate): TemplateResult | typeof nothing {
+    const found = newFindings(this.state!.config, this.discovery);
+    if (!found.length) {
+      return nothing;
     }
-    if (step.wrong.length) {
-      parts.push(t("devices.test.wrong", { entities: step.wrong.map((e) => entityName(hass, e)).join(", ") }));
-    }
-    if (step.errors.length) {
-      parts.push(t("devices.test.error", { entities: step.errors.map((e) => entityName(hass, e.entity_id)).join(", ") }));
-    }
-    return parts.join(" · ");
-  }
-
-  private renderConfirm(t: Translate, battery: BatteryConfig): TemplateResult {
-    const close = () => {
-      this.confirm = undefined;
-    };
-    return html`<joe-sheet label=${t("devices.test.start")} closeLabel=${t("common.close")} @joe-close=${close}>
-      <div data-tipped>
-        <div class="sheet-title">
-          ${displayTitle(t("devices.test.confirm.title", { name: battery.name }), "h2", tip(t, "devices_test"))}
-        </div>
-        <p class="sheet-text">${t("devices.test.confirm.text")}</p>
-        <div class="actions">
-          <button type="button" class="btn btn-secondary" data-notip @click=${close}>${t("common.cancel")}</button>
-          <button type="button" class="btn btn-primary" @click=${() => this.startTest(battery)}>
-            ${t("devices.test.confirm.go")}
-          </button>
-        </div>
+    return html`<section class="card found" data-tipped>
+      <div class="found-head">
+        <div class="eyebrow"><ha-icon icon="mdi:new-box"></ha-icon>${t("devices.found")}</div>
+        ${tip(t, "devices_found")}
       </div>
-    </joe-sheet>`;
+      <p class="found-lead">${t("devices.found.lead")}</p>
+      <ul>
+        ${found.map(
+          (finding) => html`<li>
+            <span class="what">
+              <ha-icon icon=${FOUND_ICONS[finding.kind]}></ha-icon>
+              <span><b>${finding.name}</b><small>${t(`devices.found.${finding.kind}`)}</small></span>
+            </span>
+            <span class="row-actions">
+              <button
+                type="button"
+                class="mini-btn go"
+                ?disabled=${this.busy === finding.key}
+                @click=${() => this.use(finding)}
+              >
+                ${t("devices.found.use")}
+              </button>
+              <button
+                type="button"
+                class="mini-btn quiet"
+                ?disabled=${this.busy === finding.key}
+                @click=${() => this.ignore(finding)}
+              >
+                ${t("devices.found.ignore")}
+              </button>
+            </span>
+          </li>`,
+        )}
+      </ul>
+    </section>`;
   }
 
-  private async startTest(battery: BatteryConfig): Promise<void> {
-    this.confirm = undefined;
-    try {
-      await this.hass?.callWS({ type: "energy_joe/control/test", battery_id: battery.id });
-    } catch {
-      this.notice = this.t!("error.action");
+  /** A battery is taken over right away; a car or wallbox opens the assistant to set up charging. */
+  private async use(finding: NewFinding): Promise<void> {
+    if (finding.kind !== "battery" || !finding.battery) {
+      // The assistant fills in this wallbox or car, not just the first one found.
+      navigate(this, addRoute("car", finding.key), { sheet: true });
+      return;
+    }
+    this.busy = finding.key;
+    const id = await useBattery(this, this.state!.config, finding.battery);
+    this.busy = "";
+    if (id) {
+      navigate(this, { tab: "devices", section: "battery", id });
     }
   }
 
-  private async release(): Promise<void> {
-    try {
-      await this.hass?.callWS({ type: "energy_joe/control/release" });
-    } catch {
-      this.notice = this.t!("error.action");
-    }
-  }
-
-  private edit(battery: BatteryConfig): void {
-    this.dispatchEvent(new CustomEvent("joe-edit", { detail: { editor: "battery", id: battery.id }, bubbles: true, composed: true }));
+  private async ignore(finding: NewFinding): Promise<void> {
+    this.busy = finding.key;
+    await ignoreFinding(this, this.state!.config, finding.key);
+    this.busy = "";
   }
 }
 

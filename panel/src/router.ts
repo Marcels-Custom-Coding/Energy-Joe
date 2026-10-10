@@ -14,7 +14,8 @@ export const TABS: readonly Tab[] = ["overview", "plan", "review", "devices", "h
 export const TIME_TABS: readonly Tab[] = ["overview", "plan", "review"];
 
 export type ReviewSection = "result" | "days" | "learned" | "log";
-export type DevicesSection = "all" | "climate";
+/** The kinds of devices (one chip each) plus the "+ Hinzufügen" assistant (a sheet, no chip). */
+export type DevicesSection = "all" | "battery" | "climate" | "car" | "hot_water" | "other" | "grid" | "add";
 export type HouseholdSection = "people" | "presence" | "days" | "night" | "travel";
 export type SettingsSection = "operation" | "rules" | "notify" | "maintenance" | "about";
 export type SectionTab = "review" | "devices" | "household" | "settings";
@@ -27,7 +28,7 @@ export const SECTIONS: {
   settings: readonly SettingsSection[];
 } = {
   review: ["result", "days", "learned", "log"],
-  devices: ["all", "climate"],
+  devices: ["all", "battery", "climate", "car", "hot_water", "other", "grid", "add"],
   household: ["people", "presence", "days", "night", "travel"],
   settings: ["operation", "rules", "notify", "maintenance", "about"],
 };

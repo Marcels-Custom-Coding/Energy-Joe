@@ -3,6 +3,17 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.14
+
+- **Geräte komplett:** Unter Geräte steht jetzt alles mit Strom nach Art sortiert – Alle · Speicher · Heizung & Klima · Auto & Laden · Warmwasser · Weitere Geräte · Netz & Sonne (Bereiche erscheinen nur, wenn es bei dir so ein Gerät gibt). Jedes Gerät hat eine eigene Seite in immer derselben Reihenfolge: Jetzt · Steuern · Strom · Gelernt · Protokoll · Störenfriede · Weglassen, dazu den Knopf „In HA öffnen“.
+- **Speicher:** Name, Größe („lern es“), Höchstleistung, Entladegrenze und Reihenfolge direkt auf der Speicherseite; Testlauf unter „Jetzt“; „Regler einrichten“ als eigenes Blatt mit Entwurf; Automationen, die auf genau diesen Speicher schreiben, stehen als „Störenfriede“ dabei. Die Regeln für alle Speicher stehen auf der Speicher-Seite als Zeile mit „Ändern →“.
+- **Auto & Laden, Warmwasser, Weitere Geräte:** Was bisher „Nacht-Aktion“ hieß, steht jetzt beim jeweiligen Gerät (Laden nach Bedarf, Termine des Autos, Warmwasser-Steuerung, „nachts einschalten“). Die Liste „Deine Geräte“ steht direkt unter Weitere Geräte; ändert man die Art, zieht das Gerät in seinen Bereich um.
+- **Heizung & Klima:** jedes Klimagerät mit eigener Seite (Jetzt gilt … weil …, Profil von Hand, Wochenprofile, Homematic-Haken, Nachts aus, Messgerät, Aufheizrate, Protokoll); die Wochenprofile öffnen als eigenes Blatt mit Adresse.
+- **Netz & Sonne:** Netzanschluss, Stromtarif, Einspeisung, Solaranlage (inkl. „Prognosen kombinieren“) und Hausverbrauch an einem Ort. „Was Joe nutzt“ in den Einstellungen entfällt.
+- **„+ Hinzufügen“:** ein Assistent für Speicher, Auto/Wallbox, Warmwasser, Klimagerät, Gerät für die Nacht, Gerät mit Zähler und „Nochmal umschauen“. „Neu gefunden“ zeigt, was Joe Neues entdeckt hat.
+- Die Dashboard-Karte „Auto laden“ öffnet beim Tipp auf den Kopf die Seite des Autos.
+- Behoben: Ein geänderter Aufschlag auf den Börsenpreis ging beim Speichern des Tarifs verloren.
+
 ## 0.9.13
 
 - Neue Ordnung: Oben stehen jetzt sechs Reiter – links die Zeit (Übersicht · Plan · Rückblick), rechts die Dinge (Geräte · Haushalt · Einstellungen). Jede Seite und jeder Unterbereich hat eine eigene Adresse, der Zurück-Knopf funktioniert, alte Links leiten weiter.

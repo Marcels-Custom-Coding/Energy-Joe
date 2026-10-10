@@ -281,10 +281,21 @@ class EnergyJoeCarCard extends JoeCard {
       need.soc_entity ? formatState(hass, need.soc_entity, t.lang) : null,
       need.range_entity ? formatState(hass, need.range_entity, t.lang) : null,
     ].filter(Boolean);
-    return html`<div class="head">
+    // The head opens the car's page in the panel; charging stays its own control below.
+    const carPath = href(PANEL, { tab: "devices", section: "car", id: car.id });
+    return html`<a
+        class="head"
+        href=${carPath}
+        @click=${(ev: MouseEvent) => {
+          if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey || ev.button !== 0) return;
+          ev.preventDefault();
+          openInHa(carPath);
+        }}
+      >
         <div class="eyebrow"><ha-icon icon="mdi:car-electric"></ha-icon>${car.name}</div>
         ${live?.on ? html`<span class="chip ok">${t("cards.car.charging")}</span>` : nothing}
-      </div>
+        <ha-icon class="chev" icon="mdi:chevron-right"></ha-icon>
+      </a>
       ${facts.length ? html`<p class="big">${facts.join(" · ")}</p>` : nothing}
       <joe-car-charge .hass=${hass} .t=${t} .state=${state} .action=${car}></joe-car-charge>`;
   }

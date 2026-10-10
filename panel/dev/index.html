@@ -184,6 +184,76 @@
         return config;
       };
       withClimate(state.config);
+      // ?devices=rich: a car on the wallbox meter charging by need, hot water heating to a target on its meter,
+      // a dishwasher running on cheap power and switched on at night, a pool pump without a meter.
+      if (params.get("devices") === "rich") {
+        const c = state.config;
+        const base = { enabled: true, on_value: "on", reset: "previous", reset_value: null, lead_min: 0, auto: true, forecast_below_kwh: null, conditions: [], power_kw: null, power_entity: null, priority: 3, sensor_entity: null, comfort: 45, maximum: 62, buffer: 3 };
+        const ev = c.actions.find((a) => a.id === "ev_carport");
+        if (ev) {
+          ev.consumer_id = "sensor.wallbox_energy";
+          ev.need = { ...ev.need, enabled: true, capacity_kwh: 60 };
+        }
+        c.consumers.push({ id: "sensor.dishwasher_energy", name: "Spülmaschine", kind: "household", energy_entity: "sensor.dishwasher_energy", power_entity: null, included_in: "sensor.house_energy", source: "energy_dashboard", runs: "cheap" });
+        c.actions.push(
+          { ...base, id: "hot_water_tank", name: "Warmwasser", kind: "target", entity_id: "switch.ww_boost", sensor_entity: "sensor.ww_speicher_temperatur", consumer_id: "sensor.hot_water_energy", forecast_below_kwh: 20, power_kw: 0.5, priority: 2 },
+          { ...base, id: "custom_dishwasher", name: "Spülmaschine nachts", kind: "switch", entity_id: "switch.inverter_charge_limit_enabled", consumer_id: "sensor.dishwasher_energy" },
+          { ...base, id: "custom_pool", name: "Poolpumpe", kind: "switch", entity_id: "switch.inverter_grid_charging", consumer_id: null },
+        );
+      }
+      // ?done=1 (Geräte): a second wallbox meter without a night action ("Laden einrichten"), a meter on a
+      // climate device that is not in the climate list ("Nicht zugeordnet"), and a battery Joe found but
+      // does not use yet ("Neu gefunden").
+      const lean = params.get("devices") === "lean";
+      if (done && !lean) {
+        const c = state.config;
+        c.consumers.push(
+          { id: "sensor.garage_wallbox_energy", name: "Wallbox Garage", kind: "ev", energy_entity: "sensor.garage_wallbox_energy", power_entity: null, included_in: "sensor.house_energy", source: "energy_dashboard", runs: "auto" },
+          { id: "sensor.ac_attic_energy", name: "Klimagerät Dachboden", kind: "climate", energy_entity: "sensor.ac_attic_energy", power_entity: null, included_in: "sensor.house_energy", source: "energy_dashboard", runs: "auto" },
+        );
+        const venus = sample.discovery.batteries.find((b) => b.id === "venus");
+        if (venus && !sample.discovery.batteries.some((b) => b.id === "solarflow")) {
+          sample.discovery.batteries.push({
+            ...structuredClone(venus),
+            id: "solarflow",
+            name: "Zendure SolarFlow 800",
+            device_id: "solarflow",
+            integration: "zendure_ha",
+            soc: { ...venus.soc, entity_id: "sensor.solarflow_soc", name: "SolarFlow Ladezustand", device: "Zendure SolarFlow 800", value: 55, integration: "zendure_ha" },
+            soc_entity: "sensor.solarflow_soc",
+            power: { entity_id: "sensor.solarflow_power", invert: false, minus_entity_id: null },
+            capacity_kwh: 1.92,
+            capacity_entity: null,
+            max_charge_w: 800,
+            adapter: "none",
+            controls: {},
+            mode_options: {},
+            controllable: false,
+            reasons: [{ code: "integration_key", integration: "zendure_ha" }, { code: "capacity_read" }],
+          });
+          sample.hass.states["sensor.solarflow_soc"] = { entity_id: "sensor.solarflow_soc", state: "55", attributes: { friendly_name: "SolarFlow Ladezustand", unit_of_measurement: "%", device_class: "battery" } };
+          sample.hass.states["sensor.solarflow_power"] = { entity_id: "sensor.solarflow_power", state: "120", attributes: { friendly_name: "SolarFlow Leistung", unit_of_measurement: "W", device_class: "power" } };
+        }
+      }
+      // ?devices=lean: one battery, no car – only the chips of what exists show up.
+      if (lean) {
+        const c = state.config;
+        c.batteries = c.batteries.slice(0, 1);
+        const cars = new Set(c.actions.filter((a) => a.need?.soc_entity || a.need?.range_entity).map((a) => a.id));
+        c.actions = c.actions.filter((a) => !cars.has(a.id));
+        c.consumers = c.consumers.filter((x) => x.kind !== "ev");
+        sample.discovery.wallboxes = [];
+        sample.discovery.cars = [];
+      }
+      // Checks (discovery/checks.py): with ?done=1 the grid meter's sign looks wrong right now, until it is
+      // flipped ("Umdrehen") or confirmed ("Stimmt so").
+      const gridInvert = state.config.measurements?.grid_power?.invert;
+      const checksNow = () => {
+        const grid = state.config.measurements?.grid_power;
+        const settled = (state.config.answers?.confirmed ?? []).includes(`grid_sign:${grid?.entity_id}`);
+        const sign = done && !lean && grid?.entity_id && grid.invert === gridInvert && !settled;
+        return [...sample.checks, ...(sign ? [{ code: "grid_sign", level: "warn", entity_id: grid.entity_id, expected: -1.8, actual: 1.6 }] : [])];
+      };
       // ?climate=1: heating & cooling switched on, the bedroom off at night (Haushalt › Nachtruhe lists it).
       if (params.get("climate") === "1") {
         const room = { enabled: true, away: "setback", setback_k: 3, away_preset: null, free_day_preset: null, night_from: "23:00", night_until: "06:30", week: { enabled: false, modes: {} }, device_profiles: {} };
@@ -460,6 +530,8 @@
       const view = () => structuredClone({ ...state, control: controlView(), climate: climateView() });
       const push = () => listeners.forEach((cb) => cb(view()));
 
+      // 0.9.14: the air conditioner's meter sits on its HA device (device-model.ts puts it to the climate device).
+      sample.hass.entities["sensor.ac_office_energy"] = { entity_id: "sensor.ac_office_energy", device_id: "ac1", area_id: null };
       const hass = {
         ...sample.hass,
         language: params.get("lang") || "de",
@@ -577,9 +649,9 @@
                 adopted = true;
                 push();
               }
-              return { discovery: sample.discovery, checks: sample.checks };
+              return { discovery: sample.discovery, checks: checksNow() };
             case "energy_joe/check":
-              return { checks: sample.checks };
+              return { checks: checksNow() };
             case "energy_joe/config/update": {
               state.config = applyUpdate(state.config, msg.patch, msg.source || "user");
               // A starting value gives way to what Joe learned (model.prefer_learned).
@@ -832,11 +904,12 @@
             case "energy_joe/automations/switch": {
               // Two automations in the style of a real setup (interlock and boost).
               const list = (state.automationsMock = state.automationsMock ?? [
-                { entity_id: "automation.akku_interlock_r3", name: "Akku-Interlock R3: BYD-Entladen zu, wenn Venus lädt", on: true, writes: [{ entity_id: "number.discharge_limit", name: "Grenzwert für die Entladeleistung", battery: state.config.batteries[0]?.name ?? "BYD" }], switched_off: null },
-                { entity_id: "automation.akku_boost_r5", name: "Akku-Boost R5: Venus parallel laden", on: true, writes: [{ entity_id: "number.charge_power", name: "Ladeleistung", battery: state.config.batteries[1]?.name ?? "Venus" }, { entity_id: "select.force_mode", name: "Betriebsmodus erzwingen", battery: state.config.batteries[1]?.name ?? "Venus" }], switched_off: null },
-              ]);
+                { entity_id: "automation.akku_interlock_r3", name: "Akku-Interlock R3: BYD-Entladen zu, wenn Venus lädt", on: true, writes: [{ entity_id: "number.discharge_limit", name: "Grenzwert für die Entladeleistung", battery: state.config.batteries[0]?.name ?? "BYD", battery_id: state.config.batteries[0]?.id ?? "storage", joe: true }], switched_off: null },
+                { entity_id: "automation.akku_boost_r5", name: "Akku-Boost R5: Venus parallel laden", on: true, writes: [{ entity_id: "number.charge_power", name: "Ladeleistung", battery: state.config.batteries[1]?.name ?? "Venus", battery_id: state.config.batteries[1]?.id ?? "venus", joe: true }, { entity_id: "select.force_mode", name: "Betriebsmodus erzwingen", battery: state.config.batteries[1]?.name ?? "Venus", battery_id: state.config.batteries[1]?.id ?? "venus", joe: true }], switched_off: null },
+              ].filter((item) => item.writes.every((w) => state.config.batteries.some((b) => b.id === w.battery_id))));
               if (msg.type.endsWith("/switch")) {
                 for (const item of list) {
+                  if (msg.entity_ids && !msg.entity_ids.includes(item.entity_id)) continue;
                   if (msg.on && item.switched_off) Object.assign(item, { on: true, switched_off: null });
                   if (!msg.on && item.on) Object.assign(item, { on: false, switched_off: { at: stamp(), reason: "battery" } });
                   hass.states[item.entity_id] = { entity_id: item.entity_id, state: item.on ? "on" : "off", attributes: { friendly_name: item.name } };

@@ -18,6 +18,8 @@ export class JoeCarCharge extends LitElement {
   @property({ attribute: false }) state?: JoeState;
   @property({ attribute: false }) action?: ActionConfig;
 
+  /** First in its block (a device page's "Jetzt"): no rule above it. */
+  @property({ type: Boolean, reflect: true }) flush = false;
   @state() private values: Partial<Record<"%" | "km", number>> = {};
   @state() private unit?: "%" | "km";
   @state() private failed = false;
@@ -36,6 +38,11 @@ export class JoeCarCharge extends LitElement {
         margin-top: 14px;
         padding-top: 12px;
         border-top: 1px solid var(--joe-line);
+      }
+      :host([flush]) .boost {
+        margin-top: 0;
+        padding-top: 0;
+        border-top: 0;
       }
       .boost .amount {
         display: inline-flex;

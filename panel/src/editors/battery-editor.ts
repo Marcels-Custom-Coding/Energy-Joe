@@ -1,50 +1,27 @@
-import { LitElement, css, html, nothing, type PropertyValues, type TemplateResult } from "lit";
+import { LitElement, css, html, nothing, type PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
-import { displayTitle, sourceChip } from "../components/bits";
+import { displayTitle } from "../components/bits";
 import { tip } from "../components/tip";
-import { pickEntity, saveConfig, sourceOf } from "../config";
+import { saveConfig } from "../config";
 import { define } from "../define";
-import { energyKwh, entityName, formatNumber, formatState, measurementKw } from "../entities";
-import type { TipName, Translate } from "../i18n";
+import type { Translate } from "../i18n";
+import "../pages/devices/battery-fields";
+import { BATTERY_FIELDS, type BatteryFieldsChange, type BatteryValues } from "../pages/devices/battery-fields";
 import { shared } from "../styles/shared";
-import type { BatteryConfig, BatteryFloor, Discovery, HomeAssistant, JoeConfig, JoeInfo, Measurement } from "../types";
+import type { BatteryConfig, BatteryFloor, Discovery, HomeAssistant, JoeConfig, JoeInfo } from "../types";
 import "./battery-control";
-import type { ControlValue } from "./battery-control";
+import { controlValue, withPrepare, type ControlValue } from "./battery-control";
 
-type Draft = Pick<
-  BatteryConfig,
-  | "name"
-  | "capacity_kwh"
-  | "soc_entity"
-  | "power"
-  | "max_charge_w"
-  | "max_discharge_w"
-  | "floor_soc"
-  | "priority"
-  | "adapter"
-  | "controls"
-  | "mode_options"
-  | "prepare"
-  | "steps"
->;
+type ControlDraft = ControlValue & { prepare: BatteryConfig["prepare"] };
 
-const FIELDS: (keyof Draft)[] = [
-  "name",
-  "capacity_kwh",
-  "soc_entity",
-  "power",
-  "max_charge_w",
-  "max_discharge_w",
-  "floor_soc",
-  "priority",
-  "adapter",
-  "controls",
-  "mode_options",
-  "prepare",
-  "steps",
-];
+const CONTROL_FIELDS = ["adapter", "controls", "mode_options", "steps", "prepare"] as const;
 
-/** One battery in a sheet: name, size, sensors, limits, order and control. */
+/**
+ * One battery in a sheet of the first setup ("Umschauen › Ändern"): the same
+ * fields as its page under Geräte › Speicher (pages/devices/battery-fields.ts
+ * in draft mode) plus "Regler einrichten", saved together as one partial
+ * patch. After the setup the battery has its own page.
+ */
 export class JoeBatteryEditor extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) t?: Translate;
@@ -54,8 +31,9 @@ export class JoeBatteryEditor extends LitElement {
   @property({ attribute: false }) floor?: BatteryFloor;
   @property() batteryId = "";
 
-  @state() private draft?: Draft;
-  @state() private capacityUnknown = false;
+  @state() private values?: BatteryValues;
+  @state() private control?: ControlDraft;
+  @state() private unknown = false;
   @state() private saving = false;
 
   static styles = [
@@ -63,56 +41,6 @@ export class JoeBatteryEditor extends LitElement {
     css`
       :host {
         display: block;
-      }
-      .entity {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
-        padding: 8px 12px;
-        border-radius: 10px;
-        background: var(--joe-surface-2);
-      }
-      .entity span {
-        flex: 1;
-        min-width: 0;
-      }
-      .entity b {
-        font-weight: 600;
-        overflow-wrap: anywhere;
-      }
-      .entity small {
-        display: block;
-        color: var(--joe-muted);
-      }
-      .limits {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 10px;
-      }
-      .limits label {
-        display: grid;
-        gap: 4px;
-        font-size: 13.5px;
-        font-weight: 600;
-        color: var(--joe-ink-2);
-      }
-      .limits .unit-input {
-        max-width: none;
-      }
-      .toggle {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      .toggle label {
-        font-weight: 600;
-        cursor: pointer;
-      }
-      @media (max-width: 480px) {
-        .limits {
-          grid-template-columns: 1fr;
-        }
       }
     `,
   ];
@@ -123,141 +51,36 @@ export class JoeBatteryEditor extends LitElement {
 
   protected willUpdate(changed: PropertyValues<this>): void {
     const battery = this.battery;
-    if ((changed.has("config") || changed.has("batteryId")) && battery && !this.draft) {
-      this.draft = Object.fromEntries(FIELDS.map((field) => [field, structuredClone(battery[field])])) as Draft;
-      this.capacityUnknown = this.config?.answers[`capacity:${battery.id}`] === "unknown";
+    if ((changed.has("config") || changed.has("batteryId")) && battery && !this.values) {
+      this.values = Object.fromEntries(BATTERY_FIELDS.map((field) => [field, structuredClone(battery[field])])) as BatteryValues;
+      this.control = { ...controlValue(battery), prepare: structuredClone(battery.prepare) };
+      this.unknown = this.config?.answers[`capacity:${battery.id}`] === "unknown";
     }
   }
 
   protected render() {
-    const { t, hass, config, draft } = this;
+    const { t, hass, config, values, control } = this;
     const battery = this.battery;
-    if (!t || !hass || !config || !draft || !battery) {
+    if (!t || !hass || !config || !values || !control || !battery) {
       return nothing;
     }
     const found = this.discovery?.batteries.find((b) => b.id === battery.id);
-    const readCapacity = energyKwh(hass, battery.capacity_entity);
     return html`<div class="sheet-title">${displayTitle(t("edit.battery.title", { name: battery.name }))}</div>
-      ${this.field(
-        t("f.battery.name"),
-        "f_battery_name",
-        html`<input
-          class="input"
-          type="text"
-          maxlength="60"
-          .value=${draft.name}
-          @change=${(ev: Event) => this.set({ name: (ev.target as HTMLInputElement).value.trim() || battery.name })}
-        />`,
-      )}
-      ${this.field(
-        t("f.battery.capacity"),
-        "q_capacity",
-        html`<div class="field-row">
-            <span class="unit-input">
-              <input
-                class="input"
-                type="number"
-                inputmode="decimal"
-                min="0.1"
-                max="1000"
-                step="0.01"
-                .value=${draft.capacity_kwh == null ? "" : String(draft.capacity_kwh)}
-                placeholder=${readCapacity != null ? formatNumber(t.lang, readCapacity, 2) : t("f.unknown")}
-                @change=${(ev: Event) => {
-                  const value = Number.parseFloat((ev.target as HTMLInputElement).value);
-                  this.capacityUnknown = false;
-                  this.set({ capacity_kwh: Number.isFinite(value) && value > 0 ? value : null });
-                }}
-              />
-              <span class="unit">kWh</span>
-            </span>
-            <button
-              type="button"
-              class="mini-btn ${this.capacityUnknown ? "go" : ""}"
-              aria-pressed=${String(this.capacityUnknown)}
-              @click=${() => {
-                this.capacityUnknown = !this.capacityUnknown;
-                if (this.capacityUnknown) {
-                  this.set({ capacity_kwh: null });
-                }
-              }}
-            >
-              ${t("ask.idk_learn")}
-            </button>
-          </div>
-          ${readCapacity != null
-            ? html`<p class="field-hint">${t("f.battery.capacity.read", { value: formatNumber(t.lang, readCapacity, 2) })}</p>`
-            : nothing}`,
-        sourceChip(t, sourceOf(config, `batteries[${battery.id}].capacity_kwh`)),
-      )}
-      ${this.field(
-        t("f.battery.soc"),
-        "f_battery_soc",
-        this.entityBox(t, draft.soc_entity, `${formatState(hass, draft.soc_entity, t.lang)}`, () => this.pickSoc()),
-        sourceChip(t, sourceOf(config, `batteries[${battery.id}].soc_entity`)),
-      )}
-      ${this.field(
-        t("f.battery.power"),
-        "f_battery_power",
-        this.entityBox(t, draft.power?.entity_id ?? null, this.powerText(t, draft.power), () => this.pickPower()),
-        sourceChip(t, sourceOf(config, `batteries[${battery.id}].power`)),
-      )}
-      ${this.field(
-        t("f.battery.limits"),
-        "f_battery_limits",
-        html`<div class="limits">
-          <label>${t("f.battery.max_charge")} ${this.kwInput(t, draft.max_charge_w, "max_charge_w")}</label>
-          <label>${t("f.battery.max_discharge")} ${this.kwInput(t, draft.max_discharge_w, "max_discharge_w")}</label>
-        </div>`,
-      )}
-      ${this.field(
-        t("f.battery.floor"),
-        "f_battery_floor",
-        html`<span class="unit-input">
-            <input
-              class="input"
-              type="number"
-              inputmode="decimal"
-              min="0"
-              max="100"
-              step="1"
-              aria-label=${t("f.battery.floor")}
-              .value=${draft.floor_soc == null ? "" : String(draft.floor_soc)}
-              placeholder=${this.floor?.device != null ? formatNumber(t.lang, this.floor.device, 0) : t("f.unknown")}
-              @change=${(ev: Event) => {
-                const value = Number.parseFloat((ev.target as HTMLInputElement).value.replace(",", "."));
-                this.set({ floor_soc: Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : null });
-              }}
-            />
-            <span class="unit">%</span>
-          </span>
-          ${this.floor?.device != null
-            ? html`<p class="field-hint">${t("f.battery.floor.read", { value: formatNumber(t.lang, this.floor.device, 0) })}</p>`
-            : draft.floor_soc == null
-              ? html`<div class="note warn"><ha-icon icon="mdi:help-circle-outline"></ha-icon><span>${t("f.battery.floor.ask")}</span></div>`
-              : nothing}`,
-        sourceChip(t, sourceOf(config, `batteries[${battery.id}].floor_soc`)),
-      )}
-      ${config.batteries.length > 1
-        ? this.field(
-            t("f.battery.priority"),
-            "f_battery_priority",
-            html`<span class="unit-input">
-              <input
-                class="input"
-                type="number"
-                min="1"
-                max="9"
-                step="1"
-                .value=${String(draft.priority)}
-                @change=${(ev: Event) => {
-                  const value = Math.round(Number.parseFloat((ev.target as HTMLInputElement).value));
-                  this.set({ priority: Math.min(9, Math.max(1, Number.isFinite(value) ? value : 1)) });
-                }}
-              />
-            </span>`,
-          )
-        : nothing}
+      <joe-battery-fields
+        .hass=${hass}
+        .t=${t}
+        .config=${config}
+        .battery=${battery}
+        .floor=${this.floor}
+        .draft=${values}
+        .unknown=${this.unknown}
+        @joe-battery-change=${(ev: CustomEvent<BatteryFieldsChange>) => {
+          this.values = { ...values, ...ev.detail.change };
+          if (ev.detail.unknown !== undefined) {
+            this.unknown = ev.detail.unknown;
+          }
+        }}
+      ></joe-battery-fields>
       <div class="field" data-tipped>
         <div class="field-label">${t("f.battery.control")} ${tip(t, "control_choice")}</div>
         <joe-battery-control
@@ -266,13 +89,10 @@ export class JoeBatteryEditor extends LitElement {
           .battery=${battery}
           .found=${found}
           .profiles=${this.info?.profiles}
-          .value=${{
-            adapter: draft.adapter,
-            controls: draft.controls,
-            mode_options: draft.mode_options,
-            steps: draft.steps,
-          } as ControlValue}
-          @joe-control-change=${(ev: CustomEvent<ControlValue>) => this.set(this.withPrepare(ev.detail, found))}
+          .value=${control as ControlValue}
+          @joe-control-change=${(ev: CustomEvent<ControlValue>) => {
+            this.control = withPrepare(battery, ev.detail, found);
+          }}
         ></joe-battery-control>
       </div>
       <div class="actions" data-notip>
@@ -281,123 +101,27 @@ export class JoeBatteryEditor extends LitElement {
       </div>`;
   }
 
-  private field(label: string, tipName: TipName, control: TemplateResult, chip?: TemplateResult): TemplateResult {
-    const t = this.t!;
-    return html`<div class="field" data-tipped>
-      <div class="field-label">${label} ${tip(t, tipName)} ${chip ?? nothing}</div>
-      ${control}
-    </div>`;
-  }
-
-  private entityBox(t: Translate, entityId: string | null, value: string, pick: () => void): TemplateResult {
-    const hass = this.hass!;
-    return html`<div class="entity">
-      <span>
-        ${entityId ? html`<b>${entityName(hass, entityId)}</b><small>${value}</small>` : html`<small>${t("find.none")}</small>`}
-      </span>
-      <button type="button" class="mini-btn" @click=${pick}>
-        <ha-icon icon="mdi:magnify"></ha-icon>${t(entityId ? "review.change" : "review.choose")}
-      </button>
-    </div>`;
-  }
-
-  private kwInput(t: Translate, watts: number | null, field: "max_charge_w" | "max_discharge_w"): TemplateResult {
-    return html`<span class="unit-input">
-      <input
-        class="input"
-        type="number"
-        inputmode="decimal"
-        min="0"
-        max="1000"
-        step="0.1"
-        placeholder=${t("f.unknown")}
-        .value=${watts == null ? "" : String(Math.round(watts / 100) / 10)}
-        @change=${(ev: Event) => {
-          const value = Number.parseFloat((ev.target as HTMLInputElement).value);
-          this.set({ [field]: Number.isFinite(value) && value > 0 ? Math.round(value * 1000) : null });
-        }}
-      />
-      <span class="unit">kW</span>
-    </span>`;
-  }
-
-  private powerText(t: Translate, power: Measurement | null): string {
-    const hass = this.hass!;
-    const kw = measurementKw(hass, power);
-    if (!power || kw === null) {
-      return power ? formatState(hass, power.entity_id, t.lang) : "";
-    }
-    const value = formatNumber(t.lang, Math.abs(kw), 2);
-    return t(kw >= 0 ? "pick.preview.charge" : "pick.preview.discharge", { value });
-  }
-
-  private async pickSoc(): Promise<void> {
-    const { t, draft } = this;
-    if (!t || !draft) {
-      return;
-    }
-    const picked = await pickEntity(this, {
-      heading: t("pick.battery.title"),
-      tip: "pick_battery",
-      filter: "soc",
-      selected: [draft.soc_entity],
-    });
-    if (picked?.selected[0]) {
-      this.set({ soc_entity: picked.selected[0] });
-    }
-  }
-
-  private async pickPower(): Promise<void> {
-    const { t, draft } = this;
-    if (!t || !draft) {
-      return;
-    }
-    const picked = await pickEntity(this, {
-      heading: t("pick.battery_power.title"),
-      tip: "pick_battery_power",
-      filter: "power",
-      selected: draft.power ? [draft.power.entity_id] : [],
-      measurement: { invert: draft.power?.invert ?? false, role: "battery" },
-    });
-    if (picked?.selected[0]) {
-      this.set({ power: { entity_id: picked.selected[0], invert: picked.invert, minus_entity_id: null } });
-    }
-  }
-
-  /** A known profile brings the switches it needs first ("prepare"); other ways none. */
-  private withPrepare(value: ControlValue, found: Discovery["batteries"][number] | undefined): Partial<Draft> {
-    const profile = !["none", "generic", "steps"].includes(value.adapter);
-    const prepare = profile ? (this.battery?.adapter === value.adapter ? this.battery.prepare : (found?.prepare ?? [])) : [];
-    const steps = profile && !Object.keys(value.steps).length ? (found?.steps ?? value.steps) : value.steps;
-    return { ...value, steps, prepare: prepare ?? [] };
-  }
-
-  private set(change: Partial<Draft>): void {
-    if (this.draft) {
-      this.draft = { ...this.draft, ...change };
-    }
-  }
-
+  /** Only the changed fields (and the "lern es" answer), as one partial patch. */
   private async save(): Promise<void> {
     const battery = this.battery;
-    const draft = this.draft;
-    if (!battery || !draft || !this.config) {
+    const { config, values, control } = this;
+    if (!battery || !config || !values || !control) {
       return;
     }
+    const draft: Record<string, unknown> = { ...values, ...control };
     const changes: Record<string, unknown> = {};
-    for (const field of FIELDS) {
-      if (JSON.stringify(battery[field]) !== JSON.stringify(draft[field])) {
+    for (const field of [...BATTERY_FIELDS, ...CONTROL_FIELDS]) {
+      if (JSON.stringify(battery[field] ?? null) !== JSON.stringify(draft[field] ?? null)) {
         changes[field] = draft[field];
       }
     }
     const answerKey = `capacity:${battery.id}`;
-    const wasUnknown = this.config.answers[answerKey] === "unknown";
     const patch: Record<string, unknown> = {};
     if (Object.keys(changes).length) {
       patch.batteries = { [battery.id]: changes };
     }
-    if (wasUnknown !== this.capacityUnknown) {
-      patch.answers = { [answerKey]: this.capacityUnknown ? "unknown" : null };
+    if ((config.answers[answerKey] === "unknown") !== this.unknown) {
+      patch.answers = { [answerKey]: this.unknown ? "unknown" : null };
     }
     if (Object.keys(patch).length) {
       this.saving = true;

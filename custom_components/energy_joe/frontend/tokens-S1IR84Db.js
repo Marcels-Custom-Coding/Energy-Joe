@@ -621,12 +621,9 @@ var Ne = {
 	"climate.mirror.night": "Nachtruhe",
 	"climate.mirror.night.time": "feste Uhrzeiten je Gerät",
 	"climate.mirror.night.no_entity": "noch keine Entität gewählt",
-	"devices.climate.summary": "{devices}, {steered} davon gesteuert",
-	"devices.climate.on": "Ich steuere sie danach, wer zu Hause ist.",
-	"devices.climate.off": "Die Steuerung ist aus, ich schaue nur zu.",
 	"rule.on": "an",
 	"climate.enabled": "Joe steuert Heizung und Klima",
-	"climate.live": "Ich steuere die Geräte, die du unten einschaltest.",
+	"climate.live": "Ich steuere die Geräte, bei denen du „Joe steuert dieses Gerät“ einschaltest. Tipp dazu auf ein Gerät.",
 	"climate.not_live": "Steuern tue ich erst im Modus „Live“ – bis dahin zeige ich bei jedem Gerät nur, was ich täte.",
 	"climate.home": "Zu Hause: {names}",
 	"climate.nobody": "Gerade ist niemand zu Hause.",
@@ -686,7 +683,7 @@ var Ne = {
 	"climate.room.steer": "Joe steuert dieses Gerät",
 	"climate.room.off": "Steuere ich nicht.",
 	"climate.meter.pick": "Messgerät für {name} wählen",
-	"climate.meters.count": "{linked} von {all} gekoppelt",
+	"climate.meters.count": "{linked} von {all} gemessen",
 	"climate.meter.without_long": "Kein Messgerät",
 	"climate.meter.open_long": "Noch kein Messgerät",
 	"climate.meter.change": "Ändern",
@@ -695,8 +692,21 @@ var Ne = {
 	"climate.meter.search_placeholder": "Name, Raum oder Shelly …",
 	"climate.meter.no_hits": "Nichts gefunden.",
 	"climate.meter.cancel": "Abbrechen",
-	"climate.meters": "Messgeräte",
-	"climate.meters.say": "Welches Gerät misst Leistung und Energie deiner Klimageräte? Joe wählt vor, was nach Name und Raum passt. Mehrere Klimageräte dürfen am selben Messgerät hängen.",
+	"climate.meters.say": "Welches Gerät misst Leistung und Energie dieses Klimageräts? Ich wähle vor, was nach Name und Raum passt. Mehrere Klimageräte dürfen am selben Messgerät hängen.",
+	"climate.list": "Deine Geräte nach Raum",
+	"climate.card.measured": "Strom gemessen",
+	"climate.why.free_day": "Freier Tag",
+	"climate.moved": "{name} steht jetzt unter {group} →",
+	"climate.device.main_off": "aus – dann steuere ich kein Gerät",
+	"climate.consumer": "Im Energie-Dashboard:",
+	"climate.unassigned.lead": "Im Energie-Dashboard steht dieser Zähler als Klimagerät. Zu welchem Gerät er gehört, weiß ich noch nicht.",
+	"climate.assign": "Zu welchem Klimagerät gehört dieser Zähler?",
+	"climate.assign.pick": "Gerät wählen",
+	"climate.assign.has_meter": "{name} (hat schon ein Messgerät)",
+	"climate.assign.no_device": "Dieser Zähler hängt in Home Assistant an keinem Gerät. Darum kann ich ihn keinem Klimagerät zuordnen. Sag mir unten, was er misst.",
+	"tip.climate_assign.title": "Warum zuordnen?",
+	"tip.climate_assign.text": "Gehört der Zähler zu einem Thermostat oder einer Klimaanlage, merke ich ihn mir als dessen Messgerät. Dann siehst du Gerät und Stromverbrauch auf einer Seite.",
+	"tip.climate_assign.hint": "Misst er etwas anderes, stell unten die Art um. Dann steht er bei seiner Gruppe.",
 	"climate.meter.none_option": "— kein Messgerät —",
 	"climate.meter.confirm": "Bestätigen",
 	"climate.meter.no_meters": "Joe findet kein Gerät mit Leistungs- oder Energiesensor.",
@@ -704,7 +714,7 @@ var Ne = {
 	"climate.meter.suggested": "Vorschlag",
 	"climate.meter.shared": "Am selben Messgerät wie {names} – die Messung gilt für alle zusammen.",
 	"tip.climate_meter.title": "Was misst dieses Gerät?",
-	"tip.climate_meter.text": "Wähle pro Klimagerät das Gerät, das seine Leistung und Energie misst – z. B. einen Kanal eines Shelly Pro 3EM, gruppiert nach „verbunden über …“. Joes Vorschlag ist vorgewählt und mit „(Vorschlag)“ markiert; „Bestätigen“ übernimmt ihn. „— kein Messgerät —“ sagt Joe, dass es keine Messung gibt.",
+	"tip.climate_meter.text": "Wähle das Gerät, das Leistung und Energie dieses Klimageräts misst – z. B. einen Kanal eines Shelly Pro 3EM, gruppiert nach „verbunden über …“. Meinen Vorschlag habe ich vorgewählt und mit „(Vorschlag)“ markiert; „Bestätigen“ übernimmt ihn. „— kein Messgerät —“ sagt mir, dass es keine Messung gibt.",
 	"tip.climate_meter.hint": "Mehrere Klimageräte dürfen sich ein Messgerät teilen – dann gilt die Messung für alle zusammen.",
 	"climate.away": "Wenn keiner da ist",
 	"climate.away.setback": "Absenken",
@@ -994,7 +1004,7 @@ var Ne = {
 	"past.log.all": "Alle",
 	"past.log.filter.battery": "Speicher",
 	"past.log.filter.climate": "Heizung & Klima",
-	"past.log.filter.car": "Autos",
+	"past.log.filter.car": "Auto & Laden",
 	"past.log.filter.hot_water": "Warmwasser",
 	"past.log.filter.other": "Weitere Geräte",
 	"past.log.filter.joe": "Joe selbst",
@@ -1005,6 +1015,12 @@ var Ne = {
 	"tip.past_log.text": "Jede Schaltung von mir mit Uhrzeit: an Speichern, Autos, Warmwasser, deinen Geräten und Klimageräten, dazu Testläufe, deine Antworten und wann eine Nacht beginnt. Was du selbst am Gerät änderst, steht nicht hier – außer ich bemerke es, während ich steuere.",
 	"nav.devices.all": "Alle",
 	"nav.devices.climate": "Heizung & Klima",
+	"nav.devices.battery": "Speicher",
+	"nav.devices.car": "Auto & Laden",
+	"nav.devices.hot_water": "Warmwasser",
+	"nav.devices.other": "Weitere Geräte",
+	"nav.devices.grid": "Netz & Sonne",
+	"nav.back": "← {name}",
 	"nav.household.people": "Wer wohnt hier",
 	"nav.household.presence": "Wer ist da",
 	"nav.household.days": "Tage & Kalender",
@@ -1082,8 +1098,6 @@ var Ne = {
 	"find.home": "Hausverbrauch",
 	"find.solar": "PV-Leistung",
 	"find.solar.detail": "{count} · zusammen {total} kW",
-	"find.car": "Auto",
-	"find.wallbox": "Wallbox",
 	"find.weather": "Wetter",
 	"find.holiday": "Feiertage",
 	"find.people": "Haushalt",
@@ -1160,8 +1174,6 @@ var Ne = {
 	"plan.day.cost": "Kostet etwa {cost}.",
 	"plan.title": "Hier |rechne ich",
 	"history.title": "Jeder Tag |unter der Lupe",
-	"devices.title": "Deine |Geräte",
-	"devices.text": "Speicher, Wallbox und Warmwasser – mit Zustand, Testlauf und dem, was ich mit ihnen vorhabe.",
 	"settings.operation": "Betrieb",
 	"settings.mode": "Betriebsart",
 	"settings.mode.hint": "Simulation plant und lernt, ohne etwas zu schalten. Vorschlagen fragt jeden Abend, Live steuert selbst.",
@@ -1231,34 +1243,25 @@ var Ne = {
 	"review.ignore": "Weglassen",
 	"review.use": "Doch verwenden",
 	"review.add": "Hinzufügen",
-	"review.assign": "Zuordnen",
 	"review.invert": "Umdrehen",
 	"review.keep": "Stimmt so",
 	"review.ignored": "lasse ich weg",
 	"review.ask_later": "frag ich dich gleich",
-	"review.used": "genutzt",
-	"review.unused": "noch nicht genutzt",
-	"review.wallbox.used": "für die Nacht-Aktion „E-Auto laden“",
-	"review.wallbox.unused": "für eine Nacht-Aktion – einrichten unter Geräte → „E-Auto laden“",
-	"review.car.used": "für Laden nach Bedarf",
-	"review.car.unused": "für Laden nach Bedarf – einschalten unter Geräte → E-Auto → „Laden nach Bedarf“",
 	"review.capacity_unknown": "Größe unbekannt",
 	"review.battery": "Speicher",
 	"review.battery.none": "Keinen Speicher gefunden. Hast du einen, such ihn dir aus.",
-	"review.battery.more": "Weiterer Speicher",
-	"review.battery.more_detail": "Fehlt einer? Such ihn dir aus.",
 	"review.tariff.ask": "Den Tarif frag ich dich gleich – oder trag ihn jetzt ein.",
 	"review.forecast.none": "Ohne Solarprognose plane ich vorsichtig. Richte in Home Assistant zum Beispiel Forecast.Solar ein, dann such ich nochmal.",
 	"review.grid.none": "Ohne Netzzähler sehe ich nicht, was wirklich passiert. Such dir den Sensor aus, der die Leistung am Hausanschluss misst.",
 	"review.home.balance": "Wie im Energie-Dashboard: Netz + PV ± Speicher",
+	"review.home.devices": "Geräte zuordnen",
 	"review.home.compare": "Zum Vergleich: {name} · {live}",
 	"review.home.flexible": "Für den Speicher rechne ich heraus: {names}. Das Auto lade ich nie aus dem Hausspeicher.",
 	"review.home.flexible_some": "Für den Speicher rechne ich heraus: {names}.",
-	"review.home.flexible_none": "Laufen bei dir Geräte nur mit Sonnenüberschuss oder günstigem Strom? Sag es mir bei den Geräten – dann plane ich den Speicher ohne sie.",
+	"review.home.flexible_none": "Laufen bei dir Geräte nur mit Sonnenüberschuss oder günstigem Strom? Sag es mir unter Geräte › Weitere Geräte – dann plane ich den Speicher ohne sie.",
 	"review.home.off": "Dein Sensor zeigt in den letzten {days} Tagen {pct} % {direction} als Netz + PV ± Speicher. Fehlt darin vielleicht eine kleine PV-Anlage? Ich rechne mit Netz + PV ± Speicher.",
 	"review.home.less": "weniger",
 	"review.home.more": "mehr",
-	"review.home.devices": "Geräte zuordnen",
 	"review.home.none": "Kennst du keinen? Kein Problem – dann rechne ich den Hausverbrauch aus Netz, PV und Speicher selbst aus.",
 	"review.home.without": "Hab ich nicht",
 	"review.home.computed": "rechne ich aus Netz, PV und Speicher aus",
@@ -1368,12 +1371,9 @@ var Ne = {
 	"f.battery.max_discharge": "Entladen",
 	"f.battery.priority": "Reihenfolge",
 	"f.battery.control": "Steuern",
-	"f.battery.control.allow": "Joe darf diesen Speicher steuern",
-	"f.battery.control.found": "{count} Steuerfunktionen gefunden. Geschaltet wird erst im Live-Betrieb.",
-	"f.battery.control.none": "Diesen Speicher kann ich nur beobachten – für ihn kenne ich noch keine Steuerung.",
+	"edit.tariff.label": "Tarif bearbeiten",
 	"edit.battery.label": "Speicher bearbeiten",
 	"edit.battery.title": "Speicher |einstellen",
-	"edit.tariff.label": "Tarif bearbeiten",
 	"edit.tariff.title": "Dein |Stromtarif",
 	"edit.consumers.label": "Geräte zuordnen",
 	"edit.consumers.title": "Deine |Geräte",
@@ -1475,8 +1475,6 @@ var Ne = {
 	"sum.unknown": "weiß ich nicht",
 	"sum.open": "noch offen",
 	"sum.from_sensor": "vom Sensor",
-	"settings.uses": "Was Joe nutzt",
-	"settings.uses.intro": "Das habe ich gefunden oder du hast es mir gesagt. Ändern, weglassen, dazunehmen – alles hier.",
 	"settings.answers": "Deine Antworten",
 	"settings.answer.heating": "Heizen mit Strom",
 	"settings.answer.hot_water": "Warmwasser",
@@ -1539,7 +1537,7 @@ var Ne = {
 	"rule.off": "aus",
 	"rule.reset": "Startwert",
 	"tip.review_battery.title": "Was mache ich mit dem Speicher?",
-	"tip.review_battery.text": "Ich rechne jede Nacht aus, wie viel er aus dem günstigen Netz braucht, damit er bis zur Sonne reicht.\n**Ändern** – Name, Größe, Sensoren und ob ich ihn steuern darf.\n**Weglassen** – ich plane ohne ihn. Zurückholen kannst du ihn jederzeit.",
+	"tip.review_battery.text": "Ich rechne jede Nacht aus, wie viel er aus dem günstigen Netz braucht, damit er bis zur Sonne reicht.\n**Ändern** – Name, Größe, Sensoren, Grenzen und ob ich ihn steuern darf. Nach der Einrichtung findest du das unter Geräte › Speicher.\n**Weglassen** – ich plane ohne ihn. Zurückholen kannst du ihn jederzeit.",
 	"tip.review_ignored.title": "Warum ist das ausgegraut?",
 	"tip.review_ignored.text": "Das hast du weggelassen, ich nutze es nicht. **Doch verwenden** holt es zurück.",
 	"tip.review_battery_add.title": "Fehlt ein Speicher?",
@@ -1552,7 +1550,7 @@ var Ne = {
 	"tip.review_grid.title": "Wofür brauche ich den Netzzähler?",
 	"tip.review_grid.text": "Er zeigt, wie viel Strom gerade aus dem Netz kommt oder hineingeht. Damit sehe ich, ob meine Pläne aufgehen, und lerne daraus.\n**Ändern** – einen anderen Sensor wählen.\n**Umdrehen** – falls er andersherum zählt.\n**Stimmt so** – mein Hinweis war falsch, ich sage nichts mehr.",
 	"tip.review_home.title": "Wofür brauche ich den Hausverbrauch?",
-	"tip.review_home.text": "Daraus lerne ich, wie viel ihr wann braucht – das Herzstück meiner Planung. Ich rechne ihn wie das Energie-Dashboard aus Netz, PV und Speicher aus; so zählt auch ein Balkonkraftwerk mit. Einen Hausverbrauchs-Sensor nehme ich zum Vergleich und als Ersatz, wenn die Rechnung nicht geht.\n**Ändern** – einen anderen Sensor wählen.\n**Hab ich nicht** – dann rechne ich nur aus Netz, PV und Speicher.",
+	"tip.review_home.text": "Daraus lerne ich, wie viel ihr wann braucht – das Herzstück meiner Planung. Ich rechne ihn wie das Energie-Dashboard aus Netz, PV und Speicher aus; so zählt auch ein Balkonkraftwerk mit. Einen Hausverbrauchs-Sensor nehme ich zum Vergleich und als Ersatz, wenn die Rechnung nicht geht.\n**Ändern** – einen anderen Sensor wählen.\n**Hab ich nicht** oder **Weglassen** – dann rechne ich nur aus Netz, PV und Speicher.",
 	"tip.review_solar.title": "Wofür brauche ich die PV-Leistung?",
 	"tip.review_solar.text": "Ich vergleiche, was die Prognose versprochen hat, mit dem, was deine Anlage wirklich geliefert hat. So werde ich jeden Tag genauer.\n**Ändern** – Sensoren wählen; mehrere Wechselrichter zähle ich zusammen.\n**Hab keine PV** – dann plane ich nur mit dem günstigen Netzstrom.",
 	"tip.review_weather.title": "Wofür brauche ich das Wetter?",
@@ -1602,10 +1600,10 @@ var Ne = {
 	"tip.q_hot_water.title": "Warum frage ich das?",
 	"tip.q_hot_water.text": "Elektrisches Warmwasser kann ich in günstige Stunden legen, wenn die Sonne nicht reicht. Gas, Öl und Fernwärme lasse ich in Ruhe.",
 	"tip.q_hot_water_action.title": "Was richte ich da ein?",
-	"tip.q_hot_water_action.text": "Eine Nacht-Aktion: Ich heize das Wasser in der günstigen Zeit gerade so weit vor, dass es bis zum nächsten Abend reicht, und starte so spät wie möglich. Danach stelle ich den Schalter zurück, wie er war. Wie schnell dein Speicher heizt und abkühlt, lerne ich selbst.",
+	"tip.q_hot_water_action.text": "Ich heize das Wasser in der günstigen Zeit gerade so weit vor, dass es bis zum nächsten Abend reicht, und starte so spät wie möglich. Danach stelle ich den Schalter zurück, wie er war. Wie schnell dein Speicher heizt und abkühlt, lerne ich selbst. Ändern kannst du das später unter Geräte › Warmwasser.",
 	"tip.q_hot_water_action.hint": "Hast du schon eine eigene Automation fürs Warmwasser (z. B. mit Sonnenüberschuss)? Dann pass auf, dass sich beide nicht in die Quere kommen.",
 	"tip.q_ev.title": "Warum frage ich das?",
-	"tip.q_ev.text": "Reicht die Sonne morgen nicht, kann ich das Auto nachts günstig laden lassen. Einrichten tun wir das später bei den Nacht-Aktionen.",
+	"tip.q_ev.text": "Reicht die Sonne morgen nicht, kann ich das Auto nachts günstig laden lassen. Einrichten tust du das später unter Geräte › Auto & Laden.",
 	"tip.q_household.title": "Warum frage ich das?",
 	"tip.q_household.text": "Ob jemand zu Hause ist, ändert den Verbrauch stark. Mit Anwesenheit und Kalendern lerne ich, wann ihr wie viel braucht – zum Beispiel im Homeoffice.\n**Wohnt nicht hier** – die Person lasse ich weg.",
 	"tip.q_household.hint": "Alles bleibt in deinem Home Assistant.",
@@ -1630,8 +1628,8 @@ var Ne = {
 	"tip.f_battery_limits.text": "Die höchste Lade- und Entladeleistung. Weißt du sie nicht, lass es leer – dann nehme ich, was das Gerät meldet, oder lerne es.",
 	"tip.f_battery_priority.title": "Was heißt Reihenfolge?",
 	"tip.f_battery_priority.text": "Hast du mehrere Speicher, lade ich den mit der kleineren Zahl zuerst. 1 = zuerst.",
-	"tip.f_battery_control.title": "Was heißt steuern?",
-	"tip.f_battery_control.text": "Im Live-Betrieb stelle ich Ladeziel und Entladung selbst ein und stelle am Ende jeder Nacht alles zurück. Ausgeschaltet schaue ich nur zu.",
+	"tip.f_battery_control.title": "Was steht unter Steuern?",
+	"tip.f_battery_control.text": "Ganz oben steht, wie ich diesen Speicher steuere. Mit „Regler einrichten“ legst du fest, über welche Schalter und Werte ich das tue; „Nur beobachten“ heißt: Ich schaue nur zu und schalte nichts. Im Live-Betrieb stelle ich Ladeziel und Entladung selbst ein und stelle am Ende jeder Nacht alles zurück.\nDarunter stehen Name, Größe, Höchstleistung, Entladegrenze und bei mehreren Speichern die Reihenfolge. Jedes Feld hat seine eigene Erklärung, und was du dort änderst, speichere ich sofort.",
 	"tip.f_battery_control.hint": "In der Simulation schalte ich sowieso nichts.",
 	"tip.f_calendars.title": "Wozu die Kalender?",
 	"tip.f_calendars.text": "Termine verraten mir, wann jemand weg ist oder im Homeoffice arbeitet. Ich lese nur, ob und wann etwas eingetragen ist. Jede Person kann beliebig viele Kalender haben.",
@@ -1790,8 +1788,8 @@ var Ne = {
 	"plan.empty.off": "Ich mache gerade Pause. Stell mich auf Simulation, dann plane ich wieder jede Nacht.",
 	"plan.empty.waiting": "Sobald die Einrichtung fertig ist, plane ich hier jede Nacht – mit Kurven für Sonne, Verbrauch und Ladezustand.",
 	"plan.why.no_window": "Dein Tarif hat keine günstige Zeit – nachts zu laden lohnt sich nicht. Ich schaue weiter zu und lerne.",
-	"plan.why.dynamic": "Für Börsenpreise brauche ich die Preise der nächsten Stunden. Wähle unter Einstellungen → Tarif den Preis-Sensor deiner Tarif-Integration.",
-	"plan.why.no_prices": "Dein Preis-Sensor liefert keine Preisliste für die nächsten Stunden. Wähle unter Einstellungen → Tarif einen Sensor, der die Preise mitbringt (z. B. Nord Pool, EPEX Spot, Tibber, ENTSO-E).",
+	"plan.why.dynamic": "Für Börsenpreise brauche ich die Preise der nächsten Stunden. Wähle unter Geräte › Netz & Sonne › Stromtarif den Preis-Sensor deiner Tarif-Integration.",
+	"plan.why.no_prices": "Dein Preis-Sensor liefert keine Preisliste für die nächsten Stunden. Wähle unter Geräte › Netz & Sonne › Stromtarif einen Sensor, der die Preise mitbringt (z. B. Nord Pool, EPEX Spot, Tibber, ENTSO-E).",
 	"plan.why.prices_pending": "Die Preise für die Nacht sind noch nicht da – sie kommen meist gegen 13 Uhr. Dann plane ich.",
 	"plan.why.no_battery": "Ohne Speicher, dessen Größe ich kenne, gibt es nachts nichts zu planen.",
 	"plan.why.failed": "Beim Planen ist etwas schiefgegangen. Ich versuche es zur nächsten vollen Stunde wieder.",
@@ -1841,7 +1839,7 @@ var Ne = {
 	"plan.math.target.sub": "nötig wären {optimum} %, dazu {buffer} % Puffer auf den Teil über der Reserve",
 	"plan.math.prices": "Preise",
 	"plan.math.prices.value": "günstig {night} · sonst {day} · Einspeisung {feed}",
-	"plan.math.prices.assumed": "Nicht alle Preise kenne ich – die fehlenden habe ich angenommen. Trag sie in den Einstellungen ein.",
+	"plan.math.prices.assumed": "Nicht alle Preise kenne ich – die fehlenden habe ich angenommen. Trag sie unter Geräte › Netz & Sonne ein.",
 	"plan.math.rules": "Regeln",
 	"plan.math.rules.value": "Reserve {reserve} % · höchstens {max} % · Entladen: {mode}",
 	"history.chart.plan": "Plan",
@@ -1973,7 +1971,7 @@ var Ne = {
 	"learn.hot_water.loss": "verliert {value} K/h",
 	"learn.hot_water.demand": "{value} K Verbrauch am Tag",
 	"learn.hot_water.learning": "Ich lerne aus dem Temperaturverlauf der letzten drei Wochen (aus der Aufzeichnung von Home Assistant).",
-	"learn.hot_water.none": "Lege unter Geräte eine Nacht-Aktion „Warmwasser“ mit Temperatursensor an, dann lerne ich, wie schnell es heizt und wie viel ihr am Tag braucht.",
+	"learn.hot_water.none": "Richte unter Geräte › Warmwasser dein Warmwasser mit Temperatursensor ein, dann lerne ich, wie schnell es heizt und wie viel ihr am Tag braucht.",
 	"learn.presence": "Wer wann zu Hause ist",
 	"learn.presence.value": "{label}: {hours} h",
 	"learn.presence.no_person": "Ohne Personen-Entität sehe ich nicht, wann jemand zu Hause ist.",
@@ -2288,7 +2286,7 @@ var Ne = {
 	"learn.car.km": "üblich {workday} km Werktag · {day_off} km frei",
 	"learn.car.learning": "Ich lerne aus Kilometerstand und Ladestand der letzten Wochen.",
 	"learn.car.no_odometer": "Mit einem Kilometerstand-Sensor lerne ich Verbrauch und übliche Strecke.",
-	"learn.car.none": "Schalte bei einer Nacht-Aktion fürs Auto „Laden nach Bedarf“ ein, dann lerne ich, wie viel es wirklich braucht.",
+	"learn.car.none": "Schalte unter Geräte › Auto & Laden bei deinem Auto „Laden nach Bedarf“ ein, dann lerne ich, wie viel es wirklich braucht.",
 	"learn.reset.scope.car": "Autos",
 	"learn.reset.forget.car": "Verbrauch und übliche Strecke deiner Autos.",
 	"learn.reset.scope.climate": "Heizung & Klima",
@@ -2327,7 +2325,7 @@ var Ne = {
 	"history.eval.incomplete": "Für diese Nacht fehlen mir zu viele Stunden – nachspielen ging nicht.",
 	"tip.sim_result.title": "Wie rechne ich das?",
 	"tip.sim_result.text": "Am Morgen spiele ich den Plan der Nacht mit dem echten Tag nach: echte Sonne, echter Verbrauch – einmal mit Plan, einmal ohne. Der Unterschied ist das, was das Steuern gebracht hätte, egal wie gut die Prognose war.\nBis der Tag vorbei ist, ist das Ergebnis **vorläufig**: Die restlichen Stunden spiele ich so, wie ich sie erwarte.",
-	"tip.sim_result.hint": "Gerechnet mit deinen Preisen aus den Einstellungen.",
+	"tip.sim_result.hint": "Gerechnet mit deinen Preisen aus Geräte › Netz & Sonne.",
 	"tip.learn_solar.title": "Was ist der Prognose-Faktor?",
 	"tip.learn_solar.text": "Ich vergleiche jeden Tag die Prognose vom Vorabend mit dem, was deine Anlage geliefert hat, und nehme den mittleren Wert der letzten vier Wochen. Ausreißer wie ein verschneites Dach fallen so kaum ins Gewicht. Jede neue Prognose rechne ich damit um.",
 	"tip.learn_shift.title": "Was ist der Zeitversatz?",
@@ -2353,7 +2351,7 @@ var Ne = {
 	"tip.learn_battery.title": "Was messe ich am Speicher?",
 	"tip.learn_battery.text": "Wie viel Energie wirklich hineinpasst und wie viel beim Laden und Entladen verloren geht. Ältere Speicher fassen oft weniger als auf dem Typenschild. Beides fließt in den Plan ein – außer du hast die Größe selbst eingetragen.",
 	"tip.learn_groups.title": "Wozu eine Rechnung je Gerät?",
-	"tip.learn_groups.text": "So sehe ich, welches Gerät bei Kälte mehr braucht. Läuft ein Gerät per Nacht-Aktion in der günstigen Zeit, verschiebe ich genau so viel von seinem Tagesverbrauch in die Nacht, wie es morgen voraussichtlich braucht.",
+	"tip.learn_groups.text": "So sehe ich, welches Gerät bei Kälte mehr braucht. Lasse ich ein Gerät nachts in der günstigen Zeit laufen, verschiebe ich genau so viel von seinem Tagesverbrauch in die Nacht, wie es morgen voraussichtlich braucht.",
 	"tip.learn_hot_water.title": "Was lerne ich am Warmwasser?",
 	"tip.learn_hot_water.text": "Wie schnell der Speicher heizt, wie viel er im Stehen verliert und wie viele Grad ihr am Tag verbraucht. Daraus rechne ich die Zieltemperatur für die Nacht und wann das Heizen starten muss, damit es zum Ende der günstigen Zeit fertig ist.",
 	"tip.learn_presence.title": "Wozu die Anwesenheit?",
@@ -2440,8 +2438,9 @@ var Ne = {
 	"mode.advisory": "Vorschlagen",
 	"mode.advisory.sub": "Joe fragt jeden Abend",
 	"mode.advisory.desc": "Ich frage dich jeden Abend, ob ich die Nacht steuern darf. Ohne dein Ja schalte ich nichts.",
-	"mode.untested": "Noch ohne Testlauf: {names}. Die schaue ich nur an, bis der Testlauf auf der Seite Geräte geklappt hat.",
-	"mode.none_tested": "Noch hat kein Speicher den Testlauf bestanden – ich würde nur zuschauen. Mach zuerst den Testlauf auf der Seite Geräte.",
+	"mode.untested": "Noch ohne Testlauf: {names}. Die schaue ich nur an, bis der Testlauf unter Geräte › Speicher geklappt hat.",
+	"mode.none_tested": "Noch hat kein Speicher den Testlauf bestanden – ich würde nur zuschauen. Mach zuerst den Testlauf unter Geräte › Speicher.",
+	"mode.to_batteries": "Zu den Speichern →",
 	"settings.notify": "Benachrichtigungen",
 	"settings.notify.intro": "Probleme zeige ich immer in den Benachrichtigungen von Home Assistant. Aufs Handy schicke ich nur, was du hier einschaltest.",
 	"settings.notify.service": "Handy oder Dienst",
@@ -2457,7 +2456,126 @@ var Ne = {
 	"settings.ask_time": "Frage um",
 	"settings.ask_time.hint": "Wann ich im Modus Vorschlagen frage.",
 	"devices.page.title": "Deine |Geräte",
-	"devices.lead": "Hier steuere ich deine Speicher – mit Testlauf und allem, was ich gerade mit ihnen mache.",
+	"devices.role.steers": "Ich steuere",
+	"devices.role.watches": "Ich schaue zu",
+	"devices.role.measures": "Nur gemessen",
+	"devices.group.go": "Alle zeigen →",
+	"devices.no_meter_group": "ohne Zähler",
+	"devices.car.lead": "Hier lade ich deine Autos – nach Bedarf für die Fahrten von morgen, wenn der Strom günstig ist, oder sofort, wenn du es willst.",
+	"devices.hot_water.lead": "Ich heize das Wasser in der günstigen Zeit auf, damit es bis zum nächsten Abend reicht.",
+	"devices.other.lead": "Alle Zähler aus deinem Energie-Dashboard. Sag mir, was jedes Gerät ist und wann es läuft – dann rechne ich richtig. Ein Gerät, das nachts laufen soll, schalte ich in der günstigen Zeit ein.",
+	"devices.other.empty": "Im Energie-Dashboard sind keine weiteren Geräte eingetragen.",
+	"devices.car.terms": "Termine",
+	"devices.car.terms_off": "Termine zählen erst, wenn „Laden nach Bedarf“ an ist. Das schaltest du oben unter Steuern ein.",
+	"devices.car.wallbox": "Wallbox",
+	"devices.hot_water.lonely": "Diesen Warmwasser-Zähler kenne ich aus deinem Energie-Dashboard. Richte einmal ein, was ich schalte – dann heize ich in der günstigen Zeit auf.",
+	"devices.hot_water.set_up": "Warmwasser einrichten",
+	"devices.other.night_offer": "Soll ich das Gerät nachts in der günstigen Zeit einschalten, wenn morgen die Sonne nicht reicht?",
+	"devices.other.night_add": "Einrichten →",
+	"devices.other.no_meter": "Für dieses Gerät kenne ich keinen Zähler. Unter Steuern bei „Gehört zu“ kannst du einen aus dem Energie-Dashboard wählen.",
+	"devices.moved_to": "steht jetzt unter {group} →",
+	"devices.meter": "Zähler",
+	"action.steer.unsaved": "Noch nicht gespeichert.",
+	"action.delete.ask.car": "Soll ich das Laden von „{name}“ wirklich vergessen? Das Auto bleibt in Home Assistant, ich lade es nur nicht mehr.",
+	"action.delete.ask.hot_water": "Soll ich „{name}“ wirklich nicht mehr steuern? Der Boiler bleibt in Home Assistant, ich heize nur nicht mehr vor.",
+	"action.delete.ask.other": "Soll ich „{name}“ wirklich nicht mehr nachts einschalten? Das Gerät bleibt in Home Assistant.",
+	"action.delete.yes": "Ja, löschen",
+	"action.delete.no": "Nein, behalten",
+	"action.title.ev": "Laden |einrichten",
+	"action.title.hot_water": "Warmwasser |einrichten",
+	"action.title.custom": "Nachts |einschalten",
+	"action.need.person_open": "Ansehen →",
+	"action.need.person_open_of": "{name} unter Haushalt ansehen",
+	"action.need.people_link": "Zu Wer wohnt hier →",
+	"action.need.routing_link": "Routendienst wählen →",
+	"tip.devices_lonely_hot_water.title": "Warum steht hier „einrichten“?",
+	"tip.devices_lonely_hot_water.text": "Aus dem Energie-Dashboard weiß ich, wie viel das Warmwasser zieht. Damit ich es nachts günstig vorheize, brauche ich noch, was ich schalte und welcher Fühler die Temperatur misst. Das richtest du einmal ein.",
+	"devices.problem.gone": "Finde ich in Home Assistant nicht mehr.",
+	"devices.unassigned": "Nicht zugeordnet",
+	"devices.unassigned.text": "Bei diesen Zählern weiß ich nicht, zu welchem Klimagerät sie gehören. Tipp auf einen: Dort ordnest du ihn einem Klimagerät zu oder sagst mir, was er misst.",
+	"devices.card.unassigned": "Zu welchem Gerät gehört das?",
+	"devices.card.unassigned_kind": "Sag mir, was er misst.",
+	"devices.group_add.car": "Auto oder Wallbox hinzufügen",
+	"devices.group_add.hot_water": "Warmwasser hinzufügen",
+	"devices.group_add.night": "Gerät hinzufügen",
+	"climate.assign.no_climate": "Ich kenne noch kein Thermostat und keine Klimaanlage, zu der er gehören könnte. Sag mir unten, was er misst.",
+	"devices.card.setup_car": "Laden ist noch nicht eingerichtet.",
+	"devices.card.setup_hot_water": "Warmwasser ist noch nicht eingerichtet.",
+	"devices.card.climate": "{current} °C · soll {target} °C",
+	"devices.card.temp": "{value} °C",
+	"devices.card.kw": "{value} kW",
+	"devices.card.running": "Läuft gerade",
+	"devices.card.import": "bezieht {value} kW",
+	"devices.card.export": "speist {value} kW ein",
+	"devices.grid.connection": "Netzanschluss & Tarif",
+	"devices.grid.solar": "Solaranlage",
+	"devices.grid.home": "Hausverbrauch",
+	"grid.lead": "Woher dein Strom kommt, was er kostet und wo er bleibt: Netzanschluss, Stromtarif, Solaranlage und der Verbrauch im Haus.",
+	"grid.energy.none": "Im Energie-Dashboard von Home Assistant ist noch nichts eingetragen. Trägst du dort Netz, PV und Speicher ein, finde ich sie von selbst.",
+	"grid.energy.open": "Energie-Dashboard öffnen",
+	"grid.connection": "Netzanschluss",
+	"grid.connection.say": "Der Netzzähler misst, was am Hausanschluss hereinkommt und hinausgeht. Daran sehe ich, ob meine Pläne aufgehen.",
+	"grid.tariff.say": "Wann Strom günstig ist und was er kostet. Danach entscheide ich, wann ich lade und ob es sich lohnt.",
+	"grid.tariff.unknown": "Deinen Tarif kenne ich noch nicht. Trag ihn unten ein, dann rechne ich mit deinen echten Preisen.",
+	"grid.tariff.unsaved": "Noch nicht gespeichert.",
+	"grid.tariff.discard": "Verwerfen",
+	"grid.solar.say": "Was deine Anlage gerade liefert und was die Prognose für morgen erwartet.",
+	"grid.solar.factor": "Gelernter Faktor für die Prognose",
+	"grid.home.say": "Was im Haus gerade verbraucht wird. Daraus lerne ich, wie viel ihr wann braucht.",
+	"grid.home.devices": "Geräte zuordnen →",
+	"tip.grid_tariff.title": "Wie stelle ich den Tarif ein?",
+	"tip.grid_tariff.text": "Wähl zuerst die Art deines Tarifs. Dann trägst du die günstige Zeit, die Preise und die Einspeisevergütung ein.\nDie Felder hängen zusammen. Darum übernehme ich erst alles, wenn du auf **Speichern** tippst. **Verwerfen** holt den gespeicherten Tarif zurück.",
+	"tip.grid_tariff.hint": "Die Preise stehen auf deiner Stromrechnung.",
+	"devices.page.now": "Jetzt",
+	"devices.page.steer": "Steuern",
+	"devices.page.power": "Strom",
+	"devices.page.learned": "Gelernt",
+	"devices.page.log": "Protokoll",
+	"devices.page.intruders": "Störenfriede",
+	"devices.page.remove": "Weglassen",
+	"devices.page.delete": "Löschen",
+	"devices.page.more_learned": "Mehr im Rückblick →",
+	"devices.page.more_log": "Alles im Rückblick →",
+	"devices.add": "Hinzufügen",
+	"devices.add.label": "Gerät hinzufügen",
+	"devices.add.title": "Was möchtest du |hinzufügen?",
+	"devices.add.lead": "Such dir aus, was dazukommt. Ich zeige dir dann, was ich dafür schon gefunden habe.",
+	"devices.add.battery": "Speicher",
+	"devices.add.battery.text": "Ein Hausspeicher, den ich beobachten oder steuern soll.",
+	"devices.add.car": "Auto oder Wallbox",
+	"devices.add.for": "für {name}",
+	"devices.add.car.text": "Ich lade das Auto, wenn es günstig ist und morgen reicht.",
+	"devices.add.hot_water": "Warmwasser",
+	"devices.add.hot_water.text": "Ich heize das Wasser in der günstigen Zeit auf.",
+	"devices.add.climate": "Klimagerät oder Heizung",
+	"devices.add.climate.text": "Thermostate und Klimaanlagen stehen unter Heizung & Klima.",
+	"devices.add.night": "Gerät, das nachts laufen soll",
+	"devices.add.night.text": "Ich schalte es in der günstigen Zeit ein, wenn morgen die Sonne nicht reicht.",
+	"devices.add.meter": "Gerät mit Zähler",
+	"devices.add.meter.text": "Zähler aus dem Energie-Dashboard: Sag mir, was es ist und wann es läuft.",
+	"devices.add.rediscover": "Nochmal umschauen",
+	"devices.add.rediscover.text": "Ich suche in Home Assistant nach neuen Geräten.",
+	"devices.add.other": "Andere Auswahl",
+	"devices.add.battery.title": "Speicher |hinzufügen",
+	"devices.add.battery.lead": "Diese Speicher habe ich gefunden. Fehlt deiner, such dir seinen Ladezustand selbst aus.",
+	"devices.add.battery.none": "Ich habe keinen weiteren Speicher gefunden.",
+	"devices.add.battery.pick": "Selbst auswählen",
+	"devices.add.battery.ignored": "hast du weggelassen",
+	"devices.add.battery.use": "Wieder nutzen",
+	"devices.found": "Neu gefunden",
+	"devices.found.lead": "Das habe ich neu in Home Assistant entdeckt. Soll ich es nutzen?",
+	"devices.found.battery": "Speicher",
+	"devices.found.wallbox": "Wallbox",
+	"devices.found.car": "Auto",
+	"devices.found.use": "Übernehmen",
+	"devices.found.ignore": "Nicht nutzen",
+	"tip.devices_add.title": "Was kann ich hinzufügen?",
+	"tip.devices_add.text": "Alles, was Strom speichert, lädt oder verbraucht: Speicher, Auto oder Wallbox, Warmwasser, Klimageräte und Geräte, die nachts laufen sollen.\nIch zeige dir zuerst, was ich schon gefunden habe. Du musst nichts von Hand eintippen.",
+	"tip.device_steer.title": "Was stelle ich unter Steuern ein?",
+	"tip.device_steer.text": "Hier legst du fest, was ich schalte und wann ich das Gerät nachts in der günstigen Zeit einschalte. Jedes Feld hat seine eigene Erklärung.\nWas du hier änderst, gilt erst nach „Speichern“. Bis dahin bleibt dein Entwurf stehen, auch wenn du die Seite verlässt.",
+	"tip.devices_found.title": "Was heißt Übernehmen?",
+	"tip.devices_found.text": "**Übernehmen** nimmt das Gerät dazu. Einen Speicher beobachte ich ab sofort, bei Auto und Wallbox richtest du kurz das Laden ein.\n**Nicht nutzen** blendet es aus. Über **Hinzufügen** holst du es jederzeit zurück.",
+	"devices.lead": "Alles mit Strom an einem Ort: Speicher, Heizung & Klima, Auto & Laden, Warmwasser, Weitere Geräte, Netz & Sonne. Tipp auf ein Gerät, dann siehst du alles darüber.",
 	"devices.now": "Gerade",
 	"devices.status.simulation": "Simulation – ich schalte nichts und schreibe nur auf, was ich täte.",
 	"devices.status.off": "Pause – ich schalte nichts.",
@@ -2475,8 +2593,7 @@ var Ne = {
 	"devices.power.discharge": "entlädt mit {value} kW",
 	"devices.power.idle": "ruht",
 	"devices.release": "Sofort freigeben",
-	"devices.batteries": "Speicher",
-	"devices.batteries.none": "Ich kenne noch keinen Speicher. Füg ihn in den Einstellungen hinzu.",
+	"devices.batteries.none": "Ich kenne noch keinen Speicher. Hast du einen, füg ihn mit „Speicher hinzufügen“ hinzu.",
 	"devices.battery.profile": "{name} – erkannt",
 	"devices.battery.generic": "Regler zugeordnet",
 	"devices.battery.steps": "Eigene Schritte",
@@ -2520,6 +2637,31 @@ var Ne = {
 	"devices.test.confirm.go": "Testlauf starten",
 	"devices.setup": "Regler einrichten",
 	"devices.suggested": "Ich habe Regler gefunden, die passen könnten. Prüf sie unter „Regler einrichten“ und mach dann den Testlauf.",
+	"battery.page.lead": "Wie voll deine Speicher sind, was ich gerade mit ihnen mache und welche Regeln für alle gelten. Tipp auf einen Speicher, dann siehst du alles über ihn.",
+	"battery.page.add": "Speicher hinzufügen",
+	"battery.page.suggested": "Regler gefunden, die passen könnten.",
+	"battery.page.rules": "Gilt für alle Speicher",
+	"battery.page.found": "Gefunden, aber nicht genutzt",
+	"battery.page.found.new": "neu gefunden",
+	"battery.page.how": "So steuere ich ihn",
+	"battery.page.capacity.learned": "Gemessen habe ich {value} kWh nutzbar.",
+	"battery.page.capacity.learning": "Ich messe die Größe beim Laden und Entladen. Das dauert ein paar Wochen.",
+	"battery.page.remove.text": "Lass ich den Speicher weg, plane und steuere ich ohne ihn. Habe ich ihn selbst gefunden, holst du ihn unter „Speicher hinzufügen“ mit „Wieder nutzen“ zurück.",
+	"battery.page.remove.confirm": "{name} wirklich weglassen? Was du hier für ihn eingestellt hast, geht dabei verloren.",
+	"battery.page.remove.go": "Ja, weglassen",
+	"battery.control.title": "Regler für |{name}",
+	"battery.control.lead": "Hier legst du fest, über welche Regler ich den Speicher lade und halte. Erst mit „Speichern“ übernehme ich die Änderung.",
+	"battery.control.unsaved": "Noch nicht gespeichert.",
+	"tip.battery_rules.title": "Was gilt für alle Speicher?",
+	"tip.battery_rules.text": "Diese Regeln gelten für alle Speicher zusammen. Du siehst sie hier, ändern kannst du sie in Joes Einstellungen – „Ändern →“ bringt dich direkt hin.\nDie **Reserve** gilt für alle Speicher, die **Entladegrenze** auf der Seite eines Speichers nur für ihn. Es gilt immer die höhere von beiden.",
+	"tip.battery_found.title": "Was heißt Wieder nutzen?",
+	"tip.battery_found.text": "Diese Speicher habe ich in Home Assistant gefunden, nutze sie aber nicht.\n**Übernehmen** nimmt einen neuen Speicher dazu, **Nicht nutzen** blendet ihn aus.\n**Wieder nutzen** holt einen Speicher zurück, den du weggelassen hast.",
+	"tip.battery_intruders.title": "Was sind Störenfriede?",
+	"tip.battery_intruders.text": "Automationen, die etwas an genau diesem Speicher setzen. Setzen sie dieselben Werte wie ich, gewinnt, wer zuletzt schreibt – dann hält sich der Speicher nicht an meinen Plan.\n„Alle ausschalten“ schaltet nur die Automationen dieses Speichers aus, „Wieder einschalten“ genau die, die ich ausgeschaltet habe.",
+	"tip.battery_intruders.hint": "Alle Automationen an deinen Speichern stehen unter Geräte › Speicher.",
+	"tip.battery_remove.title": "Was heißt Weglassen?",
+	"tip.battery_remove.text": "Ich nutze den Speicher dann nicht mehr: kein Plan, keine Steuerung, kein Lernen. Am Gerät und in Home Assistant ändert sich nichts.",
+	"tip.battery_remove.hint": "Einen Speicher, den ich selbst gefunden habe, holst du unter „Speicher hinzufügen“ zurück.",
 	"log.start": "Nacht beginnt",
 	"log.set": "{battery}: {entity} → {value}",
 	"log.reached": "{battery} hat {target} % erreicht",
@@ -2543,7 +2685,7 @@ var Ne = {
 	"f.battery.control.take": "Vorschlag übernehmen",
 	"f.battery.control.ready": "Laden über: {charge} · Halten über: {hold}",
 	"f.battery.control.needs": "Damit ich steuern kann, brauche ich einen Weg zum Laden (Betriebsart mit Zwangsladen oder „Laden aus dem Netz“ mit „Laden bis“) und einen zum Halten (Mindest-Ladestand, Betriebsart oder Entladegrenze).",
-	"f.battery.control.retest": "Nach jeder Änderung braucht es einen neuen Testlauf auf der Seite Geräte.",
+	"f.battery.control.retest": "Nach jeder Änderung braucht es einen neuen Testlauf. Du findest ihn auf der Seite des Speichers unter „Jetzt“.",
 	"f.battery.control.services": "So steuere ich ihn (über Dienste)",
 	"f.battery.control.levers": "Regler",
 	"f.battery.mode_options": "Was bedeuten die Optionen?",
@@ -2615,12 +2757,11 @@ var Ne = {
 	"tip.notify_morning.text": "Nach einer gesteuerten Nacht: wie weit ich die Speicher geladen habe und dass alles wieder zurückgestellt ist.",
 	"tip.ask_time.title": "Wann frage ich?",
 	"tip.ask_time.text": "Zu dieser Uhrzeit frage ich im Modus Vorschlagen, ob ich die kommende Nacht steuern darf. Antworten kannst du bis in die Nacht hinein.",
-	"action.label": "Nacht-Aktion",
-	"action.title": "Nacht-|Aktion",
-	"action.title.new": "Neue |Nacht-Aktion",
+	"action.label": "Gerät steuern",
+	"action.title": "Gerät |steuern",
 	"action.template.ev": "E-Auto laden",
 	"action.template.hot_water": "Warmwasser vorheizen",
-	"action.template.custom": "Eigene Aktion",
+	"action.template.custom": "Eigenes Gerät",
 	"action.f.name": "Name",
 	"action.f.kind": "Art",
 	"action.kind.switch": "Schalten",
@@ -2661,9 +2802,7 @@ var Ne = {
 	"action.pick.condition": "Wovon hängt es ab?",
 	"action.problem.entity": "Wähl noch aus, was ich schalten soll.",
 	"action.problem.sensor": "Für einen Zielwert brauche ich den Temperatur-Fühler.",
-	"action.delete": "Aktion löschen",
-	"devices.actions": "Nacht-Aktionen",
-	"devices.action.off": "aus",
+	"action.delete": "Löschen",
 	"devices.boost.unit": "Einheit",
 	"devices.charge.label": "Laden bis",
 	"devices.charge.now": "Jetzt laden",
@@ -2688,7 +2827,7 @@ var Ne = {
 	"cards.no_access": "Energy Joe ist nicht erreichbar – die Karte braucht einen Benutzer mit Administratorrechten.",
 	"cards.night.title": "Joe heute Nacht",
 	"cards.night.skip": "Heute aussetzen",
-	"cards.car.none": "Noch kein Auto, das ich laden kann – richte es im Energy-Joe-Panel unter „Geräte“ ein.",
+	"cards.car.none": "Noch kein Auto, das ich laden kann – richte es im Energy-Joe-Panel unter „Geräte › Auto & Laden“ ein.",
 	"cards.car.charging": "lädt",
 	"devices.charge.failed": "Das hat nicht geklappt – versuch es nochmal.",
 	"automations.lead_idle": "Diese Automationen setzen etwas an deinen Speichern. Solange ich nur zuschaue, stören sie nicht – schalte sie aus, bevor du mich auf „Vorschlagen“ oder „Live“ stellst.",
@@ -2707,12 +2846,11 @@ var Ne = {
 	"devices.boost.reserve": "Dazu kommt deine Reserve von {reserve} km.",
 	"devices.action.boost": "Lädt jetzt, weil du es willst.",
 	"devices.action.tonight": "Heute Nacht",
-	"devices.action.edit": "Bearbeiten",
 	"devices.car.no_calendar": "Kein Kalender verbunden",
 	"devices.car.lonely": "Dieses Auto kenne ich aus deinem Energie-Dashboard – laden kann ich es noch nicht. Richte es einmal ein: Wallbox wählen, „Laden nach Bedarf“ ist schon an.",
 	"devices.car.set_up": "Laden einrichten",
 	"tip.devices_lonely_car.title": "Warum steht hier „einrichten“?",
-	"tip.devices_lonely_car.text": "Unter Einstellungen steht das Auto als Verbraucher – so weiß ich, wie viel es zieht. Damit ich es nachts günstig oder nach Bedarf lade, brauche ich noch, wie ich die Wallbox schalte. Das richtest du hier einmal ein; danach steht hier die Karte mit „Laden nach Bedarf“ und dem Kalender.",
+	"tip.devices_lonely_car.text": "Aus dem Energie-Dashboard weiß ich, wie viel das Auto zieht. Damit ich es nachts günstig oder nach Bedarf lade, brauche ich noch, wie ich die Wallbox schalte. Das richtest du einmal ein – danach siehst du hier Ladestand, Fahrten und Termine des Autos.",
 	"devices.car.of_persons": "Kalender von {names}",
 	"devices.car.calendar_ok": "verbunden",
 	"devices.car.calendar_problem": "gerade ein Problem – bitte ansehen",
@@ -2720,7 +2858,7 @@ var Ne = {
 	"devices.car.connect": "Kalender verbinden",
 	"devices.car.change": "Ändern",
 	"tip.car_calendar_card.title": "Wozu der Kalender des Autos?",
-	"tip.car_calendar_card.text": "Aus den Terminen weiß ich, wie weit das Auto morgen fährt, und lade nachts genau so viel nach. Hier siehst du, welcher Kalender verbunden ist und wann ich ihn zuletzt gelesen habe. „Kalender verbinden“ öffnet die Einstellungen des Autos direkt beim Kalender und schaltet dort „Laden nach Bedarf“ ein – gespeichert wird erst, wenn du speicherst.",
+	"tip.car_calendar_card.text": "Aus den Terminen weiß ich, wie weit das Auto morgen fährt, und lade nachts genau so viel nach. Hier siehst du, welcher Kalender verbunden ist und wann ich ihn zuletzt gelesen habe. Der Knopf springt zu den Terminen weiter unten.",
 	"devices.action.disabled": "Ausgeschaltet – ich lasse sie in Ruhe.",
 	"devices.action.running": "Läuft – bis {end} Uhr.",
 	"devices.action.heating": "Heizt auf {target} °C – längstens bis {end} Uhr.",
@@ -2737,9 +2875,7 @@ var Ne = {
 	"devices.action.why.tonight": "Läuft heute Nacht – du hast es eingeschaltet.",
 	"devices.action.why.little_sun": "Läuft heute Nacht – morgen kommt zu wenig Sonne.",
 	"devices.action.why.every_night": "Läuft jede Nacht.",
-	"devices.action.add": "Nacht-Aktion hinzufügen",
-	"devices.action.add.text": "Was soll laufen, wenn morgen die Sonne nicht reicht?",
-	"plan.actions": "Nacht-Aktionen",
+	"plan.actions": "Geräte heute Nacht",
 	"plan.actions.run": "läuft von {start} bis {end} Uhr",
 	"plan.actions.target": "heizt ab {start} Uhr auf {target} °C, bis spätestens {end} Uhr",
 	"plan.actions.energy": "≈ {kwh} kWh, {cost} günstig in der Nacht",
@@ -2754,8 +2890,8 @@ var Ne = {
 	"log.tonight": "„Heute Nacht“ umgeschaltet",
 	"log.grid_guard": "Hauptsicherung: {power} kW aus dem Netz – Laden kurz pausiert",
 	"log.no_progress": "{battery} lädt nicht (bei {soc} %)",
-	"tip.a_name.title": "Wie heißt die Aktion?",
-	"tip.a_name.text": "So steht sie auf der Seite Geräte, im Plan und als Schalter in Home Assistant.",
+	"tip.a_name.title": "Wie soll das Gerät heißen?",
+	"tip.a_name.text": "So steht es unter Geräte, im Plan und als Schalter „Heute Nacht“ in Home Assistant.",
 	"tip.a_kind.title": "Welche Art?",
 	"tip.a_kind.text": "**Schalten** – ich setze einen Wert für die ganze günstige Zeit und stelle ihn am Ende zurück (z. B. den evcc-Modus auf „now“).\n**Bis zu einem Zielwert** – ich schalte so spät wie möglich ein und wieder aus, sobald ein Fühler den Zielwert erreicht (z. B. Warmwasser).",
 	"tip.a_entity.title": "Was schalte ich?",
@@ -2766,10 +2902,10 @@ var Ne = {
 	"tip.a_reset.text": "**Wie vorher** – ich merke mir den Wert vor dem Einschalten und setze ihn wieder. **Fester Wert** – immer derselbe, zum Beispiel „aus“. Hast du selbst zwischendurch etwas geändert, lasse ich es so.",
 	"tip.a_lead.title": "Warum früher?",
 	"tip.a_lead.text": "Manche Geräte brauchen etwas, bis sie umschalten – evcc zum Beispiel bis zu drei Minuten. Dann stelle ich so viel früher zurück, damit am Ende der günstigen Zeit nichts mehr teuer läuft.",
-	"tip.a_auto.title": "Wann läuft sie von allein?",
-	"tip.a_auto.text": "Wenn morgen weniger Sonne kommt als hier steht – mit dem Faktor, den ich für deine Prognose gelernt habe. Leer heißt: jede Nacht. Ausgeschaltet läuft sie nur, wenn du „Heute Nacht“ einschaltest.",
+	"tip.a_auto.title": "Wann schalte ich es von allein ein?",
+	"tip.a_auto.text": "Wenn morgen weniger Sonne kommt als hier steht – mit dem Faktor, den ich für deine Prognose gelernt habe. Leer heißt: jede Nacht. Ausgeschaltet schalte ich es nur ein, wenn du „Heute Nacht“ einschaltest.",
 	"tip.a_conditions.title": "Wozu Bedingungen?",
-	"tip.a_conditions.text": "Die Aktion läuft nur, wenn alle erfüllt sind – zum Beispiel „Auto angesteckt ist an“ oder „Ladestand des Autos kleiner als 70“.",
+	"tip.a_conditions.text": "Ich schalte es nur ein, wenn alle erfüllt sind – zum Beispiel „Auto angesteckt ist an“ oder „Ladestand des Autos kleiner als 70“.",
 	"tip.a_power.title": "Wozu die Leistung?",
 	"tip.a_power.text": "Damit ich weiß, wie viel vom Netzanschluss sie braucht. Den Rest bekommen die Speicher – so bleibt alles unter deinem Netzlimit.",
 	"tip.a_consumer.title": "Wozu die Zuordnung?",
@@ -2777,24 +2913,22 @@ var Ne = {
 	"tip.a_priority.title": "Was heißt die Reihenfolge?",
 	"tip.a_priority.text": "Reicht der Netzanschluss nicht für alles, kommt die kleinere Zahl zuerst. Die Speicher nehmen, was übrig bleibt.",
 	"tip.a_enabled.title": "Was heißt aktiv?",
-	"tip.a_enabled.text": "Ausgeschaltet plane und schalte ich diese Aktion nicht – auch nicht von Hand.",
+	"tip.a_enabled.text": "Ausgeschaltet plane und schalte ich das Gerät nicht – auch nicht von Hand.",
 	"tip.a_sensor.title": "Welcher Fühler?",
 	"tip.a_sensor.text": "Der Fühler, dessen Temperatur ich beobachte, zum Beispiel die Warmwasser-Temperatur. Ist das Ziel erreicht, schalte ich aus.",
 	"tip.a_temps.title": "Wie rechne ich das Ziel?",
 	"tip.a_temps.text": "Morgens soll das Wasser mindestens so warm sein. Dazu lege ich, was ihr über den Tag braucht (das lerne ich noch), und den Puffer. Höher als „Höchstens“ heize ich nie. Ich starte so spät, dass das Ziel bis zum Ende der günstigen Zeit steht.",
 	"tip.a_save.title": "Was passiert beim Speichern?",
-	"tip.a_save.text": "Ich plane die Aktion ab sofort mit ein. Geschaltet wird nur in den Modi Vorschlagen und Live – in der Simulation zeige ich, was ich getan hätte.",
+	"tip.a_save.text": "Erst beim Speichern übernehme ich deine Änderungen und plane ab sofort damit. Geschaltet wird nur in den Modi Vorschlagen und Live – in der Simulation zeige ich, was ich getan hätte.",
 	"tip.a_delete.title": "Was passiert beim Löschen?",
-	"tip.a_delete.text": "Die Aktion und ihr Schalter in Home Assistant verschwinden. Läuft sie gerade, stelle ich vorher zurück.",
+	"tip.a_delete.text": "Ich vergesse, wie ich das Gerät steuere, und sein Schalter „Heute Nacht“ in Home Assistant verschwindet. Läuft es gerade, stelle ich vorher zurück. Das Gerät selbst und sein Zähler bleiben.",
 	"tip.boost.title": "Jetzt oder heute Nacht?",
 	"tip.boost.text": "**Jetzt laden**: Ich schalte die Wallbox sofort ein – ohne auf die günstige Zeit oder die Sonne zu warten und auch in der Simulation, weil du es ausdrücklich willst.\n**Heute Nacht laden**: Ich lade in der kommenden Nacht in der günstigen Zeit, egal was die Prognose sagt.\nSobald der Ladestand erreicht ist (oder die Reichweite plus deine Reserve), stelle ich die Wallbox zurück, wie sie vorher war. Mit % und km wählst du, ob das Ziel ein Ladestand oder eine Reichweite ist.",
 	"tip.boost.hint": "„Jetzt laden“ hört nach spätestens 24 Stunden von selbst auf, „Heute Nacht“ mit dem Ende der Nacht. Mit „Abbrechen“ sofort.",
 	"tip.action_tonight.title": "Was macht „Heute Nacht“?",
-	"tip.action_tonight.text": "Die Aktion läuft in der kommenden Nacht, egal was die Prognose sagt – praktisch, wenn du weißt, dass du morgen früh losfährst. Nach der Nacht schaltet sich der Schalter von selbst wieder aus.",
-	"tip.devices_actions.title": "Was sind Nacht-Aktionen?",
-	"tip.devices_actions.text": "Alles außer den Speichern, was in der günstigen Zeit laufen soll, wenn morgen die Sonne nicht reicht – das E-Auto, das Warmwasser, ein Pool. Am Ende der Nacht stelle ich alles zurück.",
+	"tip.action_tonight.text": "Ich schalte das Gerät in der kommenden Nacht ein, egal was die Prognose sagt – praktisch, wenn du weißt, dass du es morgen früh brauchst. Nach der Nacht schaltet sich der Schalter von selbst wieder aus.",
 	"tip.plan_actions.title": "Was sehe ich hier?",
-	"tip.plan_actions.text": "Welche Nacht-Aktionen heute Nacht laufen würden, wann – und warum die anderen nicht.",
+	"tip.plan_actions.text": "Welche Geräte ich heute Nacht einschalten würde, wann – und warum die anderen nicht.",
 	"error.title": "Joe antwortet |nicht",
 	"error.text": "Ich erreiche die Integration nicht. Lade die Seite neu – hilft das nicht, schau unter Einstellungen → System → Protokolle nach.",
 	"error.action": "Fehler beim Speichern",
@@ -2819,12 +2953,9 @@ var Ne = {
 	"climate.mirror.night": "Bedtime",
 	"climate.mirror.night.time": "fixed times per device",
 	"climate.mirror.night.no_entity": "no entity chosen yet",
-	"devices.climate.summary": "{devices}, {steered} of them steered",
-	"devices.climate.on": "I steer them by who is home.",
-	"devices.climate.off": "Steering is off, I only watch.",
 	"rule.on": "on",
 	"climate.enabled": "Joe steers heating and cooling",
-	"climate.live": "I steer the devices you switch on below.",
+	"climate.live": "I steer the devices where you switch on “Joe steers this device”. Tap a device for that.",
 	"climate.not_live": "I only steer in the mode “Live” – until then I just show for each device what I would do.",
 	"climate.home": "At home: {names}",
 	"climate.nobody": "Nobody is home right now.",
@@ -2884,7 +3015,7 @@ var Ne = {
 	"climate.room.steer": "Joe steers this device",
 	"climate.room.off": "Not steered by me.",
 	"climate.meter.pick": "Pick the meter for {name}",
-	"climate.meters.count": "{linked} of {all} linked",
+	"climate.meters.count": "{linked} of {all} measured",
 	"climate.meter.without_long": "No meter",
 	"climate.meter.open_long": "No meter yet",
 	"climate.meter.change": "Change",
@@ -2893,8 +3024,21 @@ var Ne = {
 	"climate.meter.search_placeholder": "Name, room or Shelly …",
 	"climate.meter.no_hits": "Nothing found.",
 	"climate.meter.cancel": "Cancel",
-	"climate.meters": "Meters",
-	"climate.meters.say": "Which device measures the power and energy of your climate devices? Joe preselects what fits by name and room. Several climate devices may hang on the same meter.",
+	"climate.meters.say": "Which device measures the power and energy of this climate device? I preselect what fits by name and room. Several climate devices may hang on the same meter.",
+	"climate.list": "Your devices by room",
+	"climate.card.measured": "Power measured",
+	"climate.why.free_day": "Day off",
+	"climate.moved": "{name} is now under {group} →",
+	"climate.device.main_off": "off – then I steer no device",
+	"climate.consumer": "In the Energy dashboard:",
+	"climate.unassigned.lead": "In the Energy dashboard this meter is a climate device. I don't know yet which device it belongs to.",
+	"climate.assign": "Which climate device does this meter belong to?",
+	"climate.assign.pick": "Pick a device",
+	"climate.assign.has_meter": "{name} (already has a meter)",
+	"climate.assign.no_device": "In Home Assistant this meter is not part of any device, so I can't assign it to a climate device. Tell me below what it measures.",
+	"tip.climate_assign.title": "Why assign it?",
+	"tip.climate_assign.text": "If the meter belongs to a thermostat or air conditioner, I keep it as that device's meter. Then you see the device and its power use on one page.",
+	"tip.climate_assign.hint": "If it measures something else, change its kind below. Then it shows up in its own group.",
 	"climate.meter.none_option": "— no meter —",
 	"climate.meter.confirm": "Confirm",
 	"climate.meter.no_meters": "Joe finds no device with a power or energy sensor.",
@@ -2902,7 +3046,7 @@ var Ne = {
 	"climate.meter.suggested": "Suggestion",
 	"climate.meter.shared": "Same meter as {names} – the reading counts for all of them together.",
 	"tip.climate_meter.title": "What measures this device?",
-	"tip.climate_meter.text": "Pick for each climate device the device that measures its power and energy – e.g. a channel of a Shelly Pro 3EM, grouped by “connected via …”. Joe's suggestion is preselected and marked “(Suggestion)”; “Confirm” takes it. “— no meter —” tells Joe there is no measurement.",
+	"tip.climate_meter.text": "Pick the device that measures this climate device's power and energy – e.g. a channel of a Shelly Pro 3EM, grouped by “connected via …”. I preselected my suggestion and marked it “(Suggestion)”; “Confirm” takes it. “— no meter —” tells me there is no measurement.",
 	"tip.climate_meter.hint": "Several climate devices may share one meter – the reading then counts for all of them together.",
 	"climate.away": "When nobody is home",
 	"climate.away.setback": "Lower",
@@ -3182,7 +3326,7 @@ var Ne = {
 	"past.learned.climate.say": "How fast a room gets warm again (when cooling: cool) once I put it back after a setback. That tells me how early to start.",
 	"past.learned.climate.rate": "{rate} °C per hour",
 	"past.learned.climate.none": "As soon as I control heating or cooling, I learn here how fast each room gets warm or cool.",
-	"past.learned.climate.open": "To heating & cooling →",
+	"past.learned.climate.open": "To Heating & cooling →",
 	"tip.learn_climate.title": "What is the warm-up rate?",
 	"tip.learn_climate.text": "When I put a room back after a setback, I measure how long it takes to reach the wanted temperature. Every new measurement goes into the average, the older ones still count. Until I know a room, I assume 1.5 °C per hour.",
 	"past.log.title": "What I |switched",
@@ -3192,9 +3336,9 @@ var Ne = {
 	"past.log.all": "All",
 	"past.log.filter.battery": "Batteries",
 	"past.log.filter.climate": "Heating & cooling",
-	"past.log.filter.car": "Cars",
+	"past.log.filter.car": "Car & charging",
 	"past.log.filter.hot_water": "Hot water",
-	"past.log.filter.other": "Other devices",
+	"past.log.filter.other": "More devices",
 	"past.log.filter.joe": "Joe himself",
 	"past.log.empty": "Nothing yet – as soon as I steer, test or change a climate device, it shows up here.",
 	"past.log.empty_filter": "I haven't switched anything here yet.",
@@ -3203,6 +3347,12 @@ var Ne = {
 	"tip.past_log.text": "Everything I switched, with the time: batteries, cars, hot water, your devices and climate devices, plus test runs, your answers and when a night starts. What you change on a device yourself isn't listed – unless I notice it while I'm steering.",
 	"nav.devices.all": "All",
 	"nav.devices.climate": "Heating & cooling",
+	"nav.devices.battery": "Batteries",
+	"nav.devices.car": "Car & charging",
+	"nav.devices.hot_water": "Hot water",
+	"nav.devices.other": "More devices",
+	"nav.devices.grid": "Grid & sun",
+	"nav.back": "← {name}",
 	"nav.household.people": "Who lives here",
 	"nav.household.presence": "Who's home",
 	"nav.household.days": "Days & calendars",
@@ -3280,8 +3430,6 @@ var Ne = {
 	"find.home": "Home consumption",
 	"find.solar": "Solar power",
 	"find.solar.detail": "{count} · together {total} kW",
-	"find.car": "Car",
-	"find.wallbox": "Wallbox",
 	"find.weather": "Weather",
 	"find.holiday": "Public holidays",
 	"find.people": "Household",
@@ -3358,8 +3506,6 @@ var Ne = {
 	"plan.day.cost": "Costs about {cost}.",
 	"plan.title": "Where I |do the math",
 	"history.title": "Every day |up close",
-	"devices.title": "Your |devices",
-	"devices.text": "Batteries, wallbox and hot water – with status, a test run and what I'm planning with them.",
 	"settings.operation": "Operation",
 	"settings.mode": "Operating mode",
 	"settings.mode.hint": "Simulation plans and learns without switching anything. Suggest asks every evening, live steers by itself.",
@@ -3429,34 +3575,25 @@ var Ne = {
 	"review.ignore": "Leave out",
 	"review.use": "Use it after all",
 	"review.add": "Add",
-	"review.assign": "Assign",
 	"review.invert": "Flip",
 	"review.keep": "It's right",
 	"review.ignored": "left out",
 	"review.ask_later": "I'll ask you in a moment",
-	"review.used": "in use",
-	"review.unused": "not in use yet",
-	"review.wallbox.used": "for the night action “Charge the car”",
-	"review.wallbox.unused": "for a night action – set up under Devices → “Charge the car”",
-	"review.car.used": "for charging by need",
-	"review.car.unused": "for charging by need – switch on under Devices → car → “Charge by need”",
 	"review.capacity_unknown": "size unknown",
 	"review.battery": "Battery",
 	"review.battery.none": "No battery found. If you have one, pick it.",
-	"review.battery.more": "Another battery",
-	"review.battery.more_detail": "Missing one? Pick it.",
 	"review.tariff.ask": "I'll ask you about the tariff in a moment – or enter it now.",
 	"review.forecast.none": "Without a solar forecast I plan cautiously. Set up Forecast.Solar, for example, in Home Assistant and I'll look again.",
 	"review.grid.none": "Without a grid meter I can't see what really happens. Pick the sensor that measures the power at your grid connection.",
 	"review.home.balance": "Like the Energy dashboard: grid + solar ± storage",
+	"review.home.devices": "Assign devices",
 	"review.home.compare": "To compare: {name} · {live}",
 	"review.home.flexible": "For the battery I leave out: {names}. I never charge the car from the home battery.",
 	"review.home.flexible_some": "For the battery I leave out: {names}.",
-	"review.home.flexible_none": "Do some devices run only on solar surplus or cheap power? Tell me with the devices – then I plan the battery without them.",
+	"review.home.flexible_none": "Do some devices run only on solar surplus or cheap power? Tell me under Devices › More devices – then I plan the battery without them.",
 	"review.home.off": "Over the last {days} days your sensor shows {pct} % {direction} than grid + solar ± storage. Is a small solar system missing in it? I work with grid + solar ± storage.",
 	"review.home.less": "less",
 	"review.home.more": "more",
-	"review.home.devices": "Assign devices",
 	"review.home.none": "Don't know one? No problem – I'll work out home consumption from grid, solar and battery myself.",
 	"review.home.without": "I don't have one",
 	"review.home.computed": "worked out from grid, solar and battery",
@@ -3566,12 +3703,9 @@ var Ne = {
 	"f.battery.max_discharge": "Discharging",
 	"f.battery.priority": "Order",
 	"f.battery.control": "Control",
-	"f.battery.control.allow": "Joe may control this battery",
-	"f.battery.control.found": "{count} controls found. Nothing is switched before live mode.",
-	"f.battery.control.none": "I can only watch this battery – I don't know how to control it yet.",
+	"edit.tariff.label": "Edit tariff",
 	"edit.battery.label": "Edit battery",
 	"edit.battery.title": "Battery |settings",
-	"edit.tariff.label": "Edit tariff",
 	"edit.tariff.title": "Your |tariff",
 	"edit.consumers.label": "Assign devices",
 	"edit.consumers.title": "Your |devices",
@@ -3673,8 +3807,6 @@ var Ne = {
 	"sum.unknown": "don't know",
 	"sum.open": "still open",
 	"sum.from_sensor": "from the sensor",
-	"settings.uses": "What Joe uses",
-	"settings.uses.intro": "What I found or what you told me. Change it, leave it out, add more – all here.",
 	"settings.answers": "Your answers",
 	"settings.answer.heating": "Heating with electricity",
 	"settings.answer.hot_water": "Hot water",
@@ -3737,7 +3869,7 @@ var Ne = {
 	"rule.off": "off",
 	"rule.reset": "Default",
 	"tip.review_battery.title": "What do I do with this battery?",
-	"tip.review_battery.text": "Every night I work out how much it needs from the cheap grid to last until the sun takes over.\n**Change** – name, size, sensors and whether I may control it.\n**Leave out** – I plan without it. You can bring it back at any time.",
+	"tip.review_battery.text": "Every night I work out how much it needs from the cheap grid to last until the sun takes over.\n**Change** – name, size, sensors, limits and whether I may control it. Once setup is done, you find all this under Devices › Batteries.\n**Leave out** – I plan without it. You can bring it back at any time.",
 	"tip.review_ignored.title": "Why is this greyed out?",
 	"tip.review_ignored.text": "You left it out, so I don't use it. **Use it after all** brings it back.",
 	"tip.review_battery_add.title": "Missing a battery?",
@@ -3750,7 +3882,7 @@ var Ne = {
 	"tip.review_grid.title": "Why do I need the grid meter?",
 	"tip.review_grid.text": "It shows how much power is coming from or going to the grid right now. That's how I see whether my plans work out, and learn from it.\n**Change** – choose another sensor.\n**Flip** – if it counts the other way round.\n**It's right** – my hint was wrong, I won't mention it again.",
 	"tip.review_home.title": "Why do I need home consumption?",
-	"tip.review_home.text": "From it I learn how much you use and when – the heart of my planning. I work it out like the Energy dashboard from grid, solar and battery, so a balcony system counts too. A consumption sensor I use to compare, and in its place when the balance cannot be made.\n**Change** – choose another sensor.\n**I don't have one** – then I only work it out from grid, solar and battery.",
+	"tip.review_home.text": "From it I learn how much you use and when – the heart of my planning. I work it out like the Energy dashboard from grid, solar and battery, so a balcony system counts too. A consumption sensor I use to compare, and in its place when the balance cannot be made.\n**Change** – choose another sensor.\n**I don't have one** or **Leave out** – then I only work it out from grid, solar and battery.",
 	"tip.review_solar.title": "Why do I need solar power?",
 	"tip.review_solar.text": "I compare what the forecast promised with what your system really delivered. That way I get more accurate every day.\n**Change** – choose sensors; I add up several inverters.\n**No solar** – then I plan with cheap grid power only.",
 	"tip.review_weather.title": "Why do I need the weather?",
@@ -3800,10 +3932,10 @@ var Ne = {
 	"tip.q_hot_water.title": "Why do I ask this?",
 	"tip.q_hot_water.text": "I can move electric hot water into cheap hours when the sun isn't enough. Gas, oil and district heating I leave alone.",
 	"tip.q_hot_water_action.title": "What am I setting up?",
-	"tip.q_hot_water_action.text": "A night action: in the cheap hours I heat the water just enough to last until the next evening, starting as late as possible. Afterwards I put the switch back the way it was. How fast your tank heats up and cools down I learn myself.",
+	"tip.q_hot_water_action.text": "In the cheap hours I heat the water just enough to last until the next evening, starting as late as possible. Afterwards I put the switch back the way it was. How fast your tank heats up and cools down I learn myself. You can change it later under Devices › Hot water.",
 	"tip.q_hot_water_action.hint": "Do you already have an automation of your own for hot water (e.g. with solar surplus)? Then make sure the two don't get in each other's way.",
 	"tip.q_ev.title": "Why do I ask this?",
-	"tip.q_ev.text": "If the sun won't be enough tomorrow, I can have the car charged cheaply at night. We'll set that up later with the night actions.",
+	"tip.q_ev.text": "If the sun won't be enough tomorrow, I can have the car charged cheaply at night. You set that up later under Devices › Car & charging.",
 	"tip.q_household.title": "Why do I ask this?",
 	"tip.q_household.text": "Whether someone is at home changes consumption a lot. With presence and calendars I learn when you need how much – when working from home, for example.\n**Doesn't live here** – I leave that person out.",
 	"tip.q_household.hint": "Everything stays in your Home Assistant.",
@@ -3828,8 +3960,8 @@ var Ne = {
 	"tip.f_battery_limits.text": "The highest charging and discharging power. If you don't know, leave it empty – I'll use what the device reports, or learn it.",
 	"tip.f_battery_priority.title": "What does order mean?",
 	"tip.f_battery_priority.text": "If you have several batteries, I charge the one with the lower number first. 1 = first.",
-	"tip.f_battery_control.title": "What does control mean?",
-	"tip.f_battery_control.text": "In live mode I set the charge target and discharging myself and put everything back at the end of every night. Switched off, I only watch.",
+	"tip.f_battery_control.title": "What is under Control?",
+	"tip.f_battery_control.text": "At the top it says how I steer this battery. With “Set up levers” you choose the switches and values I use for it; “Watch only” means I only watch and switch nothing. In live mode I set the charge target and discharging myself and put everything back at the end of every night.\nBelow are name, size, maximum power, discharge limit and, with several batteries, the order. Every field has its own explanation, and I save what you change there right away.",
 	"tip.f_battery_control.hint": "In the simulation I don't switch anything anyway.",
 	"tip.f_calendars.title": "Why calendars?",
 	"tip.f_calendars.text": "Appointments tell me when someone is away or working from home. I only read whether and when something is scheduled. Each person can have as many calendars as you like.",
@@ -3988,8 +4120,8 @@ var Ne = {
 	"plan.empty.off": "I'm taking a break. Switch me to simulation and I'll plan every night again.",
 	"plan.empty.waiting": "Once the setup is done, I plan here every night – with curves for sun, consumption and charge level.",
 	"plan.why.no_window": "Your tariff has no cheap hours – charging at night doesn't pay off. I keep watching and learning.",
-	"plan.why.dynamic": "For market prices I need the prices of the coming hours. Pick the price sensor of your tariff integration under Settings → Tariff.",
-	"plan.why.no_prices": "Your price sensor does not provide a price list for the coming hours. Pick a sensor that has them under Settings → Tariff (e.g. Nord Pool, EPEX Spot, Tibber, ENTSO-E).",
+	"plan.why.dynamic": "For market prices I need the prices of the coming hours. Pick the price sensor of your tariff integration under Devices › Grid & sun › Tariff.",
+	"plan.why.no_prices": "Your price sensor does not provide a price list for the coming hours. Pick a sensor that has them under Devices › Grid & sun › Tariff (e.g. Nord Pool, EPEX Spot, Tibber, ENTSO-E).",
 	"plan.why.prices_pending": "The prices for the night are not there yet – they usually come around 1 pm. Then I plan.",
 	"plan.why.no_battery": "Without a battery whose size I know, there's nothing to plan at night.",
 	"plan.why.failed": "Something went wrong while planning. I'll try again at the next full hour.",
@@ -4039,7 +4171,7 @@ var Ne = {
 	"plan.math.target.sub": "{optimum} % would be needed, plus {buffer} % buffer on the part above the reserve",
 	"plan.math.prices": "Prices",
 	"plan.math.prices.value": "cheap {night} · otherwise {day} · feed-in {feed}",
-	"plan.math.prices.assumed": "I don't know all prices – I assumed the missing ones. Enter them in the settings.",
+	"plan.math.prices.assumed": "I don't know all prices – I assumed the missing ones. Enter them under Devices › Grid & sun.",
 	"plan.math.rules": "Rules",
 	"plan.math.rules.value": "reserve {reserve} % · at most {max} % · discharging: {mode}",
 	"history.chart.plan": "Plan",
@@ -4171,7 +4303,7 @@ var Ne = {
 	"learn.hot_water.loss": "loses {value} K/h",
 	"learn.hot_water.demand": "{value} K used a day",
 	"learn.hot_water.learning": "I learn from the temperature curve of the last three weeks (from Home Assistant's recorder).",
-	"learn.hot_water.none": "Add a night action “Hot water” with a temperature sensor under Devices, then I learn how fast it heats and how much you use a day.",
+	"learn.hot_water.none": "Set up your hot water with a temperature sensor under Devices › Hot water, then I learn how fast it heats and how much you use a day.",
 	"learn.presence": "Who is at home when",
 	"learn.presence.value": "{label}: {hours} h",
 	"learn.presence.no_person": "Without a person entity I can't see when someone is at home.",
@@ -4486,7 +4618,7 @@ var Ne = {
 	"learn.car.km": "usually {workday} km working day · {day_off} km day off",
 	"learn.car.learning": "I learn from the odometer and charge level of the last weeks.",
 	"learn.car.no_odometer": "With an odometer sensor I learn consumption and usual distance.",
-	"learn.car.none": "Switch on “Charge by need” for a car's night action, then I learn how much it really needs.",
+	"learn.car.none": "Switch on “Charge by need” for your car under Devices › Car & charging, then I learn how much it really needs.",
 	"learn.reset.scope.car": "Cars",
 	"learn.reset.forget.car": "Consumption and usual distance of your cars.",
 	"learn.reset.scope.climate": "Heating & cooling",
@@ -4525,7 +4657,7 @@ var Ne = {
 	"history.eval.incomplete": "Too many hours are missing for this night – I couldn't replay it.",
 	"tip.sim_result.title": "How do I work this out?",
 	"tip.sim_result.text": "In the morning I replay the night's plan with the real day: real sun, real consumption – once with the plan, once without. The difference is what steering would have saved, no matter how good the forecast was.\nUntil the day is over, the result is **provisional**: I play the remaining hours as I expect them.",
-	"tip.sim_result.hint": "Calculated with your prices from the settings.",
+	"tip.sim_result.hint": "Calculated with your prices from Devices › Grid & sun.",
 	"tip.learn_solar.title": "What is the forecast factor?",
 	"tip.learn_solar.text": "Every day I compare the previous evening's forecast with what your system delivered and take the middle value of the last four weeks. Outliers like a snow-covered roof hardly count that way. I convert every new forecast with it.",
 	"tip.learn_shift.title": "What is the time offset?",
@@ -4551,7 +4683,7 @@ var Ne = {
 	"tip.learn_battery.title": "What do I measure on the battery?",
 	"tip.learn_battery.text": "How much energy really fits in and how much is lost when charging and discharging. Older batteries often hold less than the label says. Both go into the plan – unless you entered the size yourself.",
 	"tip.learn_groups.title": "Why a calculation per device?",
-	"tip.learn_groups.text": "This shows me which device needs more when it's cold. When a device runs in the cheap window through a night action, I move exactly as much of its daytime use into the night as it will probably need tomorrow.",
+	"tip.learn_groups.text": "This shows me which device needs more when it's cold. When I run a device in the cheap window at night, I move exactly as much of its daytime use into the night as it will probably need tomorrow.",
 	"tip.learn_hot_water.title": "What do I learn about hot water?",
 	"tip.learn_hot_water.text": "How fast the tank heats, how much it loses standing and how many degrees you use a day. From that I work out the target temperature for the night and when heating must start to be done by the end of the cheap window.",
 	"tip.learn_presence.title": "Why presence?",
@@ -4638,8 +4770,9 @@ var Ne = {
 	"mode.advisory": "Suggest",
 	"mode.advisory.sub": "Joe asks every evening",
 	"mode.advisory.desc": "I ask you every evening whether I may steer the night. Without your yes I switch nothing.",
-	"mode.untested": "Not tested yet: {names}. I only watch them until the test run on the Devices page has passed.",
-	"mode.none_tested": "No battery has passed the test run yet – I would only watch. Do the test run on the Devices page first.",
+	"mode.untested": "Not tested yet: {names}. I only watch them until the test run under Devices › Batteries has passed.",
+	"mode.none_tested": "No battery has passed the test run yet – I would only watch. Do the test run under Devices › Batteries first.",
+	"mode.to_batteries": "To the batteries →",
 	"settings.notify": "Notifications",
 	"settings.notify.intro": "Problems always show up in Home Assistant's notifications. I only send to your phone what you switch on here.",
 	"settings.notify.service": "Phone or service",
@@ -4655,7 +4788,126 @@ var Ne = {
 	"settings.ask_time": "Ask at",
 	"settings.ask_time.hint": "When I ask in the suggest mode.",
 	"devices.page.title": "Your |devices",
-	"devices.lead": "This is where I steer your batteries – with a test run and everything I am doing with them right now.",
+	"devices.role.steers": "I steer",
+	"devices.role.watches": "I watch",
+	"devices.role.measures": "Measured only",
+	"devices.group.go": "Show all →",
+	"devices.no_meter_group": "without a meter",
+	"devices.car.lead": "This is where I charge your cars – for tomorrow's trips when power is cheap, or right away when you want.",
+	"devices.hot_water.lead": "I heat the water in the cheap hours so it lasts until the next evening.",
+	"devices.other.lead": "All meters from your Energy dashboard. Tell me what each device is and when it runs – then my numbers are right. A device that should run at night I switch on in the cheap hours.",
+	"devices.other.empty": "There are no more devices in the Energy dashboard.",
+	"devices.car.terms": "Appointments",
+	"devices.car.terms_off": "Appointments only count once “Charge by need” is on. Switch it on above under Control.",
+	"devices.car.wallbox": "Wallbox",
+	"devices.hot_water.lonely": "I know this hot water meter from your Energy dashboard. Set up once what I switch – then I heat up in the cheap hours.",
+	"devices.hot_water.set_up": "Set up hot water",
+	"devices.other.night_offer": "Should I switch the device on in the cheap hours at night when tomorrow's sun is not enough?",
+	"devices.other.night_add": "Set up →",
+	"devices.other.no_meter": "I don't know a meter for this device. Under Control at “Belongs to” you can pick one from the Energy dashboard.",
+	"devices.moved_to": "is now under {group} →",
+	"devices.meter": "Meter",
+	"action.steer.unsaved": "Not saved yet.",
+	"action.delete.ask.car": "Should I really forget charging “{name}”? The car stays in Home Assistant, I just stop charging it.",
+	"action.delete.ask.hot_water": "Should I really stop controlling “{name}”? The boiler stays in Home Assistant, I just stop heating it ahead.",
+	"action.delete.ask.other": "Should I really stop switching on “{name}” at night? The device stays in Home Assistant.",
+	"action.delete.yes": "Yes, delete",
+	"action.delete.no": "No, keep it",
+	"action.title.ev": "Set up |charging",
+	"action.title.hot_water": "Set up |hot water",
+	"action.title.custom": "Switch on |at night",
+	"action.need.person_open": "Open →",
+	"action.need.person_open_of": "Open {name} under Household",
+	"action.need.people_link": "Go to Who lives here →",
+	"action.need.routing_link": "Choose a routing service →",
+	"tip.devices_lonely_hot_water.title": "Why does it say “set up” here?",
+	"tip.devices_lonely_hot_water.text": "From the Energy dashboard I know how much the hot water draws. To heat it ahead cheaply at night I still need to know what to switch and which sensor measures the temperature. Set that up once.",
+	"devices.problem.gone": "I can't find this in Home Assistant any more.",
+	"devices.unassigned": "Not assigned",
+	"devices.unassigned.text": "I don't know which climate device these meters belong to. Tap one to assign it to a climate device or to tell me what it measures.",
+	"devices.card.unassigned": "Which device does this belong to?",
+	"devices.card.unassigned_kind": "Tell me what it measures.",
+	"devices.group_add.car": "Add a car or wallbox",
+	"devices.group_add.hot_water": "Add hot water",
+	"devices.group_add.night": "Add a device",
+	"climate.assign.no_climate": "I don't know any thermostat or air conditioner yet that it could belong to. Tell me below what it measures.",
+	"devices.card.setup_car": "Charging isn't set up yet.",
+	"devices.card.setup_hot_water": "Hot water isn't set up yet.",
+	"devices.card.climate": "{current} °C · set to {target} °C",
+	"devices.card.temp": "{value} °C",
+	"devices.card.kw": "{value} kW",
+	"devices.card.running": "Running now",
+	"devices.card.import": "drawing {value} kW",
+	"devices.card.export": "feeding in {value} kW",
+	"devices.grid.connection": "Grid connection & tariff",
+	"devices.grid.solar": "Solar system",
+	"devices.grid.home": "Home consumption",
+	"grid.lead": "Where your power comes from, what it costs and where it goes: grid connection, tariff, solar system and what the house uses.",
+	"grid.energy.none": "Nothing is entered in the Home Assistant Energy dashboard yet. Once you add grid, solar and battery there, I find them on my own.",
+	"grid.energy.open": "Open the Energy dashboard",
+	"grid.connection": "Grid connection",
+	"grid.connection.say": "The grid meter measures what comes in and goes out at your house connection. That shows me whether my plans work out.",
+	"grid.tariff.say": "When power is cheap and what it costs. That decides when I charge and whether it pays off.",
+	"grid.tariff.unknown": "I don't know your tariff yet. Enter it below and I calculate with your real prices.",
+	"grid.tariff.unsaved": "Not saved yet.",
+	"grid.tariff.discard": "Discard",
+	"grid.solar.say": "What your system delivers right now and what the forecast expects for tomorrow.",
+	"grid.solar.factor": "Learned factor for the forecast",
+	"grid.home.say": "What the house uses right now. From it I learn how much you need and when.",
+	"grid.home.devices": "Assign devices →",
+	"tip.grid_tariff.title": "How do I set the tariff?",
+	"tip.grid_tariff.text": "First pick the kind of tariff. Then enter the cheap hours, the prices and the feed-in rate.\nThe fields depend on each other, so I only take them over when you tap **Save**. **Discard** brings back the saved tariff.",
+	"tip.grid_tariff.hint": "The prices are on your electricity bill.",
+	"devices.page.now": "Now",
+	"devices.page.steer": "Control",
+	"devices.page.power": "Power",
+	"devices.page.learned": "Learned",
+	"devices.page.log": "Log",
+	"devices.page.intruders": "Troublemakers",
+	"devices.page.remove": "Leave out",
+	"devices.page.delete": "Delete",
+	"devices.page.more_learned": "More in Review →",
+	"devices.page.more_log": "All in Review →",
+	"devices.add": "Add",
+	"devices.add.label": "Add a device",
+	"devices.add.title": "What would you like to |add?",
+	"devices.add.lead": "Pick what's new. I'll show you what I've already found for it.",
+	"devices.add.battery": "Battery",
+	"devices.add.battery.text": "A home battery for me to watch or steer.",
+	"devices.add.car": "Car or wallbox",
+	"devices.add.for": "for {name}",
+	"devices.add.car.text": "I charge the car when it's cheap and enough for tomorrow.",
+	"devices.add.hot_water": "Hot water",
+	"devices.add.hot_water.text": "I heat the water in the cheap hours.",
+	"devices.add.climate": "Air conditioner or heating",
+	"devices.add.climate.text": "Thermostats and air conditioners live under Heating & cooling.",
+	"devices.add.night": "Device to run at night",
+	"devices.add.night.text": "I switch it on in the cheap hours when tomorrow's sun won't be enough.",
+	"devices.add.meter": "Device with a meter",
+	"devices.add.meter.text": "Meters from the Energy dashboard: tell me what it is and when it runs.",
+	"devices.add.rediscover": "Look around again",
+	"devices.add.rediscover.text": "I search Home Assistant for new devices.",
+	"devices.add.other": "Something else",
+	"devices.add.battery.title": "Add a |battery",
+	"devices.add.battery.lead": "These are the batteries I found. If yours is missing, pick its charge level yourself.",
+	"devices.add.battery.none": "I haven't found another battery.",
+	"devices.add.battery.pick": "Pick it myself",
+	"devices.add.battery.ignored": "you left this out",
+	"devices.add.battery.use": "Use again",
+	"devices.found": "Newly found",
+	"devices.found.lead": "I've discovered this in Home Assistant. Shall I use it?",
+	"devices.found.battery": "Battery",
+	"devices.found.wallbox": "Wallbox",
+	"devices.found.car": "Car",
+	"devices.found.use": "Use it",
+	"devices.found.ignore": "Don't use",
+	"tip.devices_add.title": "What can I add?",
+	"tip.devices_add.text": "Anything that stores, charges or uses power: batteries, a car or wallbox, hot water, air conditioners and devices that should run at night.\nI show you first what I've already found. You don't have to type anything in.",
+	"tip.device_steer.title": "What do I set under Control?",
+	"tip.device_steer.text": "Here you choose what I switch and when I switch the device on at night in the cheap hours. Every field has its own explanation.\nWhat you change here only counts after “Save”. Until then your draft stays, even when you leave the page.",
+	"tip.devices_found.title": "What does “Use it” do?",
+	"tip.devices_found.text": "**Use it** adds the device. I watch a battery from now on; for a car or wallbox you quickly set up charging.\n**Don't use** hides it. You can bring it back any time with **Add**.",
+	"devices.lead": "Everything with power in one place: Batteries, Heating & cooling, Car & charging, Hot water, More devices, Grid & sun. Tap a device to see all about it.",
 	"devices.now": "Right now",
 	"devices.status.simulation": "Simulation – I switch nothing and only note what I would do.",
 	"devices.status.off": "Paused – I switch nothing.",
@@ -4673,8 +4925,7 @@ var Ne = {
 	"devices.power.discharge": "discharging at {value} kW",
 	"devices.power.idle": "idle",
 	"devices.release": "Release now",
-	"devices.batteries": "Batteries",
-	"devices.batteries.none": "I don't know any battery yet. Add it in the settings.",
+	"devices.batteries.none": "I don't know any battery yet. If you have one, add it with “Add a battery”.",
 	"devices.battery.profile": "{name} – recognised",
 	"devices.battery.generic": "Levers assigned",
 	"devices.battery.steps": "Own steps",
@@ -4718,6 +4969,31 @@ var Ne = {
 	"devices.test.confirm.go": "Start test run",
 	"devices.setup": "Set up levers",
 	"devices.suggested": "I found levers that may fit. Check them under “Set up levers” and then do the test run.",
+	"battery.page.lead": "How full your batteries are, what I am doing with them right now and which rules apply to all of them. Tap a battery to see everything about it.",
+	"battery.page.add": "Add a battery",
+	"battery.page.suggested": "Found levers that may fit.",
+	"battery.page.rules": "Applies to all batteries",
+	"battery.page.found": "Found, but not used",
+	"battery.page.found.new": "newly found",
+	"battery.page.how": "How I steer it",
+	"battery.page.capacity.learned": "I measured {value} kWh usable.",
+	"battery.page.capacity.learning": "I measure the size while it charges and discharges. That takes a few weeks.",
+	"battery.page.remove.text": "If I leave the battery out, I plan and steer without it. If I found it myself, you bring it back under “Add a battery” with “Use again”.",
+	"battery.page.remove.confirm": "Really leave out {name}? What you set up here for it will be lost.",
+	"battery.page.remove.go": "Yes, leave it out",
+	"battery.control.title": "Levers for |{name}",
+	"battery.control.lead": "Here you choose which levers I use to charge and hold the battery. I only take the change over once you press “Save”.",
+	"battery.control.unsaved": "Not saved yet.",
+	"tip.battery_rules.title": "What applies to all batteries?",
+	"tip.battery_rules.text": "These rules apply to all batteries together. You see them here and change them in Joe's settings – “Change →” takes you straight there.\nThe **reserve** applies to all batteries, the **discharge limit** on a battery's page only to that one. The higher of the two always applies.",
+	"tip.battery_found.title": "What does Use again mean?",
+	"tip.battery_found.text": "I found these batteries in Home Assistant but do not use them.\n**Use it** adds a new battery, **Don't use** hides it.\n**Use again** brings back a battery you left out.",
+	"tip.battery_intruders.title": "What are troublemakers?",
+	"tip.battery_intruders.text": "Automations that set something on exactly this battery. If they set the same values as I do, whoever writes last wins – then the battery does not follow my plan.\n“Switch all off” only switches off this battery's automations, “Switch on again” exactly the ones I switched off.",
+	"tip.battery_intruders.hint": "All automations on your batteries are listed under Devices › Batteries.",
+	"tip.battery_remove.title": "What does Leave out mean?",
+	"tip.battery_remove.text": "I no longer use the battery then: no plan, no steering, no learning. Nothing changes on the device or in Home Assistant.",
+	"tip.battery_remove.hint": "A battery I found myself comes back under “Add a battery”.",
 	"log.start": "Night begins",
 	"log.set": "{battery}: {entity} → {value}",
 	"log.reached": "{battery} reached {target} %",
@@ -4741,7 +5017,7 @@ var Ne = {
 	"f.battery.control.take": "Take suggestion",
 	"f.battery.control.ready": "Charge via: {charge} · Hold via: {hold}",
 	"f.battery.control.needs": "To steer, I need a way to charge (a mode with forced charging, or “Charge from grid” with “Charge up to”) and a way to hold (minimum level, a mode or a discharge limit).",
-	"f.battery.control.retest": "After every change a new test run is needed on the Devices page.",
+	"f.battery.control.retest": "After every change a new test run is needed. You find it on the battery's page under “Now”.",
 	"f.battery.control.services": "How I steer it (with services)",
 	"f.battery.control.levers": "Levers",
 	"f.battery.mode_options": "What do the options mean?",
@@ -4813,12 +5089,11 @@ var Ne = {
 	"tip.notify_morning.text": "After a night I steered: how far I charged the batteries and that everything is back as it was.",
 	"tip.ask_time.title": "When do I ask?",
 	"tip.ask_time.text": "At this time I ask in the suggest mode whether I may steer the coming night. You can answer well into the night.",
-	"action.label": "Night action",
-	"action.title": "Night |action",
-	"action.title.new": "New |night action",
+	"action.label": "Control device",
+	"action.title": "Control |device",
 	"action.template.ev": "Charge the car",
 	"action.template.hot_water": "Pre-heat hot water",
-	"action.template.custom": "Own action",
+	"action.template.custom": "Own device",
 	"action.f.name": "Name",
 	"action.f.kind": "Kind",
 	"action.kind.switch": "Switch",
@@ -4859,9 +5134,7 @@ var Ne = {
 	"action.pick.condition": "What does it depend on?",
 	"action.problem.entity": "Choose what I should switch.",
 	"action.problem.sensor": "For a target I need the temperature sensor.",
-	"action.delete": "Delete action",
-	"devices.actions": "Night actions",
-	"devices.action.off": "off",
+	"action.delete": "Delete",
 	"devices.boost.unit": "Unit",
 	"devices.charge.label": "Charge to",
 	"devices.charge.now": "Charge now",
@@ -4886,7 +5159,7 @@ var Ne = {
 	"cards.no_access": "Energy Joe cannot be reached – the card needs a user with administrator rights.",
 	"cards.night.title": "Joe tonight",
 	"cards.night.skip": "Skip tonight",
-	"cards.car.none": "No car I can charge yet – set it up in the Energy Joe panel under “Devices”.",
+	"cards.car.none": "No car I can charge yet – set it up in the Energy Joe panel under “Devices › Car & charging”.",
 	"cards.car.charging": "charging",
 	"devices.charge.failed": "That did not work – try again.",
 	"automations.lead_idle": "These automations set something on your batteries. While I only watch they do no harm – switch them off before you set me to “Suggest” or “Live”.",
@@ -4905,12 +5178,11 @@ var Ne = {
 	"devices.boost.reserve": "Your reserve of {reserve} km comes on top.",
 	"devices.action.boost": "Charging now because you asked.",
 	"devices.action.tonight": "Tonight",
-	"devices.action.edit": "Edit",
 	"devices.car.no_calendar": "No calendar connected",
-	"devices.car.lonely": "I know this car from your Energy dashboard – I can't charge it yet. Set it up once: pick the wallbox, “charging by need” is already on.",
+	"devices.car.lonely": "I know this car from your Energy dashboard – I can't charge it yet. Set it up once: pick the wallbox, “Charge by need” is already on.",
 	"devices.car.set_up": "Set up charging",
 	"tip.devices_lonely_car.title": "Why does it say “set up” here?",
-	"tip.devices_lonely_car.text": "In the settings the car is listed as a consumer – so I know how much it draws. To charge it cheaply at night or by need, I still need to know how to switch the wallbox. Set that up here once; then this becomes the card with “charging by need” and the calendar.",
+	"tip.devices_lonely_car.text": "From the Energy dashboard I know how much the car draws. To charge it cheaply at night or by need I still need to know how to switch the charger. Set that up once – then you see the car's level, trips and appointments here.",
 	"devices.car.of_persons": "calendars of {names}",
 	"devices.car.calendar_ok": "connected",
 	"devices.car.calendar_problem": "a problem right now – please have a look",
@@ -4918,7 +5190,7 @@ var Ne = {
 	"devices.car.connect": "Connect a calendar",
 	"devices.car.change": "Change",
 	"tip.car_calendar_card.title": "What is the car's calendar for?",
-	"tip.car_calendar_card.text": "From the appointments I know how far the car drives tomorrow and charge just that much at night. Here you see which calendar is connected and when I last read it. “Connect a calendar” opens the car's settings right at the calendar and switches on “charging by need” there – nothing is saved until you save.",
+	"tip.car_calendar_card.text": "From the appointments I know how far the car drives tomorrow and charge just that much at night. Here you see which calendar is connected and when I last read it. The button jumps to the appointments further down.",
 	"devices.action.disabled": "Switched off – I leave it alone.",
 	"devices.action.running": "Running – until {end}.",
 	"devices.action.heating": "Heating to {target} °C – until {end} at the latest.",
@@ -4935,9 +5207,7 @@ var Ne = {
 	"devices.action.why.tonight": "Runs tonight – you switched it on.",
 	"devices.action.why.little_sun": "Runs tonight – too little sun tomorrow.",
 	"devices.action.why.every_night": "Runs every night.",
-	"devices.action.add": "Add a night action",
-	"devices.action.add.text": "What should run when tomorrow's sun is not enough?",
-	"plan.actions": "Night actions",
+	"plan.actions": "Devices tonight",
 	"plan.actions.run": "runs from {start} to {end}",
 	"plan.actions.target": "heats from {start} to {target} °C, until {end} at the latest",
 	"plan.actions.energy": "≈ {kwh} kWh, {cost} at the cheap night rate",
@@ -4952,8 +5222,8 @@ var Ne = {
 	"log.tonight": "“Tonight” switched",
 	"log.grid_guard": "Main fuse: {power} kW from the grid – charging paused briefly",
 	"log.no_progress": "{battery} does not charge (at {soc} %)",
-	"tip.a_name.title": "What is it called?",
-	"tip.a_name.text": "That's how it shows on the Devices page, in the plan and as a switch in Home Assistant.",
+	"tip.a_name.title": "What should the device be called?",
+	"tip.a_name.text": "That's how it shows under Devices, in the plan and as the “Tonight” switch in Home Assistant.",
 	"tip.a_kind.title": "Which kind?",
 	"tip.a_kind.text": "**Switch** – I set a value for the whole cheap window and put it back at the end (e.g. the evcc mode to “now”).\n**Up to a target** – I switch on as late as possible and off as soon as a sensor reaches the target (e.g. hot water).",
 	"tip.a_entity.title": "What do I switch?",
@@ -4964,10 +5234,10 @@ var Ne = {
 	"tip.a_reset.text": "**As before** – I note the value before switching on and set it again. **A fixed value** – always the same, for example “off”. If you changed it yourself in between, I leave it.",
 	"tip.a_lead.title": "Why earlier?",
 	"tip.a_lead.text": "Some devices take a while to switch – evcc up to three minutes, for example. Then I put it back that much earlier so nothing runs expensively after the cheap window.",
-	"tip.a_auto.title": "When does it run by itself?",
-	"tip.a_auto.text": "When tomorrow brings less sun than set here – with the factor I learned for your forecast. Empty means every night. Switched off, it only runs when you switch on “Tonight”.",
+	"tip.a_auto.title": "When do I switch it on by myself?",
+	"tip.a_auto.text": "When tomorrow brings less sun than set here – with the factor I learned for your forecast. Empty means every night. Switched off, I only switch it on when you turn on “Tonight”.",
 	"tip.a_conditions.title": "Why conditions?",
-	"tip.a_conditions.text": "The action only runs when all are met – for example “car connected is on” or “car level less than 70”.",
+	"tip.a_conditions.text": "I only switch it on when all are met – for example “car connected is on” or “car level less than 70”.",
 	"tip.a_power.title": "Why the power?",
 	"tip.a_power.text": "So I know how much of the grid connection it needs. The batteries get the rest – everything stays below your grid limit.",
 	"tip.a_consumer.title": "Why this link?",
@@ -4975,24 +5245,22 @@ var Ne = {
 	"tip.a_priority.title": "What does the order mean?",
 	"tip.a_priority.text": "If the grid connection is not enough for everything, the smaller number goes first. The batteries take what's left.",
 	"tip.a_enabled.title": "What does active mean?",
-	"tip.a_enabled.text": "Switched off, I neither plan nor switch this action – not even by hand.",
+	"tip.a_enabled.text": "Switched off, I neither plan nor switch the device – not even by hand.",
 	"tip.a_sensor.title": "Which sensor?",
 	"tip.a_sensor.text": "The sensor whose temperature I watch, for example the hot water temperature. Once the target is reached, I switch off.",
 	"tip.a_temps.title": "How do I work out the target?",
 	"tip.a_temps.text": "In the morning the water should be at least this warm. On top I add what you use during the day (I am still learning that) and the buffer. I never heat above “At most”. I start late enough that the target is there by the end of the cheap window.",
 	"tip.a_save.title": "What happens when saving?",
-	"tip.a_save.text": "I include the action in my plans from now on. I only switch in the suggest and live modes – in the simulation I show what I would have done.",
+	"tip.a_save.text": "Only when you save do I take over your changes and plan with them from now on. I only switch in the suggest and live modes – in the simulation I show what I would have done.",
 	"tip.a_delete.title": "What happens when deleting?",
-	"tip.a_delete.text": "The action and its switch in Home Assistant disappear. If it is running, I put things back first.",
+	"tip.a_delete.text": "I forget how I control the device, and its “Tonight” switch in Home Assistant disappears. If it is running, I put things back first. The device itself and its meter stay.",
 	"tip.boost.title": "Now or tonight?",
 	"tip.boost.text": "**Charge now**: I switch the wallbox on right away – without waiting for the cheap hours or the sun, and also in the simulation, because you ask for it.\n**Charge tonight**: I charge in the coming night in the cheap hours, whatever the forecast says.\nAs soon as the level is reached (or the range plus your reserve) I put the wallbox back the way it was. With % and km you choose whether the target is a level or a range.",
 	"tip.boost.hint": "“Charge now” stops by itself after 24 hours at the latest, “tonight” with the end of the night. “Cancel” stops right away.",
 	"tip.action_tonight.title": "What does “Tonight” do?",
-	"tip.action_tonight.text": "The action runs in the coming night, whatever the forecast says – handy when you know you'll leave early tomorrow. After the night the switch turns itself off again.",
-	"tip.devices_actions.title": "What are night actions?",
-	"tip.devices_actions.text": "Everything besides the batteries that should run in the cheap window when tomorrow's sun is not enough – the car, the hot water, a pool. At the end of the night I put everything back.",
+	"tip.action_tonight.text": "I switch the device on in the coming night, whatever the forecast says – handy when you know you'll need it tomorrow morning. After the night the switch turns itself off again.",
 	"tip.plan_actions.title": "What am I looking at?",
-	"tip.plan_actions.text": "Which night actions would run tonight, when – and why the others don't.",
+	"tip.plan_actions.text": "Which devices I would switch on tonight, when – and why the others don't run.",
 	"error.title": "Joe isn't |answering",
 	"error.text": "I can't reach the integration. Reload the page – if that doesn't help, check Settings → System → Logs.",
 	"error.action": "Saving failed",
@@ -5070,14 +5338,14 @@ function Ke(e, t, n) {
 }
 //#endregion
 //#region src/define.ts
-var qe = "0.9.13";
+var qe = "0.9.14";
 function H(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = qe, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.13" && Ye();
+	n.joeVersion !== "0.9.14" && Ye();
 }
 var Je = !1;
 function Ye() {
@@ -5843,6 +6111,125 @@ var Xe = o`
   .used-by.none {
     min-height: 44px;
   }
+  /* Device cards (components/device-card.ts): the main link to Joe's page, the HA button beside it, quick actions below. */
+  .dcards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+    gap: 12px;
+  }
+  .dcard {
+    position: relative;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 4px 6px;
+    padding: 6px 8px 6px 6px;
+    border-radius: 14px;
+    background: var(--joe-surface);
+    box-shadow: inset 0 0 0 1px var(--joe-line);
+  }
+  .dcard.problem {
+    box-shadow: inset 0 0 0 1.5px var(--joe-crit-soft);
+  }
+  a.dcard-main {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 2px 10px;
+    min-height: 44px;
+    padding: 8px 6px 8px 8px;
+    border-radius: 10px;
+    color: inherit;
+    text-decoration: none;
+    transition: background 0.12s;
+  }
+  a.dcard-main:hover {
+    background: var(--joe-surface-2);
+  }
+  a.dcard-main > ha-icon {
+    --mdc-icon-size: 22px;
+    margin-top: 1px;
+    color: var(--joe-ink-2);
+  }
+  .dcard-text {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+  .dcard-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+  .dcard-dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--joe-crit);
+  }
+  .dcard-area {
+    color: var(--joe-muted);
+    font-size: 13px;
+  }
+  .dcard-state {
+    color: var(--joe-ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .dcard-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 2px;
+  }
+  .dcard-problem {
+    color: var(--joe-crit);
+    font-size: 13.5px;
+  }
+  .dcard .ha-open {
+    margin-top: 6px;
+  }
+  .dcard-quick {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 0 8px 8px;
+  }
+  .dcard-quick:empty {
+    display: none;
+  }
+  /* Head of a group on Geräte › Alle: label, red dot, link to the group page. */
+  .group-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 22px 0 8px;
+  }
+  .group-head .group-label {
+    margin: 0;
+  }
+  .group-head .group-go {
+    margin-left: auto;
+    min-height: 44px;
+    text-decoration: none;
+  }
+  /* "← Speicher" above a device page: a real link to the group. */
+  a.back-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding-inline: 2px 10px;
+    font-weight: 600;
+    color: var(--joe-ink-2);
+    text-decoration: none;
+  }
+  a.back-link:hover {
+    color: var(--joe-ink);
+  }
   /* An address with an anchor lights up its target briefly (router.ts revealAnchor). */
   [data-anchor] {
     scroll-margin-top: calc(var(--joe-head-h, 0px) + 72px);
@@ -6342,7 +6729,16 @@ var St = "/energy-joe", Ct = [
 		"learned",
 		"log"
 	],
-	devices: ["all", "climate"],
+	devices: [
+		"all",
+		"battery",
+		"climate",
+		"car",
+		"hot_water",
+		"other",
+		"grid",
+		"add"
+	],
 	household: [
 		"people",
 		"presence",
@@ -6436,13 +6832,20 @@ function Nt(e, t) {
 	};
 }
 function Pt(e, t) {
+	if (history.state?.joeSheet) {
+		history.back();
+		return;
+	}
+	Mt(e, t, { replace: !0 });
+}
+function Ft(e, t) {
 	let n = e.querySelector(`[data-anchor="${CSS.escape(t)}"]`);
 	return n ? (n.scrollIntoView({
 		block: "start",
 		behavior: "smooth"
-	}), n.classList.remove("flash"), n.offsetWidth, n.classList.add("flash"), window.setTimeout(() => n.classList.remove("flash"), 1500), Ft(n), !0) : !1;
+	}), n.classList.remove("flash"), n.offsetWidth, n.classList.add("flash"), window.setTimeout(() => n.classList.remove("flash"), 1500), It(n), !0) : !1;
 }
-function Ft(e) {
+function It(e) {
 	let t = !1, n = () => {
 		t = !0;
 	}, r = [
@@ -6465,7 +6868,7 @@ function Ft(e) {
 //#region src/components/car-charge.ts
 var $ = class extends R {
 	constructor(...e) {
-		super(...e), this.values = {}, this.failed = !1;
+		super(...e), this.flush = !1, this.values = {}, this.failed = !1;
 	}
 	static {
 		this.styles = [Xe, o`
@@ -6480,6 +6883,11 @@ var $ = class extends R {
         margin-top: 14px;
         padding-top: 12px;
         border-top: 1px solid var(--joe-line);
+      }
+      :host([flush]) .boost {
+        margin-top: 0;
+        padding-top: 0;
+        border-top: 0;
       }
       .boost .amount {
         display: inline-flex;
@@ -6645,10 +7053,13 @@ var $ = class extends R {
 		}
 	}
 };
-U([z({ attribute: !1 })], $.prototype, "hass", void 0), U([z({ attribute: !1 })], $.prototype, "t", void 0), U([z({ attribute: !1 })], $.prototype, "state", void 0), U([z({ attribute: !1 })], $.prototype, "action", void 0), U([B()], $.prototype, "values", void 0), U([B()], $.prototype, "unit", void 0), U([B()], $.prototype, "failed", void 0), H("joe-car-charge", $);
+U([z({ attribute: !1 })], $.prototype, "hass", void 0), U([z({ attribute: !1 })], $.prototype, "t", void 0), U([z({ attribute: !1 })], $.prototype, "state", void 0), U([z({ attribute: !1 })], $.prototype, "action", void 0), U([z({
+	type: Boolean,
+	reflect: !0
+})], $.prototype, "flush", void 0), U([B()], $.prototype, "values", void 0), U([B()], $.prototype, "unit", void 0), U([B()], $.prototype, "failed", void 0), H("joe-car-charge", $);
 //#endregion
 //#region src/styles/tokens.ts
-var It = o`
+var Lt = o`
   :host {
     --joe-bg: #fbf6ec;
     --joe-surface: #ffffff;
@@ -6737,4 +7148,4 @@ var It = o`
   }
 `;
 //#endregion
-export { U as A, Le as B, rt as C, ot as D, it as E, Be as F, j as G, B as H, Ge as I, Ee as J, A as K, We as L, H as M, Ve as N, K as O, Ke as P, Ue as R, nt as S, q as T, z as U, V, R as W, o as X, _e as Y, _t as _, Ct as a, X as b, jt as c, kt as d, Pt as f, yt as g, gt as h, Tt as i, Xe as j, ct as k, Mt as l, bt as m, Q as n, wt as o, xt as p, k as q, St as r, At as s, It as t, Nt as u, Z as v, tt as w, st as x, vt as y, ze as z };
+export { ct as A, ze as B, nt as C, it as D, q as E, Ke as F, R as G, V as H, Be as I, k as J, j as K, Ge as L, Xe as M, H as N, ot as O, Ve as P, We as R, st as S, tt as T, B as U, Le as V, z as W, _e as X, Ee as Y, o as Z, yt as _, Ct as a, vt as b, At as c, Nt as d, kt as f, gt as g, bt as h, Tt as i, U as j, K as k, jt as l, xt as m, Q as n, wt as o, Ft as p, A as q, St as r, Pt as s, Lt as t, Mt as u, _t as v, rt as w, X as x, Z as y, Ue as z };

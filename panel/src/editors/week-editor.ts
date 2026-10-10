@@ -13,6 +13,7 @@ import {
   WEEK_MODES,
   WEEK_TAGS,
   type ClimateDevice,
+  type ClimateFound,
   type ClimateStatus,
   type HomeAssistant,
   type JoeConfig,
@@ -65,6 +66,11 @@ export class JoeWeekEditor extends LitElement {
   @property({ attribute: false }) config?: JoeConfig;
   @property({ attribute: false }) status?: ClimateStatus;
   @property({ attribute: false }) entityId = "";
+  /** The panel's climate devices; without the device in it, the editor asks itself. */
+  @property({ attribute: false }) found?: ClimateFound;
+  @property({ attribute: false }) prefix = PANEL;
+  /** The mode named in the address (/devices/climate/<entity>/week/<mode>). */
+  @property({ attribute: false }) startMode?: WeekMode;
 
   @state() private device?: ClimateDevice;
   /** Devices asked for and answered (or failed). */
@@ -477,6 +483,15 @@ export class JoeWeekEditor extends LitElement {
       this.notice = undefined;
       this.rowError = undefined;
     }
+    if (!this.device && !this.requested) {
+      // The panel knows the device already: no need to ask again.
+      const known = this.found?.devices.find((d) => d.entity_id === this.entityId);
+      if (known) {
+        this.device = known;
+        this.fetched = true;
+        this.requested = true;
+      }
+    }
     if (this.hass && !this.requested) {
       this.requested = true;
       void this.load();
@@ -486,6 +501,15 @@ export class JoeWeekEditor extends LitElement {
       this.drafts = structuredClone(this.room?.week?.modes ?? {});
       this.fitDrafts(WEEK_MODES);
       this.pickMode();
+    }
+    if (this.device && this.loaded && !this.mode) {
+      // The device came with the panel's list: start once the drafts are there.
+      this.fitDrafts(WEEK_MODES);
+      this.pickMode();
+    }
+    if (changed.has("startMode") && this.mode && this.startMode && this.startMode !== this.mode && this.modes.includes(this.startMode)) {
+      // The address changed (e.g. back): follow it.
+      this.showMode(this.startMode);
     }
   }
 
@@ -550,7 +574,9 @@ export class JoeWeekEditor extends LitElement {
     if (this.mode || !this.device || !this.loaded) return;
     const status = this.status?.rooms?.[this.entityId];
     const live = this.hass?.states[this.entityId]?.state ?? this.device.state;
-    const mode = [status?.mode, live, ...this.modes].find((m): m is WeekMode => !!m && this.modes.includes(m as WeekMode));
+    const mode = [this.startMode, status?.mode, live, ...this.modes].find(
+      (m): m is WeekMode => !!m && this.modes.includes(m as WeekMode),
+    );
     if (!mode) return;
     this.mode = mode;
     if (status?.mode === mode && status.profile?.index != null) {
@@ -756,7 +782,7 @@ export class JoeWeekEditor extends LitElement {
           ? nothing
           : html`<p class="field-hint">${t(`week.ho.${reason}`)}</p>
               <div>
-                <a class="mini-btn quiet" href=${href(PANEL, DAYS)} @click=${onLink(DAYS)}>
+                <a class="mini-btn quiet" href=${href(this.prefix, DAYS)} @click=${onLink(DAYS)}>
                   <ha-icon icon="mdi:calendar-text-outline"></ha-icon>${t("week.ho.rules")}
                 </a>
               </div>`}
@@ -996,8 +1022,14 @@ export class JoeWeekEditor extends LitElement {
     });
   }
 
+  /** A mode picked here: shown, and named in the address ("joe-week-mode"). */
   private setMode(mode: WeekMode): void {
     if (mode === this.mode) return;
+    this.showMode(mode);
+    this.dispatchEvent(new CustomEvent("joe-week-mode", { detail: { mode }, bubbles: true, composed: true }));
+  }
+
+  private showMode(mode: WeekMode): void {
     this.mode = mode;
     this.notice = undefined;
     this.rowError = undefined;

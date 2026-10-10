@@ -1,6 +1,7 @@
 import { LitElement, css, html, nothing, type TemplateResult } from "lit";
 import { property } from "lit/decorators.js";
 import { define } from "../define";
+import { actionPlace } from "../device-model";
 import { entityName, formatNumber } from "../entities";
 import type { Translate } from "../i18n";
 import { shared } from "../styles/shared";
@@ -48,13 +49,12 @@ export function logGroup(config: JoeConfig | undefined, entry: LogEntry): { grou
   if (key.startsWith("action:")) {
     const id = key.slice(7);
     const action = config?.actions.find((a) => a.id === id);
-    if (action?.kind === "target") {
-      return { group: "hot_water", device: id };
+    // The same place as the device's page (device-model.ts).
+    if (!config || !action) {
+      return { group: "other", device: `action-${id}` };
     }
-    if (action?.need?.enabled) {
-      return { group: "car", device: id };
-    }
-    return { group: "other", device: action?.consumer_id ?? `action-${id}` };
+    const place = actionPlace(config, action);
+    return { group: place.group, device: place.id };
   }
   return { group: "battery", device: key };
 }

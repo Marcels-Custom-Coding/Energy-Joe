@@ -733,6 +733,125 @@ export const shared = css`
   .used-by.none {
     min-height: 44px;
   }
+  /* Device cards (components/device-card.ts): the main link to Joe's page, the HA button beside it, quick actions below. */
+  .dcards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+    gap: 12px;
+  }
+  .dcard {
+    position: relative;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 4px 6px;
+    padding: 6px 8px 6px 6px;
+    border-radius: 14px;
+    background: var(--joe-surface);
+    box-shadow: inset 0 0 0 1px var(--joe-line);
+  }
+  .dcard.problem {
+    box-shadow: inset 0 0 0 1.5px var(--joe-crit-soft);
+  }
+  a.dcard-main {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 2px 10px;
+    min-height: 44px;
+    padding: 8px 6px 8px 8px;
+    border-radius: 10px;
+    color: inherit;
+    text-decoration: none;
+    transition: background 0.12s;
+  }
+  a.dcard-main:hover {
+    background: var(--joe-surface-2);
+  }
+  a.dcard-main > ha-icon {
+    --mdc-icon-size: 22px;
+    margin-top: 1px;
+    color: var(--joe-ink-2);
+  }
+  .dcard-text {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+  .dcard-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+  .dcard-dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--joe-crit);
+  }
+  .dcard-area {
+    color: var(--joe-muted);
+    font-size: 13px;
+  }
+  .dcard-state {
+    color: var(--joe-ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .dcard-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 2px;
+  }
+  .dcard-problem {
+    color: var(--joe-crit);
+    font-size: 13.5px;
+  }
+  .dcard .ha-open {
+    margin-top: 6px;
+  }
+  .dcard-quick {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 0 8px 8px;
+  }
+  .dcard-quick:empty {
+    display: none;
+  }
+  /* Head of a group on Geräte › Alle: label, red dot, link to the group page. */
+  .group-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 22px 0 8px;
+  }
+  .group-head .group-label {
+    margin: 0;
+  }
+  .group-head .group-go {
+    margin-left: auto;
+    min-height: 44px;
+    text-decoration: none;
+  }
+  /* "← Speicher" above a device page: a real link to the group. */
+  a.back-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding-inline: 2px 10px;
+    font-weight: 600;
+    color: var(--joe-ink-2);
+    text-decoration: none;
+  }
+  a.back-link:hover {
+    color: var(--joe-ink);
+  }
   /* An address with an anchor lights up its target briefly (router.ts revealAnchor). */
   [data-anchor] {
     scroll-margin-top: calc(var(--joe-head-h, 0px) + 72px);
