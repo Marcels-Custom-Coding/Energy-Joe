@@ -115,7 +115,7 @@ const LEARNED_TIPS: Record<string, TipName> = {
 function section(ctx: FrameContext, frame: DeviceFrame, name: FrameSection, body: TemplateResult | string): TemplateResult {
   const { t } = ctx;
   const tipName = frame.tips?.[name] ?? (name === "learned" && frame.learnedArea ? LEARNED_TIPS[frame.learnedArea] : undefined);
-  return html`<section class="card dsec" data-section=${name} ?data-tipped=${Boolean(tipName)}>
+  return html`<section class="card dsec" data-section=${name} data-anchor=${name} ?data-tipped=${Boolean(tipName)}>
     <h3 class="dsec-title">${name === "remove" && frame.removeTitle ? frame.removeTitle : t(`devices.page.${name}`)}${tipName ? tip(t, tipName) : nothing}</h3>
     ${body}
   </section>`;

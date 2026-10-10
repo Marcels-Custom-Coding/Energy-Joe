@@ -82,6 +82,8 @@ export interface Measurement {
   entity_id: string;
   invert: boolean;
   minus_entity_id: string | null;
+  /** Solar only: the inverter is off without sun (unavailable at night is normal, counts as 0 W). */
+  sleeps?: boolean;
 }
 
 /** A profile of a known integration (e.g. "fronius"), "generic" (assigned levers), "steps" or "none". */
@@ -98,7 +100,10 @@ export type ControlRole =
   | "discharge_limit"
   | "discharge_limit_enabled"
   | "charge_limit"
-  | "charge_limit_enabled";
+  | "charge_limit_enabled"
+  /** On the integration's system device, only for the daytime cap (Omnibattery's power limits). */
+  | "system_charge_limit"
+  | "system_charge_limit_enabled";
 export const CONTROL_ROLES: ControlRole[] = [
   "min_soc",
   "grid_charge",
@@ -140,6 +145,10 @@ export interface BatteryConfig {
   prepare: ControlStep[];
   steps: Partial<Record<StepName, ControlStep[]>>;
   priority: number;
+  /** Takes part when Joe leaves daytime surplus to evcc (rules.day_surplus); default true. */
+  day_surplus?: boolean;
+  /** What 100 % of a charge limit in % stand for (W; Fronius); null: not known yet, Joe may learn it. */
+  limit_ref_w?: number | null;
 }
 
 export type TariffKind = "fixed_window" | "dynamic" | "flat" | "unknown";
@@ -271,6 +280,100 @@ export interface Rules {
   converter_losses: boolean;
   /** Charge full once every so many days (maintenance); null: off. */
   balance_days: number | null;
+  /** Daytime surplus: cap the batteries' charging so evcc's PV mode gets the sun (control/executor.py). */
+  day_surplus: boolean;
+  /** How much of the forecast Joe counts on: 90 / 80 / 65 %. */
+  day_caution: DayCaution;
+}
+
+export type DayCaution = "tight" | "normal" | "careful";
+
+/** Why a battery does (not) take part in the daytime surplus. */
+export type SurplusBatteryState =
+  | "takes_part"
+  | "capped"
+  | "would"
+  | "left_out"
+  | "not_tested"
+  /** No charge limit Joe could set (e.g. Marstek via Omnibattery). */
+  | "no_limit"
+  /** A charge limit in A (or without a unit): no power Joe can trust. */
+  | "unit"
+  /** A charge limit in %: Joe needs to know what 100 % stand for (limit_ref_w). */
+  | "need_ref"
+  /** Joe is finding out right now what 100 % stand for (a test limit for a few minutes). */
+  | "learning"
+  /** An automation that is switched on writes the same limit. */
+  | "automation"
+  /** Its entities are not available right now. */
+  | "unavailable"
+  /** Charge level or capacity unknown. */
+  | "unknown";
+
+/** An evcc loadpoint as Joe reads it (control/evcc.py). */
+export interface EvccLoadpoint {
+  id: string;
+  name: string;
+  kind: "car" | "heating";
+  mode: string;
+  connected: boolean;
+  boost: boolean;
+  /** In a PV mode and able to take power (a car connected, or a heater). */
+  wants: boolean;
+}
+
+/** What the daytime surplus does (or would do) now (executor._async_surplus). */
+export interface DaySurplus {
+  /** cap: capped (or would be, when dry); the others say why not. */
+  state:
+    | "off"
+    | "cap"
+    | "no_plan"
+    | "night"
+    | "released"
+    | "morning"
+    | "no_sun"
+    | "after_pv"
+    | "full"
+    | "not_reachable"
+    | "no_need"
+    | "no_battery"
+    | "no_loadpoint"
+    | "soon";
+  /** Not live: Joe only shows what he would do. */
+  dry?: boolean;
+  caution?: DayCaution;
+  batteries?: Record<
+    string,
+    {
+      name: string;
+      state: SurplusBatteryState;
+      soc: number | null;
+      cap_kw: number | null;
+      problem: string | null;
+      /** state "automation": the automations that write the same limit. */
+      automations?: string[];
+    }
+  >;
+  loadpoints?: EvccLoadpoint[];
+  evcc?: { priority_soc?: number | null; buffer_soc?: number | null; buffer_start_soc?: number | null };
+  /** evcc's settings, and the batteries' own (Omnibattery's charge delay, predictive charging), that work against it. */
+  conflicts?: {
+    code: "buffer_soc" | "buffer_start_soc" | "battery_boost" | "charge_delay" | "predictive_charging";
+    value?: number;
+    loadpoint?: string;
+    entity_id?: string;
+    battery?: string;
+  }[];
+  /** When the cautious sun stops covering the house (ISO). */
+  pv_end?: string | null;
+  cap_kw?: number | null;
+  need_kwh?: number;
+  surplus_kwh?: number;
+  /** What is left for the loadpoint until the sun's end, with caution (kWh). */
+  expected_kwh?: number;
+  hours?: { start: string; surplus: number; battery: number }[];
+  sun_ratio?: number | null;
 }
 
 export interface NotifyConfig {
@@ -957,6 +1060,8 @@ export interface ControlView {
   tonight_target?: Record<string, { night: string; target: number; chosen: number; unit: "%" | "km"; sensor: string }>;
   /** Cars charging to a level by hand right now. */
   boost?: Record<string, { target: number; chosen: number; unit: "%" | "km"; sensor: string; since: string; until: string }>;
+  /** Daytime surplus for evcc (older backends: missing). */
+  surplus?: DaySurplus;
   /** Per battery: ready to steer, or why not. */
   ready: Record<string, "ready" | "not_tested" | "outdated" | "not_controllable" | "controls_missing">;
 }

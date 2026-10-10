@@ -17,7 +17,7 @@ import { tip } from "../../components/tip";
 import { saveConfig, sourceOf } from "../../config";
 import { define } from "../../define";
 import "../../editors/tariff-form";
-import { formatNumber } from "../../entities";
+import { entityName, formatNumber } from "../../entities";
 import type { TipName, Translate } from "../../i18n";
 import { href, onLink, revealAnchor, type Route } from "../../router";
 import { ruleValue, type RuleKey } from "../../rules-view";
@@ -272,7 +272,7 @@ export class JoeGridPage extends DeviceSection {
       t,
       "solar",
       t("devices.grid.solar"),
-      html`${findingList(t, [solarRow(ctx), forecastRow(ctx)])}
+      html`${findingList(t, [solarRow(ctx), forecastRow(ctx)])} ${this.renderSleeps(t, ctx)}
         ${forecast.provider && forecast.alternatives.length
           ? html`<div class="toggle-row" data-tipped>
               <span class="with-tip"><span id="combine-label">${t("learn.sources.combine")}</span>${tip(t, "learn_combine")}</span>
@@ -303,6 +303,36 @@ export class JoeGridPage extends DeviceSection {
             </div>`
           : nothing}`,
     );
+  }
+
+  /** Per PV measurement: "Ist ohne Sonne aus – das ist normal" (no warning at night, 0 W in the records). */
+  private renderSleeps(t: Translate, ctx: RowContext): TemplateResult | typeof nothing {
+    const list = ctx.config.measurements.solar_power;
+    if (!list.length) {
+      return nothing;
+    }
+    const toggle = (entityId: string) =>
+      saveConfig(this, {
+        measurements: { solar_power: list.map((m) => (m.entity_id === entityId ? { ...m, sleeps: !m.sleeps } : m)) },
+      });
+    return html`${list.map(
+      (m, index) =>
+        html`<div class="toggle-row" data-tipped>
+          <span class="with-tip"
+            ><span id="sleeps-label-${index}"
+              >${list.length > 1 ? t("solar.sleeps.named", { name: entityName(this.hass!, m.entity_id) }) : t("solar.sleeps")}</span
+            >${tip(t, "solar_sleeps")}</span
+          >
+          <button
+            type="button"
+            class="switch"
+            role="switch"
+            aria-checked=${String(Boolean(m.sleeps))}
+            aria-labelledby="sleeps-label-${index}"
+            @click=${() => toggle(m.entity_id)}
+          ></button>
+        </div>`,
+    )}`;
   }
 
   /** The home's consumption: worked out or from a sensor; the meters behind it are under Weitere Geräte. */

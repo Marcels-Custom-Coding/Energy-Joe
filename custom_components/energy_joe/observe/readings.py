@@ -124,6 +124,31 @@ def measurement_kw(get: GetState, measurement: dict[str, Any] | None) -> float |
     return kw
 
 
+# Below this the sun gives too little for an inverter to stay awake (degrees).
+SUN_LOW_DEGREES = 8
+
+
+def sun_low(state: State | None) -> bool:
+    """Whether the sun is too low for the panels (sun.sun; always without it)."""
+    if state is None or state.state in UNAVAILABLE:
+        return True
+    if state.state == "below_horizon":
+        return True
+    elevation = state.attributes.get("elevation")
+    return isinstance(elevation, int | float) and elevation < SUN_LOW_DEGREES
+
+
+def solar_kw(get: GetState, measurement: dict[str, Any] | None) -> float | None:
+    """A solar measurement in kW; an inverter that sleeps without sun gives 0
+    while it is unavailable and the sun is low (it is off, not unknown)."""
+    value = measurement_kw(get, measurement)
+    if value is None and measurement and measurement.get("sleeps"):
+        state = get(measurement["entity_id"])
+        if (state is None or state.state in UNAVAILABLE) and sun_low(get("sun.sun")):
+            return 0.0
+    return value
+
+
 def energy_kwh(state: State | None) -> float | None:
     """An energy counter or size in kWh."""
     value = number(state)

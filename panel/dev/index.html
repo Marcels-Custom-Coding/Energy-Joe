@@ -32,6 +32,13 @@
       ?climate=profiles (Büro mit Wochenprofilen, Kinderzimmer mit Geräteprogrammen, Wohnzimmer alt: Übersicht › Heizung & Klima)
       ?pnotes=1 (Plan: alle Hinweise mit Sprung, Warmwasser und eigene Geräte heute Nacht, ein Speicher ohne Größe)
       ?joe_entities=0|1 (Joes eigene Entitäten in HA für Einstellungen › Über Joe; mit ?done=1 schon an)
+      ?surplus=0|<Zustand> (Tagsüber Überschuss für evcc: mit ?done=1 an, gedrosselt für die Fußbodenheizung im PV-Modus;
+      0 schaltet die Regel aus, ein Zustand wie no_loadpoint oder full zeigt den Grund; ?evcc=ok ohne Warnung zu evcc;
+      die Ladegrenze des ersten Speichers ist in % wie bei Fronius und Joe kennt noch nicht, wofür 100 % stehen;
+      ?limitunit=W macht daraus eine Grenze in Watt; die Venus macht über die System-Leistungsgrenzen von
+      Omnibattery mit, ihre Ladeverzögerung ist an – ?omni=ok ohne diese Warnung; ?intruder=1: eine Automation
+      schreibt die System-Ladegrenze, die Venus macht deshalb nicht mit)
+      ?pv=night (Nacht: der Wechselrichter ist aus, sein Wert „nicht verfügbar“ – bis er als „ohne Sonne aus“ markiert ist)
       ?later=1 (die Frage zum Homeoffice wurde in der Einrichtung mit „Später“ übersprungen: Fragen, Los und Übersicht › Joe braucht dich)
       sample-*.json kommen aus scripts/make_dev_samples.py (erfundene Haushalte aus tests/snapshots.py):
       Funde, die Konfiguration nach dem Übernehmen, ihre Prüfungen, Zustände und Register sowie
@@ -193,6 +200,48 @@
         return config;
       };
       withClimate(state.config);
+      // 0.9.17: daytime surplus for evcc (model.py); the samples are older. With ?done=1 it is on.
+      const surplusParam = params.get("surplus");
+      state.config.rules = { day_surplus: done && surplusParam !== "0", day_caution: "normal", ...state.config.rules };
+      for (const battery of state.config.batteries) battery.day_surplus ??= true;
+      // The sample Fronius limit is in % (of a reference the inverter does not show): it takes part once
+      // Joe knows what 100 % stand for (limit_ref_w). ?limitunit=W gives it a limit in W instead.
+      const limitPercent = params.get("limitunit") !== "W";
+      const limitEntity = state.config.batteries[0]?.controls?.charge_limit;
+      if (limitEntity && !limitPercent && sample.hass.states[limitEntity]) {
+        const old = sample.hass.states[limitEntity];
+        sample.hass.states[limitEntity] = { ...old, state: "5000", attributes: { ...old.attributes, unit_of_measurement: "W", min: 0, max: 5000 } };
+      }
+      // Omnibattery's system device (control/profiles.py entry_roles): the Venus takes part through the
+      // system power limits; its charge delay is on (?omni=ok: off).
+      const omniStates = {
+        "switch.omnibattery_system_power_limits": { state: "off", attributes: { friendly_name: "Omnibattery System System-Leistungsgrenzen" } },
+        "number.omnibattery_system_max_charge_power": { state: "0", attributes: { friendly_name: "Omnibattery System System-Maximal-Ladeleistung", unit_of_measurement: "W", min: 0, max: 2500, step: 50 } },
+        "switch.omnibattery_charge_delay": { state: params.get("omni") === "ok" ? "off" : "on", attributes: { friendly_name: "Omnibattery System Ladeverzögerung" } },
+        "switch.omnibattery_predictive_charging": { state: "off", attributes: { friendly_name: "Omnibattery System Prädiktives Laden" } },
+      };
+      for (const [entity_id, value] of Object.entries(omniStates)) sample.hass.states[entity_id] = { entity_id, ...value };
+      for (const battery of state.config.batteries) {
+        if (battery.adapter === "omnibattery") {
+          battery.controls = {
+            ...battery.controls,
+            system_charge_limit: "number.omnibattery_system_max_charge_power",
+            system_charge_limit_enabled: "switch.omnibattery_system_power_limits",
+          };
+        }
+        battery.limit_ref_w ??= null;
+      }
+      // ?pv=night: the inverter is off without sun (its value unavailable, the sun below the horizon).
+      const pvNight = params.get("pv") === "night";
+      const pvEntity = state.config.measurements?.solar_power?.[0]?.entity_id;
+      sample.hass.states["sun.sun"] = {
+        entity_id: "sun.sun",
+        state: pvNight ? "below_horizon" : "above_horizon",
+        attributes: { friendly_name: "Sonne", elevation: pvNight ? -24 : 38 },
+      };
+      if (pvNight && pvEntity && sample.hass.states[pvEntity]) {
+        sample.hass.states[pvEntity] = { ...sample.hass.states[pvEntity], state: "unavailable" };
+      }
       // ?devices=rich: a car on the wallbox meter charging by need, hot water heating to a target on its meter,
       // a dishwasher running on cheap power and switched on at night, a pool pump without a meter.
       if (params.get("devices") === "rich") {
@@ -261,7 +310,10 @@
         const grid = state.config.measurements?.grid_power;
         const settled = (state.config.answers?.confirmed ?? []).includes(`grid_sign:${grid?.entity_id}`);
         const sign = done && !lean && grid?.entity_id && grid.invert === gridInvert && !settled;
-        return [...sample.checks, ...(sign ? [{ code: "grid_sign", level: "warn", entity_id: grid.entity_id, expected: -1.8, actual: 1.6 }] : [])];
+        // discovery/checks.py: a PV inverter off at night warns until it is marked "ohne Sonne aus".
+        const pv = state.config.measurements?.solar_power?.find((m) => m.entity_id === pvEntity);
+        const asleep = pvNight && pv && !pv.sleeps ? [{ code: "unavailable", level: "warn", role: "solar_power", entity_id: pvEntity, can_sleep: true }] : [];
+        return [...sample.checks, ...asleep, ...(sign ? [{ code: "grid_sign", level: "warn", entity_id: grid.entity_id, expected: -1.8, actual: 1.6 }] : [])];
       };
       // ?climate=1: heating & cooling switched on, the bedroom off at night (Haushalt › Nachtruhe lists it).
       if (params.get("climate") === "1") {
@@ -340,7 +392,80 @@
             b.adapter === "none" ? "not_controllable" : control.tests[b.id]?.ok ? "ready" : "not_tested",
           ]),
         );
-        return { steering: false, reason, night, batteries: {}, actions: {}, pending: false, ready, ...control, log: control.log.slice(-30) };
+        return {
+          steering: false,
+          reason,
+          night,
+          batteries: {},
+          actions: {},
+          pending: false,
+          ready,
+          surplus: surplusView(),
+          ...control,
+          log: control.log.slice(-30),
+        };
+      };
+      // "Tagsüber Überschuss" (executor._async_surplus): an evcc floor heating in PV mode, the first battery
+      // capped (or only "would" outside live), the others cannot; evcc's battery-assisted charging warns.
+      const surplusView = () => {
+        const rules = state.config.rules;
+        if (!rules.day_surplus) return { state: "off" };
+        const forced = surplusParam && surplusParam !== "1" ? surplusParam : null;
+        if (control.surplusReleased) return { state: "released" };
+        const dry = state.mode !== "live";
+        const evccOk = params.get("evcc") === "ok";
+        const intruder = params.get("intruder") === "1";
+        // What each battery would be capped to (the Venus through Omnibattery's system limits).
+        const shares = state.config.batteries.map((b, i) => {
+          if (forced || b.day_surplus === false) return null;
+          if (b.controls?.charge_limit && i === 0) return limitPercent && !b.limit_ref_w ? null : 1.4;
+          if (b.controls?.system_charge_limit) return intruder ? null : 0.6;
+          return null;
+        });
+        const capSum = shares.reduce((sum, kw) => sum + (kw ?? 0), 0);
+        const cap = forced ? null : capSum ? Math.round(capSum * 10) / 10 : null;
+        const batteries = Object.fromEntries(
+          state.config.batteries.map((b, i) => [
+            b.id,
+            {
+              name: b.name,
+              state: !(b.controls?.charge_limit || b.controls?.system_charge_limit)
+                ? "no_limit"
+                : b.controls?.charge_limit && limitPercent && !b.limit_ref_w
+                  ? "need_ref"
+                  : b.controls?.system_charge_limit && intruder
+                    ? "automation"
+                    : b.day_surplus === false
+                      ? "left_out"
+                      : shares[i]
+                        ? dry
+                          ? "would"
+                          : "capped"
+                        : "takes_part",
+              soc: 46 - 6 * i,
+              cap_kw: shares[i],
+              problem: null,
+              ...(b.controls?.system_charge_limit && intruder ? { automations: ["Akku-Hierarchie"] } : {}),
+            },
+          ]),
+        );
+        const omniConflict = params.get("omni") === "ok" ? [] : [{ code: "charge_delay", entity_id: "switch.omnibattery_charge_delay", battery: state.config.batteries.find((b) => b.adapter === "omnibattery")?.name ?? "Venus" }];
+        return {
+          state: forced ?? (cap ? "cap" : "no_battery"),
+          dry,
+          caution: rules.day_caution,
+          batteries,
+          loadpoints: [{ id: "lp1", name: "Fußbodenheizung", kind: "heating", mode: forced === "no_loadpoint" ? "now" : "pv", connected: false, boost: false, wants: forced !== "no_loadpoint" }],
+          evcc: { priority_soc: 50, buffer_soc: evccOk ? 0 : 80, buffer_start_soc: 0 },
+          conflicts: [...(evccOk ? [] : [{ code: "buffer_soc", value: 80 }]), ...omniConflict],
+          pv_end: dayAt(0, "19:00"),
+          cap_kw: cap,
+          need_kwh: 6.9,
+          surplus_kwh: 19.0,
+          expected_kwh: forced ? 0 : 12.1,
+          hours: [],
+          sun_ratio: 0.93,
+        };
       };
       const log = (kind, detail = {}) => {
         control.log.push({ at: stamp(), kind, ...detail });
@@ -359,6 +484,10 @@
           ...(battery ? [{ at: dayAt(0, "04:10"), kind: "reached", battery, target: 80 }] : []),
           ...(car ? [{ at: dayAt(0, "05:45"), kind: "action_done", battery: `action:${car}` }] : []),
           { at: dayAt(0, "06:00"), kind: "released" },
+          { at: dayAt(0, "06:00"), kind: "day", until: dayAt(0, "10:30") },
+          { at: dayAt(0, "08:20"), kind: "day_released", remaining: 5.2, headroom: 6.1 },
+          { at: dayAt(0, "09:12"), kind: "surplus_cap", power: 1.4, until: dayAt(0, "19:00"), loadpoint: "Fußbodenheizung" },
+          { at: dayAt(0, "11:40"), kind: "surplus_raise", power: 1.8, until: dayAt(0, "19:00"), loadpoint: "Fußbodenheizung" },
         );
       }
       // ?steer=1 (Übersicht › Gerade jetzt): Joe steers right now – the first battery charges, the second holds,
@@ -775,6 +904,7 @@
               return { started: true };
             }
             case "energy_joe/control/release":
+              control.surplusReleased = Boolean(state.config.rules.day_surplus);
               log("emergency");
               log("released", { reason: "emergency" });
               control.skip = state.plan?.window?.start ?? null;
@@ -972,6 +1102,10 @@
               const list = (state.automationsMock = state.automationsMock ?? [
                 { entity_id: "automation.akku_interlock_r3", name: "Akku-Interlock R3: BYD-Entladen zu, wenn Venus lädt", on: true, writes: [{ entity_id: "number.discharge_limit", name: "Grenzwert für die Entladeleistung", battery: state.config.batteries[0]?.name ?? "BYD", battery_id: state.config.batteries[0]?.id ?? "storage", joe: true }], switched_off: null },
                 { entity_id: "automation.akku_boost_r5", name: "Akku-Boost R5: Venus parallel laden", on: true, writes: [{ entity_id: "number.charge_power", name: "Ladeleistung", battery: state.config.batteries[1]?.name ?? "Venus", battery_id: state.config.batteries[1]?.id ?? "venus", joe: true }, { entity_id: "select.force_mode", name: "Betriebsmodus erzwingen", battery: state.config.batteries[1]?.name ?? "Venus", battery_id: state.config.batteries[1]?.id ?? "venus", joe: true }], switched_off: null },
+                // ?intruder=1: it also writes Omnibattery's system charge limit (the daytime cap's lever).
+                ...(params.get("intruder") === "1"
+                  ? [{ entity_id: "automation.akku_hierarchie", name: "Akku-Hierarchie", on: true, writes: [{ entity_id: "number.omnibattery_system_max_charge_power", name: "System-Maximal-Ladeleistung", battery: state.config.batteries[1]?.name ?? "Venus", battery_id: state.config.batteries[1]?.id ?? "venus", joe: true }], switched_off: null }]
+                  : []),
               ].filter((item) => item.writes.every((w) => state.config.batteries.some((b) => b.id === w.battery_id))));
               if (msg.type.endsWith("/switch")) {
                 for (const item of list) {

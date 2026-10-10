@@ -2,12 +2,13 @@ import { css, html, nothing, type PropertyValues, type TemplateResult } from "li
 import { property, state } from "lit/decorators.js";
 import "../../components/battery-automations";
 import { automationsOf, loadBatteryAutomations, type BatteryAutomation } from "../../components/battery-automations";
-import { displayTitle } from "../../components/bits";
+import { displayTitle, sourceChip } from "../../components/bits";
+import { daySurplus, limitInPercent, surplusAbility } from "../../components/day-surplus";
 import { dayText } from "../../components/look-back";
 import { timeOf } from "../../components/plan-text";
 import "../../components/sheet";
 import { tip } from "../../components/tip";
-import { saveConfig, withIgnored } from "../../config";
+import { saveConfig, sourceOf, withIgnored } from "../../config";
 import { define } from "../../define";
 import type { DeviceEntry } from "../../device-model";
 import "../../editors/battery-control";
@@ -15,7 +16,7 @@ import { controlValue, withPrepare, type ControlValue } from "../../editors/batt
 import { entityName, formatNumber } from "../../entities";
 import type { Translate } from "../../i18n";
 import { batteryLearned, learnedRows, learnedStyles } from "../../learned-view";
-import { closeSheet, href, navigate, onLink, type Route } from "../../router";
+import { closeSheet, href, navigate, onLink, revealAnchor, type Route } from "../../router";
 import { shared } from "../../styles/shared";
 import type { BatteryConfig, BatteryFinding, ControlView, JoeInfo, TestResult, TestStep } from "../../types";
 import "./battery-fields";
@@ -101,6 +102,8 @@ export class JoeBatteryDevice extends DeviceSection {
   @state() private notice = "";
   @state() private automations: BatteryAutomation[] | null = null;
   private automationsFor = "";
+  /** The anchor already revealed for /devices/battery/<id>/intruders. */
+  private revealed = "";
 
   static styles = [
     shared,
@@ -180,6 +183,26 @@ export class JoeBatteryDevice extends DeviceSection {
       .control-text b {
         font-weight: 700;
       }
+      .control-text .mini-btn {
+        justify-self: start;
+        margin-top: 6px;
+      }
+      .ref-field {
+        padding-bottom: 14px;
+        margin: 0 0 4px;
+        border-bottom: 1px solid var(--joe-line);
+      }
+      .field-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      @media (pointer: coarse) {
+        .ref-field .input {
+          min-height: 44px;
+        }
+      }
       a.btn {
         text-decoration: none;
       }
@@ -251,6 +274,16 @@ export class JoeBatteryDevice extends DeviceSection {
           this.automations = items;
         }
       });
+    }
+  }
+
+  protected updated(): void {
+    // /devices/battery/<id>/intruders: scroll to the "Störenfriede" once they are there.
+    const target = this.sub === "intruders" ? `${this.battery?.id}/intruders` : "";
+    if (!target) {
+      this.revealed = "";
+    } else if (this.revealed !== target && revealAnchor(this.renderRoot, "intruders")) {
+      this.revealed = target;
     }
   }
 
@@ -418,7 +451,139 @@ export class JoeBatteryDevice extends DeviceSection {
         </a>
         ${tip(t, "devices_setup")}
       </div>
-      ${this.fields(battery, "steer")}`;
+      ${battery.adapter !== "none" ? this.renderDaySurplus(t, battery) : nothing} ${this.fields(battery, "steer")}`;
+  }
+
+  /** "Macht tagsüber mit": this battery's part in the daytime surplus for evcc, and what it does now. */
+  private renderDaySurplus(t: Translate, battery: BatteryConfig): TemplateResult {
+    const joe = this.state!;
+    const rules = joe.config.rules;
+    const surplus = daySurplus(joe);
+    const mine = surplus?.batteries?.[battery.id];
+    const ability = surplusAbility(this.hass, battery);
+    const capable = ability === "ok" || ability === "need_ref";
+    const on = battery.day_surplus !== false;
+    const kw = (value: number | null | undefined) => formatNumber(t.lang, value ?? 0, 1);
+    const ruleTo: Route = { tab: "settings", section: "rules", id: "day_surplus" };
+    const intrudersTo: Route = { tab: "devices", section: "battery", id: battery.id, sub: "intruders" };
+    let text: string;
+    if (!capable) {
+      text = t(`battery.surplus.${ability}`);
+    } else if (mine && (mine.state === "no_limit" || mine.state === "unit")) {
+      text = t(`battery.surplus.${mine.state}`);
+    } else if (!rules.day_surplus) {
+      text = t("battery.surplus.rule_off");
+    } else if (mine?.state === "automation") {
+      text = t("battery.surplus.automation", { names: (mine.automations ?? []).map((n) => `„${n}“`).join(", ") });
+    } else if (mine?.state === "learning") {
+      text = t("battery.surplus.learning");
+    } else if (mine?.state === "need_ref" || ability === "need_ref") {
+      text = t("battery.surplus.need_ref");
+    } else if (mine?.state === "capped") {
+      text = t("battery.surplus.capped", { kw: kw(mine.cap_kw), time: timeOf(surplus?.pv_end) });
+    } else if (mine?.state === "would") {
+      text = t("battery.surplus.would", { kw: kw(mine.cap_kw), time: timeOf(surplus?.pv_end) });
+    } else if (mine?.state === "unavailable" || mine?.state === "unknown") {
+      text = t(`battery.surplus.${mine.state}`);
+    } else if (mine?.state === "not_tested" || joe.control?.ready[battery.id] !== "ready") {
+      text = t("battery.surplus.not_tested");
+    } else {
+      text = t(on ? "battery.surplus.takes_part" : "battery.surplus.left_out");
+    }
+    return html`<div class="control-row" data-tipped>
+        <span class="control-text">
+          <b id="day-surplus-${battery.id}">${t("battery.surplus.label")}</b>
+          <small>${text}</small>
+          ${!rules.day_surplus && capable
+            ? html`<a class="mini-btn go" href=${href(this.prefix, ruleTo)} @click=${onLink(ruleTo)}>${t("battery.surplus.rule_go")}</a>`
+            : nothing}
+          ${rules.day_surplus && mine?.state === "automation"
+            ? html`<a class="mini-btn go" href=${href(this.prefix, intrudersTo)} @click=${this.jumpToIntruders(intrudersTo)}
+                >${t("battery.surplus.intruders_go")}</a
+              >`
+            : nothing}
+        </span>
+        ${tip(t, "f_battery_day_surplus")}
+        <button
+          type="button"
+          class="switch"
+          role="switch"
+          aria-checked=${String(on && capable)}
+          aria-labelledby="day-surplus-${battery.id}"
+          ?disabled=${!capable}
+          @click=${() => saveConfig(this, { batteries: { [battery.id]: { day_surplus: !on } } })}
+        ></button>
+      </div>
+      ${limitInPercent(this.hass, battery) ? this.renderLimitRef(t, battery) : nothing}`;
+  }
+
+  /** "Wofür stehen 100 %?": the power a charge limit in % counts from (Fronius), or "Joe lernt es selbst". */
+  private renderLimitRef(t: Translate, battery: BatteryConfig): TemplateResult {
+    const config = this.state!.config;
+    const value = battery.limit_ref_w ?? null;
+    const source = sourceOf(config, `batteries[${battery.id}].limit_ref_w`);
+    const learning = value == null;
+    return html`<div class="field ref-field" data-tipped>
+      <div class="field-label">
+        <span id="limit-ref-${battery.id}">${t("battery.limit_ref.label")}</span> ${tip(t, "f_battery_limit_ref")}
+        ${value != null ? sourceChip(t, source) : nothing}
+      </div>
+      <div class="field-row">
+        <span class="unit-input">
+          <input
+            class="input"
+            type="number"
+            inputmode="numeric"
+            min="100"
+            max="100000"
+            step="10"
+            aria-labelledby="limit-ref-${battery.id}"
+            .value=${value == null ? "" : String(Math.round(value))}
+            placeholder=${t("battery.limit_ref.placeholder")}
+            @change=${(ev: Event) => {
+              const input = ev.target as HTMLInputElement;
+              const watts = Number.parseFloat(input.value.replace(",", "."));
+              const ok = Number.isFinite(watts) && watts >= 100 && watts <= 100000;
+              if (input.value.trim() && !ok) {
+                input.value = value == null ? "" : String(Math.round(value));
+                return;
+              }
+              void saveConfig(this, { batteries: { [battery.id]: { limit_ref_w: ok ? Math.round(watts) : null } } });
+            }}
+          />
+          <span class="unit">W</span>
+        </span>
+        <button
+          type="button"
+          class="mini-btn ${learning ? "go" : ""}"
+          aria-pressed=${String(learning)}
+          @click=${() => {
+            if (!learning) void saveConfig(this, { batteries: { [battery.id]: { limit_ref_w: null } } });
+          }}
+        >
+          ${t("battery.limit_ref.learn")}
+        </button>
+      </div>
+      <p class="field-hint">
+        ${value == null
+          ? t("battery.limit_ref.learning")
+          : source?.source === "learned"
+            ? t("battery.limit_ref.learned", { value: formatNumber(t.lang, value, 0) })
+            : t("battery.limit_ref.set", { value: formatNumber(t.lang, value, 0) })}
+      </p>
+    </div>`;
+  }
+
+  /** On the same page the jump only scrolls to the "Störenfriede". */
+  private jumpToIntruders(to: Route): (ev: MouseEvent) => void {
+    const go = onLink(to, { replace: true });
+    return (ev: MouseEvent) => {
+      go(ev);
+      if (ev.defaultPrevented) {
+        this.revealed = "";
+        revealAnchor(this.renderRoot, "intruders");
+      }
+    };
   }
 
   private renderPower(t: Translate, battery: BatteryConfig): TemplateResult {

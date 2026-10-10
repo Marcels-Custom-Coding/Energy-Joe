@@ -29,6 +29,7 @@ from .readings import (
     measurement_entities,
     measurement_kw,
     number,
+    solar_kw,
     sum_kwh,
     temperature_c,
 )
@@ -161,7 +162,15 @@ class JoeObserver:
         power("grid", m["grid_power"])
         power("home", m["home_power"])
         for index, measurement in enumerate(m["solar_power"]):
-            power(f"solar:{index}", measurement)
+            entities = measurement_entities(measurement)
+            if measurement.get("sleeps"):
+                # Asleep counts as 0 W only while the sun is low: its rise counts.
+                entities.append("sun.sun")
+            self._add(
+                f"solar:{index}",
+                lambda measurement=measurement: solar_kw(get, measurement),
+                entities,
+            )
         for battery in config["batteries"]:
             power(f"bat:{battery['id']}", battery["power"])
         if weather := config["context"]["weather_entity"]:

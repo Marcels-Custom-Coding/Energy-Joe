@@ -65,6 +65,7 @@ export const SIGNPOST = [
     title: "rule.discharge_in_window",
   },
   { id: "rule_converter_losses", to: { tab: "settings", section: "rules", id: "converter_losses" }, title: "rule.converter_losses" },
+  { id: "rule_day_surplus", to: { tab: "settings", section: "rules", id: "day_surplus" }, title: "rule.day_surplus" },
   { id: "rule_grid_limit_w", to: { tab: "settings", section: "rules", id: "grid_limit_w" }, title: "rule.grid_limit_w" },
   { id: "rule_max_night_kwh", to: { tab: "settings", section: "rules", id: "max_night_kwh" }, title: "rule.max_night_kwh" },
   { id: "rule_guard_grid", to: { tab: "settings", section: "rules", id: "guard_grid" }, title: "rule.guard_grid" },

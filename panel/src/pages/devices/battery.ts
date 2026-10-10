@@ -2,6 +2,7 @@ import { css, html, nothing, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
 import "../../components/battery-automations";
 import "../../components/control-status";
+import { daySurplus, surplusConflictNote, surplusText } from "../../components/day-surplus";
 import { deviceState } from "../../components/device-card";
 import { mirrorRow } from "../../components/mirror";
 import { tip } from "../../components/tip";
@@ -27,6 +28,7 @@ const BATTERY_RULES: readonly RuleKey[] = [
   "balance_days",
   "discharge_in_window",
   "converter_losses",
+  "day_surplus",
 ];
 
 /**
@@ -132,6 +134,21 @@ export class JoeBatteryGroup extends DeviceSection {
       joe-control-status {
         display: block;
       }
+      .evcc {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-top: 14px;
+      }
+      .evcc .conflicts {
+        flex: 1;
+        min-width: 0;
+        display: grid;
+        gap: 8px;
+      }
+      .evcc .note {
+        margin: 0;
+      }
       .dcards {
         margin-top: 14px;
       }
@@ -166,6 +183,7 @@ export class JoeBatteryGroup extends DeviceSection {
       ${groupHead(t, t("nav.devices.battery"), t("battery.page.lead"), batteries.length > 0)}
       ${this.device !== undefined ? notFound(t) : nothing}
       <joe-control-status .t=${t} .hass=${this.hass} .state=${joe}></joe-control-status>
+      ${this.renderEvcc(t)}
       ${batteries.length
         ? groupCards(this.ctx, this.devices, "battery", (d) => this.cardChange(t, d))
         : html`<p class="empty">${t("devices.batteries.none")}</p>`}
@@ -206,6 +224,7 @@ export class JoeBatteryGroup extends DeviceSection {
   /** The rules for all batteries: read here, changed in Einstellungen › Regeln. */
   private renderRules(t: Translate): TemplateResult {
     const config = this.state!.config;
+    const surplus = daySurplus(this.state);
     return html`<section class="card" data-tipped>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:tune-vertical"></ha-icon>${t("battery.page.rules")}</div>
@@ -218,11 +237,18 @@ export class JoeBatteryGroup extends DeviceSection {
             label: t(`rule.${key}`),
             value: ruleValue(t, config, key),
             source: sourceOf(config, `rules.${key}`),
+            hint: key === "day_surplus" && surplus ? surplusText(t, surplus) : undefined,
             to,
           });
         })}
       </div>
     </section>`;
+  }
+
+  /** evcc's battery settings that work against the daytime surplus (only while the rule is on). */
+  private renderEvcc(t: Translate): TemplateResult | typeof nothing {
+    const note = surplusConflictNote(t, daySurplus(this.state));
+    return note === nothing ? nothing : html`<div class="evcc" data-tipped>${note} ${tip(t, "surplus_evcc")}</div>`;
   }
 
   /** Batteries Joe found but does not use: new ones and ones left out ("Wieder nutzen"). */

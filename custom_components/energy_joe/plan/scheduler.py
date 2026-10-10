@@ -46,6 +46,9 @@ class JoePlanner:
         self._fixed: dict[str, Any] | None = None
         # The start of the window (or search span) the last fixed plan was for.
         self._fixed_span: str | None = None
+        # Last night's fixed plan while its grid-friendly morning still runs
+        # (the window is over, the morning lasts until day.defer_until).
+        self._morning: dict[str, Any] | None = None
         # Distances to the places of appointments (for cars charged by need).
         self.places = PlaceStore(hass)
         # Joe's own car calendars (set by the runtime).
@@ -79,6 +82,7 @@ class JoePlanner:
             self._commit()
             self._commit = None
         self._fixed = None
+        self._morning = None
         if self.plan is not None:
             self.plan = None
             self._changed()
@@ -97,10 +101,21 @@ class JoePlanner:
                 self.plan = self._fixed
                 self._changed()
                 return self.plan
+            if _morning_runs(self._fixed, now):
+                self._morning = self._fixed
             self._fixed = None
+        if self._morning is not None and not _morning_runs(self._morning, now):
+            self._morning = None
         plan = await self._async_plan(now)
         # The plan may have been fixed while this one was worked out: it stays.
-        self.plan = self._fixed if self._fixed is not None else plan
+        if self._fixed is not None:
+            self.plan = self._fixed
+        elif self._morning is not None:
+            # The next night's preview, with last night's morning still in force
+            # (the executor holds the batteries back until its defer_until).
+            self.plan = {**plan, "morning": _morning_part(self._morning)}
+        else:
+            self.plan = plan
         self._changed()
         return self.plan
 
@@ -213,14 +228,14 @@ class JoePlanner:
         for offset in (0, -1, 1):
             name = (today + timedelta(days=offset)).isoformat()
             plan = ((await self._history.async_day(name)) or {}).get("plan")
-            if (
-                plan
-                and plan.get("fixed")
-                and datetime.fromisoformat(plan["window"]["end"]) > now
-            ):
+            if not plan or not plan.get("fixed"):
+                continue
+            if datetime.fromisoformat(plan["window"]["end"]) > now:
                 self._fixed = plan
                 self._fixed_span = (plan.get("search") or plan["window"])["start"]
                 return
+            if self._morning is None and _morning_runs(plan, now):
+                self._morning = plan
 
     @callback
     def _on_tick(self, now: datetime) -> None:
@@ -273,6 +288,24 @@ class JoePlanner:
             await self._history.async_update_day(night, plan=plan)
         self._changed()
         self._schedule_commit()
+
+
+def _morning_runs(plan: dict[str, Any], now: datetime) -> bool:
+    """Whether a fixed plan's grid-friendly morning has not reached its end yet."""
+    day = plan.get("day") or {}
+    until = day.get("defer_until")
+    return bool(until) and datetime.fromisoformat(until) > now
+
+
+def _morning_part(plan: dict[str, Any]) -> dict[str, Any]:
+    """What the executor needs of last night's plan for its morning."""
+    return {
+        "fixed": True,
+        "window": plan["window"],
+        "day": plan["day"],
+        "batteries": plan.get("batteries") or [],
+        "hours": plan.get("hours") or [],
+    }
 
 
 def _span(config: dict[str, Any]) -> dict[str, str] | None:

@@ -5,6 +5,7 @@ import "../components/chart";
 import type { ChartSeries } from "../components/chart";
 import "../components/control-status";
 import { controlText } from "../components/control-status";
+import { daySurplus, surplusDoing } from "../components/day-surplus";
 import "../components/pose";
 import "../components/steer-tonight";
 import { steerAsks, steerShown } from "../components/steer-tonight";
@@ -401,6 +402,7 @@ export class JoeOverview extends LitElement {
       return nothing;
     }
     const items = inboxItems(t, joe, {
+      hass: this.hass,
       climateFound: this.climateFound,
       discovery: this.discovery,
       checks: this.checks,
@@ -546,6 +548,10 @@ export class JoeOverview extends LitElement {
           lines.push(t("overview.doing.battery", { name: battery.name, what: batteryNow(t, battery, control) }));
         }
       }
+    }
+    const surplus = surplusDoing(t, daySurplus(joe));
+    if (surplus) {
+      lines.push(surplus);
     }
     for (const action of config.actions) {
       const now = control?.actions?.[action.id];

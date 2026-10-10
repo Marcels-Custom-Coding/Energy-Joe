@@ -30,8 +30,15 @@ from typing import Any
 
 from homeassistant.core import HomeAssistant
 
-from .profiles import GENERIC, MODE_METHODS, PROFILES, Profile, profile_for
-from .writes import Write, available, fit, matches
+from .profiles import (
+    GENERIC,
+    MODE_METHODS,
+    PROFILES,
+    SYSTEM_ROLES,
+    Profile,
+    profile_for,
+)
+from .writes import Write, available, fit, matches, read
 
 # Charging power when neither the plan nor the battery says (W).
 DEFAULT_CHARGE_W = 1000
@@ -93,7 +100,10 @@ class Adapter:
         """Changes when the way of steering changes (a new test run is needed)."""
         data = {
             "kind": self.kind,
-            "controls": self.controls,
+            # The system levers of the daytime cap are no part of the night.
+            "controls": {
+                k: v for k, v in self.controls.items() if k not in SYSTEM_ROLES
+            },
             "options": self.battery.get("mode_options") or {},
             "prepare": self.battery.get("prepare") or [],
             "steps": self.battery.get("steps") or {},
@@ -226,6 +236,144 @@ class RoleAdapter(Adapter):
         writes.append(Write(self.controls["charge_limit"], 0))
         return self._paced(writes)
 
+    def limit_roles(self) -> tuple[str, str] | None:
+        """The lever of the daytime cap: (its switch role, its value role), or None.
+
+        The battery's own charge limit, else a limit on the integration's
+        system device for all its batteries (Omnibattery's power limits, which
+        work in automatic mode; manual mode would stop its own control).
+        """
+        if self._has("charge_limit"):
+            return "charge_limit_enabled", "charge_limit"
+        if self._has("system_charge_limit"):
+            return "system_charge_limit_enabled", "system_charge_limit"
+        return None
+
+    def limit_entities(self) -> list[str]:
+        """The entities the daytime cap writes (its switch, its value)."""
+        roles = self.limit_roles()
+        return [self.controls[r] for r in roles or () if r in self.controls]
+
+    def limit_key(self) -> str | None:
+        """The value entity of the cap; batteries with the same one are capped together."""
+        roles = self.limit_roles()
+        return self.controls[roles[1]] if roles else None
+
+    def limit_shared(self) -> bool:
+        """Whether the cap is for the whole system (all batteries of the integration)."""
+        roles = self.limit_roles()
+        return bool(roles) and roles[1] == "system_charge_limit"
+
+    def limit_problem(self, hass: HomeAssistant) -> str | None:
+        """Why Joe cannot cap charging at a power (daytime surplus), or None.
+
+        A charge limit in W or kW is a power Joe can trust. One in % is a
+        share of a reference the device does not tell: Fronius counts its %
+        of WChaMax (SunSpec model 124), which Home Assistant does not show and
+        which need not be the battery's highest charging power. A wrong
+        reference would cap too low, so such a battery takes part only once
+        the reference is known ("limit_ref_w", set by the owner or learned).
+        A limit in A (or without a unit) never takes part.
+        """
+        roles = self.limit_roles()
+        if roles is None:
+            return "no_limit"
+        # The battery's own levers are checked by missing(), the system's here.
+        for role in (r for r in roles if r in SYSTEM_ROLES or r == roles[1]):
+            if role in self.controls and not available(
+                hass.states.get(self.controls[role])
+            ):
+                return "unavailable"
+        state = hass.states.get(self.controls[roles[1]])
+        assert state is not None
+        unit = state.attributes.get("unit_of_measurement")
+        if unit in ("W", "kW"):
+            return None
+        if unit == "%":
+            return None if self.battery.get("limit_ref_w") else "need_ref"
+        # No unit at all: not sure it is a power, so no.
+        return "unit"
+
+    def can_limit(self, hass: HomeAssistant) -> bool:
+        """Whether Joe can cap charging at a power (daytime surplus)."""
+        return self.limit_problem(hass) is None
+
+    def limit(
+        self, hass: HomeAssistant, kw: float, saved: dict[str, Any] | None = None
+    ) -> list[Write]:
+        """Cap charging (from the sun, too) at a power; discharging stays free.
+
+        Never above a limit that was in force before Joe (the owner's own).
+        """
+        roles = self.limit_roles()
+        assert roles is not None
+        switch, role = roles
+        entity_id = self.controls[role]
+        watts = max(0.0, kw * 1000)
+        unit = self._limit_unit(hass)
+        if unit == "kW":
+            value: float = math.ceil(watts / 10) / 100
+        elif unit == "%":
+            value = self.percent_of(hass, watts)
+        else:
+            value = math.ceil(watts / 10) * 10
+        own = self._own_limit(hass, saved or {})
+        if own is not None:
+            value = min(value, own)
+        low, high = _range(hass, entity_id, 0, math.inf)
+        value = max(low, min(high, value))
+        if switch not in self.controls:
+            return self._paced([Write(entity_id, value)])
+        if role == "system_charge_limit":
+            # The value first: the system's limits take it at once when on.
+            return self._paced(
+                [Write(entity_id, value), Write(self.controls[switch], True)]
+            )
+        return self._paced(
+            [Write(self.controls[switch], True), Write(entity_id, value)]
+        )
+
+    def percent_of(self, hass: HomeAssistant, watts: float) -> float:
+        """A power as % of the reference, up to the limit's next step (never below)."""
+        reference = float(self.battery.get("limit_ref_w") or 0)
+        if reference <= 0:
+            return 100.0
+        percent = 100 * watts / reference
+        state = hass.states.get(self.limit_key() or "")
+        step = state.attributes.get("step") if state else None
+        if not isinstance(step, int | float) or step <= 0:
+            step = 1
+        return min(100.0, math.ceil(round(percent / step, 6)) * step)
+
+    def _own_limit(self, hass: HomeAssistant, saved: dict[str, Any]) -> float | None:
+        """The charge limit in force before Joe changed it, if any (entity's unit)."""
+        roles = self.limit_roles()
+        if roles is None:
+            return None
+        entity_id = self.controls[roles[1]]
+        switch = self.controls.get(roles[0])
+        if switch:
+            on = saved[switch] if switch in saved else read(hass, switch)
+            if on is not True:
+                return None
+        value = saved[entity_id] if entity_id in saved else read(hass, entity_id)
+        # 0 may mean "no limit" on devices without a switch: not a cap to keep.
+        if isinstance(value, bool) or not isinstance(value, int | float) or value <= 0:
+            return None
+        return float(value)
+
+    def unlimit(self, saved: dict[str, Any]) -> list[Write]:
+        """The charge limit back as it was: its switch first, then the value."""
+        roles = self.limit_roles()
+        if roles is None:
+            return []
+        return self._paced(self._restore(saved, *roles))
+
+    def _limit_unit(self, hass: HomeAssistant) -> str:
+        state = hass.states.get(self.limit_key() or "")
+        unit = state.attributes.get("unit_of_measurement") if state else None
+        return unit or "W"
+
     def release(self, saved: dict[str, Any]) -> list[Write]:
         return self._paced(super().release(saved))
 
@@ -250,6 +398,9 @@ class RoleAdapter(Adapter):
         if not self.hold_methods():
             result.append("hold")
         for role, entity_id in self.controls.items():
+            if role in SYSTEM_ROLES:
+                # Only the daytime cap needs them (limit_problem says so).
+                continue
             if not available(hass.states.get(entity_id)):
                 result.append(role)
         return result

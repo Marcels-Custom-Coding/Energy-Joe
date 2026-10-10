@@ -4,6 +4,7 @@ import { define } from "../define";
 import type { Translate } from "../i18n";
 import { shared } from "../styles/shared";
 import type { HomeAssistant, JoeState } from "../types";
+import { daySurplus } from "./day-surplus";
 import { timeOf } from "./plan-text";
 import { tip } from "./tip";
 
@@ -83,7 +84,9 @@ export class JoeControlStatus extends LitElement {
     if (!t || !joe || !control) {
       return nothing;
     }
-    const canRelease = control.steering || control.pending;
+    // A daytime cap for evcc can be let go, too (no cap again today).
+    const capped = daySurplus(joe)?.state === "cap" && !daySurplus(joe)?.dry;
+    const canRelease = control.steering || control.pending || capped;
     if (this.compact) {
       return canRelease || this.notice
         ? html`<section class="card status" ?data-tipped=${canRelease}>${this.renderRelease(t, control.pending, canRelease)}</section>`

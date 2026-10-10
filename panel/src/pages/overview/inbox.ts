@@ -2,13 +2,14 @@ import { LitElement, css, html, nothing } from "lit";
 import { property, state } from "lit/decorators.js";
 import "../../components/day-questions";
 import "../../components/steer-tonight";
+import { daySurplus, surplusAbility, surplusConflicts } from "../../components/day-surplus";
 import { checkText } from "../../components/texts";
 import { tip } from "../../components/tip";
 import { isIgnored, saveConfig } from "../../config";
 import { define } from "../../define";
 import { actionPlace, deviceRoute, findDevice, newFindings, type DeviceEntry, type Group } from "../../device-model";
 import { laterList, laterOpen, questionHome } from "../../homes";
-import type { Translate } from "../../i18n";
+import type { TipName, Translate } from "../../i18n";
 import { PANEL, format, href, onLink, type Route } from "../../router";
 import { shared } from "../../styles/shared";
 import type { Check, ClimateFound, Discovery, HomeAssistant, JoeState } from "../../types";
@@ -31,9 +32,22 @@ export interface TodoItem {
   title: string;
   text?: string;
   to: Route;
+  /** A quick answer right in the row (e.g. "Ist nachts aus – normal"): a config patch, its label and tooltip. */
+  fix?: { label: string; tip: TipName; patch: Record<string, unknown> };
+}
+
+/** The patch that marks a solar measurement as "off without sun" (null: not one of them). */
+export function sleepsPatch(config: JoeState["config"], entityId: string): Record<string, unknown> | null {
+  const solar = config.measurements.solar_power ?? [];
+  if (!solar.some((m) => m.entity_id === entityId && !m.sleeps)) {
+    return null;
+  }
+  return { measurements: { solar_power: solar.map((m) => (m.entity_id === entityId ? { ...m, sleeps: true } : m)) } };
 }
 
 export interface InboxInputs {
+  /** For what the backend does not tell yet (a limit in % while the rule is off). */
+  hass?: HomeAssistant;
   climateFound?: ClimateFound;
   discovery?: Discovery;
   checks?: Check[];
@@ -102,11 +116,13 @@ export function inboxItems(t: Translate, joe: JoeState, inputs: InboxInputs = {}
   for (const check of (inputs.checks ?? []).filter(counts)) {
     const place = checkPlace(check);
     const subject = String(check.battery_id ?? check.role ?? check.entity_id ?? "");
+    const patch = check.can_sleep ? sleepsPatch(config, String(check.entity_id)) : null;
     warn({
       id: `check:${check.code}:${subject}`,
       title: nameOf(place.group, place.group === "grid" && place.id === "tariff" ? "connection" : place.id, check.battery as string | undefined),
       text: checkText(t, check),
       to: deviceRoute(place),
+      fix: patch ? { label: t("solar.sleeps.quick"), tip: "solar_sleeps", patch } : undefined,
     });
   }
   const problem = (code: string) => t.optional(`devices.problem.${code}`) ?? code;
@@ -118,6 +134,62 @@ export function inboxItems(t: Translate, joe: JoeState, inputs: InboxInputs = {}
         title: battery.name,
         text: problem(code),
         to: deviceRoute({ group: "battery", id: battery.id }),
+      });
+    }
+  }
+  // The daytime surplus: evcc settings against it, a cap that does not take.
+  const surplus = daySurplus(joe);
+  const conflicts = surplusConflicts(t, surplus);
+  if (conflicts.length) {
+    warn({
+      id: `surplus:evcc:${(surplus?.conflicts ?? []).map((c) => c.code).join(",")}`,
+      title: t("surplus.conflict.title"),
+      text: conflicts.join(" "),
+      to: { tab: "devices", section: "battery" },
+    });
+  }
+  const device = surplusConflicts(t, surplus, true);
+  if (device.length) {
+    warn({
+      id: `surplus:device:${(surplus?.conflicts ?? []).map((c) => c.code).join(",")}`,
+      title: t("surplus.device_conflict.title"),
+      text: device.join(" "),
+      to: { tab: "devices", section: "battery" },
+    });
+  }
+  for (const [id, entry] of Object.entries(surplus?.batteries ?? {})) {
+    if (entry.state === "automation") {
+      warn({
+        id: `surplus:automation:${id}`,
+        title: entry.name,
+        text: t("overview.todo.surplus_automation", { names: (entry.automations ?? []).map((n) => `„${n}“`).join(", ") }),
+        to: { tab: "devices", section: "battery", id, sub: "intruders" },
+      });
+    }
+  }
+  // A limit in % that could take part once Joe knows what 100 % stand for.
+  if (config.rules.day_surplus) {
+    for (const battery of config.batteries) {
+      const state = surplus?.batteries?.[battery.id]?.state;
+      const needs = state ? state === "need_ref" : surplusAbility(inputs.hass, battery) === "need_ref";
+      if (needs && battery.day_surplus !== false && battery.adapter !== "none") {
+        push({
+          id: `limit_ref:${battery.id}`,
+          icon: "mdi:percent-outline",
+          title: t("overview.todo.limit_ref", { name: battery.name }),
+          text: t("overview.todo.limit_ref.text"),
+          to: deviceRoute({ group: "battery", id: battery.id }),
+        });
+      }
+    }
+  }
+  for (const [id, entry] of Object.entries(surplus?.batteries ?? {})) {
+    if (entry.problem) {
+      warn({
+        id: `problem:surplus:${id}:${entry.problem}`,
+        title: entry.name,
+        text: `${t("surplus.problem")} ${problem(entry.problem)}`,
+        to: deviceRoute({ group: "battery", id }),
       });
     }
   }
@@ -277,6 +349,8 @@ export class JoeOverviewInbox extends LitElement {
   @state() private all = false;
   /** The day questions opened. */
   @state() private asking = false;
+  /** Rows whose quick answer is being saved. */
+  @state() private fixing = new Set<string>();
   /** Rows just hidden, until the config comes back without them. */
   @state() private dismissed = new Set<string>();
   /** The ids hidden in this view, so a quick second tap keeps the first one. */
@@ -470,6 +544,14 @@ export class JoeOverviewInbox extends LitElement {
         </span>
         <ha-icon class="go" icon="mdi:chevron-right"></ha-icon>
       </a>
+      ${item.fix
+        ? html`<span class="todo-actions" data-tipped>
+            <button type="button" class="mini-btn" ?disabled=${this.fixing.has(item.id)} @click=${() => this.applyFix(item)}>
+              ${item.fix.label}
+            </button>
+            ${tip(t, item.fix.tip)}
+          </span>`
+        : nothing}
       ${item.hide.length
         ? html`<span class="todo-actions" data-tipped>
             <button type="button" class="mini-btn quiet" @click=${() => this.dismiss(item)}>${t("overview.todo.dismiss")}</button>
@@ -491,6 +573,21 @@ export class JoeOverviewInbox extends LitElement {
         <ha-icon class="go" icon=${this.asking ? "mdi:chevron-up" : "mdi:chevron-down"}></ha-icon>
       </button>
     </li>`;
+  }
+
+  /** A quick answer in the row: saved, and the row goes once the check is gone. */
+  private async applyFix(item: TodoItem): Promise<void> {
+    if (!item.fix) {
+      return;
+    }
+    this.fixing = new Set([...this.fixing, item.id]);
+    const saved = await saveConfig(this, item.fix.patch);
+    const rest = new Set(this.fixing);
+    rest.delete(item.id);
+    this.fixing = rest;
+    if (saved) {
+      this.dismissed = new Set([...this.dismissed, item.id]);
+    }
   }
 
   /** "Brauch ich nicht": hidden at once, stored together with the rows hidden meanwhile. */
