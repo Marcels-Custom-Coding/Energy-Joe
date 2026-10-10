@@ -10,8 +10,8 @@ Joe braucht kein Vorwissen. Er findet selbst, was er braucht, fragt in Alltagssp
 
 ## So arbeitet Joe
 
-1. **Umschauen:** Joe sucht in deinem Home Assistant nach Speicher, Tarif, Solarprognose, Messwerten, Wallbox und Auto und zeigt dir, was er gefunden hat.
-2. **Fragen:** Was er nicht selbst herausfinden kann, fragt er – zum Beispiel, wie ihr Warmwasser macht.
+1. **Umschauen:** Joe sucht in deinem Home Assistant nach Speicher, Tarif, Solarprognose, Messwerten, Wallbox und Auto und zeigt dir, was er gefunden hat – geordnet wie später im Panel: Geräte und Haushalt.
+2. **Fragen:** Was er nicht selbst herausfinden kann, fragt er – zum Beispiel, wie ihr Warmwasser macht oder ob Homeoffice euer normaler Arbeitstag ist. Was du mit „Später“ überspringst, wartet in der Übersicht unter „Joe braucht dich“.
 3. **Zuschauen und lernen:** Im Simulationsmodus plant er jede Nacht, schaltet aber nichts, und rechnet jeden Morgen vor, was das Steuern gebracht hätte.
 4. **Steuern:** Wenn du willst, steuert er selbst – nach einem Testlauf je Speicher – und stellt am Ende immer alles zurück.
 
@@ -19,10 +19,10 @@ Joe braucht kein Vorwissen. Er findet selbst, was er braucht, fragt in Alltagssp
 
 ### Einrichten
 
-- Eigenes Panel in der Seitenleiste mit Einrichtungsassistent, Übersicht und Einstellungen.
+- Eigenes Panel in der Seitenleiste mit Einrichtungsassistent und sechs Reitern (siehe [Das Panel](#das-panel)).
 - Joe erkennt Speicher, Tarif, Solarprognose, Messwerte, Wallbox, Auto und Haushalt selbst und erklärt, warum.
 - Statt Werte einzutippen beantwortest du Fragen in Alltagssprache – immer mit „Weiß ich nicht“.
-- Was du selbst einstellst, überschreibt Joe nie. Jeder Wert steht mit Erklärung in den Einstellungen.
+- Was du selbst einstellst, überschreibt Joe nie. Jeder Wert steht mit Erklärung dort, wo er hingehört – am Ende der Einrichtung sagt Joe dir zu jeder Zeile, wo sie wohnt („wohnt unter Geräte › Speicher“).
 - Joe startet im Simulationsmodus: Er schaut zu und lernt, steuert aber nichts, bis du es anders entscheidest.
 
 ### Beobachten und lernen
@@ -31,7 +31,7 @@ Joe braucht kein Vorwissen. Er findet selbst, was er braucht, fragt in Alltagssp
 - Den Hausverbrauch rechnet er wie das Energie-Dashboard (Balkonkraftwerke inklusive). Geräte, die über evcc mit Sonnenüberschuss oder nur bei günstigem Strom laufen, zählt er getrennt.
 - Einmal am Tag lernt er erklärbare Modelle: Verbrauch nach Außentemperatur, Arbeitstag und Anwesenheit, wie viel die Speicher wirklich fassen, wie gut die Prognose bei klarem, wechselhaftem und trübem Wetter trifft und wie schnell das Warmwasser heizt und abkühlt.
 - Aus euren Kalendern liest er, ob morgen Büro, Homeoffice oder Urlaub ist.
-- Liegt ein Tag weit neben seiner Erwartung, fragt er nach („Hattet ihr Besuch?“). Auf der Seite „Lernen“ siehst du alles und kannst jeden Bereich zurücksetzen.
+- Liegt ein Tag weit neben seiner Erwartung, fragt er nach („Hattet ihr Besuch?“). Unter Rückblick › Gelernt siehst du alles und kannst jeden Bereich zurücksetzen.
 
 ### Planen und rechnen
 
@@ -50,13 +50,13 @@ Joe braucht kein Vorwissen. Er findet selbst, was er braucht, fragt in Alltagssp
 
 ### E-Auto und Warmwasser
 
-- Nacht-Aktionen schalten weitere Verbraucher in die günstige Zeit, wenn morgen die Sonne nicht reicht – z. B. evcc auf „now“ oder das Warmwasser bis zu einer berechneten Temperatur.
+- Auto, Warmwasser und weitere Geräte schaltet Joe in die günstige Zeit, wenn morgen die Sonne nicht reicht – z. B. evcc auf „now“ oder das Warmwasser bis zu einer berechneten Temperatur.
 - Das Auto lädt Joe auf Wunsch nach Bedarf: Ladestand und Reichweite aus der Auto-Integration (rund 40 bekannt, dazu evcc), Termine mit Ort, Strecke über Waze, Google oder OpenStreetMap, Reserve (50 km, einstellbar) und Verbrauch bei der vorhergesagten Temperatur.
 - „Laden bis … % oder km“: sofort („Jetzt laden“) oder heute Nacht in der günstigen Zeit.
 
 ### Heizung und Klima
 
-- Neuer Bereich „Klima“: Für jedes Thermostat und jede Klimaanlage einzeln wählst du, ob Joe es steuert.
+- Unter Geräte › Heizung & Klima wählst du für jedes Thermostat und jede Klimaanlage einzeln, ob Joe es steuert.
 - Ob jemand zu Hause ist, sagt eine einzige Gruppe in HA (z. B. eure Personen). Joe nimmt eine vorhandene oder legt auf Wunsch eine an, dazu optional einen Gastmodus für Babysitter oder Kinder ohne Handy – alles funktioniert auch ohne Joe.
 - Ist keiner zu Hause: absenken (beim Kühlen anheben), ganz aus oder ein Profil des Geräts – bei Homematic IP z. B. dein Heizprofil „Abwesend“. An freien Tagen auf Wunsch ein eigenes Profil.
 - Wochenprofile für Klimaanlagen wie bei Homematic IP: je Betriebsart (Heizen, Kühlen) sechs Profile mit Temperaturverlauf über den Tag – für alle Tage gleich, Mo–Fr und Sa–So oder jeden Tag einzeln, ein Schaltpunkt darf auch „aus“ sein. Haken je Profil: Normal, Feiertag, Abwesend, Homeoffice (aus dem Kalender). Joe schaltet selbst um, z. B. aufs Abwesenheitsprofil, wenn alle weg sind; von Hand Verstelltes gilt bis zum nächsten Schaltpunkt, von Hand Ausgeschaltetes bleibt aus.
@@ -81,6 +81,21 @@ Joe bringt zwei Karten mit, die nach dem Installieren direkt in der Kartenauswah
 - **Auto laden** – Ladestand und Reichweite, „Laden bis … % oder km“ mit „Jetzt laden“ und „Heute Nacht laden“. Mit mehreren Autos wählst du eins mit `action: <id>`.
 
 Die Karten brauchen einen Benutzer mit Administratorrechten.
+
+## Das Panel
+
+Sechs Reiter, links die Zeit, rechts die Dinge:
+
+| Reiter | Was dort steht |
+|---|---|
+| **Übersicht** | Was gerade läuft, „Joe braucht dich“ (Hinweise, Noch offen, Neu gefunden, Fragen zu auffälligen Tagen), heute Nacht und die letzten Tage |
+| **Plan** | Was Joe heute Nacht vorhat, was dabei läuft und wie er gerechnet hat |
+| **Rückblick** | Ergebnis, Tage, Gelernt, Protokoll |
+| **Geräte** | Alle, Speicher, Heizung & Klima, Auto & Laden, Warmwasser, Weitere Geräte, Netz & Sonne – jedes Gerät mit eigener Seite, dazu „+ Hinzufügen“ |
+| **Haushalt** | Wer wohnt hier, Wer ist da, Tage & Kalender, Nachtruhe, Unterwegs & Wetter |
+| **Einstellungen** | Betrieb, Regeln, Benachrichtigungen, Wartung & Sichern, Über Joe – oben ein Wegweiser, der auch alte Namen wie „Historie“ oder „Für Profis“ findet |
+
+Jede Seite hat ihre eigene Adresse, zum Beispiel `/energy-joe/devices/battery`, `/energy-joe/review/days` oder `/energy-joe/household/people`. Zurück im Browser, Lesezeichen und die Dashboard-Karten führen genau dorthin.
 
 ## Betriebsarten
 
@@ -117,9 +132,9 @@ Updates kommen als Versionen über HACS. Nach einem Update lädst du die Seite e
 ## Erste Schritte
 
 1. Öffne **Energy Joe** in der Seitenleiste und lass ihn sich umschauen.
-2. Schau dir an, was er gefunden hat, und beantworte seine Fragen. „Weiß ich nicht“ ist immer eine gute Antwort.
+2. Schau dir an, was er gefunden hat, und beantworte seine Fragen. „Weiß ich nicht“ ist immer eine gute Antwort, „Später“ auch.
 3. Lass ihn ein paar Tage im **Simulationsmodus** laufen. Auf der Übersicht siehst du jeden Morgen, was das Steuern gebracht hätte.
-4. Mach auf der Seite **Geräte** für jeden Speicher den **Testlauf**.
+4. Mach unter **Geräte › Speicher** für jeden Speicher den **Testlauf**.
 5. Stell auf **Vorschlagen** oder **Live**, wenn du Joe steuern lassen willst.
 
 ## Datenschutz

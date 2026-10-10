@@ -3,6 +3,13 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.16
+
+- **Ersteinrichtung in der neuen Ordnung:** Beim Umschauen ist alles nach Geräte und Haushalt gegliedert. Neue Fragen: „Soll ich Heizung & Klima regeln?“ und „Ist Homeoffice bei euch der normale Arbeitstag?“; beim E-Auto geht es direkt weiter mit „Laden einrichten“.
+- **„Später“ bei jeder Frage:** Übersprungenes steht danach in der Übersicht unter „Joe braucht dich“ und verschwindet, sobald es beantwortet ist – egal wo.
+- Die Zusammenfassung am Ende sagt bei jeder Zeile, wo sie künftig wohnt („wohnt unter Geräte › Speicher“); ein Tipp darauf startet Joe und springt direkt hin.
+- README und Entwicklerdoku beschreiben die sechs Reiter und ihre Adressen; letzte alte Begriffe in den Texten ersetzt.
+
 ## 0.9.15
 
 - **Übersicht als Startseite:** oben „Gerade jetzt“ mit „Joe tut gerade …“ und „Sofort freigeben“, darunter „Joe braucht dich“ – nur wenn etwas offen ist: Warnungen der Prüfungen, fehlender Testlauf, fehlende Benachrichtigungen, neue Funde, Tagesfragen; jede Zeile springt an ihren Ort, Erledigtes verschwindet, „Brauch ich nicht“ blendet aus. Dazu „Heute Nacht“ mit „Ja, mach“ / „Heute aussetzen“, „Schnell“ (Auto laden, Gastmodus), Heizung & Klima je Raum, „Wer ist da“ als eine Zeile, die letzten 7 Tage und „Was es gebracht hätte“ als eine Zeile.

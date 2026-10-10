@@ -21,7 +21,7 @@
       Zeigt das gebaute Panel mit einem nachgeahmten Home Assistant.
       Aufruf über einen lokalen Webserver im Repo-Wurzelverzeichnis, z. B.
       python3 -m http.server 8767  →  http://localhost:8767/panel/dev/
-      Parameter: ?dark=1  ?lang=en  ?step=scan  ?done=1  ?page=settings  ?mode=off|advisory|live  ?sample=generic  ?audit=1  ?need=1  ?presence=0  ?climate=1
+      Parameter: ?dark=1  ?lang=en  ?step=welcome|scan|questions|done  ?done=1  ?page=settings  ?mode=off|advisory|live  ?sample=generic  ?audit=1  ?need=1  ?presence=0  ?climate=1
       ?page=<Adresse> ohne Präfix, z. B. review/days, devices/climate/climate.buero, household/people;
       alte Werte (history, learn, climate) leiten um. Jeder Sprung im Panel schreibt die Adresse zurück in ?page=,
       damit Neuladen und Zurück funktionieren.
@@ -32,6 +32,7 @@
       ?climate=profiles (Büro mit Wochenprofilen, Kinderzimmer mit Geräteprogrammen, Wohnzimmer alt: Übersicht › Heizung & Klima)
       ?pnotes=1 (Plan: alle Hinweise mit Sprung, Warmwasser und eigene Geräte heute Nacht, ein Speicher ohne Größe)
       ?joe_entities=0|1 (Joes eigene Entitäten in HA für Einstellungen › Über Joe; mit ?done=1 schon an)
+      ?later=1 (die Frage zum Homeoffice wurde in der Einrichtung mit „Später“ übersprungen: Fragen, Los und Übersicht › Joe braucht dich)
       sample-*.json kommen aus scripts/make_dev_samples.py (erfundene Haushalte aus tests/snapshots.py):
       Funde, die Konfiguration nach dem Übernehmen, ihre Prüfungen, Zustände und Register sowie
       zwei Wochen erfundener Verlauf mit festen Plänen, nachgespielten Nächten und dem, was Joe
@@ -161,6 +162,10 @@
         onboarding: { step, completed: done },
         config: structuredClone(done || ["questions", "done"].includes(step) ? sample.adopted_config : sample.default_config),
       };
+      // ?later=1: the setup question about working from home was put off with "Später".
+      if (params.get("later") === "1") {
+        state.config.answers.later = ["home_office"];
+      }
       const history = sample.history;
       // Local time in Berlin (summer time) as Home Assistant would send it.
       const stamp = () => new Date(Date.now() + 2 * 3600e3).toISOString().slice(0, 19) + "+02:00";

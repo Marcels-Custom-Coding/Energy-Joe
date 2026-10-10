@@ -1,23 +1,20 @@
 import { LitElement, css, html, nothing, type TemplateResult } from "lit";
 import { property } from "lit/decorators.js";
 import { displayTitle, swoosh } from "../components/bits";
+import { countText } from "../components/finding-rows";
 import "../components/pose";
 import "../components/review";
 import { stepNav } from "../components/step-nav";
 import { cents, tariffText } from "../components/texts";
 import { tip } from "../components/tip";
 import { define } from "../define";
-import { energyKwh, formatNumber } from "../entities";
+import { energyKwh, entityName, formatNumber } from "../entities";
+import { laterList, laterOpen, partHome, questionHome, type Home } from "../homes";
 import type { Translate } from "../i18n";
+import { PANEL, format, href, type Route } from "../router";
 import { shared } from "../styles/shared";
 import type { Check, Discovery, HomeAssistant, JoeConfig, JoeInfo, OnboardingStep } from "../types";
 import "./questions";
-
-/** "1 Fläche", "2 Flächen" – words are stored as "singular|plural". */
-function count(t: Translate, n: number, key: "word.plane" | "word.person" | "word.calendar"): string {
-  const [one, other] = t(key).split("|");
-  return `${formatNumber(t.lang, n, 0)} ${n === 1 ? one : other}`;
-}
 
 const HEATING_LABELS: Record<string, string> = {
   climate: "q.heating.climate",
@@ -35,6 +32,8 @@ export class JoeOnboarding extends LitElement {
   @property({ attribute: false }) config?: JoeConfig;
   @property({ attribute: false }) discovery?: Discovery;
   @property({ attribute: false }) checks: Check[] = [];
+  /** The panel's address, for the homes named in the summary. */
+  @property({ attribute: false }) prefix = PANEL;
   @property({ type: Boolean }) discovering = false;
   @property({ type: Boolean }) discoveryFailed = false;
 
@@ -134,22 +133,40 @@ export class JoeOnboarding extends LitElement {
         box-shadow: inset 0 0 0 1px var(--joe-line);
         padding: 4px 16px;
       }
-      .lines div {
-        display: flex;
-        justify-content: space-between;
-        gap: 16px;
+      .lines .line {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 2px 16px;
         padding: 10px 0;
         border-top: 1px solid var(--joe-line);
       }
-      .lines div:first-child {
+      .lines .line:first-child {
         border-top: 0;
       }
-      .lines span:first-child {
+      .lines .label {
         color: var(--joe-ink-2);
       }
-      .lines span:last-child {
+      .lines .value {
         font-weight: 600;
         text-align: right;
+        overflow-wrap: anywhere;
+      }
+      .lines .home {
+        grid-column: 1 / -1;
+        font-size: 13px;
+        color: var(--joe-muted);
+      }
+      .lines .home a {
+        color: var(--joe-amber-text);
+        font-weight: 600;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+      .homes-hint {
+        margin: 14px 0 0;
+        max-width: 520px;
+        color: var(--joe-ink-2);
+        font-size: 14px;
       }
       @media (max-width: 760px) {
         .wrap,
@@ -269,7 +286,7 @@ export class JoeOnboarding extends LitElement {
         <div class="calm"><span class="pill-sim">${t("mode.simulation")}</span>${t("onb.done.lead")}</div>
         <div class="actions">
           <span class="with-tip" data-tipped>
-            <button type="button" class="btn btn-primary" @click=${this.complete}>${t("onb.done.go")}</button>
+            <button type="button" class="btn btn-primary" @click=${() => this.complete()}>${t("onb.done.go")}</button>
             ${tip(t, "start")}
           </span>
           <button type="button" class="btn btn-ghost" data-notip @click=${() => this.go("scan")}>
@@ -285,7 +302,13 @@ export class JoeOnboarding extends LitElement {
       (sum, b) => sum + (b.capacity_kwh ?? (hass ? energyKwh(hass, b.capacity_entity) : null) ?? 0),
       0,
     );
+    const later = laterList(config);
+    /** "später" for a question put off and still open. */
+    const putOff = (id: string) => later.includes(id) && laterOpen(config, id);
     const choice = (key: string, labels: Record<string, string>) => {
+      if (putOff(key)) {
+        return t("sum.later");
+      }
       const value = config.answers[key];
       if (value === "unknown") {
         return t("sum.unknown");
@@ -293,8 +316,12 @@ export class JoeOnboarding extends LitElement {
       const values = Array.isArray(value) ? (value as string[]) : typeof value === "string" ? [value] : [];
       return values.length ? values.map((v) => t.optional(labels[v] ?? "") ?? v).join(", ") : t("sum.open");
     };
+    const context = (key: "weather_entity" | "holiday_entity") => {
+      const entity = config.context[key];
+      return entity ? (hass ? entityName(hass, entity) : entity) : t("sum.none");
+    };
     const forecast = this.discovery?.forecast;
-    const lines: [string, string][] = [
+    const lines: [string, string, Home][] = [
       [
         t("sum.batteries"),
         config.batteries.length
@@ -303,25 +330,42 @@ export class JoeOnboarding extends LitElement {
               kwh: capacity ? formatNumber(t.lang, capacity, 1) : "?",
             })
           : t("sum.none"),
+        partHome(t, "battery"),
       ],
-      [t("sum.tariff"), config.tariff.kind === "unknown" ? t("sum.unknown") : tariffText(t, config.tariff, false)],
+      [
+        t("sum.tariff"),
+        putOff("tariff")
+          ? t("sum.later")
+          : config.tariff.kind === "unknown"
+            ? t("sum.unknown")
+            : tariffText(t, config.tariff, false),
+        questionHome(t, "tariff"),
+      ],
       [
         t("sum.feed_in"),
         config.tariff.feed_in_price != null
           ? `${cents(t, config.tariff.feed_in_price)} ct`
           : config.tariff.feed_in_entity
             ? t("sum.from_sensor")
-            : t("sum.unknown"),
+            : putOff("feed_in")
+              ? t("sum.later")
+              : t("sum.unknown"),
+        questionHome(t, "feed_in"),
       ],
       [
         t("sum.forecast"),
         config.forecast.provider
           ? forecast
-            ? t("sum.forecast.value", { provider: forecast.provider_name, planes: count(t, forecast.planes, "word.plane") })
+            ? t("sum.forecast.value", {
+                provider: forecast.provider_name,
+                planes: countText(t, forecast.planes, "word.plane"),
+              })
             : config.forecast.provider
           : t("sum.none"),
+        partHome(t, "grid"),
       ],
-      [t("sum.heating"), choice("heating", HEATING_LABELS)],
+      [t("sum.heating"), choice("heating", HEATING_LABELS), questionHome(t, "heating")],
+      [t("sum.climate"), choice("climate", { yes: "sum.yes", no: "sum.no" }), questionHome(t, "climate")],
       [
         t("sum.hot_water"),
         choice("hot_water", {
@@ -330,23 +374,55 @@ export class JoeOnboarding extends LitElement {
           heating: "q.hot_water.heating",
           other: "q.hot_water.other",
         }),
+        questionHome(t, "hot_water"),
       ],
-      [t("sum.ev"), choice("ev", { yes: "q.ev.yes", no: "q.ev.no" })],
+      [t("sum.ev"), choice("ev", { yes: "q.ev.yes", no: "q.ev.no" }), questionHome(t, "ev")],
+      [
+        t("sum.home_office"),
+        choice("home_office", { yes: "sum.home_office.yes", no: "sum.home_office.no" }),
+        questionHome(t, "home_office"),
+      ],
       [
         t("sum.household"),
-        t("sum.household.value", {
-          persons: count(t, config.persons.length, "word.person"),
-          calendars: count(
-            t,
-            config.persons.reduce((sum, p) => sum + p.calendars.length, 0),
-            "word.calendar",
-          ),
-        }),
+        putOff("household")
+          ? t("sum.later")
+          : t("sum.household.value", {
+              persons: countText(t, config.persons.length, "word.person"),
+              calendars: countText(
+                t,
+                config.persons.reduce((sum, p) => sum + p.calendars.length, 0),
+                "word.calendar",
+              ),
+            }),
+        questionHome(t, "household"),
       ],
+      [t("sum.weather"), context("weather_entity"), partHome(t, "weather")],
+      [t("sum.holiday"), context("holiday_entity"), partHome(t, "holiday")],
     ];
-    return html`<div class="lines">
-      ${lines.map(([label, value]) => html`<div><span>${label}</span><span>${value}</span></div>`)}
-    </div>`;
+    return html`<p class="homes-hint">${t("onb.done.homes")}</p>
+      <div class="lines">
+        ${lines.map(
+          ([label, value, home]) => html`<div class="line">
+            <span class="label">${label}</span><span class="value">${value}</span>
+            <span class="home">${t("sum.lives_at")} ${this.homeLink(home)}</span>
+          </div>`,
+        )}
+      </div>`;
+  }
+
+  /** A home in the summary: a tap starts Joe and goes there. */
+  private homeLink(home: Home): TemplateResult {
+    return html`<a
+      href=${href(this.prefix, home.to)}
+      @click=${(ev: MouseEvent) => {
+        if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey || ev.button !== 0) {
+          return;
+        }
+        ev.preventDefault();
+        this.complete(home.to);
+      }}
+      >${home.place}</a
+    >`;
   }
 
   private rediscover(): void {
@@ -365,19 +441,16 @@ export class JoeOnboarding extends LitElement {
     if (!energy?.configured || !energy.sources) {
       return html`<div class="found"><p>${t("onb.scan.energy.none")}</p></div>`;
     }
-    const items: [number, string][] = [
-      [energy.sources.grid ?? 0, t("energy.grid")],
-      [energy.sources.solar ?? 0, t("energy.solar")],
-      [energy.sources.battery ?? 0, t("energy.battery")],
-      [energy.devices ?? 0, t("energy.devices")],
+    const items = [
+      countText(t, energy.sources.grid ?? 0, "word.grid"),
+      countText(t, energy.sources.solar ?? 0, "word.solar"),
+      countText(t, energy.sources.battery ?? 0, "word.battery"),
+      countText(t, energy.devices ?? 0, "word.device"),
     ];
     return html`<div class="found">
       <p>${t("onb.scan.energy")}</p>
       <div class="chips">
-        ${items.map(
-          ([count, label]) =>
-            html`<span class="chip read"><ha-icon icon="mdi:eye-outline"></ha-icon>${count} ${label}</span>`,
-        )}
+        ${items.map((text) => html`<span class="chip read"><ha-icon icon="mdi:eye-outline"></ha-icon>${text}</span>`)}
       </div>
     </div>`;
   }
@@ -386,10 +459,11 @@ export class JoeOnboarding extends LitElement {
     this.dispatchEvent(new CustomEvent("joe-onboarding", { detail: { step }, bubbles: true, composed: true }));
   }
 
-  private complete(): void {
+  /** Starts Joe; `to` is where to go then (else the overview). */
+  private complete(to?: Route): void {
     this.dispatchEvent(
       new CustomEvent("joe-onboarding", {
-        detail: { step: "done", completed: true },
+        detail: { step: "done", completed: true, to: to ? format(to) : undefined },
         bubbles: true,
         composed: true,
       }),

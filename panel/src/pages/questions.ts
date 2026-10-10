@@ -6,10 +6,12 @@ import { UNKNOWN, type ChoiceOption } from "../components/choice";
 import "../components/pose";
 import { stepNav } from "../components/step-nav";
 import { tip } from "../components/tip";
-import { saveConfig, sourceOf } from "../config";
+import { saveConfig, sourceOf, type ConfigPatch } from "../config";
 import { define } from "../define";
+import { actionGroup } from "../device-model";
 import "../editors/household";
 import "../editors/tariff-form";
+import { consumerOf, laterList } from "../homes";
 import type { Translate } from "../i18n";
 import { shared } from "../styles/shared";
 import type { ConsumerKind, Discovery, HomeAssistant, JoeConfig, TariffConfig } from "../types";
@@ -19,8 +21,10 @@ const POSES: Record<string, string> = {
   feed_in: "plug",
   capacity: "night-charge",
   heating: "ask",
+  climate: "switch",
   hot_water: "hot-water",
   ev: "ev",
+  home_office: "plan",
   household: "relax",
 };
 
@@ -48,7 +52,7 @@ export function questionList(config: JoeConfig): string[] {
       list.push(key);
     }
   }
-  list.push("heating", "hot_water", "ev", "household");
+  list.push("heating", "climate", "hot_water", "ev", "home_office", "household");
   return list;
 }
 
@@ -202,6 +206,7 @@ export class JoeQuestions extends LitElement {
     const index = Math.min(this.index, list.length - 1);
     const id = list[index];
     const last = index === list.length - 1;
+    const later = laterList(config);
     const nav = stepNav(t, {
       back: () => this.move(-1, list.length),
       next: () => this.move(1, list.length),
@@ -220,16 +225,31 @@ export class JoeQuestions extends LitElement {
                 aria-current=${i === index ? "step" : "false"}
                 @click=${() => (this.index = i)}
               >
-                ${i < index ? html`<ha-icon icon="mdi:check"></ha-icon>` : nothing}${this.topic(t, config, item)}
+                ${later.includes(item)
+                  ? html`<ha-icon icon="mdi:clock-outline" title=${t("ask.later.marked")}></ha-icon>`
+                  : i < index
+                    ? html`<ha-icon icon="mdi:check"></ha-icon>`
+                    : nothing}${this.topic(t, config, item)}
               </button>`,
             )}
           </nav>
           ${this.renderQuestion(t, config, id)}
-          <div class="actions" data-notip>
-            <button type="button" class="btn btn-primary" @click=${() => this.move(1, list.length)}>
+          <div class="actions">
+            <button type="button" class="btn btn-primary" data-notip @click=${() => this.move(1, list.length)}>
               ${t(last ? "ask.finish" : "onb.next")}
             </button>
-            <button type="button" class="btn btn-ghost" @click=${() => this.move(-1, list.length)}>
+            <span class="with-tip" data-tipped>
+              <button
+                type="button"
+                class="btn btn-secondary"
+                aria-pressed=${later.includes(id) ? "true" : "false"}
+                @click=${() => this.later(id, list.length)}
+              >
+                <ha-icon icon="mdi:clock-outline"></ha-icon>${t("ask.later")}
+              </button>
+              ${tip(t, "ask_later")}
+            </span>
+            <button type="button" class="btn btn-ghost" data-notip @click=${() => this.move(-1, list.length)}>
               ${t("onb.back")}
             </button>
           </div>
@@ -261,21 +281,43 @@ export class JoeQuestions extends LitElement {
         return this.renderHeating(t, config);
       case "hot_water":
         return this.renderHotWater(t, config);
-      case "ev": {
-        const wallbox = this.discovery?.wallboxes.find((w) => w.is_car);
+      case "climate":
         return this.question(
-          t("q.ev.title"),
-          "q_ev",
-          this.choice(t, "ev", [
-            {
-              value: "yes",
-              label: wallbox ? t("q.ev.yes_wallbox", { name: wallbox.name }) : t("q.ev.yes"),
-              icon: "mdi:car-electric",
-            },
-            { value: "no", label: t("q.ev.no"), icon: "mdi:car-off" },
-          ]),
+          t("q.climate.title"),
+          "q_climate",
+          html`${this.choice(
+              t,
+              "climate",
+              [
+                { value: "yes", label: t("q.climate.yes"), icon: "mdi:thermostat-auto" },
+                { value: "no", label: t("q.climate.no"), icon: "mdi:hand-back-right-outline" },
+              ],
+              false,
+              (value) => (value === "yes" || value === "no" ? { climate: { enabled: value === "yes" } } : {}),
+            )}
+            <p class="hint">${t(config.climate?.enabled ? "q.climate.on" : "q.climate.hint")}</p>`,
         );
-      }
+      case "ev":
+        return this.renderEv(t, config);
+      case "home_office":
+        return this.question(
+          t("q.home_office.title"),
+          "q_home_office",
+          html`${this.choice(
+              t,
+              "home_office",
+              [
+                { value: "yes", label: t("q.home_office.yes"), icon: "mdi:home-account" },
+                { value: "no", label: t("q.home_office.no"), icon: "mdi:office-building-outline" },
+              ],
+              false,
+              (value) =>
+                value === "yes" || value === "no"
+                  ? { calendar: { default_workday: value === "yes" ? "home_office" : "office" } }
+                  : {},
+            )}
+            <p class="hint">${t("q.home_office.hint")}</p>`,
+        );
       default:
         return this.question(
           t("q.household.title"),
@@ -299,7 +341,14 @@ export class JoeQuestions extends LitElement {
     </div>`;
   }
 
-  private choice(t: Translate, key: string, options: ChoiceOption[], multiple = false): TemplateResult {
+  /** Choices for answers.<key>; `extra` adds what the answer sets elsewhere in the config. */
+  private choice(
+    t: Translate,
+    key: string,
+    options: ChoiceOption[],
+    multiple = false,
+    extra?: (value: string | null) => ConfigPatch,
+  ): TemplateResult {
     const value = this.config?.answers[key];
     const selected = Array.isArray(value) ? (value as string[]) : typeof value === "string" ? [value] : [];
     return html`<joe-choice
@@ -308,8 +357,10 @@ export class JoeQuestions extends LitElement {
       ?multiple=${multiple}
       .exclusive=${["none"]}
       idk=${t("ask.idk")}
-      @joe-choice=${(ev: CustomEvent<{ value: string[] }>) =>
-        saveConfig(this, { answers: { [key]: multiple ? ev.detail.value : (ev.detail.value[0] ?? null) } })}
+      @joe-choice=${(ev: CustomEvent<{ value: string[] }>) => {
+        const first = ev.detail.value[0] ?? null;
+        this.answer(key, { ...(extra?.(first) ?? {}), answers: { [key]: multiple ? ev.detail.value : first } });
+      }}
     ></joe-choice>`;
   }
 
@@ -318,7 +369,7 @@ export class JoeQuestions extends LitElement {
     const answer = config.answers.hot_water;
     const electric = answer === "hot_water_heat_pump" || answer === "electric";
     const devices = config.consumers.filter((c) => c.kind === "hot_water");
-    const action = config.actions.find((a) => a.kind === "target");
+    const action = config.actions.find((a) => actionGroup(a, consumerOf(config, a)) === "hot_water");
     return this.question(
       t("q.hot_water.title"),
       "q_hot_water",
@@ -344,6 +395,46 @@ export class JoeQuestions extends LitElement {
                 <ha-icon icon=${action ? "mdi:pencil-outline" : "mdi:water-boiler"}></ha-icon>${t(action ? "q.hot_water.edit" : "q.hot_water.set_up")}
               </button>
               ${tip(t, "q_hot_water_action")}
+            </div>
+          </div>`
+        : nothing}`,
+    );
+  }
+
+  /** E-Auto: and, if there is one, "Laden einrichten" (the night action that charges it). */
+  private renderEv(t: Translate, config: JoeConfig): TemplateResult {
+    const wallbox = this.discovery?.wallboxes.find((w) => w.is_car);
+    const action = config.actions.find((a) => actionGroup(a, consumerOf(config, a)) === "car");
+    return this.question(
+      t("q.ev.title"),
+      "q_ev",
+      html`${this.choice(t, "ev", [
+        {
+          value: "yes",
+          label: wallbox ? t("q.ev.yes_wallbox", { name: wallbox.name }) : t("q.ev.yes"),
+          icon: "mdi:car-electric",
+        },
+        { value: "no", label: t("q.ev.no"), icon: "mdi:car-off" },
+      ])}
+      ${config.answers.ev === "yes"
+        ? html`<div class="follow">
+            <p class="hint">${action ? t("q.ev.has_action", { name: action.name }) : t("q.ev.offer")}</p>
+            <div class="with-tip" data-tipped style="margin-top:10px">
+              <button
+                type="button"
+                class="mini-btn ${action ? "" : "go"}"
+                @click=${() =>
+                  this.dispatchEvent(
+                    new CustomEvent("joe-edit", {
+                      detail: { editor: "action", id: action ? action.id : "new:ev" },
+                      bubbles: true,
+                      composed: true,
+                    }),
+                  )}
+              >
+                <ha-icon icon=${action ? "mdi:pencil-outline" : "mdi:ev-station"}></ha-icon>${t(action ? "q.ev.edit" : "q.ev.set_up")}
+              </button>
+              ${tip(t, "q_ev_action")}
             </div>
           </div>`
         : nothing}`,
@@ -409,7 +500,7 @@ export class JoeQuestions extends LitElement {
             @change=${(ev: Event) => {
               const value = Number.parseFloat((ev.target as HTMLInputElement).value);
               const known = Number.isFinite(value) && value >= 0;
-              saveConfig(this, {
+              this.answer("feed_in", {
                 tariff: { feed_in_price: known ? Math.round(value * 100) / 10000 : null },
                 answers: { feed_in: known ? "known" : null },
               });
@@ -420,14 +511,14 @@ export class JoeQuestions extends LitElement {
         <button
           type="button"
           class="mini-btn ${price === 0 ? "go" : ""}"
-          @click=${() => saveConfig(this, { tariff: { feed_in_price: 0 }, answers: { feed_in: "none" } })}
+          @click=${() => this.answer("feed_in", { tariff: { feed_in_price: 0 }, answers: { feed_in: "none" } })}
         >
           ${t("q.feed_in.none")}
         </button>
         <button
           type="button"
           class="mini-btn ${unknown ? "go" : ""}"
-          @click=${() => saveConfig(this, { tariff: { feed_in_price: null }, answers: { feed_in: UNKNOWN } })}
+          @click=${() => this.answer("feed_in", { tariff: { feed_in_price: null }, answers: { feed_in: UNKNOWN } })}
         >
           ${t("ask.idk")}
         </button>
@@ -459,7 +550,7 @@ export class JoeQuestions extends LitElement {
             @change=${(ev: Event) => {
               const value = Number.parseFloat((ev.target as HTMLInputElement).value);
               const known = Number.isFinite(value) && value > 0;
-              saveConfig(this, {
+              this.answer(key, {
                 batteries: { [id]: { capacity_kwh: known ? value : null } },
                 answers: { [key]: known ? "known" : null },
               });
@@ -471,7 +562,7 @@ export class JoeQuestions extends LitElement {
           type="button"
           class="mini-btn ${unknown ? "go" : ""}"
           @click=${() =>
-            saveConfig(this, { batteries: { [id]: { capacity_kwh: null } }, answers: { [key]: UNKNOWN } })}
+            this.answer(key, { batteries: { [id]: { capacity_kwh: null } }, answers: { [key]: UNKNOWN } })}
         >
           ${t("ask.idk_learn")}
         </button>
@@ -480,11 +571,29 @@ export class JoeQuestions extends LitElement {
   }
 
   private saveTariff(change: Partial<TariffConfig>): void {
-    const patch: Record<string, unknown> = { tariff: change };
+    const patch: ConfigPatch = { tariff: change };
     if (change.kind) {
       patch.answers = { tariff: change.kind };
     }
-    saveConfig(this, patch);
+    this.answer("tariff", patch);
+  }
+
+  /** Saves an answer; a question put off with "Später" is no longer open then. */
+  private answer(id: string, patch: ConfigPatch): void {
+    const later = laterList(this.config!);
+    if (later.includes(id)) {
+      patch = { ...patch, answers: { ...((patch.answers as object | undefined) ?? {}), later: later.filter((x) => x !== id) } };
+    }
+    void saveConfig(this, patch);
+  }
+
+  /** "Später": the question waits in Übersicht › Joe braucht dich, the setup goes on. */
+  private later(id: string, total: number): void {
+    const later = laterList(this.config!);
+    if (!later.includes(id)) {
+      void saveConfig(this, { answers: { later: [...later, id] } });
+    }
+    this.move(1, total);
   }
 
   private edit(editor: string): void {

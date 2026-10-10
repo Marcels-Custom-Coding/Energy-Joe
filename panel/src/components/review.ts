@@ -4,7 +4,8 @@ import { isIgnored, saveConfig, sourceOf, withIgnored } from "../config";
 import { define } from "../define";
 import "../editors/tariff-form";
 import { energyKwh, formatNumber, numberState } from "../entities";
-import type { Translate } from "../i18n";
+import type { Part } from "../homes";
+import type { TranslationKey, Translate } from "../i18n";
 import { pickBattery, useBattery } from "../pages/devices/device-actions";
 import { shared } from "../styles/shared";
 import type { Check, Discovery, HomeAssistant, JoeConfig } from "../types";
@@ -17,6 +18,7 @@ import {
   findingRow,
   findingStyles,
   forecastRow,
+  infoNote,
   powerRow,
   rowButton,
   solarRow,
@@ -30,10 +32,23 @@ type Row = FindingRow;
 
 const HEATING_KINDS = new Set(["climate", "heat_pump", "electric_heating", "hot_water"]);
 
+/** The headings of the parts: the names of the chips they live under after the setup. */
+const PART_TITLES = {
+  battery: "nav.devices.battery",
+  grid: "nav.devices.grid",
+  car: "nav.devices.car",
+  other: "nav.devices.other",
+  people: "nav.household.people",
+  weather: "onb.part.weather",
+  holiday: "onb.part.holiday",
+} as const satisfies Record<Part, TranslationKey>;
+
 /**
- * What Joe found and now uses, in the setup ("Umschauen"): change, leave out
- * or add each part (a battery in the panel's battery sheet, the meters in
- * its consumers sheet). The rows are the same as on Geräte › Netz & Sonne and
+ * What Joe found and now uses, in the setup ("Umschauen"), in the order of
+ * the tabs: Geräte (Speicher, Netz & Sonne, Auto & Laden, Weitere Geräte)
+ * and Haushalt (Wer wohnt hier, Wetter, Feiertage). Change, leave out or add
+ * each part (a battery in the panel's battery sheet, the meters in its
+ * consumers sheet). The rows are the same as on Geräte › Netz & Sonne and
  * Haushalt (components/finding-rows.ts); everything else is set up later
  * where it lives.
  */
@@ -59,6 +74,29 @@ export class JoeReview extends LitElement {
       joe-tariff-draft {
         margin-top: 18px;
       }
+      .group + .group {
+        margin-top: 28px;
+      }
+      .group-head {
+        margin: 0;
+        font-family: var(--joe-display);
+        font-style: italic;
+        font-weight: 800;
+        text-transform: uppercase;
+        font-size: 24px;
+        line-height: 1.1;
+      }
+      .group-lead {
+        margin: 4px 0 0;
+        color: var(--joe-ink-2);
+        font-size: 14px;
+      }
+      .part {
+        margin-top: 14px;
+      }
+      .part h4 {
+        margin: 0 0 8px;
+      }
     `,
   ];
 
@@ -68,25 +106,42 @@ export class JoeReview extends LitElement {
       return nothing;
     }
     const omit = new Set(this.omit);
-    return html`<ul class="found">
-        ${this.rows(hass, t, config)
-          .filter((row) => !omit.has(row.key))
-          .map((row) => findingRow(t, row))}
-      </ul>
+    const parts = this.parts(hass, t, config);
+    const groups: { key: "devices" | "household"; parts: Part[] }[] = [
+      { key: "devices", parts: ["battery", "grid", "car", "other"] },
+      { key: "household", parts: ["people", "weather", "holiday"] },
+    ];
+    return html`${groups.map(
+        (group) => html`<section class="group">
+          <h3 class="group-head">${t(`onb.group.${group.key}`)}</h3>
+          <p class="group-lead">${t(`onb.group.${group.key}.lead`)}</p>
+          ${group.parts.map((part) => {
+            const rows = parts[part].filter((row) => !omit.has(row.key));
+            return rows.length
+              ? html`<div class="part">
+                  <h4 class="eyebrow">${t(PART_TITLES[part])}</h4>
+                  <ul class="found">
+                    ${rows.map((row) => findingRow(t, row))}
+                  </ul>
+                </div>`
+              : nothing;
+          })}
+        </section>`,
+      )}
       ${this.tariffOpen ? this.renderTariff(t, config) : nothing}`;
   }
 
-  private rows(hass: HomeAssistant, t: Translate, config: JoeConfig): Row[] {
+  /** The rows of each part, in the order of the tabs Geräte and Haushalt. */
+  private parts(hass: HomeAssistant, t: Translate, config: JoeConfig): Record<Part, Row[]> {
     const d = this.discovery;
     const ctx: RowContext = { from: this, hass, t, config, discovery: d, checks: this.checks };
-    const rows: Row[] = [];
+    const grid: Row[] = [];
     const energy = energyRow(ctx);
     if (energy) {
-      rows.push(energy);
+      grid.push(energy);
     }
-    rows.push(...this.batteryRows(hass, t, config));
     const missing = config.tariff.kind === "unknown";
-    rows.push(
+    grid.push(
       tariffRow(ctx, {
         actions: [
           rowButton(t(missing ? "review.enter" : "review.change"), "mdi:pencil-outline", () => {
@@ -94,44 +149,97 @@ export class JoeReview extends LitElement {
           }),
         ],
       }),
-    );
-    rows.push(forecastRow(ctx));
-    rows.push(powerRow(ctx, "grid_power"));
-    rows.push(
+      forecastRow(ctx),
+      powerRow(ctx, "grid_power"),
       powerRow(ctx, "home_power", {
         devices: rowButton(t("review.home.devices"), "mdi:devices", () => this.edit("consumers")),
       }),
+      solarRow(ctx),
     );
-    rows.push(solarRow(ctx));
-    rows.push(contextRow(this, hass, t, config, d, "weather"));
-    rows.push(contextRow(this, hass, t, config, d, "holiday"));
-    const later = [html`<span class="chip soon">${t("review.ask_later")}</span>`];
-    if (config.persons.length || d?.calendars.length) {
-      rows.push({
-        key: "people",
-        icon: "mdi:account-group-outline",
-        title: t("find.people"),
-        detail: t("find.people.detail", {
-          persons: countText(t, config.persons.length, "word.person"),
-          calendars: countText(t, d?.calendars.length ?? 0, "word.calendar"),
-        }),
-        chips: later,
-      });
+    return {
+      battery: this.batteryRows(hass, t, config),
+      grid,
+      car: this.carRows(t, config),
+      other: [this.otherRow(t, config)],
+      people: [this.peopleRow(t, config)],
+      weather: [contextRow(this, hass, t, config, d, "weather")],
+      holiday: [contextRow(this, hass, t, config, d, "holiday")],
+    };
+  }
+
+  /** Wallboxes, cars and E-Auto meters Joe found; charging is set up with the question about the E-Auto. */
+  private carRows(t: Translate, config: JoeConfig): Row[] {
+    const d = this.discovery;
+    const rows: Row[] = [];
+    for (const wallbox of d?.wallboxes.filter((w) => w.is_car) ?? []) {
+      rows.push({ key: `car:wallbox:${wallbox.device_id ?? wallbox.name}`, icon: "mdi:ev-station", title: wallbox.name, detail: t("onb.car.wallbox") });
     }
-    const consumers = config.consumers.filter((c) => c.kind !== "submeter");
-    if (consumers.length) {
+    for (const car of d?.cars ?? []) {
+      const soc = car.soc !== null ? ` · ${formatNumber(t.lang, car.soc, 0)} %` : "";
+      rows.push({ key: `car:car:${car.device_id}`, icon: "mdi:car-electric", title: car.name, detail: `${t("onb.car.car")}${soc}` });
+    }
+    for (const meter of config.consumers.filter((c) => c.kind === "ev")) {
+      rows.push({ key: `car:meter:${meter.id}`, icon: "mdi:meter-electric-outline", title: meter.name, detail: t("onb.car.meter") });
+    }
+    if (!rows.length) {
       rows.push({
-        key: "devices",
-        icon: "mdi:devices",
-        title: t("find.devices"),
-        detail: t("find.devices.detail", {
-          count: countText(t, consumers.length, "word.device"),
-          heating: consumers.filter((c) => HEATING_KINDS.has(c.kind)).length,
-        }),
-        chips: later,
+        key: "car:none",
+        icon: "mdi:car-electric",
+        title: t("nav.devices.car"),
+        detail: t("find.none"),
+        state: "missing",
+        notes: [infoNote(t("onb.car.none"))],
       });
     }
     return rows;
+  }
+
+  /** The meters from the Energy dashboard (their kinds come with the question about heating). */
+  private otherRow(t: Translate, config: JoeConfig): Row {
+    const consumers = config.consumers.filter((c) => c.kind !== "submeter");
+    if (!consumers.length) {
+      return {
+        key: "devices",
+        icon: "mdi:devices",
+        title: t("find.devices"),
+        detail: t("find.none"),
+        state: "missing",
+        notes: [infoNote(t("onb.other.none"))],
+      };
+    }
+    return {
+      key: "devices",
+      icon: "mdi:devices",
+      title: t("find.devices"),
+      detail: t("find.devices.detail", {
+        count: countText(t, consumers.length, "word.device"),
+        heating: consumers.filter((c) => HEATING_KINDS.has(c.kind)).length,
+      }),
+    };
+  }
+
+  /** Persons and calendars (the household question comes in a moment). */
+  private peopleRow(t: Translate, config: JoeConfig): Row {
+    const calendars = this.discovery?.calendars.length ?? 0;
+    if (!config.persons.length && !calendars) {
+      return {
+        key: "people",
+        icon: "mdi:account-group-outline",
+        title: t("find.people"),
+        detail: t("find.none"),
+        state: "missing",
+        notes: [infoNote(t("onb.people.none"))],
+      };
+    }
+    return {
+      key: "people",
+      icon: "mdi:account-group-outline",
+      title: t("find.people"),
+      detail: t("find.people.detail", {
+        persons: countText(t, config.persons.length, "word.person"),
+        calendars: countText(t, calendars, "word.calendar"),
+      }),
+    };
   }
 
   // --- Batteries (their own page under Geräte › Speicher after the setup) ---

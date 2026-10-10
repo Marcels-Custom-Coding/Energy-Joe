@@ -501,3 +501,30 @@ def test_profiles_are_replaced_as_a_whole() -> None:
         )
     with pytest.raises(vol.Invalid):
         model.apply_update(config, {"climate": {"away_after_min": 300}}, "user")
+
+
+def test_setup_answers_keep_put_off_questions() -> None:
+    """The setup writes answers.later (questions put off with "Später") next to
+    the known answers; the schema keeps it, and the new questions set their
+    real settings (climate.enabled, calendar.default_workday)."""
+    config = model.apply_update(
+        model.default_config(),
+        {
+            "answers": {
+                "later": ["heating", "capacity:b1"],
+                "climate": "yes",
+                "home_office": "no",
+            },
+            "climate": {"enabled": True},
+            "calendar": {"default_workday": "office"},
+        },
+        "user",
+    )
+    assert config["answers"]["later"] == ["heating", "capacity:b1"]
+    assert config["answers"]["ignored"] == []
+    assert config["climate"]["enabled"] is True
+    assert config["calendar"]["default_workday"] == "office"
+
+    config = model.apply_update(config, {"answers": {"later": ["capacity:b1"]}}, "user")
+    assert config["answers"]["later"] == ["capacity:b1"]
+    assert config["answers"]["climate"] == "yes"

@@ -7,8 +7,9 @@ import { tip } from "../../components/tip";
 import { isIgnored, saveConfig } from "../../config";
 import { define } from "../../define";
 import { actionPlace, deviceRoute, findDevice, newFindings, type DeviceEntry, type Group } from "../../device-model";
+import { laterList, laterOpen, questionHome } from "../../homes";
 import type { Translate } from "../../i18n";
-import { PANEL, href, onLink, type Route } from "../../router";
+import { PANEL, format, href, onLink, type Route } from "../../router";
 import { shared } from "../../styles/shared";
 import type { Check, ClimateFound, Discovery, HomeAssistant, JoeState } from "../../types";
 
@@ -214,6 +215,29 @@ export function inboxItems(t: Translate, joe: JoeState, inputs: InboxInputs = {}
       }),
       key,
     );
+  }
+
+  // Questions of the setup put off with "Später", each to its home, until answered
+  // (left out where a row above already leads to the same place).
+  const leads = new Set(items.map((item) => format(item.to)));
+  for (const question of laterList(config).filter((id) => laterOpen(config, id))) {
+    const home = questionHome(t, question);
+    if (leads.has(format(home.to))) {
+      continue;
+    }
+    leads.add(format(home.to));
+    const battery = question.startsWith("capacity:")
+      ? config.batteries.find((b) => `capacity:${b.id}` === question)
+      : undefined;
+    push({
+      id: `later:${question}`,
+      icon: "mdi:clock-outline",
+      title: t("overview.todo.later", {
+        topic: battery?.name ?? t.optional(`ask.topic.${question}`) ?? question,
+      }),
+      text: t("overview.todo.later.text", { place: home.place }),
+      to: home.to,
+    });
   }
 
   // --- Neu gefunden ---

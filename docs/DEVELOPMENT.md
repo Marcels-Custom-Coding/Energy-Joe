@@ -11,7 +11,8 @@ cd panel && npm install
 - Tests: `.venv/bin/pytest`
 - Linter: `.venv/bin/ruff check .`
 - Panel bauen: `npm --prefix panel run build` (der Build liegt eingecheckt in `custom_components/energy_joe/frontend/`)
-- Panel ohne Home Assistant ansehen: im Repo-Wurzelverzeichnis `python3 -m http.server 8767` starten und `http://localhost:8767/panel/dev/` öffnen. Parameter: `?dark=1`, `?lang=en`, `?step=scan|questions|done`, `?done=1` (Einrichtung abgeschlossen), `?page=settings`, `?mode=off|advisory|live`, `?sample=generic`, `?audit=1`
+- Panel ohne Home Assistant ansehen: im Repo-Wurzelverzeichnis `python3 -m http.server 8767` starten und `http://localhost:8767/panel/dev/` öffnen. Parameter: `?dark=1`, `?lang=en`, `?step=welcome|scan|questions|done`, `?later=1` (eine Frage der Einrichtung mit „Später“ übersprungen), `?done=1` (Einrichtung abgeschlossen), `?page=<pfad>` (eine Adresse des Panels ohne Präfix, z. B. `?page=devices/battery/storage` oder `?page=review/days`; jeder Sprung schreibt sie zurück, damit Neuladen und Zurück gehen), `?mode=off|advisory|live`, `?sample=generic`, `?audit=1`. Weitere Parameter für einzelne Seiten stehen oben in `panel/dev/index.html`
+- Prüfen in der Browser-Konsole der Testseite: `joeAudit()` (Bedienelemente ohne Tooltip, soll `{missing: [], empty: []}` sein), `joeTargets()` (Ziele unter 44 × 44 px; am Handy mit Touch-Emulation prüfen, soll `[]` sein), `joeOverflow()` (waagrechtes Scrollen, soll `false` sein)
 - Daten der Testseite neu erzeugen (nach Änderungen an Erkennung, Modell, Historie, Planen oder Lernen): `.venv/bin/python scripts/make_dev_samples.py` – schreibt `panel/dev/sample-*.json` aus den erfundenen Haushalten in `tests/snapshots.py`, dazu drei Wochen erfundenen Verlauf (mit Außentemperatur, Geräteverbrauch, Kalender und einem Tag mit Besuch) mit festen Plänen, nachgespielten Nächten (die letzte vorläufig) und dem, was Joe daraus lernt. Mit `?done=1` hat Joe schon drei Wochen gelernt; Fragen beantworten, „Lernen zurücksetzen“ (auch je Bereich) und „Wieder selbst lernen“ funktionieren auf der Testseite
 - Joes Historie liegt in `.storage/energy_joe.history` (Index) und `.storage/energy_joe.history.JJJJ-MM` (eine Datei pro Monat). Ein Tag enthält seine Stunden, die Prognose, den festen Plan der Nacht, die an ihm beginnt, und dessen Auswertung (`evaluation`, mit `final: false` solange der Tag des Plans läuft)
 - Was Joe gelernt hat, steht in der Konfiguration unter `learned` (Herkunft „gelernt“); einen selbst eingestellten Puffer überschreibt er nie
@@ -66,7 +67,7 @@ cd panel && npm install
 
 ## Warmwasser
 
-- Gefunden wird Warmwasser als Verbraucher im Energie-Dashboard (Art `hot_water`). Die Frage „Wie wird euer Wasser warm?“ bietet dann eine Nacht-Aktion an; `panel/src/hot-water.ts` schlägt Fühler und Schalter nach Wörtern in Entity-ID, Name und Gerätename vor (Speicher vor Zirkulation und Ausgang).
+- Gefunden wird Warmwasser als Verbraucher im Energie-Dashboard (Art `hot_water`). Die Frage „Wie wird euer Wasser warm?“ bietet dann die Steuerung an (eine Aktion im Sheet `action-editor`, nach dem Start unter Geräte › Warmwasser); genauso bietet die Frage zum E-Auto „Laden einrichten“ an (Vorlage `new:ev`, danach unter Geräte › Auto & Laden). `panel/src/hot-water.ts` schlägt Fühler und Schalter nach Wörtern in Entity-ID, Name und Gerätename vor (Speicher vor Zirkulation und Ausgang).
 
 ## Speicher steuern
 
@@ -83,7 +84,18 @@ cd panel && npm install
 - `control/climate.py` (`ClimateController`): jede Minute und bei Änderungen der Personen. Je Gerät in `climate.rooms` (Schlüssel: Entity-ID) gilt ein Zustand: `away` (keiner zu Hause, außer jemand kommt laut Proximity rechtzeitig heim), `free_day` (Arbeitstag-Sensor aus, Profil vorhanden), `night` (Klimaanlage nachts aus, rechtzeitig zurück) oder keiner. Vorher-Werte (HVAC-Modus, Temperatur, Profil) in `.storage/energy_joe.climate`; zurück nur, was sich geändert hat. Geschrieben wird nur im Modus „live“; wechselt Joe den Modus, stellt er alles zurück.
 - Annäherung über die Proximity-Integration (`entry.runtime_data.entity_mapping`: Person → Sensoren `dist_to_zone`, `dir_of_travel`), 40 km/h angenommen. Gelernt wird die Aufheizrate je Gerät (K/h, gleitend) beim Zurückstellen; Vorlauf = Abstand zur Zieltemperatur / Rate + 10 min.
 - Homematic IP zeigt seine Heizprofile als Presets (`preset_modes`), die Joe direkt wählt.
-- Panel: Seite `pages/climate.ts`, Befehl `energy_joe/climate/devices` (alle Klima-Entitäten mit Raum, Modi, Presets, Annäherungen).
+- Panel: Geräte › Heizung & Klima (`pages/devices/climate.ts`, je Gerät `pages/devices/climate-device.ts`), Befehl `energy_joe/climate/devices` (alle Klima-Entitäten mit Raum, Modi, Presets, Annäherungen).
+
+## Adressen im Panel
+
+Das Panel hat sechs Reiter: Übersicht, Plan, Rückblick | Geräte, Haushalt, Einstellungen. Jede Seite, jeder Abschnitt und jedes Gerät hat eine eigene Adresse `/energy-joe/<reiter>/<abschnitt>/<id>/<unter>` (`panel/src/router.ts`):
+
+- `parse()` liest einen Pfad, `format()`/`href()` bauen ihn, `link()` ist ein echter Link, `navigate()` springt per Ereignis `joe-navigate`, das Panel schreibt die Adresse mit `history.pushState` und meldet `location-changed`.
+- Abschnitte je Reiter stehen in `SECTIONS` (z. B. `devices`: `all`, `battery`, `climate`, `car`, `hot_water`, `other`, `grid`, `add`); ohne Abschnitt gilt der erste. Unbekannte Abschnitte leiten auf den Reiter um, alte Adressen (`history`, `learn`, `climate`) auf ihren neuen Ort.
+- Sheets mit Adresse (z. B. `/devices/add`, Wochenprofil `/devices/climate/<entity>/week`) schließt `closeSheet()`: zurück, wenn sie per Sprung geöffnet wurden, sonst durch die Seite darunter ersetzt.
+- `revealAnchor()` scrollt zu `[data-anchor="<id>"]` (z. B. `/devices/grid/tariff`, `/settings/rules/buffer_factor`).
+- Wo jede Frage und jeder Fund der Einrichtung danach wohnt, steht in `panel/src/homes.ts`; die Zusammenfassung „Los“ und Übersicht › Joe braucht dich (`pages/overview/inbox.ts`) nutzen das. Mit „Später“ übersprungene Fragen stehen in `answers.later` (eine Liste von Frage-Ids, das Schema lässt fremde Schlüssel unter `answers` durch).
+- Neue Orte gehören auch in den Wegweiser (`pages/settings/signpost.ts`, mit alten Namen als Suchwörtern).
 
 ## Panel nach einem Update
 

@@ -384,6 +384,7 @@ export class EnergyJoePanel extends LitElement {
               .config=${this.joe.config}
               .discovery=${this.discovery}
               .checks=${this.checks}
+              .prefix=${this.base}
               ?discovering=${this.discovering}
               ?discoveryFailed=${this.discoveryFailed}
             ></joe-onboarding>`
@@ -725,16 +726,18 @@ export class EnergyJoePanel extends LitElement {
     }
   }
 
-  private async onOnboarding(ev: CustomEvent<{ step?: OnboardingStep; completed?: boolean }>): Promise<void> {
-    if (ev.detail.step === "welcome") {
+  /** A step of the setup; the start may name where to go then (a home in the summary). */
+  private async onOnboarding(ev: CustomEvent<{ step?: OnboardingStep; completed?: boolean; to?: string }>): Promise<void> {
+    const { to, ...detail } = ev.detail;
+    if (detail.step === "welcome") {
       // Starting over: Joe looks around again when the setup gets there.
       this.adopted = false;
       this.discoveryFailed = false;
     }
     try {
-      await this.hass?.callWS({ type: "energy_joe/onboarding", ...ev.detail });
-      if (ev.detail.completed) {
-        this.go("/");
+      await this.hass?.callWS({ type: "energy_joe/onboarding", ...detail });
+      if (detail.completed) {
+        this.go(to ?? "/");
       }
     } catch {
       this.showNotice(this.t("error.action"));
