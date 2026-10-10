@@ -3,6 +3,24 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.17
+
+### Neu: Tagsüber Überschuss abgeben (für evcc)
+- An sonnigen Tagen drosselt Joe das Laden deiner Speicher: Sie laden nur so schnell, dass sie trotzdem voll sind, bevor die Sonne am Abend nicht mehr fürs Haus reicht. Den Rest sieht evcc am Netzzähler – ein Ladepunkt im PV-Modus (Auto oder z. B. Fußbodenheizung) läuft damit den ganzen Tag.
+- Keine feste Uhrzeit: Joe rechnet jeden Tag aus der Vorhersage, wann die Sonne nicht mehr reicht – im Sommer später, im Winter früher. Du wählst nur, wie vorsichtig er ist (knapp 90 %, normal 80 %, vorsichtig 65 % der Vorhersage). Jede Minute neu gerechnet mit echtem Ladestand und echter Sonne: Hinkt die Sonne hinterher, lädt Joe sofort schneller; reicht sie nicht mehr, lässt er ganz los.
+- Nur wenn ein evcc-Ladepunkt auf PV oder Min+PV steht und Strom nehmen kann, nur bei Speichern mit bestandenem Testlauf, nur im Live-Betrieb. In Simulation und „Vorschlagen“ zeigt Joe, was er tun würde.
+- Marstek über Omnibattery: Joe nutzt die System-Leistungsgrenzen – der Speicher bleibt in seiner automatischen Regelung, der manuelle Modus wird tagsüber nie benutzt. Sind Ladeverzögerung oder prädiktives Laden an, warnt Joe.
+- Speicher mit Ladegrenze in Prozent (BYD am Fronius) machen mit, sobald Joe weiß, wofür 100 % stehen: eintragen auf der Speicherseite oder Joe misst es an einem sonnigen Tag selbst (3 Minuten 50 %, danach alles zurück).
+- Schreibt eine eingeschaltete Automation dieselbe Ladegrenze, lässt Joe diesen Speicher aus und zeigt sie bei den Störenfrieden. Hat jemand die Grenze inzwischen verstellt, schreibt Joe beim Zurückstellen nicht darüber.
+- Sicher zurück: „Sofort freigeben“, Betriebswechsel, volle Speicher, Ende der Sonne, Nacht und ein Neustart von Home Assistant stellen die Ladegrenze zurück, wie sie war. Über Nacht bleibt nie etwas gedrosselt.
+- Joe liest evccs Hausbatterie-Einstellungen und warnt, wenn batterieunterstütztes Laden oder Batterie-Boost den Speicher tagsüber leeren würden. An evcc ändert er nichts.
+- Zu finden unter Einstellungen › Regeln › Speicher, je Speicher „Macht tagsüber mit“, im Plan „Heute tagsüber“, in der Übersicht unter „Joe tut gerade …“.
+
+### Außerdem
+- Netz & Sonne: Neuer Schalter „Ist ohne Sonne aus – das ist normal“ je PV-Messung (und ein Knopf direkt am Hinweis). Joe warnt dann nachts nicht mehr und zählt 0 W statt einer Lücke.
+- Behoben: Der netzdienliche Morgen endete schon kurz nach dem Nachtfenster statt zur berechneten Uhrzeit.
+- Protokoll: verständliche Texte für den netzdienlichen Morgen und das Ende der Drosselung.
+
 ## 0.9.16
 
 - **Ersteinrichtung in der neuen Ordnung:** Beim Umschauen ist alles nach Geräte und Haushalt gegliedert. Neue Fragen: „Soll ich Heizung & Klima regeln?“ und „Ist Homeoffice bei euch der normale Arbeitstag?“; beim E-Auto geht es direkt weiter mit „Laden einrichten“.

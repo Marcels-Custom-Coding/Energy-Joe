@@ -1,4 +1,4 @@
-//#region node_modules/@lit/reactive-element/css-tag.js
+//#region ../../../../../../../../Users/marcel/claude/energy-joe/panel/node_modules/@lit/reactive-element/css-tag.js
 var e = globalThis, t = e.ShadowRoot && (e.ShadyCSS === void 0 || e.ShadyCSS.nativeShadow) && "adoptedStyleSheets" in Document.prototype && "replace" in CSSStyleSheet.prototype, n = Symbol(), r = /* @__PURE__ */ new WeakMap(), i = class {
 	constructor(e, t, r) {
 		if (this._$cssResult$ = !0, r !== n) throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");
@@ -253,7 +253,7 @@ var v = class extends HTMLElement {
 };
 v.elementStyles = [], v.shadowRootOptions = { mode: "open" }, v[h("elementProperties")] = /* @__PURE__ */ new Map(), v[h("finalized")] = /* @__PURE__ */ new Map(), re?.({ ReactiveElement: v }), (m.reactiveElementVersions ??= []).push("2.1.2");
 //#endregion
-//#region node_modules/lit-html/lit-html.js
+//#region ../../../../../../../../Users/marcel/claude/energy-joe/panel/node_modules/lit-html/lit-html.js
 var y = globalThis, ae = (e) => e, b = y.trustedTypes, oe = b ? b.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, x = "$lit$", S = `lit$${Math.random().toFixed(9).slice(2)}$`, C = "?" + S, se = `<${C}>`, w = document, T = () => w.createComment(""), E = (e) => e === null || typeof e != "object" && typeof e != "function", D = Array.isArray, ce = (e) => D(e) || typeof e?.[Symbol.iterator] == "function", le = "[ 	\n\f\r]", O = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, ue = /-->/g, de = />/g, k = RegExp(`>|${le}(?:([^\\s"'>=/]+)(${le}*=${le}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`, "g"), fe = /'/g, pe = /"/g, me = /^(?:script|style|textarea|title)$/i, he = (e) => (t, ...n) => ({
 	_$litType$: e,
 	strings: t,
@@ -524,7 +524,7 @@ R._$litElement$ = !0, R.finalized = !0, L.litElementHydrateSupport?.({ LitElemen
 var ke = L.litElementPolyfillSupport;
 ke?.({ LitElement: R }), (L.litElementVersions ??= []).push("4.2.2");
 //#endregion
-//#region node_modules/@lit/reactive-element/decorators/property.js
+//#region ../../../../../../../../Users/marcel/claude/energy-joe/panel/node_modules/@lit/reactive-element/decorators/property.js
 var Ae = {
 	attribute: !0,
 	type: String,
@@ -561,7 +561,7 @@ function z(e) {
 	})(e, t, n);
 }
 //#endregion
-//#region node_modules/@lit/reactive-element/decorators/state.js
+//#region ../../../../../../../../Users/marcel/claude/energy-joe/panel/node_modules/@lit/reactive-element/decorators/state.js
 function B(e) {
 	return z({
 		...e,
@@ -570,10 +570,10 @@ function B(e) {
 	});
 }
 //#endregion
-//#region node_modules/@lit/reactive-element/decorators/base.js
+//#region ../../../../../../../../Users/marcel/claude/energy-joe/panel/node_modules/@lit/reactive-element/decorators/base.js
 var Me = (e, t, n) => (n.configurable = !0, n.enumerable = !0, Reflect.decorate && typeof t != "object" && Object.defineProperty(e, t, n), n);
 //#endregion
-//#region node_modules/@lit/reactive-element/decorators/query.js
+//#region ../../../../../../../../Users/marcel/claude/energy-joe/panel/node_modules/@lit/reactive-element/decorators/query.js
 function Ne(e, t) {
 	return (n, r, i) => {
 		let a = (t) => t.renderRoot?.querySelector(e) ?? null;
@@ -6022,14 +6022,14 @@ function qe(e, t, n) {
 }
 //#endregion
 //#region src/define.ts
-var Je = "0.9.16";
+var Je = "0.9.17";
 function Ye(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Je, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.16" && Ze();
+	n.joeVersion !== "0.9.17" && Ze();
 }
 var Xe = !1;
 function Ze() {
