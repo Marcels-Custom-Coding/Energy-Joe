@@ -1,4 +1,4 @@
-import { $ as e, A as t, B as n, C as r, D as i, E as a, F as o, G as s, H as c, I as l, J as u, K as d, L as f, M as p, N as m, O as h, P as g, Q as _, R as v, S as ee, T as te, U as y, V as ne, W as b, X as re, Y as ie, Z as x, _ as ae, a as oe, at as se, b as S, c as ce, ct as le, d as C, et as ue, f as w, g as de, h as fe, i as pe, it as T, j as me, k as he, l as E, lt as D, m as ge, n as _e, nt as O, o as ve, ot as k, p as ye, q as be, r as A, rt as j, s as xe, st as Se, t as Ce, tt as M, u as we, v as Te, w as Ee, x as De, y as Oe, z as ke } from "./tokens-CLx0koVc.js";
+import { $ as e, A as t, B as n, C as r, D as i, E as a, F as o, G as s, H as c, I as l, J as u, K as d, L as f, M as p, N as m, O as h, P as g, Q as _, R as v, S as ee, T as te, U as y, V as ne, W as b, X as re, Y as ie, Z as x, _ as ae, a as oe, at as se, b as S, c as ce, ct as le, d as C, et as ue, f as w, g as de, h as fe, i as pe, it as T, j as me, k as he, l as E, lt as D, m as ge, n as _e, nt as O, o as ve, ot as k, p as ye, q as be, r as A, rt as j, s as xe, st as Se, t as Ce, tt as M, u as we, v as Te, w as Ee, x as De, y as Oe, z as ke } from "./tokens-Bw6pdXgf.js";
 //#region src/assets.ts
 var Ae = import.meta.url.replace(/[^/]*$/, ""), je = (e) => `${Ae}${e}`, Me = /* @__PURE__ */ new Set(["welcome"]), Ne = /* @__PURE__ */ new Set([
 	"night-charge",
@@ -8545,6 +8545,9 @@ var Ra = class extends j {
 y([O({ attribute: !1 })], Ra.prototype, "t", void 0), y([O({ attribute: !1 })], Ra.prototype, "config", void 0), y([O({ attribute: !1 })], Ra.prototype, "car", void 0), y([O({ attribute: !1 })], Ra.prototype, "leave", void 0), y([M()], Ra.prototype, "asking", void 0), y([M()], Ra.prototype, "busy", void 0), s("joe-car-sources", La), s("joe-car-delete", Ra);
 //#endregion
 //#region src/pages/devices/car-device.ts
+function q(e) {
+	return k`${e.split(/\*\*(.+?)\*\*/).map((e, t) => t % 2 ? k`<strong>${e}</strong>` : e)}`;
+}
 var za = [
 	"soc",
 	"range",
@@ -8563,6 +8566,39 @@ var za = [
 			ia,
 			Ma,
 			D`
+      details.explain {
+        margin: 0 0 14px;
+        border-radius: 12px;
+        background: var(--joe-surface-2);
+      }
+      details.explain summary {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .explain-body {
+        padding: 0 14px 12px;
+        line-height: 1.5;
+      }
+      .explain-body h4 {
+        margin: 14px 0 4px;
+        font-size: 14px;
+      }
+      .explain-body p,
+      .explain-body ul,
+      .explain-body ol {
+        margin: 0 0 6px;
+      }
+      .explain-body ul,
+      .explain-body ol {
+        padding-left: 20px;
+      }
+      .explain-body li {
+        margin: 2px 0;
+      }
       .car-cal {
         display: flex;
         align-items: center;
@@ -8670,7 +8706,8 @@ var za = [
 				anchor: "calendars",
 				title: e("devices.car.terms"),
 				tip: "car_terms",
-				body: k`${o.enabled ? this.calendarLine(e, n, i) : k`<p class="muted">${e("devices.car.terms_off")}</p>`}
+				body: k`${this.explain(e, i)}
+            ${o.enabled ? this.calendarLine(e, n, i) : k`<p class="muted">${e("devices.car.terms_off")}</p>`}
             <joe-car-steer
               .hass=${t}
               .t=${e}
@@ -8770,6 +8807,40 @@ var za = [
 			need: r
 		};
 		return k`<joe-car-need .hass=${this.hass} .t=${e} .action=${a} .roundTrip=${n.need.round_trip ?? !0}></joe-car-need>`;
+	}
+	explain(e, t) {
+		let n = t.need, r = !!(n.calendars?.length || n.source === "mailbox" || n.source === "account");
+		return k`<details class="explain" ?open=${!r} data-notip>
+      <summary>${e("car.explain.title")}</summary>
+      <div class="explain-body">
+        <p>${q(e("car.explain.why"))}</p>
+        <h4>${e("car.explain.two")}</h4>
+        <ul>
+          <li>${q(e("car.explain.car_cal", { name: t.name }))}</li>
+          <li>${q(e("car.explain.persons"))}</li>
+        </ul>
+        <h4>${e("car.explain.ways")}</h4>
+        <ul>
+          <li>${q(e("car.explain.way.calendar"))}</li>
+          <li>${q(e("car.explain.way.mailbox"))}</li>
+          <li>${q(e("car.explain.way.account"))}</li>
+        </ul>
+        <h4>${e("car.explain.example.title")}</h4>
+        <ol>
+          <li>${q(e("car.explain.example.1"))}</li>
+          <li>${q(e("car.explain.example.2", { name: t.name }))}</li>
+          <li>${q(e("car.explain.example.3", { name: t.name }))}</li>
+          <li>${q(e("car.explain.example.4"))}</li>
+        </ol>
+        <h4>${e("car.explain.rules")}</h4>
+        <ul>
+          <li>${q(e("car.explain.rule.place"))}</li>
+          <li>${q(e("car.explain.rule.online"))}</li>
+          <li>${q(e("car.explain.rule.twice"))}</li>
+          <li>${q(e("car.explain.rule.none"))}</li>
+        </ul>
+      </div>
+    </details>`;
 	}
 	calendarLine(e, t, n) {
 		let r = n.need, i = r.source ?? "ha", s = "", c = "none", l = null, u = t.config.persons.filter((e) => e.calendars.length && (r.persons == null || r.persons.includes(e.id)));
@@ -9497,7 +9568,7 @@ function So(e, t, n = "long") {
 		timeZone: "UTC"
 	}).format(new Date(Date.UTC(2024, 0, 1 + t)));
 }
-var q = class extends j {
+var J = class extends j {
 	constructor(...e) {
 		super(...e), this.entityId = "", this.prefix = A, this.fetched = !1, this.failed = !1, this.drafts = {}, this.selected = {
 			heat: 0,
@@ -10542,11 +10613,11 @@ var q = class extends j {
 		}));
 	}
 };
-y([O({ attribute: !1 })], q.prototype, "hass", void 0), y([O({ attribute: !1 })], q.prototype, "t", void 0), y([O({ attribute: !1 })], q.prototype, "config", void 0), y([O({ attribute: !1 })], q.prototype, "status", void 0), y([O({ attribute: !1 })], q.prototype, "entityId", void 0), y([O({ attribute: !1 })], q.prototype, "found", void 0), y([O({ attribute: !1 })], q.prototype, "prefix", void 0), y([O({ attribute: !1 })], q.prototype, "startMode", void 0), y([M()], q.prototype, "device", void 0), y([M()], q.prototype, "fetched", void 0), y([M()], q.prototype, "failed", void 0), y([M()], q.prototype, "drafts", void 0), y([M()], q.prototype, "mode", void 0), y([M()], q.prototype, "selected", void 0), y([M()], q.prototype, "open", void 0), y([M()], q.prototype, "notice", void 0), y([M()], q.prototype, "rowError", void 0), y([M()], q.prototype, "creating", void 0), y([M()], q.prototype, "saving", void 0), y([M()], q.prototype, "errors", void 0), y([M()], q.prototype, "fitted", void 0);
+y([O({ attribute: !1 })], J.prototype, "hass", void 0), y([O({ attribute: !1 })], J.prototype, "t", void 0), y([O({ attribute: !1 })], J.prototype, "config", void 0), y([O({ attribute: !1 })], J.prototype, "status", void 0), y([O({ attribute: !1 })], J.prototype, "entityId", void 0), y([O({ attribute: !1 })], J.prototype, "found", void 0), y([O({ attribute: !1 })], J.prototype, "prefix", void 0), y([O({ attribute: !1 })], J.prototype, "startMode", void 0), y([M()], J.prototype, "device", void 0), y([M()], J.prototype, "fetched", void 0), y([M()], J.prototype, "failed", void 0), y([M()], J.prototype, "drafts", void 0), y([M()], J.prototype, "mode", void 0), y([M()], J.prototype, "selected", void 0), y([M()], J.prototype, "open", void 0), y([M()], J.prototype, "notice", void 0), y([M()], J.prototype, "rowError", void 0), y([M()], J.prototype, "creating", void 0), y([M()], J.prototype, "saving", void 0), y([M()], J.prototype, "errors", void 0), y([M()], J.prototype, "fitted", void 0);
 function Co(e) {
 	return String(e?.message ?? e);
 }
-s("joe-week-editor", q);
+s("joe-week-editor", J);
 //#endregion
 //#region src/pages/devices/climate-view.ts
 var wo = {
@@ -10670,7 +10741,7 @@ var Fo = {
 	"auto",
 	"surplus",
 	"cheap"
-], J = class extends j {
+], Y = class extends j {
 	constructor(...e) {
 		super(...e), this.prefix = A, this.devices = [], this.picking = !1, this.query = "", this.holdUntil = {}, this.pending = {}, this.moved = {}, this.weekError = {};
 	}
@@ -11612,7 +11683,7 @@ var Fo = {
 		});
 	}
 };
-y([O({ attribute: !1 })], J.prototype, "hass", void 0), y([O({ attribute: !1 })], J.prototype, "t", void 0), y([O({ attribute: !1 })], J.prototype, "state", void 0), y([O({ attribute: !1 })], J.prototype, "route", void 0), y([O({ attribute: !1 })], J.prototype, "prefix", void 0), y([O({ attribute: !1 })], J.prototype, "found", void 0), y([O({ attribute: !1 })], J.prototype, "devices", void 0), y([O({ attribute: !1 })], J.prototype, "entry", void 0), y([O({ attribute: !1 })], J.prototype, "sub", void 0), y([M()], J.prototype, "picking", void 0), y([M()], J.prototype, "query", void 0), y([M()], J.prototype, "holdUntil", void 0), y([M()], J.prototype, "pending", void 0), y([M()], J.prototype, "moved", void 0), y([M()], J.prototype, "weekError", void 0), y([M()], J.prototype, "kindChanged", void 0), s("joe-climate-device", J);
+y([O({ attribute: !1 })], Y.prototype, "hass", void 0), y([O({ attribute: !1 })], Y.prototype, "t", void 0), y([O({ attribute: !1 })], Y.prototype, "state", void 0), y([O({ attribute: !1 })], Y.prototype, "route", void 0), y([O({ attribute: !1 })], Y.prototype, "prefix", void 0), y([O({ attribute: !1 })], Y.prototype, "found", void 0), y([O({ attribute: !1 })], Y.prototype, "devices", void 0), y([O({ attribute: !1 })], Y.prototype, "entry", void 0), y([O({ attribute: !1 })], Y.prototype, "sub", void 0), y([M()], Y.prototype, "picking", void 0), y([M()], Y.prototype, "query", void 0), y([M()], Y.prototype, "holdUntil", void 0), y([M()], Y.prototype, "pending", void 0), y([M()], Y.prototype, "moved", void 0), y([M()], Y.prototype, "weekError", void 0), y([M()], Y.prototype, "kindChanged", void 0), s("joe-climate-device", Y);
 //#endregion
 //#region src/pages/devices/climate.ts
 var Ro = {
@@ -12001,7 +12072,7 @@ var Bo = D`
     }
   }
 `;
-function Y(e, t, n, r = !1) {
+function X(e, t, n, r = !1) {
 	return k`<button type="button" class="mini-btn ${r ? "quiet" : ""}" @click=${n}>
     ${t ? k`<ha-icon icon=${t}></ha-icon>` : T}${e}
   </button>`;
@@ -12055,7 +12126,7 @@ function Go(e, t, n, r, i, a, s) {
 			chips: [x(n, N(r, `context.${c}`)), ...u && i ? [d(n, u.confidence)] : []],
 			reasons: i ? u?.reasons : void 0,
 			aside: s?.(l),
-			actions: [Y(n("review.change"), "mdi:magnify", p), Y(n("review.ignore"), "", () => I(e, {
+			actions: [X(n("review.change"), "mdi:magnify", p), X(n("review.ignore"), "", () => I(e, {
 				context: { [c]: null },
 				answers: { ignored: F(r, a, !0) }
 			}), !0)]
@@ -12065,13 +12136,13 @@ function Go(e, t, n, r, i, a, s) {
 		...f,
 		detail: n("review.ignored"),
 		state: "ignored",
-		actions: [Y(n("review.use"), "mdi:undo-variant", p)]
+		actions: [X(n("review.use"), "mdi:undo-variant", p)]
 	} : {
 		...f,
 		detail: n("find.none"),
 		state: "missing",
 		notes: [Vo(n(a === "weather" ? "review.weather.none" : "review.holiday.none"))],
-		actions: [Y(n("review.choose"), "mdi:magnify", p)]
+		actions: [X(n("review.choose"), "mdi:magnify", p)]
 	};
 }
 async function Ko(e, t, n, r, i) {
@@ -12087,7 +12158,7 @@ async function Ko(e, t, n, r, i) {
 		answers: { ignored: F(n, i, !1) }
 	});
 }
-function X(e, t, n) {
+function Z(e, t, n) {
 	let [r, i] = e(n).split("|");
 	return `${v(e.lang, t, 0)} ${t === 1 ? r : i}`;
 }
@@ -12116,10 +12187,10 @@ function Xo(e) {
 		icon: "mdi:lightning-bolt",
 		title: t("find.energy"),
 		detail: t("find.energy.detail", {
-			grid: X(t, n.grid ?? 0, "word.grid"),
-			solar: X(t, n.solar ?? 0, "word.solar"),
-			battery: X(t, n.battery ?? 0, "word.battery"),
-			devices: X(t, n.devices ?? 0, "word.device")
+			grid: Z(t, n.grid ?? 0, "word.grid"),
+			solar: Z(t, n.solar ?? 0, "word.solar"),
+			battery: Z(t, n.battery ?? 0, "word.battery"),
+			devices: Z(t, n.devices ?? 0, "word.device")
 		}),
 		chips: [x(t, { source: "read" })]
 	} : null;
@@ -12150,13 +12221,13 @@ function Qo(e) {
 		...a,
 		detail: i ? t("find.forecast.detail", {
 			provider: i.provider_name,
-			planes: X(t, i.planes, "word.plane"),
+			planes: Z(t, i.planes, "word.plane"),
 			today: i.today_kwh == null ? "–" : v(t.lang, i.today_kwh, 1),
 			tomorrow: i.tomorrow_kwh == null ? "–" : v(t.lang, i.tomorrow_kwh, 1)
 		}) : n.forecast.provider,
 		chips: [x(t, N(n, "forecast.provider")), ...i ? [d(t, i.confidence)] : []],
 		reasons: i?.reasons,
-		actions: [Y(t("review.ignore"), "", () => Jo(r, n, "forecast", { forecast: {
+		actions: [X(t("review.ignore"), "", () => Jo(r, n, "forecast", { forecast: {
 			provider: null,
 			config_entries: [],
 			today: [],
@@ -12168,7 +12239,7 @@ function Qo(e) {
 		...a,
 		detail: t("review.ignored"),
 		state: "ignored",
-		actions: [Y(t("review.use"), "mdi:undo-variant", () => $o(e))]
+		actions: [X(t("review.use"), "mdi:undo-variant", () => $o(e))]
 	} : {
 		...a,
 		detail: t("find.none"),
@@ -12202,7 +12273,7 @@ function es(e, t, r = {}) {
 		icon: f ? "mdi:transmission-tower" : "mdi:home-lightning-bolt-outline",
 		title: s(f ? "find.grid" : "find.home"),
 		tip: f ? "review_grid" : "review_home"
-	}, m = Y(s(l ? "review.change" : "review.choose"), "mdi:magnify", () => void ns(e, t)), h = r.devices ? [r.devices] : [];
+	}, m = X(s(l ? "review.change" : "review.choose"), "mdi:magnify", () => void ns(e, t)), h = r.devices ? [r.devices] : [];
 	if (!l && !f && c.measurements.grid_power) return {
 		...p,
 		detail: s("review.home.balance"),
@@ -12219,7 +12290,7 @@ function es(e, t, r = {}) {
 		detail: s("find.none"),
 		state: "missing",
 		notes: [Vo(s(f ? "review.grid.none" : "review.home.none"))],
-		actions: f ? [m] : [m, Y(s("review.home.without"), "", () => Jo(i, c, "home_power", { measurements: { home_power: null } }), !0)]
+		actions: f ? [m] : [m, X(s("review.home.without"), "", () => Jo(i, c, "home_power", { measurements: { home_power: null } }), !0)]
 	};
 	let g = n(a, l), _ = ke(a, l.entity_id, s.lang);
 	if (g !== null) {
@@ -12229,7 +12300,7 @@ function es(e, t, r = {}) {
 	let ee = e.checks.filter((e) => e.code !== "missing" && (e.role === t || f && e.code === "grid_sign" || !f && e.code === "home_negative")), te = () => rs(i, t, {
 		...l,
 		invert: !l.invert
-	}), y = ee.map((e) => e.code === "grid_sign" ? qo(s, e, [Y(s("review.invert"), "mdi:swap-vertical", te), Y(s("review.keep"), "mdi:check", () => Yo(i, c, `grid_sign:${l.entity_id}`), !0)]) : e.code === "home_negative" ? qo(s, e, [Y(s("review.invert"), "mdi:swap-vertical", te)]) : qo(s, e)), ne = ee.some((e) => e.level === "warn") ? "flag" : void 0, b = o(a, l.entity_id), re = u?.entity.entity_id === l.entity_id;
+	}), y = ee.map((e) => e.code === "grid_sign" ? qo(s, e, [X(s("review.invert"), "mdi:swap-vertical", te), X(s("review.keep"), "mdi:check", () => Yo(i, c, `grid_sign:${l.entity_id}`), !0)]) : e.code === "home_negative" ? qo(s, e, [X(s("review.invert"), "mdi:swap-vertical", te)]) : qo(s, e)), ne = ee.some((e) => e.level === "warn") ? "flag" : void 0, b = o(a, l.entity_id), re = u?.entity.entity_id === l.entity_id;
 	return !f && c.measurements.grid_power ? {
 		...p,
 		detail: `${s("review.home.balance")} · ${s("review.home.compare", {
@@ -12243,7 +12314,7 @@ function es(e, t, r = {}) {
 		actions: [
 			m,
 			...h,
-			Y(s("review.ignore"), "", () => Jo(i, c, "home_power", { measurements: { home_power: null } }), !0)
+			X(s("review.ignore"), "", () => Jo(i, c, "home_power", { measurements: { home_power: null } }), !0)
 		]
 	} : {
 		...p,
@@ -12302,7 +12373,7 @@ function is(e) {
 		icon: "mdi:solar-panel",
 		title: r("find.solar"),
 		tip: "review_solar"
-	}, u = (t) => Y(t, "mdi:magnify", () => void as(e));
+	}, u = (t) => X(t, "mdi:magnify", () => void as(e));
 	if (!a.length) return P(i, "solar_power") ? {
 		...l,
 		detail: r("review.solar.without"),
@@ -12312,13 +12383,13 @@ function is(e) {
 		...l,
 		detail: r("find.none"),
 		state: "missing",
-		actions: [u(r("review.choose")), Y(r("review.solar.none"), "", () => Jo(t, i, "solar_power", { measurements: { solar_power: [] } }), !0)]
+		actions: [u(r("review.choose")), X(r("review.solar.none"), "", () => Jo(t, i, "solar_power", { measurements: { solar_power: [] } }), !0)]
 	};
 	let f = c(n, a), p = e.checks.filter((e) => e.role === "solar_power" && e.code !== "missing"), m = a.length === 1 ? a[0].entity_id : void 0;
 	return {
 		...l,
 		detail: r("find.solar.detail", {
-			count: X(r, a.length, "word.sensor"),
+			count: Z(r, a.length, "word.sensor"),
 			total: f === null ? "–" : v(r.lang, f, 2)
 		}),
 		chips: [x(r, N(i, "measurements.solar_power")), ...s ? [d(r, s.confidence)] : []],
@@ -12326,7 +12397,7 @@ function is(e) {
 		notes: p.map((e) => qo(r, e)),
 		state: p.some((e) => e.level === "warn") ? "flag" : void 0,
 		aside: m ? e.aside?.(m, o(n, m)) : void 0,
-		actions: [u(r("review.change")), ...p.filter((e) => e.can_sleep && a.some((t) => t.entity_id === e.entity_id && !t.sleeps)).map((e) => Y(a.length > 1 ? r("solar.sleeps.quick_named", { name: o(n, String(e.entity_id)) }) : r("solar.sleeps.quick"), "mdi:weather-night", () => void I(t, { measurements: { solar_power: a.map((t) => t.entity_id === e.entity_id ? {
+		actions: [u(r("review.change")), ...p.filter((e) => e.can_sleep && a.some((t) => t.entity_id === e.entity_id && !t.sleeps)).map((e) => X(a.length > 1 ? r("solar.sleeps.quick_named", { name: o(n, String(e.entity_id)) }) : r("solar.sleeps.quick"), "mdi:weather-night", () => void I(t, { measurements: { solar_power: a.map((t) => t.entity_id === e.entity_id ? {
 			...t,
 			sleeps: !0
 		} : t) } })))]
@@ -15183,7 +15254,7 @@ function fc(e) {
 		e == null ? (n.length && t.push(n), n = []) : n.push([r, e]);
 	}), n.length && t.push(n), t;
 }
-var Z = class extends j {
+var Q = class extends j {
 	constructor(...e) {
 		super(...e), this.labels = [], this.ticks = /* @__PURE__ */ new Map(), this.series = [], this.bands = [], this.markers = [], this.unit = "kWh", this.max = 0, this.height = 220, this.label = "", this.lang = "de", this.centerTicks = !1, this.width = 640, this.hover = null;
 	}
@@ -15358,7 +15429,7 @@ var Z = class extends j {
     </div>`;
 	}
 };
-y([O({ attribute: !1 })], Z.prototype, "labels", void 0), y([O({ attribute: !1 })], Z.prototype, "ticks", void 0), y([O({ attribute: !1 })], Z.prototype, "series", void 0), y([O({ attribute: !1 })], Z.prototype, "bands", void 0), y([O({ attribute: !1 })], Z.prototype, "markers", void 0), y([O()], Z.prototype, "unit", void 0), y([O({ type: Number })], Z.prototype, "max", void 0), y([O({ type: Number })], Z.prototype, "height", void 0), y([O()], Z.prototype, "label", void 0), y([O()], Z.prototype, "lang", void 0), y([O({ type: Boolean })], Z.prototype, "centerTicks", void 0), y([M()], Z.prototype, "width", void 0), y([M()], Z.prototype, "hover", void 0), s("joe-chart", Z);
+y([O({ attribute: !1 })], Q.prototype, "labels", void 0), y([O({ attribute: !1 })], Q.prototype, "ticks", void 0), y([O({ attribute: !1 })], Q.prototype, "series", void 0), y([O({ attribute: !1 })], Q.prototype, "bands", void 0), y([O({ attribute: !1 })], Q.prototype, "markers", void 0), y([O()], Q.prototype, "unit", void 0), y([O({ type: Number })], Q.prototype, "max", void 0), y([O({ type: Number })], Q.prototype, "height", void 0), y([O()], Q.prototype, "label", void 0), y([O()], Q.prototype, "lang", void 0), y([O({ type: Boolean })], Q.prototype, "centerTicks", void 0), y([M()], Q.prototype, "width", void 0), y([M()], Q.prototype, "hover", void 0), s("joe-chart", Q);
 //#endregion
 //#region src/components/day-answer.ts
 var pc = {
@@ -17473,9 +17544,9 @@ var kc = /* @__PURE__ */ new Set([
 		}, a = [], o = Xo(i);
 		o && a.push(o);
 		let s = n.tariff.kind === "unknown";
-		return a.push(Zo(i, { actions: [Y(t(s ? "review.enter" : "review.change"), "mdi:pencil-outline", () => {
+		return a.push(Zo(i, { actions: [X(t(s ? "review.enter" : "review.change"), "mdi:pencil-outline", () => {
 			this.tariffOpen = !0;
-		})] }), Qo(i), es(i, "grid_power"), es(i, "home_power", { devices: Y(t("review.home.devices"), "mdi:devices", () => this.edit("consumers")) }), is(i)), {
+		})] }), Qo(i), es(i, "grid_power"), es(i, "home_power", { devices: X(t("review.home.devices"), "mdi:devices", () => this.edit("consumers")) }), is(i)), {
 			battery: this.batteryRows(e, t, n),
 			grid: a,
 			car: this.carRows(t, n),
@@ -17524,7 +17595,7 @@ var kc = /* @__PURE__ */ new Set([
 			icon: "mdi:devices",
 			title: e("find.devices"),
 			detail: e("find.devices.detail", {
-				count: X(e, n.length, "word.device"),
+				count: Z(e, n.length, "word.device"),
 				heating: n.filter((e) => kc.has(e.kind)).length
 			})
 		} : {
@@ -17550,8 +17621,8 @@ var kc = /* @__PURE__ */ new Set([
 			icon: "mdi:account-group-outline",
 			title: e("find.people"),
 			detail: e("find.people.detail", {
-				persons: X(e, t.persons.length, "word.person"),
-				calendars: X(e, n, "word.calendar")
+				persons: Z(e, t.persons.length, "word.person"),
+				calendars: Z(e, n, "word.calendar")
 			})
 		};
 	}
@@ -17573,7 +17644,7 @@ var kc = /* @__PURE__ */ new Set([
 				notes: l.map((e) => qo(t, e)),
 				state: l.some((e) => e.level === "warn") ? "flag" : void 0,
 				tip: "review_battery",
-				actions: [Y(t("review.change"), "mdi:pencil-outline", () => this.edit("battery", i.id)), Y(t("review.ignore"), "", () => this.ignoreBattery(i.id), !0)]
+				actions: [X(t("review.change"), "mdi:pencil-outline", () => this.edit("battery", i.id)), X(t("review.ignore"), "", () => this.ignoreBattery(i.id), !0)]
 			});
 		}
 		for (let e of this.discovery?.batteries ?? []) P(n, `battery:${e.id}`) && !n.batteries.some((t) => t.id === e.id) && r.push({
@@ -17583,7 +17654,7 @@ var kc = /* @__PURE__ */ new Set([
 			detail: t("review.ignored"),
 			state: "ignored",
 			tip: "review_ignored",
-			actions: [Y(t("review.use"), "mdi:undo-variant", () => void kr(this, n, e))]
+			actions: [X(t("review.use"), "mdi:undo-variant", () => void kr(this, n, e))]
 		});
 		return !n.batteries.length && !this.discovery?.batteries.length && r.push({
 			key: "battery:add",
@@ -17592,7 +17663,7 @@ var kc = /* @__PURE__ */ new Set([
 			detail: t("review.battery.none"),
 			state: "missing",
 			tip: "review_battery_add",
-			actions: [Y(t("review.add"), "mdi:plus", () => void Ar(this, t, e, n))]
+			actions: [X(t("review.add"), "mdi:plus", () => void Ar(this, t, e, n))]
 		}), r;
 	}
 	edit(e, t) {
@@ -18527,7 +18598,7 @@ var Gc = {
 				e("sum.forecast"),
 				t.forecast.provider ? l ? e("sum.forecast.value", {
 					provider: l.provider_name,
-					planes: X(e, l.planes, "word.plane")
+					planes: Z(e, l.planes, "word.plane")
 				}) : t.forecast.provider : e("sum.none"),
 				Lc(e, "grid")
 			],
@@ -18573,8 +18644,8 @@ var Gc = {
 			[
 				e("sum.household"),
 				a("household") ? e("sum.later") : e("sum.household.value", {
-					persons: X(e, t.persons.length, "word.person"),
-					calendars: X(e, t.persons.reduce((e, t) => e + t.calendars.length, 0), "word.calendar")
+					persons: Z(e, t.persons.length, "word.person"),
+					calendars: Z(e, t.persons.reduce((e, t) => e + t.calendars.length, 0), "word.calendar")
 				}),
 				Fc(e, "household")
 			],
@@ -18622,10 +18693,10 @@ var Gc = {
 		let t = this.info?.energy;
 		if (!t?.configured || !t.sources) return k`<div class="found"><p>${e("onb.scan.energy.none")}</p></div>`;
 		let n = [
-			X(e, t.sources.grid ?? 0, "word.grid"),
-			X(e, t.sources.solar ?? 0, "word.solar"),
-			X(e, t.sources.battery ?? 0, "word.battery"),
-			X(e, t.devices ?? 0, "word.device")
+			Z(e, t.sources.grid ?? 0, "word.grid"),
+			Z(e, t.sources.solar ?? 0, "word.solar"),
+			Z(e, t.sources.battery ?? 0, "word.battery"),
+			Z(e, t.devices ?? 0, "word.device")
 		];
 		return k`<div class="found">
       <p>${e("onb.scan.energy")}</p>
@@ -21033,7 +21104,7 @@ var vl = 36e5, yl = {
 y([O({ attribute: !1 })], xl.prototype, "hass", void 0), y([O({ attribute: !1 })], xl.prototype, "t", void 0), y([O({ attribute: !1 })], xl.prototype, "state", void 0), y([O({ attribute: !1 })], xl.prototype, "route", void 0), y([O({ attribute: !1 })], xl.prototype, "prefix", void 0), y([O({ attribute: !1 })], xl.prototype, "devices", void 0), y([M()], xl.prototype, "refreshing", void 0), s("joe-plan-page", xl);
 //#endregion
 //#region src/pages/settings/base.ts
-var Q = class extends j {
+var Sl = class extends j {
 	constructor(...e) {
 		super(...e), this.prefix = A, this.checks = [];
 	}
@@ -21051,10 +21122,10 @@ var Q = class extends j {
 		this.pending === e && ge(this.renderRoot, e) && (this.pending = void 0);
 	}
 };
-y([O({ attribute: !1 })], Q.prototype, "hass", void 0), y([O({ attribute: !1 })], Q.prototype, "t", void 0), y([O({ attribute: !1 })], Q.prototype, "state", void 0), y([O({ attribute: !1 })], Q.prototype, "route", void 0), y([O({ attribute: !1 })], Q.prototype, "prefix", void 0), y([O({ attribute: !1 })], Q.prototype, "info", void 0), y([O({ attribute: !1 })], Q.prototype, "discovery", void 0), y([O({ attribute: !1 })], Q.prototype, "checks", void 0), y([O({ attribute: !1 })], Q.prototype, "anchor", void 0);
+y([O({ attribute: !1 })], Sl.prototype, "hass", void 0), y([O({ attribute: !1 })], Sl.prototype, "t", void 0), y([O({ attribute: !1 })], Sl.prototype, "state", void 0), y([O({ attribute: !1 })], Sl.prototype, "route", void 0), y([O({ attribute: !1 })], Sl.prototype, "prefix", void 0), y([O({ attribute: !1 })], Sl.prototype, "info", void 0), y([O({ attribute: !1 })], Sl.prototype, "discovery", void 0), y([O({ attribute: !1 })], Sl.prototype, "checks", void 0), y([O({ attribute: !1 })], Sl.prototype, "anchor", void 0);
 //#endregion
 //#region src/pages/settings/styles.ts
-var Sl = D`
+var Cl = D`
   :host {
     display: block;
   }
@@ -21158,24 +21229,24 @@ var Sl = D`
       justify-content: flex-start;
     }
   }
-`, Cl = "/config/energy", wl = [
+`, wl = "/config/energy", Tl = [
 	"control",
 	"button",
 	"value",
 	"calendar",
 	"other"
-], Tl = {
+], El = {
 	select: "control",
 	switch: "control",
 	button: "button",
 	sensor: "value",
 	binary_sensor: "value",
 	calendar: "calendar"
-}, El = [
+}, Dl = [
 	"control",
 	"value",
 	"other"
-], Dl = [{
+], Ol = [{
 	id: "night",
 	type: "energy-joe-night-card",
 	icon: "mdi:weather-night"
@@ -21184,14 +21255,14 @@ var Sl = D`
 	type: "energy-joe-car-card",
 	icon: "mdi:car-electric-outline"
 }];
-function Ol(e) {
+function kl(e) {
 	return k`${e.split(/(?<=[._])/).map((e, t) => k`${t ? k`<wbr />` : T}${e}`)}`;
 }
-var kl = class extends Q {
+var Al = class extends Sl {
 	static {
 		this.styles = [
 			b,
-			Sl,
+			Cl,
 			D`
       .ent {
         display: flex;
@@ -21275,9 +21346,9 @@ var kl = class extends Q {
         <a
           class="mini-btn"
           data-notip
-          href=${Cl}
+          href=${wl}
           @click=${(e) => {
-			e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0 || (e.preventDefault(), ie(Cl));
+			e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0 || (e.preventDefault(), ie(wl));
 		}}
           ><ha-icon icon="mdi:open-in-new"></ha-icon>${e("grid.energy.open")}</a
         >
@@ -21296,7 +21367,7 @@ var kl = class extends Q {
 	renderEntities(e, t) {
 		let n = Object.values(t?.entities ?? {}).filter((e) => e.platform === "energy_joe"), r = /* @__PURE__ */ new Map();
 		for (let e of n) {
-			let n = Tl[e.entity_id.split(".", 1)[0]] ?? "other", i = t ? o(t, e.entity_id) : e.entity_id, a = i.replace(/^energy joe\s+/i, "") || i;
+			let n = El[e.entity_id.split(".", 1)[0]] ?? "other", i = t ? o(t, e.entity_id) : e.entity_id, a = i.replace(/^energy joe\s+/i, "") || i;
 			r.set(n, [...r.get(n) ?? [], {
 				id: e.entity_id,
 				name: a
@@ -21305,10 +21376,10 @@ var kl = class extends Q {
 		return k`<section class="group" data-anchor="entities">
       <div class="group-title" data-tipped><h2>${e("settings.about.entities")}</h2>${m(e, "about_entities")}</div>
       <p class="intro">${e("settings.about.entities.intro")}</p>
-      ${n.length ? wl.filter((e) => r.has(e)).map((n) => k`<div class="group-label">${e(`settings.about.group.${n}`)}</div>
+      ${n.length ? Tl.filter((e) => r.has(e)).map((n) => k`<div class="group-label">${e(`settings.about.group.${n}`)}</div>
               ${r.get(n).sort((t, n) => t.name.localeCompare(n.name, e.lang)).map((r) => k`<div class="ent">
-                    <div class="ent-text"><b>${r.name}</b><code>${Ol(r.id)}</code></div>
-                    ${t && El.includes(n) ? k`<span class="ent-state">${ke(t, r.id, e.lang)}</span>` : T}
+                    <div class="ent-text"><b>${r.name}</b><code>${kl(r.id)}</code></div>
+                    ${t && Dl.includes(n) ? k`<span class="ent-state">${ke(t, r.id, e.lang)}</span>` : T}
                     ${Nr(e, {
 			entityId: r.id,
 			name: r.name
@@ -21320,7 +21391,7 @@ var kl = class extends Q {
 		return k`<section class="group" data-anchor="cards">
       <h2>${e("settings.about.cards")}</h2>
       <p class="intro">${e("settings.about.cards.intro")}</p>
-      ${Dl.map((t) => k`<div class="row">
+      ${Ol.map((t) => k`<div class="row">
           <div>
             <b class="card-name"><ha-icon icon=${t.icon}></ha-icon>${e(`settings.about.cards.${t.id}`)}</b>
             <small>${e(`settings.about.cards.${t.id}.hint`)}</small>
@@ -21330,14 +21401,14 @@ var kl = class extends Q {
     </section>`;
 	}
 };
-s("joe-settings-about", kl);
+s("joe-settings-about", Al);
 //#endregion
 //#region src/pages/settings/maintenance.ts
-var Al = "/config/integrations/integration/energy_joe", jl = class extends Q {
+var jl = "/config/integrations/integration/energy_joe", Ml = class extends Sl {
 	static {
 		this.styles = [
 			b,
-			Sl,
+			Cl,
 			D`
       label.file {
         position: relative;
@@ -21530,9 +21601,9 @@ var Al = "/config/integrations/integration/energy_joe", jl = class extends Q {
         <a
           class="mini-btn"
           data-notip
-          href=${Al}
+          href=${jl}
           @click=${(e) => {
-			e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0 || (e.preventDefault(), ie(Al));
+			e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0 || (e.preventDefault(), ie(jl));
 		}}
           ><ha-icon icon="mdi:open-in-new"></ha-icon>${e("settings.maintenance.diagnostics.open")}</a
         >
@@ -21540,15 +21611,15 @@ var Al = "/config/integrations/integration/energy_joe", jl = class extends Q {
     </section>`;
 	}
 };
-y([M()], jl.prototype, "backup", void 0), y([M()], jl.prototype, "backupNote", void 0), s("joe-settings-maintenance", jl);
+y([M()], Ml.prototype, "backup", void 0), y([M()], Ml.prototype, "backupNote", void 0), s("joe-settings-maintenance", Ml);
 //#endregion
 //#region src/pages/settings/notify.ts
-var Ml = class extends Q {
+var Nl = class extends Sl {
 	constructor(...e) {
 		super(...e), this.loading = !1;
 	}
 	static {
-		this.styles = [b, Sl];
+		this.styles = [b, Cl];
 	}
 	connectedCallback() {
 		super.connectedCallback(), this.loadTargets();
@@ -21635,19 +21706,19 @@ var Ml = class extends Q {
     </div>`;
 	}
 };
-y([M()], Ml.prototype, "notifyTargets", void 0), s("joe-settings-notify", Ml);
+y([M()], Nl.prototype, "notifyTargets", void 0), s("joe-settings-notify", Nl);
 //#endregion
 //#region src/pages/settings/operation.ts
-var Nl = [
+var Pl = [
 	"simulation",
 	"advisory",
 	"live",
 	"off"
-], Pl = class extends Q {
+], Fl = class extends Sl {
 	static {
 		this.styles = [
 			b,
-			Sl,
+			Cl,
 			D`
       .modes {
         list-style: none;
@@ -21695,7 +21766,7 @@ var Nl = [
           </div>
         </div>
         <ul class="modes">
-          ${Nl.map((n) => k`<li class=${n === t.mode ? "on" : ""}>
+          ${Pl.map((n) => k`<li class=${n === t.mode ? "on" : ""}>
               <span class="mode-name"
                 >${e(`mode.${n}`)}
                 ${n === t.mode ? k`<span class="chip ok">${e("mode.current")}</span>` : T}</span
@@ -21749,18 +21820,18 @@ var Nl = [
           </div>` : T}`;
 	}
 };
-s("joe-settings-operation", Pl);
+s("joe-settings-operation", Fl);
 //#endregion
 //#region src/pages/settings/rules.ts
-var Fl = [
+var Il = [
 	"battery",
 	"grid",
 	"plan"
-], Il = class extends Q {
+], Ll = class extends Sl {
 	static {
 		this.styles = [
 			b,
-			Sl,
+			Cl,
 			na
 		];
 	}
@@ -21770,17 +21841,17 @@ var Fl = [
 		let n = t.config;
 		return k`<div class="list">
       <p class="intro">${e("settings.rules.intro")}</p>
-      ${Fl.map((t) => k`<section class="group" data-anchor=${`group-${t}`}>
+      ${Il.map((t) => k`<section class="group" data-anchor=${`group-${t}`}>
           <h2>${e(`settings.rules.group.${t}`)}</h2>
           ${Vi[t].map((t) => Ji(e, this, n, this.info, t))}
         </section>`)}
     </div>`;
 	}
 };
-s("joe-settings-rules", Il);
+s("joe-settings-rules", Ll);
 //#endregion
 //#region src/pages/settings/signpost.ts
-var Ll = [
+var Rl = [
 	{
 		id: "overview",
 		to: { tab: "overview" }
@@ -22233,11 +22304,11 @@ var Ll = [
 			id: "cards"
 		}
 	}
-], Rl = 8;
-function zl(e) {
+], zl = 8;
+function Bl(e) {
 	return e.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ß/g, "ss").replace(/([aou])e/g, "$1").replace(/[-\u2010\u2011]/g, "");
 }
-var Bl = class extends j {
+var Vl = class extends j {
 	constructor(...e) {
 		super(...e), this.prefix = A, this.query = "";
 	}
@@ -22348,10 +22419,10 @@ var Bl = class extends j {
 		}}
       />
       ${n && t.length ? k`<ul class="hits">
-            ${t.slice(0, Rl).map((e) => k`<li>${this.hitLink(e)}</li>`)}
+            ${t.slice(0, zl).map((e) => k`<li>${this.hitLink(e)}</li>`)}
           </ul>` : T}
-      <p class="sp-status" aria-live="polite" ?hidden=${!n || t.length > 0 && t.length <= Rl}>
-        ${n ? t.length ? e("signpost.more", { count: t.length - Rl }) : e("signpost.none") : ""}
+      <p class="sp-status" aria-live="polite" ?hidden=${!n || t.length > 0 && t.length <= zl}>
+        ${n ? t.length ? e("signpost.more", { count: t.length - zl }) : e("signpost.none") : ""}
       </p>
     </section>`;
 	}
@@ -22375,20 +22446,20 @@ var Bl = class extends j {
 		this.query = "", C(this, e);
 	}
 	search(e) {
-		let t = zl(this.query).split(/\s+/).filter(Boolean);
+		let t = Bl(this.query).split(/\s+/).filter(Boolean);
 		if (!t.length) return [];
 		let n = [];
-		return Ll.forEach((r, i) => {
-			let a = e("title" in r ? r.title : `signpost.${r.id}`), o = e(`signpost.${r.id}.terms`).split(",").map((e) => e.trim()).filter(Boolean), s = Vl(e, r.to, a), c = zl([
+		return Rl.forEach((r, i) => {
+			let a = e("title" in r ? r.title : `signpost.${r.id}`), o = e(`signpost.${r.id}.terms`).split(",").map((e) => e.trim()).filter(Boolean), s = Hl(e, r.to, a), c = Bl([
 				a,
 				...o,
 				s
 			].join(" | "));
 			if (!t.every((e) => c.includes(e))) return;
-			let l = t.join(" "), u = zl(a), d = o.find((e) => zl(e) === l), f = u === l ? 0 : d ? 1 : u.startsWith(l) ? 2 : u.includes(l) ? 3 : 6, p = f === 1 ? d : void 0;
+			let l = t.join(" "), u = Bl(a), d = o.find((e) => Bl(e) === l), f = u === l ? 0 : d ? 1 : u.startsWith(l) ? 2 : u.includes(l) ? 3 : 6, p = f === 1 ? d : void 0;
 			if (f > 3) {
-				let e = o.find((e) => zl(e).startsWith(l)) ?? o.find((e) => zl(e).includes(l));
-				e && (p = e, f = zl(e).startsWith(l) ? 4 : 5);
+				let e = o.find((e) => Bl(e).startsWith(l)) ?? o.find((e) => Bl(e).includes(l));
+				e && (p = e, f = Bl(e).startsWith(l) ? 4 : 5);
 			}
 			n.push({
 				entry: r,
@@ -22400,25 +22471,25 @@ var Bl = class extends j {
 		}), n.sort((e, t) => e.score - t.score);
 	}
 };
-y([O({ attribute: !1 })], Bl.prototype, "t", void 0), y([O({ attribute: !1 })], Bl.prototype, "state", void 0), y([O({ attribute: !1 })], Bl.prototype, "route", void 0), y([O({ attribute: !1 })], Bl.prototype, "prefix", void 0), y([M()], Bl.prototype, "query", void 0);
-function Vl(e, t, n) {
+y([O({ attribute: !1 })], Vl.prototype, "t", void 0), y([O({ attribute: !1 })], Vl.prototype, "state", void 0), y([O({ attribute: !1 })], Vl.prototype, "route", void 0), y([O({ attribute: !1 })], Vl.prototype, "prefix", void 0), y([M()], Vl.prototype, "query", void 0);
+function Hl(e, t, n) {
 	let r = [e(`tab.${t.tab}`)];
 	if (t.section) {
 		let n = e.optional(`nav.${t.tab}.${t.section}`);
 		n && r.push(n);
 	}
-	return t.id && zl(r[r.length - 1]) !== zl(n) && r.push(n), r.join(" › ");
+	return t.id && Bl(r[r.length - 1]) !== Bl(n) && r.push(n), r.join(" › ");
 }
-s("joe-signpost", Bl);
+s("joe-signpost", Vl);
 //#endregion
 //#region src/pages/settings/index.ts
-var Hl = {
+var Ul = {
 	operation: "mdi:tune-variant",
 	rules: "mdi:format-list-checks",
 	notify: "mdi:bell-outline",
 	maintenance: "mdi:wrench-outline",
 	about: "mdi:information-outline"
-}, Ul = class extends j {
+}, Wl = class extends j {
 	constructor(...e) {
 		super(...e), this.prefix = A, this.checks = [];
 	}
@@ -22439,7 +22510,7 @@ var Hl = {
 		let t = this.route?.section ?? _e.settings, n = pe.settings.map((t) => ({
 			id: t,
 			label: e(`nav.settings.${t}`),
-			icon: Hl[t]
+			icon: Ul[t]
 		}));
 		return k`${br(e, this.prefix, "settings", n, t)}
       <div class="body">${this.renderSignpost()}${this.renderSection(t)}</div>`;
@@ -22508,32 +22579,32 @@ var Hl = {
 		}
 	}
 };
-y([O({ attribute: !1 })], Ul.prototype, "hass", void 0), y([O({ attribute: !1 })], Ul.prototype, "t", void 0), y([O({ attribute: !1 })], Ul.prototype, "state", void 0), y([O({ attribute: !1 })], Ul.prototype, "route", void 0), y([O({ attribute: !1 })], Ul.prototype, "prefix", void 0), y([O({ attribute: !1 })], Ul.prototype, "info", void 0), y([O({ attribute: !1 })], Ul.prototype, "discovery", void 0), y([O({ attribute: !1 })], Ul.prototype, "checks", void 0), s("joe-settings-page", Ul);
+y([O({ attribute: !1 })], Wl.prototype, "hass", void 0), y([O({ attribute: !1 })], Wl.prototype, "t", void 0), y([O({ attribute: !1 })], Wl.prototype, "state", void 0), y([O({ attribute: !1 })], Wl.prototype, "route", void 0), y([O({ attribute: !1 })], Wl.prototype, "prefix", void 0), y([O({ attribute: !1 })], Wl.prototype, "info", void 0), y([O({ attribute: !1 })], Wl.prototype, "discovery", void 0), y([O({ attribute: !1 })], Wl.prototype, "checks", void 0), s("joe-settings-page", Wl);
 //#endregion
 //#region src/energy-joe-panel.ts
-var Wl = [
+var Gl = [
 	"simulation",
 	"advisory",
 	"live",
 	"off"
-], Gl = {
+], Kl = {
 	simulation: "mdi:pause",
 	advisory: "mdi:comment-question-outline",
 	live: "mdi:play",
 	off: "mdi:power"
-}, Kl = Wl, ql = {
+}, ql = Gl, Jl = {
 	overview: "mdi:view-dashboard-outline",
 	plan: "mdi:weather-night",
 	review: "mdi:history",
 	devices: "mdi:power-plug-outline",
 	household: "mdi:account-group-outline",
 	settings: "mdi:cog-outline"
-}, Jl = [
+}, Yl = [
 	"overview",
 	"devices",
 	"household",
 	"settings"
-], Yl = ["action", "battery"], Xl = [
+], Xl = ["action", "battery"], Zl = [
 	"devices",
 	"household",
 	"overview",
@@ -22584,7 +22655,7 @@ var Wl = [
 	updated() {
 		this.observeHead();
 		let e = this.joe;
-		e?.onboarding.completed && !this.climateRequested && Xl.includes(this.current.tab) && this.loadClimate(), !(!e || this.discovering || this.discoveryFailed) && (!e.onboarding.completed && e.onboarding.step === "scan" && !this.adopted ? this.scan() : !this.discovery && (e.onboarding.completed ? Jl.includes(this.current.tab) || Yl.includes(this.editor?.editor ?? "") : e.onboarding.step !== "welcome") && this.look());
+		e?.onboarding.completed && !this.climateRequested && Zl.includes(this.current.tab) && this.loadClimate(), !(!e || this.discovering || this.discoveryFailed) && (!e.onboarding.completed && e.onboarding.step === "scan" && !this.adopted ? this.scan() : !this.discovery && (e.onboarding.completed ? Yl.includes(this.current.tab) || Xl.includes(this.editor?.editor ?? "") : e.onboarding.step !== "welcome") && this.look());
 	}
 	async loadClimate() {
 		if (this.hass) {
@@ -22712,7 +22783,7 @@ var Wl = [
             class=${n === t ? "on" : ""}
             aria-current=${n === t ? "page" : "false"}
             @click=${w(i)}
-            ><ha-icon icon=${ql[n]}></ha-icon><span class="label">${e(`tab.${n}`)}</span></a
+            ><ha-icon icon=${Jl[n]}></ha-icon><span class="label">${e(`tab.${n}`)}</span></a
           >`;
 		})}
     </nav>`;
@@ -22852,8 +22923,8 @@ var Wl = [
           ${_}
           ${this.renderReadiness(e)}
           <div class="modes" role="group" aria-labelledby="mode-title">
-            ${Wl.map((n) => {
-			let r = Kl.includes(n);
+            ${Gl.map((n) => {
+			let r = ql.includes(n);
 			return k`<button
                 type="button"
                 class="mode ${n}"
@@ -22861,7 +22932,7 @@ var Wl = [
                 ?disabled=${!r}
                 @click=${() => this.chooseMode(n)}
               >
-                <span class="knob"><ha-icon icon=${Gl[n]}></ha-icon></span>
+                <span class="knob"><ha-icon icon=${Kl[n]}></ha-icon></span>
                 <span class="label">
                   <b>${e(`mode.${n}`)}</b>
                   <small>${e(`mode.${n}.desc`)}</small>

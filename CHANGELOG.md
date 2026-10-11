@@ -3,6 +3,11 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.21
+
+- Auto › Termine: Neue Erklärung „Wie funktioniert das mit dem Kalender?“ – warum es einen eigenen Kalender für das Auto gibt, wie sich der Kalender des Autos und die Kalender der Personen unterscheiden, die drei Wege, wie ein Termin hineinkommt (fertiger Kalender, Postfach ohne Kalender, Postfach mit Kalender), ein Beispiel von der Einladung bis zum Laden und was zählt. Sie ist offen, solange noch nichts eingerichtet ist, danach mit einem Tipp aufklappbar.
+- Der Hinweis über den Terminen sagt jetzt, dass „Laden nach Bedarf“ auch gespeichert sein muss.
+
 ## 0.9.20
 
 - Auto: Die Termine (wessen Termine zählen, Kalender des Autos, Postfach, Konto) lassen sich auf der Autoseite jetzt immer einstellen – auch bevor „Laden nach Bedarf“ an ist. Bisher war der Bereich bis dahin ausgeblendet.

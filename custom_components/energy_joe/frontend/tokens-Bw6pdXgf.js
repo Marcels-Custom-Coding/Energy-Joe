@@ -2702,7 +2702,26 @@ var Pe = {
 	"devices.other.lead": "Alle Zähler aus deinem Energie-Dashboard. Sag mir, was jedes Gerät ist und wann es läuft – dann rechne ich richtig. Ein Gerät, das nachts laufen soll, schalte ich in der günstigen Zeit ein.",
 	"devices.other.empty": "Im Energie-Dashboard sind keine weiteren Geräte eingetragen.",
 	"devices.car.terms": "Termine",
-	"devices.car.terms_off": "Du kannst die Termine schon einstellen. Sie zählen, sobald oben unter Steuern „Laden nach Bedarf“ an ist.",
+	"devices.car.terms_off": "Du kannst die Termine schon einstellen. Sie zählen, sobald oben unter Steuern „Laden nach Bedarf“ an und gespeichert ist.",
+	"car.explain.title": "Wie funktioniert das mit dem Kalender?",
+	"car.explain.why": "Damit ich nur so viel lade, wie das Auto morgen wirklich braucht, muss ich wissen, **wohin es fährt**. Das lese ich aus Terminen mit Ort. Wichtig ist dabei: In euren eigenen Kalendern stehen auch Termine, zu denen ihr mit dem Rad, der Bahn oder einem anderen Auto fahrt. Darum gibt es einen **eigenen Kalender nur für dieses Auto**: Was dort steht, ist sicher eine Fahrt mit genau diesem Auto.",
+	"car.explain.two": "Zwei Arten von Terminen",
+	"car.explain.car_cal": "**Kalender von „{name}“:** Jeder Termin mit Ort darin ist eine Fahrt mit diesem Auto. Das ist der genaue Weg.",
+	"car.explain.persons": "**Kalender der Personen** („Wessen Termine zählen“): Deren Termine mit Ort zähle ich auch als Fahrt mit diesem Auto. Das passt nur, wenn diese Personen meistens mit diesem Auto fahren. Wählst du hier niemanden aus, zählt nur der Kalender des Autos.",
+	"car.explain.ways": "Wie kommt ein Termin in den Kalender des Autos? Drei Wege – du wählst unten einen:",
+	"car.explain.way.calendar": "**Fertiger Kalender:** Ihr habt schon einen Kalender nur fürs Auto (z. B. einen geteilten Google- oder iCloud-Kalender „Auto“) und er ist in Home Assistant eingebunden. Wer mit dem Auto fährt, trägt den Termin dort ein oder kopiert ihn hinein.",
+	"car.explain.way.mailbox": "**Postfach ohne Kalender:** Das Auto bekommt eine eigene E-Mail-Adresse (z. B. kona123@web.de). Wer das Auto braucht, **lädt diese Adresse zu seinem Termin ein** – wie einen Kollegen. Ich hole die Einladung, sage zu und trage den Termin in meinen Kalender für das Auto ein.",
+	"car.explain.way.account": "**Postfach mit Kalender:** Wie eben, nur hat die Adresse selbst einen Kalender (Google, Microsoft, iCloud, Infomaniak). Die Einladung landet dort von allein, ich lese diesen Kalender und sage zu.",
+	"car.explain.example.title": "Ein Beispiel",
+	"car.explain.example.1": "Du hast am Dienstag um 9 Uhr einen Termin beim Kunden, Ort: „Hauptstraße 5, Köln“.",
+	"car.explain.example.2": "Du nimmst „{name}“ und lädst deshalb die Adresse des Autos zum Termin ein (oder trägst ihn in den Kalender des Autos ein).",
+	"car.explain.example.3": "Der Termin steht damit im Kalender von „{name}“. Ich rechne die Strecke dorthin aus (mit „Hin und zurück“ doppelt) und lege die Reserve drauf.",
+	"car.explain.example.4": "In der Nacht auf Dienstag lade ich nur, was dem Auto dafür fehlt, und zwar zur günstigsten Zeit.",
+	"car.explain.rules": "Gut zu wissen",
+	"car.explain.rule.place": "Nur Termine **mit Ort** zählen – ohne Ort weiß ich nicht, wohin es geht.",
+	"car.explain.rule.online": "Online-Termine (Teams, Zoom & Co.) lasse ich weg.",
+	"car.explain.rule.twice": "Steht derselbe Termin im Kalender des Autos und einer Person, zähle ich ihn nur einmal.",
+	"car.explain.rule.none": "Steht morgen gar nichts im Kalender, nehme ich eure übliche Strecke am Tag.",
 	"action.need.max_soc": "Höchstens laden bis",
 	"action.need.capacity_sensor": "Akkugröße vom Sensor",
 	"action.need.consumption_sensor": "Verbrauch vom Sensor",
@@ -5627,7 +5646,26 @@ var Pe = {
 	"devices.other.lead": "All meters from your Energy dashboard. Tell me what each device is and when it runs – then my numbers are right. A device that should run at night I switch on in the cheap hours.",
 	"devices.other.empty": "There are no more devices in the Energy dashboard.",
 	"devices.car.terms": "Appointments",
-	"devices.car.terms_off": "You can set up the appointments already. They count once “Charge by need” is on under Steering above.",
+	"devices.car.terms_off": "You can set up the appointments already. They count once “Charge by need” is on under Steering above and saved.",
+	"car.explain.title": "How does the calendar work?",
+	"car.explain.why": "To charge only what the car really needs tomorrow, I have to know **where it drives**. I read that from appointments with a place. The catch: your own calendars also hold appointments you go to by bike, train or another car. That is why there is a **calendar just for this car**: whatever is in it is surely a trip with exactly this car.",
+	"car.explain.two": "Two kinds of appointments",
+	"car.explain.car_cal": "**Calendar of “{name}”:** every appointment with a place in it is a trip with this car. This is the precise way.",
+	"car.explain.persons": "**People's calendars** (“Whose appointments count”): their appointments with a place count as trips with this car too. That only fits if these people mostly drive this car. If you pick nobody here, only the car's calendar counts.",
+	"car.explain.ways": "How does an appointment get into the car's calendar? Three ways – pick one below:",
+	"car.explain.way.calendar": "**Ready-made calendar:** you already have a calendar just for the car (e.g. a shared Google or iCloud calendar “Car”) and it is in Home Assistant. Whoever takes the car adds the appointment there or copies it in.",
+	"car.explain.way.mailbox": "**Mailbox without calendar:** the car gets its own e-mail address (e.g. kona123@web.de). Whoever needs the car **invites this address to their appointment** – like a colleague. I fetch the invitation, accept it and put the appointment into my calendar for the car.",
+	"car.explain.way.account": "**Mailbox with calendar:** as above, but the address has a calendar of its own (Google, Microsoft, iCloud, Infomaniak). The invitation lands there by itself; I read that calendar and accept there.",
+	"car.explain.example.title": "An example",
+	"car.explain.example.1": "On Tuesday at 9:00 you have a meeting at a customer's, place: “Hauptstraße 5, Köln”.",
+	"car.explain.example.2": "You take “{name}”, so you invite the car's address to the meeting (or add it to the car's calendar).",
+	"car.explain.example.3": "The appointment is now in the calendar of “{name}”. I work out the distance (doubled with “There and back”) and add the reserve.",
+	"car.explain.example.4": "In the night before Tuesday I charge only what the car is missing for it, at the cheapest time.",
+	"car.explain.rules": "Good to know",
+	"car.explain.rule.place": "Only appointments **with a place** count – without one I don't know where to go.",
+	"car.explain.rule.online": "I leave out online meetings (Teams, Zoom & co.).",
+	"car.explain.rule.twice": "If the same appointment is in the car's calendar and a person's, I count it once.",
+	"car.explain.rule.none": "If nothing is in the calendar for tomorrow, I use your usual distance per day.",
 	"action.need.max_soc": "Charge at most to",
 	"action.need.capacity_sensor": "Battery size from a sensor",
 	"action.need.consumption_sensor": "Consumption from a sensor",
@@ -6524,14 +6562,14 @@ function qe(e, t, n) {
 }
 //#endregion
 //#region src/define.ts
-var Je = "0.9.20";
+var Je = "0.9.21";
 function Ye(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Je, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.20" && Ze();
+	n.joeVersion !== "0.9.21" && Ze();
 }
 var Xe = !1;
 function Ze() {

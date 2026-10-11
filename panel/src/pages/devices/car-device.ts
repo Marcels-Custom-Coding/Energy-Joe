@@ -19,6 +19,11 @@ import type { CarConfig, CarRole, JoeState, PlanAction } from "../../types";
 import { deviceFrame, frameFromEntry, frameStyles } from "./device-frame";
 import { DeviceSection } from "./section-base";
 
+/** A line of text where "**word**" is shown bold. */
+function rich(text: string): TemplateResult {
+  return html`${text.split(/\*\*(.+?)\*\*/).map((part, i) => (i % 2 ? html`<strong>${part}</strong>` : part))}`;
+}
+
 /** The values shown under Jetzt, each with where it comes from. */
 const SHOWN: CarRole[] = ["soc", "range", "odometer", "plugged", "location", "outside_temp"];
 
@@ -42,6 +47,39 @@ export class JoeCarDevice extends DeviceSection {
     learnedStyles,
     actionPageStyles,
     css`
+      details.explain {
+        margin: 0 0 14px;
+        border-radius: 12px;
+        background: var(--joe-surface-2);
+      }
+      details.explain summary {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .explain-body {
+        padding: 0 14px 12px;
+        line-height: 1.5;
+      }
+      .explain-body h4 {
+        margin: 14px 0 4px;
+        font-size: 14px;
+      }
+      .explain-body p,
+      .explain-body ul,
+      .explain-body ol {
+        margin: 0 0 6px;
+      }
+      .explain-body ul,
+      .explain-body ol {
+        padding-left: 20px;
+      }
+      .explain-body li {
+        margin: 2px 0;
+      }
       .car-cal {
         display: flex;
         align-items: center;
@@ -155,7 +193,8 @@ export class JoeCarDevice extends DeviceSection {
           title: t("devices.car.terms"),
           tip: "car_terms",
           // Always set up here; the appointments only count with charging by need on.
-          body: html`${need.enabled ? this.calendarLine(t, joe, car) : html`<p class="muted">${t("devices.car.terms_off")}</p>`}
+          body: html`${this.explain(t, car)}
+            ${need.enabled ? this.calendarLine(t, joe, car) : html`<p class="muted">${t("devices.car.terms_off")}</p>`}
             <joe-car-steer
               .hass=${hass}
               .t=${t}
@@ -274,6 +313,44 @@ export class JoeCarDevice extends DeviceSection {
           need,
         };
     return html`<joe-car-need .hass=${this.hass} .t=${t} .action=${action} .roundTrip=${car.need.round_trip ?? true}></joe-car-need>`;
+  }
+
+  /** How the calendars work together, in plain words with an example: open
+   * as long as nothing is set up, a tap away afterwards. */
+  private explain(t: Translate, car: CarConfig): TemplateResult {
+    const need = car.need;
+    const set = Boolean(need.calendars?.length || need.source === "mailbox" || need.source === "account");
+    return html`<details class="explain" ?open=${!set} data-notip>
+      <summary>${t("car.explain.title")}</summary>
+      <div class="explain-body">
+        <p>${rich(t("car.explain.why"))}</p>
+        <h4>${t("car.explain.two")}</h4>
+        <ul>
+          <li>${rich(t("car.explain.car_cal", { name: car.name }))}</li>
+          <li>${rich(t("car.explain.persons"))}</li>
+        </ul>
+        <h4>${t("car.explain.ways")}</h4>
+        <ul>
+          <li>${rich(t("car.explain.way.calendar"))}</li>
+          <li>${rich(t("car.explain.way.mailbox"))}</li>
+          <li>${rich(t("car.explain.way.account"))}</li>
+        </ul>
+        <h4>${t("car.explain.example.title")}</h4>
+        <ol>
+          <li>${rich(t("car.explain.example.1"))}</li>
+          <li>${rich(t("car.explain.example.2", { name: car.name }))}</li>
+          <li>${rich(t("car.explain.example.3", { name: car.name }))}</li>
+          <li>${rich(t("car.explain.example.4"))}</li>
+        </ol>
+        <h4>${t("car.explain.rules")}</h4>
+        <ul>
+          <li>${rich(t("car.explain.rule.place"))}</li>
+          <li>${rich(t("car.explain.rule.online"))}</li>
+          <li>${rich(t("car.explain.rule.twice"))}</li>
+          <li>${rich(t("car.explain.rule.none"))}</li>
+        </ul>
+      </div>
+    </details>`;
   }
 
   /** Which calendars the car reads and whether that works. */
