@@ -35,7 +35,7 @@ from homeassistant.util import dt as dt_util
 
 from ..const import DOMAIN
 from ..observe.readings import distance_km, measurement_kw, number, solar_kw
-from ..plan import surplus as day_surplus
+from ..plan import cars, surplus as day_surplus
 from ..plan.actions import condition_met
 from . import automations as battery_automations, evcc, team as team_rules
 from .actions import ActionAdapter
@@ -217,6 +217,8 @@ class JoeExecutor:
         self._watched: tuple[str, ...] = ()
         self._last_release_try: datetime | None = None
         self.notifier: Any = None
+        # Which car is plugged in where (control/cars.py; set by the runtime).
+        self.cars: Any = None
         # Called with a battery id and the reference Joe learned (W).
         self.on_learned: Callable[[str, float], None] | None = None
         self.testing: dict[str, Any] | None = None
@@ -2166,6 +2168,24 @@ class JoeExecutor:
 
     # --- charging to a level by hand ----------------------------------------
 
+    def _car_need(self, action_id: str) -> dict[str, Any]:
+        """The need of the car plugged into a charge point (raises "no_car")."""
+        if self.cars is not None:
+            need = self.cars.need_at(action_id)
+        else:
+            config = self._config()
+            found = cars.detect_all(config, self._hass.states.get).get(action_id) or {}
+            car = cars.car_by_id(config, found.get("car"))
+            action = cars.action_by_id(config, action_id)
+            need = (
+                cars.need_for(self._hass.states.get, car, action.get("point"))
+                if car is not None and action is not None
+                else None
+            )
+        if need is None:
+            raise ValueError("no_car")
+        return need
+
     async def async_boost(
         self, action_id: str, target: float | None, unit: str = "%"
     ) -> None:
@@ -2185,7 +2205,7 @@ class JoeExecutor:
                 self.data["boost"].pop(action_id, None)
             await self.async_check()
             return
-        need = action.get("need") or {}
+        need = self._car_need(action_id)
         sensor = need.get("soc_entity") if unit == "%" else need.get("range_entity")
         if not sensor:
             raise ValueError("no_sensor")
@@ -2578,7 +2598,7 @@ class JoeExecutor:
             )
             if action is None or action["kind"] != "switch":
                 raise ValueError("unknown_action")
-            need = action.get("need") or {}
+            need = self._car_need(action_id)
             sensor = need.get("soc_entity") if unit == "%" else need.get("range_entity")
             if not sensor:
                 raise ValueError("no_sensor")

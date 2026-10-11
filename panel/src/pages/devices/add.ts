@@ -2,17 +2,19 @@ import { css, html, nothing, type PropertyValues, type TemplateResult } from "li
 import { property, state } from "lit/decorators.js";
 import { keyed } from "lit/directives/keyed.js";
 import { displayTitle } from "../../components/bits";
+import { newCar } from "../../components/car-steer";
 import "../../components/sheet";
 import { tip } from "../../components/tip";
-import type { ConfigChange } from "../../config";
+import { carRoute, sourceName } from "../../cars";
+import { isIgnored, saveConfig, withIgnored, type ConfigChange } from "../../config";
 import { define } from "../../define";
-import { actionPlace, addRoute, ignoredBatteries, newFindings, type AddKind } from "../../device-model";
+import { actionPlace, addRoute, deviceRoute, ignoredBatteries, newFindings, type AddKind } from "../../device-model";
 import "../../editors/action-editor";
 import type { ActionTemplate } from "../../editors/action-editor";
 import type { Translate } from "../../i18n";
 import { closeSheet, href, navigate, onLink, type Route } from "../../router";
 import { shared } from "../../styles/shared";
-import type { ActionConfig, BatteryFinding } from "../../types";
+import type { ActionConfig, BatteryFinding, CarSourceConfig, JoeConfig } from "../../types";
 import { ignoreFinding, pickBattery, useBattery } from "./device-actions";
 import { DeviceSection } from "./section-base";
 
@@ -20,6 +22,7 @@ import { DeviceSection } from "./section-base";
 const CHOICES: { kind: AddKind | "climate" | "meter"; icon: string }[] = [
   { kind: "battery", icon: "mdi:home-battery-outline" },
   { kind: "car", icon: "mdi:car-electric" },
+  { kind: "wallbox", icon: "mdi:ev-station" },
   { kind: "hot_water", icon: "mdi:water-boiler" },
   { kind: "climate", icon: "mdi:thermostat" },
   { kind: "night", icon: "mdi:weather-night" },
@@ -27,8 +30,8 @@ const CHOICES: { kind: AddKind | "climate" | "meter"; icon: string }[] = [
 ];
 
 /** Which new night action each kind starts from (editors/action-editor.ts). */
-const TEMPLATES: Record<"car" | "hot_water" | "night", ActionTemplate> = {
-  car: "ev",
+const TEMPLATES: Record<"wallbox" | "hot_water" | "night", ActionTemplate> = {
+  wallbox: "ev",
   hot_water: "hot_water",
   night: "custom",
 };
@@ -42,12 +45,14 @@ const ELSEWHERE: Record<string, Route> = {
 
 /**
  * "+ Hinzufügen": an addressed sheet (/devices/add[/<kind>[/<consumerId>]])
- * over the page it was opened from. Speicher are taken over or picked here;
- * Auto, Warmwasser and "Gerät, das nachts laufen soll" use the action editor.
+ * over the page it was opened from. Speicher are taken over or picked here, an
+ * Auto is taken over from what Joe sees (evcc, the car maker's integration)
+ * or made by hand; Wallbox, Warmwasser and "Gerät, das nachts laufen soll"
+ * use the action editor.
  * Once saved, the new device's page replaces the sheet.
  */
 export class JoeDeviceAdd extends DeviceSection {
-  /** battery | car | hot_water | night (climate and meter jump to their group); empty: the choices. */
+  /** battery | car | wallbox | hot_water | night (climate and meter jump to their group); empty: the choices. */
   @property({ attribute: false }) kind?: string;
   /**
    * A meter from the Energy dashboard the new night action is for, or what
@@ -159,6 +164,28 @@ export class JoeDeviceAdd extends DeviceSection {
         margin: 14px 0 0;
         color: var(--joe-ink-2);
       }
+      .by-hand {
+        display: grid;
+        gap: 8px;
+        margin-top: 18px;
+        padding-top: 14px;
+        border-top: 1px solid var(--joe-line);
+      }
+      .by-hand .field-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 600;
+      }
+      .by-hand .row-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .by-hand .input {
+        flex: 1 1 180px;
+        min-width: 0;
+      }
     `,
   ];
 
@@ -183,6 +210,8 @@ export class JoeDeviceAdd extends DeviceSection {
     >
       ${this.kind === "battery"
         ? this.renderBattery(t)
+        : this.kind === "car"
+          ? this.renderCar(t)
         : this.kind && this.kind in TEMPLATES
           ? this.renderAction(t, this.kind as keyof typeof TEMPLATES)
           : this.renderChoices(t)}
@@ -270,6 +299,89 @@ export class JoeDeviceAdd extends DeviceSection {
       </div>`;
   }
 
+  /** A car: one Joe sees (evcc's vehicle or the car maker's integration), or one by hand. */
+  private renderCar(t: Translate): TemplateResult {
+    const config = this.state!.config;
+    const linked = new Set((config.cars ?? []).flatMap((c) => c.sources.map((s) => s.id)));
+    const wanted = this.consumer?.startsWith("car:") ? this.consumer.slice(4) : "";
+    const key = (s: CarSourceConfig) => `car:${s.device_id ?? s.id}`;
+    const found = (this.discovery?.car_sources ?? []).filter((s) => !linked.has(s.id));
+    // The one "Neu gefunden" offered comes first.
+    found.sort((a, b) => Number(b.device_id === wanted) - Number(a.device_id === wanted));
+    return html`${this.backToChoices(t)}
+      <div data-tipped>
+        <div class="sheet-title">${displayTitle(t("devices.add.car.title"), "h2", tip(t, "devices_add_car"))}</div>
+        <p class="lead">${t("devices.add.car.lead")}</p>
+        ${found.length
+          ? html`<ul class="found">
+              ${found.map(
+                (source) => html`<li>
+                  <span class="what">
+                    <b>${source.name ?? source.id}</b>
+                    <small>
+                      ${t("car.source.from", { from: sourceName(t, source) })}${isIgnored(config, key(source)) ? ` · ${t("devices.add.battery.ignored")}` : ""}
+                    </small>
+                  </span>
+                  <span class="row-actions">
+                    <button type="button" class="mini-btn go" ?disabled=${Boolean(this.busy)} @click=${() => this.useCar(source)}>
+                      ${t(isIgnored(config, key(source)) ? "devices.add.battery.use" : "devices.found.use")}
+                    </button>
+                    ${isIgnored(config, key(source))
+                      ? nothing
+                      : html`<button
+                      type="button"
+                      class="mini-btn quiet"
+                      ?disabled=${Boolean(this.busy)}
+                      @click=${() => this.ignore(key(source))}
+                    >
+                      ${t("devices.found.ignore")}
+                    </button>`}
+                  </span>
+                </li>`,
+              )}
+            </ul>`
+          : html`<p class="empty">${t("devices.add.car.none")}</p>`}
+      </div>
+      <form
+        class="by-hand"
+        data-tipped
+        @submit=${(ev: Event) => {
+          ev.preventDefault();
+          const input = (ev.target as HTMLFormElement).querySelector("input") as HTMLInputElement;
+          void this.makeCar(input.value.trim());
+        }}
+      >
+        <label class="field-label" for="new-car">${t("devices.add.car.by_hand")} ${tip(t, "devices_add_car_hand")}</label>
+        <span class="row-actions">
+          <input id="new-car" class="input" type="text" maxlength="60" placeholder=${t("devices.add.car.name")} />
+          <button type="submit" class="btn btn-secondary" ?disabled=${Boolean(this.busy)}>${t("devices.add.car.make")}</button>
+        </span>
+      </form>`;
+  }
+
+  /** A car from what Joe sees: saved, then its page. */
+  private async useCar(source: CarSourceConfig): Promise<void> {
+    this.busy = source.id;
+    const name = (source.name ?? "").replace(/\s*\[[^\]]*\]\s*/g, " ").trim();
+    const id = freeCarId(this.state!.config, name || "car");
+    const ok = await saveConfig(this, {
+      cars: { [id]: { ...newCar(name || id), sources: [source] } },
+      answers: { ignored: withIgnored(this.state!.config, `car:${source.device_id ?? source.id}`, false) },
+    });
+    this.busy = "";
+    if (ok) navigate(this, carRoute(id), { replace: true });
+  }
+
+  /** A car by hand (its sensors are picked on its page under Quellen). */
+  private async makeCar(name: string): Promise<void> {
+    const label = name || this.t!("devices.add.car.name");
+    this.busy = "hand";
+    const id = freeCarId(this.state!.config, label);
+    const ok = await saveConfig(this, { cars: { [id]: newCar(label) } });
+    this.busy = "";
+    if (ok) navigate(this, carRoute(id, "sources"), { replace: true });
+  }
+
   private renderAction(t: Translate, kind: keyof typeof TEMPLATES): TemplateResult {
     const joe = this.state!;
     const sub = this.consumer ?? "";
@@ -289,7 +401,6 @@ export class JoeDeviceAdd extends DeviceSection {
           .config=${joe.config}
           .discovery=${this.discovery}
           actionId=${`new:${TEMPLATES[kind]}`}
-          section=${kind === "car" ? "need" : ""}
           consumer=${found ? "" : sub}
           found=${found}
           subtitle=${what ? t("devices.add.for", { name: what }) : ""}
@@ -326,7 +437,7 @@ export class JoeDeviceAdd extends DeviceSection {
     if (saved && config && (await (saved.result ?? Promise.resolve(false)))) {
       const action = saved.action;
       const place = actionPlace({ ...config, actions: [...config.actions.filter((a) => a.id !== action.id), action] }, action);
-      navigate(this, { tab: "devices", section: place.group, id: place.id }, { replace: true });
+      navigate(this, deviceRoute(place), { replace: true });
       return;
     }
     closeSheet(this, this.behind);
@@ -362,6 +473,19 @@ export class JoeDeviceAdd extends DeviceSection {
     this.dispatchEvent(new CustomEvent("joe-rediscover", { bubbles: true, composed: true }));
     navigate(this, { tab: "devices", section: "all" }, { replace: true });
   }
+}
+
+/** A free id for a new car ("car_kona", "car_kona_2", …). */
+function freeCarId(config: JoeConfig, name: string): string {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  const base = `car_${slug || "car"}`.slice(0, 40);
+  const known = new Set((config.cars ?? []).map((c) => c.id));
+  let id = base;
+  for (let n = 2; known.has(id); n++) id = `${base}_${n}`;
+  return id;
 }
 
 define("joe-device-add", JoeDeviceAdd);

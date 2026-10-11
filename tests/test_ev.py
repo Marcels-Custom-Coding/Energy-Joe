@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 
 from custom_components.energy_joe import model
-from custom_components.energy_joe.discovery import discover
+from custom_components.energy_joe.discovery import car_updates, discover
 from custom_components.energy_joe.learn.models import car_days, car_model
 from custom_components.energy_joe.plan.actions import plan_actions
 from custom_components.energy_joe.plan.ev import (
@@ -28,7 +28,24 @@ def berlin(hass: HomeAssistant) -> None:
 
 
 def need(**changes: Any) -> dict[str, Any]:
-    action = model.validate(
+    """The charge point with the need of its one car (as plan_actions gets them)."""
+    config = config_of(
+        {
+            "need": {
+                "enabled": True,
+                "soc_entity": "sensor.car_soc",
+                "range_entity": "sensor.car_range",
+                "capacity_kwh": 60.0,
+                **changes,
+            }
+        }
+    )
+    return {**config["actions"][0], "need": config["cars"][0]["need"]}
+
+
+def config_of(action: dict[str, Any]) -> dict[str, Any]:
+    """A configuration with the charge point "ev" and the car "kona" (its need)."""
+    return model.validate(
         {
             "version": model.CONFIG_VERSION,
             "actions": [
@@ -39,18 +56,12 @@ def need(**changes: Any) -> dict[str, Any]:
                     "entity_id": "select.carport_mode",
                     "on_value": "now",
                     "power_kw": 11.0,
-                    "need": {
-                        "enabled": True,
-                        "soc_entity": "sensor.car_soc",
-                        "range_entity": "sensor.car_range",
-                        "capacity_kwh": 60.0,
-                        **changes,
-                    },
+                    "point": {},
                 }
             ],
+            "cars": [{"id": "kona", "name": "Kona", "need": action["need"]}],
         }
-    )["actions"][0]
-    return action
+    )
 
 
 def test_colder_and_wetter_needs_more() -> None:
@@ -409,10 +420,18 @@ def test_cars_are_found_and_proposed() -> None:
     assert found["capacity_kwh"] == 78.0 and found["range_km"] == 310.0
     assert found["entities"]["odometer"] == "sensor.ev6_odometer"
     (action,) = result["proposal"]["actions"]
-    assert action["need"]["enabled"] is False
-    assert action["need"]["soc_entity"] == "sensor.ev6_battery"
-    assert action["need"]["capacity_entity"] == "sensor.ev6_capacity"
-    model.validate({"version": model.CONFIG_VERSION, **result["proposal"]})
+    assert action["point"]["soc_entity"] == "sensor.evcc_carport_vehicle_soc"
+    config = model.validate({"version": model.CONFIG_VERSION, **result["proposal"]})
+    # The car is its own item, its entities from its integration.
+    patch = car_updates(snapshot(entities), config)
+    assert patch is not None
+    config = model.apply_update(config, patch, "read")
+    (car,) = config["cars"]
+    assert car["need"]["enabled"] is False
+    (source,) = car["sources"]
+    assert source["entities"]["soc"] == "sensor.ev6_battery"
+    assert source["entities"]["capacity"] == "sensor.ev6_capacity"
+    assert source["entities"]["plugged"] == "binary_sensor.ev6_plugged"
 
 
 async def test_the_car_stops_at_the_level_it_needs(
@@ -433,8 +452,7 @@ async def test_the_car_stops_at_the_level_it_needs(
         "select.carport_mode", "pv", {"options": ["off", "pv", "now"]}
     )
     hass.states.async_set("sensor.car_soc", "38", {"unit_of_measurement": "%"})
-    action = need()
-    config = model.validate({"version": model.CONFIG_VERSION, "actions": [action]})
+    config = config_of(need())
     start = dt_util.start_of_local_day(date(2026, 10, 5))
     planned = {
         "id": "ev",
@@ -616,7 +634,7 @@ async def test_a_range_target_in_miles_and_tonight_by_hand(
         "select.carport_mode", "pv", {"options": ["off", "pv", "now"]}
     )
     hass.states.async_set("sensor.car_range", "120", {"unit_of_measurement": "mi"})
-    config = model.validate({"version": model.CONFIG_VERSION, "actions": [need()]})
+    config = config_of(need())
     start = dt_util.start_of_local_day(date(2026, 10, 5))
     entry = {
         "id": "ev",
@@ -672,7 +690,7 @@ async def test_a_correction_reaches_the_fixed_plan(hass: HomeAssistant) -> None:
     store = HistoryStore(hass)
     await store.async_load()
     planner = JoePlanner(hass, store, lambda: None)
-    config = model.validate({"version": model.CONFIG_VERSION, "actions": [need()]})
+    config = config_of(need())
     planner._config = config
     trips = [
         {
@@ -700,6 +718,7 @@ async def test_a_correction_reaches_the_fixed_plan(hass: HomeAssistant) -> None:
                 "need": {**found, "trips": trips},
             }
         ],
+        "cars": {"kona": {**found, "trips": trips}},
     }
     assert found["target"] == 100
     await planner.places.async_set("Hauptstr. 1", 30.0)
@@ -719,7 +738,7 @@ async def test_a_longer_trip_after_fixing_charges_tonight(hass: HomeAssistant) -
     store = HistoryStore(hass)
     await store.async_load()
     planner = JoePlanner(hass, store, lambda: None)
-    config = model.validate({"version": model.CONFIG_VERSION, "actions": [need()]})
+    config = config_of(need())
     planner._config = config
     # The place was not found when the plan was fixed: 60 % looked enough.
     trips = [
@@ -752,6 +771,7 @@ async def test_a_longer_trip_after_fixing_charges_tonight(hass: HomeAssistant) -
         "meta": {"tomorrow": {"workday": True}},
         "prices": {"night": 0.25, "day": 0.35},
         "actions": fixed,
+        "cars": {"kona": {**found, "trips": trips}},
     }
     await planner.places.async_set("Messe Hannover", 150.0)
     assert await planner.async_correct_needs("Messe Hannover") == ["ev"]
@@ -782,12 +802,7 @@ async def test_days_from_another_sensor_no_longer_count(
     monkeypatch.setattr(learner_module, "async_sensor_series", no_series)
     store = HistoryStore(hass)
     await store.async_load()
-    config = model.validate(
-        {
-            "version": model.CONFIG_VERSION,
-            "actions": [need(odometer_entity="sensor.car_odometer")],
-        }
-    )
+    config = config_of(need(odometer_entity="sensor.car_odometer"))
     learner = JoeLearner(hass, store, lambda: config, lambda *a: None, lambda: None)
     old = ["sensor.car_range", "sensor.car_soc", 60.0]
     new = ["sensor.car_odometer", "sensor.car_soc", 60.0]
@@ -799,7 +814,7 @@ async def test_days_from_another_sensor_no_longer_count(
         days[day] = {
             "workday": True,
             "car": {
-                "ev": {
+                "kona": {
                     "date": day,
                     "km": km,
                     "kwh": 0.0,
@@ -811,11 +826,11 @@ async def test_days_from_another_sensor_no_longer_count(
     learned = {
         "since": "2026-08-01",
         "reset": {},
-        "car_models": {"ev": {"workday_km": 250, "day_off_km": 250, "source": old}},
+        "car_models": {"kona": {"workday_km": 250, "day_off_km": 250, "source": old}},
     }
     result = await learner._async_cars(config, learned, date(2026, 10, 4), days)
-    assert result["ev"]["workday_km"] == 30
+    assert result["kona"]["workday_km"] == 30
     # Learned from the old sensor: gone, not kept.
-    assert "day_off_km" not in result["ev"]
-    assert result["ev"]["source"] == new
+    assert "day_off_km" not in result["kona"]
+    assert result["kona"]["source"] == new
     await store.async_unload()

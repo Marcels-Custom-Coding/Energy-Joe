@@ -29,11 +29,9 @@ KEEP = timedelta(days=60)
 def mailbox_cars(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Cars charged by need whose mailbox has no calendar: each gets Joe's."""
     return [
-        a
-        for a in config["actions"]
-        if a["kind"] == "switch"
-        and (a.get("need") or {}).get("enabled")
-        and a["need"].get("source") == "mailbox"
+        c
+        for c in config.get("cars") or []
+        if (c.get("need") or {}).get("enabled") and c["need"].get("source") == "mailbox"
     ]
 
 
@@ -44,13 +42,12 @@ def calendar_cars(
     every car had one) trips entered by hand there that are still to come."""
     now = now or dt_util.now()
     return [
-        a
-        for a in config["actions"]
-        if a["kind"] == "switch"
-        and (a.get("need") or {}).get("enabled")
+        c
+        for c in config.get("cars") or []
+        if (c.get("need") or {}).get("enabled")
         and (
-            a["need"].get("source") == "mailbox"
-            or any(e.get("source") == "manual" for e in store.events(a["id"], now))
+            c["need"].get("source") == "mailbox"
+            or any(e.get("source") == "manual" for e in store.events(c["id"], now))
         )
     ]
 

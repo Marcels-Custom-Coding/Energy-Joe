@@ -6,6 +6,7 @@ import {
   DAY_LABELS,
   type ActionConfig,
   type BatteryConfig,
+  type CarConfig,
   type ConsumerConfig,
   type JoeConfig,
   type JoeState,
@@ -138,9 +139,10 @@ export function hotWaterLearned(t: Translate, learned: Learned, action: ActionCo
 }
 
 /** A car charged by need: real consumption and the usual distance. */
-export function carLearned(t: Translate, learned: Learned, action: ActionConfig): LearnedRow {
+export function carLearned(t: Translate, learned: Learned, car: CarConfig): LearnedRow {
   const lang = t.lang;
-  const found = learned.car_models?.[action.id];
+  const found = learned.car_models?.[car.id];
+  const odometer = Boolean(car.need.odometer_entity || car.sources.some((s) => s.entities.odometer));
   const values: string[] = [];
   if (found?.consumption != null) {
     values.push(t("learn.car.consumption", { value: fixed(lang, found.consumption, 1) }));
@@ -157,9 +159,9 @@ export function carLearned(t: Translate, learned: Learned, action: ActionConfig)
     );
   }
   return {
-    name: action.name,
+    name: car.name,
     values: values.length ? values : [t("learn.still")],
-    note: values.length ? undefined : t(action.need?.odometer_entity ? "learn.car.learning" : "learn.car.no_odometer"),
+    note: values.length ? undefined : t(odometer ? "learn.car.learning" : "learn.car.no_odometer"),
   };
 }
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from custom_components.energy_joe import model
-from custom_components.energy_joe.discovery import discover
+from custom_components.energy_joe.discovery import car_updates, discover
 from custom_components.energy_joe.discovery.snapshot import Snapshot
 
 from .snapshots import entity, fronius_household, generic_household, snapshot
@@ -155,11 +155,23 @@ def test_fronius_household_finds_the_car() -> None:
     assert car["name"] == "Electric car" and car["integration"] == "kia_uvo"
     assert car["capacity_kwh"] == 78.0 and car["range_km"] == 214.0
     assert not any(b["soc_entity"] == "sensor.ev_battery" for b in result["batteries"])
-    need = result["proposal"]["actions"][0]["need"]
-    assert need["enabled"] is False
-    assert need["soc_entity"] == "sensor.ev_battery"
-    assert need["range_entity"] == "sensor.ev_range"
-    assert need["odometer_entity"] == "sensor.ev_odometer"
+    # The wallbox is a charge point; the car is its own item with its source.
+    point = result["proposal"]["actions"][0]["point"]
+    assert point["connected_entity"] == "binary_sensor.evcc_carport_connected"
+    config = model.adopt_proposal(model.default_config(), result["proposal"])
+    patch = car_updates(fronius_household(), config)
+    assert patch is not None
+    ((car_id, change),) = patch["cars"].items()
+    assert change["name"] == "Electric car"
+    (source,) = change["sources"]
+    assert source["kind"] == "car" and source["platform"] == "kia_uvo"
+    assert source["entities"]["soc"] == "sensor.ev_battery"
+    assert source["entities"]["range"] == "sensor.ev_range"
+    assert source["entities"]["odometer"] == "sensor.ev_odometer"
+    config = model.apply_update(config, patch, "read")
+    assert config["cars"][0]["need"]["enabled"] is False
+    # Looking again changes nothing.
+    assert car_updates(fronius_household(), config) is None
 
 
 def test_a_second_forecast_becomes_an_alternative() -> None:
@@ -430,6 +442,13 @@ def test_one_car_and_two_charge_points() -> None:
                 **ev,
             ),
         ]
-    result = discover(snapshot(entities))
-    socs = sorted(a["need"]["soc_entity"] for a in result["proposal"]["actions"])
+    snap = snapshot(entities)
+    result = discover(snap)
+    socs = sorted(a["point"]["soc_entity"] for a in result["proposal"]["actions"])
     assert socs == ["sensor.evcc_carport_vehicle_soc", "sensor.evcc_garage_vehicle_soc"]
+    # One car that may charge at both.
+    config = model.adopt_proposal(model.default_config(), result["proposal"])
+    patch = car_updates(snap, config)
+    assert patch is not None and len(patch["cars"]) == 1
+    config = model.apply_update(config, patch, "read")
+    assert all(a["point"]["cars"] is None for a in config["actions"])

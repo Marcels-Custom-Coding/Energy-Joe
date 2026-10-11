@@ -3,16 +3,16 @@ import { property } from "lit/decorators.js";
 import "../../components/car-charge";
 import { tip } from "../../components/tip";
 import { define } from "../../define";
-import { actionPlace, deviceRoute } from "../../device-model";
+import { carRoute } from "../../cars";
 import { guestToggle } from "../../household-helpers";
 import type { Translate } from "../../i18n";
 import { PANEL, href, onLink } from "../../router";
 import { shared } from "../../styles/shared";
-import type { ActionConfig, HomeAssistant, JoeState } from "../../types";
+import type { CarConfig, HomeAssistant, JoeState } from "../../types";
 
-/** Cars Joe can charge by hand: a switch with a level or range sensor (like the dashboard card "Auto laden"). */
-export function quickCars(joe: JoeState): ActionConfig[] {
-  return joe.config.actions.filter((a) => a.kind === "switch" && Boolean(a.need?.soc_entity || a.need?.range_entity));
+/** Cars Joe can charge by hand (like the dashboard card "Auto laden"); each says where it is plugged in. */
+export function quickCars(joe: JoeState): CarConfig[] {
+  return joe.config.cars ?? [];
 }
 
 /** Guest mode's switch, once it is set up under Haushalt › Wer ist da. */
@@ -115,12 +115,12 @@ export class JoeOverviewQuick extends LitElement {
         ${tip(t, "quick")}
       </div>
       ${quickCars(joe).map((car) => {
-        const to = deviceRoute(actionPlace(joe.config, car));
+        const to = carRoute(car.id);
         return html`<div class="item">
           <a class="name" href=${href(this.prefix, to)} @click=${onLink(to)}>
             <ha-icon icon="mdi:car-electric"></ha-icon>${car.name}
           </a>
-          <joe-car-charge flush .hass=${hass} .t=${t} .state=${joe} .action=${car}></joe-car-charge>
+          <joe-car-charge flush .hass=${hass} .t=${t} .state=${joe} .car=${car}></joe-car-charge>
         </div>`;
       })}
       ${guest

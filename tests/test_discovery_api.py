@@ -183,6 +183,13 @@ async def test_diagnostics_hide_personal_data(ready_hass: HomeAssistant) -> None
                     "name": "Carport",
                     "kind": "switch",
                     "entity_id": "select.carport_mode",
+                    "point": {},
+                }
+            ],
+            "cars": [
+                {
+                    "id": "kona",
+                    "name": "Kona",
                     "need": {"enabled": True, "persons": ["person.robin"]},
                 }
             ],
@@ -207,6 +214,18 @@ async def test_diagnostics_hide_personal_data(ready_hass: HomeAssistant) -> None
                 },
             }
         ],
+        "cars": {
+            "kona": {
+                "departure": "2026-10-05T08:35+02:00",
+                "trips": [
+                    {
+                        "start": "2026-10-05T09:00:00+02:00",
+                        "location": "Praxis Robinstraße 3",
+                        "minutes": 25,
+                    }
+                ],
+            }
+        },
         "meta": {"tomorrow": {"labels": {"person.robin": "office"}}},
     }
     # What Joe learned about Robin's hours at home.

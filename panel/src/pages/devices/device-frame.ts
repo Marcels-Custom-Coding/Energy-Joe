@@ -36,6 +36,8 @@ export interface DeviceFrame {
   head?: Content;
   now?: Content;
   steer?: Content;
+  /** Sections of their own after Steuern (a car's Termine and Quellen): anchor, title, body, tooltip. */
+  more?: { anchor: string; title: string; body: Content; tip?: TipName }[];
   power?: Content;
   learned?: Content;
   /** Rückblick › Gelernt anchor for "Mehr im Rückblick →" (sun|battery|devices|hot_water|car|climate …). */
@@ -121,6 +123,13 @@ function section(ctx: FrameContext, frame: DeviceFrame, name: FrameSection, body
   </section>`;
 }
 
+function moreSection(ctx: FrameContext, more: NonNullable<DeviceFrame["more"]>[number]): TemplateResult {
+  return html`<section class="card dsec" data-section=${more.anchor} data-anchor=${more.anchor} ?data-tipped=${Boolean(more.tip)}>
+    <h3 class="dsec-title">${more.title}${more.tip ? tip(ctx.t, more.tip) : nothing}</h3>
+    ${more.body}
+  </section>`;
+}
+
 function logBody(ctx: FrameContext, frame: DeviceFrame): TemplateResult | undefined {
   const log = frame.log;
   if (!log || !log.entries.some((entry) => logMatches(ctx.state?.config, entry, log.filter))) {
@@ -182,7 +191,11 @@ export function deviceFrame(ctx: FrameContext, frame: DeviceFrame): TemplateResu
       )}
       ${filled(frame.head) ? frame.head : nothing}
     </header>
-    ${FRAME_SECTIONS.map((name) => (bodies[name] !== undefined ? section(ctx, frame, name, bodies[name]!) : nothing))}
+    ${FRAME_SECTIONS.map(
+      (name) =>
+        html`${bodies[name] !== undefined ? section(ctx, frame, name, bodies[name]!) : nothing}
+        ${name === "steer" ? (frame.more ?? []).filter((m) => filled(m.body)).map((m) => moreSection(ctx, m)) : nothing}`,
+    )}
   </div>`;
 }
 

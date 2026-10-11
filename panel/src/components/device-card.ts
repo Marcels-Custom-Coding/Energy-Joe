@@ -1,4 +1,5 @@
 import { html, nothing, type TemplateResult } from "lit";
+import { carPlugText, carValue, pointText } from "../cars";
 import { addRoute, deviceRoute, type DeviceEntry, type Role } from "../device-model";
 import { formatNumber, measurementKw, numberState, sumKw } from "../entities";
 import type { Translate } from "../i18n";
@@ -49,6 +50,15 @@ export function deviceCard(t: Translate, prefix: string, d: DeviceCardData): Tem
   </article>`;
 }
 
+/** A car's level and range ("52 % · 231 km"), from where each comes now. */
+export function carLevel(t: Translate, hass: HomeAssistant, joe: JoeState, carId: string): string {
+  const soc = numberState(hass, carValue(joe, carId, "soc")?.entity);
+  const range = numberState(hass, carValue(joe, carId, "range")?.entity);
+  return [soc === null ? null : `${formatNumber(t.lang, soc, 0)} %`, range === null ? null : `${formatNumber(t.lang, range, 0)} km`]
+    .filter(Boolean)
+    .join(" · ");
+}
+
 function kw(t: Translate, value: number | null): string | undefined {
   return value === null ? undefined : t("devices.card.kw", { value: formatNumber(t.lang, value, value >= 10 ? 1 : 2) });
 }
@@ -63,7 +73,7 @@ export function deviceState(t: Translate, hass: HomeAssistant | undefined, joe: 
     return t(entry.deviceId ? "devices.card.unassigned" : "devices.card.unassigned_kind");
   }
   if (entry.setup) {
-    return t(entry.setup === "car" ? "devices.card.setup_car" : "devices.card.setup_hot_water");
+    return t(entry.setup === "wallbox" ? "devices.card.setup_car" : "devices.card.setup_hot_water");
   }
   if (entry.battery) {
     const soc = numberState(hass, entry.battery.soc_entity);
@@ -99,15 +109,17 @@ export function deviceState(t: Translate, hass: HomeAssistant | undefined, joe: 
     }
     return kw(t, entry.part === "solar" ? sumKw(hass, m?.solar_power ?? []) : measurementKw(hass, m?.home_power));
   }
+  if (entry.car && joe) {
+    // "52 % · 231 km · steckt an Parkplatz eBox"
+    return [carLevel(t, hass, joe, entry.car.id), carPlugText(t, joe, entry.car)].filter(Boolean).join(" · ");
+  }
   const action = entry.action;
+  if (entry.point && action && joe) {
+    const running = joe.control?.actions?.[action.id]?.on;
+    return [pointText(t, joe, action), running ? t("devices.card.running") : ""].filter(Boolean).join(" · ");
+  }
   if (action && joe?.control?.actions?.[action.id]?.on) {
     return t("devices.card.running");
-  }
-  if (entry.group === "car" && action?.need) {
-    const soc = numberState(hass, action.need.soc_entity);
-    const range = numberState(hass, action.need.range_entity);
-    const parts = [soc === null ? null : `${formatNumber(t.lang, soc, 0)} %`, range === null ? null : `${formatNumber(t.lang, range, 0)} km`];
-    return parts.filter(Boolean).join(" · ") || undefined;
   }
   if (entry.group === "hot_water" && action?.sensor_entity) {
     const temp = numberState(hass, action.sensor_entity);

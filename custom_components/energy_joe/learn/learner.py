@@ -14,6 +14,7 @@ from homeassistant.util import dt as dt_util
 from .. import model
 from ..observe.readings import energy_kwh, to_km
 from ..observe.store import HistoryStore
+from ..plan.cars import NEED_ENTITIES, stable_entity
 from .context import async_day_labels, async_sensor_series
 from .evaluate import evaluate
 from .learning import buffer, results, solar_factor, solar_ratios, solar_shift
@@ -367,8 +368,15 @@ class JoeLearner:
         }
         previous = learned.get("car_models") or {}
         first = (today - timedelta(days=span)).isoformat()
-        for action in config["actions"]:
-            need = action.get("need") or {}
+        for car in config.get("cars") or []:
+            # The car's own sensors (not a charge point's: those change with the car).
+            need = {
+                **(car.get("need") or {}),
+                **{
+                    field: stable_entity(car, role)
+                    for role, field in NEED_ENTITIES.items()
+                },
+            }
             odometer_id = need.get("odometer_entity")
             if not need.get("enabled") or not odometer_id or not span:
                 continue
@@ -393,7 +401,7 @@ class JoeLearner:
             # first day the recorder returns may start mid-day: it is left out.
             # Each day notes what it was worked out from; after another sensor
             # or battery size was picked, older days no longer count.
-            key = action["id"]
+            key = car["id"]
             source = [
                 odometer_id,
                 need.get("soc_entity"),

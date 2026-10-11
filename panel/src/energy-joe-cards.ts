@@ -9,7 +9,8 @@ import { translator, type Translate } from "./i18n";
 import { PANEL, href } from "./router";
 import { shared } from "./styles/shared";
 import { tokens } from "./styles/tokens";
-import type { ActionConfig, HomeAssistant, JoeState } from "./types";
+import { carPlugText, carPoint, carRoute, carValue } from "./cars";
+import type { CarConfig, HomeAssistant, JoeState } from "./types";
 
 // Dashboard cards Energy Joe brings along: "Joe heute Nacht" and "Auto laden".
 // Loaded on every page as an extra module (like the icons), so they show up in
@@ -127,6 +128,14 @@ abstract class JoeCard extends LitElement {
         color: var(--joe-muted);
         font-size: 13px;
         margin: 8px 0 0;
+      }
+      .muted.where {
+        margin: 0;
+      }
+      .next-car {
+        margin-top: 14px;
+        padding-top: 10px;
+        border-top: 1px solid var(--joe-line);
       }
     `,
   ];
@@ -262,28 +271,34 @@ class EnergyJoeCarCard extends JoeCard {
     return 4;
   }
 
-  /** The car of the config (action id), else the first one Joe charges. */
-  private car(state: JoeState): ActionConfig | undefined {
-    const cars = state.config.actions.filter((a) => a.kind === "switch" && (a.need?.soc_entity || a.need?.range_entity));
-    const wanted = typeof this.config.action === "string" ? this.config.action : undefined;
-    return cars.find((a) => a.id === wanted) ?? cars[0];
+  /** The car of the config (`car: <id>`; up to 0.9.18 `action: <id>`), else every car. */
+  private cars(state: JoeState): CarConfig[] {
+    const cars = state.config.cars ?? [];
+    const wanted = typeof this.config.car === "string" ? this.config.car : typeof this.config.action === "string" ? this.config.action : undefined;
+    const one = cars.find((c) => c.id === wanted);
+    return one ? [one] : cars;
   }
 
   protected renderCard(t: Translate, state: JoeState): TemplateResult {
-    const car = this.car(state);
-    if (!car) {
+    const cars = this.cars(state);
+    if (!cars.length) {
       return html`<p class="muted">${t("cards.car.none")}</p>`;
     }
+    return html`${cars.map((car, index) => this.renderCar(t, state, car, index > 0))}`;
+  }
+
+  private renderCar(t: Translate, state: JoeState, car: CarConfig, more: boolean): TemplateResult {
     const hass = this.hass!;
-    const need = car.need!;
-    const live = state.control?.actions?.[car.id];
-    const facts = [
-      need.soc_entity ? formatState(hass, need.soc_entity, t.lang) : null,
-      need.range_entity ? formatState(hass, need.range_entity, t.lang) : null,
-    ].filter(Boolean);
+    const point = carPoint(state, car.id);
+    const live = point ? state.control?.actions?.[point.id] : undefined;
+    const facts = (["soc", "range"] as const)
+      .map((role) => carValue(state, car.id, role)?.entity)
+      .map((entity) => (entity ? formatState(hass, entity, t.lang) : null))
+      .filter(Boolean);
     // The head opens the car's page in the panel; charging stays its own control below.
-    const carPath = href(PANEL, { tab: "devices", section: "car", id: car.id });
-    return html`<a
+    const carPath = href(PANEL, carRoute(car.id));
+    return html`<div class=${more ? "next-car" : ""}>
+      <a
         class="head"
         href=${carPath}
         @click=${(ev: MouseEvent) => {
@@ -297,7 +312,9 @@ class EnergyJoeCarCard extends JoeCard {
         <ha-icon class="chev" icon="mdi:chevron-right"></ha-icon>
       </a>
       ${facts.length ? html`<p class="big">${facts.join(" · ")}</p>` : nothing}
-      <joe-car-charge .hass=${hass} .t=${t} .state=${state} .action=${car}></joe-car-charge>`;
+      <p class="muted where">${carPlugText(t, state, car)}</p>
+      <joe-car-charge .hass=${hass} .t=${t} .state=${state} .car=${car}></joe-car-charge>
+    </div>`;
   }
 }
 

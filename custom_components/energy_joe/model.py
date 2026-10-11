@@ -23,7 +23,7 @@ from homeassistant.helpers import config_validation as cv
 from .control import week
 from .control.profiles import ADAPTERS, MODE_OPTIONS, ROLES
 
-CONFIG_VERSION = 6
+CONFIG_VERSION = 7
 
 SOURCES = ("read", "learned", "default", "user")
 TARIFF_KINDS = ("fixed_window", "dynamic", "flat", "unknown")
@@ -49,7 +49,7 @@ DAY_LABELS = ("home_office", "office", "travel", "vacation", "guests", "home")
 CONDITION_OPS = ("eq", "ne", "lt", "le", "gt", "ge")
 
 # Lists whose items have an "id"; a patch may address single items by id.
-KEYED_LISTS = ("batteries", "persons", "consumers", "actions")
+KEYED_LISTS = ("batteries", "persons", "consumers", "actions", "cars")
 # Values that are replaced as a whole instead of merged key by key.
 REPLACED = frozenset(
     {
@@ -274,9 +274,10 @@ CONDITION = vol.Schema(
 )
 
 # A night action: something besides the batteries that should run in the cheap
-# window when tomorrow brings too little sun (the car, the hot water heat pump).
+# window when tomorrow brings too little sun (a wallbox, the hot water heat pump).
 # Charging a car by need: only what tomorrow's driving (calendar trips or the
-# usual distance) plus a reserve needs, from the car's level or range.
+# usual distance) plus a reserve needs, from the car's level or range; the
+# need belongs to the car (CAR), the wallbox is a charge point (CHARGE_POINT).
 # A car's mailbox with a calendar (see accounts.py): Joe reads that calendar.
 CAR_ACCOUNT_KINDS = ("google", "outlook", "microsoft", "icloud", "infomaniak", "caldav")
 CAR_ACCOUNT = vol.Schema(
@@ -354,6 +355,77 @@ EV_NEED = vol.Schema(
         # Who may invite the car (mailbox and account): addresses or "@domain".
         vol.Optional("allowed", default=list): [str],
         vol.Optional("round_trip", default=True): bool,
+        # Never charge above this level by need (e.g. 80 % to spare the battery).
+        vol.Optional("max_soc", default=100.0): vol.All(
+            vol.Coerce(float), vol.Range(min=20, max=100)
+        ),
+    }
+)
+
+# Where a car's values come from: evcc's vehicle, the car maker's integration
+# (e.g. Hyundai) or entities chosen by hand. One car may merge several.
+CAR_SOURCE_KINDS = ("evcc", "car")
+# The roles of a car's entities (see discovery/find.py CAR_ROLES).
+CAR_ENTITY_ROLES = (
+    "soc",
+    "range",
+    "capacity",
+    "plugged",
+    "charging",
+    "odometer",
+    "consumption",
+    "outside_temp",
+    "location",
+)
+CAR_SOURCE = vol.Schema(
+    {
+        # "<kind>:<device id>": one integration's device.
+        vol.Required("id"): vol.All(str, vol.Length(min=1, max=120)),
+        vol.Optional("kind", default="car"): vol.In(CAR_SOURCE_KINDS),
+        vol.Optional("platform", default=None): vol.Any(None, str),
+        vol.Optional("device_id", default=None): vol.Any(None, str),
+        vol.Optional("name", default=None): vol.Any(None, str),
+        # evcc's id of the vehicle ("db:27" or the name in evcc.yaml), as its
+        # loadpoints show it; None: not known yet (Joe learns it).
+        vol.Optional("vehicle", default=None): vol.Any(None, str),
+        vol.Optional("entities", default=dict): {
+            vol.In(CAR_ENTITY_ROLES): cv.entity_id
+        },
+    }
+)
+# A car: everything about what it needs (see plan/cars.py). Joe charges it at
+# whichever charge point it is plugged into.
+CAR = vol.Schema(
+    {
+        vol.Required("id"): vol.All(str, vol.Length(min=1, max=120)),
+        vol.Required("name"): vol.All(str, vol.Length(min=1, max=60)),
+        vol.Optional("sources", default=list): [CAR_SOURCE],
+        # Where the car is (a device_tracker or person; None: its integration's).
+        vol.Optional("tracker_entity", default=None): _ENTITY,
+        vol.Optional("need", default=dict): EV_NEED,
+        # In the evening: tell when tomorrow needs charging but the car is not plugged in.
+        vol.Optional("remind", default=True): bool,
+        vol.Optional("remind_time", default="20:00"): _time,
+    }
+)
+# What Joe does when he cannot tell which car is plugged into a charge point.
+UNKNOWN_CAR = ("ask", "assume")
+# A charge point: a night action that switches a wallbox (evcc's mode). Joe
+# finds out which car is plugged in and charges by that car's need.
+CHARGE_POINT = vol.Schema(
+    {
+        # evcc's vehicle at the loadpoint (a select: "db:27", "null": none).
+        vol.Optional("vehicle_entity", default=None): _ENTITY,
+        vol.Optional("connected_entity", default=None): _ENTITY,
+        # evcc's values of the car at the loadpoint (evcc estimates the level
+        # while charging instead of asking the car).
+        vol.Optional("soc_entity", default=None): _ENTITY,
+        vol.Optional("range_entity", default=None): _ENTITY,
+        vol.Optional("odometer_entity", default=None): _ENTITY,
+        # Which cars may charge here (car ids); None: every car.
+        vol.Optional("cars", default=None): vol.Any(None, [str]),
+        vol.Optional("unknown", default="ask"): vol.In(UNKNOWN_CAR),
+        vol.Optional("assume_car", default=None): vol.Any(None, str),
     }
 )
 
@@ -471,7 +543,8 @@ ACTION = vol.Schema(
         vol.Optional("buffer", default=3.0): vol.All(
             vol.Coerce(float), vol.Range(min=0, max=30)
         ),
-        vol.Optional("need", default=dict): EV_NEED,
+        # A wallbox: which car is plugged in decides (see CHARGE_POINT).
+        vol.Optional("point", default=None): vol.Any(None, CHARGE_POINT),
     }
 )
 
@@ -584,6 +657,8 @@ NOTIFY = vol.Schema(
         vol.Optional("ask", default=True): bool,
         vol.Optional("problems", default=True): bool,
         vol.Optional("morning", default=False): bool,
+        # Which car is plugged in, and a car that is not plugged in but needed.
+        vol.Optional("cars", default=True): bool,
     }
 )
 
@@ -670,6 +745,7 @@ CONFIG = vol.Schema(
         vol.Optional("persons", default=list): [PERSON],
         vol.Optional("consumers", default=list): [CONSUMER],
         vol.Optional("actions", default=list): [ACTION],
+        vol.Optional("cars", default=list): [CAR],
         vol.Optional("rules", default=dict): RULES,
         vol.Optional("notify", default=dict): NOTIFY,
         vol.Optional("calendar", default=dict): CALENDAR,
@@ -690,7 +766,7 @@ def default_config() -> dict[str, Any]:
 def validate(config: dict[str, Any]) -> dict[str, Any]:
     """Validate a configuration and fill in defaults (raises vol.Invalid)."""
     data = CONFIG(deepcopy(config))
-    for key in ("batteries", "actions"):
+    for key in ("batteries", "actions", "cars"):
         ids = [item["id"] for item in data[key]]
         if len(ids) != len(set(ids)):
             raise vol.Invalid(f"{key} ids must be unique", path=[key])
@@ -920,8 +996,69 @@ def migrate(data: dict[str, Any]) -> dict[str, Any]:
         (data.get("climate") or {}).pop("home_entities", None)
     if data.get("version", 1) < 6:
         _presets_to_tags(data)
+    if data.get("version", 1) < 7:
+        _needs_to_cars(data)
     data["version"] = CONFIG_VERSION
     return validate(data)
+
+
+def is_car_action(action: dict[str, Any]) -> bool:
+    """Whether a night action of version 6 switched a wallbox for a car."""
+    need = action.get("need") or {}
+    return action.get("kind") == "switch" and bool(
+        need.get("enabled")
+        or need.get("soc_entity")
+        or need.get("range_entity")
+        or str(action.get("id", "")).startswith("ev_")
+    )
+
+
+def _needs_to_cars(data: dict[str, Any]) -> None:
+    """Version 6 kept a car's need on the wallbox's night action; now the car
+    is its own item and the action a charge point that charges whichever car
+    is plugged in.
+
+    The car keeps the action's id, so its mailbox, account, calendar, learned
+    values and day records stay with it. Its entities stay as chosen; Joe links
+    them to the integrations they come from when he looks around next.
+    """
+    provenance = data.get("provenance") or {}
+    cars = data.setdefault("cars", [])
+    known = {car.get("id") for car in cars}
+    for action in data.get("actions") or []:
+        need = action.pop("need", None) or {}
+        if not is_car_action({**action, "need": need}):
+            _forget(provenance, f"actions[{action.get('id')}].need")
+            continue
+        action_id = action["id"]
+        connected = next(
+            (
+                c["entity_id"]
+                for c in action.get("conditions") or []
+                if str(c.get("entity_id", "")).startswith("binary_sensor.")
+                and str(c.get("entity_id", "")).endswith("_connected")
+            ),
+            None,
+        )
+        action["point"] = {
+            "connected_entity": connected,
+            "cars": None,
+            "unknown": "ask",
+        }
+        # A car only where the action knew one (a level or range to read, or by need).
+        if not (
+            need.get("enabled") or need.get("soc_entity") or need.get("range_entity")
+        ):
+            _forget(provenance, f"actions[{action_id}].need")
+            continue
+        if action_id in known:
+            continue
+        cars.append({"id": action_id, "name": action["name"], "need": need})
+        known.add(action_id)
+        prefix = f"actions[{action_id}].need"
+        for path in [p for p in provenance if p == prefix or _is_below(p, prefix)]:
+            entry = provenance.pop(path)
+            provenance[f"cars[{action_id}].need{path[len(prefix) :]}"] = entry
 
 
 def _presets_to_tags(data: dict[str, Any]) -> None:

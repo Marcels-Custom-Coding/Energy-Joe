@@ -17,8 +17,9 @@ from homeassistant.util import dt as dt_util
 from ..observe.store import HistoryStore
 from .actions import plan_actions
 from .car_calendar import CarCalendarStore
+from .cars import action_by_id, car_by_id, detect_all, need_for, point_of
 from .ev import car_need
-from .inputs import DEFAULT_SEARCH, async_build_input, next_window
+from .inputs import DEFAULT_SEARCH, async_build_input, next_window, point_needs
 from .planner import make_plan
 from .trips import PlaceStore, normalize
 
@@ -57,7 +58,12 @@ class JoePlanner:
         self.accounts: Any = None
         # What the executor changed on the devices, with the values from before.
         self.held: Callable[[], dict[str, Any]] = dict
+        # Which car is plugged in at each charge point (set by the runtime).
+        self.detected: Callable[[], dict[str, dict[str, Any]]] = self._detect
         self.plan: dict[str, Any] | None = None
+
+    def _detect(self) -> dict[str, dict[str, Any]]:
+        return detect_all(self._config, self._hass.states.get) if self._config else {}
 
     @property
     def active(self) -> bool:
@@ -146,9 +152,76 @@ class JoePlanner:
         fixed = self._fixed
         config = self._config
         models = config["learned"].get("car_models") or {}
-        actions = {a["id"]: a for a in config["actions"]}
         meta = fixed.get("meta") or {}
         workday = (meta.get("tomorrow") or {}).get("workday", True)
+        detected = self.detected()
+        changed_cars: list[str] = []
+        for car_id, need in (fixed.get("cars") or {}).items():
+            car = car_by_id(config, car_id)
+            if car is None or place is None:
+                continue
+            trips = need.get("trips") or []
+            hits = [t for t in trips if normalize(t["location"]) == key]
+            if not hits:
+                continue
+            factor = 2 if (car.get("need") or {}).get("round_trip", True) else 1
+            for trip in hits:
+                trip.update(km=round(place["km"] * factor, 1), source=place["source"])
+            action = action_by_id(config, point_of(detected, car_id))
+            found = car_need(
+                need_for(
+                    self._hass.states.get,
+                    car,
+                    (action or {}).get("point") if action else None,
+                ),
+                self._hass.states.get,
+                trips,
+                models.get(car_id),
+                need.get("temp"),
+                bool(need.get("rain")),
+                workday,
+            )
+            fixed["cars"][car_id] = {**need, **found, "trips": trips}
+            changed_cars.append(car_id)
+        if not changed_cars:
+            return []
+        changed = self._replan_points(fixed, detected, changed_cars)
+        await self._history.async_update_day(
+            datetime.fromisoformat(fixed["window"]["start"]).date().isoformat(),
+            plan=fixed,
+        )
+        self.plan = fixed
+        self._changed()
+        return changed
+
+    async def async_replan_points(self) -> list[str]:
+        """Another car was plugged in (or Joe was told which): the charge
+        points follow at once. A fixed plan keeps its window; the cars' needs
+        of the evening stay, only who is plugged in where is new."""
+        if self._fixed is None:
+            if self.active:
+                await self.async_refresh()
+            return []
+        fixed = self._fixed
+        changed = self._replan_points(fixed, self.detected())
+        if changed:
+            await self._history.async_update_day(
+                datetime.fromisoformat(fixed["window"]["start"]).date().isoformat(),
+                plan=fixed,
+            )
+            self.plan = fixed
+            self._changed()
+        return changed
+
+    def _replan_points(
+        self,
+        fixed: dict[str, Any],
+        detected: dict[str, dict[str, Any]],
+        cars: list[str] | None = None,
+    ) -> list[str]:
+        """Work out the charge points of a fixed plan again (all, or where these cars are)."""
+        config = self._config
+        meta = fixed.get("meta") or {}
         sun = (
             meta.get("tomorrow_kwh")
             if "no_forecast" not in (fixed.get("notes") or [])
@@ -156,28 +229,18 @@ class JoePlanner:
         )
         start = datetime.fromisoformat(fixed["window"]["start"])
         end = datetime.fromisoformat(fixed["window"]["end"])
+        actions = {a["id"]: a for a in config["actions"]}
+        needs = point_needs(config, fixed.get("cars") or {}, detected)
+        for car_id, need in (fixed.get("cars") or {}).items():
+            need["point"] = point_of(detected, car_id)
         changed: list[str] = []
         for index, entry in enumerate(fixed.get("actions") or []):
-            need = entry.get("need")
             action = actions.get(entry["id"])
-            if not need or not action or not action.get("need"):
+            if action is None or action.get("point") is None:
                 continue
-            trips = need.get("trips") or []
-            hits = [t for t in trips if normalize(t["location"]) == key]
-            if not hits or place is None:
+            found = detected.get(entry["id"]) or {}
+            if cars is not None and found.get("car") not in cars:
                 continue
-            factor = 2 if action["need"]["round_trip"] else 1
-            for trip in hits:
-                trip.update(km=round(place["km"] * factor, 1), source=place["source"])
-            found = car_need(
-                action["need"],
-                self._hass.states.get,
-                trips,
-                models.get(entry["id"]),
-                need.get("temp"),
-                bool(need.get("rain")),
-                workday,
-            )
             again = plan_actions(
                 [action],
                 self._hass.states.get,
@@ -186,15 +249,14 @@ class JoePlanner:
                 sun,
                 self._manual(),
                 config["learned"].get("action_models") or {},
-                {entry["id"]: {**found, "trips": trips}},
+                needs,
+                detected,
             )[0]
             again["cost"] = _cost(fixed, again)
+            if _same_run(again, entry):
+                continue
             fixed["actions"][index] = again
             changed.append(entry["id"])
-        if changed:
-            await self._history.async_update_day(start.date().isoformat(), plan=fixed)
-            self.plan = fixed
-            self._changed()
         return changed
 
     async def _async_compute(self, now: datetime) -> dict[str, Any]:
@@ -208,6 +270,7 @@ class JoePlanner:
             self.calendars,
             self.accounts,
             self.held(),
+            self.detected(),
         )
         if inp is None:
             return {
@@ -337,3 +400,12 @@ def _cost(plan: dict[str, Any], action: dict[str, Any]) -> float:
                 price = prices.get("night" if hour.get("window") else "day") or 0.0
             total += (action.get("power_kw") or 0.0) * overlap / 3600 * price
     return round(total or action["energy_kwh"] * (prices.get("night") or 0.0), 2)
+
+
+def _same_run(again: dict[str, Any], entry: dict[str, Any]) -> bool:
+    """Whether an action worked out again does the same as before."""
+    keys = ("run", "start", "end", "target", "car", "plugged", "reasons")
+    return all(again.get(k) == entry.get(k) for k in keys) and (
+        (again.get("need") or {}).get("missing_kwh")
+        == (entry.get("need") or {}).get("missing_kwh")
+    )

@@ -20,6 +20,7 @@ from ..observe.records import base_home, hour_starts, local_hour
 from ..observe.store import HistoryStore
 from .actions import plan_actions, reserved_kw
 from .car_calendar import CarCalendarStore, own_events
+from .cars import action_by_id, detect_all, need_for, point_of
 from .ev import car_need
 from .planner import Battery, Hour, PlanInput, Prices, best_window
 from .prices import async_price_slots, quarters
@@ -273,6 +274,7 @@ async def async_build_input(
     calendars: CarCalendarStore | None = None,
     accounts: Any = None,
     held: dict[str, Any] | None = None,
+    detected: dict[str, dict[str, Any]] | None = None,
 ) -> tuple[PlanInput | None, list[str]]:
     """Gather everything for tonight's plan; None with reasons if there is nothing to plan."""
     tariff = config["tariff"]
@@ -423,7 +425,8 @@ async def async_build_input(
         2,
     )
     sun_tomorrow = tomorrow_kwh if "no_forecast" not in notes else None
-    needs = await async_car_needs(
+    detected = detected if detected is not None else detect_all(config, hass.states.get)
+    cars = await async_car_needs(
         hass,
         config,
         places or PlaceStore(hass),
@@ -431,7 +434,9 @@ async def async_build_input(
         outlook,
         calendars,
         accounts,
+        detected,
     )
+    needs = point_needs(config, cars, detected)
     if dynamic:
         # The cheapest window first; running actions need it long enough.
         preview = plan_actions(
@@ -443,6 +448,7 @@ async def async_build_input(
             manual or {},
             learned.get("action_models") or {},
             needs,
+            detected,
         )
 
         def _hours(action: dict[str, Any]) -> int:
@@ -489,6 +495,7 @@ async def async_build_input(
         manual or {},
         learned.get("action_models") or {},
         needs,
+        detected,
     )
     reserved = [
         reserved_kw(actions, h.start, h.start + timedelta(hours=1)) for h in hours
@@ -538,6 +545,7 @@ async def async_build_input(
             efficiency=_efficiency(efficiencies),
             notes=notes,
             actions=actions,
+            cars=cars,
             reserved=reserved,
             force_target=100.0 if balance else None,
             defer_kw=defer_kw,
@@ -566,42 +574,67 @@ async def async_car_needs(
     outlook: dict[str, Any],
     calendars: CarCalendarStore | None = None,
     accounts: Any = None,
+    detected: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, dict[str, Any]]:
-    """For each car charged by need: tomorrow's trips and what is missing."""
+    """For each car charged by need: tomorrow's trips, what is missing, and
+    the charge point it is plugged into (its values read from there)."""
     result = {}
     models = config["learned"].get("car_models") or {}
-    for action in config["actions"]:
-        need = action.get("need") or {}
-        if (
-            action["kind"] != "switch"
-            or not action.get("enabled", True)
-            or not need.get("enabled")
-        ):
+    detected = detected or {}
+    for car in config.get("cars") or []:
+        need = car.get("need") or {}
+        if not need.get("enabled"):
             continue
+        point_id = point_of(detected, car["id"])
+        action = action_by_id(config, point_id)
+        effective = need_for(
+            hass.states.get, car, (action or {}).get("point") if action else None
+        )
         own: list[dict[str, Any]] = []
         start = dt_util.start_of_local_day(day)
         if calendars is not None:
             # A mailbox without a calendar: Joe's calendar for the car. Other
             # cars: only trips entered there by hand (up to 0.3 every car had it).
             own += own_events(
-                need, calendars.events(action["id"], start, start + timedelta(days=1))
+                need, calendars.events(car["id"], start, start + timedelta(days=1))
             )
         if accounts is not None and need.get("source") == "account":
             # A mailbox with a calendar: the invitations are in there.
             own += await accounts.async_events(
-                action["id"], start, start + timedelta(days=1)
+                car["id"], start, start + timedelta(days=1)
             )
         trips = await async_trips(hass, config, need, places, day, own)
         found = car_need(
-            need,
+            effective,
             hass.states.get,
             trips,
-            models.get(action["id"]),
+            models.get(car["id"]),
             outlook["temp"],
             outlook["rain"],
             outlook["meta"]["workday"],
         )
-        result[action["id"]] = {**found, "trips": trips}
+        result[car["id"]] = {
+            **found,
+            "trips": trips,
+            "car": car["id"],
+            "name": car["name"],
+            "point": point_id,
+        }
+    return result
+
+
+def point_needs(
+    config: dict[str, Any],
+    cars: dict[str, dict[str, Any]],
+    detected: dict[str, dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    """The need of the car plugged into each charge point, by the action's id."""
+    result = {}
+    for action in config["actions"]:
+        entry = detected.get(action["id"]) or {}
+        car = entry.get("car") if entry.get("state") == "car" else None
+        if car and car in cars:
+            result[action["id"]] = cars[car]
     return result
 
 

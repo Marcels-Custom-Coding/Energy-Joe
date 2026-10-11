@@ -827,14 +827,14 @@ export class JoeLookbackLearned extends LitElement {
   }
 
   private renderCars(t: Translate, data: Learning): TemplateResult {
-    const cars = this.state!.config.actions.filter((a) => a.kind === "switch" && a.need?.enabled);
+    const cars = (this.state!.config.cars ?? []).filter((car) => car.need.enabled);
     return this.rowsCard(
       t,
       "car",
       "mdi:car-electric",
       t("learn.car"),
       tip(t, "learn_car"),
-      cars.map((action) => carLearned(t, data.learned, action)),
+      cars.map((car) => carLearned(t, data.learned, car)),
       t("learn.car.none"),
     );
   }

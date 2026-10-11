@@ -22,6 +22,10 @@ _LOGGER = logging.getLogger(__name__)
 ACCEPT = "ENERGY_JOE_YES"
 DECLINE = "ENERGY_JOE_NO"
 ACTION_EVENT = "mobile_app_notification_action"
+# "Which car is plugged in?": ENERGY_JOE_CAR::<charge point>::<car id or guest>.
+CAR_ANSWER = "ENERGY_JOE_CAR"
+# Phones show only a few buttons; with more cars the panel answers.
+MAX_BUTTONS = 3
 
 TEXTS: dict[str, dict[str, str]] = {
     "de": {
@@ -38,6 +42,12 @@ TEXTS: dict[str, dict[str, str]] = {
         "problem.battery_transfer": "{charging} lädt, während {discharging} entlädt – seit mehr als zwei Minuten, obwohl ich immer nur einen arbeiten lasse. Schau bitte im Panel unter Geräte › Speicher › Mehrere Speicher nach.",
         "morning.title": "Energy Joe: die Nacht",
         "morning.text": "Ich habe heute Nacht gesteuert: {batteries}. Alles ist wieder zurückgestellt.",
+        "car.title": "Energy Joe fragt",
+        "car.which": "Welches Auto hängt an der Wallbox „{point}“? Bis ich es weiß, lasse ich die Wallbox in Ruhe.",
+        "car.hint": "Antworten kannst du auch im Panel unter Übersicht.",
+        "car.guest": "Gast / anderes Auto",
+        "car.not_plugged.title": "Energy Joe: Auto einstecken?",
+        "car.not_plugged": "{car} braucht morgen {km} km, steckt aber nicht.",
     },
     "en": {
         "ask.title": "Energy Joe asks",
@@ -53,6 +63,12 @@ TEXTS: dict[str, dict[str, str]] = {
         "problem.battery_transfer": "{charging} charges while {discharging} discharges, for more than two minutes, although I let only one of them work at a time. Please have a look in the panel under Devices › Batteries › Several batteries.",
         "morning.title": "Energy Joe: the night",
         "morning.text": "I steered tonight: {batteries}. Everything is back as it was.",
+        "car.title": "Energy Joe asks",
+        "car.which": "Which car is plugged into the wallbox “{point}”? Until I know, I leave the wallbox alone.",
+        "car.hint": "You can also answer in the panel under Overview.",
+        "car.guest": "Guest / other car",
+        "car.not_plugged.title": "Energy Joe: plug in the car?",
+        "car.not_plugged": "{car} needs {km} km tomorrow but is not plugged in.",
     },
 }
 
@@ -70,6 +86,8 @@ class JoeNotifier:
         self._config = config
         self._answer = answer
         self._unsub: CALLBACK_TYPE | None = None
+        # The answer to "which car is plugged in?" (set by the runtime).
+        self.on_car: Callable[[str, str], Awaitable[None]] | None = None
 
     def start(self) -> None:
         if self._unsub is None:
@@ -154,6 +172,51 @@ class JoeNotifier:
                 {"tag": f"{DOMAIN}_morning"},
             )
 
+    async def async_which_car(
+        self, point_id: str, point: str, cars: list[tuple[str, str]]
+    ) -> None:
+        """Ask which car is plugged into a charge point (notification and phone)."""
+        message = self._text("car.which", point=point)
+        tag = f"{DOMAIN}_car_{point_id}"
+        persistent_notification.async_create(
+            self._hass,
+            f"{message}\n\n{self._text('car.hint')}",
+            self._text("car.title"),
+            tag,
+        )
+        notify = self._config()["notify"]
+        if not notify["service"] or not notify.get("cars", True):
+            return
+        choices = [*cars, ("guest", self._text("car.guest"))]
+        data: dict[str, Any] = {"tag": tag}
+        if len(choices) <= MAX_BUTTONS:
+            data["actions"] = [
+                {"action": f"{CAR_ANSWER}::{point_id}::{car}", "title": name}
+                for car, name in choices
+            ]
+        await self._push(self._text("car.title"), message, data)
+
+    @callback
+    def clear_which_car(self, point_id: str) -> None:
+        persistent_notification.async_dismiss(self._hass, f"{DOMAIN}_car_{point_id}")
+
+    async def async_not_plugged(self, car_id: str, car: str, km: int) -> None:
+        """In the evening: tomorrow needs charging, but the car is not plugged in."""
+        message = self._text("car.not_plugged", car=car, km=km)
+        tag = f"{DOMAIN}_unplugged_{car_id}"
+        persistent_notification.async_create(
+            self._hass, message, self._text("car.not_plugged.title"), tag
+        )
+        notify = self._config()["notify"]
+        if notify["service"] and notify.get("cars", True):
+            await self._push(self._text("car.not_plugged.title"), message, {"tag": tag})
+
+    @callback
+    def clear_not_plugged(self, car_id: str) -> None:
+        persistent_notification.async_dismiss(
+            self._hass, f"{DOMAIN}_unplugged_{car_id}"
+        )
+
     async def _push(self, title: str, message: str, data: dict[str, Any]) -> None:
         service = (self._config()["notify"]["service"] or "").split(".", 1)[-1]
         if not service or not self._hass.services.has_service("notify", service):
@@ -174,3 +237,10 @@ class JoeNotifier:
         action = event.data.get("action")
         if action in (ACCEPT, DECLINE):
             await self._answer(action == ACCEPT)
+        elif isinstance(action, str) and action.startswith(f"{CAR_ANSWER}::"):
+            parts = action.split("::")
+            if len(parts) == 3 and self.on_car is not None:
+                try:
+                    await self.on_car(parts[1], parts[2])
+                except ValueError:
+                    _LOGGER.warning("Unknown answer from a phone: %s", action)

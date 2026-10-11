@@ -22,6 +22,8 @@ from .ev import sun_before_departure
 
 # Less than this missing (kWh) is not worth charging the car for.
 MIN_KWH = 0.2
+# What a charge point does without a car of the household: nothing.
+LEAVE_ALONE = {"empty": "not_plugged", "guest": "guest", "unknown": "unknown_car"}
 # Until Joe has learned them (see learn/): how far the hot water cools over a
 # day, and how fast the heat pump heats it.
 DEFAULT_DEMAND_K = 10.0
@@ -69,14 +71,18 @@ def plan_actions(
     manual: dict[str, str],
     learned: dict[str, Any] | None = None,
     needs: dict[str, dict[str, Any]] | None = None,
+    detected: dict[str, dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """Which actions run tonight, from when to when, and how much they draw.
 
-    A car with "charging by need" (see ev.py) runs only when tomorrow's driving
-    needs more than it has, and only as long as charging the missing energy takes.
+    A charge point charges the car plugged into it (see cars.py): a car with
+    "charging by need" (see ev.py) only when tomorrow's driving needs more
+    than it has, and only as long as charging the missing energy takes. A
+    guest's car, a car Joe cannot tell, or no car: Joe leaves the wallbox alone.
     """
     learned = learned or {}
     needs = needs or {}
+    detected = detected or {}
     night = window_start.isoformat()
     result = []
     for action in actions:
@@ -87,8 +93,12 @@ def plan_actions(
         need = needs.get(action["id"])
         by_need = action["kind"] == "switch" and bool(need and need.get("known"))
         run = is_manual
+        found = detected.get(action["id"]) or {}
+        plugged = found.get("state")
         if is_manual:
             reasons.append("tonight")
+        elif plugged in LEAVE_ALONE:
+            reasons.append(LEAVE_ALONE[plugged])
         elif action.get("auto", True):
             threshold = action.get("forecast_below_kwh")
             sunny = (
@@ -137,6 +147,9 @@ def plan_actions(
             "manual": is_manual,
             "power_kw": action.get("power_kw"),
         }
+        if plugged and plugged != "free":
+            # Which car is plugged in, and how Joe knows (see cars.py).
+            entry.update(plugged=plugged, car=found.get("car"), how=found.get("how"))
         if action["kind"] == "target":
             temperature = _number(get(action.get("sensor_entity") or ""))
             mine = learned.get(action["id"]) or {}

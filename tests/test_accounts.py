@@ -19,13 +19,10 @@ def _config(kind: str, **account: Any) -> dict[str, Any]:
     return model.apply_update(
         model.default_config(),
         {
-            "actions": {
+            "cars": {
                 "kona": {
                     "id": "kona",
                     "name": "KONA",
-                    "kind": "switch",
-                    "entity_id": "select.kona_mode",
-                    "on_value": "now",
                     "need": {
                         "enabled": True,
                         "source": "account",
@@ -241,7 +238,7 @@ def test_without_joes_google_app_ones_own_is_needed(
     monkeypatch.setattr(oauth, "JOE_GOOGLE_CLIENT_ID", None)
     config = _config("google", client_id="own-app")
     accounts = CarAccounts(hass, lambda: config, lambda: None)
-    account = config["actions"][0]["need"]["account"]
+    account = config["cars"][0]["need"]["account"]
     with pytest.raises(AccountError):
         accounts._sign_in("kona", account)
     accounts._data["kona"] = {"client_secret": "own-secret"}

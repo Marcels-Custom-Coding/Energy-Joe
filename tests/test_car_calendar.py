@@ -20,9 +20,6 @@ from homeassistant.util import dt as dt_util
 CAR = {
     "id": "kona",
     "name": "KONA",
-    "kind": "switch",
-    "entity_id": "select.carport_mode",
-    "on_value": "now",
     "need": {
         "enabled": True,
         "soc_entity": "sensor.kona_soc",
@@ -38,7 +35,7 @@ async def _setup(hass: HomeAssistant) -> Any:
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
     runtime = hass.data[DOMAIN]
-    runtime.async_update_config({"actions": [CAR]}, "user")
+    runtime.async_update_config({"cars": [CAR]}, "user")
     await hass.async_block_till_done()
     return runtime
 
@@ -94,7 +91,7 @@ async def test_a_car_gets_its_own_calendar(
 
     places = PlaceStore(hass)
     places.async_distance = route  # type: ignore[method-assign]
-    need = runtime.config["actions"][0]["need"]
+    need = runtime.config["cars"][0]["need"]
     trips = await async_trips(hass, runtime.config, need, places, tomorrow, own)
     assert [t["location"] for t in trips] == ["Messe Hannover"]
     assert trips[0]["km"] == 240.0
@@ -157,12 +154,12 @@ async def test_only_a_mailbox_without_calendar_gets_joes_calendar(
     }
     runtime.calendars.add("kona", {**day, "summary": "Messe", "source": "mail"})
     # A finished calendar of the car: Joe's calendar goes away …
-    finished = {"actions": [{**CAR, "need": {**CAR["need"], "source": "ha"}}]}
+    finished = {"cars": [{**CAR, "need": {**CAR["need"], "source": "ha"}}]}
     runtime.async_update_config(finished, "user")
     await hass.async_block_till_done()
     assert hass.states.async_all("calendar") == []
     # … and comes back with its appointments when the car reads its mailbox again.
-    runtime.async_update_config({"actions": [CAR]}, "user")
+    runtime.async_update_config({"cars": [CAR]}, "user")
     await hass.async_block_till_done()
     assert _calendar_id(hass) == calendar
     assert [e["summary"] for e in runtime.calendars.events("kona")] == ["Messe"]

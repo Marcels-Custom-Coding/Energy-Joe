@@ -19,15 +19,17 @@ from . import model
 from .accounts import CarAccounts
 from .const import DOMAIN
 from .control import automations as battery_automations
+from .control.cars import CarWatcher
 from .control.climate import ClimateController
 from .control.executor import JoeExecutor
 from .control.notify import JoeNotifier
-from .discovery import async_profile_updates
+from .discovery import async_car_updates, async_profile_updates
 from .learn.learner import JoeLearner
 from .mail import oauth
 from .mail.inbox import CarInboxes
 from .observe.observer import BACKFILL_DAYS, JoeObserver
 from .observe.store import HistoryStore
+from .plan import cars as model_cars
 from .plan.car_calendar import CarCalendarStore
 from .plan.inputs import battery_floor, device_floor
 from .plan.scheduler import JoePlanner
@@ -118,6 +120,22 @@ class JoeRuntime:
         self.accounts = CarAccounts(hass, lambda: self._config, self._changed)
         self.planner.accounts = self.accounts
         self.planner.held = lambda: self.executor.data["saved"]
+        # Which car is plugged in where (asks, reminds, learns evcc's ids).
+        self.cars = CarWatcher(
+            hass,
+            lambda: self._config,
+            lambda: self._state["mode"],
+            lambda: self.planner.plan,
+            self._changed,
+        )
+        self.cars.notifier = self.notifier
+        self.cars.replan = self.planner.async_replan_points
+        self.cars.learn = lambda patch: self.async_update_config(
+            patch, "learned", "evcc_vehicle"
+        )
+        self.notifier.on_car = self.async_answer_car
+        self.planner.detected = self.cars.detect
+        self.executor.cars = self.cars
         # Heating and air conditioning by presence (the "Klima" page).
         self.climate = ClimateController(
             hass, lambda: self._config, lambda: self._state["mode"], self._changed
@@ -146,6 +164,7 @@ class JoeRuntime:
         await self.inbox.async_load()
         await self.accounts.async_load()
         await self.climate.async_load()
+        await self.cars.async_load()
 
     async def async_unload(self) -> None:
         """Stop watching and write pending changes immediately."""
@@ -154,6 +173,7 @@ class JoeRuntime:
         self.inbox.async_stop()
         self.accounts.async_stop()
         self.climate.async_stop()
+        self.cars.stop()
         await self.executor.async_stop()
         async with self._observe_lock:
             await self.learner.async_stop()
@@ -198,6 +218,7 @@ class JoeRuntime:
         await self.inbox.async_remove()
         await self.accounts.async_remove()
         await self.climate.async_remove()
+        await self.cars.async_remove()
         await self.executor.async_forget()
 
     @callback
@@ -209,7 +230,9 @@ class JoeRuntime:
         self._update_observer()
         self.inbox.async_apply()
         self.climate.async_start()
+        self.cars.start()
         self._hass.async_create_task(self._async_profile_updates(), eager_start=False)
+        self._hass.async_create_task(self.async_car_updates(), eager_start=False)
 
     def _learned_limit_ref(self, battery_id: str, watts: float) -> None:
         """What 100 % of a battery's charge limit stand for, as Joe measured it."""
@@ -251,6 +274,106 @@ class JoeRuntime:
         if patch:
             _LOGGER.info("Battery profiles updated: %s", list(patch["batteries"]))
             self.async_update_config(patch, "read", "profile")
+
+    async def async_car_updates(self) -> None:
+        """Link the cars Joe sees (evcc's vehicles, car integrations) to his cars."""
+        try:
+            patch = await async_car_updates(self._hass, self._config)
+        except Exception:
+            _LOGGER.exception("Looking for cars failed")
+            return
+        if patch:
+            _LOGGER.info("Cars updated: %s", list(patch.get("cars") or {}))
+            self.async_update_config(patch, "read", "cars")
+
+    async def async_answer_car(self, point_id: str, car: str | None) -> None:
+        """Which car is plugged into a charge point (from the panel or a phone)."""
+        await self.cars.async_answer(point_id, car)
+
+    @callback
+    def async_merge_cars(self, into: str, other: str) -> str:
+        """Two cars are one: the other's sources join it. The car that charges
+        by need keeps its settings (and its id: mailbox, calendar, learned).
+        Returns the id of the car that stays."""
+        config = self._config
+        first = model_cars.car_by_id(config, into)
+        second = model_cars.car_by_id(config, other)
+        if first is None or second is None or into == other:
+            raise ValueError("unknown_car")
+        if not (first.get("need") or {}).get("enabled") and (
+            second.get("need") or {}
+        ).get("enabled"):
+            first, second = second, first
+        known = {s["id"] for s in first.get("sources") or []}
+        sources = [
+            *(first.get("sources") or []),
+            *(s for s in second.get("sources") or [] if s["id"] not in known),
+        ]
+        patch: dict[str, Any] = {
+            "cars": {first["id"]: {"sources": sources}, second["id"]: None}
+        }
+        actions = {}
+        for action in config["actions"]:
+            point = action.get("point") or {}
+            change: dict[str, Any] = {}
+            if point.get("cars") and second["id"] in point["cars"]:
+                change["cars"] = sorted(
+                    {first["id"], *(c for c in point["cars"] if c != second["id"])}
+                )
+            if point.get("assume_car") == second["id"]:
+                change["assume_car"] = first["id"]
+            if change:
+                actions[action["id"]] = {"point": change}
+        if actions:
+            patch["actions"] = actions
+        self.async_update_config(patch, "user", "merge")
+        return first["id"]
+
+    @callback
+    def async_split_car(self, car_id: str, source_id: str) -> str:
+        """A source is another car: it becomes a car of its own (and Joe does
+        not ask again whether the two are the same). Returns the new car's id."""
+        config = self._config
+        car = model_cars.car_by_id(config, car_id)
+        source = next(
+            (s for s in (car or {}).get("sources") or [] if s["id"] == source_id),
+            None,
+        )
+        if car is None or source is None:
+            raise ValueError("unknown_source")
+        new_id = model_cars.new_car_id(config, source.get("name"))
+        pairs = self._separate_pairs(car_id, new_id)
+        self.async_update_config(
+            {
+                "cars": {
+                    car_id: {
+                        "sources": [s for s in car["sources"] if s["id"] != source_id]
+                    },
+                    new_id: {
+                        "name": model_cars.clean_name(source.get("name")) or new_id,
+                        "sources": [source],
+                    },
+                },
+                "answers": {"car_separate": pairs},
+            },
+            "user",
+            "split",
+        )
+        return new_id
+
+    @callback
+    def async_separate_cars(self, first: str, second: str) -> None:
+        """Two cars are not the same: Joe stops asking."""
+        self.async_update_config(
+            {"answers": {"car_separate": self._separate_pairs(first, second)}},
+            "user",
+            "separate",
+        )
+
+    def _separate_pairs(self, first: str, second: str) -> list[str]:
+        pairs = list((self._config.get("answers") or {}).get("car_separate") or [])
+        pair = "|".join(sorted((first, second)))
+        return pairs if pair in pairs else [*pairs, pair]
 
     def automations(self) -> list[dict[str, Any]]:
         """Automations that write to the batteries (and which ones Joe switched off)."""
@@ -380,6 +503,7 @@ class JoeRuntime:
                 "mailbox": self.inbox.status,
                 "accounts": self.accounts.status,
                 "climate": self.climate.status,
+                "cars": self.cars.status,
                 # Each battery's floor and where it comes from (user, device, unknown).
                 "floors": {
                     b["id"]: dict(
@@ -453,6 +577,7 @@ class JoeRuntime:
         if self._started:
             self.inbox.async_apply()
             self.climate.async_start()
+            self.cars.apply()
 
     @callback
     def async_replace_config(self, data: dict[str, Any]) -> None:
@@ -465,6 +590,7 @@ class JoeRuntime:
         if self._started:
             self.inbox.async_apply()
             self.climate.async_start()
+            self.cars.apply()
 
     @callback
     def async_adopt(
@@ -476,6 +602,8 @@ class JoeRuntime:
             self._config = adopted
             self._changed(config=True)
             self._update_observer()
+        if self._started:
+            self._hass.async_create_task(self.async_car_updates(), eager_start=False)
 
     @callback
     def async_notify_changed(self) -> None:
@@ -592,6 +720,7 @@ def _planned_parts(config: dict[str, Any]) -> dict[str, Any]:
         "rules": config["rules"],
         "learned": {k: v for k, v in config["learned"].items() if k in PLANNED_LEARNED},
         "actions": config["actions"],
+        "cars": config["cars"],
         "calendar": config["calendar"],
         "routing": config["routing"],
         "calendars": [(p["id"], p["calendars"]) for p in config["persons"]],

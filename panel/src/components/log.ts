@@ -73,7 +73,7 @@ export function logDeviceName(
   if (group === "battery") {
     return config?.batteries.find((b) => b.id === device)?.name ?? device;
   }
-  const actionId = device.startsWith("action-") ? device.slice(7) : device;
+  const actionId = device.startsWith("action-") ? device.slice(7) : device.startsWith("point:") ? device.slice(6) : device;
   return (
     config?.actions.find((a) => a.id === actionId)?.name ??
     config?.consumers.find((c) => c.id === device)?.name ??

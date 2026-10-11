@@ -1,6 +1,6 @@
-import { G as e, H as t, K as n, M as r, N as i, O as a, P as o, Q as s, R as c, W as l, Y as u, b as d, g as f, h as p, l as m, q as h, r as g, t as _, v } from "./tokens-BL9O-SiF.js";
+import { $ as e, D as t, E as n, G as r, T as i, U as a, W as o, Y as s, b as c, g as l, h as u, it as d, l as f, lt as p, nt as m, ot as h, r as g, rt as _, t as v, tt as y, v as b, w as x, z as S } from "./tokens-CRrLW2cq.js";
 //#region src/energy-joe-cards.ts
-var y = {
+var C = {
 	state: void 0,
 	listeners: /* @__PURE__ */ new Set(),
 	unsubscribe: void 0,
@@ -16,15 +16,15 @@ var y = {
 			this.listeners.delete(t), !this.listeners.size && this.unsubscribe && (this.unsubscribe.then((e) => e()).catch(() => void 0), this.unsubscribe = void 0, this.state = void 0);
 		};
 	}
-}, b = class extends n {
+}, w = class extends _ {
 	constructor(...e) {
 		super(...e), this.config = {};
 	}
 	static {
 		this.styles = [
-			_,
-			i,
-			s`
+			v,
+			o,
+			p`
       :host {
         display: block;
       }
@@ -85,6 +85,14 @@ var y = {
         font-size: 13px;
         margin: 8px 0 0;
       }
+      .muted.where {
+        margin: 0;
+      }
+      .next-car {
+        margin-top: 14px;
+        padding-top: 10px;
+        border-top: 1px solid var(--joe-line);
+      }
     `
 		];
 	}
@@ -108,41 +116,41 @@ var y = {
 		super.disconnectedCallback(), this.stop?.(), this.stop = void 0;
 	}
 	start() {
-		this.stop = y.listen(this._hass, (e) => this.joe = e);
+		this.stop = C.listen(this._hass, (e) => this.joe = e);
 	}
 	get t() {
-		return t(this._hass?.language);
+		return e(this._hass?.language);
 	}
 	render() {
 		let e = this.t;
-		return this._hass ? this.joe ? u`<ha-card>${this.renderCard(e, this.joe)}</ha-card>` : u`<ha-card><p class="muted">${e(y.failed ? "cards.no_access" : "cards.loading")}</p></ha-card>` : h;
+		return this._hass ? this.joe ? h`<ha-card>${this.renderCard(e, this.joe)}</ha-card>` : h`<ha-card><p class="muted">${e(C.failed ? "cards.no_access" : "cards.loading")}</p></ha-card>` : d;
 	}
 };
-r([l()], b.prototype, "joe", void 0), r([l()], b.prototype, "config", void 0), r([e({ attribute: !1 })], b.prototype, "hass", null);
-var x = class extends b {
+a([y()], w.prototype, "joe", void 0), a([y()], w.prototype, "config", void 0), a([m({ attribute: !1 })], w.prototype, "hass", null);
+var T = class extends w {
 	static getStubConfig() {
 		return {};
 	}
 	renderCard(e, t) {
-		let n = t.plan, r = t.control, i = n?.window?.start, a = !!i && r?.skip === i, o = r?.reason, s = o === "waiting" && n?.window ? e("devices.status.waiting", { time: d(n.window.start) }) : o === "day" ? e("devices.status.day", { time: n?.day ? d(n.day.defer_until) : "–" }) : o ? e.optional(`devices.status.${o}`) ?? "" : "", l = m(g, { tab: "plan" });
-		return u`<a
+		let n = t.plan, r = t.control, i = n?.window?.start, a = !!i && r?.skip === i, o = r?.reason, p = o === "waiting" && n?.window ? e("devices.status.waiting", { time: c(n.window.start) }) : o === "day" ? e("devices.status.day", { time: n?.day ? c(n.day.defer_until) : "–" }) : o ? e.optional(`devices.status.${o}`) ?? "" : "", m = f(g, { tab: "plan" });
+		return h`<a
         class="head"
-        href=${l}
+        href=${m}
         @click=${(e) => {
-			e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0 || (e.preventDefault(), c(l));
+			e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0 || (e.preventDefault(), s(m));
 		}}
       >
         <div class="eyebrow"><ha-icon icon="energy-joe:joe"></ha-icon>${e("cards.night.title")}</div>
         <span class="chip ${t.mode === "live" ? "ok" : t.mode === "advisory" ? "learned" : ""}">${e(`mode.${t.mode}`)}</span>
         <ha-icon class="chev" icon="mdi:chevron-right"></ha-icon>
       </a>
-      ${n ? u`<p class="big">${v(e, n)}</p>
+      ${n ? h`<p class="big">${b(e, n)}</p>
             <ul class="lines">
-              ${f(e, n).map((e) => u`<li>${e}</li>`)}
-              ${p(e, n) ? u`<li>${p(e, n)}</li>` : h}
-            </ul>` : u`<p class="big">${e("devices.status.no_plan")}</p>`}
-      ${s ? u`<p class="muted">${s}</p>` : h}
-      ${i && t.mode !== "simulation" && t.mode !== "off" ? u`<div class="row">
+              ${l(e, n).map((e) => h`<li>${e}</li>`)}
+              ${u(e, n) ? h`<li>${u(e, n)}</li>` : d}
+            </ul>` : h`<p class="big">${e("devices.status.no_plan")}</p>`}
+      ${p ? h`<p class="muted">${p}</p>` : d}
+      ${i && t.mode !== "simulation" && t.mode !== "off" ? h`<div class="row">
             <span>${e("cards.night.skip")}</span>
             <button
               type="button"
@@ -152,7 +160,7 @@ var x = class extends b {
               aria-label=${e("cards.night.skip")}
               @click=${() => this.skip(!a)}
             ></button>
-          </div>` : h}`;
+          </div>` : d}`;
 	}
 	async skip(e) {
 		try {
@@ -162,42 +170,43 @@ var x = class extends b {
 			});
 		} catch {}
 	}
-}, S = class extends b {
+}, E = class extends w {
 	static getStubConfig() {
 		return {};
 	}
 	getCardSize() {
 		return 4;
 	}
-	car(e) {
-		let t = e.config.actions.filter((e) => e.kind === "switch" && (e.need?.soc_entity || e.need?.range_entity)), n = typeof this.config.action == "string" ? this.config.action : void 0;
-		return t.find((e) => e.id === n) ?? t[0];
+	cars(e) {
+		let t = e.config.cars ?? [], n = typeof this.config.car == "string" ? this.config.car : typeof this.config.action == "string" ? this.config.action : void 0, r = t.find((e) => e.id === n);
+		return r ? [r] : t;
 	}
 	renderCard(e, t) {
-		let n = this.car(t);
-		if (!n) return u`<p class="muted">${e("cards.car.none")}</p>`;
-		let r = this.hass, i = n.need, o = t.control?.actions?.[n.id], s = [i.soc_entity ? a(r, i.soc_entity, e.lang) : null, i.range_entity ? a(r, i.range_entity, e.lang) : null].filter(Boolean), l = m(g, {
-			tab: "devices",
-			section: "car",
-			id: n.id
-		});
-		return u`<a
+		let n = this.cars(t);
+		return n.length ? h`${n.map((n, r) => this.renderCar(e, t, n, r > 0))}` : h`<p class="muted">${e("cards.car.none")}</p>`;
+	}
+	renderCar(e, r, a, o) {
+		let c = this.hass, l = i(r, a.id), u = l ? r.control?.actions?.[l.id] : void 0, p = ["soc", "range"].map((e) => t(r, a.id, e)?.entity).map((t) => t ? S(c, t, e.lang) : null).filter(Boolean), m = f(g, n(a.id));
+		return h`<div class=${o ? "next-car" : ""}>
+      <a
         class="head"
-        href=${l}
+        href=${m}
         @click=${(e) => {
-			e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0 || (e.preventDefault(), c(l));
+			e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0 || (e.preventDefault(), s(m));
 		}}
       >
-        <div class="eyebrow"><ha-icon icon="mdi:car-electric"></ha-icon>${n.name}</div>
-        ${o?.on ? u`<span class="chip ok">${e("cards.car.charging")}</span>` : h}
+        <div class="eyebrow"><ha-icon icon="mdi:car-electric"></ha-icon>${a.name}</div>
+        ${u?.on ? h`<span class="chip ok">${e("cards.car.charging")}</span>` : d}
         <ha-icon class="chev" icon="mdi:chevron-right"></ha-icon>
       </a>
-      ${s.length ? u`<p class="big">${s.join(" · ")}</p>` : h}
-      <joe-car-charge .hass=${r} .t=${e} .state=${t} .action=${n}></joe-car-charge>`;
+      ${p.length ? h`<p class="big">${p.join(" · ")}</p>` : d}
+      <p class="muted where">${x(e, r, a)}</p>
+      <joe-car-charge .hass=${c} .t=${e} .state=${r} .car=${a}></joe-car-charge>
+    </div>`;
 	}
 };
-o("energy-joe-night-card", x), o("energy-joe-car-card", S);
-var C = window.customCards ??= [];
+r("energy-joe-night-card", T), r("energy-joe-car-card", E);
+var D = window.customCards ??= [];
 for (let e of [{
 	type: "energy-joe-night-card",
 	name: "Energy Joe – heute Nacht",
@@ -206,7 +215,7 @@ for (let e of [{
 	type: "energy-joe-car-card",
 	name: "Energy Joe – Auto laden",
 	description: "Ladestand und Reichweite, jetzt oder heute Nacht laden."
-}]) C.some((t) => t.type === e.type) || C.push({
+}]) D.some((t) => t.type === e.type) || D.push({
 	...e,
 	preview: !0
 });

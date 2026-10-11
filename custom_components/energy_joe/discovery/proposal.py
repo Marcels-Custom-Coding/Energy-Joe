@@ -113,23 +113,18 @@ def _measurement(found: dict[str, Any] | None) -> dict[str, Any] | None:
 def _night_actions(
     wallboxes: list[dict[str, Any]], cars: list[dict[str, Any]]
 ) -> list[dict[str, Any]]:
-    """The car charges at night when tomorrow brings little sun (if it is plugged in).
+    """Each charge point charges at night when tomorrow brings little sun.
 
-    Charging by need stays off until the user switches it on; its car entities
-    are filled in already: from the one car integration found when there is
-    one wallbox, else from the wallbox's vehicle (evcc knows the car that is
-    plugged in at each charge point).
+    It charges whichever car is plugged in (see plan/cars.py): evcc tells
+    which vehicle is at the loadpoint and its level there. The cars
+    themselves are linked when Joe looks around (sync_cars).
     """
+    del cars  # the cars are their own items now
     car_wallboxes = [
         w
         for w in wallboxes
         if w.get("is_car") and "now" in (w.get("mode_options") or [])
     ]
-    car = (
-        (cars[0].get("entities") or {})
-        if len(cars) == 1 and len(car_wallboxes) == 1
-        else {}
-    )
     actions = []
     for wallbox in car_wallboxes:
         entities = wallbox.get("entities") or {}
@@ -153,15 +148,19 @@ def _night_actions(
                 "power_kw": 11.0,
                 "power_entity": entities.get("power"),
                 "priority": 1,
-                "need": {
-                    "enabled": False,
-                    "soc_entity": car.get("soc") or entities.get("vehicle_soc"),
-                    "range_entity": car.get("range") or entities.get("vehicle_range"),
-                    "capacity_entity": car.get("capacity"),
-                    "odometer_entity": car.get("odometer")
-                    or entities.get("vehicle_odometer"),
-                    "consumption_entity": car.get("consumption"),
-                },
+                "point": point_of_wallbox(wallbox),
             }
         )
     return actions
+
+
+def point_of_wallbox(wallbox: dict[str, Any]) -> dict[str, Any]:
+    """What a charge point reads from evcc's loadpoint."""
+    entities = wallbox.get("entities") or {}
+    return {
+        "vehicle_entity": entities.get("vehicle"),
+        "connected_entity": entities.get("connected"),
+        "soc_entity": entities.get("vehicle_soc"),
+        "range_entity": entities.get("vehicle_range"),
+        "odometer_entity": entities.get("vehicle_odometer"),
+    }
