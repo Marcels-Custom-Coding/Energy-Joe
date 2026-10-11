@@ -3,6 +3,16 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.19
+
+### Auto und Wallbox getrennt
+- Ein Auto hat jetzt seinen eigenen Bedarf – Fahrten, Termine, Reserve, Ladestand, „Laden nach Bedarf“ und neu „Höchstens laden bis“. Die Wallbox ist ein Ladepunkt, den Joe schaltet (bei evcc den Modus). Joe lädt immer das Auto, das gerade steckt.
+- Welches Auto steckt, erkennt Joe am Fahrzeug in evcc, am Stecker-Sensor des Autos oder am einzigen Auto zu Hause. Sonst fragt er aufs Handy und unter „Joe braucht dich“ – mit einem Knopf je Auto und „Gast / anderes Auto“. Bis dahin lässt er die Wallbox in Ruhe. Je Ladepunkt einstellbar: fragen oder immer ein bestimmtes Auto annehmen.
+- Ein Auto aus evcc und aus der Integration des Herstellers (z. B. Hyundai) wird ein Auto. Bei Unsicherheit fragt Joe; unter „Quellen“ lässt es sich trennen oder zusammenführen. Den Ladestand nimmt Joe am liebsten von evcc, jeder Wert zeigt seine Quelle. Joe fragt das Auto nie selbst ab.
+- Abends erinnert Joe, wenn ein Auto für morgen laden müsste, aber nicht steckt (Uhrzeit je Auto).
+- Neue Seiten unter Geräte › Auto & Laden: je Auto und je Ladepunkt. „Jetzt laden“, „Heute Nacht laden“ und die Dashboard-Karte „Auto laden“ gelten je Auto und laden an der Wallbox, an der es steckt.
+- Deine bisherigen Einstellungen ziehen von selbst um. Mit einem Auto und einer Wallbox bleibt das Laden wie bisher.
+
 ## 0.9.18
 
 ### Mehrere Speicher: nacheinander statt gegeneinander

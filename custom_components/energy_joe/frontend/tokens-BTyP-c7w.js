@@ -6524,14 +6524,14 @@ function qe(e, t, n) {
 }
 //#endregion
 //#region src/define.ts
-var Je = "0.9.18";
+var Je = "0.9.19";
 function Ye(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Je, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.18" && Ze();
+	n.joeVersion !== "0.9.19" && Ze();
 }
 var Xe = !1;
 function Ze() {
