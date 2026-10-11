@@ -3,6 +3,19 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.18
+
+### Mehrere Speicher: nacheinander statt gegeneinander
+- Neu unter Geräte › Speicher: „Mehrere Speicher“. Regeln sich zwei Speicher selbst auf 0 am Zähler (z. B. Fronius und Marstek über Omnibattery), schieben sie sich gegenseitig Strom zu. Mit „Nacheinander“ arbeitet immer nur einer, die anderen sperrt Joe vorher – beim Fronius über Lade- und Entladegrenze mit Schalter, beim Marstek über die System-Leistungsgrenzen von Omnibattery (er bleibt im Automatikbetrieb).
+- Reihenfolge getrennt fürs Laden und Entladen. Ist der erste voll oder leer, übernimmt der nächste; der erste ist erst wieder dran, wenn Sonne bzw. Bedarf eine Weile anhalten.
+- Joe lernt, wo ein Speicher wirklich aufhört zu entladen (z. B. BYD bei 10,5 %), und wechselt danach 1,5 % vorher.
+- Reicht die Sonne laut Vorhersage nacheinander nicht, laden die Speicher nebeneinander – nie erzwungen, ohne Netzbezug fürs Laden. Mit „Tagsüber Überschuss abgeben“ trägt der Speicher, der dran ist, die ganze Drosselung.
+- Nachts steuert weiter der Nachtplan. Alle Sperren gehen zurück bei Moduswechsel, „Sofort freigeben“, Neustart und wenn ein Speicher wegfällt.
+- Eigene Interlock-Automationen werden erkannt: Solange sie laufen, lässt Joe die Speicher in Ruhe und bietet an, sie auszuschalten.
+- Wächter: Laden sich die Speicher trotz Sperre länger als zwei Minuten gegenseitig, meldet Joe sich (auch als Push).
+- „Joe braucht dich“ schlägt „Nacheinander“ vor, sobald zwei Speicher sich selbst regeln. Ohne Wahl bleibt alles wie bisher.
+- Behoben: Schaltete die Tagesdrosselung die System-Leistungsgrenzen von Omnibattery ein, konnte das Entladen des Marstek mitgesperrt werden.
+
 ## 0.9.17
 
 ### Neu: Tagsüber Überschuss abgeben (für evcc)
