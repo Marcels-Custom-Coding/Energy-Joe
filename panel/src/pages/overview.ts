@@ -5,6 +5,7 @@ import "../components/chart";
 import type { ChartSeries } from "../components/chart";
 import "../components/control-status";
 import { controlText } from "../components/control-status";
+import { batteryTeam, teamDoing } from "../components/battery-team";
 import { daySurplus, surplusDoing } from "../components/day-surplus";
 import "../components/pose";
 import "../components/steer-tonight";
@@ -552,6 +553,10 @@ export class JoeOverview extends LitElement {
     const surplus = surplusDoing(t, daySurplus(joe));
     if (surplus) {
       lines.push(surplus);
+    }
+    const team = teamDoing(t, batteryTeam(joe));
+    if (team) {
+      lines.push(team);
     }
     for (const action of config.actions) {
       const now = control?.actions?.[action.id];

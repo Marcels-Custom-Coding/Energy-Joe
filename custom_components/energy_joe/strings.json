@@ -147,6 +147,10 @@
     "no_progress": {
       "title": "Battery does not charge",
       "description": "{battery} should charge, but its level has not risen for half an hour. Check whether the battery allows charging from the grid; a test run in the Energy Joe panel under Devices helps."
+    },
+    "battery_transfer": {
+      "title": "Batteries charge each other",
+      "description": "{charging} charges while {discharging} discharges, for more than two minutes, although Joe lets only one of them work at a time. Something else writes the same limits, or a block is not taken. Look at Devices › Batteries › Several batteries in the Energy Joe panel."
     }
   },
   "exceptions": {

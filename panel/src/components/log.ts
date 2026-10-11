@@ -102,6 +102,32 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
     remaining: typeof entry.remaining === "number" ? formatNumber(t.lang, entry.remaining, 1) : "–",
     headroom: typeof entry.headroom === "number" ? formatNumber(t.lang, entry.headroom, 1) : "–",
   };
+  const nameOf = (id: unknown) => config?.batteries.find((b) => b.id === id)?.name ?? String(id ?? "");
+  const names = (ids: unknown) => (Array.isArray(ids) ? ids.map(nameOf).join(", ") : "");
+  if (entry.kind.startsWith("team_")) {
+    const team = {
+      ...vars,
+      previous: nameOf(entry.previous),
+      charging: names(entry.charging),
+      discharging: names(entry.discharging),
+      cutoff: typeof entry.value === "number" ? formatNumber(t.lang, entry.value, 1) : "–",
+      level: typeof entry.soc === "number" ? formatNumber(t.lang, entry.soc, 1) : "–",
+    };
+    if (entry.kind === "team_handover") {
+      return t.optional(`log.team_handover.${String(entry.reason)}`, team) ?? t("log.team_handover", team);
+    }
+    if (entry.kind === "team_end") {
+      return t.optional(`log.team_end.${String(entry.reason)}`, team) ?? t("log.team_end", team);
+    }
+    if (entry.kind === "team_block") {
+      const how = entry.charge ? (entry.discharge ? "both" : "charge") : entry.discharge ? "discharge" : "free";
+      return t(`log.team_block.${how}`, team);
+    }
+    if (entry.kind === "team_transfer") {
+      return t(entry.blocked ? "log.team_transfer.blocked" : "log.team_transfer", team);
+    }
+    return t.optional(`log.${entry.kind}`, team) ?? entry.kind;
+  }
   if (entry.kind === "surplus_end") {
     return t.optional(`log.surplus_end.${String(entry.reason)}`, vars) ?? t("log.surplus_end", vars);
   }

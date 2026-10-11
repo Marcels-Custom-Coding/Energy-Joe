@@ -39,6 +39,9 @@
       Omnibattery mit, ihre Ladeverzögerung ist an – ?omni=ok ohne diese Warnung; ?intruder=1: eine Automation
       schreibt die System-Ladegrenze, die Venus macht deshalb nicht mit)
       ?pv=night (Nacht: der Wechselrichter ist aus, sein Wert „nicht verfügbar“ – bis er als „ohne Sonne aus“ markiert ist)
+      ?team=sequence|together|unset|automation|transfer|parallel (Mehrere Speicher: mit ?done=1 nacheinander,
+      der BYD arbeitet, die Venus wartet, gelernter Entladeschluss 10,5 %; unset: noch nicht gewählt, Joe schlägt es vor;
+      automation: die Interlock-Automationen machen es noch; transfer: trotz Sperre gegeneinander; parallel: nebeneinander laden)
       ?later=1 (die Frage zum Homeoffice wurde in der Einrichtung mit „Später“ übersprungen: Fragen, Los und Übersicht › Joe braucht dich)
       sample-*.json kommen aus scripts/make_dev_samples.py (erfundene Haushalte aus tests/snapshots.py):
       Funde, die Konfiguration nach dem Übernehmen, ihre Prüfungen, Zustände und Register sowie
@@ -221,15 +224,39 @@
         "switch.omnibattery_predictive_charging": { state: "off", attributes: { friendly_name: "Omnibattery System Prädiktives Laden" } },
       };
       for (const [entity_id, value] of Object.entries(omniStates)) sample.hass.states[entity_id] = { entity_id, ...value };
+      sample.hass.states["number.omnibattery_system_max_discharge_power"] = {
+        entity_id: "number.omnibattery_system_max_discharge_power",
+        state: "2500",
+        attributes: { friendly_name: "Omnibattery System System-Maximal-Entladeleistung", unit_of_measurement: "W", min: 0, max: 2500, step: 50 },
+      };
       for (const battery of state.config.batteries) {
         if (battery.adapter === "omnibattery") {
           battery.controls = {
             ...battery.controls,
             system_charge_limit: "number.omnibattery_system_max_charge_power",
             system_charge_limit_enabled: "switch.omnibattery_system_power_limits",
+            system_discharge_limit: "number.omnibattery_system_max_discharge_power",
           };
         }
         battery.limit_ref_w ??= null;
+        // Mehrere Speicher (model.py): Joe proposes "regelt sich selbst" from the profile.
+        battery.self_regulating ??= null;
+        battery.cutoff_soc ??= null;
+      }
+      // ?team=sequence|together|unset|automation|transfer|parallel (Mehrere Speicher, control/executor.py
+      // _async_team): with ?done=1 "Nacheinander" is on, the BYD works, the Venus waits; Joe learned that the
+      // BYD stops discharging at 10.5 %. unset: not chosen yet (Joe braucht dich proposes it); automation:
+      // the owner's interlock automations still do it; transfer: they ran against each other despite the
+      // blocks; parallel: a weak day, both charge side by side.
+      const teamParam = params.get("team") || (done ? "sequence" : "unset");
+      state.config.rules.battery_team = ["unset", "together"].includes(teamParam) ? (teamParam === "together" ? "together" : null) : "sequence";
+      state.config.rules.team_charge_order ??= [];
+      state.config.rules.team_discharge_order ??= [];
+      if (done && state.config.batteries.length >= 2) {
+        state.config = applyUpdate(state.config, { batteries: { [state.config.batteries[0].id]: { cutoff_soc: 10.5 } } }, "learned");
+        if (state.config.rules.battery_team) {
+          state.config = applyUpdate(state.config, { rules: { battery_team: state.config.rules.battery_team } }, "user");
+        }
       }
       // ?pv=night: the inverter is off without sun (its value unavailable, the sun below the horizon).
       const pvNight = params.get("pv") === "night";
@@ -401,6 +428,7 @@
           pending: false,
           ready,
           surplus: surplusView(),
+          team: teamView(),
           ...control,
           log: control.log.slice(-30),
         };
@@ -467,6 +495,72 @@
           sun_ratio: 0.93,
         };
       };
+      // "Mehrere Speicher" (executor._async_team): the first battery works, the others are blocked.
+      const teamView = () => {
+        const batteries = state.config.batteries;
+        const rules = state.config.rules;
+        const proposed = (b) => b.adapter === "fronius" || b.adapter === "omnibattery";
+        const regulating = (b) => b.self_regulating ?? proposed(b);
+        const members = batteries.filter(regulating);
+        const parallel = teamParam === "parallel";
+        const order = (key) => {
+          const named = rules[key] ?? [];
+          const rank = (b) => (named.indexOf(b.id) < 0 ? named.length + batteries.indexOf(b) : named.indexOf(b.id));
+          return [...members].sort((a, b) => rank(a) - rank(b));
+        };
+        const active = order("team_charge_order")[0]?.id ?? null;
+        const stateName =
+          rules.battery_team == null
+            ? "unset"
+            : rules.battery_team === "together"
+              ? "together"
+              : members.length < 2
+                ? "single"
+                : teamParam === "automation"
+                  ? "automation"
+                  : "on";
+        const on = stateName === "on";
+        return {
+          state: stateName,
+          mode: rules.battery_team ?? null,
+          dry: state.mode !== "live",
+          active: on ? active : null,
+          since: on ? dayAt(0, "09:40") : null,
+          flow: on ? "surplus" : null,
+          parallel,
+          batteries: Object.fromEntries(
+            batteries.map((b, i) => [
+              b.id,
+              {
+                name: b.name,
+                self_regulating: regulating(b),
+                proposed: proposed(b),
+                soc: 46 - 6 * i,
+                power_w: i === 0 ? 1800 : parallel ? 700 : 0,
+                cutoff: b.cutoff_soc ?? null,
+                floor: i === 0 ? 5 : 12,
+                charge: on && regulating(b) ? (b.id === active || parallel ? "free" : "blocked") : null,
+                discharge: on && regulating(b) ? (b.id === active && !parallel ? "free" : "blocked") : null,
+                why: on && regulating(b) ? (b.id === active ? "active" : parallel ? "parallel" : "waits_full") : null,
+                problem: null,
+              },
+            ]),
+          ),
+          automations: stateName === "automation" ? ["Akku-Hierarchie: Venus hinter BYD", "Interlock R2", "Interlock R3", "Akku-Boost R5"] : [],
+          transfer:
+            teamParam === "transfer" || stateName === "unset"
+              ? {
+                  since: dayAt(0, "08:10"),
+                  at: dayAt(0, "08:12"),
+                  active: false,
+                  charging: [batteries[1]?.name ?? "Venus"],
+                  discharging: [batteries[0]?.name ?? "BYD"],
+                  despite: teamParam === "transfer",
+                }
+              : null,
+          proposal: stateName === "unset" && members.length >= 2,
+        };
+      };
       const log = (kind, detail = {}) => {
         control.log.push({ at: stamp(), kind, ...detail });
         control.log = control.log.slice(-100);
@@ -489,6 +583,17 @@
           { at: dayAt(0, "09:12"), kind: "surplus_cap", power: 1.4, until: dayAt(0, "19:00"), loadpoint: "Fußbodenheizung" },
           { at: dayAt(0, "11:40"), kind: "surplus_raise", power: 1.8, until: dayAt(0, "19:00"), loadpoint: "Fußbodenheizung" },
         );
+        const [first, second] = state.config.batteries;
+        if (first && second) {
+          control.log.push(
+            { at: dayAt(1, "21:05"), kind: "team_cutoff", battery: first.id, soc: 10.5, value: 10.5 },
+            { at: dayAt(1, "21:05"), kind: "team_handover", battery: second.id, previous: first.id, reason: "empty", soc: 10.5 },
+            { at: dayAt(1, "21:05"), kind: "team_block", battery: first.id, charge: true, discharge: true },
+            { at: dayAt(1, "22:00"), kind: "team_end", reason: "night" },
+            { at: dayAt(0, "09:40"), kind: "team_handover", battery: first.id, previous: second.id, reason: "order", soc: 31 },
+            { at: dayAt(0, "09:40"), kind: "team_block", battery: second.id, charge: true, discharge: true },
+          );
+        }
       }
       // ?steer=1 (Übersicht › Gerade jetzt): Joe steers right now – the first battery charges, the second holds,
       // the car charges; "Sofort freigeben" shows up.

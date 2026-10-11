@@ -39,11 +39,18 @@ ROLES = (
     "command_timeout",
     "system_charge_limit",
     "system_charge_limit_enabled",
+    "system_discharge_limit",
 )
-# Levers only for the daytime cap, on the integration's system device (all its
-# batteries at once): no part of the night's steering, its test run or its
-# signature, and a lever that is gone keeps no battery from being steered.
-SYSTEM_ROLES = ("system_charge_limit", "system_charge_limit_enabled")
+# Levers only for the day (the daytime cap, several batteries one after the
+# other), on the integration's system device (all its batteries at once): no
+# part of the night's steering, its test run or its signature, and a lever
+# that is gone keeps no battery from being steered. The system's limits share
+# one switch (system_charge_limit_enabled).
+SYSTEM_ROLES = (
+    "system_charge_limit",
+    "system_charge_limit_enabled",
+    "system_discharge_limit",
+)
 # Meanings of mode options.
 MODE_OPTIONS = ("normal", "force_charge", "hold", "force_discharge")
 # Entity domains per role.
@@ -61,6 +68,7 @@ ROLE_DOMAINS: dict[str, tuple[str, ...]] = {
     "command_timeout": ("number", "input_number"),
     "system_charge_limit": ("number", "input_number"),
     "system_charge_limit_enabled": ("switch", "input_boolean"),
+    "system_discharge_limit": ("number", "input_number"),
 }
 
 # Ways to charge from the grid:
@@ -199,11 +207,14 @@ PROFILES: dict[str, Profile] = {
             prepare=(Set("battery_manual_mode", True),),
             # The daytime cap: the system's power limits, in automatic mode
             # (manual mode would stop Omnibattery's own grid-zero control).
-            # Unique ids "marstek_venus_system_system_power_limits" and
-            # "…_system_max_charge_power" on the system device (October 2026).
+            # Unique ids "marstek_venus_system_system_power_limits",
+            # "…_system_max_charge_power" and "…_system_max_discharge_power" on
+            # the system device (October 2026). Several batteries one after the
+            # other block discharging with the same switch.
             entry_roles={
                 "system_charge_limit": ("system_max_charge_power",),
                 "system_charge_limit_enabled": ("system_power_limits",),
+                "system_discharge_limit": ("system_max_discharge_power",),
             },
             # Its own charge delay and predictive charging hold charging back, too.
             day_conflicts=("charge_delay", "predictive_charging"),

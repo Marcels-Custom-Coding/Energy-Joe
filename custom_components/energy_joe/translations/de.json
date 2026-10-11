@@ -147,6 +147,10 @@
     "no_progress": {
       "title": "Speicher lädt nicht",
       "description": "{battery} soll laden, der Ladestand steigt aber seit einer halben Stunde nicht. Prüfe, ob der Speicher Netzladen erlaubt; ein Testlauf im Energy-Joe-Panel unter Geräte hilft."
+    },
+    "battery_transfer": {
+      "title": "Speicher laden sich gegenseitig",
+      "description": "{charging} lädt, während {discharging} entlädt – seit mehr als zwei Minuten, obwohl Joe immer nur einen arbeiten lässt. Etwas anderes schreibt dieselben Grenzen, oder eine Sperre greift nicht. Schau im Energy-Joe-Panel unter Geräte › Speicher › Mehrere Speicher nach."
     }
   },
   "exceptions": {

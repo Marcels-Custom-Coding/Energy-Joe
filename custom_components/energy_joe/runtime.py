@@ -106,6 +106,7 @@ class JoeRuntime:
         )
         self.executor.notifier = self.notifier
         self.executor.on_learned = self._learned_limit_ref
+        self.executor.on_cutoff = self._learned_cutoff
         # Joe's calendar for each car whose mailbox has none.
         self.calendars = CarCalendarStore(hass)
         self.planner.calendars = self.calendars
@@ -222,6 +223,23 @@ class JoeRuntime:
             )
         except Exception:
             _LOGGER.exception("Keeping the learned reference failed")
+
+    def _learned_cutoff(self, battery_id: str, soc: float) -> None:
+        """The level a battery really stops discharging at, as Joe saw it (a
+        value the user set stays)."""
+        if not any(b["id"] == battery_id for b in self._config["batteries"]):
+            return
+        path = f"batteries[{battery_id}].cutoff_soc"
+        # Only a value the user set for this field counts (not the battery's).
+        own = (self._config.get("provenance") or {}).get(path) or {}
+        if own.get("source") == "user":
+            return
+        try:
+            self.async_update_config(
+                {"batteries": {battery_id: {"cutoff_soc": soc}}}, "learned", "cutoff"
+            )
+        except Exception:
+            _LOGGER.exception("Keeping the learned cutoff failed")
 
     async def _async_profile_updates(self) -> None:
         """Batteries set up before a profile learned more (e.g. a manual mode)."""

@@ -162,6 +162,15 @@ BATTERY = vol.Schema(
         vol.Optional("limit_ref_w", default=None): vol.Any(
             None, vol.All(vol.Coerce(float), vol.Range(min=100, max=100000))
         ),
+        # Regulates itself to 0 W at the grid meter (Fronius, Omnibattery in
+        # automatic mode): with others of its kind it needs coordinating
+        # (rules.battery_team). None: as Joe proposes from its profile.
+        vol.Optional("self_regulating", default=None): vol.Any(None, bool),
+        # The level at which it really stops discharging (a BYD at ~10.5 %
+        # with a reserve of 5 %); None: not known yet, Joe learns it.
+        vol.Optional("cutoff_soc", default=None): vol.Any(
+            None, vol.All(vol.Coerce(float), vol.Range(min=0, max=60))
+        ),
     }
 )
 
@@ -468,6 +477,8 @@ ACTION = vol.Schema(
 
 # How much of the solar forecast Joe counts on for the daytime surplus.
 DAY_CAUTIONS = ("tight", "normal", "careful")
+# How several batteries that regulate themselves work together.
+TEAM_MODES = ("sequence", "together")
 
 RULES = vol.Schema(
     {
@@ -510,6 +521,14 @@ RULES = vol.Schema(
         # meter for evcc's PV mode (see control/surplus.py).
         vol.Optional("day_surplus", default=False): bool,
         vol.Optional("day_caution", default="normal"): vol.In(DAY_CAUTIONS),
+        # Several batteries that regulate themselves on one grid meter:
+        # "sequence" one after the other (see control/team.py), "together"
+        # left to themselves; None: not chosen yet (left to themselves).
+        vol.Optional("battery_team", default=None): vol.Any(None, vol.In(TEAM_MODES)),
+        # Which battery goes first (battery ids; the others follow in the
+        # order of the batteries).
+        vol.Optional("team_charge_order", default=list): [str],
+        vol.Optional("team_discharge_order", default=list): [str],
         # Expert: count the inverter's losses when charging from the grid,
         # measured at the grid meter (a battery's own meter may sit behind it).
         vol.Optional("converter_losses", default=False): bool,

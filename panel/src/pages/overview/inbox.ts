@@ -2,6 +2,7 @@ import { LitElement, css, html, nothing } from "lit";
 import { property, state } from "lit/decorators.js";
 import "../../components/day-questions";
 import "../../components/steer-tonight";
+import { batteryTeam, teamTransfer } from "../../components/battery-team";
 import { daySurplus, surplusAbility, surplusConflicts } from "../../components/day-surplus";
 import { checkText } from "../../components/texts";
 import { tip } from "../../components/tip";
@@ -166,6 +167,37 @@ export function inboxItems(t: Translate, joe: JoeState, inputs: InboxInputs = {}
         to: { tab: "devices", section: "battery", id, sub: "intruders" },
       });
     }
+  }
+  // Several batteries: running against each other despite Joe's blocks, the
+  // owner's automations doing it so far, or "Nacheinander" not chosen yet.
+  const team = batteryTeam(joe);
+  const teamTo: Route = { tab: "devices", section: "battery", id: "together" };
+  if (team?.transfer?.despite) {
+    warn({
+      id: `team:transfer:${team.transfer.since}`,
+      title: t("team.title"),
+      text: teamTransfer(t, team) ?? "",
+      to: teamTo,
+    });
+  }
+  if (team?.state === "automation") {
+    push({
+      id: "team:automations",
+      icon: "mdi:robot-confused-outline",
+      title: t("team.title"),
+      text: t("team.automations", { names: team.automations.map((n) => `„${n}“`).join(", ") }),
+      to: teamTo,
+    });
+  }
+  if (team?.proposal) {
+    push({
+      id: "team:proposal",
+      icon: "mdi:battery-sync-outline",
+      title: t("overview.todo.team"),
+      text: t("overview.todo.team.text"),
+      to: teamTo,
+      fix: { label: t("team.mode.sequence"), tip: "team_mode", patch: { rules: { battery_team: "sequence" } } },
+    });
   }
   // A limit in % that could take part once Joe knows what 100 % stand for.
   if (config.rules.day_surplus) {
