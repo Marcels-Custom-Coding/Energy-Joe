@@ -117,14 +117,12 @@ def test_the_one_mailbox_moves_into_each_car() -> None:
             "need": {"enabled": True, "source": source},
         }
 
-    stored = model.apply_update(
-        model.default_config(),
-        {"actions": {"kona": car("kona", "mailbox"), "eup": car("eup", "account")}},
-        "user",
-    )
-    stored["version"] = 3
-    for action in stored["actions"]:
-        del action["need"]["mailbox"], action["need"]["allowed"]
+    # Stored by version 3 (the need on the night action, as up to version 6).
+    stored = {
+        **model.default_config(),
+        "actions": [car("kona", "mailbox"), car("eup", "account")],
+        "version": 3,
+    }
     stored["mailbox"] = {
         "enabled": True,
         "provider": "icloud",
@@ -135,7 +133,7 @@ def test_the_one_mailbox_moves_into_each_car() -> None:
     }
     stored["provenance"]["mailbox.allowed"] = {"source": "user"}
     migrated = model.migrate(stored)
-    kona, eup = migrated["actions"]
+    kona, eup = migrated["cars"]
     assert kona["need"]["mailbox"]["address"] == "auto+kona@example.org"
     # The plus address logs in as the mailbox it belongs to.
     assert kona["need"]["mailbox"]["username"] == "auto@example.org"
@@ -150,25 +148,20 @@ def test_the_one_mailbox_moves_into_each_car() -> None:
 
 def test_a_microsoft_mailbox_becomes_the_cars_account() -> None:
     """Microsoft's mailbox has a calendar: the one car using it reads that now."""
-    stored = model.apply_update(
-        model.default_config(),
-        {
-            "actions": {
-                "kona": {
-                    "id": "kona",
-                    "name": "KONA",
-                    "kind": "switch",
-                    "entity_id": "select.kona",
-                    "on_value": "now",
-                    "need": {"enabled": True, "source": "mailbox"},
-                }
+    stored = {
+        **model.default_config(),
+        "actions": [
+            {
+                "id": "kona",
+                "name": "KONA",
+                "kind": "switch",
+                "entity_id": "select.kona",
+                "on_value": "now",
+                "need": {"enabled": True, "source": "mailbox"},
             }
-        },
-        "user",
-    )
-    stored["version"] = 3
-    for action in stored["actions"]:
-        del action["need"]["mailbox"], action["need"]["allowed"]
+        ],
+        "version": 3,
+    }
     stored["mailbox"] = {
         "provider": "microsoft",
         "address": "auto@firma.example",
@@ -176,7 +169,7 @@ def test_a_microsoft_mailbox_becomes_the_cars_account() -> None:
         "tenant": "firma.example",
         "allowed": ["@firma.example"],
     }
-    (kona,) = model.migrate(stored)["actions"]
+    (kona,) = model.migrate(stored)["cars"]
     assert kona["need"]["source"] == "account"
     assert kona["need"]["account"]["kind"] == "microsoft"
     assert kona["need"]["account"]["client_id"] == "company-app"

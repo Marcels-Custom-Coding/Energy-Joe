@@ -22,6 +22,10 @@
       Aufruf über einen lokalen Webserver im Repo-Wurzelverzeichnis, z. B.
       python3 -m http.server 8767  →  http://localhost:8767/panel/dev/
       Parameter: ?dark=1  ?lang=en  ?step=welcome|scan|questions|done  ?done=1  ?page=settings  ?mode=off|advisory|live  ?sample=generic  ?audit=1  ?need=1  ?presence=0  ?climate=1
+      ?cars=merged|ask|migrated|guest (Auto & Laden, mit ?done=1: Kona aus evcc und Hyundai zusammengeführt, steckt am Carport;
+      am Stellplatz steckt ein Auto, das Joe nicht erkennt – er fragt. ask: zwei Autos, Joe fragt, ob sie eins sind;
+      migrated: so wie die Version 6 umgezogen ist, noch nicht verknüpft; guest: am Stellplatz ist als Gast beantwortet)
+      ?remind=1 (abends: Kona braucht morgen Strom, steckt aber nicht)
       ?page=<Adresse> ohne Präfix, z. B. review/days, devices/climate/climate.buero, household/people;
       alte Werte (history, learn, climate) leiten um. Jeder Sprung im Panel schreibt die Adresse zurück in ?page=,
       damit Neuladen und Zurück funktionieren.
@@ -74,7 +78,7 @@
       customElements.define("ha-menu-button", class extends HTMLElement {});
 
       // The same merge rules as custom_components/energy_joe/model.py (simplified).
-      const KEYED = ["batteries", "persons", "consumers", "actions"];
+      const KEYED = ["batteries", "persons", "consumers", "actions", "cars"];
       const REPLACED = new Set([
         "grid_power",
         "home_power",
@@ -109,7 +113,8 @@
         },
         persons: { person_entity: null, calendars: [] },
         consumers: { energy_entity: null, power_entity: null, included_in: null, source: "manual" },
-        actions: { enabled: true, reset: "previous", reset_value: null, lead_min: 0, auto: true, conditions: [], priority: 1 },
+        actions: { enabled: true, reset: "previous", reset_value: null, lead_min: 0, auto: true, conditions: [], priority: 1, point: null },
+        cars: { sources: [], tracker_entity: null, need: {}, remind: true, remind_time: "20:00" },
       };
       const isDict = (v) => v && typeof v === "object" && !Array.isArray(v);
       const below = (other, path) => other.startsWith(`${path}.`) || other.startsWith(`${path}[`);
@@ -203,6 +208,102 @@
         return config;
       };
       withClimate(state.config);
+
+      // 0.9.19 (model.py version 7): a car is its own item with its need, the wallbox a charge point that
+      // charges whichever car is plugged in. The samples are of version 6 (the need on the night action):
+      // this is the migration (model._needs_to_cars), then what Joe links when he looks around (sync_cars).
+      const NEED_ENTITY_FIELDS = ["soc_entity", "range_entity", "capacity_entity", "odometer_entity", "consumption_entity"];
+      const POINT = { vehicle_entity: null, connected_entity: null, soc_entity: null, range_entity: null, odometer_entity: null, cars: null, unknown: "ask", assume_car: null };
+      const migrateCars = (config) => {
+        config.cars = config.cars ?? [];
+        config.notify = { cars: true, ...config.notify };
+        for (const action of config.actions ?? []) {
+          const need = action.need;
+          delete action.need;
+          if (action.point !== undefined) continue;
+          const isCar = action.kind === "switch" && (need?.enabled || need?.soc_entity || need?.range_entity || action.id.startsWith("ev_"));
+          if (!isCar) {
+            action.point = null;
+            continue;
+          }
+          const connected = (action.conditions ?? []).find((c) => c.entity_id.startsWith("binary_sensor.") && c.entity_id.endsWith("_connected"));
+          action.point = { ...POINT, connected_entity: connected?.entity_id ?? null };
+          if (need && (need.enabled || need.soc_entity || need.range_entity) && !config.cars.some((c) => c.id === action.id)) {
+            config.cars.push({ id: action.id, name: action.name, sources: [], tracker_entity: null, need: { max_soc: 100, ...need }, remind: true, remind_time: "20:00" });
+          }
+        }
+        config.version = 7;
+        return config;
+      };
+      const carsParam = params.get("cars") || "merged";
+      const kiaFound = sample.discovery.cars?.[0];
+      const evccKona = { id: "evcc:kona_evcc", kind: "evcc", platform: "evcc_intg", device_id: "kona_evcc", name: "Kona", vehicle: "db:27", entities: {} };
+      const kiaKona = kiaFound
+        ? { id: `car:${kiaFound.device_id}`, kind: "car", platform: kiaFound.integration, device_id: kiaFound.device_id, name: "KONA", vehicle: null, entities: { ...kiaFound.entities, location: "device_tracker.kona_location" } }
+        : null;
+      sample.discovery.car_sources = [
+        evccKona,
+        ...(kiaKona ? [kiaKona] : []),
+        { id: "car:zoe", kind: "car", platform: "renault", device_id: "zoe", name: "ZOE", vehicle: null, entities: { soc: "sensor.zoe_battery" } },
+      ];
+      if (kiaFound) kiaFound.name = "KONA";
+      const linkCars = (config) => {
+        const car = config.cars.find((c) => c.id === "ev_carport");
+        const carport = config.actions.find((a) => a.id === "ev_carport");
+        if (carport?.point) {
+          Object.assign(carport.point, { vehicle_entity: "select.evcc_carport_vehicle_name", soc_entity: "sensor.evcc_carport_vehicle_soc", range_entity: null });
+        }
+        if (!car || carsParam === "migrated") return;
+        if (carsParam === "ask") {
+          // Two cars Joe is not sure about: the evcc one and the maker's (he asks whether they are one).
+          car.name = "Mein Auto";
+          car.sources = kiaKona ? [{ ...kiaKona, name: "Electric car" }] : [];
+          const plain = Object.fromEntries(Object.entries(car.need).filter(([key]) => !NEED_ENTITY_FIELDS.includes(key)));
+          config.cars.push({ id: "car_kona", name: "Kona", sources: [evccKona], tracker_entity: null, need: { ...plain, enabled: false }, remind: true, remind_time: "20:00" });
+        } else {
+          car.name = "Kona";
+          car.sources = [evccKona, ...(kiaKona ? [kiaKona] : [])];
+        }
+        for (const field of NEED_ENTITY_FIELDS) car.need[field] = null;
+      };
+      migrateCars(state.config);
+      if (done) linkCars(state.config);
+      const linkCarsAfter = (config) => {
+        linkCars(config);
+        return config;
+      };
+      // A second charge point where a car Joe does not know is plugged in (a friend's): he asks.
+      const carAnswers = {};
+      if (done && params.get("devices") !== "lean" && state.config.actions.some((a) => a.id === "ev_carport")) {
+        state.config.actions.push({
+          ...structuredClone(state.config.actions.find((a) => a.id === "ev_carport")),
+          id: "ev_stellplatz",
+          name: "Stellplatz",
+          entity_id: "select.evcc_stellplatz_mode",
+          conditions: [{ entity_id: "binary_sensor.evcc_stellplatz_connected", op: "eq", value: true }],
+          power_entity: null,
+          consumer_id: null,
+          point: { ...POINT, vehicle_entity: "select.evcc_stellplatz_vehicle_name", connected_entity: "binary_sensor.evcc_stellplatz_connected", soc_entity: "sensor.evcc_stellplatz_vehicle_soc" },
+        });
+        if (carsParam === "guest") carAnswers.ev_stellplatz = { car: "guest", since: null, at: new Date().toISOString() };
+      }
+      const evccStates = {
+        "select.evcc_carport_vehicle_name": ["db:27", "Carport Fahrzeug", { options: ["null", "db:27"] }],
+        "sensor.evcc_carport_vehicle_soc": ["57", "Carport Fahrzeug Ladestand", { unit_of_measurement: "%" }],
+        "binary_sensor.evcc_carport_connected": [params.get("remind") === "1" ? "off" : "on", "Carport Verbunden", {}],
+        "select.evcc_stellplatz_mode": ["pv", "Stellplatz Modus", { options: ["off", "pv", "minpv", "now"] }],
+        "select.evcc_stellplatz_vehicle_name": ["null", "Stellplatz Fahrzeug", { options: ["null", "db:27"] }],
+        "binary_sensor.evcc_stellplatz_connected": [params.get("remind") === "1" ? "off" : "on", "Stellplatz Verbunden", {}],
+        "sensor.evcc_stellplatz_vehicle_soc": ["0", "Stellplatz Fahrzeug Ladestand", { unit_of_measurement: "%" }],
+        "device_tracker.kona_location": ["home", "KONA Ort", {}],
+        "sensor.zoe_battery": ["64", "ZOE Batterie", { unit_of_measurement: "%", device_class: "battery" }],
+      };
+      for (const [id, [value, name, attributes]] of Object.entries(evccStates)) {
+        sample.hass.states[id] = { entity_id: id, state: value, attributes: { friendly_name: name, ...attributes } };
+      }
+      if (params.get("remind") === "1") {
+        sample.hass.states["select.evcc_carport_vehicle_name"].state = "null";
+      }
       // 0.9.17: daytime surplus for evcc (model.py); the samples are older. With ?done=1 it is on.
       const surplusParam = params.get("surplus");
       state.config.rules = { day_surplus: done && surplusParam !== "0", day_caution: "normal", ...state.config.rules };
@@ -275,10 +376,9 @@
         const c = state.config;
         const base = { enabled: true, on_value: "on", reset: "previous", reset_value: null, lead_min: 0, auto: true, forecast_below_kwh: null, conditions: [], power_kw: null, power_entity: null, priority: 3, sensor_entity: null, comfort: 45, maximum: 62, buffer: 3 };
         const ev = c.actions.find((a) => a.id === "ev_carport");
-        if (ev) {
-          ev.consumer_id = "sensor.wallbox_energy";
-          ev.need = { ...ev.need, enabled: true, capacity_kwh: 60 };
-        }
+        if (ev) ev.consumer_id = "sensor.wallbox_energy";
+        const kona = c.cars?.find((car) => car.id === "ev_carport");
+        if (kona) kona.need = { ...kona.need, enabled: true, capacity_kwh: 60 };
         c.consumers.push({ id: "sensor.dishwasher_energy", name: "Spülmaschine", kind: "household", energy_entity: "sensor.dishwasher_energy", power_entity: null, included_in: "sensor.house_energy", source: "energy_dashboard", runs: "cheap" });
         c.actions.push(
           { ...base, id: "hot_water_tank", name: "Warmwasser", kind: "target", entity_id: "switch.ww_boost", sensor_entity: "sensor.ww_speicher_temperatur", consumer_id: "sensor.hot_water_energy", forecast_below_kwh: 20, power_kw: 0.5, priority: 2 },
@@ -324,8 +424,8 @@
       if (lean) {
         const c = state.config;
         c.batteries = c.batteries.slice(0, 1);
-        const cars = new Set(c.actions.filter((a) => a.need?.soc_entity || a.need?.range_entity).map((a) => a.id));
-        c.actions = c.actions.filter((a) => !cars.has(a.id));
+        c.actions = c.actions.filter((a) => !a.point);
+        c.cars = [];
         c.consumers = c.consumers.filter((x) => x.kind !== "ev");
         sample.discovery.wallboxes = [];
         sample.discovery.cars = [];
@@ -623,9 +723,7 @@
       // ?need=1: the car charges by need (the night computed with made-up trips).
       if (params.get("need") === "1" && history.plan_need) {
         history.plan = history.plan_need;
-        for (const action of state.config.actions) {
-          if (action.kind === "switch" && action.need) action.need.enabled = true;
-        }
+        for (const car of state.config.cars ?? []) car.need.enabled = true;
         state.config.routing = { ...state.config.routing, service: "waze" };
       }
       // ?pnotes=1 (Plan): every plan note with its jump, hot water + own devices in tonight's plan, a battery without size.
@@ -809,8 +907,106 @@
         return null;
       };
 
+      // The car plugged in at a charge point and where its values come from.
+      const carAt = (pointId) => {
+        const cars = carsView();
+        const id = cars.points[pointId]?.state === "car" ? cars.points[pointId].car : null;
+        const car = (state.config.cars ?? []).find((x) => x.id === id);
+        return { car, values: car ? cars.cars[car.id].values : {} };
+      };
       const listeners = new Set();
-      const view = () => structuredClone({ ...state, control: controlView(), climate: climateView() });
+      // Which car is plugged in where (plan/cars.py detect_all, simplified) and where each value comes from.
+      const carsView = () => {
+        const c = state.config;
+        const st = (id) => (id ? hass.states[id]?.state : undefined);
+        const points = {};
+        const taken = new Set();
+        const pointsOf = c.actions.filter((a) => a.point && a.enabled !== false);
+        for (const pass of [1, 2]) {
+          for (const a of pointsOf) {
+            if (pass === 2 && points[a.id].state !== "unknown") continue;
+            const allowed = (c.cars ?? []).filter((car) => a.point.cars == null || a.point.cars.includes(car.id));
+            const conn = st(a.point.connected_entity);
+            const veh = st(a.point.vehicle_entity);
+            const entry = { state: "unknown", car: null, how: null, vehicle: veh && veh !== "null" ? veh : null, connected: conn === undefined ? null : conn === "on", ask: false };
+            points[a.id] = entry;
+            if (!allowed.length) entry.state = "free";
+            else if (entry.connected === false) entry.state = "empty";
+            else if (carAnswers[a.id]?.car === "guest") Object.assign(entry, { state: "guest", how: "answer" });
+            else if (carAnswers[a.id] && allowed.some((x) => x.id === carAnswers[a.id].car)) Object.assign(entry, { state: "car", car: carAnswers[a.id].car, how: "answer" });
+            else if (entry.vehicle && allowed.find((x) => x.sources.some((src) => src.vehicle === entry.vehicle))) {
+              const car = allowed.find((x) => x.sources.some((src) => src.vehicle === entry.vehicle));
+              Object.assign(entry, { state: "car", car: car.id, how: "evcc" });
+            } else if (pass === 2) {
+              const free = allowed.filter((x) => !taken.has(x.id));
+              if (free.length === 1) Object.assign(entry, { state: "car", car: free[0].id, how: "home" });
+              else if (a.point.unknown === "assume" && a.point.assume_car) Object.assign(entry, { state: "car", car: a.point.assume_car, how: "assume" });
+              else entry.ask = Boolean(entry.connected || entry.vehicle);
+            }
+            if (entry.state === "car") taken.add(entry.car);
+          }
+        }
+        const value = (car, role, point) => {
+          const at = point?.[`${role}_entity`];
+          if (role === "soc" && at && Number.parseFloat(st(at)) > 0.5) return { entity: at, kind: "evcc", platform: "evcc_intg", name: null };
+          for (const src of car.sources) if (src.entities?.[role]) return { entity: src.entities[role], kind: src.kind, platform: src.platform, name: src.name };
+          const field = { soc: "soc_entity", range: "range_entity", capacity: "capacity_entity", odometer: "odometer_entity", consumption: "consumption_entity" }[role];
+          return field && car.need?.[field] ? { entity: car.need[field], kind: "manual", platform: null, name: null } : null;
+        };
+        const cars = {};
+        for (const car of c.cars ?? []) {
+          const pointId = Object.keys(points).find((id) => points[id].state === "car" && points[id].car === car.id) ?? null;
+          const point = c.actions.find((a) => a.id === pointId)?.point;
+          const values = {};
+          for (const role of ["soc", "range", "odometer", "capacity", "consumption", "plugged", "outside_temp", "location"]) {
+            const found = value(car, role, point);
+            if (found) values[role] = found;
+          }
+          cars[car.id] = { point: pointId, plugged: values.plugged ? st(values.plugged.entity) === "on" : null, home: true, values };
+        }
+        const separate = c.answers?.car_separate ?? [];
+        const merge = [];
+        for (const a of (c.cars ?? []).filter((x) => x.sources.some((s) => s.kind === "evcc") && !x.sources.some((s) => s.kind === "car"))) {
+          for (const b of (c.cars ?? []).filter((x) => x.sources.some((s) => s.kind === "car") && !x.sources.some((s) => s.kind === "evcc"))) {
+            if (!separate.includes([a.id, b.id].sort().join("|"))) {
+              merge.push({ a: a.id, b: b.id, a_name: a.name, b_name: b.name, b_platform: b.sources.find((s) => s.kind === "car").platform });
+            }
+          }
+        }
+        const reminders =
+          params.get("remind") === "1"
+            ? (c.cars ?? []).filter((car) => !cars[car.id].point).map((car) => ({ car: car.id, name: car.name, km: 120 }))
+            : [];
+        return { points, cars, answers: carAnswers, merge, reminders };
+      };
+      // The plan knows which car is plugged in at each charge point (plan/actions.py) and each car's need.
+      const planView = (cars) => {
+        const plan = state.plan;
+        if (!plan) return plan;
+        const p = structuredClone(plan);
+        const leave = { empty: "not_plugged", guest: "guest", unknown: "unknown_car" };
+        const actions = p.actions ?? [];
+        for (const a of state.config.actions.filter((x) => x.point && !actions.some((y) => y.id === x.id))) {
+          actions.push({ id: a.id, name: a.name, kind: "switch", run: false, manual: false, reasons: [], start: p.window?.start ?? "", end: p.window?.end ?? "", power_kw: a.power_kw, energy_kwh: 0, cost: 0, priority: 1 });
+        }
+        p.actions = actions.map((a) => {
+          const pt = cars.points[a.id];
+          if (!pt || pt.state === "free") return a;
+          const out = { ...a, plugged: pt.state, car: pt.car, how: pt.how };
+          if (leave[pt.state]) Object.assign(out, { run: false, reasons: [leave[pt.state]], energy_kwh: 0, cost: 0, need: undefined, target: undefined });
+          return out;
+        });
+        const need = (history.plan_need?.actions ?? []).find((a) => a.need)?.need;
+        p.cars = {};
+        for (const car of state.config.cars ?? []) {
+          if (car.need.enabled && need) p.cars[car.id] = { ...structuredClone(need), car: car.id, name: car.name, point: cars.cars[car.id]?.point ?? null };
+        }
+        return p;
+      };
+      const view = () => {
+        const cars = state.config.cars ? carsView() : undefined;
+        return structuredClone({ ...state, plan: cars ? planView(cars) : state.plan, cars, control: controlView(), climate: climateView() });
+      };
       const push = () => listeners.forEach((cb) => cb(view()));
 
       // 0.9.14: the air conditioner's meter sits on its HA device (device-model.ts puts it to the climate device).
@@ -945,7 +1141,7 @@
             case "energy_joe/adopt":
               await new Promise((resolve) => setTimeout(resolve, 900));
               if (!adopted) {
-                state.config = withClimate(structuredClone(sample.adopted_config));
+                state.config = linkCarsAfter(migrateCars(withClimate(structuredClone(sample.adopted_config))));
                 adopted = true;
                 push();
               }
@@ -1020,15 +1216,51 @@
               log(msg.skip ? "skip" : "unskip");
               push();
               return null;
+            case "energy_joe/car/answer":
+              if (msg.car == null) delete carAnswers[msg.point];
+              else carAnswers[msg.point] = { car: msg.car, since: null, at: new Date().toISOString() };
+              push();
+              return null;
+            case "energy_joe/car/merge": {
+              const cars = state.config.cars;
+              let into = cars.find((x) => x.id === msg.into);
+              let other = cars.find((x) => x.id === msg.other);
+              if (!into || !other) throw { code: "invalid", message: "unknown_car" };
+              if (!into.need.enabled && other.need.enabled) [into, other] = [other, into];
+              const sources = [...into.sources, ...other.sources.filter((s) => !into.sources.some((x) => x.id === s.id))];
+              state.config = applyUpdate(state.config, { cars: { [into.id]: { sources }, [other.id]: null } }, "user");
+              push();
+              return { car: into.id };
+            }
+            case "energy_joe/car/split": {
+              const car = state.config.cars.find((x) => x.id === msg.car);
+              const source = car?.sources.find((s) => s.id === msg.source);
+              if (!source) throw { code: "invalid", message: "unknown_source" };
+              const id = `car_${(source.name || "auto").toLowerCase().replace(/[^a-z0-9]+/g, "_")}`;
+              const separate = [...(state.config.answers.car_separate ?? []), [car.id, id].sort().join("|")];
+              state.config = applyUpdate(
+                state.config,
+                { cars: { [car.id]: { sources: car.sources.filter((s) => s.id !== source.id) }, [id]: { name: source.name || id, sources: [source], need: { ...structuredClone(car.need), enabled: false } } }, answers: { car_separate: separate } },
+                "user",
+              );
+              push();
+              return { car: id };
+            }
+            case "energy_joe/car/separate": {
+              const separate = [...(state.config.answers.car_separate ?? []), [msg.a, msg.b].sort().join("|")];
+              state.config = applyUpdate(state.config, { answers: { car_separate: separate } }, "user");
+              push();
+              return null;
+            }
             case "energy_joe/control/action_tonight": {
               control.tonight_target = control.tonight_target ?? {};
               const night = state.plan?.window?.start;
               if (msg.on && night) control.tonight[msg.action_id] = night;
               else delete control.tonight[msg.action_id];
               if (msg.on && night && msg.target != null) {
-                const car = state.config.actions.find((a) => a.id === msg.action_id);
+                const { car, values } = carAt(msg.action_id);
                 const reserve = msg.unit === "km" ? (car?.need?.reserve_km ?? 50) : 0;
-                const sensor = msg.unit === "km" ? car?.need?.range_entity : car?.need?.soc_entity;
+                const sensor = msg.unit === "km" ? values.range?.entity : values.soc?.entity;
                 control.tonight_target[msg.action_id] = { night, target: msg.target + reserve, chosen: msg.target, unit: msg.unit, sensor };
               } else delete control.tonight_target[msg.action_id];
               log("tonight", { battery: `action:${msg.action_id}`, on: msg.on });
@@ -1043,9 +1275,9 @@
                 delete control.actions[msg.action_id];
                 log("boost_end", { battery: `action:${msg.action_id}`, reason: "stopped" });
               } else {
-                const action = state.config.actions.find((a) => a.id === msg.action_id);
-                const reserve = msg.unit === "km" ? (action?.need?.reserve_km ?? 50) : 0;
-                const sensor = msg.unit === "km" ? action?.need?.range_entity : action?.need?.soc_entity;
+                const { car, values } = carAt(msg.action_id);
+                const reserve = msg.unit === "km" ? (car?.need?.reserve_km ?? 50) : 0;
+                const sensor = msg.unit === "km" ? values.range?.entity : values.soc?.entity;
                 const until = new Date(Date.now() + 86400000).toISOString();
                 control.boost[msg.action_id] = { target: msg.target + reserve, chosen: msg.target, unit: msg.unit, sensor, since: stamp(), until };
                 const value = Number.parseFloat(hass.states[sensor]?.state);
@@ -1057,7 +1289,7 @@
             }
             case "energy_joe/calendar/links": {
               if (msg.renew || !state.calendarToken) state.calendarToken = Math.random().toString(36).slice(2, 14);
-              const cars = state.config.actions.filter((a) => a.kind === "switch" && a.need?.enabled && a.need?.source === "mailbox");
+              const cars = (state.config.cars ?? []).filter((a) => a.need?.enabled && a.need?.source === "mailbox");
               return {
                 external_url: "https://ha.example.com",
                 links: Object.fromEntries(cars.map((a) => [a.id, `/api/energy_joe/calendar/${state.calendarToken}/${a.id}.ics`])),

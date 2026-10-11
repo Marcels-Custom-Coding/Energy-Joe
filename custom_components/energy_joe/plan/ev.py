@@ -150,12 +150,14 @@ def car_need(
     if soc is not None and capacity:
         need_kwh = needed_km * per_100km / 100
         have_kwh = soc / 100 * capacity
-        # No more than fits into the battery; a longer trip needs a stop on the way.
-        missing = max(0.0, min(need_kwh, capacity) - have_kwh)
+        # No more than fits into the battery (or the highest level the user
+        # allows); a longer trip needs a stop on the way.
+        top = need.get("max_soc") or 100.0
+        missing = max(0.0, min(need_kwh, capacity * top / 100) - have_kwh)
         result.update(
             known=True,
             have_km=round(have_kwh / per_100km * 100, 1),
-            target=min(100, math.ceil(need_kwh / capacity * 100)),
+            target=min(int(top), math.ceil(need_kwh / capacity * 100)),
             target_unit="%",
             sensor=need.get("soc_entity"),
             fits=need_kwh <= capacity,

@@ -24,7 +24,7 @@ sys.path.insert(0, str(ROOT))
 
 from custom_components.energy_joe import model
 from custom_components.energy_joe.control.profiles import PROFILES
-from custom_components.energy_joe.discovery import discover
+from custom_components.energy_joe.discovery import car_updates, discover
 from custom_components.energy_joe.discovery.checks import run_config_checks
 from custom_components.energy_joe.discovery.snapshot import Snapshot
 from custom_components.energy_joe.learn.evaluate import evaluate
@@ -58,12 +58,14 @@ from custom_components.energy_joe.observe.records import (
     local_hour,
     summarize,
 )
+from custom_components.energy_joe.plan import cars
 from custom_components.energy_joe.plan.actions import plan_actions
 from custom_components.energy_joe.plan.ev import car_need
 from custom_components.energy_joe.plan.inputs import (
     DEFAULT_SEARCH,
     consumption_profiles,
     next_window,
+    point_needs,
 )
 from custom_components.energy_joe.plan.planner import (
     Battery,
@@ -586,29 +588,48 @@ def history_sample(config: dict, snap_hass: dict | None = None) -> dict:
                 "source": None,
             },
         ]
-        by_need = deepcopy(config["actions"])
-        needs = {}
-        for action in by_need:
-            if action["kind"] == "switch":
-                action["need"]["enabled"] = True
-                found = car_need(
-                    action["need"],
-                    _state_getter(snap_hass),
-                    trips,
-                    None,
-                    7.0,
-                    True,
-                    True,
-                )
-                needs[action["id"]] = {**found, "trips": trips}
+        get = _state_getter(snap_hass)
+        by_need = deepcopy(config)
+        for car in by_need["cars"]:
+            car["need"]["enabled"] = True
+        detected = cars.detect_all(by_need, get)
+        needs_by_car = {}
+        for car in by_need["cars"]:
+            point = cars.point_of(detected, car["id"])
+            action = cars.action_by_id(by_need, point)
+            found = car_need(
+                cars.need_for(get, car, (action or {}).get("point")),
+                get,
+                trips,
+                None,
+                7.0,
+                True,
+                True,
+            )
+            needs_by_car[car["id"]] = {
+                **found,
+                "trips": trips,
+                "car": car["id"],
+                "name": car["name"],
+                "point": point,
+            }
         planned = plan_actions(
-            by_need, _state_getter(snap_hass), start, end, 5.5, {}, {}, needs
+            by_need["actions"],
+            get,
+            start,
+            end,
+            5.5,
+            {},
+            {},
+            point_needs(by_need, needs_by_car, detected),
+            detected,
         )
         plan_need = deepcopy(tonight)
         plan_need["actions"] = [
             {**a, "cost": round(a["energy_kwh"] * tariff["night_price"], 2)}
             for a in planned
         ]
+        plan_need["cars"] = needs_by_car
     if tonight.get("meta") is not None:
         tonight["meta"]["tomorrow"] = tomorrow_outlook(
             config, learned, learning["days"], LAST_DAY + timedelta(days=1), 5.5
@@ -630,6 +651,8 @@ def history_sample(config: dict, snap_hass: dict | None = None) -> dict:
 def write(name: str, snap: Snapshot) -> None:
     result = discover(snap)
     adopted = model.adopt_proposal(model.default_config(), result["proposal"])
+    if patch := car_updates(snap, adopted):
+        adopted = model.apply_update(adopted, patch, "read")
     sample = {
         "discovery": result,
         "default_config": model.default_config(),

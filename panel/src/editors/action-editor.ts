@@ -4,13 +4,9 @@ import {
   actionFieldStyles,
   actionFields,
   actionProblem,
-  DEFAULT_NEED,
-  fromCar,
   fromWallbox,
   layoutOf,
   newAction,
-  setNeed,
-  toggleNeed,
   type ActionFieldsHost,
   type ActionLayout,
   type ActionTemplate,
@@ -47,13 +43,13 @@ export class JoeActionEditor extends LitElement implements ActionFieldsHost {
   @property({ attribute: false }) prefix = PANEL;
   /** An existing action's id, or "new:<template>". */
   @property() actionId = "";
-  /** "need" or "calendars": switch charging by need on and show it. */
+  /** Up to 0.9.18: "need" or "calendars" (a car's need is on its own page now). */
   @property() section = "";
   /** A meter from the Energy dashboard this new action is for. */
   @property() consumer = "";
   /** A line under the title (which meter or found device the new action is for). */
   @property() subtitle = "";
-  /** What "Neu gefunden" offered: "wallbox:<device id or name>" or "car:<device id>" (its key). */
+  /** What "Neu gefunden" offered: "wallbox:<device id or name>" (its key). */
   @property() found = "";
 
   @state() draft?: ActionConfig;
@@ -127,10 +123,6 @@ export class JoeActionEditor extends LitElement implements ActionFieldsHost {
         if (this.actionId === "new:ev" && wallbox) {
           Object.assign(draft, fromWallbox(wallbox));
         }
-        const car = foundKind === "car" ? this.discovery?.cars?.find((c) => c.device_id === foundKey) : undefined;
-        if (car) {
-          draft.name = car.name;
-        }
         const hotWater = this.config?.consumers.filter((c) => c.kind === "hot_water") ?? [];
         if (this.actionId === "new:hot_water" && hotWater.length === 1) {
           // The one hot water meter found: its energy moves into the night.
@@ -143,37 +135,14 @@ export class JoeActionEditor extends LitElement implements ActionFieldsHost {
           draft.power_entity = meter.power_entity ?? null;
         }
         this.draft = draft;
-        if (this.section === "need") {
-          toggleNeed(this);
-        }
-        if (car && this.actionId === "new:ev") {
-          // The car picked under "Neu gefunden" fills charging by need (not the first car found).
-          setNeed(this, { enabled: true, ...fromCar(car, this.draft.need ?? DEFAULT_NEED) });
-        }
         this.touched = false;
       } else if (this.existing) {
         this.draft = structuredClone(this.existing);
         const consumer = this.config?.consumers.find((c) => c.id === this.existing?.consumer_id);
         this.openLayout = layoutOf(actionGroup(this.existing, consumer));
-        if ((this.section === "calendars" || this.section === "need") && !this.draft.need?.enabled) {
-          // Calendars belong to charging by need: switch it on (until saved, nothing changes).
-          toggleNeed(this);
-        }
       }
     }
   }
-
-  protected updated(): void {
-    if ((this.section === "calendars" || this.section === "need") && !this.focused) {
-      const field = this.shadowRoot?.querySelector(this.section === "need" ? `[aria-label="${this.t?.("action.need") ?? ""}"]` : "joe-car-calendars");
-      if (field) {
-        this.focused = true;
-        field.scrollIntoView({ block: "center" });
-      }
-    }
-  }
-
-  private focused = false;
 
   protected render() {
     const { t, hass, draft } = this;
@@ -184,7 +153,7 @@ export class JoeActionEditor extends LitElement implements ActionFieldsHost {
     const title = existing ? t("action.title") : t(`action.title.${this.actionId.slice(4) as ActionTemplate}`);
     return html`<div class="sheet-title">${displayTitle(title)}</div>
       ${this.subtitle ? html`<p class="sheet-sub">${this.subtitle}</p>` : nothing}
-      ${actionFields(this, this.layout, { calendars: true })}
+      ${actionFields(this, this.layout)}
       ${this.problem ? html`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${this.problem}</span></div>` : nothing}
       <div class="actions">
         <span data-tipped class="row">

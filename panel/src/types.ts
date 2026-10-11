@@ -454,6 +454,8 @@ export interface NotifyConfig {
   ask: boolean;
   problems: boolean;
   morning: boolean;
+  /** Which car is plugged in, and a car needed tomorrow but not plugged in. */
+  cars?: boolean;
 }
 
 export interface Answers {
@@ -566,7 +568,91 @@ export interface CarNeedConfig {
   account?: CarAccountConfig;
   /** Who may invite the car: addresses or "@domain". */
   allowed?: string[];
+  /** Never charge above this level by need (%). */
+  max_soc?: number;
 }
+
+/** The roles of a car's entities (see model.py CAR_ENTITY_ROLES). */
+export type CarRole = "soc" | "range" | "capacity" | "plugged" | "charging" | "odometer" | "consumption" | "outside_temp" | "location";
+
+/** One integration that shows a car: evcc's vehicle or the car maker's (see model.py CAR_SOURCE). */
+export interface CarSourceConfig {
+  id: string;
+  kind: "evcc" | "car";
+  platform: string | null;
+  device_id: string | null;
+  name: string | null;
+  /** evcc's id of the vehicle ("db:27"), learned. */
+  vehicle: string | null;
+  entities: Partial<Record<CarRole, string>>;
+}
+
+/** A car: everything about its need (see model.py CAR). */
+export interface CarConfig {
+  id: string;
+  name: string;
+  sources: CarSourceConfig[];
+  /** Where the car is (device_tracker or person); null: its integration's. */
+  tracker_entity: string | null;
+  need: CarNeedConfig;
+  /** The evening reminder when tomorrow needs charging but the car is not plugged in. */
+  remind: boolean;
+  remind_time: string;
+}
+
+/** A wallbox Joe switches: which car is plugged in decides (see model.py CHARGE_POINT). */
+export interface ChargePointConfig {
+  vehicle_entity: string | null;
+  connected_entity: string | null;
+  soc_entity: string | null;
+  range_entity: string | null;
+  odometer_entity: string | null;
+  /** Which cars may charge here; null: every car. */
+  cars: string[] | null;
+  /** When Joe cannot tell the car: ask, or assume one. */
+  unknown: "ask" | "assume";
+  assume_car: string | null;
+}
+
+/** Which car is plugged into a charge point (see plan/cars.py detect_all). */
+export interface PointStatus {
+  state: "free" | "empty" | "car" | "guest" | "unknown";
+  car: string | null;
+  how: "evcc" | "plugged" | "home" | "answer" | "assume" | null;
+  vehicle: string | null;
+  connected: boolean | null;
+  ask: boolean;
+}
+
+/** Where one value of a car comes from now. */
+export interface CarValueSource {
+  entity: string;
+  kind: "evcc" | "car" | "manual";
+  platform: string | null;
+  name: string | null;
+}
+
+/** What the backend tells about the cars (see control/cars.py status). */
+export interface CarsStatus {
+  points: Record<string, PointStatus>;
+  cars: Record<
+    string,
+    {
+      point: string | null;
+      plugged: boolean | null;
+      home: boolean | null;
+      values: Partial<Record<CarRole, CarValueSource>>;
+    }
+  >;
+  answers: Record<string, { car: string; since: string | null; at: string }>;
+  /** Cars that may be one vehicle: Joe asks. */
+  merge: { a: string; b: string; a_name: string; b_name: string; b_platform: string | null }[];
+  /** Tonight's "needs charging, not plugged in". */
+  reminders: { car: string; name: string; km: number }[];
+}
+
+/** A car's need for tomorrow in the plan, with where it is plugged in. */
+export type PlanCar = CarNeed & { car: string; name: string; point: string | null };
 
 export type MailProvider = "webde" | "gmx" | "google" | "tonline" | "other";
 
@@ -862,7 +948,8 @@ export interface ActionConfig {
   comfort: number;
   maximum: number;
   buffer: number;
-  need?: CarNeedConfig;
+  /** A wallbox for cars (null: an ordinary night action). */
+  point?: ChargePointConfig | null;
 }
 
 export interface JoeConfig {
@@ -884,6 +971,7 @@ export interface JoeConfig {
   persons: PersonConfig[];
   consumers: ConsumerConfig[];
   actions: ActionConfig[];
+  cars: CarConfig[];
   rules: Rules;
   notify: NotifyConfig;
   calendar: CalendarConfig;
@@ -982,6 +1070,8 @@ export interface Plan {
   };
   hours?: PlanHour[];
   actions?: PlanAction[];
+  /** Each car charged by need: tomorrow and where it is plugged in. */
+  cars?: Record<string, PlanCar>;
 }
 
 /** Tomorrow as Joe's models see it (see plan/inputs.py). */
@@ -1019,6 +1109,10 @@ export interface PlanAction {
   temperature?: number | null;
   sensor?: string;
   need?: CarNeed;
+  /** A charge point: what is plugged in, the car and how Joe knows. */
+  plugged?: PointStatus["state"];
+  car?: string | null;
+  how?: PointStatus["how"];
 }
 
 export interface JoeState {
@@ -1038,6 +1132,8 @@ export interface JoeState {
   apps?: { microsoft: boolean; google: boolean };
   /** Heating and air conditioning by presence. */
   climate?: ClimateStatus;
+  /** Which car is plugged in where, questions and reminders. */
+  cars?: CarsStatus;
   /** Each battery's floor (%), where it comes from, and the device's own setting. */
   floors?: Record<string, BatteryFloor>;
 }
@@ -1457,6 +1553,8 @@ export interface Discovery {
   forecast: ForecastFinding | null;
   wallboxes: WallboxFinding[];
   cars?: CarFinding[];
+  /** Every car Joe sees as a source: evcc's vehicles, then the car makers'. */
+  car_sources?: CarSourceConfig[];
   weather: ContextFinding | null;
   holiday: ContextFinding | null;
   persons: { entity_id: string; name: string; calendars: string[] }[];

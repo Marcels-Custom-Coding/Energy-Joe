@@ -51,8 +51,11 @@ Joe braucht kein Vorwissen. Er findet selbst, was er braucht, fragt in Alltagssp
 ### E-Auto und Warmwasser
 
 - Auto, Warmwasser und weitere Geräte schaltet Joe in die günstige Zeit, wenn morgen die Sonne nicht reicht – z. B. evcc auf „now“ oder das Warmwasser bis zu einer berechneten Temperatur.
-- Das Auto lädt Joe auf Wunsch nach Bedarf: Ladestand und Reichweite aus der Auto-Integration (rund 40 bekannt, dazu evcc), Termine mit Ort, Strecke über Waze, Google oder OpenStreetMap, Reserve (50 km, einstellbar) und Verbrauch bei der vorhergesagten Temperatur.
-- „Laden bis … % oder km“: sofort („Jetzt laden“) oder heute Nacht in der günstigen Zeit.
+- Auto und Wallbox sind getrennt: Das **Auto** hat seinen Bedarf (Fahrten, Termine, Reserve, Ladestand), der **Ladepunkt** ist die Wallbox, die Joe schaltet (bei evcc den Modus, nicht evccs eigenen Ladeplan). Joe lädt immer das Auto, das gerade steckt.
+- Welches Auto steckt, erkennt Joe der Reihe nach: am Fahrzeug, das evcc am Ladepunkt zeigt; am Stecker-Sensor des Autos; am einzigen Auto, das zu Hause ist. Sonst fragt er – aufs Handy und unter Übersicht – mit einem Knopf je Auto und „Gast / anderes Auto“. Bis er es weiß, lässt er die Wallbox in Ruhe; bei einem Gast macht evcc, was eingestellt ist. Je Ladepunkt einstellbar: fragen oder immer ein bestimmtes Auto annehmen.
+- Ein Auto aus mehreren Integrationen ist ein Auto: evccs Fahrzeug und die Integration des Herstellers (z. B. Hyundai) führt Joe zusammen, wenn Name, Ladestand oder Kilometerstand passen – sonst fragt er. Den Ladestand nimmt er am liebsten von evcc, Reichweite, Kilometerstand und Ort vom Hersteller; jeder Wert zeigt, woher er kommt. Joe fragt das Auto nie selbst ab und weckt es nicht.
+- Das Auto lädt Joe auf Wunsch nach Bedarf: Termine mit Ort, Strecke über Waze, Google oder OpenStreetMap, Reserve (50 km, einstellbar), höchstens bis zu einem Ladestand deiner Wahl und Verbrauch bei der vorhergesagten Temperatur. Braucht ein Auto morgen Strom und steckt abends nicht, erinnert Joe dich.
+- „Laden bis … % oder km“: sofort („Jetzt laden“) oder heute Nacht in der günstigen Zeit – an der Wallbox, an der das Auto gerade steckt.
 
 ### Heizung und Klima
 
@@ -78,7 +81,7 @@ Drei Wege, wie Termine zum Auto kommen:
 Joe bringt zwei Karten mit, die nach dem Installieren direkt in der Kartenauswahl stehen („Energy Joe …“):
 
 - **Joe heute Nacht** – was Joe plant, was es kostet, Status und „Heute aussetzen“.
-- **Auto laden** – Ladestand und Reichweite, „Laden bis … % oder km“ mit „Jetzt laden“ und „Heute Nacht laden“. Mit mehreren Autos wählst du eins mit `action: <id>`.
+- **Auto laden** – Ladestand und Reichweite, „Laden bis … % oder km“ mit „Jetzt laden“ und „Heute Nacht laden“. Ohne Angabe zeigt sie jedes Auto, mit `car: <id>` nur eines; geladen wird an der Wallbox, an der das Auto steckt.
 
 Die Karten brauchen einen Benutzer mit Administratorrechten.
 
@@ -97,7 +100,7 @@ Sechs Reiter, links die Zeit, rechts die Dinge:
 
 Unter **Einstellungen › Regeln** steht auch „Tagsüber Überschuss abgeben“ (Standard: aus): An sonnigen Tagen laden die Speicher nur so schnell, dass sie vor dem Abend trotzdem voll sind; den Rest der Sonne bekommt ein evcc-Ladepunkt im PV-Modus, z. B. das Auto oder die Fußbodenheizung. Nur im Live-Betrieb und nur für Speicher mit einer Ladegrenze in W oder kW; abends stellt Joe die Ladegrenze zurück.
 
-Jede Seite hat ihre eigene Adresse, zum Beispiel `/energy-joe/devices/battery`, `/energy-joe/review/days` oder `/energy-joe/household/people`. Zurück im Browser, Lesezeichen und die Dashboard-Karten führen genau dorthin.
+Jede Seite hat ihre eigene Adresse, zum Beispiel `/energy-joe/devices/battery`, `/energy-joe/review/days` oder `/energy-joe/household/people`; ein Auto unter `/energy-joe/devices/car/<id>`, ein Ladepunkt unter `/energy-joe/devices/car/point/<id>`. Zurück im Browser, Lesezeichen und die Dashboard-Karten führen genau dorthin.
 
 ## Betriebsarten
 

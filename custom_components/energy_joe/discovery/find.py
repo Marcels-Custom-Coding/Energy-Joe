@@ -1035,6 +1035,9 @@ def find_cars(snap: Snapshot) -> list[dict[str, Any]]:
                         break
             if "soc" not in parts and "range" not in parts:
                 continue
+            tracker = next((e for e in entities if e.domain == "device_tracker"), None)
+            if tracker is not None:
+                parts["location"] = tracker
             # A level (and a charging flag) alone also fits a home battery of the
             # same integration (tesla_custom's Powerwall: "<site>_battery").
             if not parts.keys() - {"soc", "charging"}:
@@ -1062,6 +1065,63 @@ def find_cars(snap: Snapshot) -> list[dict[str, Any]]:
             )
     found.sort(key=lambda c: c["name"])
     return found
+
+
+def find_evcc_vehicles(snap: Snapshot) -> list[dict[str, Any]]:
+    """evcc's vehicles (as configured in evcc), as sources of Joe's cars.
+
+    evcc_intg shows each vehicle as a device of its own ("Kona [evcc]"); its
+    level, range and odometer are switched off in Home Assistant until the
+    user switches them on. At a loadpoint evcc shows the plugged car's values.
+    """
+    by_device: dict[str, list[EntityInfo]] = {}
+    for entity in snap.of_platform("evcc_intg"):
+        if entity.device_id:
+            by_device.setdefault(entity.device_id, []).append(entity)
+    found = []
+    for device_id, entities in by_device.items():
+        ids = [(e.unique_id or e.entity_id) for e in entities]
+        if any(e.has_key("mode") and e.domain == "select" for e in entities):
+            continue
+        if not any(mark in uid for uid in ids for mark in kb.EVCC_VEHICLE_MARKS):
+            continue
+        parts = {
+            role: next((e.entity_id for e in entities if e.has_key(key)), None)
+            for role, key in kb.EVCC_VEHICLE_KEYS.items()
+        }
+        name = snap.device_name(device_id) or device_id
+        found.append(
+            {
+                "id": f"evcc:{device_id}",
+                "kind": "evcc",
+                "platform": "evcc_intg",
+                "device_id": device_id,
+                "name": re.sub(r"\s*\[[^\]]*\]\s*", " ", name).strip() or name,
+                "vehicle": None,
+                "entities": {role: e for role, e in parts.items() if e},
+            }
+        )
+    found.sort(key=lambda v: v["name"])
+    return found
+
+
+def car_sources(snap: Snapshot) -> list[dict[str, Any]]:
+    """Every car Joe can see, as a source: evcc's vehicles first, then the car makers'."""
+    return [
+        *find_evcc_vehicles(snap),
+        *(
+            {
+                "id": f"car:{car['device_id']}",
+                "kind": "car",
+                "platform": car["integration"],
+                "device_id": car["device_id"],
+                "name": car["name"],
+                "vehicle": None,
+                "entities": car["entities"],
+            }
+            for car in find_cars(snap)
+        ),
+    ]
 
 
 def find_weather(snap: Snapshot) -> dict[str, Any] | None:

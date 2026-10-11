@@ -89,8 +89,19 @@ WALLBOX_KEYS: dict[str, dict[str, str]] = {
         "vehicle_soc": "vehicle_soc",
         "vehicle_range": "vehicle_range",
         "vehicle_odometer": "vehicle_odometer",
+        # Which of evcc's vehicles is at the loadpoint ("db:27"; "null": none).
+        "vehicle": "vehicle_name",
     },
 }
+# evcc's own vehicles (devices of evcc_intg without a mode): the end of their
+# entities' unique ids by role ("evcc_intg.evcc_kona_configvehicle_soc").
+EVCC_VEHICLE_KEYS: dict[str, str] = {
+    "soc": "configvehicle_soc",
+    "range": "configvehicle_range",
+    "odometer": "configvehicle_odometer",
+}
+# Entities that only an evcc vehicle has (also when its values are switched off).
+EVCC_VEHICLE_MARKS = ("configvehicle_", "charging_sessions_vehicle_")
 
 # Car integrations (core and HACS) and the keys of their entities per role:
 # (entity domain, translation key or end of the unique id), best first.

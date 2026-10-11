@@ -248,7 +248,7 @@ export class JoeDevicesAll extends DeviceSection {
   private async use(finding: NewFinding): Promise<void> {
     if (finding.kind !== "battery" || !finding.battery) {
       // The assistant fills in this wallbox or car, not just the first one found.
-      navigate(this, addRoute("car", finding.key), { sheet: true });
+      navigate(this, addRoute(finding.kind === "wallbox" ? "wallbox" : "car", finding.key), { sheet: true });
       return;
     }
     this.busy = finding.key;

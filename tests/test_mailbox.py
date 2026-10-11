@@ -151,9 +151,6 @@ def _car(car: str, address: str, **extra: Any) -> dict[str, Any]:
     return {
         "id": car,
         "name": car.upper(),
-        "kind": "switch",
-        "entity_id": f"select.{car}_mode",
-        "on_value": "now",
         "need": {
             "enabled": True,
             "source": "mailbox",
@@ -169,7 +166,7 @@ def config() -> dict[str, Any]:
     return model.apply_update(
         model.default_config(),
         {
-            "actions": {
+            "cars": {
                 "kona": _car("kona", "kona@example.org"),
                 "eup": _car("eup", "eup@example.org"),
             }
@@ -297,9 +294,9 @@ async def test_a_newly_allowed_sender_is_read_again(
     assert inbox.status["kona"]["recent"][0]["result"] == "not_allowed"
     assert calendars.events("kona") == []
 
-    allowed = [*config["actions"][0]["need"]["allowed"], "kim@example.net"]
+    allowed = [*config["cars"][0]["need"]["allowed"], "kim@example.net"]
     current["config"] = model.apply_update(
-        config, {"actions": {"kona": {"need": {"allowed": allowed}}}}, "user"
+        config, {"cars": {"kona": {"need": {"allowed": allowed}}}}, "user"
     )
     inbox.async_apply()
     await hass.async_block_till_done()
@@ -350,7 +347,7 @@ async def test_the_mailbox_test_takes_the_settings_in_the_editor(
     )
     config = model.default_config()
     config = model.apply_update(
-        config, {"actions": {"kona": {**_car("kona", "x@y.z"), "need": {}}}}, "user"
+        config, {"cars": {"kona": {**_car("kona", "x@y.z"), "need": {}}}}, "user"
     )
     calendars = CarCalendarStore(hass)
     inbox = CarInboxes(hass, lambda: config, calendars, lambda: None)

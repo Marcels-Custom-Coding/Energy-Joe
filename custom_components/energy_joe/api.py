@@ -67,6 +67,10 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_set_mode)
     websocket_api.async_register_command(hass, ws_onboarding)
     websocket_api.async_register_command(hass, ws_config_update)
+    websocket_api.async_register_command(hass, ws_car_answer)
+    websocket_api.async_register_command(hass, ws_car_merge)
+    websocket_api.async_register_command(hass, ws_car_split)
+    websocket_api.async_register_command(hass, ws_car_separate)
     websocket_api.async_register_command(hass, ws_discover)
     websocket_api.async_register_command(hass, ws_adopt)
     websocket_api.async_register_command(hass, ws_check)
@@ -753,8 +757,117 @@ async def ws_control_answer(
 
 @websocket_api.websocket_command(
     {
+        vol.Required("type"): f"{DOMAIN}/car/answer",
+        vol.Required("point"): str,
+        # A car's id, "guest", or None: forget the answer.
+        vol.Required("car"): vol.Any(None, str),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_car_answer(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Which car is plugged into a charge point."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    try:
+        await runtime.async_answer_car(msg["point"], msg["car"])
+    except ValueError as err:
+        connection.send_error(msg["id"], str(err), str(err))
+        return
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/car/merge",
+        vol.Required("into"): str,
+        vol.Required("other"): str,
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_car_merge(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Two cars are one vehicle (e.g. evcc's and the car maker's)."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    try:
+        car = runtime.async_merge_cars(msg["into"], msg["other"])
+    except (ValueError, vol.Invalid) as err:
+        connection.send_error(msg["id"], "invalid", str(err))
+        return
+    connection.send_result(msg["id"], {"car": car})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/car/split",
+        vol.Required("car"): str,
+        vol.Required("source"): str,
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_car_split(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """A source of a car is another car."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    try:
+        car = runtime.async_split_car(msg["car"], msg["source"])
+    except (ValueError, vol.Invalid) as err:
+        connection.send_error(msg["id"], "invalid", str(err))
+        return
+    connection.send_result(msg["id"], {"car": car})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/car/separate",
+        vol.Required("a"): str,
+        vol.Required("b"): str,
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_car_separate(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Two cars are not the same vehicle: Joe stops asking."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    runtime.async_separate_cars(msg["a"], msg["b"])
+    connection.send_result(msg["id"])
+
+
+def _point_for(runtime: JoeRuntime, msg: dict[str, Any]) -> str:
+    """The charge point a command is for: named, or where the car is plugged in."""
+    if msg.get("action_id"):
+        return str(msg["action_id"])
+    point = runtime.cars.point_of(msg.get("car") or "")
+    if point is None:
+        raise ValueError("not_plugged")
+    return point
+
+
+@websocket_api.websocket_command(
+    {
         vol.Required("type"): f"{DOMAIN}/control/action_tonight",
-        vol.Required("action_id"): str,
+        # The charge point, or the car (where it is plugged in).
+        vol.Exclusive("action_id", "where"): str,
+        vol.Exclusive("car", "where"): str,
         vol.Required("on"): bool,
         # A car: charge up to this level (%) or range (km, plus the reserve).
         vol.Optional("target"): vol.Any(
@@ -775,7 +888,7 @@ async def ws_control_action_tonight(
         return
     try:
         await runtime.async_action_tonight(
-            msg["action_id"], msg["on"], msg.get("target"), msg["unit"]
+            _point_for(runtime, msg), msg["on"], msg.get("target"), msg["unit"]
         )
     except ValueError as err:
         connection.send_error(msg["id"], str(err), str(err))
@@ -786,7 +899,8 @@ async def ws_control_action_tonight(
 @websocket_api.websocket_command(
     {
         vol.Required("type"): f"{DOMAIN}/control/boost",
-        vol.Required("action_id"): str,
+        vol.Exclusive("action_id", "where"): str,
+        vol.Exclusive("car", "where"): str,
         # None stops it.
         vol.Required("target"): vol.Any(
             None, vol.All(vol.Coerce(float), vol.Range(min=1, max=1500))
@@ -809,7 +923,9 @@ async def ws_control_boost(
         connection.send_error(msg["id"], "invalid", "A level is at most 100 %.")
         return
     try:
-        await runtime.executor.async_boost(msg["action_id"], target, msg["unit"])
+        await runtime.executor.async_boost(
+            _point_for(runtime, msg), target, msg["unit"]
+        )
     except ValueError as err:
         connection.send_error(msg["id"], str(err), str(err))
         return

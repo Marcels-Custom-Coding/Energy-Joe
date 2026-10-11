@@ -46,8 +46,8 @@ async def async_get_config_entry_diagnostics(
     config["persons"] = [
         {**person, "id": ids[person["id"]]} for person in config["persons"]
     ]
-    for action in config.get("actions") or []:
-        need = action.get("need") or {}
+    for car in config.get("cars") or []:
+        need = car.get("need") or {}
         if need.get("persons"):
             need["persons"] = [ids.get(p, REDACTED) for p in need["persons"]]
     learned = config.get("learned") or {}
@@ -58,8 +58,10 @@ async def async_get_config_entry_diagnostics(
     plan = state.get("plan") or {}
     # Tomorrow's appointments (place and time) come from the family's calendars;
     # the departure is the first one's start minus the drive.
-    for action in plan.get("actions") or []:
-        need = action.get("need") or {}
+    for need in [
+        *((a.get("need") or {}) for a in plan.get("actions") or []),
+        *(plan.get("cars") or {}).values(),
+    ]:
         for trip in need.get("trips") or []:
             trip["location"] = REDACTED
             trip["start"] = REDACTED

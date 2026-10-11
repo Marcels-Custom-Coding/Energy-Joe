@@ -20,16 +20,16 @@ function steeredRooms(config: JoeConfig, found?: ClimateFound): string[] {
 
 /** Cars charged by need that count someone's appointments (null: everyone with a calendar). */
 function carsFor(config: JoeConfig, personId?: string): Use[] {
-  return config.actions
-    .filter((action) => action.enabled && action.need?.enabled)
-    .filter((action) => {
-      const persons = action.need!.persons;
+  return (config.cars ?? [])
+    .filter((car) => car.need.enabled)
+    .filter((car) => {
+      const persons = car.need.persons;
       if (personId === undefined) {
         return persons === null || persons.length > 0;
       }
       return persons === null ? true : persons.includes(personId);
     })
-    .map((action) => ({ label: action.name, to: "/devices" }));
+    .map((car) => ({ label: car.name, to: `/devices/car/${encodeURIComponent(car.id)}` }));
 }
 
 function climateUse(t: Translate, rooms: string[]): Use[] {

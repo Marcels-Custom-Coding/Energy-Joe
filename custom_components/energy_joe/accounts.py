@@ -444,7 +444,7 @@ class CarAccounts:
     async def async_load(self) -> None:
         stored = (await self._store.async_load() or {}).get("cars", {})
         # Cars that are gone (or never saved) take their secrets with them.
-        known = {a["id"] for a in self._config()["actions"]}
+        known = {c["id"] for c in self._config().get("cars") or []}
         self._data = {car: v for car, v in stored.items() if car in known}
         for car in self._data:
             self.status[car] = self._secrets(car)
@@ -468,8 +468,10 @@ class CarAccounts:
         self._tasks = {}
 
     def _need(self, car: str) -> dict[str, Any]:
-        action = next((a for a in self._config()["actions"] if a["id"] == car), None)
-        return (action or {}).get("need") or {}
+        found = next(
+            (c for c in self._config().get("cars") or [] if c["id"] == car), None
+        )
+        return (found or {}).get("need") or {}
 
     def _account(self, car: str) -> dict[str, Any] | None:
         need = self._need(car)

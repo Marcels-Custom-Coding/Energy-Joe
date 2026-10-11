@@ -3,9 +3,11 @@ import { isIgnored } from "./config";
 import { entityName } from "./entities";
 import type { Translate } from "./i18n";
 import type { Route } from "./router";
+import { carValue, pointRoute } from "./cars";
 import type {
   ActionConfig,
   BatteryConfig,
+  CarConfig,
   BatteryFinding,
   CarFinding,
   Check,
@@ -63,8 +65,12 @@ export interface DeviceEntry {
   /** All problems, most important first. */
   problems: string[];
   battery?: BatteryConfig;
-  /** The night action steering it (car, hot water, a device with a meter, or one "ohne Zähler"). */
+  /** The night action steering it (a charge point, hot water, a device with a meter, or one "ohne Zähler"). */
   action?: ActionConfig;
+  /** A car (Auto & Laden): everything about its need. */
+  car?: CarConfig;
+  /** A charge point (Auto & Laden, id "point:<action id>", address /devices/car/point/<action id>). */
+  point?: boolean;
   /** The device's meter from the Energy dashboard (Verbraucher). */
   consumer?: ConsumerConfig;
   /** A thermostat or air conditioner (from energy_joe/climate/devices; only entity_id/name without it). */
@@ -74,7 +80,7 @@ export interface DeviceEntry {
   /** The device measuring a climate device. */
   meter?: { deviceId?: string; power?: string };
   /** An E-Auto or Warmwasser meter without a night action: the card offers to set it up (/devices/add/<setup>/<consumerId>). */
-  setup?: "car" | "hot_water";
+  setup?: "wallbox" | "hot_water";
   /** A climate consumer Joe cannot put to a thermostat or air conditioner (shown as "nicht zugeordnet"). */
   unassigned?: boolean;
   /** A night action without a meter (Weitere Geräte › "ohne Zähler", id "action-<actionId>"). */
@@ -82,9 +88,6 @@ export interface DeviceEntry {
   /** Netz & Sonne: which part (the id is the same). */
   part?: GridPart;
 }
-
-const STEERING_NEED = (action: ActionConfig) =>
-  Boolean(action.need?.enabled || action.need?.soc_entity || action.need?.range_entity);
 
 /**
  * Last resort for old actions without a meter, without charging by need and
@@ -106,7 +109,7 @@ export function actionGroup(action: ActionConfig, consumer?: ConsumerConfig | nu
   if (action.kind === "target") {
     return "hot_water";
   }
-  if (STEERING_NEED(action) || consumer?.kind === "ev") {
+  if (action.point != null || consumer?.kind === "ev") {
     return "car";
   }
   if (consumer?.kind === "hot_water") {
@@ -132,6 +135,9 @@ export function actionGroup(action: ActionConfig, consumer?: ConsumerConfig | nu
 export function actionPlace(config: JoeConfig, action: ActionConfig): { group: "car" | "hot_water" | "other"; id: string } {
   const consumer = action.consumer_id ? config.consumers.find((c) => c.id === action.consumer_id) : undefined;
   const group = actionGroup(action, consumer);
+  if (group === "car") {
+    return { group, id: `point:${action.id}` };
+  }
   if (group !== "other") {
     return { group, id: action.id };
   }
@@ -148,11 +154,14 @@ export function actionPlace(config: JoeConfig, action: ActionConfig): { group: "
 
 /** The address of a device's page (Netz & Sonne: the anchor). */
 export function deviceRoute(entry: Pick<DeviceEntry, "group" | "id">): Route {
+  if (entry.group === "car" && entry.id.startsWith("point:")) {
+    return pointRoute(entry.id.slice(6));
+  }
   return { tab: "devices", section: entry.group, id: entry.id };
 }
 
 /** What "+ Hinzufügen" can add (the kind in /devices/add/<kind>[/<consumerId>]). */
-export type AddKind = "battery" | "car" | "hot_water" | "night";
+export type AddKind = "battery" | "car" | "wallbox" | "hot_water" | "night";
 
 /** The assistant's address; open it with navigate(…, { sheet: true }). */
 export function addRoute(kind?: AddKind, consumerId?: string): Route {
@@ -312,7 +321,7 @@ export function buildDevices(t: Translate, state: JoeState, hass: HomeAssistant 
     const consumer = action.consumer_id ? consumers.get(action.consumer_id) : undefined;
     const main =
       group === "car"
-        ? (action.need?.soc_entity ?? action.need?.range_entity ?? action.entity_id)
+        ? action.entity_id
         : group === "hot_water"
           ? (action.sensor_entity ?? action.entity_id)
           : action.entity_id;
@@ -323,17 +332,40 @@ export function buildDevices(t: Translate, state: JoeState, hass: HomeAssistant 
         id,
         name: id === consumer?.id ? consumer.name : action.name,
         area: areaOf(hass, deviceId, main || undefined),
-        icon: GROUP_ICONS[group],
         deviceId,
         entityId: main || undefined,
         role: action.enabled ? "steers" : "watches",
         action,
         consumer,
+        point: group === "car" || undefined,
+        icon: group === "car" ? "mdi:ev-station" : GROUP_ICONS[group],
         noMeter: group === "other" && !consumer,
       },
       [controlProblem(t, control?.actions?.[action.id]?.problem)],
     );
   };
+  // Cars first, then the charge points they plug into.
+  for (const car of config.cars ?? []) {
+    const soc = carValue(state, car.id, "soc")?.entity;
+    const maker = car.sources.find((s) => s.kind === "car") ?? car.sources[0];
+    const deviceId = maker?.device_id ?? deviceOf(hass, soc);
+    byGroup.car.push(
+      withProblems(
+        {
+          group: "car",
+          id: car.id,
+          name: car.name,
+          area: areaOf(hass, deviceId, soc),
+          icon: GROUP_ICONS.car,
+          deviceId: deviceId ?? undefined,
+          entityId: soc,
+          role: car.need.enabled ? "steers" : "watches",
+          car,
+        },
+        [],
+      ),
+    );
+  }
   for (const action of config.actions) {
     const place = actionPlace(config, action);
     if (action.consumer_id && place.group !== "other") withAction.add(action.consumer_id);
@@ -358,7 +390,7 @@ export function buildDevices(t: Translate, state: JoeState, hass: HomeAssistant 
         entityId,
         role: "measures",
         consumer,
-        setup: group === "other" ? undefined : group,
+        setup: group === "other" ? undefined : group === "car" ? "wallbox" : group,
       },
       [],
     );
@@ -460,10 +492,11 @@ export function newFindings(config: JoeConfig, discovery: Discovery | undefined)
   }
   for (const car of discovery.cars ?? []) {
     const key = findingKey("car", car.device_id);
-    const used = config.actions.some(
-      (a) =>
-        (car.entities.soc && a.need?.soc_entity === car.entities.soc) ||
-        (car.entities.range && a.need?.range_entity === car.entities.range),
+    const used = (config.cars ?? []).some(
+      (c) =>
+        c.sources.some((s) => s.device_id === car.device_id) ||
+        (car.entities.soc && c.need.soc_entity === car.entities.soc) ||
+        (car.entities.range && c.need.range_entity === car.entities.range),
     );
     if (!used && !isIgnored(config, key)) {
       result.push({ kind: "car", key, name: car.name, car });

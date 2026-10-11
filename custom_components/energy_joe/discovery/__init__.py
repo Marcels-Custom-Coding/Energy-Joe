@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, State
 
 from .. import model
+from ..plan import cars as cars_module
 from .checks import run_checks, run_config_checks
 from .energy import parse_energy_prefs
 from .find import (
+    car_sources,
     find_batteries,
     find_cars,
     find_consumers,
@@ -23,10 +25,11 @@ from .find import (
     profile_controls,
     profile_prepare,
 )
-from .proposal import build_proposal
+from .proposal import build_proposal, point_of_wallbox
 from .snapshot import Snapshot, async_collect
 
 __all__ = [
+    "async_car_updates",
     "async_check",
     "async_collect",
     "async_discover",
@@ -80,6 +83,60 @@ async def async_profile_updates(
     return {"batteries": patch} if patch else None
 
 
+async def async_car_updates(
+    hass: HomeAssistant, config: dict[str, Any]
+) -> dict[str, Any] | None:
+    """Link the cars Joe sees to his cars and charge points (a config patch)."""
+    return car_updates(await async_collect(hass), config)
+
+
+def car_updates(snap: Snapshot, config: dict[str, Any]) -> dict[str, Any] | None:
+    """The cars from car integrations and evcc's vehicles, and what each
+    charge point reads from its loadpoint; what the user set stays."""
+    patch: dict[str, Any] = {}
+    actions: dict[str, Any] = {}
+    point_entities: set[str] = set()
+    for wallbox in find_wallboxes(snap):
+        if not wallbox["is_car"]:
+            continue
+        found = point_of_wallbox(wallbox)
+        point_entities |= {e for e in found.values() if e}
+        for action in config["actions"]:
+            point = action.get("point")
+            if point is None or action["entity_id"] != wallbox["mode_entity"]:
+                continue
+            path = f"actions[{action['id']}].point"
+            change = {
+                field: value
+                for field, value in found.items()
+                if value != point.get(field)
+                and model.source_of(config, f"{path}.{field}") != "user"
+            }
+            if change:
+                actions[action["id"]] = {"point": change}
+    if actions:
+        patch["actions"] = actions
+    ignored = set((config.get("answers") or {}).get(model.IGNORED) or [])
+    lookup = {e.entity_id: e for e in snap.entities.values()}
+    cars = cars_module.sync_cars(
+        config,
+        lambda entity_id: _state_of(lookup.get(entity_id)),
+        car_sources(snap),
+        ignored,
+        point_entities,
+    )
+    if cars:
+        patch["cars"] = cars
+    return patch or None
+
+
+def _state_of(entity: Any) -> Any:
+    """A snapshot entity as far as the car matching reads it (state, unit)."""
+    if entity is None or entity.state is None:
+        return None
+    return State(entity.entity_id, entity.state, entity.attributes)
+
+
 def discover(snap: Snapshot) -> dict[str, Any]:
     """Run all finders on a snapshot."""
     energy = parse_energy_prefs(snap.energy_prefs)
@@ -92,6 +149,7 @@ def discover(snap: Snapshot) -> dict[str, Any]:
         "forecast": find_forecast(snap, energy),
         "wallboxes": find_wallboxes(snap),
         "cars": find_cars(snap),
+        "car_sources": car_sources(snap),
         "weather": find_weather(snap),
         "holiday": find_holiday(snap),
         "persons": persons,

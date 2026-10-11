@@ -17,7 +17,8 @@ import { formatNumber } from "../entities";
 import type { Translate } from "../i18n";
 import { PANEL, href, onLink, type Route } from "../router";
 import { shared } from "../styles/shared";
-import type { BatteryConfig, HomeAssistant, JoeState, Plan, PlanAction, PlanBattery, PlanHour } from "../types";
+import { carById, carRoute } from "../cars";
+import type { BatteryConfig, HomeAssistant, JoeState, Plan, PlanAction, PlanBattery, PlanCar, PlanHour } from "../types";
 
 const HOUR_MS = 3600 * 1000;
 /** Homes of the plan's inputs (Netz & Sonne anchors). */
@@ -276,13 +277,16 @@ export class JoePlanPage extends LitElement {
   private renderTonight(t: Translate, plan: Plan): TemplateResult | typeof nothing {
     const batteries = plan.batteries ?? [];
     const actions = plan.actions ?? [];
-    if (!batteries.length && !actions.length) {
+    // Cars charged by need that are not plugged in anywhere: what tomorrow needs, and that they do not charge.
+    const away = Object.values(plan.cars ?? {}).filter((car) => !actions.some((a) => a.car === car.car && a.plugged === "car"));
+    if (!batteries.length && !actions.length && !away.length) {
       return nothing;
     }
     return html`<section class="chart-card" data-tipped>
       <div class="chart-head">${t("plan.tonight")} ${tip(t, "plan_actions")}</div>
       <ul class="tonight">
         ${batteries.map((battery) => this.batteryRow(t, plan, battery))} ${actions.map((action) => this.actionRow(t, plan, action))}
+        ${away.map((car) => this.awayRow(t, car))}
       </ul>
     </section>`;
   }
@@ -399,17 +403,52 @@ export class JoePlanPage extends LitElement {
     const own = config?.actions.find((a) => a.id === action.id);
     const place = config && own ? actionPlace(config, own) : undefined;
     const entry = place ? findDevice(this.devices, place.group, place.id) : undefined;
-    const group = place?.group ?? (action.need ? "car" : action.kind === "target" ? "hot_water" : "other");
+    const group = place?.group ?? (action.need || action.plugged ? "car" : action.kind === "target" ? "hot_water" : "other");
+    // A charge point with a car of the household: the car with its charge point ("Kona · an Parkplatz eBox").
+    const car = action.plugged === "car" && config ? carById(config, action.car) : undefined;
     return this.tonightRow(t, {
-      icon: entry?.icon ?? GROUP_ICONS[group],
-      name: action.name,
+      icon: car ? GROUP_ICONS.car : (entry?.icon ?? GROUP_ICONS[group]),
+      name: car ? t("plan.car_at", { car: car.name, point: action.name }) : action.name,
       text,
       extra,
       // A device the list does not know (yet): its address all the same; gone from the settings: the group.
-      to: entry ? deviceRoute(entry) : place ? { tab: "devices", section: place.group, id: place.id } : { tab: "devices", section: group },
+      to: car
+        ? carRoute(car.id)
+        : entry
+          ? deviceRoute(entry)
+          : place
+            ? deviceRoute(place)
+            : { tab: "devices", section: group },
       more: action.need
-        ? html`<joe-car-need .hass=${this.hass} .t=${t} .action=${action} .roundTrip=${own?.need?.round_trip ?? true}></joe-car-need>`
+        ? html`<joe-car-need .hass=${this.hass} .t=${t} .action=${action} .roundTrip=${car?.need.round_trip ?? true}></joe-car-need>`
         : undefined,
+    });
+  }
+
+  /** A car charged by need that is not plugged in: tomorrow's need, and that it cannot charge. */
+  private awayRow(t: Translate, need: PlanCar): TemplateResult {
+    const car = this.state ? carById(this.state.config, need.car) : undefined;
+    const action: PlanAction = {
+      id: need.car,
+      name: need.name,
+      kind: "switch",
+      run: false,
+      manual: false,
+      reasons: [],
+      start: "",
+      end: "",
+      power_kw: null,
+      energy_kwh: 0,
+      priority: 1,
+      need,
+    };
+    const missing = need.missing_kwh ?? 0;
+    return this.tonightRow(t, {
+      icon: GROUP_ICONS.car,
+      name: need.name,
+      text: t(missing >= 0.2 ? "plan.car_away.missing" : "plan.car_away.enough"),
+      to: carRoute(need.car),
+      more: html`<joe-car-need .hass=${this.hass} .t=${t} .action=${action} .roundTrip=${car?.need.round_trip ?? true}></joe-car-need>`,
     });
   }
 

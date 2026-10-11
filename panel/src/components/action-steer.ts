@@ -32,12 +32,12 @@ export function actionChanges(saved: ActionConfig, draft: ActionConfig): Record<
     if (key === "id" || same(draft[key], saved[key])) {
       continue;
     }
-    if (key === "need" && draft.need && saved.need) {
-      const need: Record<string, unknown> = {};
-      for (const [field, value] of Object.entries(draft.need)) {
-        if (!same(value, (saved.need as unknown as Record<string, unknown>)[field])) need[field] = value;
+    if (key === "point" && draft.point && saved.point) {
+      const point: Record<string, unknown> = {};
+      for (const [field, value] of Object.entries(draft.point)) {
+        if (!same(value, (saved.point as unknown as Record<string, unknown>)[field])) point[field] = value;
       }
-      patch.need = need;
+      patch.point = point;
     } else {
       patch[key] = draft[key];
     }
@@ -45,19 +45,18 @@ export function actionChanges(saved: ActionConfig, draft: ActionConfig): Record<
   return patch;
 }
 
-/** The action as saved now with a block's own changes on top (the need merged field by field). */
+/** The action as saved now with a block's own changes on top (a charge point merged field by field). */
 function withChanges(action: ActionConfig, changes: Record<string, unknown>): ActionConfig {
   const next = { ...action, ...changes } as ActionConfig;
-  if (changes.need && action.need) {
-    next.need = { ...action.need, ...(changes.need as Partial<NonNullable<ActionConfig["need"]>>) };
+  if (changes.point && action.point) {
+    next.point = { ...action.point, ...(changes.point as Partial<NonNullable<ActionConfig["point"]>>) };
   }
   return next;
 }
 
 /**
  * <joe-action-steer .action .section>: one block of a night action's settings
- * on its device page. car: charging by need, the wallbox and the rest;
- * calendars: the car's appointments; hot_water; night (a device at night).
+ * on its device page. point: a wallbox for cars; hot_water; night (a device at night).
  */
 export class JoeActionSteer extends LitElement implements ActionFieldsHost {
   @property({ attribute: false }) hass?: HomeAssistant;

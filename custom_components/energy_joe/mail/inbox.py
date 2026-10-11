@@ -106,7 +106,7 @@ class CarInboxes:
         if "cars" not in data:
             data = self._from_one_mailbox(data)
         # Cars that are gone (or never saved) take their password with them.
-        known = {a["id"] for a in self._config()["actions"]}
+        known = {c["id"] for c in self._config().get("cars") or []}
         self._data = {car: v for car, v in data["cars"].items() if car in known}
         for car in self._data:
             self._set(car, notify=False)

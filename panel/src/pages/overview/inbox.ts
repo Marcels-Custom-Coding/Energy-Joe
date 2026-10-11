@@ -1,11 +1,13 @@
-import { LitElement, css, html, nothing } from "lit";
+import { LitElement, css, html, nothing, type PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
 import "../../components/day-questions";
 import "../../components/steer-tonight";
 import { batteryTeam, teamTransfer } from "../../components/battery-team";
+import { mergeAnswers, mergeQuestion } from "../../components/car-sources";
 import { daySurplus, surplusAbility, surplusConflicts } from "../../components/day-surplus";
 import { checkText } from "../../components/texts";
 import { tip } from "../../components/tip";
+import { allowedCars, carRoute, pointRoute } from "../../cars";
 import { isIgnored, saveConfig } from "../../config";
 import { define } from "../../define";
 import { actionPlace, deviceRoute, findDevice, newFindings, type DeviceEntry, type Group } from "../../device-model";
@@ -35,6 +37,9 @@ export interface TodoItem {
   to: Route;
   /** A quick answer right in the row (e.g. "Ist nachts aus – normal"): a config patch, its label and tooltip. */
   fix?: { label: string; tip: TipName; patch: Record<string, unknown> };
+  /** Answers right in the row ("Welches Auto hängt …?": one per car): a command each, one tooltip for all. */
+  choices?: { label: string; message: { type: string; [key: string]: unknown } }[];
+  choicesTip?: TipName;
 }
 
 /** The patch that marks a solar measurement as "off without sun" (null: not one of them). */
@@ -112,6 +117,52 @@ export function inboxItems(t: Translate, joe: JoeState, inputs: InboxInputs = {}
       items.push({ ...many(names), id: `${key}:${rest.map((m) => m.id).join(",")}`, hide: rest.map((m) => m.id) });
     }
   };
+
+  // --- Cars: which one is plugged in, are two of them one, and one needed but not plugged in ---
+  for (const action of config.actions.filter((a) => a.point)) {
+    const status = joe.cars?.points?.[action.id];
+    if (!status?.ask) continue;
+    items.push({
+      id: `which_car:${action.id}`,
+      hide: [],
+      icon: "mdi:car-question",
+      title: t("point.ask", { point: action.name }),
+      text: t("point.ask.text"),
+      to: pointRoute(action.id),
+      choices: [
+        ...allowedCars(config, action).map((car) => ({
+          label: car.name,
+          message: { type: "energy_joe/car/answer", point: action.id, car: car.id },
+        })),
+        { label: t("point.guest"), message: { type: "energy_joe/car/answer", point: action.id, car: "guest" } },
+      ],
+      choicesTip: "point_which",
+    });
+  }
+  for (const question of joe.cars?.merge ?? []) {
+    const answers = mergeAnswers(question);
+    push({
+      id: `car_merge:${question.a}|${question.b}`,
+      icon: "mdi:call-merge",
+      title: mergeQuestion(t, joe, question),
+      text: t("car.merge.text"),
+      to: carRoute(question.a, "sources"),
+      choices: [
+        { label: t("car.merge.yes"), message: answers.yes },
+        { label: t("car.merge.no"), message: answers.no },
+      ],
+      choicesTip: "car_merge",
+    });
+  }
+  for (const reminder of joe.cars?.reminders ?? []) {
+    push({
+      id: `unplugged:${reminder.car}:${joe.plan?.window?.start ?? ""}`,
+      icon: "mdi:power-plug-off-outline",
+      title: t("car.reminder", { car: reminder.name, km: reminder.km }),
+      text: t("car.reminder.text"),
+      to: carRoute(reminder.car),
+    });
+  }
 
   // --- Hinweise: checks and problems at a device ---
   for (const check of (inputs.checks ?? []).filter(counts)) {
@@ -294,7 +345,7 @@ export function inboxItems(t: Translate, joe: JoeState, inputs: InboxInputs = {}
     });
   }
   // Cars that charge without knowing the need, and wallbox meters with no charging set up at all: two rows.
-  const cars = devices.filter((d) => d.group === "car" && !d.action?.need?.enabled);
+  const cars = devices.filter((d) => d.group === "car" && ((d.car && !d.car.need.enabled) || d.setup));
   for (const [setup, key] of [
     [false, "car"],
     [true, "car_setup"],
@@ -511,8 +562,22 @@ export class JoeOverviewInbox extends LitElement {
         gap: 6px;
         margin-left: auto;
       }
+      .todo-actions.choices {
+        flex-wrap: wrap;
+        margin-left: 46px;
+        padding-bottom: 4px;
+      }
     `,
   ];
+
+  protected willUpdate(changed: PropertyValues<this>): void {
+    // An answered car question that is gone may come back with the next plug-in: show it again then.
+    if (changed.has("items")) {
+      const open = new Set(this.items.map((item) => item.id));
+      const kept = [...this.dismissed].filter((id) => !/^(which_car|car_merge):/.test(id) || open.has(id));
+      if (kept.length !== this.dismissed.size) this.dismissed = new Set(kept);
+    }
+  }
 
   protected render() {
     const t = this.t;
@@ -576,6 +641,21 @@ export class JoeOverviewInbox extends LitElement {
         </span>
         <ha-icon class="go" icon="mdi:chevron-right"></ha-icon>
       </a>
+      ${item.choices?.length
+        ? html`<span class="todo-actions choices" data-tipped role="group" aria-label=${item.title}>
+            ${item.choices.map(
+              (choice) => html`<button
+                type="button"
+                class="mini-btn"
+                ?disabled=${this.fixing.has(item.id)}
+                @click=${() => this.choose(item, choice.message)}
+              >
+                ${choice.label}
+              </button>`,
+            )}
+            ${item.choicesTip ? tip(t, item.choicesTip) : nothing}
+          </span>`
+        : nothing}
       ${item.fix
         ? html`<span class="todo-actions" data-tipped>
             <button type="button" class="mini-btn" ?disabled=${this.fixing.has(item.id)} @click=${() => this.applyFix(item)}>
@@ -605,6 +685,23 @@ export class JoeOverviewInbox extends LitElement {
         <ha-icon class="go" icon=${this.asking ? "mdi:chevron-up" : "mdi:chevron-down"}></ha-icon>
       </button>
     </li>`;
+  }
+
+  /** An answer right in the row (a command): the row goes once the backend has it. */
+  private async choose(item: TodoItem, message: { type: string; [key: string]: unknown }): Promise<void> {
+    this.fixing = new Set([...this.fixing, item.id]);
+    let ok = true;
+    try {
+      await this.hass?.callWS(message);
+    } catch {
+      ok = false;
+    }
+    const rest = new Set(this.fixing);
+    rest.delete(item.id);
+    this.fixing = rest;
+    if (ok) {
+      this.dismissed = new Set([...this.dismissed, item.id]);
+    }
   }
 
   /** A quick answer in the row: saved, and the row goes once the check is gone. */

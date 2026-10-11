@@ -9,7 +9,7 @@ import type { JoeConfig } from "../../types";
 import { SettingsSection } from "./base";
 import { settingsStyles } from "./styles";
 
-type NotifyKey = "ask" | "problems" | "morning";
+type NotifyKey = "ask" | "problems" | "morning" | "cars";
 
 /** Einstellungen › Benachrichtigungen: where Joe writes, what about, and when he asks in the evening. */
 export class JoeSettingsNotify extends SettingsSection {
@@ -83,6 +83,7 @@ export class JoeSettingsNotify extends SettingsSection {
           </select>
         </div>
         ${this.toggle(t, config, "ask")} ${this.toggle(t, config, "problems")} ${this.toggle(t, config, "morning")}
+        ${config.cars?.length ? this.toggle(t, config, "cars") : nothing}
         ${this.askTime(t, config)}
       </section>
     </div>`;
@@ -99,10 +100,10 @@ export class JoeSettingsNotify extends SettingsSection {
         type="button"
         class="switch"
         role="switch"
-        aria-checked=${String(notify[key])}
+        aria-checked=${String(notify[key] ?? true)}
         aria-labelledby="notify-${key}"
         ?disabled=${!notify.service}
-        @click=${() => saveConfig(this, { notify: { [key]: !notify[key] } })}
+        @click=${() => saveConfig(this, { notify: { [key]: !(notify[key] ?? true) } })}
       ></button>
     </div>`;
   }

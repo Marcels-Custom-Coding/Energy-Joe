@@ -10,8 +10,8 @@ import type {
   ActionCondition,
   ActionConfig,
   CarAccountStatus,
-  CarFinding,
   CarMailboxStatus,
+  ChargePointConfig,
   CarNeedConfig,
   ConditionOp,
   Discovery,
@@ -26,8 +26,8 @@ import type {
 
 export type ActionTemplate = "ev" | "hot_water" | "custom";
 
-/** Which fields a form shows: a car, hot water, a device at night, or only a car's appointments. */
-export type ActionLayout = "car" | "hot_water" | "night" | "calendars";
+/** Which fields a form shows: a wallbox for cars, hot water, or a device at night. */
+export type ActionLayout = "point" | "hot_water" | "night";
 
 const OPS: ConditionOp[] = ["eq", "ne", "lt", "le", "gt", "ge"];
 
@@ -48,12 +48,31 @@ export const DEFAULT_NEED: CarNeedConfig = {
   calendars: [],
   source: "ha",
   allowed: [],
+  max_soc: 100,
+};
+
+/** A charge point that charges every car and asks when it cannot tell which (model.py CHARGE_POINT). */
+export const DEFAULT_POINT: ChargePointConfig = {
+  vehicle_entity: null,
+  connected_entity: null,
+  soc_entity: null,
+  range_entity: null,
+  odometer_entity: null,
+  cars: null,
+  unknown: "ask",
+  assume_car: null,
 };
 
 // The same limits as EV_NEED in model.py (a battery size above 0).
-const NEED_LIMITS = { reserve_km: [0, 1000], consumption: [5, 60], daily_km: [0, 2000], capacity_kwh: [0.1, 300] } as const;
+const NEED_LIMITS = {
+  reserve_km: [0, 1000],
+  consumption: [5, 60],
+  daily_km: [0, 2000],
+  capacity_kwh: [0.1, 300],
+  max_soc: [20, 100],
+} as const;
 
-type NeedEntity = "soc_entity" | "range_entity" | "capacity_entity" | "odometer_entity" | "consumption_entity";
+export type NeedEntity = "soc_entity" | "range_entity" | "capacity_entity" | "odometer_entity" | "consumption_entity";
 // Which entities fit each car field, and which role of a found car fills it.
 const NEED_ENTITIES: Record<NeedEntity, { filter: FilterName; role: "soc" | "range" | "capacity" | "odometer" | "consumption"; tip: TipName }> = {
   soc_entity: { filter: "soc", role: "soc", tip: "a_need_soc" },
@@ -88,7 +107,7 @@ export function newAction(template: ActionTemplate, t: Translate): ActionConfig 
     buffer: 3,
   };
   if (template === "ev") {
-    return { ...base, on_value: "now", lead_min: 3, forecast_below_kwh: 15, power_kw: 11, priority: 1 };
+    return { ...base, on_value: "now", lead_min: 3, forecast_below_kwh: 15, power_kw: 11, priority: 1, point: { ...DEFAULT_POINT } };
   }
   if (template === "hot_water") {
     // Back as it was: a switch that is normally on (highest set point) stays on.
@@ -100,36 +119,30 @@ export function newAction(template: ActionTemplate, t: Translate): ActionConfig 
 /** What a found wallbox fills in: its mode, "plugged in" as a condition, its power. */
 export function fromWallbox(w: Discovery["wallboxes"][number]): Partial<ActionConfig> {
   const conditions: ActionCondition[] = w.entities?.connected ? [{ entity_id: w.entities.connected, op: "eq", value: true }] : [];
+  const entities = (w.entities ?? {}) as Record<string, string | undefined>;
   return {
     name: w.name,
     entity_id: w.mode_entity ?? "",
     conditions,
     power_entity: w.entities?.power ?? null,
+    point: {
+      ...DEFAULT_POINT,
+      vehicle_entity: entities.vehicle ?? null,
+      connected_entity: entities.connected ?? null,
+      soc_entity: entities.vehicle_soc ?? null,
+      range_entity: entities.vehicle_range ?? null,
+      odometer_entity: entities.vehicle_odometer ?? null,
+    },
   };
-}
-
-/** The fields of charging by need a found car fills in (only where nothing is chosen yet). */
-export function fromCar(car: CarFinding, need: CarNeedConfig): Partial<CarNeedConfig> {
-  const fill: Partial<CarNeedConfig> = {};
-  for (const [key, info] of Object.entries(NEED_ENTITIES) as [NeedEntity, (typeof NEED_ENTITIES)[NeedEntity]][]) {
-    const entity = car.entities[info.role];
-    if (!need[key] && entity) {
-      fill[key] = entity;
-    }
-  }
-  return fill;
 }
 
 /** The layout of an action's form, by where the action lives. */
 export function layoutOf(template: ActionTemplate | "car" | "hot_water" | "other"): ActionLayout {
-  return template === "ev" || template === "car" ? "car" : template === "hot_water" ? "hot_water" : "night";
+  return template === "ev" || template === "car" ? "point" : template === "hot_water" ? "hot_water" : "night";
 }
 
 /** What is missing before the draft can be saved (empty: nothing). */
-export function actionProblem(t: Translate, draft: ActionConfig, layout: ActionLayout): string {
-  if (layout === "calendars") {
-    return "";
-  }
+export function actionProblem(t: Translate, draft: ActionConfig, _layout: ActionLayout): string {
   if (!draft.entity_id) {
     return t("action.problem.entity");
   }
@@ -157,6 +170,20 @@ export interface ActionFieldsHost extends HTMLElement {
   setDraft(change: Partial<ActionConfig>): void;
 }
 
+/** The element holding a car's draft (its need and appointments). */
+export interface NeedHost extends HTMLElement {
+  t?: Translate;
+  hass?: HomeAssistant;
+  config?: JoeConfig;
+  discovery?: Discovery;
+  mailboxes?: Record<string, CarMailboxStatus>;
+  accounts?: Record<string, CarAccountStatus>;
+  apps?: { microsoft: boolean; google: boolean };
+  readonly draft?: { id: string; name: string; need?: CarNeedConfig };
+  readonly existing?: { need?: CarNeedConfig };
+  setDraft(change: { need: CarNeedConfig }): void;
+}
+
 // --- Small building blocks ---
 
 export function field(t: Translate, label: string, tipName: TipName, control: TemplateResult): TemplateResult {
@@ -166,7 +193,7 @@ export function field(t: Translate, label: string, tipName: TipName, control: Te
   </div>`;
 }
 
-function entityBox(h: ActionFieldsHost, entityId: string, pick: () => void): TemplateResult {
+export function entityBox(h: { t?: Translate; hass?: HomeAssistant }, entityId: string, pick: () => void): TemplateResult {
   const t = h.t!;
   const hass = h.hass!;
   return html`<div class="entity">
@@ -488,100 +515,93 @@ export function enabledField(h: ActionFieldsHost): TemplateResult {
   return field(t, t("action.f.enabled"), "a_enabled", switchButton(t("action.f.enabled"), draft.enabled, () => h.setDraft({ enabled: !draft.enabled })));
 }
 
-// --- Charging by need ---
+// --- Charging by need (a car's page) ---
 
-export function setNeed(h: ActionFieldsHost, change: Partial<CarNeedConfig>): void {
-  h.setDraft({ need: { ...(h.draft?.need ?? DEFAULT_NEED), ...change } });
+export function setNeed(h: NeedHost, change: Partial<CarNeedConfig>): void {
+  h.setDraft({ need: { ...DEFAULT_NEED, ...(h.draft?.need ?? {}), ...change } });
 }
 
-/** Switching it on fills in the car Joe found, where nothing is chosen yet. */
-export function toggleNeed(h: ActionFieldsHost): void {
-  const need = h.draft?.need ?? DEFAULT_NEED;
-  if (need.enabled) {
-    setNeed(h, { enabled: false });
-    return;
-  }
-  const cars = h.discovery?.cars ?? [];
-  // The one car found belongs to this action only if there is one charge point.
-  const wallboxes = (h.discovery?.wallboxes ?? []).filter((w) => w.is_car);
-  const car = cars.length === 1 && wallboxes.length <= 1 ? cars[0].entities : {};
-  const fill: Partial<CarNeedConfig> = { enabled: true };
-  for (const [key, info] of Object.entries(NEED_ENTITIES) as [NeedEntity, (typeof NEED_ENTITIES)[NeedEntity]][]) {
-    if (!need[key] && car[info.role]) {
-      fill[key] = car[info.role] ?? null;
-    }
-  }
-  setNeed(h, fill);
-}
-
-/** The switch "Laden nach Bedarf" and, when on, what Joe knows about the car. */
-export function needFields(h: ActionFieldsHost): TemplateResult {
+/** A number of the car's need with its unit; out of range counts as empty. */
+function needNumber(
+  h: NeedHost,
+  key: "reserve_km" | "consumption" | "daily_km" | "capacity_kwh" | "max_soc",
+  unit: string,
+  placeholder = "",
+): TemplateResult {
   const t = h.t!;
   const need = h.draft?.need ?? DEFAULT_NEED;
-  const number = (key: "reserve_km" | "consumption" | "daily_km" | "capacity_kwh", unit: string, max: number, placeholder = "") => html`<span
-    class="unit-input"
-  >
+  const [low, high] = NEED_LIMITS[key];
+  const value = need[key];
+  return html`<span class="unit-input">
     <input
       class="input"
       type="number"
       inputmode="decimal"
-      min=${NEED_LIMITS[key][0]}
-      max=${Math.min(max, NEED_LIMITS[key][1])}
-      step=${key === "consumption" || key === "capacity_kwh" ? "0.1" : "1"}
+      min=${low}
+      max=${high}
+      step=${key === "consumption" || key === "capacity_kwh" ? "0.1" : key === "max_soc" ? "5" : "1"}
       placeholder=${placeholder}
-      .value=${need[key] == null ? "" : String(need[key])}
+      aria-label=${t(`action.need.${key === "reserve_km" ? "reserve" : key === "daily_km" ? "daily" : key === "capacity_kwh" ? "capacity" : key}`)}
+      .value=${value == null ? "" : String(value)}
       @change=${(ev: Event) => {
         const input = ev.target as HTMLInputElement;
-        const value = Number.parseFloat(input.value.replace(",", "."));
-        const [low, high] = NEED_LIMITS[key];
-        const ok = Number.isFinite(value) && value >= low && value <= high;
-        const empty = key === "reserve_km" ? 50 : null;
-        // Out of range counts as empty, so the action still saves.
+        const number = Number.parseFloat(input.value.replace(",", "."));
+        const ok = Number.isFinite(number) && number >= low && number <= high;
+        const empty = key === "reserve_km" ? 50 : key === "max_soc" ? 100 : null;
+        // Out of range counts as empty, so the car still saves.
         if (!ok) input.value = empty == null ? "" : String(empty);
-        setNeed(h, { [key]: ok ? value : empty });
+        setNeed(h, { [key]: ok ? number : empty });
       }}
     />
     <span class="unit">${unit}</span>
   </span>`;
-  const box = (key: NeedEntity) => entityBox(h, need[key] ?? "", () => pickNeed(h, key));
+}
+
+/** "Laden nach Bedarf" and, when on, the reserve, the highest level and what Joe would otherwise learn. */
+export function needFields(h: NeedHost): TemplateResult {
+  const t = h.t!;
+  const need = h.draft?.need ?? DEFAULT_NEED;
   return html`${field(
       t,
       t("action.need"),
       "a_need",
       html`<div class="row">
-          ${switchButton(t("action.need"), need.enabled, () => toggleNeed(h))}
+          ${switchButton(t("action.need"), need.enabled, () => setNeed(h, { enabled: !(h.draft?.need ?? DEFAULT_NEED).enabled }))}
           <span>${t(need.enabled ? "action.need.on" : "action.need.off")}</span>
         </div>
         <p class="field-hint">${t("action.need.hint")}</p>`,
     )}
     ${need.enabled
-      ? html`${field(t, t("action.need.soc"), "a_need_soc", box("soc_entity"))}
-        ${field(t, t("action.need.range"), "a_need_range", box("range_entity"))}
+      ? html`${field(t, t("action.need.reserve"), "a_need_reserve", needNumber(h, "reserve_km", "km"))}
+        ${field(t, t("action.need.max_soc"), "a_need_max_soc", needNumber(h, "max_soc", "%"))}
         ${field(
           t,
           t("action.need.capacity"),
           "a_need_capacity",
-          html`<div class="row">${number("capacity_kwh", "kWh", 300, t("action.need.from_sensor"))}</div>
-            ${need.capacity_kwh == null ? box("capacity_entity") : nothing}`,
+          needNumber(h, "capacity_kwh", "kWh", t("action.need.from_sensor")),
         )}
-        ${field(t, t("action.need.reserve"), "a_need_reserve", number("reserve_km", "km", 1000))}
-        ${field(
-          t,
-          t("action.need.consumption"),
-          "a_need_consumption",
-          html`${number("consumption", "kWh/100 km", 60, t("action.need.learned"))}
-            ${need.consumption == null ? box("consumption_entity") : nothing}`,
-        )}
-        ${field(t, t("action.need.daily"), "a_need_daily", number("daily_km", "km", 2000, t("action.need.learned")))}
-        ${field(t, t("action.need.odometer"), "a_need_odometer", box("odometer_entity"))}`
+        ${field(t, t("action.need.consumption"), "a_need_consumption", needNumber(h, "consumption", "kWh/100 km", t("action.need.learned")))}
+        ${field(t, t("action.need.daily"), "a_need_daily", needNumber(h, "daily_km", "km", t("action.need.learned")))}`
       : nothing}`;
+}
+
+/** The car's sensors chosen by hand (for a car no integration shows). */
+export function needEntityFields(h: NeedHost): TemplateResult {
+  const t = h.t!;
+  const need = h.draft?.need ?? DEFAULT_NEED;
+  const box = (key: NeedEntity) => entityBox(h, need[key] ?? "", () => pickNeed(h, key));
+  return html`${field(t, t("action.need.soc"), "a_need_soc", box("soc_entity"))}
+    ${field(t, t("action.need.range"), "a_need_range", box("range_entity"))}
+    ${field(t, t("action.need.capacity_sensor"), "a_need_capacity_sensor", box("capacity_entity"))}
+    ${field(t, t("action.need.consumption_sensor"), "a_need_consumption_sensor", box("consumption_entity"))}
+    ${field(t, t("action.need.odometer"), "a_need_odometer", box("odometer_entity"))}`;
 }
 
 /**
  * The car's appointments: whose calendars count (each person links to
  * Haushalt), the car's own calendars, there and back, and the routing hint.
  */
-export function calendarFields(h: ActionFieldsHost): TemplateResult {
+export function calendarFields(h: NeedHost): TemplateResult {
   const t = h.t!;
   const draft = h.draft!;
   const need = draft.need ?? DEFAULT_NEED;
@@ -649,22 +669,81 @@ export function calendarFields(h: ActionFieldsHost): TemplateResult {
         </div>`}`;
 }
 
+// --- A wallbox for cars ---
+
+export function setPoint(h: ActionFieldsHost, change: Partial<ChargePointConfig>): void {
+  h.setDraft({ point: { ...DEFAULT_POINT, ...(h.draft?.point ?? {}), ...change } });
+}
+
+/** Which cars may charge here and what Joe does with a car he cannot tell. */
+export function pointFields(h: ActionFieldsHost): TemplateResult {
+  const t = h.t!;
+  const point = h.draft?.point ?? DEFAULT_POINT;
+  const cars = h.config?.cars ?? [];
+  const all = cars.map((c) => c.id);
+  const toggleCar = (id: string) => {
+    const now = h.draft?.point ?? DEFAULT_POINT;
+    const chosen = now.cars ?? all;
+    const next = chosen.includes(id) ? chosen.filter((c) => c !== id) : [...chosen, id];
+    // Every car chosen is kept as "every car" (a new car may charge here too).
+    setPoint(h, { cars: all.every((c) => next.includes(c)) ? null : next });
+  };
+  return html`${field(
+      t,
+      t("point.f.cars"),
+      "point_cars",
+      cars.length
+        ? html`<ul class="people" role="group" aria-label=${t("point.f.cars")}>
+            ${cars.map((car) => {
+              const on = point.cars == null || point.cars.includes(car.id);
+              return html`<li>
+                <button type="button" class="mini-btn ${on ? "go" : "quiet"}" aria-pressed=${String(on)} @click=${() => toggleCar(car.id)}>
+                  <ha-icon icon=${on ? "mdi:check" : "mdi:minus"}></ha-icon>${car.name}
+                </button>
+              </li>`;
+            })}
+          </ul>`
+        : html`<p class="field-hint">${t("point.f.no_cars")}</p>`,
+    )}
+    ${field(
+      t,
+      t("point.f.unknown"),
+      "point_unknown",
+      html`<div class="row">
+          <div class="seg" role="group" aria-label=${t("point.f.unknown")}>
+            ${(["ask", "assume"] as const).map(
+              (mode) =>
+                html`<button
+                  type="button"
+                  aria-pressed=${String(point.unknown === mode)}
+                  ?disabled=${mode === "assume" && !cars.length}
+                  @click=${() => setPoint(h, { unknown: mode, assume_car: mode === "assume" ? (point.assume_car ?? cars[0]?.id ?? null) : point.assume_car })}
+                >
+                  ${t(`point.unknown.${mode}`)}
+                </button>`,
+            )}
+          </div>
+          ${point.unknown === "assume" && cars.length
+            ? html`<select
+                class="input"
+                aria-label=${t("point.f.assume")}
+                @change=${(ev: Event) => setPoint(h, { assume_car: (ev.target as HTMLSelectElement).value })}
+              >
+                ${cars.map((car) => html`<option value=${car.id} ?selected=${point.assume_car === car.id}>${car.name}</option>`)}
+              </select>`
+            : nothing}
+        </div>
+        <p class="field-hint">${t("point.f.unknown.hint")}</p>`,
+    )}`;
+}
+
 // --- Whole forms ---
 
-/**
- * The fields of one layout, in a fixed order. `calendars` puts the car's
- * appointments into the car form (the assistant has no separate block).
- */
-export function actionFields(h: ActionFieldsHost, layout: ActionLayout, opts: { calendars?: boolean } = {}): TemplateResult {
-  const t = h.t!;
+/** The fields of one layout, in a fixed order. */
+export function actionFields(h: ActionFieldsHost, layout: ActionLayout): TemplateResult {
   const draft = h.draft!;
-  if (layout === "calendars") {
-    return calendarFields(h);
-  }
-  if (layout === "car") {
-    return html`${needFields(h)} ${opts.calendars && draft.need?.enabled ? calendarFields(h) : nothing}
-      <h4 class="fields-head">${t("devices.car.wallbox")}</h4>
-      ${switchFields(h)} ${autoFields(h)} ${powerFields(h)} ${nameField(h)} ${enabledField(h)}`;
+  if (layout === "point") {
+    return html`${switchFields(h)} ${autoFields(h)} ${pointFields(h)} ${powerFields(h)} ${nameField(h)} ${enabledField(h)}`;
   }
   if (layout === "hot_water") {
     return html`${kindField(h)} ${switchFields(h)} ${draft.kind === "target" ? targetFields(h) : nothing} ${autoFields(h)}
@@ -719,7 +798,7 @@ async function pickSensor(h: ActionFieldsHost): Promise<void> {
   }
 }
 
-async function pickNeed(h: ActionFieldsHost, key: NeedEntity): Promise<void> {
+async function pickNeed(h: NeedHost, key: NeedEntity): Promise<void> {
   const t = h.t!;
   const info = NEED_ENTITIES[key];
   const found = (h.discovery?.cars ?? [])

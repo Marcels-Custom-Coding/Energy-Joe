@@ -86,6 +86,8 @@ class PlanInput:
     meta: dict[str, Any] = field(default_factory=dict)
     # Night actions (see actions.py) and the power they take per hour (kW).
     actions: list[dict[str, Any]] = field(default_factory=list)
+    # Each car charged by need: what tomorrow needs and where it is plugged in.
+    cars: dict[str, Any] = field(default_factory=dict)
     reserved: list[float] = field(default_factory=list)
     # Dynamic tariff: the span in which Joe looks for the best window.
     search: tuple[datetime, datetime] | None = None
@@ -571,6 +573,7 @@ def _plan(inp: PlanInput) -> dict[str, Any]:
             {**action, "cost": round(_action_cost(inp, action), 2)}
             for action in inp.actions
         ],
+        "cars": inp.cars,
         "hours": [
             {
                 "start": dt_util.as_local(hour.start).isoformat(),

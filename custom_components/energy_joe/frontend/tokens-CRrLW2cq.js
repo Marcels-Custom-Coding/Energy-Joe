@@ -29,11 +29,11 @@ var e = globalThis, t = e.ShadowRoot && (e.ShadyCSS === void 0 || e.ShadyCSS.nat
 	let t = "";
 	for (let n of e.cssRules) t += n.cssText;
 	return a(t);
-})(e) : e, { is: l, defineProperty: u, getOwnPropertyDescriptor: d, getOwnPropertyNames: f, getOwnPropertySymbols: p, getPrototypeOf: ee } = Object, m = globalThis, te = m.trustedTypes, ne = te ? te.emptyScript : "", re = m.reactiveElementPolyfillSupport, h = (e, t) => e, g = {
+})(e) : e, { is: l, defineProperty: u, getOwnPropertyDescriptor: d, getOwnPropertyNames: f, getOwnPropertySymbols: p, getPrototypeOf: m } = Object, h = globalThis, g = h.trustedTypes, ee = g ? g.emptyScript : "", te = h.reactiveElementPolyfillSupport, _ = (e, t) => e, v = {
 	toAttribute(e, t) {
 		switch (t) {
 			case Boolean:
-				e = e ? ne : null;
+				e = e ? ee : null;
 				break;
 			case Object:
 			case Array: e = e == null ? e : JSON.stringify(e);
@@ -58,23 +58,23 @@ var e = globalThis, t = e.ShadowRoot && (e.ShadyCSS === void 0 || e.ShadyCSS.nat
 		}
 		return n;
 	}
-}, _ = (e, t) => !l(e, t), ie = {
+}, ne = (e, t) => !l(e, t), re = {
 	attribute: !0,
 	type: String,
-	converter: g,
+	converter: v,
 	reflect: !1,
 	useDefault: !1,
-	hasChanged: _
+	hasChanged: ne
 };
-Symbol.metadata ??= Symbol("metadata"), m.litPropertyMetadata ??= /* @__PURE__ */ new WeakMap();
-var v = class extends HTMLElement {
+Symbol.metadata ??= Symbol("metadata"), h.litPropertyMetadata ??= /* @__PURE__ */ new WeakMap();
+var y = class extends HTMLElement {
 	static addInitializer(e) {
 		this._$Ei(), (this.l ??= []).push(e);
 	}
 	static get observedAttributes() {
 		return this.finalize(), this._$Eh && [...this._$Eh.keys()];
 	}
-	static createProperty(e, t = ie) {
+	static createProperty(e, t = re) {
 		if (t.state && (t.attribute = !1), this._$Ei(), this.prototype.hasOwnProperty(e) && ((t = Object.create(t)).wrapped = !0), this.elementProperties.set(e, t), !t.noAccessor) {
 			let n = Symbol(), r = this.getPropertyDescriptor(e, n, t);
 			r !== void 0 && u(this.prototype, e, r);
@@ -100,16 +100,16 @@ var v = class extends HTMLElement {
 		};
 	}
 	static getPropertyOptions(e) {
-		return this.elementProperties.get(e) ?? ie;
+		return this.elementProperties.get(e) ?? re;
 	}
 	static _$Ei() {
-		if (this.hasOwnProperty(h("elementProperties"))) return;
-		let e = ee(this);
+		if (this.hasOwnProperty(_("elementProperties"))) return;
+		let e = m(this);
 		e.finalize(), e.l !== void 0 && (this.l = [...e.l]), this.elementProperties = new Map(e.elementProperties);
 	}
 	static finalize() {
-		if (this.hasOwnProperty(h("finalized"))) return;
-		if (this.finalized = !0, this._$Ei(), this.hasOwnProperty(h("properties"))) {
+		if (this.hasOwnProperty(_("finalized"))) return;
+		if (this.finalized = !0, this._$Ei(), this.hasOwnProperty(_("properties"))) {
 			let e = this.properties, t = [...f(e), ...p(e)];
 			for (let n of t) this.createProperty(n, e[n]);
 		}
@@ -171,14 +171,14 @@ var v = class extends HTMLElement {
 	_$ET(e, t) {
 		let n = this.constructor.elementProperties.get(e), r = this.constructor._$Eu(e, n);
 		if (r !== void 0 && !0 === n.reflect) {
-			let i = (n.converter?.toAttribute === void 0 ? g : n.converter).toAttribute(t, n.type);
+			let i = (n.converter?.toAttribute === void 0 ? v : n.converter).toAttribute(t, n.type);
 			this._$Em = e, i == null ? this.removeAttribute(r) : this.setAttribute(r, i), this._$Em = null;
 		}
 	}
 	_$AK(e, t) {
 		let n = this.constructor, r = n._$Eh.get(e);
 		if (r !== void 0 && this._$Em !== r) {
-			let e = n.getPropertyOptions(r), i = typeof e.converter == "function" ? { fromAttribute: e.converter } : e.converter?.fromAttribute === void 0 ? g : e.converter;
+			let e = n.getPropertyOptions(r), i = typeof e.converter == "function" ? { fromAttribute: e.converter } : e.converter?.fromAttribute === void 0 ? v : e.converter;
 			this._$Em = r;
 			let a = i.fromAttribute(t, e.type);
 			this[r] = a ?? this._$Ej?.get(r) ?? a, this._$Em = null;
@@ -187,7 +187,7 @@ var v = class extends HTMLElement {
 	requestUpdate(e, t, n, r = !1, i) {
 		if (e !== void 0) {
 			let a = this.constructor;
-			if (!1 === r && (i = this[e]), n ??= a.getPropertyOptions(e), !((n.hasChanged ?? _)(i, t) || n.useDefault && n.reflect && i === this._$Ej?.get(e) && !this.hasAttribute(a._$Eu(e, n)))) return;
+			if (!1 === r && (i = this[e]), n ??= a.getPropertyOptions(e), !((n.hasChanged ?? ne)(i, t) || n.useDefault && n.reflect && i === this._$Ej?.get(e) && !this.hasAttribute(a._$Eu(e, n)))) return;
 			this.C(e, t, n);
 		}
 		!1 === this.isUpdatePending && (this._$ES = this._$EP());
@@ -251,37 +251,37 @@ var v = class extends HTMLElement {
 	updated(e) {}
 	firstUpdated(e) {}
 };
-v.elementStyles = [], v.shadowRootOptions = { mode: "open" }, v[h("elementProperties")] = /* @__PURE__ */ new Map(), v[h("finalized")] = /* @__PURE__ */ new Map(), re?.({ ReactiveElement: v }), (m.reactiveElementVersions ??= []).push("2.1.2");
+y.elementStyles = [], y.shadowRootOptions = { mode: "open" }, y[_("elementProperties")] = /* @__PURE__ */ new Map(), y[_("finalized")] = /* @__PURE__ */ new Map(), te?.({ ReactiveElement: y }), (h.reactiveElementVersions ??= []).push("2.1.2");
 //#endregion
 //#region node_modules/lit-html/lit-html.js
-var y = globalThis, ae = (e) => e, b = y.trustedTypes, oe = b ? b.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, x = "$lit$", S = `lit$${Math.random().toFixed(9).slice(2)}$`, C = "?" + S, se = `<${C}>`, w = document, T = () => w.createComment(""), E = (e) => e === null || typeof e != "object" && typeof e != "function", D = Array.isArray, ce = (e) => D(e) || typeof e?.[Symbol.iterator] == "function", le = "[ 	\n\f\r]", O = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, ue = /-->/g, de = />/g, k = RegExp(`>|${le}(?:([^\\s"'>=/]+)(${le}*=${le}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`, "g"), fe = /'/g, pe = /"/g, me = /^(?:script|style|textarea|title)$/i, he = (e) => (t, ...n) => ({
+var ie = globalThis, ae = (e) => e, b = ie.trustedTypes, oe = b ? b.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, x = "$lit$", S = `lit$${Math.random().toFixed(9).slice(2)}$`, C = "?" + S, se = `<${C}>`, w = document, T = () => w.createComment(""), E = (e) => e === null || typeof e != "object" && typeof e != "function", ce = Array.isArray, le = (e) => ce(e) || typeof e?.[Symbol.iterator] == "function", ue = "[ 	\n\f\r]", D = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, de = /-->/g, fe = />/g, O = RegExp(`>|${ue}(?:([^\\s"'>=/]+)(${ue}*=${ue}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`, "g"), pe = /'/g, me = /"/g, he = /^(?:script|style|textarea|title)$/i, ge = (e) => (t, ...n) => ({
 	_$litType$: e,
 	strings: t,
 	values: n
-}), A = he(1), ge = he(2), j = Symbol.for("lit-noChange"), M = Symbol.for("lit-nothing"), _e = /* @__PURE__ */ new WeakMap(), N = w.createTreeWalker(w, 129);
-function ve(e, t) {
-	if (!D(e) || !e.hasOwnProperty("raw")) throw Error("invalid template strings array");
+}), k = ge(1), _e = ge(2), A = Symbol.for("lit-noChange"), j = Symbol.for("lit-nothing"), ve = /* @__PURE__ */ new WeakMap(), M = w.createTreeWalker(w, 129);
+function ye(e, t) {
+	if (!ce(e) || !e.hasOwnProperty("raw")) throw Error("invalid template strings array");
 	return oe === void 0 ? t : oe.createHTML(t);
 }
-var ye = (e, t) => {
-	let n = e.length - 1, r = [], i, a = t === 2 ? "<svg>" : t === 3 ? "<math>" : "", o = O;
+var be = (e, t) => {
+	let n = e.length - 1, r = [], i, a = t === 2 ? "<svg>" : t === 3 ? "<math>" : "", o = D;
 	for (let t = 0; t < n; t++) {
 		let n = e[t], s, c, l = -1, u = 0;
-		for (; u < n.length && (o.lastIndex = u, c = o.exec(n), c !== null);) u = o.lastIndex, o === O ? c[1] === "!--" ? o = ue : c[1] === void 0 ? c[2] === void 0 ? c[3] !== void 0 && (o = k) : (me.test(c[2]) && (i = RegExp("</" + c[2], "g")), o = k) : o = de : o === k ? c[0] === ">" ? (o = i ?? O, l = -1) : c[1] === void 0 ? l = -2 : (l = o.lastIndex - c[2].length, s = c[1], o = c[3] === void 0 ? k : c[3] === "\"" ? pe : fe) : o === pe || o === fe ? o = k : o === ue || o === de ? o = O : (o = k, i = void 0);
-		let d = o === k && e[t + 1].startsWith("/>") ? " " : "";
-		a += o === O ? n + se : l >= 0 ? (r.push(s), n.slice(0, l) + x + n.slice(l) + S + d) : n + S + (l === -2 ? t : d);
+		for (; u < n.length && (o.lastIndex = u, c = o.exec(n), c !== null);) u = o.lastIndex, o === D ? c[1] === "!--" ? o = de : c[1] === void 0 ? c[2] === void 0 ? c[3] !== void 0 && (o = O) : (he.test(c[2]) && (i = RegExp("</" + c[2], "g")), o = O) : o = fe : o === O ? c[0] === ">" ? (o = i ?? D, l = -1) : c[1] === void 0 ? l = -2 : (l = o.lastIndex - c[2].length, s = c[1], o = c[3] === void 0 ? O : c[3] === "\"" ? me : pe) : o === me || o === pe ? o = O : o === de || o === fe ? o = D : (o = O, i = void 0);
+		let d = o === O && e[t + 1].startsWith("/>") ? " " : "";
+		a += o === D ? n + se : l >= 0 ? (r.push(s), n.slice(0, l) + x + n.slice(l) + S + d) : n + S + (l === -2 ? t : d);
 	}
-	return [ve(e, a + (e[n] || "<?>") + (t === 2 ? "</svg>" : t === 3 ? "</math>" : "")), r];
-}, be = class e {
+	return [ye(e, a + (e[n] || "<?>") + (t === 2 ? "</svg>" : t === 3 ? "</math>" : "")), r];
+}, N = class e {
 	constructor({ strings: t, _$litType$: n }, r) {
 		let i;
 		this.parts = [];
-		let a = 0, o = 0, s = t.length - 1, c = this.parts, [l, u] = ye(t, n);
-		if (this.el = e.createElement(l, r), N.currentNode = this.el.content, n === 2 || n === 3) {
+		let a = 0, o = 0, s = t.length - 1, c = this.parts, [l, u] = be(t, n);
+		if (this.el = e.createElement(l, r), M.currentNode = this.el.content, n === 2 || n === 3) {
 			let e = this.el.content.firstChild;
 			e.replaceWith(...e.childNodes);
 		}
-		for (; (i = N.nextNode()) !== null && c.length < s;) {
+		for (; (i = M.nextNode()) !== null && c.length < s;) {
 			if (i.nodeType === 1) {
 				if (i.hasAttributes()) for (let e of i.getAttributeNames()) if (e.endsWith(x)) {
 					let t = u[o++], n = i.getAttribute(e).split(S), r = /([.?@])?(.*)/.exec(t);
@@ -296,11 +296,11 @@ var ye = (e, t) => {
 					type: 6,
 					index: a
 				}), i.removeAttribute(e));
-				if (me.test(i.tagName)) {
+				if (he.test(i.tagName)) {
 					let e = i.textContent.split(S), t = e.length - 1;
 					if (t > 0) {
 						i.textContent = b ? b.emptyScript : "";
-						for (let n = 0; n < t; n++) i.append(e[n], T()), N.nextNode(), c.push({
+						for (let n = 0; n < t; n++) i.append(e[n], T()), M.nextNode(), c.push({
 							type: 2,
 							index: ++a
 						});
@@ -329,7 +329,7 @@ var ye = (e, t) => {
 	}
 };
 function P(e, t, n = e, r) {
-	if (t === j) return t;
+	if (t === A) return t;
 	let i = r === void 0 ? n._$Cl : n._$Co?.[r], a = E(t) ? void 0 : t._$litDirective$;
 	return i?.constructor !== a && (i?._$AO?.(!1), a === void 0 ? i = void 0 : (i = new a(e), i._$AT(e, n, r)), r === void 0 ? n._$Cl = i : (n._$Co ??= [])[r] = i), i !== void 0 && (t = P(e, i._$AS(e, t.values), i, r)), t;
 }
@@ -345,16 +345,16 @@ var xe = class {
 	}
 	u(e) {
 		let { el: { content: t }, parts: n } = this._$AD, r = (e?.creationScope ?? w).importNode(t, !0);
-		N.currentNode = r;
-		let i = N.nextNode(), a = 0, o = 0, s = n[0];
+		M.currentNode = r;
+		let i = M.nextNode(), a = 0, o = 0, s = n[0];
 		for (; s !== void 0;) {
 			if (a === s.index) {
 				let t;
 				s.type === 2 ? t = new F(i, i.nextSibling, this, e) : s.type === 1 ? t = new s.ctor(i, s.name, s.strings, this, e) : s.type === 6 && (t = new Te(i, this, e)), this._$AV.push(t), s = n[++o];
 			}
-			a !== s?.index && (i = N.nextNode(), a++);
+			a !== s?.index && (i = M.nextNode(), a++);
 		}
-		return N.currentNode = w, r;
+		return M.currentNode = w, r;
 	}
 	p(e) {
 		let t = 0;
@@ -365,7 +365,7 @@ var xe = class {
 		return this._$AM?._$AU ?? this._$Cv;
 	}
 	constructor(e, t, n, r) {
-		this.type = 2, this._$AH = M, this._$AN = void 0, this._$AA = e, this._$AB = t, this._$AM = n, this.options = r, this._$Cv = r?.isConnected ?? !0;
+		this.type = 2, this._$AH = j, this._$AN = void 0, this._$AA = e, this._$AB = t, this._$AM = n, this.options = r, this._$Cv = r?.isConnected ?? !0;
 	}
 	get parentNode() {
 		let e = this._$AA.parentNode, t = this._$AM;
@@ -378,7 +378,7 @@ var xe = class {
 		return this._$AB;
 	}
 	_$AI(e, t = this) {
-		e = P(this, e, t), E(e) ? e === M || e == null || e === "" ? (this._$AH !== M && this._$AR(), this._$AH = M) : e !== this._$AH && e !== j && this._(e) : e._$litType$ === void 0 ? e.nodeType === void 0 ? ce(e) ? this.k(e) : this._(e) : this.T(e) : this.$(e);
+		e = P(this, e, t), E(e) ? e === j || e == null || e === "" ? (this._$AH !== j && this._$AR(), this._$AH = j) : e !== this._$AH && e !== A && this._(e) : e._$litType$ === void 0 ? e.nodeType === void 0 ? le(e) ? this.k(e) : this._(e) : this.T(e) : this.$(e);
 	}
 	O(e) {
 		return this._$AA.parentNode.insertBefore(e, this._$AB);
@@ -387,10 +387,10 @@ var xe = class {
 		this._$AH !== e && (this._$AR(), this._$AH = this.O(e));
 	}
 	_(e) {
-		this._$AH !== M && E(this._$AH) ? this._$AA.nextSibling.data = e : this.T(w.createTextNode(e)), this._$AH = e;
+		this._$AH !== j && E(this._$AH) ? this._$AA.nextSibling.data = e : this.T(w.createTextNode(e)), this._$AH = e;
 	}
 	$(e) {
-		let { values: t, _$litType$: n } = e, r = typeof n == "number" ? this._$AC(e) : (n.el === void 0 && (n.el = be.createElement(ve(n.h, n.h[0]), this.options)), n);
+		let { values: t, _$litType$: n } = e, r = typeof n == "number" ? this._$AC(e) : (n.el === void 0 && (n.el = N.createElement(ye(n.h, n.h[0]), this.options)), n);
 		if (this._$AH?._$AD === r) this._$AH.p(t);
 		else {
 			let e = new xe(r, this), n = e.u(this.options);
@@ -398,11 +398,11 @@ var xe = class {
 		}
 	}
 	_$AC(e) {
-		let t = _e.get(e.strings);
-		return t === void 0 && _e.set(e.strings, t = new be(e)), t;
+		let t = ve.get(e.strings);
+		return t === void 0 && ve.set(e.strings, t = new N(e)), t;
 	}
 	k(t) {
-		D(this._$AH) || (this._$AH = [], this._$AR());
+		ce(this._$AH) || (this._$AH = [], this._$AR());
 		let n = this._$AH, r, i = 0;
 		for (let a of t) i === n.length ? n.push(r = new e(this.O(T()), this.O(T()), this, this.options)) : r = n[i], r._$AI(a), i++;
 		i < n.length && (this._$AR(r && r._$AB.nextSibling, i), n.length = i);
@@ -424,41 +424,41 @@ var xe = class {
 		return this._$AM._$AU;
 	}
 	constructor(e, t, n, r, i) {
-		this.type = 1, this._$AH = M, this._$AN = void 0, this.element = e, this.name = t, this._$AM = r, this.options = i, n.length > 2 || n[0] !== "" || n[1] !== "" ? (this._$AH = Array(n.length - 1).fill(/* @__PURE__ */ new String()), this.strings = n) : this._$AH = M;
+		this.type = 1, this._$AH = j, this._$AN = void 0, this.element = e, this.name = t, this._$AM = r, this.options = i, n.length > 2 || n[0] !== "" || n[1] !== "" ? (this._$AH = Array(n.length - 1).fill(/* @__PURE__ */ new String()), this.strings = n) : this._$AH = j;
 	}
 	_$AI(e, t = this, n, r) {
 		let i = this.strings, a = !1;
-		if (i === void 0) e = P(this, e, t, 0), a = !E(e) || e !== this._$AH && e !== j, a && (this._$AH = e);
+		if (i === void 0) e = P(this, e, t, 0), a = !E(e) || e !== this._$AH && e !== A, a && (this._$AH = e);
 		else {
 			let r = e, o, s;
-			for (e = i[0], o = 0; o < i.length - 1; o++) s = P(this, r[n + o], t, o), s === j && (s = this._$AH[o]), a ||= !E(s) || s !== this._$AH[o], s === M ? e = M : e !== M && (e += (s ?? "") + i[o + 1]), this._$AH[o] = s;
+			for (e = i[0], o = 0; o < i.length - 1; o++) s = P(this, r[n + o], t, o), s === A && (s = this._$AH[o]), a ||= !E(s) || s !== this._$AH[o], s === j ? e = j : e !== j && (e += (s ?? "") + i[o + 1]), this._$AH[o] = s;
 		}
 		a && !r && this.j(e);
 	}
 	j(e) {
-		e === M ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, e ?? "");
+		e === j ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, e ?? "");
 	}
 }, Se = class extends I {
 	constructor() {
 		super(...arguments), this.type = 3;
 	}
 	j(e) {
-		this.element[this.name] = e === M ? void 0 : e;
+		this.element[this.name] = e === j ? void 0 : e;
 	}
 }, Ce = class extends I {
 	constructor() {
 		super(...arguments), this.type = 4;
 	}
 	j(e) {
-		this.element.toggleAttribute(this.name, !!e && e !== M);
+		this.element.toggleAttribute(this.name, !!e && e !== j);
 	}
 }, we = class extends I {
 	constructor(e, t, n, r, i) {
 		super(e, t, n, r, i), this.type = 5;
 	}
 	_$AI(e, t = this) {
-		if ((e = P(this, e, t, 0) ?? M) === j) return;
-		let n = this._$AH, r = e === M && n !== M || e.capture !== n.capture || e.once !== n.once || e.passive !== n.passive, i = e !== M && (n === M || r);
+		if ((e = P(this, e, t, 0) ?? j) === A) return;
+		let n = this._$AH, r = e === j && n !== j || e.capture !== n.capture || e.once !== n.once || e.passive !== n.passive, i = e !== j && (n === j || r);
 		r && this.element.removeEventListener(this.name, this, n), i && this.element.addEventListener(this.name, this, e), this._$AH = e;
 	}
 	handleEvent(e) {
@@ -479,9 +479,9 @@ var xe = class {
 	P: S,
 	A: C,
 	C: 1,
-	L: ye,
+	L: be,
 	R: xe,
-	D: ce,
+	D: le,
 	V: P,
 	I: F,
 	H: I,
@@ -489,8 +489,8 @@ var xe = class {
 	U: we,
 	B: Se,
 	F: Te
-}, De = y.litHtmlPolyfillSupport;
-De?.(be, F), (y.litHtmlVersions ??= []).push("3.3.3");
+}, De = ie.litHtmlPolyfillSupport;
+De?.(N, F), (ie.litHtmlVersions ??= []).push("3.3.3");
 var Oe = (e, t, n) => {
 	let r = n?.renderBefore ?? t, i = r._$litPart$;
 	if (i === void 0) {
@@ -498,7 +498,7 @@ var Oe = (e, t, n) => {
 		r._$litPart$ = i = new F(t.insertBefore(T(), e), e, void 0, n ?? {});
 	}
 	return i._$AI(e), i;
-}, L = globalThis, R = class extends v {
+}, L = globalThis, R = class extends y {
 	constructor() {
 		super(...arguments), this.renderOptions = { host: this }, this._$Do = void 0;
 	}
@@ -517,7 +517,7 @@ var Oe = (e, t, n) => {
 		super.disconnectedCallback(), this._$Do?.setConnected(!1);
 	}
 	render() {
-		return j;
+		return A;
 	}
 };
 R._$litElement$ = !0, R.finalized = !0, L.litElementHydrateSupport?.({ LitElement: R });
@@ -528,9 +528,9 @@ ke?.({ LitElement: R }), (L.litElementVersions ??= []).push("4.2.2");
 var Ae = {
 	attribute: !0,
 	type: String,
-	converter: g,
+	converter: v,
 	reflect: !1,
-	hasChanged: _
+	hasChanged: ne
 }, je = (e = Ae, t, n) => {
 	let { kind: r, metadata: i } = n, a = globalThis.litPropertyMetadata.get(i);
 	if (a === void 0 && globalThis.litPropertyMetadata.set(i, a = /* @__PURE__ */ new Map()), r === "setter" && ((e = Object.create(e)).wrapped = !0), a.set(n.name, e), r === "accessor") {
@@ -2697,13 +2697,183 @@ var Pe = {
 	"devices.role.measures": "Nur gemessen",
 	"devices.group.go": "Alle zeigen →",
 	"devices.no_meter_group": "ohne Zähler",
-	"devices.car.lead": "Hier lade ich deine Autos – nach Bedarf für die Fahrten von morgen, wenn der Strom günstig ist, oder sofort, wenn du es willst.",
+	"devices.car.lead": "Ein Auto hat seinen Bedarf – Fahrten, Termine, Ladestand. Ein Ladepunkt ist die Wallbox, die ich schalte. Ich lade immer das Auto, das gerade steckt: nach Bedarf, wenn der Strom günstig ist, oder sofort, wenn du es willst.",
 	"devices.hot_water.lead": "Ich heize das Wasser in der günstigen Zeit auf, damit es bis zum nächsten Abend reicht.",
 	"devices.other.lead": "Alle Zähler aus deinem Energie-Dashboard. Sag mir, was jedes Gerät ist und wann es läuft – dann rechne ich richtig. Ein Gerät, das nachts laufen soll, schalte ich in der günstigen Zeit ein.",
 	"devices.other.empty": "Im Energie-Dashboard sind keine weiteren Geräte eingetragen.",
 	"devices.car.terms": "Termine",
 	"devices.car.terms_off": "Termine zählen erst, wenn „Laden nach Bedarf“ an ist. Das schaltest du oben unter Steuern ein.",
-	"devices.car.wallbox": "Wallbox",
+	"action.need.max_soc": "Höchstens laden bis",
+	"action.need.capacity_sensor": "Akkugröße vom Sensor",
+	"action.need.consumption_sensor": "Verbrauch vom Sensor",
+	"tip.a_need_max_soc.title": "Warum höchstens?",
+	"tip.a_need_max_soc.text": "Nach Bedarf lade ich nie über diesen Stand – zum Beispiel 80 %, wenn du den Akku schonen willst. Braucht morgen mehr, siehst du es unter „Fahrten morgen“.",
+	"tip.a_need_capacity_sensor.title": "Welcher Sensor für die Akkugröße?",
+	"tip.a_need_capacity_sensor.text": "Zeigt keine Integration die Akkugröße, kannst du hier einen Sensor wählen – oder oben unter Steuern die Größe eintragen.",
+	"tip.a_need_consumption_sensor.title": "Welcher Sensor für den Verbrauch?",
+	"tip.a_need_consumption_sensor.text": "Der Langzeit-Durchschnitt des Autos (kWh/100 km, Wh/km oder km/kWh). Bis ich selbst gelernt habe, rechne ich damit.",
+	"car.delete": "Auto löschen",
+	"car.delete.ask": "{name} wirklich löschen? Termine, Postfach und was ich über das Auto gelernt habe, sind dann weg. Die Wallbox bleibt.",
+	"tip.car_delete.title": "Was passiert beim Löschen?",
+	"tip.car_delete.text": "Das Auto ist weg – mit Terminen, Postfach und Gelerntem. Die Wallbox schalte ich weiter. Seine Integrationen lasse ich beim Umschauen weg; unter „+ Hinzufügen › Auto“ kannst du sie wieder nutzen.",
+	"car.f.name": "Name",
+	"tip.car_name.title": "Welcher Name?",
+	"tip.car_name.text": "So nenne ich das Auto überall – in Fragen, Erinnerungen und im Plan.",
+	"car.f.remind": "Erinnern, wenn es nicht steckt",
+	"car.f.remind_at": "abends um",
+	"car.f.remind_time": "Uhrzeit der Erinnerung",
+	"tip.car_remind.title": "Wann erinnere ich dich?",
+	"tip.car_remind.text": "Braucht das Auto für morgen Strom und steckt um diese Uhrzeit an keiner Wallbox, sage ich es dir – unter Übersicht und, wenn eingerichtet, aufs Handy. Einmal am Abend.",
+	"car.f.tracker": "Wo ist das Auto?",
+	"car.pick.tracker": "Wo ist das Auto?",
+	"tip.car_tracker.title": "Wozu der Ort?",
+	"tip.car_tracker.text": "Steckt ein Auto an, und nur eines ist zu Hause, weiß ich, welches es ist. Meist bringt die Integration des Herstellers den Ort mit; sonst wähle hier einen Tracker oder eine Person.",
+	"car.merge.ask": "Gehören „{a}“ aus evcc und „{b}“ aus {from} zusammen?",
+	"car.merge.text": "Dann ist es ein Auto mit den Werten aus beiden – den Ladestand nehme ich am liebsten von evcc.",
+	"car.merge.yes": "Ja, ein Auto",
+	"car.merge.no": "Nein, zwei Autos",
+	"car.merge.with": "Zusammenführen mit …",
+	"car.merge.do": "Zusammenführen",
+	"tip.car_merge.title": "Warum frage ich das?",
+	"tip.car_merge.text": "Dasselbe Auto zeigt sich oft zweimal: in evcc und in der Integration des Herstellers. Passen Name, Ladestand oder Kilometerstand eindeutig, führe ich sie selbst zusammen. Bin ich unsicher, frage ich lieber. Du kannst es unter Quellen jederzeit wieder trennen.",
+	"tip.car_merge_with.title": "Wann zusammenführen?",
+	"tip.car_merge_with.text": "Wenn zwei Autos hier in Wahrheit eines sind. Die Einstellungen des Autos, das nach Bedarf lädt, bleiben; die Quellen des anderen kommen dazu.",
+	"car.open_point": "Zum Ladepunkt",
+	"car.plugged_at": "steckt an {point}",
+	"car.plugged_elsewhere": "steckt an einer Wallbox, die ich nicht schalte",
+	"car.not_plugged": "steckt nicht",
+	"car.reminder": "{car} braucht morgen {km} km, steckt aber nicht",
+	"car.reminder.text": "Steck es heute Abend ein, dann lade ich in der günstigen Zeit.",
+	"car.role.soc": "Ladestand",
+	"car.role.range": "Reichweite",
+	"car.role.capacity": "Akkugröße",
+	"car.role.plugged": "Eingesteckt",
+	"car.role.charging": "Lädt",
+	"car.role.odometer": "Kilometerstand",
+	"car.role.consumption": "Verbrauch",
+	"car.role.outside_temp": "Außentemperatur",
+	"car.role.location": "Ort",
+	"car.source.car": "Auto-Integration",
+	"car.source.manual": "von Hand",
+	"car.source.chip": "aus {from}",
+	"car.source.chip_manual": "von Hand gewählt",
+	"car.source.from": "über {from}",
+	"car.source.gives": "liefert: {roles}",
+	"car.source.evcc_only": "evcc sagt mir, ob das Auto an einer Wallbox steckt, und seinen Ladestand dort.",
+	"car.source.nothing": "liefert gerade keine Werte",
+	"car.source.split": "Trennen",
+	"car.source.vehicle": "in evcc: {id}",
+	"car.platform.kia_uvo": "Hyundai / Kia",
+	"car.platform.ha_kia_hyundai": "Hyundai / Kia",
+	"car.platform.bmw_connected_drive": "BMW",
+	"car.platform.bavariandata": "BMW",
+	"car.platform.cardata": "BMW",
+	"car.platform.tesla_fleet": "Tesla",
+	"car.platform.teslemetry": "Tesla",
+	"car.platform.tesla_custom": "Tesla",
+	"car.platform.volkswagen_we_connect_id": "Volkswagen",
+	"car.platform.renault": "Renault",
+	"car.platform.mbapi2020": "Mercedes-Benz",
+	"car.platform.byd_vehicle": "BYD",
+	"car.platform.audiconnect": "Audi",
+	"car.platform.stellantis_vehicles": "Stellantis",
+	"car.sources": "Quellen",
+	"tip.car_sources.title": "Woher kommen die Werte?",
+	"tip.car_sources.text": "Ein Auto kann aus mehreren Integrationen kommen. Den Ladestand nehme ich am liebsten von evcc – evcc schätzt ihn beim Laden, statt das Auto zu fragen. Reichweite, Kilometerstand, Ort und Außentemperatur kommen von der Integration des Herstellers. Ich frage das Auto nie selbst ab und wecke es nicht auf.",
+	"car.sources.manual": "Von Hand gewählt",
+	"car.sources.manual.hint": "Für ein Auto, das keine Integration zeigt – oder wenn ich einen Wert nicht finde.",
+	"car.sources.manual.open": "Sensoren von Hand wählen",
+	"tip.car_manual.title": "Wann wähle ich von Hand?",
+	"tip.car_manual.text": "Nur wenn eine Integration einen Wert nicht liefert oder ein Auto gar keine Integration hat. Was die Integrationen liefern, lese ich von selbst.",
+	"car.sources.none": "Noch keine Integration – wähle unten die Sensoren von Hand.",
+	"tip.car_split.title": "Was heißt trennen?",
+	"tip.car_split.text": "Diese Quelle ist ein anderes Auto: Sie wird ein Auto für sich, und ich frage nicht mehr, ob die beiden zusammengehören.",
+	"car.trips": "Fahrten morgen",
+	"car.trips.none": "Sobald ich die Nacht plane, steht hier, was morgen ansteht.",
+	"car.values.none": "Noch keine Werte – unter Quellen siehst du, woher sie kommen sollen.",
+	"car.value.unknown": "–",
+	"car.value.plugged": "ja",
+	"car.value.unplugged": "nein",
+	"car.value.home": "zu Hause",
+	"car.value.away": "unterwegs",
+	"tip.car_now.title": "Was sehe ich hier?",
+	"tip.car_now.text": "Die Werte des Autos, jeweils mit ihrer Quelle, wo es gerade steckt, Jetzt laden oder Heute Nacht laden, und was morgen ansteht.",
+	"tip.car_steer.title": "Was stelle ich hier ein?",
+	"tip.car_steer.text": "Alles, was das Auto braucht: Laden nach Bedarf, die Reserve, wie hoch ich höchstens lade und die Erinnerung am Abend. Welche Wallbox ich schalte, steht beim Ladepunkt.",
+	"tip.car_terms.title": "Wozu die Termine?",
+	"tip.car_terms.text": "Aus den Terminen weiß ich, wie weit das Auto morgen fährt. Wessen Termine zählen, wählst du hier.",
+	"tip.car_save.title": "Was passiert beim Speichern?",
+	"tip.car_save.text": "Ich plane die Nacht mit diesen Werten neu. Am Ladepunkt ändert sich nichts.",
+	"devices.add.wallbox": "Wallbox",
+	"devices.add.wallbox.text": "Ich schalte sie nachts ein und lade das Auto, das gerade steckt.",
+	"devices.add.car.title": "Auto |hinzufügen",
+	"devices.add.car.lead": "Diese Autos sehe ich in Home Assistant. Zeigen evcc und der Hersteller dasselbe Auto, führe ich sie zusammen – oder frage dich.",
+	"devices.add.car.none": "Ich sehe kein weiteres Auto.",
+	"devices.add.car.by_hand": "Oder ein Auto von Hand anlegen",
+	"devices.add.car.name": "Name des Autos",
+	"devices.add.car.make": "Anlegen",
+	"tip.devices_add_car.title": "Woher kenne ich die Autos?",
+	"tip.devices_add_car.text": "Aus evcc (seine Fahrzeuge) und aus den Integrationen der Hersteller, etwa Hyundai, BMW oder Tesla. Ein Auto, das in beiden steht, wird eines.",
+	"tip.devices_add_car_hand.title": "Wann von Hand?",
+	"tip.devices_add_car_hand.text": "Für ein Auto ohne Integration, etwa das eines Freundes, das öfter hier lädt. Seine Sensoren wählst du danach unter Quellen – oder lässt sie leer.",
+	"devices.car.cars": "Autos",
+	"devices.car.points": "Ladepunkte",
+	"devices.group_add.wallbox": "Wallbox hinzufügen",
+	"devices.charge.guessed": "Ich nehme an, dass dieses Auto an {point} steckt. Stimmt das nicht, sag es mir beim Ladepunkt.",
+	"devices.charge.label_at": "Laden an {point} bis",
+	"devices.charge.no_level": "Ladestand und Reichweite von {car} kenne ich gerade nicht – unter Quellen siehst du, woher sie kommen.",
+	"devices.charge.not_plugged": "{car} steckt gerade nicht. Sobald es an einer Wallbox hängt, kannst du hier laden.",
+	"devices.action.why.guest": "Ein Gast lädt – ich lasse die Wallbox in Ruhe, evcc macht, was eingestellt ist.",
+	"devices.action.why.unknown_car": "Ich weiß nicht, welches Auto steckt – bis du es mir sagst, lasse ich die Wallbox in Ruhe.",
+	"devices.action.why.not_plugged": "Heute nicht: kein Auto eingesteckt.",
+	"plan.car_at": "{car} · an {point}",
+	"plan.car_away.missing": "Steckt nicht – lädt heute Nacht nicht, obwohl morgen etwas fehlt.",
+	"plan.car_away.enough": "Steckt nicht – braucht für morgen aber auch nichts.",
+	"point.ask": "Welches Auto hängt an der Wallbox „{point}“?",
+	"point.ask.text": "Bis ich es weiß, lasse ich die Wallbox in Ruhe.",
+	"point.f.cars": "Welche Autos hier laden dürfen",
+	"point.f.no_cars": "Noch kein Auto – lege eins unter „Auto hinzufügen“ an. Bis dahin schalte ich die Wallbox nach der Sonne.",
+	"point.f.unknown": "Wenn ich das Auto nicht erkenne",
+	"point.f.unknown.hint": "Erkennen heißt: evcc sagt es mir, der Stecker-Sensor des Autos zeigt es, oder nur ein Auto ist zu Hause.",
+	"point.f.assume": "Welches Auto ich annehme",
+	"point.unknown.ask": "fragen",
+	"point.unknown.assume": "immer annehmen",
+	"point.forget": "Selbst erkennen lassen",
+	"point.guest": "Gast / anderes Auto",
+	"point.open_car": "Zu {car}",
+	"point.other_car": "Ein anderes Auto?",
+	"point.state.car": "{car} steckt ({how})",
+	"point.state.empty": "frei – kein Auto eingesteckt",
+	"point.state.guest": "Gast / anderes Auto – ich schalte hier nichts",
+	"point.state.unknown": "ein Auto, das ich nicht erkenne",
+	"point.state.free": "lädt nach der Sonne (noch kein Auto angelegt)",
+	"point.state.none": "noch nicht gelesen",
+	"point.how.evcc": "erkannt über evcc",
+	"point.how.plugged": "laut Stecker-Sensor des Autos",
+	"point.how.home": "das einzige Auto zu Hause",
+	"point.how.answer": "du hast es gesagt",
+	"point.how.assume": "so eingestellt",
+	"tip.point_cars.title": "Welche Autos dürfen hier laden?",
+	"tip.point_cars.text": "Standard: alle. Lädt hier nur ein bestimmtes Auto, erkenne ich es sicherer und frage seltener.",
+	"tip.point_unknown.title": "Was, wenn ich das Auto nicht erkenne?",
+	"tip.point_unknown.text": "„Fragen“: Ich lasse die Wallbox in Ruhe und frage dich – aufs Handy und unter Übersicht. „Immer annehmen“: Ich nehme dieses Auto an und lade nach seinem Bedarf.",
+	"tip.point_unknown.hint": "Ein Gast: Antworte „Gast / anderes Auto“ – dann macht evcc, was eingestellt ist.",
+	"tip.point_which.title": "Woran erkenne ich das Auto?",
+	"tip.point_which.text": "Der Reihe nach: das Fahrzeug, das evcc am Ladepunkt zeigt; der Stecker-Sensor des Autos; das einzige Auto, das zu Hause ist. Sonst frage ich dich. Deine Antwort gilt, bis das Auto wieder ausgesteckt wird.",
+	"tip.point_now.title": "Was sehe ich hier?",
+	"tip.point_now.text": "Welches Auto gerade steckt und woher ich das weiß. Liege ich falsch, sag mir das richtige Auto.",
+	"tip.point_steer.title": "Was stelle ich hier ein?",
+	"tip.point_steer.text": "Was ich an der Wallbox schalte (bei evcc den Modus, nicht evccs eigenen Ladeplan), wann ich sie einschalte, welche Autos hier laden dürfen und was ich mit einem Auto tue, das ich nicht erkenne.",
+	"settings.notify.cars": "Autos",
+	"settings.notify.cars.hint": "Welches Auto an der Wallbox hängt, wenn ich es nicht erkenne – und abends, wenn ein Auto für morgen nicht steckt.",
+	"tip.notify_cars.title": "Was frage ich zu den Autos?",
+	"tip.notify_cars.text": "Steckt ein Auto an, das ich nicht erkenne, frage ich mit einem Knopf je Auto und „Gast“. Abends erinnere ich dich, wenn ein Auto für morgen laden müsste, aber nicht steckt. Die Uhrzeit stellst du beim Auto ein.",
+	"signpost.wallbox": "Ladepunkt / Wallbox",
+	"signpost.wallbox.terms": "Wallbox, Ladepunkt, Ladestation, evcc, Modus, welches Auto steckt, Gast, fremdes Auto, Auto erkennen",
+	"signpost.car_sources": "Quellen eines Autos",
+	"signpost.car_sources.terms": "evcc, Hyundai, Hersteller, Integration, zusammenführen, trennen, Ladestand, Kilometerstand",
+	"signpost.car_reminder": "Erinnerung: Auto einstecken",
+	"signpost.car_reminder.terms": "Erinnerung, einstecken, abends, steckt nicht, Benachrichtigung",
 	"devices.hot_water.lonely": "Diesen Warmwasser-Zähler kenne ich aus deinem Energie-Dashboard. Richte einmal ein, was ich schalte – dann heize ich in der günstigen Zeit auf.",
 	"devices.hot_water.set_up": "Warmwasser einrichten",
 	"devices.other.night_offer": "Soll ich das Gerät nachts in der günstigen Zeit einschalten, wenn morgen die Sonne nicht reicht?",
@@ -2731,7 +2901,7 @@ var Pe = {
 	"devices.unassigned.text": "Bei diesen Zählern weiß ich nicht, zu welchem Klimagerät sie gehören. Tipp auf einen: Dort ordnest du ihn einem Klimagerät zu oder sagst mir, was er misst.",
 	"devices.card.unassigned": "Zu welchem Gerät gehört das?",
 	"devices.card.unassigned_kind": "Sag mir, was er misst.",
-	"devices.group_add.car": "Auto oder Wallbox hinzufügen",
+	"devices.group_add.car": "Auto hinzufügen",
 	"devices.group_add.hot_water": "Warmwasser hinzufügen",
 	"devices.group_add.night": "Gerät hinzufügen",
 	"climate.assign.no_climate": "Ich kenne noch kein Thermostat und keine Klimaanlage, zu der er gehören könnte. Sag mir unten, was er misst.",
@@ -2778,9 +2948,9 @@ var Pe = {
 	"devices.add.lead": "Such dir aus, was dazukommt. Ich zeige dir dann, was ich dafür schon gefunden habe.",
 	"devices.add.battery": "Speicher",
 	"devices.add.battery.text": "Ein Hausspeicher, den ich beobachten oder steuern soll.",
-	"devices.add.car": "Auto oder Wallbox",
+	"devices.add.car": "Auto",
 	"devices.add.for": "für {name}",
-	"devices.add.car.text": "Ich lade das Auto, wenn es günstig ist und morgen reicht.",
+	"devices.add.car.text": "Wie weit es morgen fährt, Ladestand, Termine – alles, was es braucht.",
 	"devices.add.hot_water": "Warmwasser",
 	"devices.add.hot_water.text": "Ich heize das Wasser in der günstigen Zeit auf.",
 	"devices.add.climate": "Klimagerät oder Heizung",
@@ -3223,7 +3393,6 @@ var Pe = {
 	"action.problem.sensor": "Für einen Zielwert brauche ich den Temperatur-Fühler.",
 	"action.delete": "Löschen",
 	"devices.boost.unit": "Einheit",
-	"devices.charge.label": "Laden bis",
 	"devices.charge.now": "Jetzt laden",
 	"devices.charge.tonight": "Heute Nacht laden",
 	"devices.charge.percent": "{target} %",
@@ -5453,13 +5622,183 @@ var Pe = {
 	"devices.role.measures": "Measured only",
 	"devices.group.go": "Show all →",
 	"devices.no_meter_group": "without a meter",
-	"devices.car.lead": "This is where I charge your cars – for tomorrow's trips when power is cheap, or right away when you want.",
+	"devices.car.lead": "A car has its need – trips, appointments, level. A charge point is the wallbox I switch. I always charge the car that is plugged in: by need when power is cheap, or right away when you want.",
 	"devices.hot_water.lead": "I heat the water in the cheap hours so it lasts until the next evening.",
 	"devices.other.lead": "All meters from your Energy dashboard. Tell me what each device is and when it runs – then my numbers are right. A device that should run at night I switch on in the cheap hours.",
 	"devices.other.empty": "There are no more devices in the Energy dashboard.",
 	"devices.car.terms": "Appointments",
 	"devices.car.terms_off": "Appointments only count once “Charge by need” is on. Switch it on above under Control.",
-	"devices.car.wallbox": "Wallbox",
+	"action.need.max_soc": "Charge at most to",
+	"action.need.capacity_sensor": "Battery size from a sensor",
+	"action.need.consumption_sensor": "Consumption from a sensor",
+	"tip.a_need_max_soc.title": "Why at most?",
+	"tip.a_need_max_soc.text": "Charging by need never goes above this level – for example 80 % if you want to spare the battery. If tomorrow needs more, you see it under “Trips tomorrow”.",
+	"tip.a_need_capacity_sensor.title": "Which sensor for the battery size?",
+	"tip.a_need_capacity_sensor.text": "If no integration shows the battery size, pick a sensor here – or enter the size above under Steer.",
+	"tip.a_need_consumption_sensor.title": "Which sensor for the consumption?",
+	"tip.a_need_consumption_sensor.text": "The car's own long-term average (kWh/100 km, Wh/km or km/kWh). Until I have learned my own value I use it.",
+	"car.delete": "Delete car",
+	"car.delete.ask": "Really delete {name}? Its appointments, mailbox and what I learned about the car are gone then. The wallbox stays.",
+	"tip.car_delete.title": "What happens when I delete it?",
+	"tip.car_delete.text": "The car is gone – with its appointments, mailbox and what I learned. I keep switching the wallbox. I leave its integrations out when I look around; under “+ Add › Car” you can use them again.",
+	"car.f.name": "Name",
+	"tip.car_name.title": "Which name?",
+	"tip.car_name.text": "This is what I call the car everywhere – in questions, reminders and the plan.",
+	"car.f.remind": "Remind me when it is not plugged in",
+	"car.f.remind_at": "in the evening at",
+	"car.f.remind_time": "Time of the reminder",
+	"tip.car_remind.title": "When do I remind you?",
+	"tip.car_remind.text": "If the car needs charging for tomorrow and is not plugged into any wallbox at this time, I tell you – under Overview and, if set up, on your phone. Once an evening.",
+	"car.f.tracker": "Where is the car?",
+	"car.pick.tracker": "Where is the car?",
+	"tip.car_tracker.title": "Why the location?",
+	"tip.car_tracker.text": "When a car is plugged in and only one is at home, I know which one it is. Usually the maker's integration brings the location; otherwise pick a tracker or a person here.",
+	"car.merge.ask": "Do “{a}” from evcc and “{b}” from {from} belong together?",
+	"car.merge.text": "Then it is one car with the values of both – I prefer the level from evcc.",
+	"car.merge.yes": "Yes, one car",
+	"car.merge.no": "No, two cars",
+	"car.merge.with": "Merge with …",
+	"car.merge.do": "Merge",
+	"tip.car_merge.title": "Why do I ask?",
+	"tip.car_merge.text": "The same car often shows up twice: in evcc and in the maker's integration. If name, level or odometer clearly match, I merge them myself. When I am unsure, I rather ask. You can split them again under Sources at any time.",
+	"tip.car_merge_with.title": "When to merge?",
+	"tip.car_merge_with.text": "When two cars here are really one. The settings of the car that charges by need stay; the other's sources join it.",
+	"car.open_point": "Open charge point",
+	"car.plugged_at": "plugged into {point}",
+	"car.plugged_elsewhere": "plugged into a wallbox I don't switch",
+	"car.not_plugged": "not plugged in",
+	"car.reminder": "{car} needs {km} km tomorrow but is not plugged in",
+	"car.reminder.text": "Plug it in tonight and I charge it in the cheap hours.",
+	"car.role.soc": "Level",
+	"car.role.range": "Range",
+	"car.role.capacity": "Battery size",
+	"car.role.plugged": "Plugged in",
+	"car.role.charging": "Charging",
+	"car.role.odometer": "Odometer",
+	"car.role.consumption": "Consumption",
+	"car.role.outside_temp": "Outside temperature",
+	"car.role.location": "Location",
+	"car.source.car": "car integration",
+	"car.source.manual": "chosen by hand",
+	"car.source.chip": "from {from}",
+	"car.source.chip_manual": "chosen by hand",
+	"car.source.from": "via {from}",
+	"car.source.gives": "gives: {roles}",
+	"car.source.evcc_only": "evcc tells me whether the car is plugged into a wallbox, and its level there.",
+	"car.source.nothing": "gives no values right now",
+	"car.source.split": "Split",
+	"car.source.vehicle": "in evcc: {id}",
+	"car.platform.kia_uvo": "Hyundai / Kia",
+	"car.platform.ha_kia_hyundai": "Hyundai / Kia",
+	"car.platform.bmw_connected_drive": "BMW",
+	"car.platform.bavariandata": "BMW",
+	"car.platform.cardata": "BMW",
+	"car.platform.tesla_fleet": "Tesla",
+	"car.platform.teslemetry": "Tesla",
+	"car.platform.tesla_custom": "Tesla",
+	"car.platform.volkswagen_we_connect_id": "Volkswagen",
+	"car.platform.renault": "Renault",
+	"car.platform.mbapi2020": "Mercedes-Benz",
+	"car.platform.byd_vehicle": "BYD",
+	"car.platform.audiconnect": "Audi",
+	"car.platform.stellantis_vehicles": "Stellantis",
+	"car.sources": "Sources",
+	"tip.car_sources.title": "Where do the values come from?",
+	"tip.car_sources.text": "A car may come from several integrations. I prefer the level from evcc – evcc estimates it while charging instead of asking the car. Range, odometer, location and outside temperature come from the maker's integration. I never ask the car myself and never wake it up.",
+	"car.sources.manual": "Chosen by hand",
+	"car.sources.manual.hint": "For a car no integration shows – or when I cannot find a value.",
+	"car.sources.manual.open": "Pick sensors by hand",
+	"tip.car_manual.title": "When do I pick by hand?",
+	"tip.car_manual.text": "Only when an integration does not give a value or a car has no integration at all. What the integrations give, I read by myself.",
+	"car.sources.none": "No integration yet – pick the sensors by hand below.",
+	"tip.car_split.title": "What does split mean?",
+	"tip.car_split.text": "This source is another car: it becomes a car of its own, and I no longer ask whether the two belong together.",
+	"car.trips": "Trips tomorrow",
+	"car.trips.none": "Once I plan the night, you see here what is coming up tomorrow.",
+	"car.values.none": "No values yet – Sources shows where they should come from.",
+	"car.value.unknown": "–",
+	"car.value.plugged": "yes",
+	"car.value.unplugged": "no",
+	"car.value.home": "at home",
+	"car.value.away": "away",
+	"tip.car_now.title": "What do I see here?",
+	"tip.car_now.text": "The car's values, each with its source, where it is plugged in, charge now or tonight, and what is coming up tomorrow.",
+	"tip.car_steer.title": "What do I set here?",
+	"tip.car_steer.text": "Everything the car needs: charging by need, the reserve, how high I charge at most, and the evening reminder. Which wallbox I switch is set at the charge point.",
+	"tip.car_terms.title": "Why the appointments?",
+	"tip.car_terms.text": "From the appointments I know how far the car drives tomorrow. Whose appointments count, you choose here.",
+	"tip.car_save.title": "What happens when I save?",
+	"tip.car_save.text": "I plan the night again with these values. Nothing changes at the charge point.",
+	"devices.add.wallbox": "Wallbox",
+	"devices.add.wallbox.text": "I switch it on at night and charge whichever car is plugged in.",
+	"devices.add.car.title": "Add |a car",
+	"devices.add.car.lead": "I see these cars in Home Assistant. If evcc and the maker show the same car, I merge them – or ask you.",
+	"devices.add.car.none": "I don't see another car.",
+	"devices.add.car.by_hand": "Or add a car by hand",
+	"devices.add.car.name": "Name of the car",
+	"devices.add.car.make": "Add",
+	"tip.devices_add_car.title": "Where do I know the cars from?",
+	"tip.devices_add_car.text": "From evcc (its vehicles) and from the makers' integrations, such as Hyundai, BMW or Tesla. A car that shows up in both becomes one.",
+	"tip.devices_add_car_hand.title": "When by hand?",
+	"tip.devices_add_car_hand.text": "For a car without an integration, such as a friend's car that often charges here. You pick its sensors afterwards under Sources – or leave them empty.",
+	"devices.car.cars": "Cars",
+	"devices.car.points": "Charge points",
+	"devices.group_add.wallbox": "Add a wallbox",
+	"devices.charge.guessed": "I assume this car is plugged into {point}. If not, tell me at the charge point.",
+	"devices.charge.label_at": "Charge at {point} to",
+	"devices.charge.no_level": "I don't know the level and range of {car} right now – Sources shows where they come from.",
+	"devices.charge.not_plugged": "{car} is not plugged in right now. Once it is at a wallbox you can charge it here.",
+	"devices.action.why.guest": "A guest is charging – I leave the wallbox alone, evcc does what it is set to.",
+	"devices.action.why.unknown_car": "I don't know which car is plugged in – until you tell me, I leave the wallbox alone.",
+	"devices.action.why.not_plugged": "Not tonight: no car plugged in.",
+	"plan.car_at": "{car} · at {point}",
+	"plan.car_away.missing": "Not plugged in – does not charge tonight although tomorrow needs more.",
+	"plan.car_away.enough": "Not plugged in – but needs nothing for tomorrow either.",
+	"point.ask": "Which car is plugged into the wallbox “{point}”?",
+	"point.ask.text": "Until I know, I leave the wallbox alone.",
+	"point.f.cars": "Which cars may charge here",
+	"point.f.no_cars": "No car yet – add one under “Add a car”. Until then I switch the wallbox by the sun.",
+	"point.f.unknown": "When I can't tell the car",
+	"point.f.unknown.hint": "Telling means: evcc says so, the car's plug sensor shows it, or only one car is at home.",
+	"point.f.assume": "Which car I assume",
+	"point.unknown.ask": "ask",
+	"point.unknown.assume": "always assume",
+	"point.forget": "Let Joe tell again",
+	"point.guest": "Guest / other car",
+	"point.open_car": "Open {car}",
+	"point.other_car": "Another car?",
+	"point.state.car": "{car} is plugged in ({how})",
+	"point.state.empty": "free – no car plugged in",
+	"point.state.guest": "guest / other car – I switch nothing here",
+	"point.state.unknown": "a car I can't tell",
+	"point.state.free": "charges by the sun (no car added yet)",
+	"point.state.none": "not read yet",
+	"point.how.evcc": "told by evcc",
+	"point.how.plugged": "by the car's plug sensor",
+	"point.how.home": "the only car at home",
+	"point.how.answer": "you said so",
+	"point.how.assume": "as set",
+	"tip.point_cars.title": "Which cars may charge here?",
+	"tip.point_cars.text": "Default: all. If only one car charges here, I can tell it more surely and ask less often.",
+	"tip.point_unknown.title": "What if I can't tell the car?",
+	"tip.point_unknown.text": "“Ask”: I leave the wallbox alone and ask you – on your phone and under Overview. “Always assume”: I take this car and charge by its need.",
+	"tip.point_unknown.hint": "A guest: answer “Guest / other car” – then evcc does what it is set to.",
+	"tip.point_which.title": "How do I tell the car?",
+	"tip.point_which.text": "In this order: the vehicle evcc shows at the charge point; the car's plug sensor; the only car at home. Otherwise I ask you. Your answer counts until the car is unplugged.",
+	"tip.point_now.title": "What do I see here?",
+	"tip.point_now.text": "Which car is plugged in right now and how I know. If I am wrong, tell me the right car.",
+	"tip.point_steer.title": "What do I set here?",
+	"tip.point_steer.text": "What I switch at the wallbox (with evcc its mode, not evcc's own charging plan), when I switch it on, which cars may charge here, and what I do with a car I can't tell.",
+	"settings.notify.cars": "Cars",
+	"settings.notify.cars.hint": "Which car is at the wallbox when I can't tell – and in the evening when a car for tomorrow is not plugged in.",
+	"tip.notify_cars.title": "What do I ask about the cars?",
+	"tip.notify_cars.text": "When a car I can't tell is plugged in, I ask with one button per car and “Guest”. In the evening I remind you when a car should charge for tomorrow but is not plugged in. You set the time at the car.",
+	"signpost.wallbox": "Charge point / wallbox",
+	"signpost.wallbox.terms": "Wallbox, charge point, charging station, evcc, mode, which car is plugged in, guest, other car, tell the car",
+	"signpost.car_sources": "A car's sources",
+	"signpost.car_sources.terms": "evcc, Hyundai, maker, integration, merge, split, level, odometer",
+	"signpost.car_reminder": "Reminder: plug in the car",
+	"signpost.car_reminder.terms": "reminder, plug in, evening, not plugged in, notification",
 	"devices.hot_water.lonely": "I know this hot water meter from your Energy dashboard. Set up once what I switch – then I heat up in the cheap hours.",
 	"devices.hot_water.set_up": "Set up hot water",
 	"devices.other.night_offer": "Should I switch the device on in the cheap hours at night when tomorrow's sun is not enough?",
@@ -5487,7 +5826,7 @@ var Pe = {
 	"devices.unassigned.text": "I don't know which climate device these meters belong to. Tap one to assign it to a climate device or to tell me what it measures.",
 	"devices.card.unassigned": "Which device does this belong to?",
 	"devices.card.unassigned_kind": "Tell me what it measures.",
-	"devices.group_add.car": "Add a car or wallbox",
+	"devices.group_add.car": "Add a car",
 	"devices.group_add.hot_water": "Add hot water",
 	"devices.group_add.night": "Add a device",
 	"climate.assign.no_climate": "I don't know any thermostat or air conditioner yet that it could belong to. Tell me below what it measures.",
@@ -5534,9 +5873,9 @@ var Pe = {
 	"devices.add.lead": "Pick what's new. I'll show you what I've already found for it.",
 	"devices.add.battery": "Battery",
 	"devices.add.battery.text": "A home battery for me to watch or steer.",
-	"devices.add.car": "Car or wallbox",
+	"devices.add.car": "Car",
 	"devices.add.for": "for {name}",
-	"devices.add.car.text": "I charge the car when it's cheap and enough for tomorrow.",
+	"devices.add.car.text": "How far it drives tomorrow, its level, appointments – everything it needs.",
 	"devices.add.hot_water": "Hot water",
 	"devices.add.hot_water.text": "I heat the water in the cheap hours.",
 	"devices.add.climate": "Air conditioner or heating",
@@ -5979,7 +6318,6 @@ var Pe = {
 	"action.problem.sensor": "For a target I need the temperature sensor.",
 	"action.delete": "Delete",
 	"devices.boost.unit": "Unit",
-	"devices.charge.label": "Charge to",
 	"devices.charge.now": "Charge now",
 	"devices.charge.tonight": "Charge tonight",
 	"devices.charge.percent": "{target} %",
@@ -6128,7 +6466,7 @@ function ze(e) {
 }
 //#endregion
 //#region src/components/bits.ts
-var Be = A`<svg
+var Be = k`<svg
   class="swoosh"
   viewBox="0 0 300 16"
   preserveAspectRatio="none"
@@ -6137,18 +6475,18 @@ var Be = A`<svg
   <path d="M2 13 C 70 5, 190 1, 298 3 L 298 6 C 190 5, 80 9, 4 15 Z" fill="currentColor" />
 </svg>`;
 function Ve(e, t = "h2", n) {
-	let r = ze(e), i = r.length - 1, a = r.map((e, t) => t === i && r.length > 1 ? A`<span class="hl">${e}</span>` : e.endsWith("!") ? A`${e}<br />` : A`${e}`), o = n ? A`<span class="title-tip">${n}</span>` : "";
-	return t === "h1" ? A`<h1 class="display">${a}${o}</h1>` : A`<h2 class="display">${a}${o}</h2>`;
+	let r = ze(e), i = r.length - 1, a = r.map((e, t) => t === i && r.length > 1 ? k`<span class="hl">${e}</span>` : e.endsWith("!") ? k`${e}<br />` : k`${e}`), o = n ? k`<span class="title-tip">${n}</span>` : "";
+	return t === "h1" ? k`<h1 class="display">${a}${o}</h1>` : k`<h2 class="display">${a}${o}</h2>`;
 }
 function He(e, t) {
 	let n = t >= .85 ? 4 : t >= .65 ? 3 : t >= .45 ? 2 : 1, r = e(`conf.${n}`);
-	return A`<span class="conf" role="img" aria-label=${r} title=${r}>
+	return k`<span class="conf" role="img" aria-label=${r} title=${r}>
     ${[
 		1,
 		2,
 		3,
 		4
-	].map((e) => A`<i class=${e <= n ? "on" : ""}></i>`)}
+	].map((e) => k`<i class=${e <= n ? "on" : ""}></i>`)}
   </span>`;
 }
 var Ue = {
@@ -6159,7 +6497,7 @@ var Ue = {
 };
 function We(e, t) {
 	let n = t?.source ?? "default";
-	return A`<span class="chip ${n}"
+	return k`<span class="chip ${n}"
     ><ha-icon icon=${Ue[n]}></ha-icon>${e(`source.${n}`)}</span
   >`;
 }
@@ -6172,9 +6510,9 @@ function Ke(e) {
 	history.pushState(null, "", e), window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: !1 } }));
 }
 function qe(e, t, n) {
-	if (!e) return A`<span title=${n ?? ""}>${t}</span>`;
+	if (!e) return k`<span title=${n ?? ""}>${t}</span>`;
 	let r = `/config/devices/device/${e}`;
-	return A`<a
+	return k`<a
     class="ha-link"
     href=${r}
     title=${n ?? ""}
@@ -7237,7 +7575,7 @@ function ut(e, t) {
 }
 //#endregion
 //#region src/components/tip.ts
-var dt = 120, ft = 220, K = 8, pt = 10, q, J = class extends R {
+var dt = 120, ft = 220, pt = 8, mt = 10, K, q = class extends R {
 	constructor(...e) {
 		super(...e), this.label = "", this.open = !1, this.pinned = !1, this.keepOnBlur = !1, this.onOutside = (e) => {
 			e.composedPath().includes(this) || this.close();
@@ -7396,7 +7734,7 @@ var dt = 120, ft = 220, K = 8, pt = 10, q, J = class extends R {
 	}
 	render() {
 		let e = this.tip;
-		return e ? A`<button
+		return e ? k`<button
         type="button"
         class=${this.open ? "open" : ""}
         aria-label=${this.label}
@@ -7424,13 +7762,13 @@ var dt = 120, ft = 220, K = 8, pt = 10, q, J = class extends R {
         @pointerdown=${this.onBubbleDown}
       >
         <span class="h">${e.heading}</span>
-        ${mt(e.text)}
-        ${e.facts?.length ? A`<dl>${e.facts.map(([e, t]) => A`<dt>${e}</dt><dd>${t}</dd>`)}</dl>` : M}
+        ${ht(e.text)}
+        ${e.facts?.length ? k`<dl>${e.facts.map(([e, t]) => k`<dt>${e}</dt><dd>${t}</dd>`)}</dl>` : j}
         <span class="arrow"></span>
-      </div>` : M;
+      </div>` : j;
 	}
 	show(e = !1) {
-		this.cancelTimer(), this.pinned = this.pinned || e, !this.open && (q && q !== this && q.close(), q = this, this.open = !0, window.addEventListener("pointerdown", this.onOutside, !0), window.addEventListener("keydown", this.onKey, !0), this.updateComplete.then(() => {
+		this.cancelTimer(), this.pinned = this.pinned || e, !this.open && (K && K !== this && K.close(), K = this, this.open = !0, window.addEventListener("pointerdown", this.onOutside, !0), window.addEventListener("keydown", this.onKey, !0), this.updateComplete.then(() => {
 			let e = this.bubble;
 			this.open && e && (typeof e.showPopover == "function" && !e.matches(":popover-open") && e.showPopover(), this.follow());
 		}));
@@ -7438,7 +7776,7 @@ var dt = 120, ft = 220, K = 8, pt = 10, q, J = class extends R {
 	close() {
 		this.cancelTimer(), this.pinned = !1, this.frame !== void 0 && (cancelAnimationFrame(this.frame), this.frame = void 0), window.removeEventListener("pointerdown", this.onOutside, !0), window.removeEventListener("keydown", this.onKey, !0);
 		let e = this.bubble;
-		e && typeof e.hidePopover == "function" && e.matches(":popover-open") && e.hidePopover(), q === this && (q = void 0), this.open = !1;
+		e && typeof e.hidePopover == "function" && e.matches(":popover-open") && e.hidePopover(), K === this && (K = void 0), this.open = !1;
 	}
 	onClick() {
 		this.open && this.pinned ? this.close() : this.show(!0);
@@ -7475,19 +7813,19 @@ var dt = 120, ft = 220, K = 8, pt = 10, q, J = class extends R {
 			this.close();
 			return;
 		}
-		let r = t.getBoundingClientRect(), i = document.documentElement.clientWidth, a = n.top - r.height - pt, o = "top";
-		a < K && (a = n.bottom + pt, o = "bottom");
-		let s = n.left + n.width / 2, c = Math.max(K, Math.min(s - r.width / 2, i - r.width - K)), l = Math.max(14, Math.min(s - c, r.width - 14));
+		let r = t.getBoundingClientRect(), i = document.documentElement.clientWidth, a = n.top - r.height - mt, o = "top";
+		a < pt && (a = n.bottom + mt, o = "bottom");
+		let s = n.left + n.width / 2, c = Math.max(pt, Math.min(s - r.width / 2, i - r.width - pt)), l = Math.max(14, Math.min(s - c, r.width - 14));
 		t.style.left = `${Math.round(c)}px`, t.style.top = `${Math.round(a)}px`, t.style.setProperty("--arrow", `${Math.round(l)}px`), t.dataset.place = o;
 	}
 };
-V([z({ attribute: !1 })], J.prototype, "tip", void 0), V([z()], J.prototype, "label", void 0), V([B()], J.prototype, "open", void 0), V([Ne("button")], J.prototype, "button", void 0), V([Ne(".bubble")], J.prototype, "bubble", void 0);
-function mt(e) {
-	return e.split("\n").map((e) => A`<p>
-        ${e.split(/\*\*(.+?)\*\*/).map((e, t) => t % 2 ? A`<strong>${e}</strong>` : e)}
+V([z({ attribute: !1 })], q.prototype, "tip", void 0), V([z()], q.prototype, "label", void 0), V([B()], q.prototype, "open", void 0), V([Ne("button")], q.prototype, "button", void 0), V([Ne(".bubble")], q.prototype, "bubble", void 0);
+function ht(e) {
+	return e.split("\n").map((e) => k`<p>
+        ${e.split(/\*\*(.+?)\*\*/).map((e, t) => t % 2 ? k`<strong>${e}</strong>` : e)}
       </p>`);
 }
-function ht(e, t, n, r = []) {
+function gt(e, t, n, r = []) {
 	let i = e.optional(`tip.${t}.hint`, n);
 	return {
 		heading: e(`tip.${t}.title`, n),
@@ -7495,19 +7833,73 @@ function ht(e, t, n, r = []) {
 		facts: i ? [...r, [e("tip.hint"), i]] : r
 	};
 }
-function Y(e, t, n, r) {
-	return A`<joe-tip .tip=${ht(e, t, n, r)} label=${e("tip.label")}></joe-tip>`;
+function J(e, t, n, r) {
+	return k`<joe-tip .tip=${gt(e, t, n, r)} label=${e("tip.label")}></joe-tip>`;
 }
-Ye("joe-tip", J);
+Ye("joe-tip", q);
+//#endregion
+//#region src/cars.ts
+function _t(e, t) {
+	return {
+		tab: "devices",
+		section: "car",
+		id: e,
+		sub: t
+	};
+}
+function vt(e) {
+	return {
+		tab: "devices",
+		section: "car",
+		id: "point",
+		sub: e
+	};
+}
+function yt(e, t) {
+	return t ? e.cars?.find((e) => e.id === t) : void 0;
+}
+function bt(e, t) {
+	let n = t.point?.cars;
+	return (e.cars ?? []).filter((e) => n == null || n.includes(e.id));
+}
+function xt(e, t) {
+	return e?.cars?.points?.[t];
+}
+function Y(e, t) {
+	let n = e?.cars?.cars?.[t]?.point;
+	return n ? e?.config.actions.find((e) => e.id === n) : void 0;
+}
+function St(e, t, n) {
+	return e?.cars?.cars?.[t]?.values?.[n];
+}
+function Ct(e, t) {
+	return t.kind === "evcc" ? "evcc" : t.kind === "manual" ? e("car.source.manual") : t.platform && e.optional(`car.platform.${t.platform}`) || t.name || t.platform || e("car.source.car");
+}
+function wt(e, t, n) {
+	let r = Y(t, n.id);
+	if (r) return e("car.plugged_at", { point: r.name });
+	let i = t.cars?.cars?.[n.id]?.plugged;
+	return e(i ? "car.plugged_elsewhere" : "car.not_plugged");
+}
+function Tt(e, t, n) {
+	let r = xt(t, n.id);
+	return r ? r.state === "car" ? e("point.state.car", {
+		car: yt(t.config, r.car)?.name ?? r.car ?? "",
+		how: e(`point.how.${r.how ?? "home"}`)
+	}) : e(`point.state.${r.state}`) : e("point.state.none");
+}
+function Et(e, t) {
+	return e?.plan?.cars?.[t];
+}
 //#endregion
 //#region src/components/plan-text.ts
 function X(e) {
 	return e ? e.slice(11, 16) : "";
 }
-function gt(e) {
+function Dt(e) {
 	return e.slice(0, 10);
 }
-function _t(e) {
+function Ot(e) {
 	switch (e?.kind) {
 		case "charge": return "plug";
 		case "hold": return "switch";
@@ -7515,22 +7907,22 @@ function _t(e) {
 		default: return "sleep";
 	}
 }
-function vt(e) {
+function kt(e) {
 	return (e.charge_slots ?? []).map((e) => `${X(e.start)}–${X(e.end)}`).join(", ");
 }
-function yt(e, t) {
+function At(e, t) {
 	if (!t.window) return "";
 	let n = [`${X(t.window.start)}–${X(t.window.end)}`];
 	return t.prices && n.push(`${G(e.lang, t.prices.night * 100, 1)} ct/kWh`), n.join(" · ");
 }
-function bt(e, t) {
+function jt(e, t) {
 	if (t.kind === "unavailable") {
 		let n = t.reasons.find((t) => e.optional(`plan.why.${t}`)) ?? "failed";
 		return e.optional(`plan.why.${n}`) ?? "";
 	}
 	let n = [], r = G(e.lang, t.target ?? 0, 0), i = t.sun_takes_over;
 	return t.reasons.includes("balance") && n.push(e("plan.say.balance")), t.kind === "charge" && t.tariff === "dynamic" && t.charge_slots?.length ? n.push(e("plan.say.charge_slots", {
-		slots: vt(t),
+		slots: kt(t),
 		target: r
 	})) : t.kind === "charge" ? n.push(e("plan.say.charge", {
 		from: X(t.charge_from),
@@ -7538,18 +7930,18 @@ function bt(e, t) {
 	})) : t.kind === "hold" ? (n.push(e("plan.say.hold", { target: r })), t.empty_without && n.push(e("plan.say.empty", { time: X(t.empty_without) }))) : t.reasons.includes("small_saving") ? n.push(e("plan.say.small_saving")) : n.push(i ? e("plan.say.none", { time: X(i) }) : e("plan.say.none_nosun")), t.reasons.includes("max_price") && t.kind !== "charge" && n.push(e("plan.say.max_price")), t.day && (n.push(e("plan.day", {
 		time: X(t.day.defer_until),
 		kwh: G(e.lang, t.day.held_kwh, 0)
-	})), t.day.cost && t.day.cost >= .01 && n.push(e("plan.day.cost", { cost: `${G(e.lang, t.day.cost * 100, 0)} ct` }))), t.kind !== "none" && (i && t.full_at && gt(t.full_at) === gt(i) ? n.push(e("plan.say.sun_full", {
+	})), t.day.cost && t.day.cost >= .01 && n.push(e("plan.day.cost", { cost: `${G(e.lang, t.day.cost * 100, 0)} ct` }))), t.kind !== "none" && (i && t.full_at && Dt(t.full_at) === Dt(i) ? n.push(e("plan.say.sun_full", {
 		sun: X(i),
 		full: X(t.full_at)
 	})) : i ? n.push(e("plan.say.sun", { sun: X(i) })) : n.push(e("plan.say.nosun"))), n.join(" ");
 }
-function xt(e, t) {
+function Mt(e, t) {
 	return (t.batteries ?? []).map((n) => {
 		let r = [n.name];
 		return t.kind === "charge" ? r.push(`${G(e.lang, n.soc_start, 0)} → ${G(e.lang, n.target, 0)} %`, `${G(e.lang, n.charge_kwh, 1)} kWh`, `${G(e.lang, n.power_kw, 1)} kW`) : t.kind === "hold" ? r.push(e("plan.line.hold", { target: G(e.lang, n.target, 0) })) : r.push(e("plan.line.now", { soc: G(e.lang, n.soc, 0) })), n.controllable || r.push(e("plan.line.watch_only")), r.join(" · ");
 	});
 }
-function St(e, t, n = "EUR") {
+function Nt(e, t, n = "EUR") {
 	if (!t.cost) return "";
 	let r = (t) => new Intl.NumberFormat(e.lang, {
 		style: "currency",
@@ -7559,18 +7951,18 @@ function St(e, t, n = "EUR") {
 }
 //#endregion
 //#region src/router.ts
-var Ct = "/energy-joe", wt = [
+var Pt = "/energy-joe", Ft = [
 	"overview",
 	"plan",
 	"review",
 	"devices",
 	"household",
 	"settings"
-], Tt = [
+], It = [
 	"overview",
 	"plan",
 	"review"
-], Z = {
+], Lt = {
 	review: [
 		"result",
 		"days",
@@ -7601,34 +7993,34 @@ var Ct = "/energy-joe", wt = [
 		"maintenance",
 		"about"
 	]
-}, Q = {
+}, Z = {
 	review: "result",
 	devices: "all",
 	household: "people",
 	settings: "operation"
-}, Et = {
+}, Rt = {
 	history: "/review/days",
 	learn: "/review/learned",
 	climate: "/devices/climate"
 };
-function Dt(e) {
-	return e in Z;
+function zt(e) {
+	return e in Lt;
 }
-function Ot(e) {
+function Bt(e) {
 	try {
 		return decodeURIComponent(e);
 	} catch {
 		return e;
 	}
 }
-function kt(e) {
-	let t = e.split(/[?#]/, 1)[0].split("/").filter(Boolean).map(Ot), [n, r, i, a, ...o] = t;
+function Vt(e) {
+	let t = e.split(/[?#]/, 1)[0].split("/").filter(Boolean).map(Bt), [n, r, i, a, ...o] = t;
 	if (!n) return { route: { tab: "overview" } };
-	let s = Et[n];
+	let s = Rt[n];
 	if (s) {
 		let e = [s, ...t.slice(1).map(encodeURIComponent)].join("/");
 		return {
-			route: kt(e).route,
+			route: Vt(e).route,
 			redirect: e
 		};
 	}
@@ -7637,66 +8029,66 @@ function kt(e) {
 		redirect: "/plan"
 	} : { route: { tab: "plan" } };
 	let c = n;
-	if (!wt.includes(c) || !Dt(c)) return {
+	if (!Ft.includes(c) || !zt(c)) return {
 		route: { tab: "overview" },
 		redirect: "/"
 	};
-	if (r && !Z[c].includes(r)) return {
+	if (r && !Lt[c].includes(r)) return {
 		route: {
 			tab: c,
-			section: Q[c]
+			section: Z[c]
 		},
 		redirect: `/${c}`
 	};
 	let l = {
 		tab: c,
-		section: r ?? Q[c]
+		section: r ?? Z[c]
 	};
 	return i && (l.id = i), a && (l.sub = a), o.length && (l.rest = o), { route: l };
 }
-function At(e) {
+function Ht(e) {
 	if (typeof e == "string") return e.startsWith("/") ? e : `/${e}`;
 	if (e.tab === "overview") return "/";
-	let t = [e.tab], n = e.section ?? (e.id && Dt(e.tab) ? Q[e.tab] : void 0);
+	let t = [e.tab], n = e.section ?? (e.id && zt(e.tab) ? Z[e.tab] : void 0);
 	return n && (t.push(n), e.id && (t.push(e.id), e.sub && t.push(e.sub, ...e.rest ?? []))), `/${t.map(encodeURIComponent).join("/")}`;
 }
-function jt(e, t) {
-	let n = At(t);
+function Ut(e, t) {
+	let n = Ht(t);
 	return n === "/" ? e : `${e}${n}`;
 }
-function Mt(e, t, n = {}) {
+function Q(e, t, n = {}) {
 	e.dispatchEvent(new CustomEvent("joe-navigate", {
 		detail: {
-			path: At(t),
+			path: Ht(t),
 			...n
 		},
 		bubbles: !0,
 		composed: !0
 	}));
 }
-function Nt(e, t) {
+function Wt(e, t) {
 	return (n) => {
-		n.defaultPrevented || n.metaKey || n.ctrlKey || n.shiftKey || n.altKey || n.button !== 0 || (n.preventDefault(), Mt(n.currentTarget ?? window, e, t));
+		n.defaultPrevented || n.metaKey || n.ctrlKey || n.shiftKey || n.altKey || n.button !== 0 || (n.preventDefault(), Q(n.currentTarget ?? window, e, t));
 	};
 }
-function Pt(e, t, n, r) {
-	return A`<a class=${r ?? ""} href=${jt(e, t)} @click=${Nt(t)}>${n}</a>`;
+function Gt(e, t, n, r) {
+	return k`<a class=${r ?? ""} href=${Ut(e, t)} @click=${Wt(t)}>${n}</a>`;
 }
-function Ft(e, t) {
+function Kt(e, t) {
 	if (history.state?.joeSheet) {
 		history.back();
 		return;
 	}
-	Mt(e, t, { replace: !0 });
+	Q(e, t, { replace: !0 });
 }
-function It(e, t) {
+function qt(e, t) {
 	let n = e.querySelector(`[data-anchor="${CSS.escape(t)}"]`);
 	return n ? (n.scrollIntoView({
 		block: "start",
 		behavior: "smooth"
-	}), n.classList.remove("flash"), n.offsetWidth, n.classList.add("flash"), window.setTimeout(() => n.classList.remove("flash"), 1500), Lt(n), !0) : !1;
+	}), n.classList.remove("flash"), n.offsetWidth, n.classList.add("flash"), window.setTimeout(() => n.classList.remove("flash"), 1500), Jt(n), !0) : !1;
 }
-function Lt(e) {
+function Jt(e) {
 	let t = !1, n = () => {
 		t = !0;
 	}, r = [
@@ -7781,105 +8173,124 @@ var $ = class extends R {
         color: var(--joe-warn, var(--joe-crit));
         margin: 6px 0 0;
       }
+      p.boost.off {
+        color: var(--joe-ink-2);
+        flex-wrap: nowrap;
+      }
+      p.boost.off span {
+        flex: 1;
+      }
     `];
 	}
 	render() {
-		return A`${this.renderBody()}
-    ${this.failed && this.t ? A`<p class="bad" role="status">${this.t("devices.charge.failed")}</p>` : M}`;
+		return k`${this.renderBody()}
+    ${this.failed && this.t ? k`<p class="bad" role="status">${this.t("devices.charge.failed")}</p>` : j}`;
 	}
 	renderBody() {
-		let { t: e, state: t, action: n } = this;
-		if (!e || !t || !n) return M;
-		let r = t.plan?.window?.start, i = !!r && t.control?.tonight?.[n.id] === r, a = t.control?.boost?.[n.id], o = t.control?.actions?.[n.id], s = t.control?.tonight_target?.[n.id], c = n.need, l = (t, n, r) => r === "km" ? e("devices.charge.km", {
+		let { t: e, state: t, car: n } = this;
+		if (!e || !t || !n) return j;
+		let r = Y(t, n.id);
+		if (!r) return k`<p class="boost off" data-tipped>
+        <ha-icon icon="mdi:power-plug-off-outline"></ha-icon>
+        <span>${e("devices.charge.not_plugged", { car: n.name })}</span>
+        ${J(e, "boost")}
+      </p>`;
+		let i = t.plan?.window?.start, a = !!i && t.control?.tonight?.[r.id] === i, o = t.control?.boost?.[r.id], s = t.control?.actions?.[r.id], c = t.control?.tonight_target?.[r.id], l = n.need, u = t.cars?.cars?.[n.id]?.values ?? {}, d = xt(t, r.id), f = (t, n, r) => r === "km" ? e("devices.charge.km", {
 			target: G(e.lang, t, 0),
 			reserve: G(e.lang, n - t, 0)
 		}) : e("devices.charge.percent", { target: G(e.lang, t, 0) });
-		if (a) {
-			let t = o?.value;
-			return A`<div class="boost on" data-tipped>
+		if (o) {
+			let t = s?.value;
+			return k`<div class="boost on" data-tipped>
         <span>
           ${e("devices.charge.now_running", {
-				amount: l(a.chosen, a.target, a.unit),
-				now: t == null ? "–" : `${G(e.lang, t, 0)} ${a.unit}`
+				amount: f(o.chosen, o.target, o.unit),
+				now: t == null ? "–" : `${G(e.lang, t, 0)} ${o.unit}`
 			})}
         </span>
         <button type="button" class="mini-btn quiet" @click=${() => this.boost(null)}>${e("devices.boost.stop")}</button>
-        ${Y(e, "boost")}
+        ${J(e, "boost")}
       </div>`;
 		}
-		if (i) {
-			let t = s && s.night === r ? s : null;
-			return A`<div class="boost on" data-tipped>
+		if (a) {
+			let t = c && c.night === i ? c : null;
+			return k`<div class="boost on" data-tipped>
         <span>
-          ${o?.reason === "reached" ? e(t ? "devices.charge.tonight_done" : "devices.action.reached_plain", { amount: t ? l(t.chosen, t.target, t.unit) : "" }) : t ? e("devices.charge.tonight_set", { amount: l(t.chosen, t.target, t.unit) }) : e("devices.charge.tonight_window")}
+          ${s?.reason === "reached" ? e(t ? "devices.charge.tonight_done" : "devices.action.reached_plain", { amount: t ? f(t.chosen, t.target, t.unit) : "" }) : t ? e("devices.charge.tonight_set", { amount: f(t.chosen, t.target, t.unit) }) : e("devices.charge.tonight_window")}
         </span>
         <button type="button" class="mini-btn quiet" @click=${() => this.tonight(!1)}>${e("devices.boost.stop")}</button>
-        ${Y(e, "boost")}
+        ${J(e, "boost")}
       </div>`;
 		}
-		let u = [...c.soc_entity ? ["%"] : [], ...c.range_entity ? ["km"] : []], d = this.unit && u.includes(this.unit) ? this.unit : u[0], f = this.values[d] ?? (d === "%" ? 80 : 200), p = d === "%" ? 100 : 1500, ee = (e) => {
+		let p = [...u.soc ? ["%"] : [], ...u.range ? ["km"] : []];
+		if (!p.length) return k`<p class="boost off">${e("devices.charge.no_level", { car: n.name })}</p>`;
+		let m = this.unit && p.includes(this.unit) ? this.unit : p[0], h = this.values[m] ?? (m === "%" ? 80 : 200), g = m === "%" ? 100 : 1500, ee = (e) => {
 			let t = e?.querySelector("input"), n = Number.parseFloat((t?.value ?? "").replace(",", "."));
-			return Math.round(Math.min(p, Math.max(1, Number.isFinite(n) ? n : f)));
+			return Math.round(Math.min(g, Math.max(1, Number.isFinite(n) ? n : h)));
 		};
-		return A`<form
+		return k`<form
       class="boost"
       data-tipped
       novalidate
       @submit=${(e) => {
-			e.preventDefault(), this.boost(ee(e.target), d);
+			e.preventDefault(), this.boost(ee(e.target), m);
 		}}
     >
-      <label class="toggle-label" for="boost-${n.id}">${e("devices.charge.label")}</label>
+      <label class="toggle-label" for="boost-${r.id}">${e("devices.charge.label_at", { point: r.name })}</label>
       <span class="amount">
         <input
-          id="boost-${n.id}"
+          id="boost-${r.id}"
           class="input"
           type="number"
           inputmode="numeric"
-          min=${d === "%" ? 5 : 10}
-          max=${p}
-          step=${d === "%" ? 5 : 10}
-          .value=${String(f)}
+          min=${m === "%" ? 5 : 10}
+          max=${g}
+          step=${m === "%" ? 5 : 10}
+          .value=${String(h)}
           @change=${(e) => {
 			let t = Number.parseFloat(e.target.value.replace(",", "."));
 			Number.isFinite(t) && t >= 1 && (this.values = {
 				...this.values,
-				[d]: Math.min(t, p)
+				[m]: Math.min(t, g)
 			});
 		}}
         />
-        ${u.length > 1 ? A`<span class="seg unit-seg" role="group" aria-label=${e("devices.boost.unit")}>
-              ${u.map((e) => A`<button
+        ${p.length > 1 ? k`<span class="seg unit-seg" role="group" aria-label=${e("devices.boost.unit")}>
+              ${p.map((e) => k`<button
                   type="button"
-                  aria-pressed=${String(e === d)}
+                  aria-pressed=${String(e === m)}
                   @click=${() => this.unit = e}
                 >
                   ${e}
                 </button>`)}
-            </span>` : A`<span class="unit">${d}</span>`}
+            </span>` : k`<span class="unit">${m}</span>`}
       </span>
-      ${Y(e, "boost")}
+      ${J(e, "boost")}
       <span class="charge-buttons">
-        <button type="submit" class="mini-btn go" ?disabled=${t.mode === "off" || !n.enabled}>
+        <button type="submit" class="mini-btn go" ?disabled=${t.mode === "off" || !r.enabled}>
           <ha-icon icon="mdi:ev-plug-type2"></ha-icon>${e("devices.charge.now")}
         </button>
         <button
           type="button"
           class="mini-btn"
-          ?disabled=${!r || !n.enabled}
-          @click=${(e) => this.tonight(!0, ee(e.target.closest("form")), d)}
+          ?disabled=${!i || !r.enabled}
+          @click=${(e) => this.tonight(!0, ee(e.target.closest("form")), m)}
         >
           <ha-icon icon="mdi:weather-night"></ha-icon>${e("devices.charge.tonight")}
         </button>
       </span>
-      ${d === "km" ? A`<small class="hint">${e("devices.boost.reserve", { reserve: G(e.lang, c.reserve_km ?? 50, 0) })}</small>` : M}
-      ${r ? M : A`<small class="hint">${e("devices.charge.no_night")}</small>`}
+      ${m === "km" ? k`<small class="hint">${e("devices.boost.reserve", { reserve: G(e.lang, l.reserve_km ?? 50, 0) })}</small>` : j}
+      ${d?.how === "assume" || d?.how === "home" ? k`<small class="hint">${e("devices.charge.guessed", { point: r.name })}</small>` : j}
+      ${i ? j : k`<small class="hint">${e("devices.charge.no_night")}</small>`}
     </form>`;
+	}
+	get point() {
+		return this.car ? Y(this.state, this.car.id)?.id : void 0;
 	}
 	async boost(e, t = "%") {
 		await this.call({
 			type: "energy_joe/control/boost",
-			action_id: this.action?.id,
+			action_id: this.point,
 			target: e,
 			unit: t
 		});
@@ -7887,7 +8298,7 @@ var $ = class extends R {
 	async tonight(e, t, n) {
 		await this.call({
 			type: "energy_joe/control/action_tonight",
-			action_id: this.action?.id,
+			action_id: this.point,
 			on: e,
 			...t == null ? {} : {
 				target: t,
@@ -7904,13 +8315,13 @@ var $ = class extends R {
 		}
 	}
 };
-V([z({ attribute: !1 })], $.prototype, "hass", void 0), V([z({ attribute: !1 })], $.prototype, "t", void 0), V([z({ attribute: !1 })], $.prototype, "state", void 0), V([z({ attribute: !1 })], $.prototype, "action", void 0), V([z({
+V([z({ attribute: !1 })], $.prototype, "hass", void 0), V([z({ attribute: !1 })], $.prototype, "t", void 0), V([z({ attribute: !1 })], $.prototype, "state", void 0), V([z({ attribute: !1 })], $.prototype, "car", void 0), V([z({
 	type: Boolean,
 	reflect: !0
 })], $.prototype, "flush", void 0), V([B()], $.prototype, "values", void 0), V([B()], $.prototype, "unit", void 0), V([B()], $.prototype, "failed", void 0), Ye("joe-car-charge", $);
 //#endregion
 //#region src/styles/tokens.ts
-var Rt = o`
+var Yt = o`
   :host {
     --joe-bg: #fbf6ec;
     --joe-surface: #ffffff;
@@ -7999,4 +8410,4 @@ var Rt = o`
   }
 `;
 //#endregion
-export { W as A, We as B, lt as C, G as D, rt as E, He as F, z as G, Re as H, qe as I, j as J, R as K, Ve as L, V as M, Qe as N, ot as O, Ye as P, o as Q, Ke as R, Y as S, at as T, Ne as U, Be as V, B as W, Ee as X, A as Y, ge as Z, _t as _, wt as a, X as b, At as c, Mt as d, Nt as f, xt as g, St as h, Z as i, ut as j, ct as k, jt as l, It as m, Q as n, Tt as o, kt as p, M as q, Ct as r, Ft as s, Rt as t, Pt as u, bt as v, it as w, yt as x, vt as y, Ge as z };
+export { Re as $, xt as A, ct as B, yt as C, St as D, _t as E, it as F, Ye as G, ut as H, at as I, Ve as J, He as K, rt as L, Ct as M, J as N, Et as O, lt as P, Be as Q, G as R, bt as S, Y as T, V as U, W as V, Qe as W, Ge as X, Ke as Y, We as Z, Ot as _, Ft as a, A as at, X as b, Ht as c, _e as ct, Q as d, Ne as et, Wt as f, Mt as g, Nt as h, Lt as i, j as it, Tt as j, vt as k, Ut as l, o as lt, qt as m, Z as n, z as nt, It as o, k as ot, Vt as p, qe as q, Pt as r, R as rt, Kt as s, Ee as st, Yt as t, B as tt, Gt as u, jt as v, wt as w, At as x, kt as y, ot as z };

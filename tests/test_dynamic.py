@@ -544,6 +544,13 @@ async def test_the_window_is_long_enough_for_the_car(
                     "entity_id": "select.carport_mode",
                     "on_value": "now",
                     "power_kw": 3.7,
+                    "point": {},
+                }
+            ],
+            "cars": [
+                {
+                    "id": "kona",
+                    "name": "Kona",
                     "need": {
                         "enabled": True,
                         "soc_entity": "sensor.car_soc",
@@ -601,6 +608,13 @@ async def test_a_car_without_power_keeps_the_cheapest_window(
                     "entity_id": "select.carport_mode",
                     "on_value": "now",
                     "power_kw": None,
+                    "point": {},
+                }
+            ],
+            "cars": [
+                {
+                    "id": "kona",
+                    "name": "Kona",
                     "need": {
                         "enabled": True,
                         "soc_entity": "sensor.car_soc",

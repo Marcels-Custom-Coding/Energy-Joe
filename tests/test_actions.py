@@ -56,6 +56,17 @@ HOT_WATER = {
 }
 
 
+def with_car(action: dict[str, Any], need: dict[str, Any]) -> dict[str, Any]:
+    """A charge point and the one car that charges there."""
+    return model.validate(
+        {
+            "version": model.CONFIG_VERSION,
+            "actions": [{**action, "point": {}}],
+            "cars": [{"id": "kona", "name": "Kona", "need": need}],
+        }
+    )
+
+
 @pytest.fixture(autouse=True)
 def berlin(hass: HomeAssistant) -> None:
     dt_util.set_default_time_zone(dt_util.get_time_zone("Europe/Berlin"))
@@ -298,8 +309,7 @@ async def test_just_charge_to_a_level(hass: HomeAssistant, freezer) -> None:
         "select.carport_mode", "smart", {"options": ["off", "smart", "now"]}
     )
     hass.states.async_set("sensor.car_soc", "41", {"unit_of_measurement": "%"})
-    car = {**EV, "need": {"soc_entity": "sensor.car_soc"}}
-    config = model.validate({"version": model.CONFIG_VERSION, "actions": [car]})
+    config = with_car(EV, {"soc_entity": "sensor.car_soc"})
     executor = JoeExecutor(
         hass, lambda: config, lambda: None, lambda: "simulation", lambda: None
     )
@@ -331,8 +341,7 @@ async def test_just_charge_to_a_range_with_reserve(
         "select.carport_mode", "smart", {"options": ["off", "smart", "now"]}
     )
     hass.states.async_set("sensor.car_range", "120", {"unit_of_measurement": "km"})
-    car = {**EV, "need": {"range_entity": "sensor.car_range", "reserve_km": 40}}
-    config = model.validate({"version": model.CONFIG_VERSION, "actions": [car]})
+    config = with_car(EV, {"range_entity": "sensor.car_range", "reserve_km": 40})
     executor = JoeExecutor(
         hass, lambda: config, lambda: None, lambda: "live", lambda: None
     )
@@ -364,8 +373,7 @@ async def test_charging_by_hand_wins_over_the_night_plan(
     )
     hass.states.async_set("binary_sensor.carport_connected", "on")
     hass.states.async_set("sensor.car_soc", "41", {"unit_of_measurement": "%"})
-    car = {**EV, "need": {"soc_entity": "sensor.car_soc"}}
-    config = model.validate({"version": model.CONFIG_VERSION, "actions": [car]})
+    config = with_car(EV, {"soc_entity": "sensor.car_soc"})
     start, end = window(hass)
     planned = plan_actions(config["actions"], hass.states.get, start, end, 8.0, {})
     assert planned[0]["run"] is True
@@ -400,12 +408,9 @@ async def test_tonight_up_to_a_range(hass: HomeAssistant, freezer) -> None:
     )
     hass.states.async_set("binary_sensor.carport_connected", "on")
     hass.states.async_set("sensor.car_range", "120", {"unit_of_measurement": "km"})
-    car = {
-        **EV,
-        "auto": False,
-        "need": {"range_entity": "sensor.car_range", "reserve_km": 40},
-    }
-    config = model.validate({"version": model.CONFIG_VERSION, "actions": [car]})
+    config = with_car(
+        {**EV, "auto": False}, {"range_entity": "sensor.car_range", "reserve_km": 40}
+    )
     start, end = window(hass)
     tonight: dict[str, str] = {}
 

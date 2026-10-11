@@ -4,19 +4,21 @@ import { define } from "../define";
 import { formatNumber } from "../entities";
 import type { Translate } from "../i18n";
 import { shared } from "../styles/shared";
-import type { ActionConfig, HomeAssistant, JoeState } from "../types";
+import { carPoint, pointStatus } from "../cars";
+import type { CarConfig, HomeAssistant, JoeState } from "../types";
 import { tip } from "./tip";
 
 /**
  * Charging a car by hand: one target (a level or a range plus the reserve),
- * then "now" or "tonight" in the cheap window. On the devices page and in the
+ * then "now" or "tonight" in the cheap window, at the charge point the car is
+ * plugged into. On the car's page, under Übersicht › Schnell and in the
  * dashboard card "Auto laden".
  */
 export class JoeCarCharge extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) t?: Translate;
   @property({ attribute: false }) state?: JoeState;
-  @property({ attribute: false }) action?: ActionConfig;
+  @property({ attribute: false }) car?: CarConfig;
 
   /** First in its block (a device page's "Jetzt"): no rule above it. */
   @property({ type: Boolean, reflect: true }) flush = false;
@@ -85,6 +87,13 @@ export class JoeCarCharge extends LitElement {
         color: var(--joe-warn, var(--joe-crit));
         margin: 6px 0 0;
       }
+      p.boost.off {
+        color: var(--joe-ink-2);
+        flex-wrap: nowrap;
+      }
+      p.boost.off span {
+        flex: 1;
+      }
     `,
   ];
 
@@ -98,16 +107,27 @@ export class JoeCarCharge extends LitElement {
   }
 
   private renderBody() {
-    const { t, state: joe, action } = this;
-    if (!t || !joe || !action) {
+    const { t, state: joe, car } = this;
+    if (!t || !joe || !car) {
       return nothing;
+    }
+    const action = carPoint(joe, car.id);
+    if (!action) {
+      // Charging needs a wallbox: say where the car is not.
+      return html`<p class="boost off" data-tipped>
+        <ha-icon icon="mdi:power-plug-off-outline"></ha-icon>
+        <span>${t("devices.charge.not_plugged", { car: car.name })}</span>
+        ${tip(t, "boost")}
+      </p>`;
     }
     const night = joe.plan?.window?.start;
     const tonight = Boolean(night) && joe.control?.tonight?.[action.id] === night;
     const boost = joe.control?.boost?.[action.id];
     const live = joe.control?.actions?.[action.id];
     const chosen = joe.control?.tonight_target?.[action.id];
-    const need = action.need!;
+    const need = car.need;
+    const values = joe.cars?.cars?.[car.id]?.values ?? {};
+    const at = pointStatus(joe, action.id);
     const amount = (target: number, total: number, unit: "%" | "km") =>
       unit === "km"
         ? t("devices.charge.km", { target: formatNumber(t.lang, target, 0), reserve: formatNumber(t.lang, total - target, 0) })
@@ -141,7 +161,10 @@ export class JoeCarCharge extends LitElement {
         ${tip(t, "boost")}
       </div>`;
     }
-    const units: ("%" | "km")[] = [...(need.soc_entity ? ["%" as const] : []), ...(need.range_entity ? ["km" as const] : [])];
+    const units: ("%" | "km")[] = [...(values.soc ? ["%" as const] : []), ...(values.range ? ["km" as const] : [])];
+    if (!units.length) {
+      return html`<p class="boost off">${t("devices.charge.no_level", { car: car.name })}</p>`;
+    }
     const unit = this.unit && units.includes(this.unit) ? this.unit : units[0];
     const value = this.values[unit] ?? (unit === "%" ? 80 : 200);
     const max = unit === "%" ? 100 : 1500;
@@ -159,7 +182,7 @@ export class JoeCarCharge extends LitElement {
         this.boost(typed(ev.target as HTMLFormElement), unit);
       }}
     >
-      <label class="toggle-label" for="boost-${action.id}">${t("devices.charge.label")}</label>
+      <label class="toggle-label" for="boost-${action.id}">${t("devices.charge.label_at", { point: action.name })}</label>
       <span class="amount">
         <input
           id="boost-${action.id}"
@@ -206,18 +229,26 @@ export class JoeCarCharge extends LitElement {
         </button>
       </span>
       ${unit === "km" ? html`<small class="hint">${t("devices.boost.reserve", { reserve: formatNumber(t.lang, need.reserve_km ?? 50, 0) })}</small>` : nothing}
+      ${at?.how === "assume" || at?.how === "home"
+        ? html`<small class="hint">${t("devices.charge.guessed", { point: action.name })}</small>`
+        : nothing}
       ${night ? nothing : html`<small class="hint">${t("devices.charge.no_night")}</small>`}
     </form>`;
   }
 
+  /** The charge point the car is plugged into (where Joe switches). */
+  private get point(): string | undefined {
+    return this.car ? carPoint(this.state, this.car.id)?.id : undefined;
+  }
+
   private async boost(target: number | null, unit: "%" | "km" = "%"): Promise<void> {
-    await this.call({ type: "energy_joe/control/boost", action_id: this.action?.id, target, unit });
+    await this.call({ type: "energy_joe/control/boost", action_id: this.point, target, unit });
   }
 
   private async tonight(on: boolean, target?: number, unit?: "%" | "km"): Promise<void> {
     await this.call({
       type: "energy_joe/control/action_tonight",
-      action_id: this.action?.id,
+      action_id: this.point,
       on,
       ...(target != null ? { target, unit } : {}),
     });
