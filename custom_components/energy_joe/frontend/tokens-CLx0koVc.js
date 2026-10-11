@@ -2702,7 +2702,7 @@ var Pe = {
 	"devices.other.lead": "Alle Zähler aus deinem Energie-Dashboard. Sag mir, was jedes Gerät ist und wann es läuft – dann rechne ich richtig. Ein Gerät, das nachts laufen soll, schalte ich in der günstigen Zeit ein.",
 	"devices.other.empty": "Im Energie-Dashboard sind keine weiteren Geräte eingetragen.",
 	"devices.car.terms": "Termine",
-	"devices.car.terms_off": "Termine zählen erst, wenn „Laden nach Bedarf“ an ist. Das schaltest du oben unter Steuern ein.",
+	"devices.car.terms_off": "Du kannst die Termine schon einstellen. Sie zählen, sobald oben unter Steuern „Laden nach Bedarf“ an ist.",
 	"action.need.max_soc": "Höchstens laden bis",
 	"action.need.capacity_sensor": "Akkugröße vom Sensor",
 	"action.need.consumption_sensor": "Verbrauch vom Sensor",
@@ -5627,7 +5627,7 @@ var Pe = {
 	"devices.other.lead": "All meters from your Energy dashboard. Tell me what each device is and when it runs – then my numbers are right. A device that should run at night I switch on in the cheap hours.",
 	"devices.other.empty": "There are no more devices in the Energy dashboard.",
 	"devices.car.terms": "Appointments",
-	"devices.car.terms_off": "Appointments only count once “Charge by need” is on. Switch it on above under Control.",
+	"devices.car.terms_off": "You can set up the appointments already. They count once “Charge by need” is on under Steering above.",
 	"action.need.max_soc": "Charge at most to",
 	"action.need.capacity_sensor": "Battery size from a sensor",
 	"action.need.consumption_sensor": "Consumption from a sensor",
@@ -6524,14 +6524,14 @@ function qe(e, t, n) {
 }
 //#endregion
 //#region src/define.ts
-var Je = "0.9.19";
+var Je = "0.9.20";
 function Ye(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Je, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.19" && Ze();
+	n.joeVersion !== "0.9.20" && Ze();
 }
 var Xe = !1;
 function Ze() {

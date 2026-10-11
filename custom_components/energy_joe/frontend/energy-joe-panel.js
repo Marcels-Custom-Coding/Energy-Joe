@@ -1,4 +1,4 @@
-import { $ as e, A as t, B as n, C as r, D as i, E as a, F as o, G as s, H as c, I as l, J as u, K as d, L as f, M as p, N as m, O as h, P as g, Q as _, R as v, S as ee, T as te, U as y, V as ne, W as b, X as re, Y as ie, Z as x, _ as ae, a as oe, at as se, b as S, c as ce, ct as le, d as C, et as ue, f as w, g as de, h as fe, i as pe, it as T, j as me, k as he, l as E, lt as D, m as ge, n as _e, nt as O, o as ve, ot as k, p as ye, q as be, r as A, rt as j, s as xe, st as Se, t as Ce, tt as M, u as we, v as Te, w as Ee, x as De, y as Oe, z as ke } from "./tokens-BTyP-c7w.js";
+import { $ as e, A as t, B as n, C as r, D as i, E as a, F as o, G as s, H as c, I as l, J as u, K as d, L as f, M as p, N as m, O as h, P as g, Q as _, R as v, S as ee, T as te, U as y, V as ne, W as b, X as re, Y as ie, Z as x, _ as ae, a as oe, at as se, b as S, c as ce, ct as le, d as C, et as ue, f as w, g as de, h as fe, i as pe, it as T, j as me, k as he, l as E, lt as D, m as ge, n as _e, nt as O, o as ve, ot as k, p as ye, q as be, r as A, rt as j, s as xe, st as Se, t as Ce, tt as M, u as we, v as Te, w as Ee, x as De, y as Oe, z as ke } from "./tokens-CLx0koVc.js";
 //#region src/assets.ts
 var Ae = import.meta.url.replace(/[^/]*$/, ""), je = (e) => `${Ae}${e}`, Me = /* @__PURE__ */ new Set(["welcome"]), Ne = /* @__PURE__ */ new Set([
 	"night-charge",
@@ -8670,16 +8670,16 @@ var za = [
 				anchor: "calendars",
 				title: e("devices.car.terms"),
 				tip: "car_terms",
-				body: o.enabled ? k`${this.calendarLine(e, n, i)}
-                <joe-car-steer
-                  .hass=${t}
-                  .t=${e}
-                  .state=${n}
-                  .discovery=${this.discovery}
-                  .prefix=${this.prefix}
-                  .car=${i}
-                  .section=${"calendars"}
-                ></joe-car-steer>` : k`<p class="muted">${e("devices.car.terms_off")}</p>`
+				body: k`${o.enabled ? this.calendarLine(e, n, i) : k`<p class="muted">${e("devices.car.terms_off")}</p>`}
+            <joe-car-steer
+              .hass=${t}
+              .t=${e}
+              .state=${n}
+              .discovery=${this.discovery}
+              .prefix=${this.prefix}
+              .car=${i}
+              .section=${"calendars"}
+            ></joe-car-steer>`
 			}, {
 				anchor: "sources",
 				title: e("car.sources"),

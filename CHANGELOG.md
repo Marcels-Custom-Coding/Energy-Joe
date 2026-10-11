@@ -3,6 +3,10 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.20
+
+- Auto: Die Termine (wessen Termine zählen, Kalender des Autos, Postfach, Konto) lassen sich auf der Autoseite jetzt immer einstellen – auch bevor „Laden nach Bedarf“ an ist. Bisher war der Bereich bis dahin ausgeblendet.
+
 ## 0.9.19
 
 ### Auto und Wallbox getrennt

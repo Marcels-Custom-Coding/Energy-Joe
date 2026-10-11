@@ -2361,7 +2361,7 @@ export const en: Record<Key, string> = {
   "devices.other.lead": "All meters from your Energy dashboard. Tell me what each device is and when it runs – then my numbers are right. A device that should run at night I switch on in the cheap hours.",
   "devices.other.empty": "There are no more devices in the Energy dashboard.",
   "devices.car.terms": "Appointments",
-  "devices.car.terms_off": "Appointments only count once “Charge by need” is on. Switch it on above under Control.",
+  "devices.car.terms_off": "You can set up the appointments already. They count once “Charge by need” is on under Steering above.",
   "action.need.max_soc": "Charge at most to",
   "action.need.capacity_sensor": "Battery size from a sensor",
   "action.need.consumption_sensor": "Consumption from a sensor",

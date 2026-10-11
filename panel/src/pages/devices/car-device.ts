@@ -154,18 +154,17 @@ export class JoeCarDevice extends DeviceSection {
           anchor: "calendars",
           title: t("devices.car.terms"),
           tip: "car_terms",
-          body: need.enabled
-            ? html`${this.calendarLine(t, joe, car)}
-                <joe-car-steer
-                  .hass=${hass}
-                  .t=${t}
-                  .state=${joe}
-                  .discovery=${this.discovery}
-                  .prefix=${this.prefix}
-                  .car=${car}
-                  .section=${"calendars"}
-                ></joe-car-steer>`
-            : html`<p class="muted">${t("devices.car.terms_off")}</p>`,
+          // Always set up here; the appointments only count with charging by need on.
+          body: html`${need.enabled ? this.calendarLine(t, joe, car) : html`<p class="muted">${t("devices.car.terms_off")}</p>`}
+            <joe-car-steer
+              .hass=${hass}
+              .t=${t}
+              .state=${joe}
+              .discovery=${this.discovery}
+              .prefix=${this.prefix}
+              .car=${car}
+              .section=${"calendars"}
+            ></joe-car-steer>`,
         },
         {
           anchor: "sources",

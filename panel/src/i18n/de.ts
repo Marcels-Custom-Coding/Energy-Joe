@@ -2388,7 +2388,7 @@ export const de = {
   "devices.other.lead": "Alle Zähler aus deinem Energie-Dashboard. Sag mir, was jedes Gerät ist und wann es läuft – dann rechne ich richtig. Ein Gerät, das nachts laufen soll, schalte ich in der günstigen Zeit ein.",
   "devices.other.empty": "Im Energie-Dashboard sind keine weiteren Geräte eingetragen.",
   "devices.car.terms": "Termine",
-  "devices.car.terms_off": "Termine zählen erst, wenn „Laden nach Bedarf“ an ist. Das schaltest du oben unter Steuern ein.",
+  "devices.car.terms_off": "Du kannst die Termine schon einstellen. Sie zählen, sobald oben unter Steuern „Laden nach Bedarf“ an ist.",
   "action.need.max_soc": "Höchstens laden bis",
   "action.need.capacity_sensor": "Akkugröße vom Sensor",
   "action.need.consumption_sensor": "Verbrauch vom Sensor",
