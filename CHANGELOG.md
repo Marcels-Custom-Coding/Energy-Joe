@@ -3,6 +3,15 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.22
+
+- **Autos wiederfinden und zuordnen:** „Nochmal nach Autos suchen“ unter Geräte › Auto & Laden zeigt alle Autos, die Home Assistant kennt – aus evcc und aus den Integrationen der Hersteller, auch früher weggelassene, und bei welchem Auto sie schon hängen.
+- Unter „Quellen“ eines Autos hängst du mit „Quelle hinzufügen“ eine oder mehrere Integrationen an das Auto (z. B. den Hyundai wieder an den Kona aus evcc). Gehört sie zu einem anderen Auto, frage ich vorher.
+- Unter „+ Hinzufügen › Auto“ stehen auch früher weggelassene Autos – mit „Wieder nutzen“.
+- Behoben: Nach dem Löschen eines Autos fand Joe dessen Hersteller-Integration nie wieder. Beim Löschen steht jetzt, wie du sie wiederfindest.
+- „Laden bis … km“ zeigt die Reserve direkt dahinter („zzgl. 50 km Reserve“) und sagt, wo du sie änderst (beim Auto unter Steuern).
+- Texte überarbeitet: Joe spricht auch in den Home-Assistant-Texten (Einrichtung, Dienste, Hinweise) in der Ich-Form, der Dienst „Nacht-Aktion“ heißt jetzt „Gerät heute Nacht einschalten“, Hinweise nennen den genauen Ort, lange Erklärungen sind in Absätze geteilt.
+
 ## 0.9.21
 
 - Auto › Termine: Neue Erklärung „Wie funktioniert das mit dem Kalender?“ – warum es einen eigenen Kalender für das Auto gibt, wie sich der Kalender des Autos und die Kalender der Personen unterscheiden, die drei Wege, wie ein Termin hineinkommt (fertiger Kalender, Postfach ohne Kalender, Postfach mit Kalender), ein Beispiel von der Einladung bis zum Laden und was zählt. Sie ist offen, solange noch nichts eingerichtet ist, danach mit einem Tipp aufklappbar.
