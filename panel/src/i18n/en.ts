@@ -36,7 +36,8 @@ export const en: Record<Key, string> = {
   "climate.route_eta": "Drive time from the routing service",
   "climate.now.arriving_usual": "Now: the usual homecoming is close – I'm warming up already.",
   "tip.climate_route_eta.title": "How does Joe know when someone comes home?",
-  "tip.climate_route_eta.text": "Two ways: 1. When someone gets closer (Proximity integration), I ask the routing service (Household › Travel & weather: OpenStreetMap, Waze or Google) how long the drive still takes – with traffic where the service knows it. For that, the person's position, rounded to about 100 m, goes to that service. Switch it off and I assume 40 km/h. 2. I note when you usually come home on working days and days off, and bring the rooms back ahead of that time. Someone merely passing by at a quite different time only counts when getting steadily closer.",
+  "tip.climate_route_eta.text":
+    "I use two ways.\n**1. Someone coming closer:** With the “Proximity” integration I ask the routing service (Household › Travel & weather: OpenStreetMap, Waze or Google) how long the drive still takes – including traffic where the service knows it. For that, the person's position, rounded to about 100 m, goes to that service. Switch it off and I assume 40 km/h.\n**2. Your usual time:** I note when you usually come home on working days and days off, and warm up the rooms ahead of that. Someone who only drives past at a quite different time counts once they keep getting closer.",
   "tip.climate_route_eta.hint":
     "I know the usual time after 4 homecomings on such days, and only if it varies by no more than 45 minutes.",
   "climate.no_proximity":
@@ -73,7 +74,7 @@ export const en: Record<Key, string> = {
     "Created by Energy Joe: {tracker} follows the switch {guest} (on = home, off = not_home), so the presence group stays home/not_home.",
   "tip.household_guest.title": "How does guest mode work?",
   "tip.household_guest.text":
-    "I create three ordinary things in Home Assistant: the switch “guest mode”, a device tracker “guest” and an automation that makes the tracker follow the switch (on = home, off = away). The tracker is a member of your presence group – like a person. A switch directly in the group would turn its state into on/off, and automations checking for “home” would stop working.",
+    "I create three ordinary building blocks in Home Assistant: the switch “Guest mode”, a device tracker “Guest” and an automation that makes the tracker follow the switch (on = home, off = away). The tracker belongs to your presence group, like a person. If the switch itself were in the group, the group would only have the state on/off – and automations checking for “home” would stop working.",
   "tip.household_guest.hint": "Everything works without me too. Switch guest mode off again when the visit leaves.",
   "household.presence.create": "Create helper",
   "household.presence.creating": "Creating …",
@@ -158,7 +159,8 @@ export const en: Record<Key, string> = {
   "climate.open_device": "Open the device in Home Assistant ({id})",
   "climate.open_meter": "Open the meter in Home Assistant",
   "pick.night.title": "What tells you that you are in bed?",
-  "tip.climate_night.text": "The air conditioner goes off at night and comes back early enough to be comfortable at the morning time you set. How I tell it's night – fixed times or an entity – you set under Household › Bedtime. How long the room takes to cool, I learn over time.",
+  "tip.climate_night.text":
+    "At night I switch the air conditioner off and back on in good time before your morning time, so it is comfortable by then. How I tell it's night – fixed times or an entity – you set under Household › Bedtime. How long the room takes to cool down, I learn over time.",
   "tip.climate_night_source.title": "How does Joe tell night?",
   "tip.climate_night_source.text":
     "“By fixed times”: each air conditioner has its own from – to. “By an entity”: it is night while the chosen entity is “on” – e.g. a helper (input_boolean) your good-night routine switches on and off again in the morning, a bed sensor or a schedule.",
@@ -243,7 +245,7 @@ export const en: Record<Key, string> = {
   "devprof.pending.start":
     "The ticks take effect once the current absence or day off is over – until then everything stays as it is.",
   "devprof.pending.end":
-    "The absence program runs until someone comes home; then I set the normal program and let go.",
+    "The away program is still running until someone comes home. Then I set the normal program and leave the device to itself again.",
   "week.legacy_now":
     "The air conditioner is set to “{state}” right now – there are no profiles for that, so the setting below applies.",
   "climate.hvac.off": "Off",
@@ -440,7 +442,8 @@ export const en: Record<Key, string> = {
   "past.learned.presence.usual": "on days like today usually home around {time}",
   "past.learned.presence.no_calendar": "Without a calendar I don't know what kind of day this person has ahead.",
   "past.learned.climate": "Heating & cooling",
-  "past.learned.climate.say": "How fast a room gets warm again (when cooling: cool) once I put it back after a setback. That tells me how early to start.",
+  "past.learned.climate.say":
+    "How quickly a room warms up again (when cooling: cools down) once I set it back after lowering. That tells me how early I need to start.",
   "past.learned.climate.rate": "{rate} °C per hour",
   "past.learned.climate.none": "As soon as I control heating or cooling, I learn here how fast each room gets warm or cool.",
   "past.learned.climate.open": "To Heating & cooling →",
@@ -646,7 +649,7 @@ export const en: Record<Key, string> = {
   "scan.looking": "Looking around …",
   "scan.title": "Here's what |I found",
   "scan.lead":
-    "This is what I'll use from now on. If something's off, change it or leave it out – I never overwrite what you set.",
+    "This is what I'll work with from now on. If something is wrong, change it or leave it out – I never overwrite what you set.",
   "scan.again": "Look again",
   "scan.why": "Why?",
   "scan.failed": "Something went wrong while looking around. Please try again.",
@@ -865,7 +868,8 @@ export const en: Record<Key, string> = {
   "review.home.flexible": "For the battery I leave out: {names}. I never charge the car from the home battery.",
   "review.home.flexible_some": "For the battery I leave out: {names}.",
   "review.home.flexible_none": "Do some devices run only on solar surplus or cheap power? Tell me under Devices › More devices – then I plan the battery without them.",
-  "review.home.off": "Over the last {days} days your sensor shows {pct} % {direction} than grid + solar ± storage. Is a small solar system missing in it? I work with grid + solar ± storage.",
+  "review.home.off":
+    "Over the last {days} days your sensor shows {pct} % {direction} than grid + solar ± storage. Maybe a small solar system is missing from it? I'm using grid + solar ± storage.",
   "review.home.less": "less",
   "review.home.more": "more",
   "review.home.none":
@@ -881,7 +885,7 @@ export const en: Record<Key, string> = {
   "pick.suggested": "Joe suggests",
   "pick.fitting": "Matching",
   "pick.all": "All entities",
-  "pick.empty": "Nothing matches. Turn on “Show all” below or search for another word.",
+  "pick.empty": "Nothing fits here. Tap “Show all” below or search for another word.",
   "pick.more": "Show {count} more",
   "pick.show_all": "Show all",
   "pick.apply": "Use",
@@ -1057,7 +1061,8 @@ export const en: Record<Key, string> = {
   "household.night.lead": "Bedtime means: you are in bed. Devices with “Off at night” switch off then and are comfortable again in time for the morning.",
   "household.night.source": "How I recognise the night",
   "household.night.devices": "Devices with “Off at night”",
-  "household.night.devices.none": "No device has “Off at night” switched on yet. You set that on the device under Heating & cooling.",
+  "household.night.devices.none":
+    "No device has “Off at night” switched on yet. You set that on the device under Devices › Heating & cooling.",
   "household.night.span": "{from}–{until}",
   "household.night.until": "comfortable again by {until}",
   "household.night.not_steered": "not steered right now",
@@ -1131,7 +1136,8 @@ export const en: Record<Key, string> = {
   "rule.day_surplus": "Leave daytime surplus",
   "rule.day_surplus.hint": "On sunny days the batteries charge only as fast as they must – the rest of the sun is left for evcc (e.g. a car or floor heating in PV mode).",
   "tip.r_day_surplus.title": "What does “Leave daytime surplus” mean?",
-  "tip.r_day_surplus.text": "Usually the batteries swallow all of the morning sun and are full by noon. Only then does evcc see a surplus. With this switch on I slow the batteries' charging down: they charge just fast enough to be full before the evening sun no longer covers the house. evcc sees the rest at the grid meter – and a loadpoint in PV mode runs on it all day, e.g. the floor heating. If the sun falls behind the forecast I charge faster at once; if it no longer suffices at all, I let go completely.",
+  "tip.r_day_surplus.text":
+    "Normally the batteries swallow all the morning sun and are full by noon – only then does evcc see a surplus. With the switch on, I slow down charging: they charge just fast enough to still be full before the sun no longer covers the house in the evening. evcc sees the rest at the grid meter, and a loadpoint in PV mode (e.g. underfloor heating) can then run all day.\nIf the sun falls short of the forecast, I charge faster right away; if it no longer suffices at all, I let go completely.",
   "tip.r_day_surplus.hint": "Only while an evcc loadpoint is set to PV or Min+PV and can take power, only for batteries with a charge limit in W or kW and a passed test run, and only in live mode. In the evening everything is back as before.",
   "rule.day_caution": "How careful?",
   "rule.day_caution.tight": "Tight",
@@ -1146,7 +1152,7 @@ export const en: Record<Key, string> = {
   "rule.reserve_soc.hint":
     "At least this much stays in every battery. If a battery's own floor is higher, that applies.",
   "tip.r_reserve_soc.text":
-    "The lowest level for all batteries – e.g. as an emergency reserve or to spare the battery. Each battery also has its own discharge floor (set on the device, see the battery). For each battery I use the higher of the two.",
+    "The lowest level for all batteries – e.g. as an emergency reserve or to spare the batteries. Each battery also has its own discharge floor (set on the device, see the battery). For each battery I use the higher of the two.",
   "tip.r_reserve_soc.hint": "10 % fits most batteries.",
   "rule.max_target_soc": "Charge at night up to",
   "rule.max_target_soc.hint": "I never charge more than this from the grid at night.",
@@ -1329,7 +1335,8 @@ export const en: Record<Key, string> = {
   "tip.f_battery_priority.title": "What does order mean?",
   "tip.f_battery_priority.text": "If you have several batteries, I charge the one with the lower number first. 1 = first.",
   "tip.f_battery_control.title": "What is under Control?",
-  "tip.f_battery_control.text": "At the top it says how I steer this battery. With “Set up levers” you choose the switches and values I use for it; “Watch only” means I only watch and switch nothing. In live mode I set the charge target and discharging myself and put everything back at the end of every night.\nBelow are name, size, maximum power, discharge limit and, with several batteries, the order. Every field has its own explanation, and I save what you change there right away.",
+  "tip.f_battery_control.text":
+    "At the top it says how I control this battery. With “Set up levers” you decide which switches and values I use; with “Watch only” I just watch and switch nothing. In Live mode I set the charge target and discharging myself and put everything back at the end of each night.\nBelow are the name, size, maximum power, discharge limit and, with several batteries, the order. Every field has its own explanation. Whatever you change there, I save right away.",
   "tip.f_battery_control.hint": "In the simulation I don't switch anything anyway.",
   "tip.f_calendars.title": "Why calendars?",
   "tip.f_calendars.text":
@@ -1361,7 +1368,7 @@ export const en: Record<Key, string> = {
     "I never charge from the grid above this price – even if the calculation would narrowly recommend it. I may still hold the batteries.",
   "tip.r_min_saving.title": "Why a minimum saving?",
   "tip.r_min_saving.text":
-    "Every time I steer, I write values to your devices. If a night brings less than this amount, I leave it and the batteries run as without me. Maintenance nights are the exception.",
+    "Every time I take control, I write values into your devices. If a night would bring less than this amount, I skip it and the batteries run as if I weren't there. Maintenance nights are exempt.",
   "tip.r_grid_friendly.title": "What does grid-friendly mean?",
   "tip.r_grid_friendly.text":
     "At midday all solar systems deliver the most at once – the grid is full. In the morning and evening everyone needs power – it is short.\n**Batteries**: On sunny days I hold back charging in the morning, the surplus goes to the grid and the battery charges at the midday peak. I take only 80 % of the forecast and let go early when the sun lags. This works with batteries whose charging power I can limit.\n**Morning and evening** the home takes power from the battery instead of the grid.\n**Car**: If it leaves only in the afternoon, it charges with the sun instead of at night.",
@@ -1384,7 +1391,7 @@ export const en: Record<Key, string> = {
     "This many minutes before the cheap hours begin I work out the plan for the night – with the latest forecast.",
   "tip.r_reset_lead_min.title": "Why put things back before the end?",
   "tip.r_reset_lead_min.text":
-    "This many minutes before the cheap hours end I put everything back, for example the wallbox from “Now” to “PV”. Some devices keep running for a moment – this way nothing costs the day price.",
+    "This many minutes before the cheap window ends I put everything back, for example the wallbox from “Now” to “PV”. Some devices keep running for a moment – this way nothing lands in the pricier day tariff.",
   "tip.r_priority.title": "Who gets power first?",
   "tip.r_priority.text":
     "If the grid limit isn't enough for everyone, whoever is on top gets power first. The others wait or charge more slowly.",
@@ -1469,7 +1476,8 @@ export const en: Record<Key, string> = {
   "overview.result.night": "Night to {day}",
   "overview.result.none": "After the first planned night I work out what my plan would have saved.",
   "tip.inbox.title": "What is this?",
-  "tip.inbox.text": "Everything I need you for: your answer for tonight, notes about your devices, what isn't set up yet, newly found devices and questions about unusual days. Notes about faults come first and stay until the fault is gone. I show three rows first, the rest under “Show more”. Tap a row to go where you sort it out. When nothing is open, this box disappears.",
+  "tip.inbox.text":
+    "Everything I need you for: your answer for tonight, notes about your devices, what isn't set up yet, newly found devices and questions about unusual days. Error notes stay at the top until the error is fixed. I show three lines first, the rest under “Show … more”. Tapping a line takes you to where you sort it out. If nothing is open, this box disappears.",
   "tip.todo_dismiss.title": "What does “Don't need it” do?",
   "tip.todo_dismiss.text": "The row disappears and I won't show it again. Nothing else changes – you can still set it up any time where the row leads.",
   "tip.quick.title": "What is “Quick” for?",
@@ -1741,7 +1749,8 @@ export const en: Record<Key, string> = {
   "ask.answer.special": "Something else special",
   "ask.answer.normal": "A normal day",
   "learn.model": "Consumption and weather",
-  "learn.model.no_weather": "Without a weather entity I don't know the outdoor temperature. As soon as you pick one, I learn how much more you need when it's cold.",
+  "learn.model.no_weather":
+    "As long as no weather forecast is chosen, I don't know the outdoor temperature. Once you pick one, I learn how much more you use when it's cold.",
   "learn.model.learning":
     "Every day I compare your consumption with the outdoor temperature. From {need} complete days on I use it – I have {have}.",
   "learn.model.base": "On warm days you need about {value} kWh.",
@@ -1777,7 +1786,7 @@ export const en: Record<Key, string> = {
   "learn.battery.no_power": "Without a power measurement of the battery I can't measure its size and losses.",
   "learn.battery.user": "You entered {value} kWh – I keep using that.",
   "learn.battery.odd":
-    "That doesn't fit the {value} kWh the device reports – I'd rather use the device value. Check the charge level and power sensors.",
+    "That doesn't match the {value} kWh the device reports – I'd rather use the device value. Check the sensors for charge level and power.",
   "learn.battery.uses_nominal": "The device says {value} kWh – I use the measured value.",
   "learn.battery.uses": "I use the measured value.",
   "learn.battery.capacity": "{value} kWh usable",
@@ -1798,7 +1807,7 @@ export const en: Record<Key, string> = {
   "learn.hot_water.none": "Set up your hot water with a temperature sensor under Devices › Hot water, then I learn how fast it heats and how much you use a day.",
   "learn.presence": "Who is at home when",
   "learn.presence.value": "{label}: {hours} h",
-  "learn.presence.no_person": "Without a person entity I can't see when someone is at home.",
+  "learn.presence.no_person": "Without people in Home Assistant I can't see when someone is home.",
   "learn.presence.none":
     "Assign calendars to people, then I learn how many hours they are at home on office, home office or vacation days.",
   "learn.presence.calendars": "Assign calendars →",
@@ -2220,7 +2229,7 @@ export const en: Record<Key, string> = {
     "How fast the tank heats, how much it loses standing and how many degrees you use a day. From that I work out the target temperature for the night and when heating must start to be done by the end of the cheap window.",
   "tip.learn_presence.title": "Why presence?",
   "tip.learn_presence.text":
-    "From your calendars I read what's on tomorrow – office, home office, vacation. How many hours someone is at home on such days I learn from the person entity. Whoever is at home uses more; that goes into the calculation for tomorrow.",
+    "From your calendars I read what is on tomorrow – office, home office, vacation. How many hours someone is home on such days, I learn from their presence in Home Assistant. Whoever is home uses more; that goes into tomorrow's calculation.",
   "tip.learn_calendar.title": "How do I read your calendars?",
   "tip.learn_calendar.text":
     "For each person I look into their calendars, all-day events first. The first matching keyword decides the kind of day. If an event fits several kinds, the upper row wins.\nUpper and lower case don't matter.",
@@ -2391,9 +2400,9 @@ export const en: Record<Key, string> = {
   "tip.a_need_consumption_sensor.title": "Which sensor for the consumption?",
   "tip.a_need_consumption_sensor.text": "The car's own long-term average (kWh/100 km, Wh/km or km/kWh). Until I have learned my own value I use it.",
   "car.delete": "Delete car",
-  "car.delete.ask": "Really delete {name}? Its appointments, mailbox and what I learned about the car are gone then. The wallbox stays.",
+  "car.delete.ask": "Really delete {name}? Its appointments, mailbox and what I learned about the car are gone then. The wallbox stays. I leave its integrations out afterwards – “Search for cars again” finds them again.",
   "tip.car_delete.title": "What happens when I delete it?",
-  "tip.car_delete.text": "The car is gone – with its appointments, mailbox and what I learned. I keep switching the wallbox. I leave its integrations out when I look around; under “+ Add › Car” you can use them again.",
+  "tip.car_delete.text": "The car is gone – with its appointments, mailbox and what I learned. I keep switching the wallbox. I leave its integrations out afterwards, so the car doesn't come back by itself. Under Devices › Car & charging, “Search for cars again” finds them again – make a car of them there, or attach them to a car under Sources.",
   "car.f.name": "Name",
   "tip.car_name.title": "Which name?",
   "tip.car_name.text": "This is what I call the car everywhere – in questions, reminders and the plan.",
@@ -2466,6 +2475,35 @@ export const en: Record<Key, string> = {
   "car.sources.none": "No integration yet – pick the sensors by hand below.",
   "tip.car_split.title": "What does split mean?",
   "tip.car_split.text": "This source is another car: it becomes a car of its own, and I no longer ask whether the two belong together.",
+  "car.search": "Search for cars again",
+  "car.search.busy": "I'm looking for cars in Home Assistant …",
+  "car.search.failed": "The search didn't work just now. Please try again in a moment.",
+  "car.search.lead": "I see these cars in Home Assistant – from evcc and from the makers' integrations. Also the ones you left out before.",
+  "car.search.none": "I don't see any car in Home Assistant right now – neither in evcc nor in a maker's integration.",
+  "car.find.of": "belongs to {car}",
+  "car.find.ignored": "left out before",
+  "car.find.new": "not part of any car yet",
+  "car.find.open": "View",
+  "car.find.use": "As a new car",
+  "car.find.reuse": "Use again",
+  "tip.car_search.title": "What do I find when searching?",
+  "tip.car_search.text": "I look for every car in Home Assistant: the vehicles from evcc and the makers' integrations, such as Hyundai, BMW or Tesla. Also the ones you left out before or deleted with a car. Searching changes nothing – you decide what happens with them.",
+  "tip.car_search_use.title": "A new car or part of a car?",
+  "tip.car_search_use.text": "“As a new car” and “Use again” make a car of its own. If the integration shows a car you already have, open that car and choose “Add a source” under Sources.",
+  "car.attach.open": "Add a source",
+  "car.attach.lead": "Which integration also shows {car}? Tap one or more.",
+  "car.attach.none": "I don't see any other integration with a car. Set it up in Home Assistant, then search again.",
+  "car.attach.from": "belongs to {car} so far",
+  "car.attach.do": "Add to {car}",
+  "car.attach.ask": "“{name}” belongs to “{from}” so far. I take it away there and attach it to “{car}”.",
+  "car.attach.empty": "“{from}” has no integration left then – you pick its sensors by hand, or delete it.",
+  "car.attach.yes": "Yes, attach here",
+  "car.attach.no": "Cancel",
+  "car.attach.close": "Close",
+  "tip.car_attach_open.title": "When to add a source?",
+  "tip.car_attach_open.text": "When I didn't match an integration of your car by myself – for example because you deleted the car once. A car can have several sources: evcc, the maker's app and more.",
+  "tip.car_attach.title": "What happens when adding?",
+  "tip.car_attach.text": "The integration then belongs to this car: I read the level, range, odometer, whether it's plugged in, where it is and the outside temperature from there too. If it belonged to another car, I take it away there. If you had left it out, I use it again. “Split” undoes it.",
   "car.trips": "Trips tomorrow",
   "car.trips.none": "Once I plan the night, you see here what is coming up tomorrow.",
   "car.values.none": "No values yet – Sources shows where they should come from.",
@@ -2549,7 +2587,7 @@ export const en: Record<Key, string> = {
   "signpost.wallbox": "Charge point / wallbox",
   "signpost.wallbox.terms": "Wallbox, charge point, charging station, evcc, mode, which car is plugged in, guest, other car, tell the car",
   "signpost.car_sources": "A car's sources",
-  "signpost.car_sources.terms": "evcc, Hyundai, maker, integration, merge, split, level, odometer",
+  "signpost.car_sources.terms": "evcc, Hyundai, maker, integration, merge, split, add a source, search again, left out, level, odometer",
   "signpost.car_reminder": "Reminder: plug in the car",
   "signpost.car_reminder.terms": "reminder, plug in, evening, not plugged in, notification",
   "devices.hot_water.lonely": "I know this hot water meter from your Energy dashboard. Set up once what I switch – then I heat up in the cheap hours.",
@@ -2885,8 +2923,8 @@ export const en: Record<Key, string> = {
   "tip.solar_sleeps.text": "Some inverters switch off when the sun is gone. Their value is then “unavailable” in Home Assistant. If yours does that, switch this on: while the sun is low I count 0 W and do not warn.",
   "tip.solar_sleeps.hint": "If the sun is high and the value is still missing, I keep warning – then something really is wrong.",
   "log.limit_ref_test": "{battery}: charge limit at {value} % for a few minutes – I measure what 100 % stand for",
-  "log.limit_ref": "Reference learned: for {battery} 100 % stand for {power} kW",
-  "log.limit_ref_failed": "{battery}: reference not learned – I will try again another day",
+  "log.limit_ref": "Learned: for {battery}, 100 % stands for {power} kW",
+  "log.limit_ref_failed": "{battery}: couldn't learn what 100 % stands for – I'll try again another day",
   "log.limit_ref_failed.no_effect": "{battery}: the test limit held nothing back – I will try again another day with a smaller value",
   "log.limit_ref_failed.sun": "{battery}: clouds came during the test – I will try again another day",
   "log.limit_ref_failed.implausible": "{battery}: the measurement did not add up – I will try again another day",
@@ -3076,6 +3114,7 @@ export const en: Record<Key, string> = {
   "devices.charge.tonight": "Charge tonight",
   "devices.charge.percent": "{target} %",
   "devices.charge.km": "{target} km range plus {reserve} km reserve",
+  "devices.charge.plus_reserve": "plus {reserve} km reserve",
   "devices.charge.now_running": "Charging now to {amount} – {now} at the moment.",
   "devices.charge.tonight_set": "Charges tonight in the cheap hours to {amount}.",
   "devices.charge.tonight_window": "Charges tonight through all the cheap hours.",
@@ -3118,7 +3157,7 @@ export const en: Record<Key, string> = {
   "tip.battery_automations.hint":
     "Rather keep one? Give it the condition: Energy Joe status is neither “Steering” nor “Holding back charging” – then it stays out of the way while I work on the batteries.",
   "devices.boost.stop": "Cancel",
-  "devices.boost.reserve": "Your reserve of {reserve} km comes on top.",
+  "devices.boost.reserve": "You set the reserve on the car's page under Steering.",
   "devices.action.boost": "Charging now because you asked.",
   "devices.action.tonight": "Tonight",
   "devices.car.no_calendar": "No calendar connected",
@@ -3159,10 +3198,10 @@ export const en: Record<Key, string> = {
   "plan.tonight.charge.energy": "≈ {kwh} kWh from the grid, at up to {kw} kW",
   "plan.tonight.hold": "doesn't charge, but holds {target} % during the cheap hours",
   "plan.tonight.idle": "nothing to do tonight, now at {soc} %",
-  "log.boost": "{battery}: just charge to {target} {unit}",
-  "log.boost_end.reached": "{battery}: just charge – target reached",
-  "log.boost_end.stopped": "{battery}: just charge stopped",
-  "log.boost_end.expired": "{battery}: just charge ended after 24 hours",
+  "log.boost": "{battery}: Charge now up to {target} {unit}",
+  "log.boost_end.reached": "{battery}: Charge now – target reached",
+  "log.boost_end.stopped": "{battery}: Charge now ended",
+  "log.boost_end.expired": "{battery}: Charge now ended after 24 hours",
   "log.action_on": "{battery}: switched on ({value})",
   "log.action_off": "{battery}: put back ({value})",
   "log.action_done": "{battery}: target reached",

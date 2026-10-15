@@ -522,6 +522,93 @@ def new_car_id(config: dict[str, Any], name: str | None) -> str:
     return candidate
 
 
+def source_entry(item: dict[str, Any]) -> dict[str, Any]:
+    """What Joe found (discovery's car_sources) as a source of a car (model.CAR_SOURCE)."""
+    return {
+        "id": item["id"],
+        "kind": item.get("kind", "car"),
+        "platform": item.get("platform"),
+        "device_id": item.get("device_id"),
+        "name": item.get("name"),
+        "vehicle": item.get("vehicle"),
+        "entities": dict(item.get("entities") or {}),
+    }
+
+
+def ignored_keys(item: dict[str, Any]) -> set[str]:
+    """The keys under answers.ignored that leave a found car out."""
+    return {f"car:{item.get('device_id') or item['id']}", f"car:{item['id']}"}
+
+
+def attach_sources(
+    config: dict[str, Any], car_id: str | None, items: list[dict[str, Any]]
+) -> tuple[dict[str, Any], str]:
+    """Attach found cars (sources) to a car, or to a new one (`car_id` None).
+
+    Each source leaves the car it belonged to (that car stays, maybe without
+    any source: then its sensors are chosen by hand) and is no longer left
+    out. Its entities are filled the way the linking fills them. Entities the
+    car chose by hand that a source brings now are cleared. Returns the
+    config patch and the car's id.
+    """
+    if not items:
+        raise ValueError("no_source")
+    cars = {c["id"]: _copy_car(c) for c in config.get("cars") or []}
+    if car_id is None:
+        name = clean_name(items[0].get("name"))
+        car_id = new_car_id(config, name)
+        target: dict[str, Any] = {
+            "id": car_id,
+            "name": name or car_id,
+            "sources": [],
+            "need": {},
+        }
+        new = True
+    elif car_id in cars:
+        target, new = cars[car_id], False
+    else:
+        raise ValueError("unknown_car")
+    changed: set[str] = set()
+    for item in items:
+        source = source_entry(item)
+        old = next((s for s in target["sources"] if s["id"] == source["id"]), None)
+        for other in cars.values():
+            if other is target:
+                continue
+            kept = [s for s in other["sources"] if s["id"] != source["id"]]
+            if len(kept) != len(other["sources"]):
+                old = old or next(
+                    s for s in other["sources"] if s["id"] == source["id"]
+                )
+                other["sources"] = kept
+                changed.add(other["id"])
+        # A learned vehicle id stays.
+        source["vehicle"] = (old or {}).get("vehicle") or source["vehicle"]
+        target["sources"] = [
+            *(s for s in target["sources"] if s["id"] != source["id"]),
+            source,
+        ]
+    patch_cars: dict[str, Any] = {
+        other: {"sources": cars[other]["sources"]} for other in sorted(changed)
+    }
+    if new:
+        patch_cars[car_id] = {"name": target["name"], "sources": target["sources"]}
+    else:
+        change: dict[str, Any] = {"sources": target["sources"]}
+        owned = {
+            e for s in target["sources"] for e in (s.get("entities") or {}).values()
+        }
+        if cleared := moved_by_hand(target, owned):
+            change["need"] = cleared
+        patch_cars[car_id] = change
+    drop = set().union(*(ignored_keys(item) for item in items))
+    ignored = list((config.get("answers") or {}).get(model.IGNORED) or [])
+    patch: dict[str, Any] = {"cars": patch_cars}
+    if any(key in drop for key in ignored):
+        patch["answers"] = {model.IGNORED: [key for key in ignored if key not in drop]}
+    return patch, car_id
+
+
 def sync_cars(
     config: dict[str, Any],
     get: GetState,
@@ -560,15 +647,7 @@ def sync_cars(
     for item in sorted(found, key=lambda item: not linked(item)):
         if f"car:{item.get('device_id')}" in ignored or f"car:{item['id']}" in ignored:
             continue
-        source = {
-            "id": item["id"],
-            "kind": item.get("kind", "car"),
-            "platform": item.get("platform"),
-            "device_id": item.get("device_id"),
-            "name": item.get("name"),
-            "vehicle": item.get("vehicle"),
-            "entities": dict(item.get("entities") or {}),
-        }
+        source = source_entry(item)
         owner = next(
             (
                 c

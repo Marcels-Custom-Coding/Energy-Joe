@@ -22,9 +22,10 @@
       Aufruf über einen lokalen Webserver im Repo-Wurzelverzeichnis, z. B.
       python3 -m http.server 8767  →  http://localhost:8767/panel/dev/
       Parameter: ?dark=1  ?lang=en  ?step=welcome|scan|questions|done  ?done=1  ?page=settings  ?mode=off|advisory|live  ?sample=generic  ?audit=1  ?need=1  ?presence=0  ?climate=1
-      ?cars=merged|ask|migrated|guest (Auto & Laden, mit ?done=1: Kona aus evcc und Hyundai zusammengeführt, steckt am Carport;
+      ?cars=merged|ask|migrated|guest|deleted (Auto & Laden, mit ?done=1: Kona aus evcc und Hyundai zusammengeführt, steckt am Carport;
       am Stellplatz steckt ein Auto, das Joe nicht erkennt – er fragt. ask: zwei Autos, Joe fragt, ob sie eins sind;
-      migrated: so wie die Version 6 umgezogen ist, noch nicht verknüpft; guest: am Stellplatz ist als Gast beantwortet)
+      migrated: so wie die Version 6 umgezogen ist, noch nicht verknüpft; guest: am Stellplatz ist als Gast beantwortet;
+      deleted: Kona nur aus evcc, der Hyundai wurde mit dem Auto einmal gelöscht und ist weggelassen)
       ?remind=1 (abends: Kona braucht morgen Strom, steckt aber nicht)
       ?page=<Adresse> ohne Präfix, z. B. review/days, devices/climate/climate.buero, household/people;
       alte Werte (history, learn, climate) leiten um. Jeder Sprung im Panel schreibt die Adresse zurück in ?page=,
@@ -245,6 +246,8 @@
         evccKona,
         ...(kiaKona ? [kiaKona] : []),
         { id: "car:zoe", kind: "car", platform: "renault", device_id: "zoe", name: "ZOE", vehicle: null, entities: { soc: "sensor.zoe_battery" } },
+        // A second evcc vehicle (a guest's car evcc knows).
+        { id: "evcc:zoe_evcc", kind: "evcc", platform: "evcc_intg", device_id: "zoe_evcc", name: "Zoe", vehicle: null, entities: {} },
       ];
       if (kiaFound) kiaFound.name = "KONA";
       const linkCars = (config) => {
@@ -260,6 +263,11 @@
           car.sources = kiaKona ? [{ ...kiaKona, name: "Electric car" }] : [];
           const plain = Object.fromEntries(Object.entries(car.need).filter(([key]) => !NEED_ENTITY_FIELDS.includes(key)));
           config.cars.push({ id: "car_kona", name: "Kona", sources: [evccKona], tracker_entity: null, need: { ...plain, enabled: false }, remind: true, remind_time: "20:00" });
+        } else if (carsParam === "deleted") {
+          // The Kona was deleted once: since then Joe finds it only via evcc, the Hyundai is left out.
+          car.name = "Kona";
+          car.sources = [evccKona];
+          if (kiaKona) config.answers.ignored = [...(config.answers.ignored ?? []), `car:${kiaKona.device_id}`];
         } else {
           car.name = "Kona";
           car.sources = [evccKona, ...(kiaKona ? [kiaKona] : [])];
@@ -1243,6 +1251,32 @@
                 { cars: { [car.id]: { sources: car.sources.filter((s) => s.id !== source.id) }, [id]: { name: source.name || id, sources: [source], need: { ...structuredClone(car.need), enabled: false } } }, answers: { car_separate: separate } },
                 "user",
               );
+              push();
+              return { car: id };
+            }
+            case "energy_joe/car/attach": {
+              // As the backend (plan/cars.py attach_sources): the sources leave other cars and are no longer left out.
+              const found = msg.sources.map((sid) => sample.discovery.car_sources.find((s) => s.id === sid) ?? state.config.cars.flatMap((c) => c.sources).find((s) => s.id === sid));
+              if (!found.length || found.some((s) => !s)) throw { code: "invalid", message: "unknown_source" };
+              let id = msg.car;
+              const cars = {};
+              if (id == null) {
+                const base = `car_${(found[0].name || "auto").toLowerCase().replace(/[^a-z0-9]+/g, "_")}`;
+                id = base;
+                for (let n = 2; state.config.cars.some((c) => c.id === id); n++) id = `${base}_${n}`;
+              } else if (!state.config.cars.some((c) => c.id === id)) {
+                throw { code: "invalid", message: "unknown_car" };
+              }
+              const ids = new Set(found.map((s) => s.id));
+              for (const other of state.config.cars) {
+                if (other.id !== id && other.sources.some((s) => ids.has(s.id))) cars[other.id] = { sources: other.sources.filter((s) => !ids.has(s.id)) };
+              }
+              const target = state.config.cars.find((c) => c.id === id);
+              const sources = [...(target?.sources ?? []).filter((s) => !ids.has(s.id)), ...found.map((s) => structuredClone(s))];
+              cars[id] = target ? { sources } : { name: found[0].name || id, sources, tracker_entity: null, need: { ...structuredClone(state.config.cars[0]?.need ?? {}), enabled: false }, remind: true, remind_time: "20:00" };
+              const drop = new Set(found.flatMap((s) => [`car:${s.device_id ?? s.id}`, `car:${s.id}`]));
+              const ignored = (state.config.answers.ignored ?? []).filter((key) => !drop.has(key));
+              state.config = applyUpdate(state.config, { cars, answers: { ignored } }, "user");
               push();
               return { car: id };
             }

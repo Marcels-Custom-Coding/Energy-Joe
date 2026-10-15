@@ -58,23 +58,23 @@ var e = globalThis, t = e.ShadowRoot && (e.ShadyCSS === void 0 || e.ShadyCSS.nat
 		}
 		return n;
 	}
-}, ne = (e, t) => !l(e, t), re = {
+}, y = (e, t) => !l(e, t), ne = {
 	attribute: !0,
 	type: String,
 	converter: v,
 	reflect: !1,
 	useDefault: !1,
-	hasChanged: ne
+	hasChanged: y
 };
 Symbol.metadata ??= Symbol("metadata"), h.litPropertyMetadata ??= /* @__PURE__ */ new WeakMap();
-var y = class extends HTMLElement {
+var b = class extends HTMLElement {
 	static addInitializer(e) {
 		this._$Ei(), (this.l ??= []).push(e);
 	}
 	static get observedAttributes() {
 		return this.finalize(), this._$Eh && [...this._$Eh.keys()];
 	}
-	static createProperty(e, t = re) {
+	static createProperty(e, t = ne) {
 		if (t.state && (t.attribute = !1), this._$Ei(), this.prototype.hasOwnProperty(e) && ((t = Object.create(t)).wrapped = !0), this.elementProperties.set(e, t), !t.noAccessor) {
 			let n = Symbol(), r = this.getPropertyDescriptor(e, n, t);
 			r !== void 0 && u(this.prototype, e, r);
@@ -100,7 +100,7 @@ var y = class extends HTMLElement {
 		};
 	}
 	static getPropertyOptions(e) {
-		return this.elementProperties.get(e) ?? re;
+		return this.elementProperties.get(e) ?? ne;
 	}
 	static _$Ei() {
 		if (this.hasOwnProperty(_("elementProperties"))) return;
@@ -187,7 +187,7 @@ var y = class extends HTMLElement {
 	requestUpdate(e, t, n, r = !1, i) {
 		if (e !== void 0) {
 			let a = this.constructor;
-			if (!1 === r && (i = this[e]), n ??= a.getPropertyOptions(e), !((n.hasChanged ?? ne)(i, t) || n.useDefault && n.reflect && i === this._$Ej?.get(e) && !this.hasAttribute(a._$Eu(e, n)))) return;
+			if (!1 === r && (i = this[e]), n ??= a.getPropertyOptions(e), !((n.hasChanged ?? y)(i, t) || n.useDefault && n.reflect && i === this._$Ej?.get(e) && !this.hasAttribute(a._$Eu(e, n)))) return;
 			this.C(e, t, n);
 		}
 		!1 === this.isUpdatePending && (this._$ES = this._$EP());
@@ -251,89 +251,89 @@ var y = class extends HTMLElement {
 	updated(e) {}
 	firstUpdated(e) {}
 };
-y.elementStyles = [], y.shadowRootOptions = { mode: "open" }, y[_("elementProperties")] = /* @__PURE__ */ new Map(), y[_("finalized")] = /* @__PURE__ */ new Map(), te?.({ ReactiveElement: y }), (h.reactiveElementVersions ??= []).push("2.1.2");
+b.elementStyles = [], b.shadowRootOptions = { mode: "open" }, b[_("elementProperties")] = /* @__PURE__ */ new Map(), b[_("finalized")] = /* @__PURE__ */ new Map(), te?.({ ReactiveElement: b }), (h.reactiveElementVersions ??= []).push("2.1.2");
 //#endregion
 //#region node_modules/lit-html/lit-html.js
-var ie = globalThis, ae = (e) => e, b = ie.trustedTypes, oe = b ? b.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, x = "$lit$", S = `lit$${Math.random().toFixed(9).slice(2)}$`, C = "?" + S, se = `<${C}>`, w = document, T = () => w.createComment(""), E = (e) => e === null || typeof e != "object" && typeof e != "function", ce = Array.isArray, le = (e) => ce(e) || typeof e?.[Symbol.iterator] == "function", ue = "[ 	\n\f\r]", D = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, de = /-->/g, fe = />/g, O = RegExp(`>|${ue}(?:([^\\s"'>=/]+)(${ue}*=${ue}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`, "g"), pe = /'/g, me = /"/g, he = /^(?:script|style|textarea|title)$/i, ge = (e) => (t, ...n) => ({
+var x = globalThis, re = (e) => e, S = x.trustedTypes, ie = S ? S.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, C = "$lit$", w = `lit$${Math.random().toFixed(9).slice(2)}$`, ae = "?" + w, oe = `<${ae}>`, T = document, E = () => T.createComment(""), D = (e) => e === null || typeof e != "object" && typeof e != "function", se = Array.isArray, ce = (e) => se(e) || typeof e?.[Symbol.iterator] == "function", le = "[ 	\n\f\r]", O = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, ue = /-->/g, de = />/g, k = RegExp(`>|${le}(?:([^\\s"'>=/]+)(${le}*=${le}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`, "g"), fe = /'/g, pe = /"/g, me = /^(?:script|style|textarea|title)$/i, he = (e) => (t, ...n) => ({
 	_$litType$: e,
 	strings: t,
 	values: n
-}), k = ge(1), _e = ge(2), A = Symbol.for("lit-noChange"), j = Symbol.for("lit-nothing"), ve = /* @__PURE__ */ new WeakMap(), M = w.createTreeWalker(w, 129);
-function ye(e, t) {
-	if (!ce(e) || !e.hasOwnProperty("raw")) throw Error("invalid template strings array");
-	return oe === void 0 ? t : oe.createHTML(t);
+}), A = he(1), ge = he(2), j = Symbol.for("lit-noChange"), M = Symbol.for("lit-nothing"), _e = /* @__PURE__ */ new WeakMap(), N = T.createTreeWalker(T, 129);
+function ve(e, t) {
+	if (!se(e) || !e.hasOwnProperty("raw")) throw Error("invalid template strings array");
+	return ie === void 0 ? t : ie.createHTML(t);
 }
-var be = (e, t) => {
-	let n = e.length - 1, r = [], i, a = t === 2 ? "<svg>" : t === 3 ? "<math>" : "", o = D;
+var ye = (e, t) => {
+	let n = e.length - 1, r = [], i, a = t === 2 ? "<svg>" : t === 3 ? "<math>" : "", o = O;
 	for (let t = 0; t < n; t++) {
 		let n = e[t], s, c, l = -1, u = 0;
-		for (; u < n.length && (o.lastIndex = u, c = o.exec(n), c !== null);) u = o.lastIndex, o === D ? c[1] === "!--" ? o = de : c[1] === void 0 ? c[2] === void 0 ? c[3] !== void 0 && (o = O) : (he.test(c[2]) && (i = RegExp("</" + c[2], "g")), o = O) : o = fe : o === O ? c[0] === ">" ? (o = i ?? D, l = -1) : c[1] === void 0 ? l = -2 : (l = o.lastIndex - c[2].length, s = c[1], o = c[3] === void 0 ? O : c[3] === "\"" ? me : pe) : o === me || o === pe ? o = O : o === de || o === fe ? o = D : (o = O, i = void 0);
-		let d = o === O && e[t + 1].startsWith("/>") ? " " : "";
-		a += o === D ? n + se : l >= 0 ? (r.push(s), n.slice(0, l) + x + n.slice(l) + S + d) : n + S + (l === -2 ? t : d);
+		for (; u < n.length && (o.lastIndex = u, c = o.exec(n), c !== null);) u = o.lastIndex, o === O ? c[1] === "!--" ? o = ue : c[1] === void 0 ? c[2] === void 0 ? c[3] !== void 0 && (o = k) : (me.test(c[2]) && (i = RegExp("</" + c[2], "g")), o = k) : o = de : o === k ? c[0] === ">" ? (o = i ?? O, l = -1) : c[1] === void 0 ? l = -2 : (l = o.lastIndex - c[2].length, s = c[1], o = c[3] === void 0 ? k : c[3] === "\"" ? pe : fe) : o === pe || o === fe ? o = k : o === ue || o === de ? o = O : (o = k, i = void 0);
+		let d = o === k && e[t + 1].startsWith("/>") ? " " : "";
+		a += o === O ? n + oe : l >= 0 ? (r.push(s), n.slice(0, l) + C + n.slice(l) + w + d) : n + w + (l === -2 ? t : d);
 	}
-	return [ye(e, a + (e[n] || "<?>") + (t === 2 ? "</svg>" : t === 3 ? "</math>" : "")), r];
-}, N = class e {
+	return [ve(e, a + (e[n] || "<?>") + (t === 2 ? "</svg>" : t === 3 ? "</math>" : "")), r];
+}, P = class e {
 	constructor({ strings: t, _$litType$: n }, r) {
 		let i;
 		this.parts = [];
-		let a = 0, o = 0, s = t.length - 1, c = this.parts, [l, u] = be(t, n);
-		if (this.el = e.createElement(l, r), M.currentNode = this.el.content, n === 2 || n === 3) {
+		let a = 0, o = 0, s = t.length - 1, c = this.parts, [l, u] = ye(t, n);
+		if (this.el = e.createElement(l, r), N.currentNode = this.el.content, n === 2 || n === 3) {
 			let e = this.el.content.firstChild;
 			e.replaceWith(...e.childNodes);
 		}
-		for (; (i = M.nextNode()) !== null && c.length < s;) {
+		for (; (i = N.nextNode()) !== null && c.length < s;) {
 			if (i.nodeType === 1) {
-				if (i.hasAttributes()) for (let e of i.getAttributeNames()) if (e.endsWith(x)) {
-					let t = u[o++], n = i.getAttribute(e).split(S), r = /([.?@])?(.*)/.exec(t);
+				if (i.hasAttributes()) for (let e of i.getAttributeNames()) if (e.endsWith(C)) {
+					let t = u[o++], n = i.getAttribute(e).split(w), r = /([.?@])?(.*)/.exec(t);
 					c.push({
 						type: 1,
 						index: a,
 						name: r[2],
 						strings: n,
-						ctor: r[1] === "." ? Se : r[1] === "?" ? Ce : r[1] === "@" ? we : I
+						ctor: r[1] === "." ? xe : r[1] === "?" ? Se : r[1] === "@" ? Ce : L
 					}), i.removeAttribute(e);
-				} else e.startsWith(S) && (c.push({
+				} else e.startsWith(w) && (c.push({
 					type: 6,
 					index: a
 				}), i.removeAttribute(e));
-				if (he.test(i.tagName)) {
-					let e = i.textContent.split(S), t = e.length - 1;
+				if (me.test(i.tagName)) {
+					let e = i.textContent.split(w), t = e.length - 1;
 					if (t > 0) {
-						i.textContent = b ? b.emptyScript : "";
-						for (let n = 0; n < t; n++) i.append(e[n], T()), M.nextNode(), c.push({
+						i.textContent = S ? S.emptyScript : "";
+						for (let n = 0; n < t; n++) i.append(e[n], E()), N.nextNode(), c.push({
 							type: 2,
 							index: ++a
 						});
-						i.append(e[t], T());
+						i.append(e[t], E());
 					}
 				}
 			} else if (i.nodeType === 8) {
-				if (i.data === C) c.push({
+				if (i.data === ae) c.push({
 					type: 2,
 					index: a
 				});
 				else {
 					let e = -1;
-					for (; (e = i.data.indexOf(S, e + 1)) !== -1;) c.push({
+					for (; (e = i.data.indexOf(w, e + 1)) !== -1;) c.push({
 						type: 7,
 						index: a
-					}), e += S.length - 1;
+					}), e += w.length - 1;
 				}
 			}
 			a++;
 		}
 	}
 	static createElement(e, t) {
-		let n = w.createElement("template");
+		let n = T.createElement("template");
 		return n.innerHTML = e, n;
 	}
 };
-function P(e, t, n = e, r) {
-	if (t === A) return t;
-	let i = r === void 0 ? n._$Cl : n._$Co?.[r], a = E(t) ? void 0 : t._$litDirective$;
-	return i?.constructor !== a && (i?._$AO?.(!1), a === void 0 ? i = void 0 : (i = new a(e), i._$AT(e, n, r)), r === void 0 ? n._$Cl = i : (n._$Co ??= [])[r] = i), i !== void 0 && (t = P(e, i._$AS(e, t.values), i, r)), t;
+function F(e, t, n = e, r) {
+	if (t === j) return t;
+	let i = r === void 0 ? n._$Cl : n._$Co?.[r], a = D(t) ? void 0 : t._$litDirective$;
+	return i?.constructor !== a && (i?._$AO?.(!1), a === void 0 ? i = void 0 : (i = new a(e), i._$AT(e, n, r)), r === void 0 ? n._$Cl = i : (n._$Co ??= [])[r] = i), i !== void 0 && (t = F(e, i._$AS(e, t.values), i, r)), t;
 }
-var xe = class {
+var be = class {
 	constructor(e, t) {
 		this._$AV = [], this._$AN = void 0, this._$AD = e, this._$AM = t;
 	}
@@ -344,28 +344,28 @@ var xe = class {
 		return this._$AM._$AU;
 	}
 	u(e) {
-		let { el: { content: t }, parts: n } = this._$AD, r = (e?.creationScope ?? w).importNode(t, !0);
-		M.currentNode = r;
-		let i = M.nextNode(), a = 0, o = 0, s = n[0];
+		let { el: { content: t }, parts: n } = this._$AD, r = (e?.creationScope ?? T).importNode(t, !0);
+		N.currentNode = r;
+		let i = N.nextNode(), a = 0, o = 0, s = n[0];
 		for (; s !== void 0;) {
 			if (a === s.index) {
 				let t;
-				s.type === 2 ? t = new F(i, i.nextSibling, this, e) : s.type === 1 ? t = new s.ctor(i, s.name, s.strings, this, e) : s.type === 6 && (t = new Te(i, this, e)), this._$AV.push(t), s = n[++o];
+				s.type === 2 ? t = new I(i, i.nextSibling, this, e) : s.type === 1 ? t = new s.ctor(i, s.name, s.strings, this, e) : s.type === 6 && (t = new we(i, this, e)), this._$AV.push(t), s = n[++o];
 			}
-			a !== s?.index && (i = M.nextNode(), a++);
+			a !== s?.index && (i = N.nextNode(), a++);
 		}
-		return M.currentNode = w, r;
+		return N.currentNode = T, r;
 	}
 	p(e) {
 		let t = 0;
 		for (let n of this._$AV) n !== void 0 && (n.strings === void 0 ? n._$AI(e[t]) : (n._$AI(e, n, t), t += n.strings.length - 2)), t++;
 	}
-}, F = class e {
+}, I = class e {
 	get _$AU() {
 		return this._$AM?._$AU ?? this._$Cv;
 	}
 	constructor(e, t, n, r) {
-		this.type = 2, this._$AH = j, this._$AN = void 0, this._$AA = e, this._$AB = t, this._$AM = n, this.options = r, this._$Cv = r?.isConnected ?? !0;
+		this.type = 2, this._$AH = M, this._$AN = void 0, this._$AA = e, this._$AB = t, this._$AM = n, this.options = r, this._$Cv = r?.isConnected ?? !0;
 	}
 	get parentNode() {
 		let e = this._$AA.parentNode, t = this._$AM;
@@ -378,7 +378,7 @@ var xe = class {
 		return this._$AB;
 	}
 	_$AI(e, t = this) {
-		e = P(this, e, t), E(e) ? e === j || e == null || e === "" ? (this._$AH !== j && this._$AR(), this._$AH = j) : e !== this._$AH && e !== A && this._(e) : e._$litType$ === void 0 ? e.nodeType === void 0 ? le(e) ? this.k(e) : this._(e) : this.T(e) : this.$(e);
+		e = F(this, e, t), D(e) ? e === M || e == null || e === "" ? (this._$AH !== M && this._$AR(), this._$AH = M) : e !== this._$AH && e !== j && this._(e) : e._$litType$ === void 0 ? e.nodeType === void 0 ? ce(e) ? this.k(e) : this._(e) : this.T(e) : this.$(e);
 	}
 	O(e) {
 		return this._$AA.parentNode.insertBefore(e, this._$AB);
@@ -387,36 +387,36 @@ var xe = class {
 		this._$AH !== e && (this._$AR(), this._$AH = this.O(e));
 	}
 	_(e) {
-		this._$AH !== j && E(this._$AH) ? this._$AA.nextSibling.data = e : this.T(w.createTextNode(e)), this._$AH = e;
+		this._$AH !== M && D(this._$AH) ? this._$AA.nextSibling.data = e : this.T(T.createTextNode(e)), this._$AH = e;
 	}
 	$(e) {
-		let { values: t, _$litType$: n } = e, r = typeof n == "number" ? this._$AC(e) : (n.el === void 0 && (n.el = N.createElement(ye(n.h, n.h[0]), this.options)), n);
+		let { values: t, _$litType$: n } = e, r = typeof n == "number" ? this._$AC(e) : (n.el === void 0 && (n.el = P.createElement(ve(n.h, n.h[0]), this.options)), n);
 		if (this._$AH?._$AD === r) this._$AH.p(t);
 		else {
-			let e = new xe(r, this), n = e.u(this.options);
+			let e = new be(r, this), n = e.u(this.options);
 			e.p(t), this.T(n), this._$AH = e;
 		}
 	}
 	_$AC(e) {
-		let t = ve.get(e.strings);
-		return t === void 0 && ve.set(e.strings, t = new N(e)), t;
+		let t = _e.get(e.strings);
+		return t === void 0 && _e.set(e.strings, t = new P(e)), t;
 	}
 	k(t) {
-		ce(this._$AH) || (this._$AH = [], this._$AR());
+		se(this._$AH) || (this._$AH = [], this._$AR());
 		let n = this._$AH, r, i = 0;
-		for (let a of t) i === n.length ? n.push(r = new e(this.O(T()), this.O(T()), this, this.options)) : r = n[i], r._$AI(a), i++;
+		for (let a of t) i === n.length ? n.push(r = new e(this.O(E()), this.O(E()), this, this.options)) : r = n[i], r._$AI(a), i++;
 		i < n.length && (this._$AR(r && r._$AB.nextSibling, i), n.length = i);
 	}
 	_$AR(e = this._$AA.nextSibling, t) {
 		for (this._$AP?.(!1, !0, t); e !== this._$AB;) {
-			let t = ae(e).nextSibling;
-			ae(e).remove(), e = t;
+			let t = re(e).nextSibling;
+			re(e).remove(), e = t;
 		}
 	}
 	setConnected(e) {
 		this._$AM === void 0 && (this._$Cv = e, this._$AP?.(e));
 	}
-}, I = class {
+}, L = class {
 	get tagName() {
 		return this.element.tagName;
 	}
@@ -424,47 +424,47 @@ var xe = class {
 		return this._$AM._$AU;
 	}
 	constructor(e, t, n, r, i) {
-		this.type = 1, this._$AH = j, this._$AN = void 0, this.element = e, this.name = t, this._$AM = r, this.options = i, n.length > 2 || n[0] !== "" || n[1] !== "" ? (this._$AH = Array(n.length - 1).fill(/* @__PURE__ */ new String()), this.strings = n) : this._$AH = j;
+		this.type = 1, this._$AH = M, this._$AN = void 0, this.element = e, this.name = t, this._$AM = r, this.options = i, n.length > 2 || n[0] !== "" || n[1] !== "" ? (this._$AH = Array(n.length - 1).fill(/* @__PURE__ */ new String()), this.strings = n) : this._$AH = M;
 	}
 	_$AI(e, t = this, n, r) {
 		let i = this.strings, a = !1;
-		if (i === void 0) e = P(this, e, t, 0), a = !E(e) || e !== this._$AH && e !== A, a && (this._$AH = e);
+		if (i === void 0) e = F(this, e, t, 0), a = !D(e) || e !== this._$AH && e !== j, a && (this._$AH = e);
 		else {
 			let r = e, o, s;
-			for (e = i[0], o = 0; o < i.length - 1; o++) s = P(this, r[n + o], t, o), s === A && (s = this._$AH[o]), a ||= !E(s) || s !== this._$AH[o], s === j ? e = j : e !== j && (e += (s ?? "") + i[o + 1]), this._$AH[o] = s;
+			for (e = i[0], o = 0; o < i.length - 1; o++) s = F(this, r[n + o], t, o), s === j && (s = this._$AH[o]), a ||= !D(s) || s !== this._$AH[o], s === M ? e = M : e !== M && (e += (s ?? "") + i[o + 1]), this._$AH[o] = s;
 		}
 		a && !r && this.j(e);
 	}
 	j(e) {
-		e === j ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, e ?? "");
+		e === M ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, e ?? "");
 	}
-}, Se = class extends I {
+}, xe = class extends L {
 	constructor() {
 		super(...arguments), this.type = 3;
 	}
 	j(e) {
-		this.element[this.name] = e === j ? void 0 : e;
+		this.element[this.name] = e === M ? void 0 : e;
 	}
-}, Ce = class extends I {
+}, Se = class extends L {
 	constructor() {
 		super(...arguments), this.type = 4;
 	}
 	j(e) {
-		this.element.toggleAttribute(this.name, !!e && e !== j);
+		this.element.toggleAttribute(this.name, !!e && e !== M);
 	}
-}, we = class extends I {
+}, Ce = class extends L {
 	constructor(e, t, n, r, i) {
 		super(e, t, n, r, i), this.type = 5;
 	}
 	_$AI(e, t = this) {
-		if ((e = P(this, e, t, 0) ?? j) === A) return;
-		let n = this._$AH, r = e === j && n !== j || e.capture !== n.capture || e.once !== n.once || e.passive !== n.passive, i = e !== j && (n === j || r);
+		if ((e = F(this, e, t, 0) ?? M) === j) return;
+		let n = this._$AH, r = e === M && n !== M || e.capture !== n.capture || e.once !== n.once || e.passive !== n.passive, i = e !== M && (n === M || r);
 		r && this.element.removeEventListener(this.name, this, n), i && this.element.addEventListener(this.name, this, e), this._$AH = e;
 	}
 	handleEvent(e) {
 		typeof this._$AH == "function" ? this._$AH.call(this.options?.host ?? this.element, e) : this._$AH.handleEvent(e);
 	}
-}, Te = class {
+}, we = class {
 	constructor(e, t, n) {
 		this.element = e, this.type = 6, this._$AN = void 0, this._$AM = t, this.options = n;
 	}
@@ -472,33 +472,33 @@ var xe = class {
 		return this._$AM._$AU;
 	}
 	_$AI(e) {
-		P(this, e);
+		F(this, e);
 	}
-}, Ee = {
-	M: x,
-	P: S,
-	A: C,
+}, Te = {
+	M: C,
+	P: w,
+	A: ae,
 	C: 1,
-	L: be,
-	R: xe,
-	D: le,
-	V: P,
-	I: F,
-	H: I,
-	N: Ce,
-	U: we,
-	B: Se,
-	F: Te
-}, De = ie.litHtmlPolyfillSupport;
-De?.(N, F), (ie.litHtmlVersions ??= []).push("3.3.3");
-var Oe = (e, t, n) => {
+	L: ye,
+	R: be,
+	D: ce,
+	V: F,
+	I,
+	H: L,
+	N: Se,
+	U: Ce,
+	B: xe,
+	F: we
+}, Ee = x.litHtmlPolyfillSupport;
+Ee?.(P, I), (x.litHtmlVersions ??= []).push("3.3.3");
+var De = (e, t, n) => {
 	let r = n?.renderBefore ?? t, i = r._$litPart$;
 	if (i === void 0) {
 		let e = n?.renderBefore ?? null;
-		r._$litPart$ = i = new F(t.insertBefore(T(), e), e, void 0, n ?? {});
+		r._$litPart$ = i = new I(t.insertBefore(E(), e), e, void 0, n ?? {});
 	}
 	return i._$AI(e), i;
-}, L = globalThis, R = class extends y {
+}, R = globalThis, z = class extends b {
 	constructor() {
 		super(...arguments), this.renderOptions = { host: this }, this._$Do = void 0;
 	}
@@ -508,7 +508,7 @@ var Oe = (e, t, n) => {
 	}
 	update(e) {
 		let t = this.render();
-		this.hasUpdated || (this.renderOptions.isConnected = this.isConnected), super.update(e), this._$Do = Oe(t, this.renderRoot, this.renderOptions);
+		this.hasUpdated || (this.renderOptions.isConnected = this.isConnected), super.update(e), this._$Do = De(t, this.renderRoot, this.renderOptions);
 	}
 	connectedCallback() {
 		super.connectedCallback(), this._$Do?.setConnected(!0);
@@ -517,21 +517,21 @@ var Oe = (e, t, n) => {
 		super.disconnectedCallback(), this._$Do?.setConnected(!1);
 	}
 	render() {
-		return A;
+		return j;
 	}
 };
-R._$litElement$ = !0, R.finalized = !0, L.litElementHydrateSupport?.({ LitElement: R });
-var ke = L.litElementPolyfillSupport;
-ke?.({ LitElement: R }), (L.litElementVersions ??= []).push("4.2.2");
+z._$litElement$ = !0, z.finalized = !0, R.litElementHydrateSupport?.({ LitElement: z });
+var Oe = R.litElementPolyfillSupport;
+Oe?.({ LitElement: z }), (R.litElementVersions ??= []).push("4.2.2");
 //#endregion
 //#region node_modules/@lit/reactive-element/decorators/property.js
-var Ae = {
+var ke = {
 	attribute: !0,
 	type: String,
 	converter: v,
 	reflect: !1,
-	hasChanged: ne
-}, je = (e = Ae, t, n) => {
+	hasChanged: y
+}, Ae = (e = ke, t, n) => {
 	let { kind: r, metadata: i } = n, a = globalThis.litPropertyMetadata.get(i);
 	if (a === void 0 && globalThis.litPropertyMetadata.set(i, a = /* @__PURE__ */ new Map()), r === "setter" && ((e = Object.create(e)).wrapped = !0), a.set(n.name, e), r === "accessor") {
 		let { name: r } = n;
@@ -554,16 +554,16 @@ var Ae = {
 	}
 	throw Error("Unsupported decorator location: " + r);
 };
-function z(e) {
-	return (t, n) => typeof n == "object" ? je(e, t, n) : ((e, t, n) => {
+function B(e) {
+	return (t, n) => typeof n == "object" ? Ae(e, t, n) : ((e, t, n) => {
 		let r = t.hasOwnProperty(n);
 		return t.constructor.createProperty(n, e), r ? Object.getOwnPropertyDescriptor(t, n) : void 0;
 	})(e, t, n);
 }
 //#endregion
 //#region node_modules/@lit/reactive-element/decorators/state.js
-function B(e) {
-	return z({
+function V(e) {
+	return B({
 		...e,
 		state: !0,
 		attribute: !1
@@ -571,10 +571,10 @@ function B(e) {
 }
 //#endregion
 //#region node_modules/@lit/reactive-element/decorators/base.js
-var Me = (e, t, n) => (n.configurable = !0, n.enumerable = !0, Reflect.decorate && typeof t != "object" && Object.defineProperty(e, t, n), n);
+var je = (e, t, n) => (n.configurable = !0, n.enumerable = !0, Reflect.decorate && typeof t != "object" && Object.defineProperty(e, t, n), n);
 //#endregion
 //#region node_modules/@lit/reactive-element/decorators/query.js
-function Ne(e, t) {
+function Me(e, t) {
 	return (n, r, i) => {
 		let a = (t) => t.renderRoot?.querySelector(e) ?? null;
 		if (t) {
@@ -589,19 +589,19 @@ function Ne(e, t) {
 					}
 				};
 			})();
-			return Me(n, r, { get() {
+			return je(n, r, { get() {
 				let n = e.call(this);
 				return n === void 0 && (n = a(this), (n !== null || this.hasUpdated) && t.call(this, n)), n;
 			} });
 		}
-		return Me(n, r, { get() {
+		return je(n, r, { get() {
 			return a(this);
 		} });
 	};
 }
 //#endregion
 //#region src/i18n/de.ts
-var Pe = {
+var Ne = {
 	"tab.overview": "Übersicht",
 	"tab.plan": "Plan",
 	"tab.review": "Rückblick",
@@ -635,7 +635,7 @@ var Pe = {
 	"climate.route_eta": "Fahrzeit über den Routendienst",
 	"climate.now.arriving_usual": "Jetzt: gleich ist die übliche Heimkehrzeit – ich fahre schon hoch.",
 	"tip.climate_route_eta.title": "Wie weiß Joe, wann jemand heimkommt?",
-	"tip.climate_route_eta.text": "Zwei Wege: 1. Kommt jemand näher (Integration „Nähe“), frage ich den Routendienst (Haushalt › Unterwegs & Wetter: OpenStreetMap, Waze oder Google), wie lange die Fahrt noch dauert – mit Stau, wo der Dienst ihn kennt. Dafür geht die Position der Person, auf etwa 100 m gerundet, an diesen Dienst. Schaltest du das aus, rechne ich mit 40 km/h. 2. Ich merke mir, wann ihr an Arbeits- und freien Tagen meist heimkommt, und fahre die Räume zu dieser Zeit schon vorher hoch. Wer zu einer ganz anderen Zeit nur in der Nähe vorbeifährt, zählt erst, wenn er stetig näher kommt.",
+	"tip.climate_route_eta.text": "Ich nutze zwei Wege.\n**1. Wer näher kommt:** Mit der Integration „Nähe“ frage ich den Routendienst (Haushalt › Unterwegs & Wetter: OpenStreetMap, Waze oder Google), wie lange die Fahrt noch dauert – mit Stau, wo der Dienst ihn kennt. Dafür geht die Position der Person, auf etwa 100 m gerundet, an diesen Dienst. Schaltest du das aus, rechne ich mit 40 km/h.\n**2. Eure übliche Zeit:** Ich merke mir, wann ihr an Arbeits- und freien Tagen meist heimkommt, und fahre die Räume schon vorher hoch. Wer nur zu einer ganz anderen Zeit in der Nähe vorbeifährt, zählt erst, wenn er stetig näher kommt.",
 	"tip.climate_route_eta.hint": "Die übliche Zeit kenne ich nach 4 Heimkehren an solchen Tagen, und nur, wenn sie nicht mehr als 45 Minuten schwankt.",
 	"climate.no_proximity": "Damit ich rechtzeitig vorheize, wenn jemand heimkommt, brauche ich die Integration „Nähe“ (Proximity) für eure Personen.",
 	"climate.add_proximity": "Nähe einrichten",
@@ -663,7 +663,7 @@ var Pe = {
 	"household.guest.automation": "Gastmodus → Tracker „Gast“",
 	"household.guest.automation_text": "Angelegt von Energy Joe: {tracker} folgt dem Schalter {guest} (an = home, aus = not_home), damit die Anwesenheitsgruppe bei home/not_home bleibt.",
 	"tip.household_guest.title": "Wie funktioniert der Gastmodus?",
-	"tip.household_guest.text": "Ich lege drei normale Dinge in Home Assistant an: den Schalter „Gastmodus“, einen Geräte-Tracker „Gast“ und eine Automation, die den Tracker dem Schalter folgen lässt (an = zu Hause, aus = weg). Der Tracker ist ein Mitglied deiner Anwesenheitsgruppe – wie eine Person. Ein Schalter direkt in der Gruppe würde ihren Zustand auf an/aus ändern, und Automationen, die auf „home“ prüfen, liefen nicht mehr.",
+	"tip.household_guest.text": "Ich lege drei ganz normale Bausteine in Home Assistant an: den Schalter „Gastmodus“, einen Geräte-Tracker „Gast“ und eine Automation, die den Tracker dem Schalter folgen lässt (an = zu Hause, aus = weg). Der Tracker gehört zu deiner Anwesenheitsgruppe, wie eine Person. Läge der Schalter selbst in der Gruppe, hätte sie nur noch den Zustand an/aus – und Automationen, die auf „home“ prüfen, würden nicht mehr greifen.",
 	"tip.household_guest.hint": "Alles funktioniert auch ohne mich. Schalte den Gastmodus wieder aus, wenn der Besuch geht.",
 	"household.presence.create": "Helfer anlegen",
 	"household.presence.creating": "Lege an …",
@@ -744,7 +744,7 @@ var Pe = {
 	"climate.open_device": "Gerät in Home Assistant öffnen ({id})",
 	"climate.open_meter": "Messgerät in Home Assistant öffnen",
 	"pick.night.title": "Was sagt dir, dass ihr im Bett seid?",
-	"tip.climate_night.text": "Die Klimaanlage geht nachts aus und so früh wieder an, dass es zur eingestellten Morgen-Zeit wieder angenehm ist. Woran ich die Nacht erkenne – feste Uhrzeit oder eine Entität –, stellst du unter Haushalt › Nachtruhe ein. Wie lange der Raum zum Abkühlen braucht, lerne ich mit der Zeit.",
+	"tip.climate_night.text": "Nachts schalte ich die Klimaanlage aus und rechtzeitig vor deiner Morgenzeit wieder an, damit es dann angenehm ist. Woran ich die Nacht erkenne – feste Uhrzeit oder eine Entität –, stellst du unter Haushalt › Nachtruhe ein. Wie lange der Raum zum Abkühlen braucht, lerne ich mit der Zeit.",
 	"tip.climate_night_source.title": "Woran erkennt Joe die Nacht?",
 	"tip.climate_night_source.text": "„An festen Uhrzeiten“: jede Klimaanlage hat ihre Zeit von – bis. „An einer Entität“: Nacht ist, solange die gewählte Entität „an“ ist – etwa ein Helfer (input_boolean), den deine Gute-Nacht-Routine einschaltet und morgens wieder aus, ein Bettsensor oder ein Zeitplan.",
 	"tip.climate_night_source.hint": "Auch mit Entität fahre ich die Räume rechtzeitig zur Morgen-Zeit wieder hoch, falls morgens niemand ausschaltet.",
@@ -813,7 +813,7 @@ var Pe = {
 	"week.pending.start": "Die Wochenprofile übernehmen, sobald die laufende Nacht oder Abwesenheit vorbei ist – bis dahin bleibt alles, wie es ist.",
 	"week.pending.end": "Die Wochenprofile laufen noch bis zum Ende der Nacht bzw. Abwesenheit, dann gebe ich ab.",
 	"devprof.pending.start": "Die Haken wirken, sobald die laufende Abwesenheit oder der freie Tag vorbei ist – bis dahin bleibt alles, wie es ist.",
-	"devprof.pending.end": "Das Abwesenheitsprogramm läuft noch, bis jemand heimkommt; dann stelle ich das normale Programm ein und gebe ab.",
+	"devprof.pending.end": "Das Abwesenheitsprogramm läuft noch, bis jemand heimkommt. Dann stelle ich das normale Programm ein und überlasse das Gerät wieder sich selbst.",
 	"week.legacy_now": "Die Klimaanlage steht gerade auf „{state}“ – dafür gibt es keine Profile, also gilt die Einstellung darunter.",
 	"climate.hvac.off": "Aus",
 	"climate.hvac.heat": "Heizen",
@@ -991,7 +991,7 @@ var Pe = {
 	"past.learned.presence.usual": "kommt an Tagen wie heute meist gegen {time} heim",
 	"past.learned.presence.no_calendar": "Ohne Kalender weiß ich nicht, was für ein Tag für diese Person ansteht.",
 	"past.learned.climate": "Heizung & Klima",
-	"past.learned.climate.say": "So schnell wird ein Raum wieder warm (beim Kühlen: kühl), wenn ich ihn nach dem Absenken zurückstelle. Danach richte ich, wie früh ich anfange.",
+	"past.learned.climate.say": "So schnell wird ein Raum wieder warm (beim Kühlen: kühl), wenn ich ihn nach dem Absenken zurückstelle. Daran sehe ich, wie früh ich anfangen muss.",
 	"past.learned.climate.rate": "{rate} °C pro Stunde",
 	"past.learned.climate.none": "Sobald ich Heizung oder Klima steuere, lerne ich hier, wie schnell jeder Raum warm oder kühl wird.",
 	"past.learned.climate.open": "Zu Heizung & Klima →",
@@ -1189,7 +1189,7 @@ var Pe = {
 	"onb.scan.energy.none": "Ein Energie-Dashboard habe ich nicht gefunden. Kein Problem – ich suche auch so nach deinen Geräten.",
 	"scan.looking": "Ich schau mich um …",
 	"scan.title": "Das hab ich |gefunden",
-	"scan.lead": "Das nehme ich ab jetzt. Passt etwas nicht, ändere es oder lass es weg – was du einstellst, überschreibe ich nie.",
+	"scan.lead": "Damit arbeite ich ab jetzt. Passt etwas nicht, ändere es oder lass es weg – was du einstellst, überschreibe ich nie.",
 	"scan.again": "Nochmal suchen",
 	"scan.why": "Warum?",
 	"scan.failed": "Beim Umschauen ist etwas schiefgegangen. Versuch es nochmal.",
@@ -1387,7 +1387,7 @@ var Pe = {
 	"review.home.flexible": "Für den Speicher rechne ich heraus: {names}. Das Auto lade ich nie aus dem Hausspeicher.",
 	"review.home.flexible_some": "Für den Speicher rechne ich heraus: {names}.",
 	"review.home.flexible_none": "Laufen bei dir Geräte nur mit Sonnenüberschuss oder günstigem Strom? Sag es mir unter Geräte › Weitere Geräte – dann plane ich den Speicher ohne sie.",
-	"review.home.off": "Dein Sensor zeigt in den letzten {days} Tagen {pct} % {direction} als Netz + PV ± Speicher. Fehlt darin vielleicht eine kleine PV-Anlage? Ich rechne mit Netz + PV ± Speicher.",
+	"review.home.off": "In den letzten {days} Tagen zeigt dein Sensor {pct} % {direction} als Netz + PV ± Speicher. Fehlt darin vielleicht eine kleine PV-Anlage? Ich rechne mit Netz + PV ± Speicher.",
 	"review.home.less": "weniger",
 	"review.home.more": "mehr",
 	"review.home.none": "Kennst du keinen? Kein Problem – dann rechne ich den Hausverbrauch aus Netz, PV und Speicher selbst aus.",
@@ -1401,7 +1401,7 @@ var Pe = {
 	"pick.suggested": "Joe schlägt vor",
 	"pick.fitting": "Passende",
 	"pick.all": "Alle Entitäten",
-	"pick.empty": "Hier passt nichts. Schalte unten „Alle zeigen“ ein oder such nach einem anderen Wort.",
+	"pick.empty": "Hier passt nichts. Tipp unten auf „Alle zeigen“ oder such nach einem anderen Wort.",
 	"pick.more": "{count} weitere zeigen",
 	"pick.show_all": "Alle zeigen",
 	"pick.apply": "Übernehmen",
@@ -1572,7 +1572,7 @@ var Pe = {
 	"household.night.lead": "Nachtruhe heißt: Ihr liegt im Bett. Geräte mit „Nachts aus“ schalten dann ab und sind morgens rechtzeitig wieder angenehm.",
 	"household.night.source": "So erkenne ich die Nacht",
 	"household.night.devices": "Geräte mit „Nachts aus“",
-	"household.night.devices.none": "Noch hat kein Gerät „Nachts aus“ eingeschaltet. Das stellst du am Gerät unter Heizung & Klima ein.",
+	"household.night.devices.none": "Noch hat kein Gerät „Nachts aus“ eingeschaltet. Das stellst du am Gerät unter Geräte › Heizung & Klima ein.",
 	"household.night.span": "{from}–{until} Uhr",
 	"household.night.until": "spätestens um {until} Uhr wieder angenehm",
 	"household.night.not_steered": "steuere ich gerade nicht",
@@ -1640,7 +1640,7 @@ var Pe = {
 	"rule.day_surplus": "Tagsüber Überschuss abgeben",
 	"rule.day_surplus.hint": "An sonnigen Tagen laden die Speicher nur so schnell, wie sie müssen – der Rest der Sonne bleibt für evcc (z. B. Auto oder Fußbodenheizung im PV-Modus).",
 	"tip.r_day_surplus.title": "Was heißt „Tagsüber Überschuss abgeben“?",
-	"tip.r_day_surplus.text": "Normalerweise schlucken die Speicher morgens die ganze Sonne und sind mittags voll. Erst dann sieht evcc Überschuss. Ist der Schalter an, drossle ich das Laden der Speicher: Sie laden gerade so schnell, dass sie trotzdem voll sind, bevor die Sonne am Abend nicht mehr fürs Haus reicht. Den Rest sieht evcc am Netzzähler – und ein Ladepunkt im PV-Modus läuft damit den ganzen Tag, z. B. die Fußbodenheizung. Bleibt die Sonne hinter der Vorhersage zurück, lade ich sofort schneller; reicht sie gar nicht mehr, lasse ich ganz los.",
+	"tip.r_day_surplus.text": "Normalerweise schlucken die Speicher morgens die ganze Sonne und sind mittags voll – erst dann sieht evcc Überschuss. Ist der Schalter an, bremse ich das Laden der Speicher: Sie laden nur so schnell, dass sie trotzdem voll sind, bevor die Sonne am Abend nicht mehr fürs Haus reicht. Den Rest sieht evcc am Netzzähler, und ein Ladepunkt im PV-Modus (z. B. die Fußbodenheizung) läuft damit den ganzen Tag.\nBleibt die Sonne hinter der Vorhersage zurück, lade ich sofort schneller; reicht sie gar nicht mehr, lasse ich ganz los.",
 	"tip.r_day_surplus.hint": "Nur wenn ein evcc-Ladepunkt auf PV oder Min+PV steht und Strom nehmen kann, nur bei Speichern mit einer Ladegrenze in W oder kW und bestandenem Testlauf und nur im Live-Betrieb. Abends ist alles wieder wie vorher.",
 	"rule.day_caution": "Wie vorsichtig?",
 	"rule.day_caution.tight": "Knapp",
@@ -1653,7 +1653,7 @@ var Pe = {
 	"tip.r_day_caution.text": "Ich nehme die Sonnenvorhersage (schon mit dem, was ich über deine Anlage gelernt habe) und rechne nur mit einem Teil davon: knapp 90 %, normal 80 %, vorsichtig 65 %. Damit bestimme ich, wann die Sonne am Abend nicht mehr fürs Haus reicht – im Sommer später, im Winter früher – und wie langsam die Speicher bis dahin laden dürfen.",
 	"tip.r_day_caution.hint": "Je vorsichtiger, desto früher und schneller laden die Speicher und desto weniger bleibt für evcc.",
 	"rule.reserve_soc.hint": "Mindestens so viel bleibt in jedem Speicher. Hat ein Speicher eine höhere Entladegrenze, gilt die.",
-	"tip.r_reserve_soc.text": "Die Untergrenze für alle Speicher – zum Beispiel als Notreserve oder um die Batterie zu schonen. Jeder Speicher hat zusätzlich seine eigene Entladegrenze (am Gerät eingestellt, siehe Speicher). Ich rechne je Speicher mit dem höheren der beiden Werte.",
+	"tip.r_reserve_soc.text": "Die Untergrenze für alle Speicher – zum Beispiel als Notreserve oder um die Speicher zu schonen. Jeder Speicher hat zusätzlich seine eigene Entladegrenze (am Gerät eingestellt, siehe Speicher). Ich rechne je Speicher mit dem höheren der beiden Werte.",
 	"tip.r_reserve_soc.hint": "10 % passen für die meisten Speicher.",
 	"rule.max_target_soc": "Nachts höchstens laden bis",
 	"rule.max_target_soc.hint": "Mehr lade ich nachts nicht aus dem Netz.",
@@ -1805,7 +1805,7 @@ var Pe = {
 	"tip.f_battery_priority.title": "Was heißt Reihenfolge?",
 	"tip.f_battery_priority.text": "Hast du mehrere Speicher, lade ich den mit der kleineren Zahl zuerst. 1 = zuerst.",
 	"tip.f_battery_control.title": "Was steht unter Steuern?",
-	"tip.f_battery_control.text": "Ganz oben steht, wie ich diesen Speicher steuere. Mit „Regler einrichten“ legst du fest, über welche Schalter und Werte ich das tue; „Nur beobachten“ heißt: Ich schaue nur zu und schalte nichts. Im Live-Betrieb stelle ich Ladeziel und Entladung selbst ein und stelle am Ende jeder Nacht alles zurück.\nDarunter stehen Name, Größe, Höchstleistung, Entladegrenze und bei mehreren Speichern die Reihenfolge. Jedes Feld hat seine eigene Erklärung, und was du dort änderst, speichere ich sofort.",
+	"tip.f_battery_control.text": "Ganz oben steht, wie ich diesen Speicher steuere. Mit „Regler einrichten“ legst du fest, über welche Schalter und Werte ich das tue; bei „Nur beobachten“ schaue ich nur zu und schalte nichts. Im Live-Betrieb stelle ich Ladeziel und Entladung selbst ein und setze am Ende jeder Nacht alles zurück.\nDarunter stehen Name, Größe, Höchstleistung, Entladegrenze und bei mehreren Speichern die Reihenfolge. Jedes Feld hat seine eigene Erklärung. Was du dort änderst, speichere ich sofort.",
 	"tip.f_battery_control.hint": "In der Simulation schalte ich sowieso nichts.",
 	"tip.f_calendars.title": "Wozu die Kalender?",
 	"tip.f_calendars.text": "Termine verraten mir, wann jemand weg ist oder im Homeoffice arbeitet. Ich lese nur, ob und wann etwas eingetragen ist. Jede Person kann beliebig viele Kalender haben.",
@@ -1828,7 +1828,7 @@ var Pe = {
 	"tip.r_max_price.title": "Wozu ein Höchstpreis?",
 	"tip.r_max_price.text": "Teurer als das lade ich nie aus dem Netz – auch wenn die Rechnung es knapp empfehlen würde. Halten darf ich die Speicher trotzdem.",
 	"tip.r_min_saving.title": "Warum eine Mindestersparnis?",
-	"tip.r_min_saving.text": "Jedes Steuern schreibt Werte in deine Geräte. Bringt eine Nacht weniger als diesen Betrag, lasse ich es und die Speicher laufen wie ohne mich. Pflegenächte sind ausgenommen.",
+	"tip.r_min_saving.text": "Jedes Mal, wenn ich steuere, schreibe ich Werte in deine Geräte. Bringt eine Nacht weniger als diesen Betrag, lasse ich es und die Speicher laufen wie ohne mich. Pflegenächte sind ausgenommen.",
 	"tip.r_grid_friendly.title": "Was heißt netzdienlich?",
 	"tip.r_grid_friendly.text": "Mittags liefern alle Solaranlagen gleichzeitig am meisten – dann ist das Netz voll. Morgens und abends brauchen alle Strom – dann ist es knapp.\n**Speicher**: An sonnigen Tagen halte ich das Laden morgens zurück, der Überschuss geht ins Netz, und der Speicher lädt in der Mittagsspitze. Ich rechne vorsichtig mit 80 % der Prognose und gebe früher frei, wenn die Sonne zurückbleibt. Das geht bei Speichern, deren Ladeleistung ich begrenzen kann.\n**Morgens und abends** nimmt das Haus Strom aus dem Speicher statt aus dem Netz.\n**Auto**: Fährt es erst nachmittags, lädt es mit Sonne statt nachts.",
 	"tip.r_grid_friendly.hint": "Steuern tue ich das nur in den Modi „Vorschlagen“ und „Live“, in der Simulation zeige ich es nur.",
@@ -1844,7 +1844,7 @@ var Pe = {
 	"tip.r_plan_offset_min.title": "Wann lege ich den Plan fest?",
 	"tip.r_plan_offset_min.text": "So viele Minuten vor Beginn der günstigen Zeit rechne ich den Plan für die Nacht aus – mit der neuesten Prognose.",
 	"tip.r_reset_lead_min.title": "Warum vor dem Ende zurückstellen?",
-	"tip.r_reset_lead_min.text": "So viele Minuten vor Ende der günstigen Zeit stelle ich alles zurück, zum Beispiel die Wallbox von „Jetzt“ auf „PV“. Manche Geräte laufen kurz nach – so kostet nichts den Tagpreis.",
+	"tip.r_reset_lead_min.text": "So viele Minuten vor Ende der günstigen Zeit stelle ich alles zurück, zum Beispiel die Wallbox von „Jetzt“ auf „PV“. Manche Geräte laufen noch kurz nach – so landet nichts im teureren Tagtarif.",
 	"tip.r_priority.title": "Wer bekommt zuerst Strom?",
 	"tip.r_priority.text": "Reicht das Netzlimit nicht für alle, bekommt zuerst Strom, wer oben steht. Die anderen warten oder laden langsamer.",
 	"tip.r_discharge_in_window.title": "Was dürfen die Speicher nachts?",
@@ -1926,7 +1926,7 @@ var Pe = {
 	"overview.result.night": "Nacht zum {day}",
 	"overview.result.none": "Nach der ersten geplanten Nacht rechne ich nach, was mein Plan gebracht hätte.",
 	"tip.inbox.title": "Was steht hier?",
-	"tip.inbox.text": "Alles, wobei ich dich brauche: deine Antwort für heute Nacht, Hinweise zu deinen Geräten, was noch nicht eingerichtet ist, neu gefundene Geräte und Fragen zu auffälligen Tagen. Hinweise auf Fehler stehen oben und bleiben, bis der Fehler behoben ist. Ich zeige erst drei Zeilen, den Rest unter „weitere zeigen“. Ein Tipp auf eine Zeile bringt dich dorthin, wo du es erledigst. Ist nichts offen, verschwindet dieser Kasten.",
+	"tip.inbox.text": "Alles, wobei ich dich brauche: deine Antwort für heute Nacht, Hinweise zu deinen Geräten, noch nicht Eingerichtetes, neu gefundene Geräte und Fragen zu auffälligen Tagen. Hinweise auf Fehler stehen oben und bleiben, bis der Fehler behoben ist. Zuerst zeige ich drei Zeilen, den Rest unter „weitere zeigen“. Ein Tipp auf eine Zeile bringt dich dorthin, wo du es erledigst. Ist nichts offen, verschwindet der Kasten.",
 	"tip.todo_dismiss.title": "Was macht „Brauch ich nicht“?",
 	"tip.todo_dismiss.text": "Die Zeile verschwindet, und ich zeige sie nicht wieder. Geändert wird nichts – einstellen kannst du es jederzeit dort, wo die Zeile hinführt.",
 	"tip.quick.title": "Wofür ist „Schnell“?",
@@ -2169,7 +2169,7 @@ var Pe = {
 	"ask.answer.special": "Etwas anderes Besonderes",
 	"ask.answer.normal": "Ganz normaler Tag",
 	"learn.model": "Verbrauch und Wetter",
-	"learn.model.no_weather": "Ohne Wetter-Entität kenne ich die Außentemperatur nicht. Sobald du eine wählst, lerne ich, wie viel ihr bei Kälte mehr braucht.",
+	"learn.model.no_weather": "Solange keine Wettervorhersage gewählt ist, kenne ich die Außentemperatur nicht. Sobald du eine wählst, lerne ich, wie viel ihr bei Kälte mehr braucht.",
 	"learn.model.learning": "Ich vergleiche jeden Tag euren Verbrauch mit der Außentemperatur. Ab {need} vollständigen Tagen rechne ich damit – {have} habe ich.",
 	"learn.model.base": "An warmen Tagen braucht ihr etwa {value} kWh.",
 	"learn.model.workday_more": "An Arbeitstagen {value} kWh mehr.",
@@ -2199,7 +2199,7 @@ var Pe = {
 	"learn.battery.learning": "Ich messe, wie viel hinein- und herausgeht und wie sich der Ladestand ändert. Nach etwa {need} Tagen mit Bewegung weiß ich, wie viel er wirklich fasst.",
 	"learn.battery.no_power": "Ohne Leistungsmessung des Speichers kann ich Größe und Verluste nicht messen.",
 	"learn.battery.user": "Du hast {value} kWh eingetragen – damit rechne ich weiter.",
-	"learn.battery.odd": "Das passt nicht zu den {value} kWh laut Gerät – ich rechne lieber mit dem Gerätewert. Prüfe den Ladestand- und den Leistungs-Sensor.",
+	"learn.battery.odd": "Das passt nicht zu den {value} kWh laut Gerät – ich rechne lieber mit dem Gerätewert. Prüf die Sensoren für Ladestand und Leistung.",
 	"learn.battery.uses_nominal": "Laut Gerät {value} kWh – ich rechne mit dem gemessenen Wert.",
 	"learn.battery.uses": "Ich rechne mit dem gemessenen Wert.",
 	"learn.battery.capacity": "{value} kWh nutzbar",
@@ -2218,7 +2218,7 @@ var Pe = {
 	"learn.hot_water.none": "Richte unter Geräte › Warmwasser dein Warmwasser mit Temperatursensor ein, dann lerne ich, wie schnell es heizt und wie viel ihr am Tag braucht.",
 	"learn.presence": "Wer wann zu Hause ist",
 	"learn.presence.value": "{label}: {hours} h",
-	"learn.presence.no_person": "Ohne Personen-Entität sehe ich nicht, wann jemand zu Hause ist.",
+	"learn.presence.no_person": "Ohne Personen in Home Assistant sehe ich nicht, wann jemand zu Hause ist.",
 	"learn.presence.none": "Ordne Personen ihre Kalender zu, dann lerne ich, wie viele Stunden sie bei Büro, Homeoffice oder Urlaub zu Hause sind.",
 	"learn.presence.calendars": "Kalender zuordnen →",
 	"learn.calendar": "Kalender-Regeln",
@@ -2591,7 +2591,7 @@ var Pe = {
 	"tip.learn_hot_water.title": "Was lerne ich am Warmwasser?",
 	"tip.learn_hot_water.text": "Wie schnell der Speicher heizt, wie viel er im Stehen verliert und wie viele Grad ihr am Tag verbraucht. Daraus rechne ich die Zieltemperatur für die Nacht und wann das Heizen starten muss, damit es zum Ende der günstigen Zeit fertig ist.",
 	"tip.learn_presence.title": "Wozu die Anwesenheit?",
-	"tip.learn_presence.text": "Aus euren Kalendern lese ich, was morgen ansteht – Büro, Homeoffice, Urlaub. Wie viele Stunden jemand an solchen Tagen zu Hause ist, lerne ich aus der Personen-Entität. Wer zu Hause ist, verbraucht mehr; das fließt in die Rechnung für morgen ein.",
+	"tip.learn_presence.text": "Aus euren Kalendern lese ich, was morgen ansteht – Büro, Homeoffice, Urlaub. Wie viele Stunden jemand an solchen Tagen zu Hause ist, lerne ich aus seiner Anwesenheit in Home Assistant. Wer zu Hause ist, verbraucht mehr; das fließt in die Rechnung für morgen ein.",
 	"tip.learn_calendar.title": "Wie lese ich eure Kalender?",
 	"tip.learn_calendar.text": "Für jede Person schaue ich in ihre Kalender, ganztägige Termine zuerst. Das erste passende Stichwort bestimmt die Art des Tages. Passt ein Termin zu mehreren Arten, gilt die obere Zeile.\nGroß- und Kleinschreibung spielt keine Rolle.",
 	"tip.cal_defaults.title": "Und ohne Termin?",
@@ -2732,9 +2732,9 @@ var Pe = {
 	"tip.a_need_consumption_sensor.title": "Welcher Sensor für den Verbrauch?",
 	"tip.a_need_consumption_sensor.text": "Der Langzeit-Durchschnitt des Autos (kWh/100 km, Wh/km oder km/kWh). Bis ich selbst gelernt habe, rechne ich damit.",
 	"car.delete": "Auto löschen",
-	"car.delete.ask": "{name} wirklich löschen? Termine, Postfach und was ich über das Auto gelernt habe, sind dann weg. Die Wallbox bleibt.",
+	"car.delete.ask": "{name} wirklich löschen? Termine, Postfach und was ich über das Auto gelernt habe, sind dann weg. Die Wallbox bleibt. Seine Integrationen lasse ich danach weg – mit „Nochmal nach Autos suchen“ findest du sie wieder.",
 	"tip.car_delete.title": "Was passiert beim Löschen?",
-	"tip.car_delete.text": "Das Auto ist weg – mit Terminen, Postfach und Gelerntem. Die Wallbox schalte ich weiter. Seine Integrationen lasse ich beim Umschauen weg; unter „+ Hinzufügen › Auto“ kannst du sie wieder nutzen.",
+	"tip.car_delete.text": "Das Auto ist weg – mit Terminen, Postfach und Gelerntem. Die Wallbox schalte ich weiter. Seine Integrationen lasse ich danach weg, damit es nicht von selbst wiederkommt. Unter Geräte › Auto & Laden findest du sie mit „Nochmal nach Autos suchen“ wieder – dort machst du ein Auto daraus, oder du hängst sie unter Quellen an ein Auto.",
 	"car.f.name": "Name",
 	"tip.car_name.title": "Welcher Name?",
 	"tip.car_name.text": "So nenne ich das Auto überall – in Fragen, Erinnerungen und im Plan.",
@@ -2807,6 +2807,35 @@ var Pe = {
 	"car.sources.none": "Noch keine Integration – wähle unten die Sensoren von Hand.",
 	"tip.car_split.title": "Was heißt trennen?",
 	"tip.car_split.text": "Diese Quelle ist ein anderes Auto: Sie wird ein Auto für sich, und ich frage nicht mehr, ob die beiden zusammengehören.",
+	"car.search": "Nochmal nach Autos suchen",
+	"car.search.busy": "Ich schaue mich in Home Assistant nach Autos um …",
+	"car.search.failed": "Das Suchen hat gerade nicht geklappt. Versuch es gleich noch mal.",
+	"car.search.lead": "Diese Autos sehe ich in Home Assistant – aus evcc und aus den Integrationen der Hersteller. Auch die, die du früher weggelassen hast.",
+	"car.search.none": "Ich sehe in Home Assistant gerade kein Auto – weder in evcc noch in der Integration eines Herstellers.",
+	"car.find.of": "gehört zu {car}",
+	"car.find.ignored": "früher weggelassen",
+	"car.find.new": "gehört noch zu keinem Auto",
+	"car.find.open": "Ansehen",
+	"car.find.use": "Als neues Auto",
+	"car.find.reuse": "Wieder nutzen",
+	"tip.car_search.title": "Was finde ich beim Suchen?",
+	"tip.car_search.text": "Ich schaue in Home Assistant nach allen Autos: den Fahrzeugen aus evcc und den Integrationen der Hersteller, etwa Hyundai, BMW oder Tesla. Auch nach denen, die du früher weggelassen oder mit einem Auto gelöscht hast. Beim Suchen ändere ich nichts – was damit passiert, entscheidest du.",
+	"tip.car_search_use.title": "Neues Auto oder zu einem Auto?",
+	"tip.car_search_use.text": "„Als neues Auto“ und „Wieder nutzen“ machen daraus ein eigenes Auto. Zeigt die Integration ein Auto, das du schon hast, öffne dieses Auto und wähle unter Quellen „Quelle hinzufügen“.",
+	"car.attach.open": "Quelle hinzufügen",
+	"car.attach.lead": "Welche Integration zeigt auch {car}? Tippe eine oder mehrere an.",
+	"car.attach.none": "Ich sehe keine weitere Integration mit einem Auto. Richte sie in Home Assistant ein und such dann nochmal.",
+	"car.attach.from": "gehört bis jetzt zu {car}",
+	"car.attach.do": "Zu {car} hinzufügen",
+	"car.attach.ask": "„{name}“ gehört bis jetzt zu „{from}“. Ich nehme es dort weg und hänge es an „{car}“.",
+	"car.attach.empty": "„{from}“ hat danach keine Integration mehr – seine Sensoren wählst du dann von Hand, oder du löschst es.",
+	"car.attach.yes": "Ja, hierher",
+	"car.attach.no": "Abbrechen",
+	"car.attach.close": "Schließen",
+	"tip.car_attach_open.title": "Wann eine Quelle hinzufügen?",
+	"tip.car_attach_open.text": "Wenn ich eine Integration deines Autos nicht von selbst zugeordnet habe – etwa weil du das Auto einmal gelöscht hattest. Ein Auto kann mehrere Quellen haben: evcc, die App des Herstellers und weitere.",
+	"tip.car_attach.title": "Was passiert beim Hinzufügen?",
+	"tip.car_attach.text": "Die Integration gehört dann zu diesem Auto: Ladestand, Reichweite, Kilometerstand, ob es steckt, wo es ist und die Außentemperatur lese ich auch von dort. Hing sie an einem anderen Auto, nehme ich sie dort weg. Hattest du sie weggelassen, nutze ich sie wieder. Mit „Trennen“ machst du es rückgängig.",
 	"car.trips": "Fahrten morgen",
 	"car.trips.none": "Sobald ich die Nacht plane, steht hier, was morgen ansteht.",
 	"car.values.none": "Noch keine Werte – unter Quellen siehst du, woher sie kommen sollen.",
@@ -2890,7 +2919,7 @@ var Pe = {
 	"signpost.wallbox": "Ladepunkt / Wallbox",
 	"signpost.wallbox.terms": "Wallbox, Ladepunkt, Ladestation, evcc, Modus, welches Auto steckt, Gast, fremdes Auto, Auto erkennen",
 	"signpost.car_sources": "Quellen eines Autos",
-	"signpost.car_sources.terms": "evcc, Hyundai, Hersteller, Integration, zusammenführen, trennen, Ladestand, Kilometerstand",
+	"signpost.car_sources.terms": "evcc, Hyundai, Hersteller, Integration, zusammenführen, trennen, Quelle hinzufügen, nochmal suchen, weggelassen, Ladestand, Kilometerstand",
 	"signpost.car_reminder": "Erinnerung: Auto einstecken",
 	"signpost.car_reminder.terms": "Erinnerung, einstecken, abends, steckt nicht, Benachrichtigung",
 	"devices.hot_water.lonely": "Diesen Warmwasser-Zähler kenne ich aus deinem Energie-Dashboard. Richte einmal ein, was ich schalte – dann heize ich in der günstigen Zeit auf.",
@@ -3226,8 +3255,8 @@ var Pe = {
 	"tip.solar_sleeps.text": "Manche Wechselrichter schalten sich ab, wenn keine Sonne mehr scheint. Ihr Wert ist dann in Home Assistant „nicht verfügbar“. Ist das bei dir so, schalte es hier ein: Solange die Sonne tief steht, zähle ich dann 0 W und warne nicht.",
 	"tip.solar_sleeps.hint": "Steht die Sonne hoch und der Wert fehlt trotzdem, warne ich weiter – dann stimmt wirklich etwas nicht.",
 	"log.limit_ref_test": "{battery}: Ladegrenze für ein paar Minuten auf {value} % – ich messe, wofür 100 % stehen",
-	"log.limit_ref": "Bezugsgröße gelernt: Bei {battery} stehen 100 % für {power} kW",
-	"log.limit_ref_failed": "{battery}: Bezugsgröße nicht gelernt – ich versuche es an einem anderen Tag",
+	"log.limit_ref": "Gelernt: Bei {battery} stehen 100 % für {power} kW",
+	"log.limit_ref_failed": "{battery}: Wert für 100 % nicht gelernt – ich versuche es an einem anderen Tag",
 	"log.limit_ref_failed.no_effect": "{battery}: Die Testgrenze hat nichts gebremst – ich versuche es an einem anderen Tag mit einem kleineren Wert",
 	"log.limit_ref_failed.sun": "{battery}: Während des Tests kamen Wolken – ich versuche es an einem anderen Tag",
 	"log.limit_ref_failed.implausible": "{battery}: Die Messung passte nicht zusammen – ich versuche es an einem anderen Tag",
@@ -3416,6 +3445,7 @@ var Pe = {
 	"devices.charge.tonight": "Heute Nacht laden",
 	"devices.charge.percent": "{target} %",
 	"devices.charge.km": "{target} km Reichweite plus {reserve} km Reserve",
+	"devices.charge.plus_reserve": "zzgl. {reserve} km Reserve",
 	"devices.charge.now_running": "Lädt jetzt bis {amount} – gerade {now}.",
 	"devices.charge.tonight_set": "Lädt heute Nacht in der günstigen Zeit bis {amount}.",
 	"devices.charge.tonight_window": "Lädt heute Nacht in der ganzen günstigen Zeit.",
@@ -3450,7 +3480,7 @@ var Pe = {
 	"tip.battery_automations.text": "Ich steuere die Speicher über Modus, Leistung und Grenzwerte. Setzt eine Automation dieselben Werte, gewinnt, wer zuletzt schreibt – dann hält sich der Speicher nicht an meinen Plan. Hier stehen alle Automationen, deren Aktionen etwas an deinen Speichern setzen (auch über Skripte); welche sie nur lesen, lasse ich weg. „Auch meine Regler“ heißt: genau die Werte, die ich selbst setze.\n„Alle ausschalten“ schaltet sie in Home Assistant aus und schreibt ins Logbuch der Automation, wann und warum. „Wieder einschalten“ schaltet genau die wieder an, die ich ausgeschaltet habe – entfernst du Energy Joe, mache ich das selbst.",
 	"tip.battery_automations.hint": "Lieber behalten? Gib der Automation die Bedingung: Status von Energy Joe ist weder „Steuert“ noch „Hält das Laden zurück“ – dann hält sie sich raus, solange ich an den Speichern arbeite.",
 	"devices.boost.stop": "Abbrechen",
-	"devices.boost.reserve": "Dazu kommt deine Reserve von {reserve} km.",
+	"devices.boost.reserve": "Die Reserve stellst du beim Auto unter Steuern ein.",
 	"devices.action.boost": "Lädt jetzt, weil du es willst.",
 	"devices.action.tonight": "Heute Nacht",
 	"devices.car.no_calendar": "Kein Kalender verbunden",
@@ -3491,10 +3521,10 @@ var Pe = {
 	"plan.tonight.charge.energy": "≈ {kwh} kWh aus dem Netz, mit bis zu {kw} kW",
 	"plan.tonight.hold": "lädt nicht, hält in der günstigen Zeit aber {target} %",
 	"plan.tonight.idle": "muss heute Nacht nichts tun, jetzt {soc} %",
-	"log.boost": "{battery}: einfach laden bis {target} {unit}",
-	"log.boost_end.reached": "{battery}: einfach laden – Ziel erreicht",
-	"log.boost_end.stopped": "{battery}: einfach laden beendet",
-	"log.boost_end.expired": "{battery}: einfach laden nach 24 Stunden beendet",
+	"log.boost": "{battery}: Jetzt laden bis {target} {unit}",
+	"log.boost_end.reached": "{battery}: Jetzt laden – Ziel erreicht",
+	"log.boost_end.stopped": "{battery}: Jetzt laden beendet",
+	"log.boost_end.expired": "{battery}: Jetzt laden nach 24 Stunden beendet",
 	"log.action_on": "{battery}: eingeschaltet ({value})",
 	"log.action_off": "{battery}: zurückgestellt ({value})",
 	"log.action_done": "{battery}: Ziel erreicht",
@@ -3545,7 +3575,7 @@ var Pe = {
 	"error.text": "Ich erreiche die Integration nicht. Lade die Seite neu – hilft das nicht, schau unter Einstellungen → System → Protokolle nach.",
 	"error.action": "Fehler beim Speichern",
 	loading: "Joe sattelt auf …"
-}, Fe = {
+}, Pe = {
 	"tab.overview": "Overview",
 	"tab.plan": "Plan",
 	"tab.review": "Review",
@@ -3579,7 +3609,7 @@ var Pe = {
 	"climate.route_eta": "Drive time from the routing service",
 	"climate.now.arriving_usual": "Now: the usual homecoming is close – I'm warming up already.",
 	"tip.climate_route_eta.title": "How does Joe know when someone comes home?",
-	"tip.climate_route_eta.text": "Two ways: 1. When someone gets closer (Proximity integration), I ask the routing service (Household › Travel & weather: OpenStreetMap, Waze or Google) how long the drive still takes – with traffic where the service knows it. For that, the person's position, rounded to about 100 m, goes to that service. Switch it off and I assume 40 km/h. 2. I note when you usually come home on working days and days off, and bring the rooms back ahead of that time. Someone merely passing by at a quite different time only counts when getting steadily closer.",
+	"tip.climate_route_eta.text": "I use two ways.\n**1. Someone coming closer:** With the “Proximity” integration I ask the routing service (Household › Travel & weather: OpenStreetMap, Waze or Google) how long the drive still takes – including traffic where the service knows it. For that, the person's position, rounded to about 100 m, goes to that service. Switch it off and I assume 40 km/h.\n**2. Your usual time:** I note when you usually come home on working days and days off, and warm up the rooms ahead of that. Someone who only drives past at a quite different time counts once they keep getting closer.",
 	"tip.climate_route_eta.hint": "I know the usual time after 4 homecomings on such days, and only if it varies by no more than 45 minutes.",
 	"climate.no_proximity": "To warm up in time when someone comes home I need the Proximity integration for your persons.",
 	"climate.add_proximity": "Set up Proximity",
@@ -3607,7 +3637,7 @@ var Pe = {
 	"household.guest.automation": "Guest mode → tracker “guest”",
 	"household.guest.automation_text": "Created by Energy Joe: {tracker} follows the switch {guest} (on = home, off = not_home), so the presence group stays home/not_home.",
 	"tip.household_guest.title": "How does guest mode work?",
-	"tip.household_guest.text": "I create three ordinary things in Home Assistant: the switch “guest mode”, a device tracker “guest” and an automation that makes the tracker follow the switch (on = home, off = away). The tracker is a member of your presence group – like a person. A switch directly in the group would turn its state into on/off, and automations checking for “home” would stop working.",
+	"tip.household_guest.text": "I create three ordinary building blocks in Home Assistant: the switch “Guest mode”, a device tracker “Guest” and an automation that makes the tracker follow the switch (on = home, off = away). The tracker belongs to your presence group, like a person. If the switch itself were in the group, the group would only have the state on/off – and automations checking for “home” would stop working.",
 	"tip.household_guest.hint": "Everything works without me too. Switch guest mode off again when the visit leaves.",
 	"household.presence.create": "Create helper",
 	"household.presence.creating": "Creating …",
@@ -3688,7 +3718,7 @@ var Pe = {
 	"climate.open_device": "Open the device in Home Assistant ({id})",
 	"climate.open_meter": "Open the meter in Home Assistant",
 	"pick.night.title": "What tells you that you are in bed?",
-	"tip.climate_night.text": "The air conditioner goes off at night and comes back early enough to be comfortable at the morning time you set. How I tell it's night – fixed times or an entity – you set under Household › Bedtime. How long the room takes to cool, I learn over time.",
+	"tip.climate_night.text": "At night I switch the air conditioner off and back on in good time before your morning time, so it is comfortable by then. How I tell it's night – fixed times or an entity – you set under Household › Bedtime. How long the room takes to cool down, I learn over time.",
 	"tip.climate_night_source.title": "How does Joe tell night?",
 	"tip.climate_night_source.text": "“By fixed times”: each air conditioner has its own from – to. “By an entity”: it is night while the chosen entity is “on” – e.g. a helper (input_boolean) your good-night routine switches on and off again in the morning, a bed sensor or a schedule.",
 	"tip.climate_night_source.hint": "With an entity too, I bring the rooms back in time for the morning in case nobody switches it off.",
@@ -3757,7 +3787,7 @@ var Pe = {
 	"week.pending.start": "The weekly profiles take over once the current night or absence is over – until then everything stays as it is.",
 	"week.pending.end": "The weekly profiles run until the night or absence is over, then I let go.",
 	"devprof.pending.start": "The ticks take effect once the current absence or day off is over – until then everything stays as it is.",
-	"devprof.pending.end": "The absence program runs until someone comes home; then I set the normal program and let go.",
+	"devprof.pending.end": "The away program is still running until someone comes home. Then I set the normal program and leave the device to itself again.",
 	"week.legacy_now": "The air conditioner is set to “{state}” right now – there are no profiles for that, so the setting below applies.",
 	"climate.hvac.off": "Off",
 	"climate.hvac.heat": "Heat",
@@ -3935,7 +3965,7 @@ var Pe = {
 	"past.learned.presence.usual": "on days like today usually home around {time}",
 	"past.learned.presence.no_calendar": "Without a calendar I don't know what kind of day this person has ahead.",
 	"past.learned.climate": "Heating & cooling",
-	"past.learned.climate.say": "How fast a room gets warm again (when cooling: cool) once I put it back after a setback. That tells me how early to start.",
+	"past.learned.climate.say": "How quickly a room warms up again (when cooling: cools down) once I set it back after lowering. That tells me how early I need to start.",
 	"past.learned.climate.rate": "{rate} °C per hour",
 	"past.learned.climate.none": "As soon as I control heating or cooling, I learn here how fast each room gets warm or cool.",
 	"past.learned.climate.open": "To Heating & cooling →",
@@ -4133,7 +4163,7 @@ var Pe = {
 	"onb.scan.energy.none": "I didn't find an Energy dashboard. No problem – I'll look for your devices anyway.",
 	"scan.looking": "Looking around …",
 	"scan.title": "Here's what |I found",
-	"scan.lead": "This is what I'll use from now on. If something's off, change it or leave it out – I never overwrite what you set.",
+	"scan.lead": "This is what I'll work with from now on. If something is wrong, change it or leave it out – I never overwrite what you set.",
 	"scan.again": "Look again",
 	"scan.why": "Why?",
 	"scan.failed": "Something went wrong while looking around. Please try again.",
@@ -4331,7 +4361,7 @@ var Pe = {
 	"review.home.flexible": "For the battery I leave out: {names}. I never charge the car from the home battery.",
 	"review.home.flexible_some": "For the battery I leave out: {names}.",
 	"review.home.flexible_none": "Do some devices run only on solar surplus or cheap power? Tell me under Devices › More devices – then I plan the battery without them.",
-	"review.home.off": "Over the last {days} days your sensor shows {pct} % {direction} than grid + solar ± storage. Is a small solar system missing in it? I work with grid + solar ± storage.",
+	"review.home.off": "Over the last {days} days your sensor shows {pct} % {direction} than grid + solar ± storage. Maybe a small solar system is missing from it? I'm using grid + solar ± storage.",
 	"review.home.less": "less",
 	"review.home.more": "more",
 	"review.home.none": "Don't know one? No problem – I'll work out home consumption from grid, solar and battery myself.",
@@ -4345,7 +4375,7 @@ var Pe = {
 	"pick.suggested": "Joe suggests",
 	"pick.fitting": "Matching",
 	"pick.all": "All entities",
-	"pick.empty": "Nothing matches. Turn on “Show all” below or search for another word.",
+	"pick.empty": "Nothing fits here. Tap “Show all” below or search for another word.",
 	"pick.more": "Show {count} more",
 	"pick.show_all": "Show all",
 	"pick.apply": "Use",
@@ -4516,7 +4546,7 @@ var Pe = {
 	"household.night.lead": "Bedtime means: you are in bed. Devices with “Off at night” switch off then and are comfortable again in time for the morning.",
 	"household.night.source": "How I recognise the night",
 	"household.night.devices": "Devices with “Off at night”",
-	"household.night.devices.none": "No device has “Off at night” switched on yet. You set that on the device under Heating & cooling.",
+	"household.night.devices.none": "No device has “Off at night” switched on yet. You set that on the device under Devices › Heating & cooling.",
 	"household.night.span": "{from}–{until}",
 	"household.night.until": "comfortable again by {until}",
 	"household.night.not_steered": "not steered right now",
@@ -4584,7 +4614,7 @@ var Pe = {
 	"rule.day_surplus": "Leave daytime surplus",
 	"rule.day_surplus.hint": "On sunny days the batteries charge only as fast as they must – the rest of the sun is left for evcc (e.g. a car or floor heating in PV mode).",
 	"tip.r_day_surplus.title": "What does “Leave daytime surplus” mean?",
-	"tip.r_day_surplus.text": "Usually the batteries swallow all of the morning sun and are full by noon. Only then does evcc see a surplus. With this switch on I slow the batteries' charging down: they charge just fast enough to be full before the evening sun no longer covers the house. evcc sees the rest at the grid meter – and a loadpoint in PV mode runs on it all day, e.g. the floor heating. If the sun falls behind the forecast I charge faster at once; if it no longer suffices at all, I let go completely.",
+	"tip.r_day_surplus.text": "Normally the batteries swallow all the morning sun and are full by noon – only then does evcc see a surplus. With the switch on, I slow down charging: they charge just fast enough to still be full before the sun no longer covers the house in the evening. evcc sees the rest at the grid meter, and a loadpoint in PV mode (e.g. underfloor heating) can then run all day.\nIf the sun falls short of the forecast, I charge faster right away; if it no longer suffices at all, I let go completely.",
 	"tip.r_day_surplus.hint": "Only while an evcc loadpoint is set to PV or Min+PV and can take power, only for batteries with a charge limit in W or kW and a passed test run, and only in live mode. In the evening everything is back as before.",
 	"rule.day_caution": "How careful?",
 	"rule.day_caution.tight": "Tight",
@@ -4597,7 +4627,7 @@ var Pe = {
 	"tip.r_day_caution.text": "I take the solar forecast (already corrected by what I learned about your system) and count on only part of it: tight 90 %, normal 80 %, careful 65 %. From that I work out when the evening sun no longer covers the house – later in summer, earlier in winter – and how slowly the batteries may charge until then.",
 	"tip.r_day_caution.hint": "The more careful, the earlier and faster the batteries charge and the less is left for evcc.",
 	"rule.reserve_soc.hint": "At least this much stays in every battery. If a battery's own floor is higher, that applies.",
-	"tip.r_reserve_soc.text": "The lowest level for all batteries – e.g. as an emergency reserve or to spare the battery. Each battery also has its own discharge floor (set on the device, see the battery). For each battery I use the higher of the two.",
+	"tip.r_reserve_soc.text": "The lowest level for all batteries – e.g. as an emergency reserve or to spare the batteries. Each battery also has its own discharge floor (set on the device, see the battery). For each battery I use the higher of the two.",
 	"tip.r_reserve_soc.hint": "10 % fits most batteries.",
 	"rule.max_target_soc": "Charge at night up to",
 	"rule.max_target_soc.hint": "I never charge more than this from the grid at night.",
@@ -4749,7 +4779,7 @@ var Pe = {
 	"tip.f_battery_priority.title": "What does order mean?",
 	"tip.f_battery_priority.text": "If you have several batteries, I charge the one with the lower number first. 1 = first.",
 	"tip.f_battery_control.title": "What is under Control?",
-	"tip.f_battery_control.text": "At the top it says how I steer this battery. With “Set up levers” you choose the switches and values I use for it; “Watch only” means I only watch and switch nothing. In live mode I set the charge target and discharging myself and put everything back at the end of every night.\nBelow are name, size, maximum power, discharge limit and, with several batteries, the order. Every field has its own explanation, and I save what you change there right away.",
+	"tip.f_battery_control.text": "At the top it says how I control this battery. With “Set up levers” you decide which switches and values I use; with “Watch only” I just watch and switch nothing. In Live mode I set the charge target and discharging myself and put everything back at the end of each night.\nBelow are the name, size, maximum power, discharge limit and, with several batteries, the order. Every field has its own explanation. Whatever you change there, I save right away.",
 	"tip.f_battery_control.hint": "In the simulation I don't switch anything anyway.",
 	"tip.f_calendars.title": "Why calendars?",
 	"tip.f_calendars.text": "Appointments tell me when someone is away or working from home. I only read whether and when something is scheduled. Each person can have as many calendars as you like.",
@@ -4772,7 +4802,7 @@ var Pe = {
 	"tip.r_max_price.title": "Why a highest price?",
 	"tip.r_max_price.text": "I never charge from the grid above this price – even if the calculation would narrowly recommend it. I may still hold the batteries.",
 	"tip.r_min_saving.title": "Why a minimum saving?",
-	"tip.r_min_saving.text": "Every time I steer, I write values to your devices. If a night brings less than this amount, I leave it and the batteries run as without me. Maintenance nights are the exception.",
+	"tip.r_min_saving.text": "Every time I take control, I write values into your devices. If a night would bring less than this amount, I skip it and the batteries run as if I weren't there. Maintenance nights are exempt.",
 	"tip.r_grid_friendly.title": "What does grid-friendly mean?",
 	"tip.r_grid_friendly.text": "At midday all solar systems deliver the most at once – the grid is full. In the morning and evening everyone needs power – it is short.\n**Batteries**: On sunny days I hold back charging in the morning, the surplus goes to the grid and the battery charges at the midday peak. I take only 80 % of the forecast and let go early when the sun lags. This works with batteries whose charging power I can limit.\n**Morning and evening** the home takes power from the battery instead of the grid.\n**Car**: If it leaves only in the afternoon, it charges with the sun instead of at night.",
 	"tip.r_grid_friendly.hint": "I only steer this in the modes “Suggest” and “Live”; in simulation I only show it.",
@@ -4788,7 +4818,7 @@ var Pe = {
 	"tip.r_plan_offset_min.title": "When do I fix the plan?",
 	"tip.r_plan_offset_min.text": "This many minutes before the cheap hours begin I work out the plan for the night – with the latest forecast.",
 	"tip.r_reset_lead_min.title": "Why put things back before the end?",
-	"tip.r_reset_lead_min.text": "This many minutes before the cheap hours end I put everything back, for example the wallbox from “Now” to “PV”. Some devices keep running for a moment – this way nothing costs the day price.",
+	"tip.r_reset_lead_min.text": "This many minutes before the cheap window ends I put everything back, for example the wallbox from “Now” to “PV”. Some devices keep running for a moment – this way nothing lands in the pricier day tariff.",
 	"tip.r_priority.title": "Who gets power first?",
 	"tip.r_priority.text": "If the grid limit isn't enough for everyone, whoever is on top gets power first. The others wait or charge more slowly.",
 	"tip.r_discharge_in_window.title": "What may the batteries do at night?",
@@ -4870,7 +4900,7 @@ var Pe = {
 	"overview.result.night": "Night to {day}",
 	"overview.result.none": "After the first planned night I work out what my plan would have saved.",
 	"tip.inbox.title": "What is this?",
-	"tip.inbox.text": "Everything I need you for: your answer for tonight, notes about your devices, what isn't set up yet, newly found devices and questions about unusual days. Notes about faults come first and stay until the fault is gone. I show three rows first, the rest under “Show more”. Tap a row to go where you sort it out. When nothing is open, this box disappears.",
+	"tip.inbox.text": "Everything I need you for: your answer for tonight, notes about your devices, what isn't set up yet, newly found devices and questions about unusual days. Error notes stay at the top until the error is fixed. I show three lines first, the rest under “Show … more”. Tapping a line takes you to where you sort it out. If nothing is open, this box disappears.",
 	"tip.todo_dismiss.title": "What does “Don't need it” do?",
 	"tip.todo_dismiss.text": "The row disappears and I won't show it again. Nothing else changes – you can still set it up any time where the row leads.",
 	"tip.quick.title": "What is “Quick” for?",
@@ -5113,7 +5143,7 @@ var Pe = {
 	"ask.answer.special": "Something else special",
 	"ask.answer.normal": "A normal day",
 	"learn.model": "Consumption and weather",
-	"learn.model.no_weather": "Without a weather entity I don't know the outdoor temperature. As soon as you pick one, I learn how much more you need when it's cold.",
+	"learn.model.no_weather": "As long as no weather forecast is chosen, I don't know the outdoor temperature. Once you pick one, I learn how much more you use when it's cold.",
 	"learn.model.learning": "Every day I compare your consumption with the outdoor temperature. From {need} complete days on I use it – I have {have}.",
 	"learn.model.base": "On warm days you need about {value} kWh.",
 	"learn.model.workday_more": "On working days {value} kWh more.",
@@ -5143,7 +5173,7 @@ var Pe = {
 	"learn.battery.learning": "I measure what goes in and out and how the charge level changes. After about {need} days with movement I know how much it really holds.",
 	"learn.battery.no_power": "Without a power measurement of the battery I can't measure its size and losses.",
 	"learn.battery.user": "You entered {value} kWh – I keep using that.",
-	"learn.battery.odd": "That doesn't fit the {value} kWh the device reports – I'd rather use the device value. Check the charge level and power sensors.",
+	"learn.battery.odd": "That doesn't match the {value} kWh the device reports – I'd rather use the device value. Check the sensors for charge level and power.",
 	"learn.battery.uses_nominal": "The device says {value} kWh – I use the measured value.",
 	"learn.battery.uses": "I use the measured value.",
 	"learn.battery.capacity": "{value} kWh usable",
@@ -5162,7 +5192,7 @@ var Pe = {
 	"learn.hot_water.none": "Set up your hot water with a temperature sensor under Devices › Hot water, then I learn how fast it heats and how much you use a day.",
 	"learn.presence": "Who is at home when",
 	"learn.presence.value": "{label}: {hours} h",
-	"learn.presence.no_person": "Without a person entity I can't see when someone is at home.",
+	"learn.presence.no_person": "Without people in Home Assistant I can't see when someone is home.",
 	"learn.presence.none": "Assign calendars to people, then I learn how many hours they are at home on office, home office or vacation days.",
 	"learn.presence.calendars": "Assign calendars →",
 	"learn.calendar": "Calendar rules",
@@ -5535,7 +5565,7 @@ var Pe = {
 	"tip.learn_hot_water.title": "What do I learn about hot water?",
 	"tip.learn_hot_water.text": "How fast the tank heats, how much it loses standing and how many degrees you use a day. From that I work out the target temperature for the night and when heating must start to be done by the end of the cheap window.",
 	"tip.learn_presence.title": "Why presence?",
-	"tip.learn_presence.text": "From your calendars I read what's on tomorrow – office, home office, vacation. How many hours someone is at home on such days I learn from the person entity. Whoever is at home uses more; that goes into the calculation for tomorrow.",
+	"tip.learn_presence.text": "From your calendars I read what is on tomorrow – office, home office, vacation. How many hours someone is home on such days, I learn from their presence in Home Assistant. Whoever is home uses more; that goes into tomorrow's calculation.",
 	"tip.learn_calendar.title": "How do I read your calendars?",
 	"tip.learn_calendar.text": "For each person I look into their calendars, all-day events first. The first matching keyword decides the kind of day. If an event fits several kinds, the upper row wins.\nUpper and lower case don't matter.",
 	"tip.cal_defaults.title": "And without an event?",
@@ -5676,9 +5706,9 @@ var Pe = {
 	"tip.a_need_consumption_sensor.title": "Which sensor for the consumption?",
 	"tip.a_need_consumption_sensor.text": "The car's own long-term average (kWh/100 km, Wh/km or km/kWh). Until I have learned my own value I use it.",
 	"car.delete": "Delete car",
-	"car.delete.ask": "Really delete {name}? Its appointments, mailbox and what I learned about the car are gone then. The wallbox stays.",
+	"car.delete.ask": "Really delete {name}? Its appointments, mailbox and what I learned about the car are gone then. The wallbox stays. I leave its integrations out afterwards – “Search for cars again” finds them again.",
 	"tip.car_delete.title": "What happens when I delete it?",
-	"tip.car_delete.text": "The car is gone – with its appointments, mailbox and what I learned. I keep switching the wallbox. I leave its integrations out when I look around; under “+ Add › Car” you can use them again.",
+	"tip.car_delete.text": "The car is gone – with its appointments, mailbox and what I learned. I keep switching the wallbox. I leave its integrations out afterwards, so the car doesn't come back by itself. Under Devices › Car & charging, “Search for cars again” finds them again – make a car of them there, or attach them to a car under Sources.",
 	"car.f.name": "Name",
 	"tip.car_name.title": "Which name?",
 	"tip.car_name.text": "This is what I call the car everywhere – in questions, reminders and the plan.",
@@ -5751,6 +5781,35 @@ var Pe = {
 	"car.sources.none": "No integration yet – pick the sensors by hand below.",
 	"tip.car_split.title": "What does split mean?",
 	"tip.car_split.text": "This source is another car: it becomes a car of its own, and I no longer ask whether the two belong together.",
+	"car.search": "Search for cars again",
+	"car.search.busy": "I'm looking for cars in Home Assistant …",
+	"car.search.failed": "The search didn't work just now. Please try again in a moment.",
+	"car.search.lead": "I see these cars in Home Assistant – from evcc and from the makers' integrations. Also the ones you left out before.",
+	"car.search.none": "I don't see any car in Home Assistant right now – neither in evcc nor in a maker's integration.",
+	"car.find.of": "belongs to {car}",
+	"car.find.ignored": "left out before",
+	"car.find.new": "not part of any car yet",
+	"car.find.open": "View",
+	"car.find.use": "As a new car",
+	"car.find.reuse": "Use again",
+	"tip.car_search.title": "What do I find when searching?",
+	"tip.car_search.text": "I look for every car in Home Assistant: the vehicles from evcc and the makers' integrations, such as Hyundai, BMW or Tesla. Also the ones you left out before or deleted with a car. Searching changes nothing – you decide what happens with them.",
+	"tip.car_search_use.title": "A new car or part of a car?",
+	"tip.car_search_use.text": "“As a new car” and “Use again” make a car of its own. If the integration shows a car you already have, open that car and choose “Add a source” under Sources.",
+	"car.attach.open": "Add a source",
+	"car.attach.lead": "Which integration also shows {car}? Tap one or more.",
+	"car.attach.none": "I don't see any other integration with a car. Set it up in Home Assistant, then search again.",
+	"car.attach.from": "belongs to {car} so far",
+	"car.attach.do": "Add to {car}",
+	"car.attach.ask": "“{name}” belongs to “{from}” so far. I take it away there and attach it to “{car}”.",
+	"car.attach.empty": "“{from}” has no integration left then – you pick its sensors by hand, or delete it.",
+	"car.attach.yes": "Yes, attach here",
+	"car.attach.no": "Cancel",
+	"car.attach.close": "Close",
+	"tip.car_attach_open.title": "When to add a source?",
+	"tip.car_attach_open.text": "When I didn't match an integration of your car by myself – for example because you deleted the car once. A car can have several sources: evcc, the maker's app and more.",
+	"tip.car_attach.title": "What happens when adding?",
+	"tip.car_attach.text": "The integration then belongs to this car: I read the level, range, odometer, whether it's plugged in, where it is and the outside temperature from there too. If it belonged to another car, I take it away there. If you had left it out, I use it again. “Split” undoes it.",
 	"car.trips": "Trips tomorrow",
 	"car.trips.none": "Once I plan the night, you see here what is coming up tomorrow.",
 	"car.values.none": "No values yet – Sources shows where they should come from.",
@@ -5834,7 +5893,7 @@ var Pe = {
 	"signpost.wallbox": "Charge point / wallbox",
 	"signpost.wallbox.terms": "Wallbox, charge point, charging station, evcc, mode, which car is plugged in, guest, other car, tell the car",
 	"signpost.car_sources": "A car's sources",
-	"signpost.car_sources.terms": "evcc, Hyundai, maker, integration, merge, split, level, odometer",
+	"signpost.car_sources.terms": "evcc, Hyundai, maker, integration, merge, split, add a source, search again, left out, level, odometer",
 	"signpost.car_reminder": "Reminder: plug in the car",
 	"signpost.car_reminder.terms": "reminder, plug in, evening, not plugged in, notification",
 	"devices.hot_water.lonely": "I know this hot water meter from your Energy dashboard. Set up once what I switch – then I heat up in the cheap hours.",
@@ -6170,8 +6229,8 @@ var Pe = {
 	"tip.solar_sleeps.text": "Some inverters switch off when the sun is gone. Their value is then “unavailable” in Home Assistant. If yours does that, switch this on: while the sun is low I count 0 W and do not warn.",
 	"tip.solar_sleeps.hint": "If the sun is high and the value is still missing, I keep warning – then something really is wrong.",
 	"log.limit_ref_test": "{battery}: charge limit at {value} % for a few minutes – I measure what 100 % stand for",
-	"log.limit_ref": "Reference learned: for {battery} 100 % stand for {power} kW",
-	"log.limit_ref_failed": "{battery}: reference not learned – I will try again another day",
+	"log.limit_ref": "Learned: for {battery}, 100 % stands for {power} kW",
+	"log.limit_ref_failed": "{battery}: couldn't learn what 100 % stands for – I'll try again another day",
 	"log.limit_ref_failed.no_effect": "{battery}: the test limit held nothing back – I will try again another day with a smaller value",
 	"log.limit_ref_failed.sun": "{battery}: clouds came during the test – I will try again another day",
 	"log.limit_ref_failed.implausible": "{battery}: the measurement did not add up – I will try again another day",
@@ -6360,6 +6419,7 @@ var Pe = {
 	"devices.charge.tonight": "Charge tonight",
 	"devices.charge.percent": "{target} %",
 	"devices.charge.km": "{target} km range plus {reserve} km reserve",
+	"devices.charge.plus_reserve": "plus {reserve} km reserve",
 	"devices.charge.now_running": "Charging now to {amount} – {now} at the moment.",
 	"devices.charge.tonight_set": "Charges tonight in the cheap hours to {amount}.",
 	"devices.charge.tonight_window": "Charges tonight through all the cheap hours.",
@@ -6394,7 +6454,7 @@ var Pe = {
 	"tip.battery_automations.text": "I steer the batteries through mode, power and limits. If an automation sets the same values, whoever writes last wins – and the battery no longer follows my plan. Listed here are all automations whose actions set something on your batteries (also through scripts); those that only read them are left out. “My controls too” means: exactly the values I set myself.\n“Switch all off” turns them off in Home Assistant and writes into each automation's logbook when and why. “Switch on again” turns on exactly the ones I switched off – if you remove Energy Joe, I do that myself.",
 	"tip.battery_automations.hint": "Rather keep one? Give it the condition: Energy Joe status is neither “Steering” nor “Holding back charging” – then it stays out of the way while I work on the batteries.",
 	"devices.boost.stop": "Cancel",
-	"devices.boost.reserve": "Your reserve of {reserve} km comes on top.",
+	"devices.boost.reserve": "You set the reserve on the car's page under Steering.",
 	"devices.action.boost": "Charging now because you asked.",
 	"devices.action.tonight": "Tonight",
 	"devices.car.no_calendar": "No calendar connected",
@@ -6435,10 +6495,10 @@ var Pe = {
 	"plan.tonight.charge.energy": "≈ {kwh} kWh from the grid, at up to {kw} kW",
 	"plan.tonight.hold": "doesn't charge, but holds {target} % during the cheap hours",
 	"plan.tonight.idle": "nothing to do tonight, now at {soc} %",
-	"log.boost": "{battery}: just charge to {target} {unit}",
-	"log.boost_end.reached": "{battery}: just charge – target reached",
-	"log.boost_end.stopped": "{battery}: just charge stopped",
-	"log.boost_end.expired": "{battery}: just charge ended after 24 hours",
+	"log.boost": "{battery}: Charge now up to {target} {unit}",
+	"log.boost_end.reached": "{battery}: Charge now – target reached",
+	"log.boost_end.stopped": "{battery}: Charge now ended",
+	"log.boost_end.expired": "{battery}: Charge now ended after 24 hours",
 	"log.action_on": "{battery}: switched on ({value})",
 	"log.action_off": "{battery}: put back ({value})",
 	"log.action_done": "{battery}: target reached",
@@ -6489,22 +6549,22 @@ var Pe = {
 	"error.text": "I can't reach the integration. Reload the page – if that doesn't help, check Settings → System → Logs.",
 	"error.action": "Saving failed",
 	loading: "Joe is saddling up …"
-}, Ie = /* @__PURE__ */ new Map();
-function Le(e, t) {
+}, Fe = /* @__PURE__ */ new Map();
+function Ie(e, t) {
 	return e.replace(/\{(\w+)\}/g, (e, n) => String(t?.[n] ?? ""));
 }
-function Re(e) {
-	let t = e || "en", n = Ie.get(t);
+function Le(e) {
+	let t = e || "en", n = Fe.get(t);
 	if (n) return n;
-	let r = t.startsWith("de") ? Pe : Fe, i = ((e, t) => Le(r[e], t));
-	return i.optional = (e, t) => e in r ? Le(r[e], t) : void 0, Object.defineProperty(i, "lang", { value: t }), Ie.set(t, i), i;
+	let r = t.startsWith("de") ? Ne : Pe, i = ((e, t) => Ie(r[e], t));
+	return i.optional = (e, t) => e in r ? Ie(r[e], t) : void 0, Object.defineProperty(i, "lang", { value: t }), Fe.set(t, i), i;
 }
-function ze(e) {
+function Re(e) {
 	return e.split("|");
 }
 //#endregion
 //#region src/components/bits.ts
-var Be = k`<svg
+var ze = A`<svg
   class="swoosh"
   viewBox="0 0 300 16"
   preserveAspectRatio="none"
@@ -6512,69 +6572,69 @@ var Be = k`<svg
 >
   <path d="M2 13 C 70 5, 190 1, 298 3 L 298 6 C 190 5, 80 9, 4 15 Z" fill="currentColor" />
 </svg>`;
-function Ve(e, t = "h2", n) {
-	let r = ze(e), i = r.length - 1, a = r.map((e, t) => t === i && r.length > 1 ? k`<span class="hl">${e}</span>` : e.endsWith("!") ? k`${e}<br />` : k`${e}`), o = n ? k`<span class="title-tip">${n}</span>` : "";
-	return t === "h1" ? k`<h1 class="display">${a}${o}</h1>` : k`<h2 class="display">${a}${o}</h2>`;
+function Be(e, t = "h2", n) {
+	let r = Re(e), i = r.length - 1, a = r.map((e, t) => t === i && r.length > 1 ? A`<span class="hl">${e}</span>` : e.endsWith("!") ? A`${e}<br />` : A`${e}`), o = n ? A`<span class="title-tip">${n}</span>` : "";
+	return t === "h1" ? A`<h1 class="display">${a}${o}</h1>` : A`<h2 class="display">${a}${o}</h2>`;
 }
-function He(e, t) {
+function Ve(e, t) {
 	let n = t >= .85 ? 4 : t >= .65 ? 3 : t >= .45 ? 2 : 1, r = e(`conf.${n}`);
-	return k`<span class="conf" role="img" aria-label=${r} title=${r}>
+	return A`<span class="conf" role="img" aria-label=${r} title=${r}>
     ${[
 		1,
 		2,
 		3,
 		4
-	].map((e) => k`<i class=${e <= n ? "on" : ""}></i>`)}
+	].map((e) => A`<i class=${e <= n ? "on" : ""}></i>`)}
   </span>`;
 }
-var Ue = {
+var He = {
 	read: "mdi:eye-outline",
 	learned: "mdi:auto-fix",
 	user: "mdi:account-edit-outline",
 	default: "mdi:tune-variant"
 };
-function We(e, t) {
+function Ue(e, t) {
 	let n = t?.source ?? "default";
-	return k`<span class="chip ${n}"
-    ><ha-icon icon=${Ue[n]}></ha-icon>${e(`source.${n}`)}</span
+	return A`<span class="chip ${n}"
+    ><ha-icon icon=${He[n]}></ha-icon>${e(`source.${n}`)}</span
   >`;
 }
-function Ge(e, t) {
+function We(e, t) {
 	let n = {};
 	for (let [e, r] of Object.entries(t)) (typeof r == "string" || typeof r == "number") && (n[e] = r);
 	return e.optional(`reason.${t.code}`, n) ?? t.code;
 }
-function Ke(e) {
+function Ge(e) {
 	history.pushState(null, "", e), window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: !1 } }));
 }
-function qe(e, t, n) {
-	if (!e) return k`<span title=${n ?? ""}>${t}</span>`;
+function Ke(e, t, n) {
+	if (!e) return A`<span title=${n ?? ""}>${t}</span>`;
 	let r = `/config/devices/device/${e}`;
-	return k`<a
+	return A`<a
     class="ha-link"
     href=${r}
     title=${n ?? ""}
     @click=${(e) => {
-		e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0 || (e.preventDefault(), Ke(r));
+		e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0 || (e.preventDefault(), Ge(r));
 	}}
     >${t}</a
   >`;
 }
 //#endregion
 //#region src/define.ts
-var Je = "0.9.21";
-function Ye(e, t) {
+var qe = "0.9.21";
+function Je(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
-		t.joeVersion = Je, customElements.define(e, t);
+		t.joeVersion = qe, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.21" && Ze();
+	n.joeVersion !== "0.9.21" && Xe();
 }
-var Xe = !1;
-function Ze() {
-	if (Xe || typeof document > "u") return;
-	Xe = !0;
+var Ye = !1;
+function Xe() {
+	if (Ye || typeof document > "u") return;
+	Ye = !0;
 	let e = (document.documentElement.lang || navigator.language || "").toLowerCase().startsWith("de"), t = document.createElement("div");
 	t.setAttribute("role", "alert"), t.style.cssText = [
 		"position:fixed",
@@ -6603,7 +6663,7 @@ function Ze() {
 }
 //#endregion
 //#region src/styles/shared.ts
-var Qe = o`
+var Ze = o`
   :host {
     font-family: var(--joe-ui);
   }
@@ -7473,7 +7533,7 @@ var Qe = o`
 `;
 //#endregion
 //#region \0@oxc-project+runtime@0.152.0/helpers/esm/decorate.js
-function V(e, t, n, r) {
+function H(e, t, n, r) {
 	var i = arguments.length, a = i < 3 ? t : r === null ? r = Object.getOwnPropertyDescriptor(t, n) : r, o;
 	if (typeof Reflect == "object" && typeof Reflect.decorate == "function") a = Reflect.decorate(e, t, n, r);
 	else for (var s = e.length - 1; s >= 0; s--) (o = e[s]) && (a = (i < 3 ? o(a) : i > 3 ? o(t, n, a) : o(t, n)) || a);
@@ -7481,41 +7541,41 @@ function V(e, t, n, r) {
 }
 //#endregion
 //#region src/entities.ts
-var $e = [
+var Qe = [
 	"W",
 	"kW",
 	"MW"
-], et = [
+], $e = [
 	"Wh",
 	"kWh",
 	"MWh"
-], tt = (e) => [
+], et = (e) => [
 	"binary_sensor",
 	"input_boolean",
 	"switch",
 	"schedule"
-].includes(H(e)), nt = {
-	power: (e) => H(e) === "sensor" && $e.includes(U(e)),
-	soc: (e) => H(e) === "sensor" && U(e) === "%",
-	energy: (e) => H(e) === "sensor" && et.includes(U(e)),
+].includes(U(e)), tt = {
+	power: (e) => U(e) === "sensor" && Qe.includes(W(e)),
+	soc: (e) => U(e) === "sensor" && W(e) === "%",
+	energy: (e) => U(e) === "sensor" && $e.includes(W(e)),
 	price: (e) => [
 		"sensor",
 		"number",
 		"input_number"
-	].includes(H(e)) && (e.attributes.device_class === "monetary" || /\/\s*kwh/i.test(U(e))),
-	weather: (e) => H(e) === "weather",
-	workday: (e) => H(e) === "binary_sensor",
-	calendar: (e) => H(e) === "calendar",
-	person: (e) => H(e) === "person",
-	level: (e) => ["number", "input_number"].includes(H(e)) && U(e) === "%",
+	].includes(U(e)) && (e.attributes.device_class === "monetary" || /\/\s*kwh/i.test(W(e))),
+	weather: (e) => U(e) === "weather",
+	workday: (e) => U(e) === "binary_sensor",
+	calendar: (e) => U(e) === "calendar",
+	person: (e) => U(e) === "person",
+	level: (e) => ["number", "input_number"].includes(U(e)) && W(e) === "%",
 	temperature: (e) => [
 		"sensor",
 		"number",
 		"input_number"
-	].includes(H(e)) && ["°C", "°F"].includes(U(e)),
-	setpoint: (e) => ["number", "input_number"].includes(H(e)),
-	toggle: (e) => ["switch", "input_boolean"].includes(H(e)),
-	option: (e) => ["select", "input_select"].includes(H(e)),
+	].includes(U(e)) && ["°C", "°F"].includes(W(e)),
+	setpoint: (e) => ["number", "input_number"].includes(U(e)),
+	toggle: (e) => ["switch", "input_boolean"].includes(U(e)),
+	option: (e) => ["select", "input_select"].includes(U(e)),
 	writable: (e) => [
 		"number",
 		"input_number",
@@ -7526,24 +7586,24 @@ var $e = [
 		"script",
 		"button",
 		"input_button"
-	].includes(H(e)),
-	distance: (e) => H(e) === "sensor" && [
+	].includes(U(e)),
+	distance: (e) => U(e) === "sensor" && [
 		"km",
 		"mi",
 		"m"
-	].includes(U(e)),
-	consumption: (e) => H(e) === "sensor" && /kwh\/100|wh\/km|km\/kwh|mi\/kwh/i.test(U(e).replace(/\s/g, "")),
+	].includes(W(e)),
+	consumption: (e) => U(e) === "sensor" && /kwh\/100|wh\/km|km\/kwh|mi\/kwh/i.test(W(e).replace(/\s/g, "")),
 	car_energy: (e) => [
 		"sensor",
 		"number",
 		"input_number"
-	].includes(H(e)) && [
-		...et,
+	].includes(U(e)) && [
+		...$e,
 		"kJ",
 		"MJ"
-	].includes(U(e)),
-	night: tt,
-	toggle_like: tt,
+	].includes(W(e)),
+	night: et,
+	toggle_like: et,
 	presence: (e) => [
 		"group",
 		"input_boolean",
@@ -7551,69 +7611,69 @@ var $e = [
 		"switch",
 		"person",
 		"device_tracker"
-	].includes(H(e)),
+	].includes(U(e)),
 	any: () => !0
 };
-function H(e) {
+function U(e) {
 	return e.entity_id.split(".", 1)[0];
 }
-function U(e) {
+function W(e) {
 	return String(e.attributes.unit_of_measurement ?? "");
 }
-function rt(e, t) {
-	return nt[t](e);
+function nt(e, t) {
+	return tt[t](e);
 }
-function it(e, t) {
+function rt(e, t) {
 	let n = e.states[t]?.attributes.friendly_name;
 	return typeof n == "string" && n ? n : t.split(".", 2)[1]?.replace(/_/g, " ") ?? t;
 }
-function at(e, t) {
+function it(e, t) {
 	let n = e.entities?.[t], r = n?.device_id ? e.devices?.[n.device_id] : void 0, i = n?.area_id ?? r?.area_id, a = i ? e.areas?.[i]?.name : void 0, o = r?.name_by_user || r?.name || void 0;
-	return [o && it(e, t).toLowerCase().startsWith(o.toLowerCase()) ? void 0 : o, a].filter(Boolean).join(" · ");
+	return [o && rt(e, t).toLowerCase().startsWith(o.toLowerCase()) ? void 0 : o, a].filter(Boolean).join(" · ");
 }
-function W(e, t) {
+function G(e, t) {
 	if (!t) return null;
 	let n = Number.parseFloat(e.states[t]?.state ?? "");
 	return Number.isFinite(n) ? n : null;
 }
-function G(e, t, n) {
+function K(e, t, n) {
 	return new Intl.NumberFormat(e, { maximumFractionDigits: n }).format(t);
 }
-function ot(e, t, n) {
+function at(e, t, n) {
 	let r = e.states[t];
 	if (!r) return "–";
 	if (e.formatEntityState) return e.formatEntityState(r);
-	let i = W(e, t);
-	return i === null ? r.state : `${G(n, i, Math.abs(i) >= 100 ? 0 : Math.abs(i) >= 10 ? 1 : 2)} ${U(r)}`.trim();
+	let i = G(e, t);
+	return i === null ? r.state : `${K(n, i, Math.abs(i) >= 100 ? 0 : Math.abs(i) >= 10 ? 1 : 2)} ${W(r)}`.trim();
 }
-function st(e, t) {
+function ot(e, t) {
 	return t === "W" ? e / 1e3 : t === "MW" ? e * 1e3 : e;
 }
-function ct(e, t) {
+function st(e, t) {
 	if (!t) return null;
-	let n = W(e, t.entity_id);
+	let n = G(e, t.entity_id);
 	if (n === null) return null;
-	let r = st(n, U(e.states[t.entity_id]));
+	let r = ot(n, W(e.states[t.entity_id]));
 	if (t.invert && (r = -r), t.minus_entity_id) {
-		let n = W(e, t.minus_entity_id);
+		let n = G(e, t.minus_entity_id);
 		if (n === null) return null;
-		r -= st(n, U(e.states[t.minus_entity_id]));
+		r -= ot(n, W(e.states[t.minus_entity_id]));
 	}
 	return r;
 }
-function lt(e, t) {
-	let n = W(e, t);
+function ct(e, t) {
+	let n = G(e, t);
 	if (n === null || !t) return null;
-	let r = U(e.states[t]);
+	let r = W(e.states[t]);
 	return r === "Wh" ? n / 1e3 : r === "MWh" ? n * 1e3 : n;
 }
-function ut(e, t) {
-	let n = t.map((t) => ct(e, t)).filter((e) => e !== null);
+function lt(e, t) {
+	let n = t.map((t) => st(e, t)).filter((e) => e !== null);
 	return n.length ? n.reduce((e, t) => e + t, 0) : null;
 }
 //#endregion
 //#region src/components/tip.ts
-var dt = 120, ft = 220, pt = 8, mt = 10, K, q = class extends R {
+var ut = 120, dt = 220, ft = 8, pt = 10, q, J = class extends z {
 	constructor(...e) {
 		super(...e), this.label = "", this.open = !1, this.pinned = !1, this.keepOnBlur = !1, this.onOutside = (e) => {
 			e.composedPath().includes(this) || this.close();
@@ -7772,7 +7832,7 @@ var dt = 120, ft = 220, pt = 8, mt = 10, K, q = class extends R {
 	}
 	render() {
 		let e = this.tip;
-		return e ? k`<button
+		return e ? A`<button
         type="button"
         class=${this.open ? "open" : ""}
         aria-label=${this.label}
@@ -7800,13 +7860,13 @@ var dt = 120, ft = 220, pt = 8, mt = 10, K, q = class extends R {
         @pointerdown=${this.onBubbleDown}
       >
         <span class="h">${e.heading}</span>
-        ${ht(e.text)}
-        ${e.facts?.length ? k`<dl>${e.facts.map(([e, t]) => k`<dt>${e}</dt><dd>${t}</dd>`)}</dl>` : j}
+        ${mt(e.text)}
+        ${e.facts?.length ? A`<dl>${e.facts.map(([e, t]) => A`<dt>${e}</dt><dd>${t}</dd>`)}</dl>` : M}
         <span class="arrow"></span>
-      </div>` : j;
+      </div>` : M;
 	}
 	show(e = !1) {
-		this.cancelTimer(), this.pinned = this.pinned || e, !this.open && (K && K !== this && K.close(), K = this, this.open = !0, window.addEventListener("pointerdown", this.onOutside, !0), window.addEventListener("keydown", this.onKey, !0), this.updateComplete.then(() => {
+		this.cancelTimer(), this.pinned = this.pinned || e, !this.open && (q && q !== this && q.close(), q = this, this.open = !0, window.addEventListener("pointerdown", this.onOutside, !0), window.addEventListener("keydown", this.onKey, !0), this.updateComplete.then(() => {
 			let e = this.bubble;
 			this.open && e && (typeof e.showPopover == "function" && !e.matches(":popover-open") && e.showPopover(), this.follow());
 		}));
@@ -7814,16 +7874,16 @@ var dt = 120, ft = 220, pt = 8, mt = 10, K, q = class extends R {
 	close() {
 		this.cancelTimer(), this.pinned = !1, this.frame !== void 0 && (cancelAnimationFrame(this.frame), this.frame = void 0), window.removeEventListener("pointerdown", this.onOutside, !0), window.removeEventListener("keydown", this.onKey, !0);
 		let e = this.bubble;
-		e && typeof e.hidePopover == "function" && e.matches(":popover-open") && e.hidePopover(), K === this && (K = void 0), this.open = !1;
+		e && typeof e.hidePopover == "function" && e.matches(":popover-open") && e.hidePopover(), q === this && (q = void 0), this.open = !1;
 	}
 	onClick() {
 		this.open && this.pinned ? this.close() : this.show(!0);
 	}
 	onEnter(e) {
-		e.pointerType === "mouse" && (this.cancelTimer(), this.open || (this.timer = window.setTimeout(() => this.show(), dt)));
+		e.pointerType === "mouse" && (this.cancelTimer(), this.open || (this.timer = window.setTimeout(() => this.show(), ut)));
 	}
 	onLeave(e) {
-		e.pointerType === "mouse" && (this.cancelTimer(), this.open && !this.pinned && (this.timer = window.setTimeout(() => this.close(), ft)));
+		e.pointerType === "mouse" && (this.cancelTimer(), this.open && !this.pinned && (this.timer = window.setTimeout(() => this.close(), dt)));
 	}
 	onFocus() {
 		this.button?.matches(":focus-visible") && this.show();
@@ -7851,19 +7911,19 @@ var dt = 120, ft = 220, pt = 8, mt = 10, K, q = class extends R {
 			this.close();
 			return;
 		}
-		let r = t.getBoundingClientRect(), i = document.documentElement.clientWidth, a = n.top - r.height - mt, o = "top";
-		a < pt && (a = n.bottom + mt, o = "bottom");
-		let s = n.left + n.width / 2, c = Math.max(pt, Math.min(s - r.width / 2, i - r.width - pt)), l = Math.max(14, Math.min(s - c, r.width - 14));
+		let r = t.getBoundingClientRect(), i = document.documentElement.clientWidth, a = n.top - r.height - pt, o = "top";
+		a < ft && (a = n.bottom + pt, o = "bottom");
+		let s = n.left + n.width / 2, c = Math.max(ft, Math.min(s - r.width / 2, i - r.width - ft)), l = Math.max(14, Math.min(s - c, r.width - 14));
 		t.style.left = `${Math.round(c)}px`, t.style.top = `${Math.round(a)}px`, t.style.setProperty("--arrow", `${Math.round(l)}px`), t.dataset.place = o;
 	}
 };
-V([z({ attribute: !1 })], q.prototype, "tip", void 0), V([z()], q.prototype, "label", void 0), V([B()], q.prototype, "open", void 0), V([Ne("button")], q.prototype, "button", void 0), V([Ne(".bubble")], q.prototype, "bubble", void 0);
-function ht(e) {
-	return e.split("\n").map((e) => k`<p>
-        ${e.split(/\*\*(.+?)\*\*/).map((e, t) => t % 2 ? k`<strong>${e}</strong>` : e)}
+H([B({ attribute: !1 })], J.prototype, "tip", void 0), H([B()], J.prototype, "label", void 0), H([V()], J.prototype, "open", void 0), H([Me("button")], J.prototype, "button", void 0), H([Me(".bubble")], J.prototype, "bubble", void 0);
+function mt(e) {
+	return e.split("\n").map((e) => A`<p>
+        ${e.split(/\*\*(.+?)\*\*/).map((e, t) => t % 2 ? A`<strong>${e}</strong>` : e)}
       </p>`);
 }
-function gt(e, t, n, r = []) {
+function ht(e, t, n, r = []) {
 	let i = e.optional(`tip.${t}.hint`, n);
 	return {
 		heading: e(`tip.${t}.title`, n),
@@ -7871,13 +7931,13 @@ function gt(e, t, n, r = []) {
 		facts: i ? [...r, [e("tip.hint"), i]] : r
 	};
 }
-function J(e, t, n, r) {
-	return k`<joe-tip .tip=${gt(e, t, n, r)} label=${e("tip.label")}></joe-tip>`;
+function Y(e, t, n, r) {
+	return A`<joe-tip .tip=${ht(e, t, n, r)} label=${e("tip.label")}></joe-tip>`;
 }
-Ye("joe-tip", q);
+Je("joe-tip", J);
 //#endregion
 //#region src/cars.ts
-function _t(e, t) {
+function gt(e, t) {
 	return {
 		tab: "devices",
 		section: "car",
@@ -7885,7 +7945,7 @@ function _t(e, t) {
 		sub: t
 	};
 }
-function vt(e) {
+function _t(e) {
 	return {
 		tab: "devices",
 		section: "car",
@@ -7893,51 +7953,62 @@ function vt(e) {
 		sub: e
 	};
 }
-function yt(e, t) {
+function vt(e, t) {
 	return t ? e.cars?.find((e) => e.id === t) : void 0;
 }
-function bt(e, t) {
+function yt(e, t) {
 	let n = t.point?.cars;
 	return (e.cars ?? []).filter((e) => n == null || n.includes(e.id));
 }
-function xt(e, t) {
+function bt(e, t) {
 	return e?.cars?.points?.[t];
 }
-function Y(e, t) {
+function X(e, t) {
 	let n = e?.cars?.cars?.[t]?.point;
 	return n ? e?.config.actions.find((e) => e.id === n) : void 0;
 }
-function St(e, t, n) {
+function xt(e, t, n) {
 	return e?.cars?.cars?.[t]?.values?.[n];
 }
-function Ct(e, t) {
+function St(e, t) {
 	return t.kind === "evcc" ? "evcc" : t.kind === "manual" ? e("car.source.manual") : t.platform && e.optional(`car.platform.${t.platform}`) || t.name || t.platform || e("car.source.car");
 }
-function wt(e, t, n) {
-	let r = Y(t, n.id);
+function Ct(e, t, n) {
+	let r = X(t, n.id);
 	if (r) return e("car.plugged_at", { point: r.name });
 	let i = t.cars?.cars?.[n.id]?.plugged;
 	return e(i ? "car.plugged_elsewhere" : "car.not_plugged");
 }
-function Tt(e, t, n) {
-	let r = xt(t, n.id);
+function wt(e, t, n) {
+	let r = bt(t, n.id);
 	return r ? r.state === "car" ? e("point.state.car", {
-		car: yt(t.config, r.car)?.name ?? r.car ?? "",
+		car: vt(t.config, r.car)?.name ?? r.car ?? "",
 		how: e(`point.how.${r.how ?? "home"}`)
 	}) : e(`point.state.${r.state}`) : e("point.state.none");
 }
-function Et(e, t) {
+function Tt(e, t) {
 	return e?.plan?.cars?.[t];
+}
+function Et(e) {
+	return `car:${e.device_id ?? e.id}`;
+}
+function Dt(e, t) {
+	let n = new Set(e.answers.ignored);
+	return (t?.car_sources ?? []).map((t) => ({
+		source: t,
+		car: (e.cars ?? []).find((e) => e.sources.some((e) => e.id === t.id)),
+		ignored: n.has(Et(t)) || n.has(`car:${t.id}`)
+	}));
 }
 //#endregion
 //#region src/components/plan-text.ts
-function X(e) {
+function Z(e) {
 	return e ? e.slice(11, 16) : "";
 }
-function Dt(e) {
+function Ot(e) {
 	return e.slice(0, 10);
 }
-function Ot(e) {
+function kt(e) {
 	switch (e?.kind) {
 		case "charge": return "plug";
 		case "hold": return "switch";
@@ -7945,41 +8016,41 @@ function Ot(e) {
 		default: return "sleep";
 	}
 }
-function kt(e) {
-	return (e.charge_slots ?? []).map((e) => `${X(e.start)}–${X(e.end)}`).join(", ");
-}
-function At(e, t) {
-	if (!t.window) return "";
-	let n = [`${X(t.window.start)}–${X(t.window.end)}`];
-	return t.prices && n.push(`${G(e.lang, t.prices.night * 100, 1)} ct/kWh`), n.join(" · ");
+function At(e) {
+	return (e.charge_slots ?? []).map((e) => `${Z(e.start)}–${Z(e.end)}`).join(", ");
 }
 function jt(e, t) {
+	if (!t.window) return "";
+	let n = [`${Z(t.window.start)}–${Z(t.window.end)}`];
+	return t.prices && n.push(`${K(e.lang, t.prices.night * 100, 1)} ct/kWh`), n.join(" · ");
+}
+function Mt(e, t) {
 	if (t.kind === "unavailable") {
 		let n = t.reasons.find((t) => e.optional(`plan.why.${t}`)) ?? "failed";
 		return e.optional(`plan.why.${n}`) ?? "";
 	}
-	let n = [], r = G(e.lang, t.target ?? 0, 0), i = t.sun_takes_over;
+	let n = [], r = K(e.lang, t.target ?? 0, 0), i = t.sun_takes_over;
 	return t.reasons.includes("balance") && n.push(e("plan.say.balance")), t.kind === "charge" && t.tariff === "dynamic" && t.charge_slots?.length ? n.push(e("plan.say.charge_slots", {
-		slots: kt(t),
+		slots: At(t),
 		target: r
 	})) : t.kind === "charge" ? n.push(e("plan.say.charge", {
-		from: X(t.charge_from),
+		from: Z(t.charge_from),
 		target: r
-	})) : t.kind === "hold" ? (n.push(e("plan.say.hold", { target: r })), t.empty_without && n.push(e("plan.say.empty", { time: X(t.empty_without) }))) : t.reasons.includes("small_saving") ? n.push(e("plan.say.small_saving")) : n.push(i ? e("plan.say.none", { time: X(i) }) : e("plan.say.none_nosun")), t.reasons.includes("max_price") && t.kind !== "charge" && n.push(e("plan.say.max_price")), t.day && (n.push(e("plan.day", {
-		time: X(t.day.defer_until),
-		kwh: G(e.lang, t.day.held_kwh, 0)
-	})), t.day.cost && t.day.cost >= .01 && n.push(e("plan.day.cost", { cost: `${G(e.lang, t.day.cost * 100, 0)} ct` }))), t.kind !== "none" && (i && t.full_at && Dt(t.full_at) === Dt(i) ? n.push(e("plan.say.sun_full", {
-		sun: X(i),
-		full: X(t.full_at)
-	})) : i ? n.push(e("plan.say.sun", { sun: X(i) })) : n.push(e("plan.say.nosun"))), n.join(" ");
+	})) : t.kind === "hold" ? (n.push(e("plan.say.hold", { target: r })), t.empty_without && n.push(e("plan.say.empty", { time: Z(t.empty_without) }))) : t.reasons.includes("small_saving") ? n.push(e("plan.say.small_saving")) : n.push(i ? e("plan.say.none", { time: Z(i) }) : e("plan.say.none_nosun")), t.reasons.includes("max_price") && t.kind !== "charge" && n.push(e("plan.say.max_price")), t.day && (n.push(e("plan.day", {
+		time: Z(t.day.defer_until),
+		kwh: K(e.lang, t.day.held_kwh, 0)
+	})), t.day.cost && t.day.cost >= .01 && n.push(e("plan.day.cost", { cost: `${K(e.lang, t.day.cost * 100, 0)} ct` }))), t.kind !== "none" && (i && t.full_at && Ot(t.full_at) === Ot(i) ? n.push(e("plan.say.sun_full", {
+		sun: Z(i),
+		full: Z(t.full_at)
+	})) : i ? n.push(e("plan.say.sun", { sun: Z(i) })) : n.push(e("plan.say.nosun"))), n.join(" ");
 }
-function Mt(e, t) {
+function Nt(e, t) {
 	return (t.batteries ?? []).map((n) => {
 		let r = [n.name];
-		return t.kind === "charge" ? r.push(`${G(e.lang, n.soc_start, 0)} → ${G(e.lang, n.target, 0)} %`, `${G(e.lang, n.charge_kwh, 1)} kWh`, `${G(e.lang, n.power_kw, 1)} kW`) : t.kind === "hold" ? r.push(e("plan.line.hold", { target: G(e.lang, n.target, 0) })) : r.push(e("plan.line.now", { soc: G(e.lang, n.soc, 0) })), n.controllable || r.push(e("plan.line.watch_only")), r.join(" · ");
+		return t.kind === "charge" ? r.push(`${K(e.lang, n.soc_start, 0)} → ${K(e.lang, n.target, 0)} %`, `${K(e.lang, n.charge_kwh, 1)} kWh`, `${K(e.lang, n.power_kw, 1)} kW`) : t.kind === "hold" ? r.push(e("plan.line.hold", { target: K(e.lang, n.target, 0) })) : r.push(e("plan.line.now", { soc: K(e.lang, n.soc, 0) })), n.controllable || r.push(e("plan.line.watch_only")), r.join(" · ");
 	});
 }
-function Nt(e, t, n = "EUR") {
+function Pt(e, t, n = "EUR") {
 	if (!t.cost) return "";
 	let r = (t) => new Intl.NumberFormat(e.lang, {
 		style: "currency",
@@ -7989,18 +8060,18 @@ function Nt(e, t, n = "EUR") {
 }
 //#endregion
 //#region src/router.ts
-var Pt = "/energy-joe", Ft = [
+var Ft = "/energy-joe", It = [
 	"overview",
 	"plan",
 	"review",
 	"devices",
 	"household",
 	"settings"
-], It = [
+], Lt = [
 	"overview",
 	"plan",
 	"review"
-], Lt = {
+], Rt = {
 	review: [
 		"result",
 		"days",
@@ -8031,34 +8102,34 @@ var Pt = "/energy-joe", Ft = [
 		"maintenance",
 		"about"
 	]
-}, Z = {
+}, Q = {
 	review: "result",
 	devices: "all",
 	household: "people",
 	settings: "operation"
-}, Rt = {
+}, zt = {
 	history: "/review/days",
 	learn: "/review/learned",
 	climate: "/devices/climate"
 };
-function zt(e) {
-	return e in Lt;
-}
 function Bt(e) {
+	return e in Rt;
+}
+function Vt(e) {
 	try {
 		return decodeURIComponent(e);
 	} catch {
 		return e;
 	}
 }
-function Vt(e) {
-	let t = e.split(/[?#]/, 1)[0].split("/").filter(Boolean).map(Bt), [n, r, i, a, ...o] = t;
+function Ht(e) {
+	let t = e.split(/[?#]/, 1)[0].split("/").filter(Boolean).map(Vt), [n, r, i, a, ...o] = t;
 	if (!n) return { route: { tab: "overview" } };
-	let s = Rt[n];
+	let s = zt[n];
 	if (s) {
 		let e = [s, ...t.slice(1).map(encodeURIComponent)].join("/");
 		return {
-			route: Vt(e).route,
+			route: Ht(e).route,
 			redirect: e
 		};
 	}
@@ -8067,66 +8138,66 @@ function Vt(e) {
 		redirect: "/plan"
 	} : { route: { tab: "plan" } };
 	let c = n;
-	if (!Ft.includes(c) || !zt(c)) return {
+	if (!It.includes(c) || !Bt(c)) return {
 		route: { tab: "overview" },
 		redirect: "/"
 	};
-	if (r && !Lt[c].includes(r)) return {
+	if (r && !Rt[c].includes(r)) return {
 		route: {
 			tab: c,
-			section: Z[c]
+			section: Q[c]
 		},
 		redirect: `/${c}`
 	};
 	let l = {
 		tab: c,
-		section: r ?? Z[c]
+		section: r ?? Q[c]
 	};
 	return i && (l.id = i), a && (l.sub = a), o.length && (l.rest = o), { route: l };
 }
-function Ht(e) {
+function Ut(e) {
 	if (typeof e == "string") return e.startsWith("/") ? e : `/${e}`;
 	if (e.tab === "overview") return "/";
-	let t = [e.tab], n = e.section ?? (e.id && zt(e.tab) ? Z[e.tab] : void 0);
+	let t = [e.tab], n = e.section ?? (e.id && Bt(e.tab) ? Q[e.tab] : void 0);
 	return n && (t.push(n), e.id && (t.push(e.id), e.sub && t.push(e.sub, ...e.rest ?? []))), `/${t.map(encodeURIComponent).join("/")}`;
 }
-function Ut(e, t) {
-	let n = Ht(t);
+function Wt(e, t) {
+	let n = Ut(t);
 	return n === "/" ? e : `${e}${n}`;
 }
-function Q(e, t, n = {}) {
+function Gt(e, t, n = {}) {
 	e.dispatchEvent(new CustomEvent("joe-navigate", {
 		detail: {
-			path: Ht(t),
+			path: Ut(t),
 			...n
 		},
 		bubbles: !0,
 		composed: !0
 	}));
 }
-function Wt(e, t) {
+function Kt(e, t) {
 	return (n) => {
-		n.defaultPrevented || n.metaKey || n.ctrlKey || n.shiftKey || n.altKey || n.button !== 0 || (n.preventDefault(), Q(n.currentTarget ?? window, e, t));
+		n.defaultPrevented || n.metaKey || n.ctrlKey || n.shiftKey || n.altKey || n.button !== 0 || (n.preventDefault(), Gt(n.currentTarget ?? window, e, t));
 	};
 }
-function Gt(e, t, n, r) {
-	return k`<a class=${r ?? ""} href=${Ut(e, t)} @click=${Wt(t)}>${n}</a>`;
+function qt(e, t, n, r) {
+	return A`<a class=${r ?? ""} href=${Wt(e, t)} @click=${Kt(t)}>${n}</a>`;
 }
-function Kt(e, t) {
+function Jt(e, t) {
 	if (history.state?.joeSheet) {
 		history.back();
 		return;
 	}
-	Q(e, t, { replace: !0 });
+	Gt(e, t, { replace: !0 });
 }
-function qt(e, t) {
+function Yt(e, t) {
 	let n = e.querySelector(`[data-anchor="${CSS.escape(t)}"]`);
 	return n ? (n.scrollIntoView({
 		block: "start",
 		behavior: "smooth"
-	}), n.classList.remove("flash"), n.offsetWidth, n.classList.add("flash"), window.setTimeout(() => n.classList.remove("flash"), 1500), Jt(n), !0) : !1;
+	}), n.classList.remove("flash"), n.offsetWidth, n.classList.add("flash"), window.setTimeout(() => n.classList.remove("flash"), 1500), Xt(n), !0) : !1;
 }
-function Jt(e) {
+function Xt(e) {
 	let t = !1, n = () => {
 		t = !0;
 	}, r = [
@@ -8147,12 +8218,12 @@ function Jt(e) {
 }
 //#endregion
 //#region src/components/car-charge.ts
-var $ = class extends R {
+var $ = class extends z {
 	constructor(...e) {
 		super(...e), this.flush = !1, this.values = {}, this.failed = !1;
 	}
 	static {
-		this.styles = [Qe, o`
+		this.styles = [Ze, o`
       :host {
         display: block;
       }
@@ -8188,6 +8259,10 @@ var $ = class extends R {
       .boost .unit {
         color: var(--joe-ink-2);
       }
+      .boost .plus {
+        color: var(--joe-ink-2);
+        white-space: nowrap;
+      }
       .boost .unit-seg button {
         min-width: 44px;
       }
@@ -8221,52 +8296,52 @@ var $ = class extends R {
     `];
 	}
 	render() {
-		return k`${this.renderBody()}
-    ${this.failed && this.t ? k`<p class="bad" role="status">${this.t("devices.charge.failed")}</p>` : j}`;
+		return A`${this.renderBody()}
+    ${this.failed && this.t ? A`<p class="bad" role="status">${this.t("devices.charge.failed")}</p>` : M}`;
 	}
 	renderBody() {
 		let { t: e, state: t, car: n } = this;
-		if (!e || !t || !n) return j;
-		let r = Y(t, n.id);
-		if (!r) return k`<p class="boost off" data-tipped>
+		if (!e || !t || !n) return M;
+		let r = X(t, n.id);
+		if (!r) return A`<p class="boost off" data-tipped>
         <ha-icon icon="mdi:power-plug-off-outline"></ha-icon>
         <span>${e("devices.charge.not_plugged", { car: n.name })}</span>
-        ${J(e, "boost")}
+        ${Y(e, "boost")}
       </p>`;
-		let i = t.plan?.window?.start, a = !!i && t.control?.tonight?.[r.id] === i, o = t.control?.boost?.[r.id], s = t.control?.actions?.[r.id], c = t.control?.tonight_target?.[r.id], l = n.need, u = t.cars?.cars?.[n.id]?.values ?? {}, d = xt(t, r.id), f = (t, n, r) => r === "km" ? e("devices.charge.km", {
-			target: G(e.lang, t, 0),
-			reserve: G(e.lang, n - t, 0)
-		}) : e("devices.charge.percent", { target: G(e.lang, t, 0) });
+		let i = t.plan?.window?.start, a = !!i && t.control?.tonight?.[r.id] === i, o = t.control?.boost?.[r.id], s = t.control?.actions?.[r.id], c = t.control?.tonight_target?.[r.id], l = n.need, u = t.cars?.cars?.[n.id]?.values ?? {}, d = bt(t, r.id), f = (t, n, r) => r === "km" ? e("devices.charge.km", {
+			target: K(e.lang, t, 0),
+			reserve: K(e.lang, n - t, 0)
+		}) : e("devices.charge.percent", { target: K(e.lang, t, 0) });
 		if (o) {
 			let t = s?.value;
-			return k`<div class="boost on" data-tipped>
+			return A`<div class="boost on" data-tipped>
         <span>
           ${e("devices.charge.now_running", {
 				amount: f(o.chosen, o.target, o.unit),
-				now: t == null ? "–" : `${G(e.lang, t, 0)} ${o.unit}`
+				now: t == null ? "–" : `${K(e.lang, t, 0)} ${o.unit}`
 			})}
         </span>
         <button type="button" class="mini-btn quiet" @click=${() => this.boost(null)}>${e("devices.boost.stop")}</button>
-        ${J(e, "boost")}
+        ${Y(e, "boost")}
       </div>`;
 		}
 		if (a) {
 			let t = c && c.night === i ? c : null;
-			return k`<div class="boost on" data-tipped>
+			return A`<div class="boost on" data-tipped>
         <span>
           ${s?.reason === "reached" ? e(t ? "devices.charge.tonight_done" : "devices.action.reached_plain", { amount: t ? f(t.chosen, t.target, t.unit) : "" }) : t ? e("devices.charge.tonight_set", { amount: f(t.chosen, t.target, t.unit) }) : e("devices.charge.tonight_window")}
         </span>
         <button type="button" class="mini-btn quiet" @click=${() => this.tonight(!1)}>${e("devices.boost.stop")}</button>
-        ${J(e, "boost")}
+        ${Y(e, "boost")}
       </div>`;
 		}
 		let p = [...u.soc ? ["%"] : [], ...u.range ? ["km"] : []];
-		if (!p.length) return k`<p class="boost off">${e("devices.charge.no_level", { car: n.name })}</p>`;
+		if (!p.length) return A`<p class="boost off">${e("devices.charge.no_level", { car: n.name })}</p>`;
 		let m = this.unit && p.includes(this.unit) ? this.unit : p[0], h = this.values[m] ?? (m === "%" ? 80 : 200), g = m === "%" ? 100 : 1500, ee = (e) => {
 			let t = e?.querySelector("input"), n = Number.parseFloat((t?.value ?? "").replace(",", "."));
 			return Math.round(Math.min(g, Math.max(1, Number.isFinite(n) ? n : h)));
 		};
-		return k`<form
+		return A`<form
       class="boost"
       data-tipped
       novalidate
@@ -8293,17 +8368,18 @@ var $ = class extends R {
 			});
 		}}
         />
-        ${p.length > 1 ? k`<span class="seg unit-seg" role="group" aria-label=${e("devices.boost.unit")}>
-              ${p.map((e) => k`<button
+        ${p.length > 1 ? A`<span class="seg unit-seg" role="group" aria-label=${e("devices.boost.unit")}>
+              ${p.map((e) => A`<button
                   type="button"
                   aria-pressed=${String(e === m)}
                   @click=${() => this.unit = e}
                 >
                   ${e}
                 </button>`)}
-            </span>` : k`<span class="unit">${m}</span>`}
+            </span>` : A`<span class="unit">${m}</span>`}
+        ${m === "km" ? A`<span class="plus">${e("devices.charge.plus_reserve", { reserve: K(e.lang, l.reserve_km ?? 50, 0) })}</span>` : M}
       </span>
-      ${J(e, "boost")}
+      ${Y(e, "boost")}
       <span class="charge-buttons">
         <button type="submit" class="mini-btn go" ?disabled=${t.mode === "off" || !r.enabled}>
           <ha-icon icon="mdi:ev-plug-type2"></ha-icon>${e("devices.charge.now")}
@@ -8317,13 +8393,13 @@ var $ = class extends R {
           <ha-icon icon="mdi:weather-night"></ha-icon>${e("devices.charge.tonight")}
         </button>
       </span>
-      ${m === "km" ? k`<small class="hint">${e("devices.boost.reserve", { reserve: G(e.lang, l.reserve_km ?? 50, 0) })}</small>` : j}
-      ${d?.how === "assume" || d?.how === "home" ? k`<small class="hint">${e("devices.charge.guessed", { point: r.name })}</small>` : j}
-      ${i ? j : k`<small class="hint">${e("devices.charge.no_night")}</small>`}
+      ${m === "km" ? A`<small class="hint">${e("devices.boost.reserve")}</small>` : M}
+      ${d?.how === "assume" || d?.how === "home" ? A`<small class="hint">${e("devices.charge.guessed", { point: r.name })}</small>` : M}
+      ${i ? M : A`<small class="hint">${e("devices.charge.no_night")}</small>`}
     </form>`;
 	}
 	get point() {
-		return this.car ? Y(this.state, this.car.id)?.id : void 0;
+		return this.car ? X(this.state, this.car.id)?.id : void 0;
 	}
 	async boost(e, t = "%") {
 		await this.call({
@@ -8353,13 +8429,13 @@ var $ = class extends R {
 		}
 	}
 };
-V([z({ attribute: !1 })], $.prototype, "hass", void 0), V([z({ attribute: !1 })], $.prototype, "t", void 0), V([z({ attribute: !1 })], $.prototype, "state", void 0), V([z({ attribute: !1 })], $.prototype, "car", void 0), V([z({
+H([B({ attribute: !1 })], $.prototype, "hass", void 0), H([B({ attribute: !1 })], $.prototype, "t", void 0), H([B({ attribute: !1 })], $.prototype, "state", void 0), H([B({ attribute: !1 })], $.prototype, "car", void 0), H([B({
 	type: Boolean,
 	reflect: !0
-})], $.prototype, "flush", void 0), V([B()], $.prototype, "values", void 0), V([B()], $.prototype, "unit", void 0), V([B()], $.prototype, "failed", void 0), Ye("joe-car-charge", $);
+})], $.prototype, "flush", void 0), H([V()], $.prototype, "values", void 0), H([V()], $.prototype, "unit", void 0), H([V()], $.prototype, "failed", void 0), Je("joe-car-charge", $);
 //#endregion
 //#region src/styles/tokens.ts
-var Yt = o`
+var Zt = o`
   :host {
     --joe-bg: #fbf6ec;
     --joe-surface: #ffffff;
@@ -8448,4 +8524,4 @@ var Yt = o`
   }
 `;
 //#endregion
-export { Re as $, xt as A, ct as B, yt as C, St as D, _t as E, it as F, Ye as G, ut as H, at as I, Ve as J, He as K, rt as L, Ct as M, J as N, Et as O, lt as P, Be as Q, G as R, bt as S, Y as T, V as U, W as V, Qe as W, Ge as X, Ke as Y, We as Z, Ot as _, Ft as a, A as at, X as b, Ht as c, _e as ct, Q as d, Ne as et, Wt as f, Mt as g, Nt as h, Lt as i, j as it, Tt as j, vt as k, Ut as l, o as lt, qt as m, Z as n, z as nt, It as o, k as ot, Vt as p, qe as q, Pt as r, R as rt, Kt as s, Ee as st, Yt as t, B as tt, Gt as u, jt as v, wt as w, At as x, kt as y, ot as z };
+export { Ue as $, Tt as A, K as B, vt as C, X as D, Ct as E, Y as F, H as G, st as H, ct as I, Ve as J, Ze as K, rt as L, bt as M, wt as N, gt as O, St as P, We as Q, it as R, yt as S, Et as T, G as U, at as V, lt as W, Be as X, Ke as Y, Ge as Z, kt as _, It as a, z as at, Z as b, Ut as c, A as ct, Gt as d, o as dt, ze as et, Kt as f, Nt as g, Pt as h, Rt as i, B as it, _t as j, xt as k, Wt as l, Te as lt, Yt as m, Q as n, Me as nt, Lt as o, M as ot, Ht as p, Je as q, Ft as r, V as rt, Jt as s, j as st, Zt as t, Le as tt, qt as u, ge as ut, Mt as v, Dt as w, jt as x, At as y, nt as z };

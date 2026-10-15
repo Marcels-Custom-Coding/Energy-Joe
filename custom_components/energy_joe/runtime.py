@@ -23,7 +23,7 @@ from .control.cars import CarWatcher
 from .control.climate import ClimateController
 from .control.executor import JoeExecutor
 from .control.notify import JoeNotifier
-from .discovery import async_car_updates, async_profile_updates
+from .discovery import async_car_sources, async_car_updates, async_profile_updates
 from .learn.learner import JoeLearner
 from .mail import oauth
 from .mail.inbox import CarInboxes
@@ -329,6 +329,25 @@ class JoeRuntime:
         self.async_update_config(patch, "user", "merge")
         return first["id"]
 
+    async def async_attach_to_car(
+        self, car_id: str | None, source_ids: list[str]
+    ) -> str:
+        """Attach cars Joe sees (by their source id) to a car, or to a new one
+        (`car_id` None): they leave the car they belonged to and are no longer
+        left out. Returns the car's id."""
+        found = {item["id"]: item for item in await async_car_sources(self._hass)}
+        # One Home Assistant does not show right now is moved as it was saved.
+        for car in self._config.get("cars") or []:
+            for source in car.get("sources") or []:
+                found.setdefault(source["id"], source)
+        if any(source_id not in found for source_id in source_ids):
+            raise ValueError("unknown_source")
+        patch, car = model_cars.attach_sources(
+            self._config, car_id, [found[source_id] for source_id in source_ids]
+        )
+        self.async_update_config(patch, "user", "attach")
+        return car
+
     @callback
     def async_split_car(self, car_id: str, source_id: str) -> str:
         """A source is another car: it becomes a car of its own (and Joe does
@@ -422,11 +441,11 @@ class JoeRuntime:
             )
         else:
             message = (
-                "wurde von Energy Joe ausgeschaltet, damit sie Joes Steuerung der "
+                "wurde von Energy Joe ausgeschaltet, damit sie die Steuerung der "
                 "Speicher nicht überschreibt"
                 if german
                 else "was switched off by Energy Joe so that it does not overwrite "
-                "Joe's battery steering"
+                "Energy Joe's battery steering"
             )
         failed = await battery_automations.async_switch(
             self._hass, entity_ids, on, switched_off, message

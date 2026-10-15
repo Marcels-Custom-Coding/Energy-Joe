@@ -3,11 +3,11 @@
     "step": {
       "user": {
         "title": "Energy Joe",
-        "description": "Joe moves in. He will ask his questions himself – open **Energy Joe** in the sidebar after adding."
+        "description": "I'm moving in. I'll ask my questions myself – after adding, open **Energy Joe** in the sidebar."
       }
     },
     "abort": {
-      "single_instance_allowed": "Energy Joe is already here. You will find him in the sidebar."
+      "single_instance_allowed": "Energy Joe is already set up. You'll find me in the sidebar."
     }
   },
   "entity": {
@@ -74,19 +74,19 @@
   "services": {
     "release": {
       "name": "Release now",
-      "description": "Puts back every value Joe set and stops steering for tonight."
+      "description": "I put back everything I set and stop steering tonight."
     },
     "replan": {
       "name": "Plan again",
-      "description": "Plans tonight again right away."
+      "description": "I recalculate tonight's plan right away."
     },
     "skip_tonight": {
       "name": "Skip tonight",
-      "description": "Joe does not steer the coming night.",
+      "description": "I won't steer the coming night.",
       "fields": {
         "skip": {
           "name": "Skip",
-          "description": "Off: steer after all."
+          "description": "Off: I steer after all."
         }
       }
     },
@@ -102,7 +102,7 @@
     },
     "answer": {
       "name": "Answer for tonight",
-      "description": "In the suggest mode: may Joe steer tonight?",
+      "description": "In Suggest mode: may I steer tonight?",
       "fields": {
         "accept": {
           "name": "Yes",
@@ -111,12 +111,12 @@
       }
     },
     "trigger_action": {
-      "name": "Night action tonight",
-      "description": "Runs a night action in the coming night, whatever the forecast says.",
+      "name": "Switch on device tonight",
+      "description": "Switches on a device that should run at night in the coming night, whatever the forecast says.",
       "fields": {
         "action_id": {
-          "name": "Action",
-          "description": "The id of the night action (shown in the panel)."
+          "name": "Device",
+          "description": "The id of the device."
         },
         "tonight": {
           "name": "Tonight",
@@ -137,20 +137,20 @@
   },
   "issues": {
     "release_failed": {
-      "title": "Joe could not put everything back",
-      "description": "These values are not back to where they were: {entities}. Joe keeps trying every five minutes. Check the devices or set the values back by hand."
+      "title": "I couldn't put everything back",
+      "description": "These values are not back to where they were: {entities}. I keep trying every five minutes. Check the devices or set the values back by hand."
     },
     "control_failed": {
       "title": "Steering failed",
-      "description": "Something went wrong steering {battery} ({code}). Joe leaves this battery alone tonight."
+      "description": "Something went wrong steering {battery} ({code}). I'll leave this battery alone tonight."
     },
     "no_progress": {
       "title": "Battery does not charge",
-      "description": "{battery} should charge, but its level has not risen for half an hour. Check whether the battery allows charging from the grid; a test run in the Energy Joe panel under Devices helps."
+      "description": "{battery} should charge, but its level has not risen for half an hour. Check whether the battery allows charging from the grid; a test run in the Energy Joe panel under Devices › Batteries helps."
     },
     "battery_transfer": {
       "title": "Batteries charge each other",
-      "description": "{charging} charges while {discharging} discharges, for more than two minutes, although Joe lets only one of them work at a time. Something else writes the same limits, or a block is not taken. Look at Devices › Batteries › Several batteries in the Energy Joe panel."
+      "description": "{charging} charges while {discharging} discharges, for more than two minutes, although I let only one of them work at a time. Something else writes the same limits, or a block is not taken. Look at Devices › Batteries › Several batteries in the Energy Joe panel."
     }
   },
   "exceptions": {

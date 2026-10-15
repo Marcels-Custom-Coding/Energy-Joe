@@ -4,10 +4,14 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 from typing import Any
+from unittest.mock import patch as mock_patch
 
 import pytest
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.typing import WebSocketGenerator
 
 from custom_components.energy_joe import model
+from custom_components.energy_joe.const import DOMAIN
 from custom_components.energy_joe.control.cars import CarWatcher
 from custom_components.energy_joe.discovery import car_updates
 from custom_components.energy_joe.discovery.snapshot import DeviceInfo
@@ -542,6 +546,146 @@ def test_levels_far_apart_are_not_merged(hass: HomeAssistant) -> None:
         {"soc": "sensor.two"},
     )
     assert found["name"] and found["against"] and not found["sure"]
+
+
+# --- searching again: attaching what Joe sees to a car -----------------------
+
+
+HYUNDAI = {
+    "id": "car:hyundai",
+    "kind": "car",
+    "platform": "kia_uvo",
+    "device_id": "hyundai",
+    "name": "KONA",
+    "vehicle": None,
+    "entities": {
+        "soc": "sensor.kona_ev_battery_level",
+        "range": "sensor.kona_ev_range",
+        "odometer": "sensor.kona_odometer",
+        "location": "device_tracker.kona_location",
+    },
+}
+
+
+def _deleted_kona() -> dict[str, Any]:
+    """Kona from evcc only: the Hyundai was deleted once and is left out since."""
+    config = model.validate(
+        {
+            "version": model.CONFIG_VERSION,
+            "cars": [
+                {
+                    "id": "kona",
+                    "name": "Kona",
+                    "sources": [
+                        {"id": "evcc:evcc_kona", "kind": "evcc", "name": "Kona"}
+                    ],
+                    "need": {
+                        "enabled": True,
+                        "range_entity": "sensor.kona_ev_range",
+                    },
+                },
+                {"id": "zweit", "name": "Zweitwagen", "sources": [HYUNDAI]},
+            ],
+        }
+    )
+    config["answers"]["ignored"] = ["car:hyundai", "battery:x"]
+    return config
+
+
+def test_a_left_out_car_is_attached_again() -> None:
+    """Attached to Kona: left out no more, gone from the other car, values filled."""
+    config = _deleted_kona()
+    patch, car_id = cars.attach_sources(config, "kona", [HYUNDAI])
+    assert car_id == "kona"
+    config = model.apply_update(config, patch, "user")
+    kona = cars.car_by_id(config, "kona")
+    assert [s["id"] for s in kona["sources"]] == ["evcc:evcc_kona", "car:hyundai"]
+    hyundai = kona["sources"][1]
+    assert hyundai["entities"] == HYUNDAI["entities"]
+    assert hyundai["device_id"] == "hyundai"
+    # The range is read from the Hyundai now, not by hand.
+    assert kona["need"]["range_entity"] is None and kona["need"]["enabled"]
+    assert cars.car_by_id(config, "zweit")["sources"] == []
+    assert config["answers"]["ignored"] == ["battery:x"]
+    # The next look around keeps it there.
+    assert cars.sync_cars(config, lambda _: None, [HYUNDAI]) == {}
+
+
+def test_attaching_twice_changes_nothing_more() -> None:
+    config = _deleted_kona()
+    config = model.apply_update(
+        config, cars.attach_sources(config, "kona", [HYUNDAI])[0], "user"
+    )
+    patch, _ = cars.attach_sources(config, "kona", [HYUNDAI])
+    assert "answers" not in patch
+    assert model.apply_update(config, patch, "user")["cars"] == config["cars"]
+
+
+def test_a_left_out_car_becomes_a_car_of_its_own() -> None:
+    """ "Wieder nutzen": no car given, a new one named after the integration."""
+    config = _deleted_kona()
+    config["cars"] = config["cars"][:1]
+    patch, car_id = cars.attach_sources(config, None, [HYUNDAI])
+    assert car_id == "car_kona"
+    config = model.apply_update(config, patch, "user")
+    new = cars.car_by_id(config, "car_kona")
+    assert new["name"] == "KONA" and [s["id"] for s in new["sources"]] == [
+        "car:hyundai"
+    ]
+    assert "car:hyundai" not in config["answers"]["ignored"]
+
+
+def test_attaching_needs_a_known_car_and_a_source() -> None:
+    config = _deleted_kona()
+    with pytest.raises(ValueError):
+        cars.attach_sources(config, "nope", [HYUNDAI])
+    with pytest.raises(ValueError):
+        cars.attach_sources(config, "kona", [])
+
+
+async def test_attach_over_the_websocket(
+    ready_hass: HomeAssistant, hass_ws_client: WebSocketGenerator
+) -> None:
+    """energy_joe/car/attach finds the source as discovery does and saves it."""
+    hass = ready_hass
+    entry = MockConfigEntry(domain=DOMAIN, data={})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    runtime = hass.data[DOMAIN]
+    config = _deleted_kona()
+    runtime.async_update_config(
+        {"cars": {c["id"]: c for c in config["cars"]}, "answers": config["answers"]},
+        "user",
+        "test",
+    )
+    client = await hass_ws_client(hass)
+
+    async def seen(_: HomeAssistant) -> list[dict[str, Any]]:
+        return [HYUNDAI]
+
+    with mock_patch("custom_components.energy_joe.runtime.async_car_sources", seen):
+        await client.send_json_auto_id(
+            {"type": f"{DOMAIN}/car/attach", "car": "kona", "sources": ["car:hyundai"]}
+        )
+        msg = await client.receive_json()
+        assert msg["success"] and msg["result"] == {"car": "kona"}
+        kona = cars.car_by_id(runtime.config, "kona")
+        assert [s["kind"] for s in kona["sources"]] == ["evcc", "car"]
+        assert runtime.config["answers"]["ignored"] == ["battery:x"]
+        await client.send_json_auto_id(
+            {"type": f"{DOMAIN}/car/attach", "car": "kona", "sources": ["car:x"]}
+        )
+        msg = await client.receive_json()
+        assert not msg["success"]
+    # Splitting still works.
+    await client.send_json_auto_id(
+        {"type": f"{DOMAIN}/car/split", "car": "kona", "source": "car:hyundai"}
+    )
+    msg = await client.receive_json()
+    assert msg["success"]
+    assert [s["id"] for s in cars.car_by_id(runtime.config, "kona")["sources"]] == [
+        "evcc:evcc_kona"
+    ]
 
 
 # --- the watcher: asking, answers, the evening reminder ----------------------------

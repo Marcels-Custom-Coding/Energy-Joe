@@ -64,6 +64,10 @@ export class JoeCarCharge extends LitElement {
       .boost .unit {
         color: var(--joe-ink-2);
       }
+      .boost .plus {
+        color: var(--joe-ink-2);
+        white-space: nowrap;
+      }
       .boost .unit-seg button {
         min-width: 44px;
       }
@@ -213,6 +217,9 @@ export class JoeCarCharge extends LitElement {
               )}
             </span>`
           : html`<span class="unit">${unit}</span>`}
+        ${unit === "km"
+          ? html`<span class="plus">${t("devices.charge.plus_reserve", { reserve: formatNumber(t.lang, need.reserve_km ?? 50, 0) })}</span>`
+          : nothing}
       </span>
       ${tip(t, "boost")}
       <span class="charge-buttons">
@@ -228,7 +235,7 @@ export class JoeCarCharge extends LitElement {
           <ha-icon icon="mdi:weather-night"></ha-icon>${t("devices.charge.tonight")}
         </button>
       </span>
-      ${unit === "km" ? html`<small class="hint">${t("devices.boost.reserve", { reserve: formatNumber(t.lang, need.reserve_km ?? 50, 0) })}</small>` : nothing}
+      ${unit === "km" ? html`<small class="hint">${t("devices.boost.reserve")}</small>` : nothing}
       ${at?.how === "assume" || at?.how === "home"
         ? html`<small class="hint">${t("devices.charge.guessed", { point: action.name })}</small>`
         : nothing}
