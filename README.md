@@ -60,13 +60,13 @@ Joe braucht kein Vorwissen. Er findet selbst, was er braucht, fragt in Alltagssp
 ### Heizung und Klima
 
 - Unter Geräte › Heizung & Klima wählst du für jedes Thermostat und jede Klimaanlage einzeln, ob Joe es steuert.
-- Ob jemand zu Hause ist, sagt eine einzige Gruppe in HA (z. B. eure Personen). Joe nimmt eine vorhandene oder legt auf Wunsch eine an, dazu optional einen Gastmodus für Babysitter oder Kinder ohne Handy – alles funktioniert auch ohne Joe.
+- Ob jemand zu Hause ist, sagt eine einzige Gruppe in Home Assistant (z. B. eure Personen); sie steht unter Haushalt › Wer ist da. Joe nimmt eine vorhandene oder legt auf Wunsch eine an, dazu optional einen Gastmodus für Babysitter oder Kinder ohne Handy – alles funktioniert auch ohne Joe.
 - Ist keiner zu Hause: absenken (beim Kühlen anheben), ganz aus oder ein Profil des Geräts – bei Homematic IP z. B. dein Heizprofil „Abwesend“. An freien Tagen auf Wunsch ein eigenes Profil.
 - Wochenprofile für Klimaanlagen wie bei Homematic IP: je Betriebsart (Heizen, Kühlen) sechs Profile mit Temperaturverlauf über den Tag – für alle Tage gleich, Mo–Fr und Sa–So oder jeden Tag einzeln, ein Schaltpunkt darf auch „aus“ sein. Haken je Profil: Normal, Feiertag, Abwesend, Homeoffice (aus dem Kalender). Joe schaltet selbst um, z. B. aufs Abwesenheitsprofil, wenn alle weg sind; von Hand Verstelltes gilt bis zum nächsten Schaltpunkt, von Hand Ausgeschaltetes bleibt aus.
 - Dieselben Haken für die Heizprogramme deiner Homematic-IP-Thermostate: Joe wechselt nur das Programm (im Automatik-Betrieb), die Zeiten bleiben im Gerät.
 - Kommt jemand heim (Integration „Nähe“/Proximity), fährt Joe die Räume so rechtzeitig hoch, wie sie es laut Gelerntem brauchen – mit der echten Fahrzeit vom Routendienst. Er lernt auch, wann ihr meist heimkommt, und heizt schon vorher. Danach stellt er alles genau so zurück, wie es war.
-- Klimaanlagen auf Wunsch nachts aus und rechtzeitig vor dem Morgen wieder an. Wann Nacht ist, sagen feste Uhrzeiten oder eine Entität (z. B. deine Gute-Nacht-Routine oder ein Bettsensor).
-- Messgerät koppeln: Joe schlägt zu jedem Klimagerät das Gerät vor, das seine Leistung misst (z. B. einen Kanal eines Shelly Pro 3EM). Mehrere Klimageräte dürfen sich ein Messgerät teilen.
+- Klimaanlagen auf Wunsch nachts aus und rechtzeitig vor dem Morgen wieder an. Wann Nacht ist, legst du unter Haushalt › Nachtruhe fest: feste Uhrzeiten oder eine Entität (z. B. deine Gute-Nacht-Routine oder ein Bettsensor).
+- Messgeräte: Joe schlägt zu jedem Klimagerät das Gerät vor, das seine Leistung misst (z. B. einen Kanal eines Shelly Pro 3EM). Mehrere Klimageräte dürfen sich ein Messgerät teilen.
 
 ### Termine des Autos
 

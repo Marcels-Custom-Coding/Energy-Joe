@@ -422,11 +422,11 @@ class JoeRuntime:
             )
         else:
             message = (
-                "wurde von Energy Joe ausgeschaltet, damit sie Joes Steuerung der "
+                "wurde von Energy Joe ausgeschaltet, damit sie die Steuerung der "
                 "Speicher nicht überschreibt"
                 if german
                 else "was switched off by Energy Joe so that it does not overwrite "
-                "Joe's battery steering"
+                "Energy Joe's battery steering"
             )
         failed = await battery_automations.async_switch(
             self._hass, entity_ids, on, switched_off, message

@@ -37,7 +37,8 @@ export const de = {
   "climate.route_eta": "Fahrzeit über den Routendienst",
   "climate.now.arriving_usual": "Jetzt: gleich ist die übliche Heimkehrzeit – ich fahre schon hoch.",
   "tip.climate_route_eta.title": "Wie weiß Joe, wann jemand heimkommt?",
-  "tip.climate_route_eta.text": "Zwei Wege: 1. Kommt jemand näher (Integration „Nähe“), frage ich den Routendienst (Haushalt › Unterwegs & Wetter: OpenStreetMap, Waze oder Google), wie lange die Fahrt noch dauert – mit Stau, wo der Dienst ihn kennt. Dafür geht die Position der Person, auf etwa 100 m gerundet, an diesen Dienst. Schaltest du das aus, rechne ich mit 40 km/h. 2. Ich merke mir, wann ihr an Arbeits- und freien Tagen meist heimkommt, und fahre die Räume zu dieser Zeit schon vorher hoch. Wer zu einer ganz anderen Zeit nur in der Nähe vorbeifährt, zählt erst, wenn er stetig näher kommt.",
+  "tip.climate_route_eta.text":
+    "Ich nutze zwei Wege.\n**1. Wer näher kommt:** Mit der Integration „Nähe“ frage ich den Routendienst (Haushalt › Unterwegs & Wetter: OpenStreetMap, Waze oder Google), wie lange die Fahrt noch dauert – mit Stau, wo der Dienst ihn kennt. Dafür geht die Position der Person, auf etwa 100 m gerundet, an diesen Dienst. Schaltest du das aus, rechne ich mit 40 km/h.\n**2. Eure übliche Zeit:** Ich merke mir, wann ihr an Arbeits- und freien Tagen meist heimkommt, und fahre die Räume schon vorher hoch. Wer nur zu einer ganz anderen Zeit in der Nähe vorbeifährt, zählt erst, wenn er stetig näher kommt.",
   "tip.climate_route_eta.hint":
     "Die übliche Zeit kenne ich nach 4 Heimkehren an solchen Tagen, und nur, wenn sie nicht mehr als 45 Minuten schwankt.",
   "climate.no_proximity":
@@ -75,7 +76,7 @@ export const de = {
     "Angelegt von Energy Joe: {tracker} folgt dem Schalter {guest} (an = home, aus = not_home), damit die Anwesenheitsgruppe bei home/not_home bleibt.",
   "tip.household_guest.title": "Wie funktioniert der Gastmodus?",
   "tip.household_guest.text":
-    "Ich lege drei normale Dinge in Home Assistant an: den Schalter „Gastmodus“, einen Geräte-Tracker „Gast“ und eine Automation, die den Tracker dem Schalter folgen lässt (an = zu Hause, aus = weg). Der Tracker ist ein Mitglied deiner Anwesenheitsgruppe – wie eine Person. Ein Schalter direkt in der Gruppe würde ihren Zustand auf an/aus ändern, und Automationen, die auf „home“ prüfen, liefen nicht mehr.",
+    "Ich lege drei ganz normale Bausteine in Home Assistant an: den Schalter „Gastmodus“, einen Geräte-Tracker „Gast“ und eine Automation, die den Tracker dem Schalter folgen lässt (an = zu Hause, aus = weg). Der Tracker gehört zu deiner Anwesenheitsgruppe, wie eine Person. Läge der Schalter selbst in der Gruppe, hätte sie nur noch den Zustand an/aus – und Automationen, die auf „home“ prüfen, würden nicht mehr greifen.",
   "tip.household_guest.hint":
     "Alles funktioniert auch ohne mich. Schalte den Gastmodus wieder aus, wenn der Besuch geht.",
   "household.presence.create": "Helfer anlegen",
@@ -162,7 +163,8 @@ export const de = {
   "climate.open_device": "Gerät in Home Assistant öffnen ({id})",
   "climate.open_meter": "Messgerät in Home Assistant öffnen",
   "pick.night.title": "Was sagt dir, dass ihr im Bett seid?",
-  "tip.climate_night.text": "Die Klimaanlage geht nachts aus und so früh wieder an, dass es zur eingestellten Morgen-Zeit wieder angenehm ist. Woran ich die Nacht erkenne – feste Uhrzeit oder eine Entität –, stellst du unter Haushalt › Nachtruhe ein. Wie lange der Raum zum Abkühlen braucht, lerne ich mit der Zeit.",
+  "tip.climate_night.text":
+    "Nachts schalte ich die Klimaanlage aus und rechtzeitig vor deiner Morgenzeit wieder an, damit es dann angenehm ist. Woran ich die Nacht erkenne – feste Uhrzeit oder eine Entität –, stellst du unter Haushalt › Nachtruhe ein. Wie lange der Raum zum Abkühlen braucht, lerne ich mit der Zeit.",
   "tip.climate_night_source.title": "Woran erkennt Joe die Nacht?",
   "tip.climate_night_source.text":
     "„An festen Uhrzeiten“: jede Klimaanlage hat ihre Zeit von – bis. „An einer Entität“: Nacht ist, solange die gewählte Entität „an“ ist – etwa ein Helfer (input_boolean), den deine Gute-Nacht-Routine einschaltet und morgens wieder aus, ein Bettsensor oder ein Zeitplan.",
@@ -248,7 +250,7 @@ export const de = {
   "devprof.pending.start":
     "Die Haken wirken, sobald die laufende Abwesenheit oder der freie Tag vorbei ist – bis dahin bleibt alles, wie es ist.",
   "devprof.pending.end":
-    "Das Abwesenheitsprogramm läuft noch, bis jemand heimkommt; dann stelle ich das normale Programm ein und gebe ab.",
+    "Das Abwesenheitsprogramm läuft noch, bis jemand heimkommt. Dann stelle ich das normale Programm ein und überlasse das Gerät wieder sich selbst.",
   "week.legacy_now":
     "Die Klimaanlage steht gerade auf „{state}“ – dafür gibt es keine Profile, also gilt die Einstellung darunter.",
   "climate.hvac.off": "Aus",
@@ -449,7 +451,8 @@ export const de = {
   "past.learned.presence.usual": "kommt an Tagen wie heute meist gegen {time} heim",
   "past.learned.presence.no_calendar": "Ohne Kalender weiß ich nicht, was für ein Tag für diese Person ansteht.",
   "past.learned.climate": "Heizung & Klima",
-  "past.learned.climate.say": "So schnell wird ein Raum wieder warm (beim Kühlen: kühl), wenn ich ihn nach dem Absenken zurückstelle. Danach richte ich, wie früh ich anfange.",
+  "past.learned.climate.say":
+    "So schnell wird ein Raum wieder warm (beim Kühlen: kühl), wenn ich ihn nach dem Absenken zurückstelle. Daran sehe ich, wie früh ich anfangen muss.",
   "past.learned.climate.rate": "{rate} °C pro Stunde",
   "past.learned.climate.none": "Sobald ich Heizung oder Klima steuere, lerne ich hier, wie schnell jeder Raum warm oder kühl wird.",
   "past.learned.climate.open": "Zu Heizung & Klima →",
@@ -655,7 +658,7 @@ export const de = {
   "scan.looking": "Ich schau mich um …",
   "scan.title": "Das hab ich |gefunden",
   "scan.lead":
-    "Das nehme ich ab jetzt. Passt etwas nicht, ändere es oder lass es weg – was du einstellst, überschreibe ich nie.",
+    "Damit arbeite ich ab jetzt. Passt etwas nicht, ändere es oder lass es weg – was du einstellst, überschreibe ich nie.",
   "scan.again": "Nochmal suchen",
   "scan.why": "Warum?",
   "scan.failed": "Beim Umschauen ist etwas schiefgegangen. Versuch es nochmal.",
@@ -874,7 +877,8 @@ export const de = {
   "review.home.flexible": "Für den Speicher rechne ich heraus: {names}. Das Auto lade ich nie aus dem Hausspeicher.",
   "review.home.flexible_some": "Für den Speicher rechne ich heraus: {names}.",
   "review.home.flexible_none": "Laufen bei dir Geräte nur mit Sonnenüberschuss oder günstigem Strom? Sag es mir unter Geräte › Weitere Geräte – dann plane ich den Speicher ohne sie.",
-  "review.home.off": "Dein Sensor zeigt in den letzten {days} Tagen {pct} % {direction} als Netz + PV ± Speicher. Fehlt darin vielleicht eine kleine PV-Anlage? Ich rechne mit Netz + PV ± Speicher.",
+  "review.home.off":
+    "In den letzten {days} Tagen zeigt dein Sensor {pct} % {direction} als Netz + PV ± Speicher. Fehlt darin vielleicht eine kleine PV-Anlage? Ich rechne mit Netz + PV ± Speicher.",
   "review.home.less": "weniger",
   "review.home.more": "mehr",
   "review.home.none":
@@ -890,7 +894,7 @@ export const de = {
   "pick.suggested": "Joe schlägt vor",
   "pick.fitting": "Passende",
   "pick.all": "Alle Entitäten",
-  "pick.empty": "Hier passt nichts. Schalte unten „Alle zeigen“ ein oder such nach einem anderen Wort.",
+  "pick.empty": "Hier passt nichts. Tipp unten auf „Alle zeigen“ oder such nach einem anderen Wort.",
   "pick.more": "{count} weitere zeigen",
   "pick.show_all": "Alle zeigen",
   "pick.apply": "Übernehmen",
@@ -1069,7 +1073,8 @@ export const de = {
   "household.night.lead": "Nachtruhe heißt: Ihr liegt im Bett. Geräte mit „Nachts aus“ schalten dann ab und sind morgens rechtzeitig wieder angenehm.",
   "household.night.source": "So erkenne ich die Nacht",
   "household.night.devices": "Geräte mit „Nachts aus“",
-  "household.night.devices.none": "Noch hat kein Gerät „Nachts aus“ eingeschaltet. Das stellst du am Gerät unter Heizung & Klima ein.",
+  "household.night.devices.none":
+    "Noch hat kein Gerät „Nachts aus“ eingeschaltet. Das stellst du am Gerät unter Geräte › Heizung & Klima ein.",
   "household.night.span": "{from}–{until} Uhr",
   "household.night.until": "spätestens um {until} Uhr wieder angenehm",
   "household.night.not_steered": "steuere ich gerade nicht",
@@ -1144,7 +1149,8 @@ export const de = {
   "rule.day_surplus": "Tagsüber Überschuss abgeben",
   "rule.day_surplus.hint": "An sonnigen Tagen laden die Speicher nur so schnell, wie sie müssen – der Rest der Sonne bleibt für evcc (z. B. Auto oder Fußbodenheizung im PV-Modus).",
   "tip.r_day_surplus.title": "Was heißt „Tagsüber Überschuss abgeben“?",
-  "tip.r_day_surplus.text": "Normalerweise schlucken die Speicher morgens die ganze Sonne und sind mittags voll. Erst dann sieht evcc Überschuss. Ist der Schalter an, drossle ich das Laden der Speicher: Sie laden gerade so schnell, dass sie trotzdem voll sind, bevor die Sonne am Abend nicht mehr fürs Haus reicht. Den Rest sieht evcc am Netzzähler – und ein Ladepunkt im PV-Modus läuft damit den ganzen Tag, z. B. die Fußbodenheizung. Bleibt die Sonne hinter der Vorhersage zurück, lade ich sofort schneller; reicht sie gar nicht mehr, lasse ich ganz los.",
+  "tip.r_day_surplus.text":
+    "Normalerweise schlucken die Speicher morgens die ganze Sonne und sind mittags voll – erst dann sieht evcc Überschuss. Ist der Schalter an, bremse ich das Laden der Speicher: Sie laden nur so schnell, dass sie trotzdem voll sind, bevor die Sonne am Abend nicht mehr fürs Haus reicht. Den Rest sieht evcc am Netzzähler, und ein Ladepunkt im PV-Modus (z. B. die Fußbodenheizung) läuft damit den ganzen Tag.\nBleibt die Sonne hinter der Vorhersage zurück, lade ich sofort schneller; reicht sie gar nicht mehr, lasse ich ganz los.",
   "tip.r_day_surplus.hint": "Nur wenn ein evcc-Ladepunkt auf PV oder Min+PV steht und Strom nehmen kann, nur bei Speichern mit einer Ladegrenze in W oder kW und bestandenem Testlauf und nur im Live-Betrieb. Abends ist alles wieder wie vorher.",
   "rule.day_caution": "Wie vorsichtig?",
   "rule.day_caution.tight": "Knapp",
@@ -1159,7 +1165,7 @@ export const de = {
   "rule.reserve_soc.hint":
     "Mindestens so viel bleibt in jedem Speicher. Hat ein Speicher eine höhere Entladegrenze, gilt die.",
   "tip.r_reserve_soc.text":
-    "Die Untergrenze für alle Speicher – zum Beispiel als Notreserve oder um die Batterie zu schonen. Jeder Speicher hat zusätzlich seine eigene Entladegrenze (am Gerät eingestellt, siehe Speicher). Ich rechne je Speicher mit dem höheren der beiden Werte.",
+    "Die Untergrenze für alle Speicher – zum Beispiel als Notreserve oder um die Speicher zu schonen. Jeder Speicher hat zusätzlich seine eigene Entladegrenze (am Gerät eingestellt, siehe Speicher). Ich rechne je Speicher mit dem höheren der beiden Werte.",
   "tip.r_reserve_soc.hint": "10 % passen für die meisten Speicher.",
   "rule.max_target_soc": "Nachts höchstens laden bis",
   "rule.max_target_soc.hint": "Mehr lade ich nachts nicht aus dem Netz.",
@@ -1343,7 +1349,8 @@ export const de = {
   "tip.f_battery_priority.title": "Was heißt Reihenfolge?",
   "tip.f_battery_priority.text": "Hast du mehrere Speicher, lade ich den mit der kleineren Zahl zuerst. 1 = zuerst.",
   "tip.f_battery_control.title": "Was steht unter Steuern?",
-  "tip.f_battery_control.text": "Ganz oben steht, wie ich diesen Speicher steuere. Mit „Regler einrichten“ legst du fest, über welche Schalter und Werte ich das tue; „Nur beobachten“ heißt: Ich schaue nur zu und schalte nichts. Im Live-Betrieb stelle ich Ladeziel und Entladung selbst ein und stelle am Ende jeder Nacht alles zurück.\nDarunter stehen Name, Größe, Höchstleistung, Entladegrenze und bei mehreren Speichern die Reihenfolge. Jedes Feld hat seine eigene Erklärung, und was du dort änderst, speichere ich sofort.",
+  "tip.f_battery_control.text":
+    "Ganz oben steht, wie ich diesen Speicher steuere. Mit „Regler einrichten“ legst du fest, über welche Schalter und Werte ich das tue; bei „Nur beobachten“ schaue ich nur zu und schalte nichts. Im Live-Betrieb stelle ich Ladeziel und Entladung selbst ein und setze am Ende jeder Nacht alles zurück.\nDarunter stehen Name, Größe, Höchstleistung, Entladegrenze und bei mehreren Speichern die Reihenfolge. Jedes Feld hat seine eigene Erklärung. Was du dort änderst, speichere ich sofort.",
   "tip.f_battery_control.hint": "In der Simulation schalte ich sowieso nichts.",
   "tip.f_calendars.title": "Wozu die Kalender?",
   "tip.f_calendars.text":
@@ -1376,7 +1383,7 @@ export const de = {
     "Teurer als das lade ich nie aus dem Netz – auch wenn die Rechnung es knapp empfehlen würde. Halten darf ich die Speicher trotzdem.",
   "tip.r_min_saving.title": "Warum eine Mindestersparnis?",
   "tip.r_min_saving.text":
-    "Jedes Steuern schreibt Werte in deine Geräte. Bringt eine Nacht weniger als diesen Betrag, lasse ich es und die Speicher laufen wie ohne mich. Pflegenächte sind ausgenommen.",
+    "Jedes Mal, wenn ich steuere, schreibe ich Werte in deine Geräte. Bringt eine Nacht weniger als diesen Betrag, lasse ich es und die Speicher laufen wie ohne mich. Pflegenächte sind ausgenommen.",
   "tip.r_grid_friendly.title": "Was heißt netzdienlich?",
   "tip.r_grid_friendly.text":
     "Mittags liefern alle Solaranlagen gleichzeitig am meisten – dann ist das Netz voll. Morgens und abends brauchen alle Strom – dann ist es knapp.\n**Speicher**: An sonnigen Tagen halte ich das Laden morgens zurück, der Überschuss geht ins Netz, und der Speicher lädt in der Mittagsspitze. Ich rechne vorsichtig mit 80 % der Prognose und gebe früher frei, wenn die Sonne zurückbleibt. Das geht bei Speichern, deren Ladeleistung ich begrenzen kann.\n**Morgens und abends** nimmt das Haus Strom aus dem Speicher statt aus dem Netz.\n**Auto**: Fährt es erst nachmittags, lädt es mit Sonne statt nachts.",
@@ -1399,7 +1406,7 @@ export const de = {
     "So viele Minuten vor Beginn der günstigen Zeit rechne ich den Plan für die Nacht aus – mit der neuesten Prognose.",
   "tip.r_reset_lead_min.title": "Warum vor dem Ende zurückstellen?",
   "tip.r_reset_lead_min.text":
-    "So viele Minuten vor Ende der günstigen Zeit stelle ich alles zurück, zum Beispiel die Wallbox von „Jetzt“ auf „PV“. Manche Geräte laufen kurz nach – so kostet nichts den Tagpreis.",
+    "So viele Minuten vor Ende der günstigen Zeit stelle ich alles zurück, zum Beispiel die Wallbox von „Jetzt“ auf „PV“. Manche Geräte laufen noch kurz nach – so landet nichts im teureren Tagtarif.",
   "tip.r_priority.title": "Wer bekommt zuerst Strom?",
   "tip.r_priority.text":
     "Reicht das Netzlimit nicht für alle, bekommt zuerst Strom, wer oben steht. Die anderen warten oder laden langsamer.",
@@ -1484,7 +1491,8 @@ export const de = {
   "overview.result.night": "Nacht zum {day}",
   "overview.result.none": "Nach der ersten geplanten Nacht rechne ich nach, was mein Plan gebracht hätte.",
   "tip.inbox.title": "Was steht hier?",
-  "tip.inbox.text": "Alles, wobei ich dich brauche: deine Antwort für heute Nacht, Hinweise zu deinen Geräten, was noch nicht eingerichtet ist, neu gefundene Geräte und Fragen zu auffälligen Tagen. Hinweise auf Fehler stehen oben und bleiben, bis der Fehler behoben ist. Ich zeige erst drei Zeilen, den Rest unter „weitere zeigen“. Ein Tipp auf eine Zeile bringt dich dorthin, wo du es erledigst. Ist nichts offen, verschwindet dieser Kasten.",
+  "tip.inbox.text":
+    "Alles, wobei ich dich brauche: deine Antwort für heute Nacht, Hinweise zu deinen Geräten, noch nicht Eingerichtetes, neu gefundene Geräte und Fragen zu auffälligen Tagen. Hinweise auf Fehler stehen oben und bleiben, bis der Fehler behoben ist. Zuerst zeige ich drei Zeilen, den Rest unter „weitere zeigen“. Ein Tipp auf eine Zeile bringt dich dorthin, wo du es erledigst. Ist nichts offen, verschwindet der Kasten.",
   "tip.todo_dismiss.title": "Was macht „Brauch ich nicht“?",
   "tip.todo_dismiss.text": "Die Zeile verschwindet, und ich zeige sie nicht wieder. Geändert wird nichts – einstellen kannst du es jederzeit dort, wo die Zeile hinführt.",
   "tip.quick.title": "Wofür ist „Schnell“?",
@@ -1762,7 +1770,8 @@ export const de = {
   "ask.answer.special": "Etwas anderes Besonderes",
   "ask.answer.normal": "Ganz normaler Tag",
   "learn.model": "Verbrauch und Wetter",
-  "learn.model.no_weather": "Ohne Wetter-Entität kenne ich die Außentemperatur nicht. Sobald du eine wählst, lerne ich, wie viel ihr bei Kälte mehr braucht.",
+  "learn.model.no_weather":
+    "Solange keine Wettervorhersage gewählt ist, kenne ich die Außentemperatur nicht. Sobald du eine wählst, lerne ich, wie viel ihr bei Kälte mehr braucht.",
   "learn.model.learning":
     "Ich vergleiche jeden Tag euren Verbrauch mit der Außentemperatur. Ab {need} vollständigen Tagen rechne ich damit – {have} habe ich.",
   "learn.model.base": "An warmen Tagen braucht ihr etwa {value} kWh.",
@@ -1798,7 +1807,7 @@ export const de = {
   "learn.battery.no_power": "Ohne Leistungsmessung des Speichers kann ich Größe und Verluste nicht messen.",
   "learn.battery.user": "Du hast {value} kWh eingetragen – damit rechne ich weiter.",
   "learn.battery.odd":
-    "Das passt nicht zu den {value} kWh laut Gerät – ich rechne lieber mit dem Gerätewert. Prüfe den Ladestand- und den Leistungs-Sensor.",
+    "Das passt nicht zu den {value} kWh laut Gerät – ich rechne lieber mit dem Gerätewert. Prüf die Sensoren für Ladestand und Leistung.",
   "learn.battery.uses_nominal": "Laut Gerät {value} kWh – ich rechne mit dem gemessenen Wert.",
   "learn.battery.uses": "Ich rechne mit dem gemessenen Wert.",
   "learn.battery.capacity": "{value} kWh nutzbar",
@@ -1819,7 +1828,7 @@ export const de = {
   "learn.hot_water.none": "Richte unter Geräte › Warmwasser dein Warmwasser mit Temperatursensor ein, dann lerne ich, wie schnell es heizt und wie viel ihr am Tag braucht.",
   "learn.presence": "Wer wann zu Hause ist",
   "learn.presence.value": "{label}: {hours} h",
-  "learn.presence.no_person": "Ohne Personen-Entität sehe ich nicht, wann jemand zu Hause ist.",
+  "learn.presence.no_person": "Ohne Personen in Home Assistant sehe ich nicht, wann jemand zu Hause ist.",
   "learn.presence.none":
     "Ordne Personen ihre Kalender zu, dann lerne ich, wie viele Stunden sie bei Büro, Homeoffice oder Urlaub zu Hause sind.",
   "learn.presence.calendars": "Kalender zuordnen →",
@@ -2247,7 +2256,7 @@ export const de = {
     "Wie schnell der Speicher heizt, wie viel er im Stehen verliert und wie viele Grad ihr am Tag verbraucht. Daraus rechne ich die Zieltemperatur für die Nacht und wann das Heizen starten muss, damit es zum Ende der günstigen Zeit fertig ist.",
   "tip.learn_presence.title": "Wozu die Anwesenheit?",
   "tip.learn_presence.text":
-    "Aus euren Kalendern lese ich, was morgen ansteht – Büro, Homeoffice, Urlaub. Wie viele Stunden jemand an solchen Tagen zu Hause ist, lerne ich aus der Personen-Entität. Wer zu Hause ist, verbraucht mehr; das fließt in die Rechnung für morgen ein.",
+    "Aus euren Kalendern lese ich, was morgen ansteht – Büro, Homeoffice, Urlaub. Wie viele Stunden jemand an solchen Tagen zu Hause ist, lerne ich aus seiner Anwesenheit in Home Assistant. Wer zu Hause ist, verbraucht mehr; das fließt in die Rechnung für morgen ein.",
   "tip.learn_calendar.title": "Wie lese ich eure Kalender?",
   "tip.learn_calendar.text":
     "Für jede Person schaue ich in ihre Kalender, ganztägige Termine zuerst. Das erste passende Stichwort bestimmt die Art des Tages. Passt ein Termin zu mehreren Arten, gilt die obere Zeile.\nGroß- und Kleinschreibung spielt keine Rolle.",
@@ -2912,8 +2921,8 @@ export const de = {
   "tip.solar_sleeps.text": "Manche Wechselrichter schalten sich ab, wenn keine Sonne mehr scheint. Ihr Wert ist dann in Home Assistant „nicht verfügbar“. Ist das bei dir so, schalte es hier ein: Solange die Sonne tief steht, zähle ich dann 0 W und warne nicht.",
   "tip.solar_sleeps.hint": "Steht die Sonne hoch und der Wert fehlt trotzdem, warne ich weiter – dann stimmt wirklich etwas nicht.",
   "log.limit_ref_test": "{battery}: Ladegrenze für ein paar Minuten auf {value} % – ich messe, wofür 100 % stehen",
-  "log.limit_ref": "Bezugsgröße gelernt: Bei {battery} stehen 100 % für {power} kW",
-  "log.limit_ref_failed": "{battery}: Bezugsgröße nicht gelernt – ich versuche es an einem anderen Tag",
+  "log.limit_ref": "Gelernt: Bei {battery} stehen 100 % für {power} kW",
+  "log.limit_ref_failed": "{battery}: Wert für 100 % nicht gelernt – ich versuche es an einem anderen Tag",
   "log.limit_ref_failed.no_effect": "{battery}: Die Testgrenze hat nichts gebremst – ich versuche es an einem anderen Tag mit einem kleineren Wert",
   "log.limit_ref_failed.sun": "{battery}: Während des Tests kamen Wolken – ich versuche es an einem anderen Tag",
   "log.limit_ref_failed.implausible": "{battery}: Die Messung passte nicht zusammen – ich versuche es an einem anderen Tag",
@@ -3187,10 +3196,10 @@ export const de = {
   "plan.tonight.charge.energy": "≈ {kwh} kWh aus dem Netz, mit bis zu {kw} kW",
   "plan.tonight.hold": "lädt nicht, hält in der günstigen Zeit aber {target} %",
   "plan.tonight.idle": "muss heute Nacht nichts tun, jetzt {soc} %",
-  "log.boost": "{battery}: einfach laden bis {target} {unit}",
-  "log.boost_end.reached": "{battery}: einfach laden – Ziel erreicht",
-  "log.boost_end.stopped": "{battery}: einfach laden beendet",
-  "log.boost_end.expired": "{battery}: einfach laden nach 24 Stunden beendet",
+  "log.boost": "{battery}: Jetzt laden bis {target} {unit}",
+  "log.boost_end.reached": "{battery}: Jetzt laden – Ziel erreicht",
+  "log.boost_end.stopped": "{battery}: Jetzt laden beendet",
+  "log.boost_end.expired": "{battery}: Jetzt laden nach 24 Stunden beendet",
   "log.action_on": "{battery}: eingeschaltet ({value})",
   "log.action_off": "{battery}: zurückgestellt ({value})",
   "log.action_done": "{battery}: Ziel erreicht",

@@ -3,11 +3,11 @@
     "step": {
       "user": {
         "title": "Energy Joe",
-        "description": "Joe zieht ein. Seine Fragen stellt er dir selbst – öffne danach **Energy Joe** in der Seitenleiste."
+        "description": "Ich ziehe ein. Meine Fragen stelle ich dir gleich selbst – öffne danach **Energy Joe** in der Seitenleiste."
       }
     },
     "abort": {
-      "single_instance_allowed": "Energy Joe ist schon da. Du findest ihn in der Seitenleiste."
+      "single_instance_allowed": "Energy Joe ist schon eingerichtet. Du findest mich in der Seitenleiste."
     }
   },
   "entity": {
@@ -74,19 +74,19 @@
   "services": {
     "release": {
       "name": "Sofort freigeben",
-      "description": "Stellt alle Werte zurück, die Joe gesetzt hat, und steuert heute Nacht nicht mehr."
+      "description": "Ich stelle alles zurück, was ich gesetzt habe, und steuere heute Nacht nicht mehr."
     },
     "replan": {
       "name": "Neu planen",
-      "description": "Rechnet den Plan für heute Nacht sofort neu."
+      "description": "Ich rechne den Plan für heute Nacht sofort neu."
     },
     "skip_tonight": {
       "name": "Heute Nacht aussetzen",
-      "description": "Joe steuert die kommende Nacht nicht.",
+      "description": "Ich steuere die kommende Nacht nicht.",
       "fields": {
         "skip": {
           "name": "Aussetzen",
-          "description": "Aus: doch steuern."
+          "description": "Aus: ich steuere doch."
         }
       }
     },
@@ -102,7 +102,7 @@
     },
     "answer": {
       "name": "Antwort für heute Nacht",
-      "description": "Im Modus Vorschlagen: Darf Joe heute Nacht steuern?",
+      "description": "Im Modus Vorschlagen: Darf ich heute Nacht steuern?",
       "fields": {
         "accept": {
           "name": "Ja",
@@ -111,12 +111,12 @@
       }
     },
     "trigger_action": {
-      "name": "Nacht-Aktion heute Nacht",
-      "description": "Lässt eine Nacht-Aktion in der kommenden Nacht laufen, egal was die Prognose sagt.",
+      "name": "Gerät heute Nacht einschalten",
+      "description": "Schaltet ein Gerät, das nachts laufen soll, in der kommenden Nacht ein – egal was die Prognose sagt.",
       "fields": {
         "action_id": {
-          "name": "Aktion",
-          "description": "Die Kennung der Nacht-Aktion (steht im Panel)."
+          "name": "Gerät",
+          "description": "Die Kennung des Geräts."
         },
         "tonight": {
           "name": "Heute Nacht",
@@ -137,20 +137,20 @@
   },
   "issues": {
     "release_failed": {
-      "title": "Joe konnte nicht alles zurückstellen",
-      "description": "Diese Werte stehen noch nicht wieder auf ihrem Ausgangswert: {entities}. Joe versucht es alle fünf Minuten weiter. Prüf die Geräte oder stell die Werte von Hand zurück."
+      "title": "Ich konnte nicht alles zurückstellen",
+      "description": "Diese Werte stehen noch nicht wieder auf ihrem Ausgangswert: {entities}. Ich versuche es alle fünf Minuten weiter. Prüf die Geräte oder stell die Werte von Hand zurück."
     },
     "control_failed": {
       "title": "Steuern hat nicht geklappt",
-      "description": "Beim Steuern von {battery} ging etwas schief ({code}). Joe lässt den Speicher für heute Nacht in Ruhe."
+      "description": "Beim Steuern von {battery} ging etwas schief ({code}). Ich lasse den Speicher für heute Nacht in Ruhe."
     },
     "no_progress": {
       "title": "Speicher lädt nicht",
-      "description": "{battery} soll laden, der Ladestand steigt aber seit einer halben Stunde nicht. Prüfe, ob der Speicher Netzladen erlaubt; ein Testlauf im Energy-Joe-Panel unter Geräte hilft."
+      "description": "{battery} soll laden, der Ladestand steigt aber seit einer halben Stunde nicht. Prüf, ob der Speicher Netzladen erlaubt; ein Testlauf im Energy-Joe-Panel unter Geräte › Speicher hilft."
     },
     "battery_transfer": {
       "title": "Speicher laden sich gegenseitig",
-      "description": "{charging} lädt, während {discharging} entlädt – seit mehr als zwei Minuten, obwohl Joe immer nur einen arbeiten lässt. Etwas anderes schreibt dieselben Grenzen, oder eine Sperre greift nicht. Schau im Energy-Joe-Panel unter Geräte › Speicher › Mehrere Speicher nach."
+      "description": "{charging} lädt, während {discharging} entlädt – seit mehr als zwei Minuten, obwohl ich immer nur einen arbeiten lasse. Etwas anderes schreibt dieselben Grenzen, oder eine Sperre greift nicht. Schau im Energy-Joe-Panel unter Geräte › Speicher › Mehrere Speicher nach."
     }
   },
   "exceptions": {
