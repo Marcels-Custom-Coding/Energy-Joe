@@ -1,7 +1,8 @@
-import { html, nothing } from "lit";
+import { css, html, nothing } from "lit";
 import { property } from "lit/decorators.js";
 import { actionPageStyles, movedPlace, movedRow } from "../../components/action-page";
 import "../../components/action-steer";
+import "../../components/car-search";
 import { define } from "../../define";
 import { findDevice, type DeviceEntry } from "../../device-model";
 import { shared } from "../../styles/shared";
@@ -15,7 +16,8 @@ import { DeviceSection } from "./section-base";
  * charge points (the wallboxes Joe switches) as separate cards that name
  * each other ("Kona · steckt an Parkplatz eBox"), and the E-Autos from the
  * Energy dashboard without a wallbox Joe switches ("Laden einrichten").
- * /devices/car/<car id> is a car's page, /devices/car/point/<action id> a
+ * "Nochmal nach Autos suchen" lists every car Home Assistant shows, also
+ * the ones left out once. /devices/car/<car id> is a car's page, /devices/car/point/<action id> a
  * charge point's.
  */
 export class JoeCarGroup extends DeviceSection {
@@ -23,7 +25,16 @@ export class JoeCarGroup extends DeviceSection {
   @property({ attribute: false }) device?: string;
   @property({ attribute: false }) sub?: string;
 
-  static styles = [shared, frameStyles, actionPageStyles];
+  static styles = [
+    shared,
+    frameStyles,
+    actionPageStyles,
+    css`
+      joe-car-search.search {
+        margin-top: 20px;
+      }
+    `,
+  ];
 
   /** The page an address names: a car, a charge point, or (up to 0.9.18) a charge point by its action id. */
   private target(): DeviceEntry | undefined {
@@ -106,6 +117,14 @@ export class JoeCarGroup extends DeviceSection {
       <div class="group-actions">
         ${addLink(t, this.prefix, "car", t("devices.group_add.car"))} ${addLink(t, this.prefix, "wallbox", t("devices.group_add.wallbox"))}
       </div>
+      <joe-car-search
+        class="search"
+        .hass=${this.hass}
+        .t=${t}
+        .state=${this.state}
+        .discovery=${this.discovery}
+        .prefix=${this.prefix}
+      ></joe-car-search>
     </div>`;
   }
 }

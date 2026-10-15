@@ -70,6 +70,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_car_answer)
     websocket_api.async_register_command(hass, ws_car_merge)
     websocket_api.async_register_command(hass, ws_car_split)
+    websocket_api.async_register_command(hass, ws_car_attach)
     websocket_api.async_register_command(hass, ws_car_separate)
     websocket_api.async_register_command(hass, ws_discover)
     websocket_api.async_register_command(hass, ws_adopt)
@@ -825,6 +826,33 @@ def ws_car_split(
         return
     try:
         car = runtime.async_split_car(msg["car"], msg["source"])
+    except (ValueError, vol.Invalid) as err:
+        connection.send_error(msg["id"], "invalid", str(err))
+        return
+    connection.send_result(msg["id"], {"car": car})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/car/attach",
+        # The car the sources join; None: a new car.
+        vol.Required("car"): vol.Any(None, str),
+        # Source ids as discovery's car_sources names them ("evcc:…", "car:…").
+        vol.Required("sources"): vol.All([str], vol.Length(min=1)),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_car_attach(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Integrations Joe sees belong to this car (also ones left out before)."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    try:
+        car = await runtime.async_attach_to_car(msg["car"], msg["sources"])
     except (ValueError, vol.Invalid) as err:
         connection.send_error(msg["id"], "invalid", str(err))
         return

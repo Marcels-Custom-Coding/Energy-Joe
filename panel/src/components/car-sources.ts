@@ -1,9 +1,10 @@
 import { LitElement, css, html, nothing, type PropertyValues, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
+import "./car-search";
 import "./car-steer";
 import { subHead } from "./action-page";
 import { tip } from "./tip";
-import { sourceName } from "../cars";
+import { carIgnoredKey, sourceName } from "../cars";
 import { saveConfig } from "../config";
 import { define } from "../define";
 import type { Translate } from "../i18n";
@@ -12,8 +13,9 @@ import { shared } from "../styles/shared";
 import type { CarConfig, CarRole, CarSourceConfig, Discovery, HomeAssistant, JoeConfig, JoeState } from "../types";
 
 // A car's Quellen: the integrations merged into it (evcc's vehicle, the car
-// maker's), "Trennen" and "Zusammenführen", Joe's question whether two cars
-// are one, and the sensors chosen by hand.
+// maker's), "Trennen", "Zusammenführen" and "Quelle hinzufügen" (what Joe sees
+// in Home Assistant, also ones left out once), Joe's question whether two
+// cars are one, and the sensors chosen by hand.
 
 const ROLES: CarRole[] = ["soc", "range", "odometer", "capacity", "consumption", "plugged", "outside_temp", "location"];
 
@@ -47,6 +49,8 @@ export class JoeCarSources extends LitElement {
   @state() private busy = false;
   @state() private failed = false;
   @state() private other = "";
+  /** "Quelle hinzufügen" opened: Joe searches and the found ones may join. */
+  @state() private adding = false;
   /** The sensors chosen by hand opened (a car with integrations shows them only on request). */
   @state() private manual = false;
 
@@ -136,6 +140,20 @@ export class JoeCarSources extends LitElement {
       .mini-btn {
         min-height: 44px;
       }
+      .add {
+        margin-top: 12px;
+      }
+      .close-row {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 8px;
+      }
+      .add-box {
+        margin-top: 12px;
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid var(--joe-line);
+      }
       .by-hand {
         display: flex;
         align-items: center;
@@ -148,6 +166,7 @@ export class JoeCarSources extends LitElement {
     if (changed.has("car") && changed.get("car")?.id !== this.car?.id) {
       this.other = "";
       this.manual = false;
+      this.adding = false;
     }
   }
 
@@ -193,6 +212,19 @@ export class JoeCarSources extends LitElement {
             ${tip(t, "car_merge_with")}
           </div>`
         : nothing}
+      ${this.adding
+        ? html`<div class="add-box" @joe-attached=${() => (this.adding = false)}>
+            <joe-car-search .hass=${this.hass} .t=${t} .state=${joe} .discovery=${this.discovery} .prefix=${this.prefix} .car=${car}></joe-car-search>
+            <div class="close-row">
+              <button type="button" class="mini-btn quiet" @click=${() => (this.adding = false)}>${t("car.attach.close")}</button>
+            </div>
+          </div>`
+        : html`<div class="add by-hand" data-tipped>
+            <button type="button" class="mini-btn" aria-expanded="false" @click=${() => (this.adding = true)}>
+              <ha-icon icon="mdi:plus"></ha-icon>${t("car.attach.open")}
+            </button>
+            ${tip(t, "car_attach_open")}
+          </div>`}
       ${this.failed ? html`<p class="bad" role="status">${t("error.action")}</p>` : nothing}
       ${subHead(t("car.sources.manual"))}
       ${car.sources.length && !this.manual && !this.chosenByHand(car)
@@ -311,10 +343,11 @@ export class JoeCarDelete extends LitElement {
     const car = this.car;
     if (!car) return;
     this.busy = true;
-    // Joe would find the car again when he looks around: its integrations are left out from now on.
+    // Joe would find the car again when he looks around: its integrations are
+    // left out from now on ("Nochmal nach Autos suchen" shows them again).
     const ignored = [...(this.config?.answers.ignored ?? [])];
     for (const source of car.sources) {
-      const key = `car:${source.device_id ?? source.id}`;
+      const key = carIgnoredKey(source);
       if (!ignored.includes(key)) ignored.push(key);
     }
     const ok = await saveConfig(this, { cars: { [car.id]: null }, answers: { ignored } });

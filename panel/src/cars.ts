@@ -1,6 +1,6 @@
 import type { Translate } from "./i18n";
 import type { Route } from "./router";
-import type { ActionConfig, CarConfig, CarRole, CarValueSource, JoeConfig, JoeState, PlanCar, PointStatus } from "./types";
+import type { ActionConfig, CarConfig, CarRole, CarSourceConfig, CarValueSource, Discovery, JoeConfig, JoeState, PlanCar, PointStatus } from "./types";
 
 // Cars and charge points in the panel (the backend: plan/cars.py and
 // control/cars.py). A car is everything about its need; a charge point is a
@@ -80,3 +80,27 @@ export function planCar(joe: JoeState | undefined, carId: string): PlanCar | und
   return joe?.plan?.cars?.[carId];
 }
 
+
+/** The key under answers.ignored that leaves a car Joe sees out (a deleted car's integrations). */
+export function carIgnoredKey(source: Pick<CarSourceConfig, "id" | "device_id">): string {
+  return `car:${source.device_id ?? source.id}`;
+}
+
+/** A car Home Assistant shows, and what it is to Joe: part of a car, left out, or new. */
+export interface CarFind {
+  source: CarSourceConfig;
+  /** The car it belongs to. */
+  car?: CarConfig;
+  /** Left out once (the car was deleted, or "Ignorieren"). */
+  ignored: boolean;
+}
+
+/** Every car Joe sees (evcc's vehicles first, then the car makers'), also the ones left out. */
+export function carFinds(config: JoeConfig, discovery: Discovery | undefined): CarFind[] {
+  const ignored = new Set(config.answers.ignored);
+  return (discovery?.car_sources ?? []).map((source) => ({
+    source,
+    car: (config.cars ?? []).find((c) => c.sources.some((s) => s.id === source.id)),
+    ignored: ignored.has(carIgnoredKey(source)) || ignored.has(`car:${source.id}`),
+  }));
+}

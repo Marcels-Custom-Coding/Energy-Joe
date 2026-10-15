@@ -2,11 +2,12 @@ import { css, html, nothing, type PropertyValues, type TemplateResult } from "li
 import { property, state } from "lit/decorators.js";
 import { keyed } from "lit/directives/keyed.js";
 import { displayTitle } from "../../components/bits";
+import { attachToCar, searchCars } from "../../components/car-search";
 import { newCar } from "../../components/car-steer";
 import "../../components/sheet";
 import { tip } from "../../components/tip";
-import { carRoute, sourceName } from "../../cars";
-import { isIgnored, saveConfig, withIgnored, type ConfigChange } from "../../config";
+import { carIgnoredKey, carRoute, sourceName } from "../../cars";
+import { isIgnored, saveConfig, type ConfigChange } from "../../config";
 import { define } from "../../define";
 import { actionPlace, addRoute, deviceRoute, ignoredBatteries, newFindings, type AddKind } from "../../device-model";
 import "../../editors/action-editor";
@@ -63,6 +64,7 @@ export class JoeDeviceAdd extends DeviceSection {
   @property({ attribute: false }) behind: Route = { tab: "devices", section: "all" };
 
   @state() private busy = "";
+  @state() private searchFailed = false;
   /** The night action the editor asked to save (id and fields) and whether that worked. */
   private saved?: { action: ActionConfig; result?: Promise<boolean> };
 
@@ -299,15 +301,15 @@ export class JoeDeviceAdd extends DeviceSection {
       </div>`;
   }
 
-  /** A car: one Joe sees (evcc's vehicle or the car maker's integration), or one by hand. */
+  /** A car: one Joe sees (evcc's vehicle or the car maker's integration, also one left out once), or one by hand. */
   private renderCar(t: Translate): TemplateResult {
     const config = this.state!.config;
     const linked = new Set((config.cars ?? []).flatMap((c) => c.sources.map((s) => s.id)));
     const wanted = this.consumer?.startsWith("car:") ? this.consumer.slice(4) : "";
-    const key = (s: CarSourceConfig) => `car:${s.device_id ?? s.id}`;
+    const left = (s: CarSourceConfig) => isIgnored(config, carIgnoredKey(s)) || isIgnored(config, `car:${s.id}`);
     const found = (this.discovery?.car_sources ?? []).filter((s) => !linked.has(s.id));
-    // The one "Neu gefunden" offered comes first.
-    found.sort((a, b) => Number(b.device_id === wanted) - Number(a.device_id === wanted));
+    // The one "Neu gefunden" offered comes first, the ones left out once last.
+    found.sort((a, b) => Number(b.device_id === wanted) - Number(a.device_id === wanted) || Number(left(a)) - Number(left(b)));
     return html`${this.backToChoices(t)}
       <div data-tipped>
         <div class="sheet-title">${displayTitle(t("devices.add.car.title"), "h2", tip(t, "devices_add_car"))}</div>
@@ -318,30 +320,35 @@ export class JoeDeviceAdd extends DeviceSection {
                 (source) => html`<li>
                   <span class="what">
                     <b>${source.name ?? source.id}</b>
-                    <small>
-                      ${t("car.source.from", { from: sourceName(t, source) })}${isIgnored(config, key(source)) ? ` · ${t("devices.add.battery.ignored")}` : ""}
-                    </small>
+                    <small>${t("car.source.from", { from: sourceName(t, source) })}${left(source) ? ` · ${t("car.find.ignored")}` : ""}</small>
                   </span>
                   <span class="row-actions">
                     <button type="button" class="mini-btn go" ?disabled=${Boolean(this.busy)} @click=${() => this.useCar(source)}>
-                      ${t(isIgnored(config, key(source)) ? "devices.add.battery.use" : "devices.found.use")}
+                      ${t(left(source) ? "car.find.reuse" : "devices.found.use")}
                     </button>
-                    ${isIgnored(config, key(source))
+                    ${left(source)
                       ? nothing
                       : html`<button
-                      type="button"
-                      class="mini-btn quiet"
-                      ?disabled=${Boolean(this.busy)}
-                      @click=${() => this.ignore(key(source))}
-                    >
-                      ${t("devices.found.ignore")}
-                    </button>`}
+                          type="button"
+                          class="mini-btn quiet"
+                          ?disabled=${Boolean(this.busy)}
+                          @click=${() => this.ignore(carIgnoredKey(source))}
+                        >
+                          ${t("devices.found.ignore")}
+                        </button>`}
                   </span>
                 </li>`,
               )}
             </ul>`
           : html`<p class="empty">${t("devices.add.car.none")}</p>`}
       </div>
+      <div class="actions" data-tipped>
+        <button type="button" class="btn btn-secondary" ?disabled=${Boolean(this.busy)} @click=${this.searchCars}>
+          <ha-icon icon="mdi:magnify"></ha-icon>${t("car.search")}
+        </button>
+        ${tip(t, "car_search")}
+      </div>
+      ${this.searchFailed ? html`<p class="empty" role="status">${t("car.search.failed")}</p>` : nothing}
       <form
         class="by-hand"
         data-tipped
@@ -359,17 +366,30 @@ export class JoeDeviceAdd extends DeviceSection {
       </form>`;
   }
 
-  /** A car from what Joe sees: saved, then its page. */
+  /** A car from what Joe sees (also one left out once): saved the way Joe links cars, then its page. */
   private async useCar(source: CarSourceConfig): Promise<void> {
+    if (!this.hass) return;
     this.busy = source.id;
-    const name = (source.name ?? "").replace(/\s*\[[^\]]*\]\s*/g, " ").trim();
-    const id = freeCarId(this.state!.config, name || "car");
-    const ok = await saveConfig(this, {
-      cars: { [id]: { ...newCar(name || id), sources: [source] } },
-      answers: { ignored: withIgnored(this.state!.config, `car:${source.device_id ?? source.id}`, false) },
-    });
+    let id: string | undefined;
+    try {
+      id = await attachToCar(this.hass, null, [source.id]);
+    } catch {
+      id = undefined;
+    }
     this.busy = "";
-    if (ok) navigate(this, carRoute(id), { replace: true });
+    if (id) navigate(this, carRoute(id), { replace: true });
+  }
+
+  /** "Nochmal nach Autos suchen": Joe looks again, the list follows. */
+  private async searchCars(): Promise<void> {
+    this.busy = "search";
+    this.searchFailed = false;
+    try {
+      await searchCars(this, this.hass);
+    } catch {
+      this.searchFailed = true;
+    }
+    this.busy = "";
   }
 
   /** A car by hand (its sensors are picked on its page under Quellen). */

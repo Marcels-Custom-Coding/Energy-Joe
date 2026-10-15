@@ -29,6 +29,7 @@ from .proposal import build_proposal, point_of_wallbox
 from .snapshot import Snapshot, async_collect
 
 __all__ = [
+    "async_car_sources",
     "async_car_updates",
     "async_check",
     "async_collect",
@@ -88,6 +89,11 @@ async def async_car_updates(
 ) -> dict[str, Any] | None:
     """Link the cars Joe sees to his cars and charge points (a config patch)."""
     return car_updates(await async_collect(hass), config)
+
+
+async def async_car_sources(hass: HomeAssistant) -> list[dict[str, Any]]:
+    """Every car Joe sees now (evcc's vehicles, the car makers'), left out or not."""
+    return car_sources(await async_collect(hass))
 
 
 def car_updates(snap: Snapshot, config: dict[str, Any]) -> dict[str, Any] | None:

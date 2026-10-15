@@ -374,6 +374,7 @@ export class EnergyJoePanel extends LitElement {
       <main
         @joe-onboarding=${this.onOnboarding}
         @joe-rediscover=${() => this.scan()}
+        @joe-discovery=${(ev: CustomEvent<Discovery>) => (this.discovery = ev.detail)}
       >
         ${onboarding
           ? html`<joe-onboarding
