@@ -99,6 +99,17 @@ class JoeTargetSensor(JoeEntity, SensorEntity):
             "batteries": {
                 b["id"]: b.get("target") for b in plan.get("batteries") or []
             },
+            # Each battery's share of tonight's charging: energy, power, when.
+            "charging": {
+                b["id"]: {
+                    "kwh": b.get("charge_kwh"),
+                    "power_w": round((b.get("power_kw") or 0) * 1000),
+                    "from": b["slots"][0]["start"],
+                    "until": b["slots"][-1]["end"],
+                }
+                for b in plan.get("batteries") or []
+                if b.get("slots")
+            },
         }
 
 

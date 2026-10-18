@@ -17317,10 +17317,10 @@
    "soc_now": 100.0,
    "soc_start": 10.0,
    "grid_charge_kwh": 4.74,
-   "charge_from": "2026-10-04T03:00+02:00",
+   "charge_from": "2026-10-04T02:00+02:00",
    "charge_slots": [
     {
-     "start": "2026-10-04T03:00+02:00",
+     "start": "2026-10-04T02:00+02:00",
      "end": "2026-10-04T05:00+02:00"
     }
    ],
@@ -17338,7 +17338,30 @@
      "charge_kwh": 4.5,
      "power_kw": 2.5,
      "controllable": false,
-     "grid": true
+     "grid": true,
+     "grid_kwh": 4.74,
+     "max_kw": 2.5,
+     "slots": [
+      {
+       "start": "2026-10-04T02:00+02:00",
+       "end": "2026-10-04T03:00+02:00",
+       "power_kw": 1.12
+      },
+      {
+       "start": "2026-10-04T03:00+02:00",
+       "end": "2026-10-04T04:00+02:00",
+       "power_kw": 2.5
+      },
+      {
+       "start": "2026-10-04T04:00+02:00",
+       "end": "2026-10-04T05:00+02:00",
+       "power_kw": 1.29
+      }
+     ],
+     "how": "full",
+     "paced": true,
+     "group": "flow800",
+     "rank": 0
     }
    ],
    "sun_takes_over": "2026-10-04T12:48+02:00",

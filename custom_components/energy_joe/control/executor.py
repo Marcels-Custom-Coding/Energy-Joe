@@ -46,6 +46,7 @@ from . import (
 )
 from .actions import ActionAdapter
 from .adapters import Adapter, Desired, RoleAdapter, make_adapter
+from .groups import proposed_group
 from .profiles import profile_for
 from .writes import Write, WriteError, async_apply, fit, matches, read
 
@@ -108,6 +109,17 @@ GRID_MARGIN = 1.02
 NO_PROGRESS = timedelta(minutes=30)
 # Charging to a level by hand ends after this at the latest.
 BOOST_LIMIT = timedelta(hours=24)
+# The night's power as a charge limit (Fronius): after this, Joe compares
+# what the battery takes with the limit. Clearly above it (more than this
+# share plus a few watts) for OVER_FOR: the limit does not hold while
+# charging from the grid. Held for WORKS_FOR: it works.
+NIGHT_CAP_SETTLE = timedelta(minutes=6)
+NIGHT_CAP_OVER = 1.3
+NIGHT_CAP_SLACK_W = 200
+NIGHT_CAP_OVER_FOR = timedelta(minutes=5)
+NIGHT_CAP_WORKS_FOR = timedelta(minutes=15)
+# The highest import from the grid: noted again once it rose by this share.
+GRID_PEAK_STEP = 1.02
 # A grid-friendly morning lets go when the rest of the sun, taken with this
 # caution, no longer fills the batteries.
 DAY_CAUTION = 0.8
@@ -165,6 +177,12 @@ DEFAULT_DATA: dict[str, Any] = {
     "paused": None,
     # Per charging battery: since when and from which level it should rise.
     "progress": {},
+    # The night's power as a charge limit (Fronius): battery -> the power
+    # (W), since when, since when it took clearly more, what Joe saw.
+    "night_caps": {},
+    # The highest import from the grid measured so far: W, when, since when
+    # Joe watches (a learned grid limit for the plan, a hint in the panel).
+    "grid_peak": None,
     # "Just charge to …" by hand: action id -> target, unit, sensor, since, until.
     "boost": {},
     # The night whose grid-friendly morning runs, or was let go early.
@@ -245,6 +263,33 @@ def _charging_time(plan: dict[str, Any], now: datetime) -> bool:
     return charge_from is not None and now >= datetime.fromisoformat(charge_from)
 
 
+def _battery_charging(
+    plan: dict[str, Any], planned: dict[str, Any], now: datetime
+) -> tuple[bool, float | None]:
+    """Whether this battery charges now, and with what power (kW; None: as
+    fast as it can).
+
+    In one of its own spans with that span's power; after its last one at
+    full power until it reaches its target ("as fast as needed"). Older plans
+    without spans: the plan's slots with the battery's power.
+    """
+    if plan.get("kind") != "charge":
+        return False, None
+    spans = planned.get("slots")
+    if spans is None:
+        return _charging_time(plan, now), planned.get("power_kw") or None
+    for span in spans:
+        if (
+            datetime.fromisoformat(span["start"])
+            <= now
+            < datetime.fromisoformat(span["end"])
+        ):
+            return True, span.get("power_kw") or None
+    if spans and now >= datetime.fromisoformat(spans[-1]["end"]):
+        return True, None
+    return False, None
+
+
 class JoeExecutor:
     """Applies tonight's plan to the batteries in the modes "suggest" and "live"."""
 
@@ -279,6 +324,9 @@ class JoeExecutor:
         self.testing: dict[str, Any] | None = None
         # Called with a battery id and the cutoff Joe learned (%).
         self.on_cutoff: Callable[[str, float], None] | None = None
+        # Called with a battery id and whether its charge limit holds while it
+        # charges from the grid ("works", "ignored").
+        self.on_night_cap: Callable[[str, str], None] | None = None
         # What the daytime surplus does (or would do) now, for the panel.
         self.surplus: dict[str, Any] = {"state": "off"}
         # What several batteries do together now, for the panel.
@@ -436,8 +484,11 @@ class JoeExecutor:
     async def _async_check(self, now: datetime) -> None:
         config, plan, mode = self._config(), self._plan(), self._mode()
         reason, night = self._why(now, config, plan, mode)
+        peaked = self._track_grid_peak(config, now)
         boosts, keep, ended = await self._async_boosts(config, mode, now)
         if reason != "steering":
+            # The night's power limits go back with the release.
+            self.data["night_caps"] = {}
             before = self._written_state()
             day, held = await self._async_day(config, plan, mode, now)
             keep |= held
@@ -490,7 +541,7 @@ class JoeExecutor:
             self._set_status("day" if day else reason, night, day, boosts, keep)
             self._watch([])
             # Originals and caps survive a crash: saved whenever they change.
-            if boosts or ended or day or self._written_state() != before:
+            if boosts or ended or day or peaked or self._written_state() != before:
                 await self._async_save()
             return
         assert plan is not None and night is not None
@@ -524,7 +575,13 @@ class JoeExecutor:
                 "target": planned["target"],
                 "soc": soc,
                 "problem": None,
+                "power_w": want.power_w if want else None,
             }
+            # The ceiling of the power before charging starts, back after it ends.
+            capped = want is not None and want.charge_to is not None
+            cap = None
+            if adapter is not None and soc is not None and capped:
+                cap = await self._async_night_cap(battery, adapter, want, now)
             if adapter is None:
                 entry["action"] = "watch"
                 entry["problem"] = self._watch_reason(battery)
@@ -533,6 +590,10 @@ class JoeExecutor:
             elif want is not None:
                 problem = await self._async_steer(adapter, want, soc, now)
                 entry["problem"] = problem
+            if adapter is not None and soc is not None and not capped:
+                cap = await self._async_night_cap(battery, adapter, want, now)
+            if cap:
+                entry["cap"] = cap
             batteries[battery["id"]] = entry
         actions = await self._async_actions(config, plan, night, now, set(boosts))
         self._set_status("steering", night, batteries, {**actions, **boosts})
@@ -737,7 +798,6 @@ class JoeExecutor:
             if window
             else None
         )
-        charging_time = _charging_time(plan, now)
         floors: dict[str, int] = self.data["floors"]
         reached: list[str] = self.data["reached"]
         result: dict[str, Desired] = {}
@@ -747,12 +807,14 @@ class JoeExecutor:
                 continue
             key = battery["id"]
             target = int(planned["target"])
+            # Each battery in its own spans, with the power planned for it.
+            charging_time, power_kw = _battery_charging(plan, planned, now)
             if charging_time and key not in reached and soc >= target - 0.5:
                 reached.append(key)
                 self._log("reached", battery=key, target=target, soc=round(soc, 1))
                 self._fire("target_reached", battery=key, target=target)
             if charging_time and key not in reached and adapter.can_charge:
-                power = (planned.get("power_kw") or 0) * 1000 or None
+                power = (power_kw or 0) * 1000 or None
                 result[key] = Desired(charge_to=target, power_w=power, span_s=span)
                 # Between charging slots Joe holds what the battery has by then.
                 floors.pop(key, None)
@@ -3156,28 +3218,8 @@ class JoeExecutor:
         return True
 
     def _proposed_group(self, battery: dict[str, Any]) -> tuple[str, bool]:
-        """The system Joe thinks regulates a battery, and whether he is sure.
-
-        The batteries of one integration entry (all batteries of one
-        Omnibattery, a Fronius or Kostal inverter with its battery) are
-        regulated by its system; Omnibattery's batteries also by the system
-        limits they share. Batteries Joe steers through levers the owner
-        assigned (or only watches) are a system of their own until the owner
-        says otherwise.
-        """
-        adapter = battery.get("adapter") or "none"
-        profiled = profile_for(adapter) is not None and adapter not in (
-            "generic",
-            "steps",
-        )
-        if profiled:
-            item = er.async_get(self._hass).async_get(battery["soc_entity"])
-            if item is not None and item.config_entry_id:
-                return f"entry:{item.config_entry_id}", True
-            shared = (battery.get("controls") or {}).get("system_charge_limit")
-            if shared:
-                return f"system:{shared}", True
-        return f"own:{battery['id']}", profiled
+        """The system Joe thinks regulates a battery (see groups.py)."""
+        return proposed_group(self._hass, battery)
 
     def _team_groups(self, config: dict[str, Any]) -> dict[str, tuple[str, str, bool]]:
         """Per battery: its group (as set, else as proposed), the proposal and
@@ -3542,6 +3584,129 @@ class JoeExecutor:
 
     # --- nights ------------------------------------------------------------------
 
+    # --- the night's power as a charge limit (Fronius) ---------------------------
+
+    async def _async_night_cap(
+        self,
+        battery: dict[str, Any],
+        adapter: Adapter,
+        want: Desired | None,
+        now: datetime,
+    ) -> dict[str, Any] | None:
+        """A battery that charges from the grid without a power of its own
+        (Fronius raises its reserve and charges as fast as it can): its
+        charge limit as a ceiling at the planned power, while it charges with
+        a planned power. Joe watches whether the battery keeps to it; if it
+        takes clearly more, the limit does not hold while charging from the
+        grid: he notes that for this battery (from then on he plans it at
+        full power) and puts the limit back. The ceiling belongs to the
+        night: the day's levers (team, cap) are given back before it.
+        Returns what the panel shows, or None.
+        """
+        if not isinstance(adapter, RoleAdapter):
+            return None
+        key = battery["id"]
+        caps: dict[str, Any] = self.data["night_caps"]
+        entry = caps.get(key)
+        wanted = (
+            want is not None
+            and want.charge_to is not None
+            and bool(want.power_w)
+            and adapter.power_lever(self._hass) == "cap"
+            and not (entry and entry.get("state") == "ignored")
+        )
+        if not wanted:
+            if entry and entry.get("w"):
+                # Not charging (or at full power now): the limit back as it was.
+                await self._async_unlimit(adapter, now)
+                entry["w"] = None
+                entry["since"] = None
+            return _cap_view(entry)
+        assert want is not None and want.power_w is not None
+        watts = round(want.power_w)
+        writes = adapter.night_cap(self._hass, watts, self.data["saved"])
+        problem = await self._async_write(adapter, writes, now, "charge")
+        if entry is None or entry.get("w") != watts:
+            entry = {
+                **(entry or {}),
+                "w": watts,
+                "since": now.isoformat(timespec="seconds"),
+                "over": None,
+            }
+            caps[key] = entry
+            self._log("night_cap", battery=key, power=round(watts / 1000, 2))
+        elif problem is None:
+            self._night_cap_learn(battery, adapter, entry, now)
+            if entry.get("state") == "ignored":
+                await self._async_unlimit(adapter, now)
+                entry["w"] = None
+        return _cap_view(entry)
+
+    def _night_cap_learn(
+        self,
+        battery: dict[str, Any],
+        adapter: RoleAdapter,
+        entry: dict[str, Any],
+        now: datetime,
+    ) -> None:
+        """Whether the battery keeps to its ceiling (see _async_night_cap)."""
+        since = datetime.fromisoformat(entry["since"])
+        if now - since < NIGHT_CAP_SETTLE:
+            return
+        power = _charge_w(self._hass, battery)
+        if power is None:
+            return
+        limit = entry["w"]
+        entry["seen_w"] = round(power)
+        key = battery["id"]
+        if power > limit * NIGHT_CAP_OVER + NIGHT_CAP_SLACK_W:
+            over = entry.get("over")
+            if over is None:
+                entry["over"] = now.isoformat(timespec="seconds")
+                return
+            if now - datetime.fromisoformat(over) < NIGHT_CAP_OVER_FOR:
+                return
+            entry["state"] = "ignored"
+            self._log(
+                "night_cap_ignored",
+                battery=key,
+                cap=round(limit / 1000, 2),
+                power=round(power / 1000, 2),
+            )
+            if self.on_night_cap:
+                self.on_night_cap(key, "ignored")
+            return
+        entry["over"] = None
+        if (
+            entry.get("state") is None
+            and battery.get("night_cap") != "works"
+            and power >= limit * 0.5
+            and now - since >= NIGHT_CAP_WORKS_FOR
+        ):
+            entry["state"] = "works"
+            self._log("night_cap_works", battery=key, cap=round(limit / 1000, 2))
+            if self.on_night_cap:
+                self.on_night_cap(key, "works")
+
+    def _track_grid_peak(self, config: dict[str, Any], now: datetime) -> bool:
+        """Note the highest import from the grid (for a learned grid limit).
+        Returns whether it changed."""
+        grid = measurement_kw(
+            self._hass.states.get, config["measurements"]["grid_power"]
+        )
+        if grid is None or grid <= 0:
+            return False
+        peak = self.data.get("grid_peak")
+        watts = round(grid * 1000)
+        if peak is None:
+            stamp = now.isoformat(timespec="seconds")
+            self.data["grid_peak"] = {"w": watts, "at": stamp, "since": stamp}
+            return True
+        if watts <= peak["w"] * GRID_PEAK_STEP:
+            return False
+        peak.update(w=watts, at=now.isoformat(timespec="seconds"))
+        return True
+
     def _guard_grid(
         self,
         config: dict[str, Any],
@@ -3625,6 +3790,7 @@ class JoeExecutor:
             done=[],
             paused=None,
             progress={},
+            night_caps={},
         )
         self._log("start", night=night)
         if self.notifier:
@@ -3640,6 +3806,7 @@ class JoeExecutor:
             first={},
             steered=False,
             done=[],
+            night_caps={},
         )
         # A switch "tonight" is for one night only.
         self.data["tonight"] = {
@@ -3977,6 +4144,7 @@ class JoeExecutor:
             "surplus": self.surplus,
             "team": self.team,
             "guard": self.guard,
+            "grid_peak": self.data.get("grid_peak"),
         }
 
     async def async_forget(self) -> None:
@@ -4010,6 +4178,18 @@ def _action(want: Desired | None) -> str | None:
     if want.floor is not None:
         return "hold"
     return "free"
+
+
+def _cap_view(entry: dict[str, Any] | None) -> dict[str, Any] | None:
+    """The night's ceiling for the panel: the power, what the battery took,
+    and whether it holds."""
+    if not entry:
+        return None
+    return {
+        "w": entry.get("w"),
+        "seen_w": entry.get("seen_w"),
+        "state": entry.get("state"),
+    }
 
 
 def _test_power(battery: dict[str, Any]) -> float:

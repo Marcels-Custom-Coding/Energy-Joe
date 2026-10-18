@@ -565,6 +565,8 @@
           surplus: surplusView(),
           team: teamView(),
           guard: guardView(),
+          // The highest import Joe measured (executor._track_grid_peak), watched for ten days.
+          grid_peak: done ? { w: 6340, at: new Date(Date.now() - 3 * 86400e3).toISOString(), since: new Date(Date.now() - 10 * 86400e3).toISOString() } : null,
           ...control,
           log: control.log.slice(-30),
         };

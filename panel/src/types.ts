@@ -164,6 +164,8 @@ export interface BatteryConfig {
   control_group?: string | null;
   /** The level it really stops discharging at (learned or set); null: not known yet. */
   cutoff_soc?: number | null;
+  /** Whether its charge limit holds while it charges from the grid (Fronius, learned); null: not seen yet. */
+  night_cap?: "works" | "ignored" | null;
 }
 
 export type TariffKind = "fixed_window" | "dynamic" | "flat" | "unknown";
@@ -1069,15 +1071,32 @@ export interface PlanHour {
   grid_out: number;
 }
 
+/** Why a battery charges as it does tonight (see plan/night.py). */
+export type PlanPace = "none" | "spread" | "short" | "cheapest" | "full" | "grid_limit" | "fixed_power";
+
 export interface PlanBattery {
   id: string;
   name: string;
   soc: number;
   soc_start: number;
+  /** Its own target (each battery gets its share of tonight's energy). */
   target: number;
+  /** Into the battery (kWh); grid_kwh with the losses. */
   charge_kwh: number;
+  grid_kwh?: number;
+  /** The highest power Joe sets tonight (kW). */
   power_kw: number;
+  max_kw?: number;
+  /** When it charges and with what power (older plans: missing). */
+  slots?: { start: string; end: string; power_kw: number }[];
+  how?: PlanPace;
+  /** Whether Joe can set its power (else it charges at full power). */
+  paced?: boolean;
+  /** Its place in the order of charging (0: gets first). */
+  rank?: number;
   controllable: boolean;
+  /** Whether Joe can charge it from the grid at all. */
+  grid?: boolean;
 }
 
 /** Tonight's plan (see custom_components/energy_joe/plan). */
@@ -1121,6 +1140,9 @@ export interface Plan {
     max_price?: number | null;
     min_saving?: number;
     force_target?: number | null;
+    grid_limit_kw?: number | null;
+    /** Where the grid limit comes from: the user's or the highest import Joe measured. */
+    grid_limit_source?: "user" | "learned" | null;
   };
   meta?: {
     consumption: { source: "history" | "default"; days: number };
@@ -1230,6 +1252,10 @@ export interface ControlBattery {
   target: number;
   soc: number | null;
   problem: string | null;
+  /** The power Joe sets while it charges (W; null: as fast as it can). */
+  power_w?: number | null;
+  /** Fronius: its charge limit as the ceiling of the night's power, and whether it holds. */
+  cap?: { w: number | null; seen_w: number | null; state: "works" | "ignored" | null };
 }
 
 export interface TestStep {
@@ -1298,6 +1324,8 @@ export interface ControlView {
   team?: BatteryTeam;
   /** The watchdog: batteries running against each other (older backends: missing). */
   guard?: TransferGuard;
+  /** The highest import from the grid Joe measured (W), when, and since when he watches. */
+  grid_peak?: { w: number; at: string; since: string } | null;
   /** Per battery: ready to steer, or why not. */
   ready: Record<string, "ready" | "not_tested" | "outdated" | "not_controllable" | "controls_missing">;
 }

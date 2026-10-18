@@ -26,7 +26,7 @@ export class JoeSettingsRules extends SettingsSection {
       ${GROUPS.map(
         (group) => html`<section class="group" data-anchor=${`group-${group}`}>
           <h2>${t(`settings.rules.group.${group}`)}</h2>
-          ${RULE_GROUPS[group].map((key) => ruleRow(t, this, config, this.info, key))}
+          ${RULE_GROUPS[group].map((key) => ruleRow(t, this, config, this.info, key, joe.control))}
         </section>`,
       )}
     </div>`;

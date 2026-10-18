@@ -110,6 +110,7 @@ class JoeRuntime:
         self.executor.notifier = self.notifier
         self.executor.on_learned = self._learned_limit_ref
         self.executor.on_cutoff = self._learned_cutoff
+        self.executor.on_night_cap = self._learned_night_cap
         # Joe's calendar for each car whose mailbox has none.
         self.calendars = CarCalendarStore(hass)
         self.planner.calendars = self.calendars
@@ -121,6 +122,7 @@ class JoeRuntime:
         self.accounts = CarAccounts(hass, lambda: self._config, self._changed)
         self.planner.accounts = self.accounts
         self.planner.held = lambda: self.executor.data["saved"]
+        self.planner.grid_peak = lambda: self.executor.data.get("grid_peak")
         # Which car is plugged in where (asks, reminds, learns evcc's ids).
         self.cars = CarWatcher(
             hass,
@@ -247,6 +249,19 @@ class JoeRuntime:
             )
         except Exception:
             _LOGGER.exception("Keeping the learned reference failed")
+
+    def _learned_night_cap(self, battery_id: str, found: str) -> None:
+        """Whether a battery's charge limit holds while it charges from the grid."""
+        if not any(b["id"] == battery_id for b in self._config["batteries"]):
+            return
+        try:
+            self.async_update_config(
+                {"batteries": {battery_id: {"night_cap": found}}},
+                "learned",
+                "night_cap",
+            )
+        except Exception:
+            _LOGGER.exception("Keeping what Joe saw of the charge limit failed")
 
     def _learned_cutoff(self, battery_id: str, soc: float) -> None:
         """The level a battery really stops discharging at, as Joe saw it (a

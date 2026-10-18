@@ -367,6 +367,7 @@ async def test_untested_batteries_are_only_watched(
         "target": 60,
         "soc": 30.0,
         "problem": "not_tested",
+        "power_w": None,
     }
 
 

@@ -174,6 +174,12 @@ BATTERY = vol.Schema(
         vol.Optional("control_group", default=None): vol.Any(
             None, vol.All(str, vol.Length(min=1, max=120))
         ),
+        # Whether its charge limit holds as a ceiling while it charges from the
+        # grid (Fronius: the night's power): None not seen yet, "works", or
+        # "ignored" (Joe then plans its night at full power). Learned.
+        vol.Optional("night_cap", default=None): vol.Any(
+            None, vol.In(("works", "ignored"))
+        ),
         # The level at which it really stops discharging (a BYD at ~10.5 %
         # with a reserve of 5 %); None: not known yet, Joe learns it.
         vol.Optional("cutoff_soc", default=None): vol.Any(

@@ -83,6 +83,12 @@ class Adapter:
         """Every entity this adapter may change."""
         return list(self.controls.values())
 
+    def power_lever(self, hass: HomeAssistant) -> str | None:
+        """How Joe sets the power when charging from the grid: "power" (a
+        charging power), "cap" (a charge limit as a ceiling, Fronius) or None
+        (it charges as fast as it does)."""
+        return None
+
     def prepare_entities(self) -> list[str]:
         """Entities switched before steering (e.g. a manual mode)."""
         return []
@@ -224,6 +230,73 @@ class RoleAdapter(Adapter):
     @property
     def can_charge(self) -> bool:
         return bool(self.charge_methods())
+
+    def power_lever(self, hass: HomeAssistant) -> str | None:
+        methods = self.charge_methods()
+        if not methods:
+            return None
+        if methods[0] in ("mode", "target"):
+            return "power" if self._has("charge_power") else None
+        return "cap" if self.night_cap_problem(hass) is None else None
+
+    # --- the night's charging power as a ceiling (Fronius) ------------------------
+
+    def night_cap_problem(self, hass: HomeAssistant) -> str | None:
+        """Why Joe cannot set the power of grid charging through the battery's
+        own charge limit, or None.
+
+        Fronius charges from the grid up to its raised reserve as fast as it
+        can; its charge limit (in % of WChaMax, SunSpec InWRte) is a ceiling.
+        Only with a known reference ("limit_ref_w") for a limit in %, never
+        once Joe saw it does not hold while charging from the grid.
+        """
+        if not self._has("charge_limit"):
+            return "no_limit"
+        if self.battery.get("night_cap") == "ignored":
+            return "ignored"
+        state = hass.states.get(self.controls["charge_limit"])
+        if not available(state):
+            return "unavailable"
+        assert state is not None
+        unit = state.attributes.get("unit_of_measurement")
+        if unit in ("W", "kW"):
+            return None
+        if unit == "%":
+            return None if self.battery.get("limit_ref_w") else "need_ref"
+        return "unit"
+
+    def night_cap(
+        self, hass: HomeAssistant, watts: float, saved: dict[str, Any]
+    ) -> list[Write]:
+        """The charge limit as a ceiling for grid charging: the value first,
+        then its switch on (Fronius ignores the limit while its switch is off).
+        Never above a limit of the owner's in force before Joe."""
+        entity_id = self.controls["charge_limit"]
+        state = hass.states.get(entity_id)
+        unit = state.attributes.get("unit_of_measurement") if state else None
+        watts = max(0.0, watts)
+        if unit == "kW":
+            value: float = math.ceil(watts / 10) / 100
+        elif unit == "%":
+            value = self.percent_of(hass, watts)
+        else:
+            value = math.ceil(watts / 10) * 10
+        own = self._own_limit(hass, saved)
+        if own is not None:
+            value = min(value, own)
+        low, high = _range(hass, entity_id, 0, math.inf)
+        writes = [Write(entity_id, max(low, min(high, value)))]
+        if "charge_limit_enabled" in self.controls:
+            writes.append(Write(self.controls["charge_limit_enabled"], True))
+        return self._paced(writes)
+
+    def night_cap_entities(self) -> list[str]:
+        """The entities of the ceiling (its switch, its value)."""
+        return [
+            self.controls[r]
+            for r in ("charge_limit_enabled", "charge_limit")
+            if r in self.controls
+        ]
 
     def can_defer(self) -> bool:
         """Whether charging (from the sun too) can be held back while discharging stays free."""
@@ -951,6 +1024,10 @@ class StepsAdapter(Adapter):
     @property
     def can_charge(self) -> bool:
         return bool(self.steps.get("charge"))
+
+    def power_lever(self, hass: HomeAssistant) -> str | None:
+        """Steps that take "{power}" set it."""
+        return "power" if "{power}" in json.dumps(self.steps.get("charge")) else None
 
     def missing(self, hass: HomeAssistant) -> list[str]:
         result = [] if self.steps.get("hold") else ["hold"]

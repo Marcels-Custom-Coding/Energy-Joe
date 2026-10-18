@@ -5,7 +5,7 @@ import { tip } from "./components/tip";
 import { saveConfig, sourceOf } from "./config";
 import { formatNumber } from "./entities";
 import type { Translate, TranslationKey } from "./i18n";
-import type { DayCaution, DischargeMode, JoeConfig, JoeInfo, PriorityItem, Rules } from "./types";
+import type { ControlView, DayCaution, DischargeMode, JoeConfig, JoeInfo, PriorityItem, Rules } from "./types";
 
 // Joe's rules: one row per rule (Einstellungen › Regeln) and the same
 // formatting for mirrors elsewhere ("Sicherheitspuffer · 120 %").
@@ -128,9 +128,17 @@ export function ruleValue(t: Translate, config: JoeConfig, key: RuleKey): string
  * One rule as a settings row: label, hint, (i), source chip and its control.
  * Saves right away; the row carries data-anchor=<key> for /settings/rules/<key>.
  */
-export function ruleRow(t: Translate, host: HTMLElement, config: JoeConfig, info: JoeInfo | undefined, key: RuleKey): TemplateResult {
+export function ruleRow(
+  t: Translate,
+  host: HTMLElement,
+  config: JoeConfig,
+  info: JoeInfo | undefined,
+  key: RuleKey,
+  control?: ControlView,
+): TemplateResult {
   if (isNumberRule(key)) {
-    return numberRow(t, host, config, info, NUMBER_RULES[key]);
+    const extra = key === "grid_limit_w" ? peakLine(t, host, config, control) : nothing;
+    return numberRow(t, host, config, info, NUMBER_RULES[key], extra);
   }
   switch (key) {
     case "guard_grid":
@@ -148,7 +156,46 @@ export function ruleRow(t: Translate, host: HTMLElement, config: JoeConfig, info
   }
 }
 
-function numberRow(t: Translate, host: HTMLElement, config: JoeConfig, info: JoeInfo | undefined, rule: NumberRule): TemplateResult {
+/** Days Joe measures before the highest import counts as the grid limit (plan/inputs.py PEAK_DAYS). */
+const PEAK_DAYS = 7;
+
+/**
+ * Below the grid limit: the highest import Joe measured, what he does with it
+ * without the user's limit, and "Übernehmen" to take it as the limit.
+ */
+function peakLine(t: Translate, host: HTMLElement, config: JoeConfig, control?: ControlView): TemplateResult | typeof nothing {
+  const peak = control?.grid_peak;
+  if (!peak?.w) {
+    return nothing;
+  }
+  const kw = Math.ceil(peak.w / 100) / 10;
+  const since = new Date(peak.since);
+  const date = new Intl.DateTimeFormat(t.lang, { day: "numeric", month: "long" }).format(since);
+  const ready = Date.now() - since.getTime() >= PEAK_DAYS * 24 * 3600 * 1000;
+  const own = config.rules.grid_limit_w != null;
+  const key = own ? "rule.grid_limit_w.measured_own" : ready ? "rule.grid_limit_w.measured" : "rule.grid_limit_w.measuring";
+  return html`<div class="peak">
+    <small>${t(key, { kw: formatNumber(t.lang, kw, 1), date })}</small>${tip(t, "r_grid_peak")}
+    ${own
+      ? nothing
+      : html`<button
+          type="button"
+          class="mini-btn quiet"
+          @click=${() => saveConfig(host, { rules: { grid_limit_w: Math.round(kw * 1000) } })}
+        >
+          ${t("rule.grid_limit_w.take", { kw: formatNumber(t.lang, kw, 1) })}
+        </button>`}
+  </div>`;
+}
+
+function numberRow(
+  t: Translate,
+  host: HTMLElement,
+  config: JoeConfig,
+  info: JoeInfo | undefined,
+  rule: NumberRule,
+  extra: TemplateResult | typeof nothing = nothing,
+): TemplateResult {
   const fallback = info?.defaults?.rules[rule.key];
   const provenance = sourceOf(config, `rules.${rule.key}`);
   const changed = provenance?.source === "user";
@@ -156,6 +203,7 @@ function numberRow(t: Translate, host: HTMLElement, config: JoeConfig, info: Joe
     <div>
       <div class="name"><b>${t(`rule.${rule.key}`)}</b>${tip(t, `r_${rule.key}`)}</div>
       <small>${t(`rule.${rule.key}.hint`)}</small>
+      ${extra}
     </div>
     <div class="control">
       ${sourceChip(t, provenance)}
@@ -404,6 +452,13 @@ function daySurplusRow(t: Translate, host: HTMLElement, config: JoeConfig): Temp
 export const ruleStyles = css`
   .unit-input {
     width: 150px;
+  }
+  .peak {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+    margin-top: 6px;
   }
   .order {
     display: flex;

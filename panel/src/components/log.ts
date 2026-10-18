@@ -95,6 +95,7 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
     value: entry.value == null ? "–" : String(entry.value),
     target: String(entry.target ?? ""),
     power: typeof entry.power === "number" ? formatNumber(t.lang, entry.power, 1) : "–",
+    cap: typeof entry.cap === "number" ? formatNumber(t.lang, entry.cap, 1) : "–",
     soc: typeof entry.soc === "number" ? formatNumber(t.lang, entry.soc, 0) : "–",
     unit: typeof entry.unit === "string" ? entry.unit : "%",
     until: typeof entry.until === "string" ? entry.until.slice(11, 16) : "–",

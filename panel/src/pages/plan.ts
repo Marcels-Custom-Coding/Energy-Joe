@@ -184,6 +184,10 @@ export class JoePlanPage extends LitElement {
       .tonight .more {
         grid-column: 2 / -1;
       }
+      .tonight .more .pace {
+        font-size: 13px;
+        color: var(--joe-ink-2);
+      }
       .note {
         margin-top: 10px;
       }
@@ -353,19 +357,25 @@ export class JoePlanPage extends LitElement {
   private batteryRow(t: Translate, plan: Plan, battery: PlanBattery): TemplateResult {
     const entry = findDevice(this.devices, "battery", battery.id);
     const pct = (value: number) => formatNumber(t.lang, value, 0);
-    const time = timeOf(plan.charge_slots?.[0]?.start ?? plan.charge_from);
+    const spans = battery.slots ?? [];
+    const time = timeOf(spans[0]?.start ?? plan.charge_slots?.[0]?.start ?? plan.charge_from);
     let text: string;
     let extra = "";
+    let more: TemplateResult | undefined;
     if (plan.kind === "charge" && battery.charge_kwh >= 0.05) {
       text = t(time ? "plan.tonight.charge" : "plan.tonight.charge_any", {
         time,
         from: pct(battery.soc_start),
         target: pct(battery.target),
       });
-      extra = t("plan.tonight.charge.energy", {
-        kwh: formatNumber(t.lang, battery.charge_kwh, 1),
-        kw: formatNumber(t.lang, battery.power_kw, 1),
-      });
+      const kwh = formatNumber(t.lang, battery.charge_kwh, 1);
+      extra = spans.length
+        ? t("plan.tonight.charge.spans", { kwh, spans: spanText(t, spans) })
+        : t("plan.tonight.charge.energy", { kwh, kw: formatNumber(t.lang, battery.power_kw, 1) });
+      const why = paceText(t, plan, battery, this.state?.config.batteries.find((b) => b.id === battery.id));
+      if (why) {
+        more = html`<span class="pace">${why}</span> ${tip(t, "plan_pace")}`;
+      }
     } else if (plan.kind === "hold") {
       text = t("plan.tonight.hold", { target: pct(battery.target) });
     } else {
@@ -379,6 +389,7 @@ export class JoePlanPage extends LitElement {
       name: battery.name,
       text,
       extra,
+      more,
       to: entry ? deviceRoute(entry) : { tab: "devices", section: "battery" },
     });
   }
@@ -820,6 +831,41 @@ export class JoePlanPage extends LitElement {
       this.refreshing = false;
     }
   }
+}
+
+/** A power as people read it: "900 W", "2,4 kW". */
+function powerText(t: Translate, kw: number): string {
+  return kw < 1 ? `${formatNumber(t.lang, Math.round(kw * 20) * 50, 0)} W` : `${formatNumber(t.lang, kw, 1)} kW`;
+}
+
+/** "00:00–04:30 Uhr mit 900 W, 04:30–05:00 Uhr mit 2,4 kW". */
+export function spanText(t: Translate, spans: NonNullable<PlanBattery["slots"]>): string {
+  return spans
+    .map((span) => t("plan.tonight.span", { start: timeOf(span.start), end: timeOf(span.end), power: powerText(t, span.power_kw) }))
+    .join(", ");
+}
+
+/** Why a battery charges as slowly (or as fast) as it does tonight. */
+export function paceText(t: Translate, plan: Plan, battery: PlanBattery, config?: BatteryConfig): string {
+  const parts: string[] = [];
+  if (config?.night_cap === "ignored") {
+    parts.push(t("plan.pace.cap_ignored"));
+  } else if (battery.how && battery.how !== "none") {
+    parts.push(
+      t(`plan.pace.${battery.how}`, {
+        limit: formatNumber(t.lang, plan.rules?.grid_limit_kw ?? 0, 1),
+      }),
+    );
+    if (battery.how === "fixed_power" && config?.controls.charge_limit && !config.limit_ref_w) {
+      parts.push(t("plan.pace.need_ref"));
+    }
+  }
+  // Several batteries take from the grid: the first to discharge by day gets first.
+  const able = (plan.batteries ?? []).filter((b) => b.grid).length;
+  if (battery.rank === 0 && able > 1) {
+    parts.push(t("plan.pace.first"));
+  }
+  return parts.join(" ");
 }
 
 define("joe-plan-page", JoePlanPage);

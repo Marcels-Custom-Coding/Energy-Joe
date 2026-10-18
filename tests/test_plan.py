@@ -82,16 +82,21 @@ def test_sunny_day_needs_nothing() -> None:
     assert "2026-10-04T06:00" < plan["sun_takes_over"] < "2026-10-04T09:00"
 
 
-def test_grey_day_charges_late_in_the_window() -> None:
+def test_grey_day_charges_slowly_over_the_window() -> None:
     plan = make_plan(plan_input(solar=3, soc=20))
     assert plan["kind"] == "charge"
     assert plan["target"] > 20
     assert plan["grid_charge_kwh"] > 0
-    assert "2026-10-04T00:00" < plan["charge_from"] < "2026-10-04T05:00"
+    assert "2026-10-04T00:00" <= plan["charge_from"] < "2026-10-04T05:00"
     assert plan["cost"]["saving"] > 0
-    # Charging happens at the end of the window, not at its start.
+    # One price all night: spread evenly, with less than full power, and done
+    # half an hour before the window ends.
+    (battery,) = plan["batteries"]
+    assert battery["how"] == "spread"
+    assert 0 < battery["power_kw"] < battery["max_kw"]
+    assert battery["slots"][-1]["end"] <= "2026-10-04T04:30+02:00"
     charges = [h["charge"] for h in plan["hours"] if h["window"]]
-    assert charges[0] == 0 and charges[-1] > 0
+    assert charges[0] > 0 and charges[-1] < charges[0]
 
 
 def test_holds_when_charging_does_not_pay() -> None:
@@ -111,7 +116,7 @@ def test_block_keeps_the_battery_still() -> None:
     socs = [h["soc"] for h in plan["hours"] if h["window"]]
     # Never down during the cheap window, only up when Joe charges.
     assert all(later >= earlier for earlier, later in zip(socs, socs[1:], strict=False))
-    assert socs[0] == plan["soc_start"]
+    assert socs[0] >= plan["soc_start"]
 
 
 def test_highest_target_and_buffer() -> None:
@@ -125,10 +130,14 @@ def test_highest_target_and_buffer() -> None:
     )
 
 
-def test_grid_limit_starts_charging_earlier() -> None:
+def test_grid_limit_keeps_the_power_down() -> None:
     free = make_plan(plan_input(solar=0, soc=15))
     tight = make_plan(plan_input(solar=0, soc=15, grid_limit_kw=1.4))
-    assert tight["charge_from"] < free["charge_from"]
+    # The home takes 0.4 kW at night: 1 kW are left for the battery.
+    (battery,) = tight["batteries"]
+    assert battery["power_kw"] <= 1.0 + 1e-9
+    assert battery["how"] == "grid_limit"
+    assert tight["grid_charge_kwh"] < free["grid_charge_kwh"]
 
 
 def test_evening_minimum_raises_the_target() -> None:
