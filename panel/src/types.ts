@@ -48,6 +48,8 @@ export interface HomeAssistant {
     ): Promise<() => Promise<void>>;
   };
   language: string;
+  /** "docked", "auto" or "always_hidden" – the user's sidebar setting. */
+  dockedSidebar?: string;
   themes?: { darkMode?: boolean };
   states: Record<string, HassEntity>;
   entities?: Record<string, HassEntityEntry>;

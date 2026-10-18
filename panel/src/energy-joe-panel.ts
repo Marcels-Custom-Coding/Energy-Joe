@@ -338,6 +338,11 @@ export class EnergyJoePanel extends LitElement {
     });
   }
 
+  /** Same event HA's own menu button sends: opens the drawer, or docks a hidden sidebar again. */
+  private toggleSidebar(): void {
+    this.dispatchEvent(new Event("hass-toggle-menu", { bubbles: true, composed: true }));
+  }
+
   protected render(): TemplateResult {
     const t = this.t;
     if (this.failed) {
@@ -351,8 +356,10 @@ export class EnergyJoePanel extends LitElement {
       <header>
         ${this.joe.mode === "simulation" ? html`<div class="simband" aria-hidden="true"></div>` : nothing}
         <div class="bar">
-          ${this.narrow
-            ? html`<ha-menu-button .hass=${this.hass} .narrow=${this.narrow}></ha-menu-button>`
+          ${this.narrow || this.hass?.dockedSidebar === "always_hidden"
+            ? html`<button class="menu" type="button" data-notip aria-label=${t("menu.sidebar")} @click=${this.toggleSidebar}>
+                <ha-icon icon="mdi:menu"></ha-icon>
+              </button>`
             : nothing}
           <div class="brand">
             <img class="light" src=${asset("joe-head.webp")} alt="" width="36" height="36" />
@@ -826,6 +833,25 @@ export class EnergyJoePanel extends LitElement {
         gap: 10px 18px;
         padding: 10px 20px;
         min-height: 64px;
+      }
+      .menu {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        margin-left: -8px;
+        border: 0;
+        border-radius: 50%;
+        background: none;
+        color: var(--joe-ink);
+        cursor: pointer;
+      }
+      .menu:hover {
+        background: var(--joe-line);
+      }
+      .menu:focus-visible {
+        outline: 3px solid var(--joe-amber);
+        outline-offset: 2px;
       }
       .brand {
         display: flex;

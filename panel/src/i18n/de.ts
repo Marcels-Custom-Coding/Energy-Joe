@@ -3334,6 +3334,7 @@ export const de = {
     "Ich erreiche die Integration nicht. Lade die Seite neu – hilft das nicht, schau unter Einstellungen → System → Protokolle nach.",
   "error.action": "Fehler beim Speichern",
   "loading": "Joe sattelt auf …",
+  "menu.sidebar": "Home-Assistant-Menü",
 };
 
 export type Key = keyof typeof de;
