@@ -860,6 +860,10 @@ export function paceText(t: Translate, plan: Plan, battery: PlanBattery, config?
       parts.push(t("plan.pace.need_ref"));
     }
   }
+  // Measured charging much slower than it could: planned with that power.
+  if (battery.slow_kw) {
+    parts.push(t("plan.pace.slow", { power: powerText(t, battery.slow_kw) }));
+  }
   // Several batteries take from the grid: the first to discharge by day gets first.
   const able = (plan.batteries ?? []).filter((b) => b.grid).length;
   if (battery.rank === 0 && able > 1) {

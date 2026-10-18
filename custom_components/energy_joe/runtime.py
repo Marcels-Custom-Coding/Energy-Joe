@@ -171,6 +171,7 @@ class JoeRuntime:
         self.planner.accounts = self.accounts
         self.planner.held = lambda: self.executor.data["saved"]
         self.planner.grid_peak = lambda: self.executor.data.get("grid_peak")
+        self.planner.slow = self.executor.slow_powers
         # Which car is plugged in where (asks, reminds, learns evcc's ids).
         self.cars = CarWatcher(
             hass,

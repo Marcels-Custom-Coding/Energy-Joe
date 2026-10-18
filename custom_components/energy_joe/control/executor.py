@@ -139,6 +139,23 @@ NIGHT_CAP_OVER = 1.3
 NIGHT_CAP_SLACK_W = 200
 NIGHT_CAP_OVER_FOR = timedelta(minutes=5)
 NIGHT_CAP_WORKS_FOR = timedelta(minutes=15)
+# A battery charging from the grid with a planned power (not under a ceiling
+# of Joe's, not while the grid limit pauses it, not within SLOW_NEAR percent
+# of its target): once it had SLOW_START to get going, taking less than
+# SLOW_SHARE of that power for SLOW_FOR means it charges much slower than
+# planned – some inverters let a raised reserve pull only a little from the
+# grid. Joe tells the owner (once a night) and plans it with what he measured
+# (the most of its last SLOW_NIGHTS findings) until it takes SLOW_AGAIN times
+# that again for SLOW_START.
+SLOW_START = timedelta(minutes=3)
+SLOW_SHARE = 0.4
+SLOW_FOR = timedelta(minutes=15)
+SLOW_NEAR = 5
+SLOW_NIGHTS = 3
+SLOW_AGAIN = 1.5
+# What a battery took while Joe charged it, summed up check by check; a gap
+# longer than this between two checks (Joe was down) counts as this long.
+ENERGY_GAP = timedelta(minutes=5)
 # The highest import from the grid: noted again once it rose by this share.
 GRID_PEAK_STEP = 1.02
 # A grid-friendly morning lets go when the rest of the sun, taken with this
@@ -206,6 +223,20 @@ DEFAULT_DATA: dict[str, Any] = {
     # The highest import from the grid measured so far: W, when, since when
     # Joe watches (a learned grid limit for the plan, a hint in the panel).
     "grid_peak": None,
+    # Batteries that charge much slower than planned (see _async_watch_slow):
+    # battery -> the planned and the measured power (W), when, and the last
+    # findings by night (the plan goes by the most of them).
+    "night_slow": {},
+    # Watching for that tonight: battery -> since when it charges, since when
+    # it takes too little (the sum and count of what it took then), since
+    # when it takes clearly more than Joe learned.
+    "slow_watch": {},
+    # What each battery took tonight while Joe charged it (kWh), and the last
+    # check it was counted at.
+    "night_energy": {},
+    # The last night looked back on: what was planned against what each
+    # battery took (see _review_night).
+    "night_review": None,
     # "Just charge to …" by hand: action id -> target, unit, sensor, since, until.
     "boost": {},
     # The night whose grid-friendly morning runs, or was let go early.
@@ -748,6 +779,14 @@ class JoeExecutor:
             if not day:
                 self.data["day"] = None
                 self.data["day_buffer"] = None
+            # The window is over: what each battery took against the plan.
+            reviewed = (
+                reason == "done"
+                and plan is not None
+                and night is not None
+                and self.data["night"] == night
+                and self._review_night(plan, now)
+            )
             # No plan for a moment (a restart, the planner restarting) does not
             # end the night: only a plan for another night does.
             if self.data["night"] and night is not None and self.data["night"] != night:
@@ -755,7 +794,14 @@ class JoeExecutor:
             self._set_status("day" if day else reason, night, day, boosts, keep)
             self._watch([])
             # Originals and caps survive a crash: saved whenever they change.
-            if boosts or ended or day or peaked or self._written_state() != before:
+            if (
+                boosts
+                or ended
+                or day
+                or peaked
+                or reviewed
+                or self._written_state() != before
+            ):
                 await self._async_save()
             return
         assert plan is not None and night is not None
@@ -813,6 +859,7 @@ class JoeExecutor:
             if cap:
                 entry["cap"] = cap
             batteries[battery["id"]] = entry
+        await self._async_watch_slow(items, desired, socs, batteries, now)
         actions = await self._async_actions(config, plan, night, now, set(boosts))
         self._set_status("steering", night, batteries, {**actions, **boosts})
         self._watch([b["soc_entity"] for b, _, a in items if a is not None])
@@ -4765,6 +4812,247 @@ class JoeExecutor:
                     "no_progress", battery=names.get(key, key)
                 )
 
+    # --- charging much slower than planned ---------------------------------------
+
+    async def _async_watch_slow(
+        self,
+        items: list[tuple[dict[str, Any], dict[str, Any], Adapter | None]],
+        desired: dict[str, Desired],
+        socs: dict[str, float | None],
+        batteries: dict[str, Any],
+        now: datetime,
+    ) -> None:
+        """A battery that takes far less than the power planned for it while
+        it charges from the grid gets noted (the plan goes by it) and the
+        owner told, once a night; one that takes clearly more again is
+        forgotten. What each battery takes is summed up for the night's look
+        back. `batteries` are the panel's entries of this check.
+        """
+        watch: dict[str, Any] = self.data["slow_watch"]
+        known: dict[str, Any] = self.data["night_slow"]
+        for battery, _, adapter in items:
+            key = battery["id"]
+            entry = batteries.get(key)
+            if entry is not None and key in known:
+                entry["slow"] = _slow_view(known[key])
+            want = desired.get(key)
+            charging = (
+                adapter is not None and want is not None and want.charge_to is not None
+            )
+            power = _charge_w(self._hass, battery) if charging else None
+            if not charging or power is None:
+                # Not charging (or no power to see): the next stretch starts afresh.
+                watch.pop(key, None)
+                self._count_energy(key, None, now)
+                continue
+            assert want is not None and want.charge_to is not None
+            power = max(0.0, power)
+            self._count_energy(key, power, now)
+            soc = socs.get(key)
+            cap = (entry or {}).get("cap") or {}
+            if (
+                not want.power_w
+                or soc is None
+                or soc >= want.charge_to - SLOW_NEAR
+                or cap.get("w")
+                or (entry or {}).get("problem")
+            ):
+                # No planned power (as fast as it can), near its target, Joe's
+                # own ceiling in force or a value that did not take: nothing
+                # to measure.
+                watch.pop(key, None)
+                continue
+            mark = watch.get(key)
+            if mark is None:
+                mark = watch[key] = {
+                    "since": now.isoformat(timespec="seconds"),
+                    "low_since": None,
+                    "sum": 0.0,
+                    "n": 0,
+                    "fast_since": None,
+                }
+            if now - _at(mark["since"]) < SLOW_START:
+                continue
+            if power >= want.power_w * SLOW_SHARE:
+                mark.update(low_since=None, sum=0.0, n=0)
+                self._slow_over(battery, mark, power, now, entry)
+                continue
+            mark["fast_since"] = None
+            if mark["low_since"] is None:
+                mark["low_since"] = now.isoformat(timespec="seconds")
+            mark["sum"] += power
+            mark["n"] += 1
+            if now - _at(mark["low_since"]) < SLOW_FOR:
+                continue
+            if entry is not None and entry.get("problem") is None:
+                entry["problem"] = "charge_slow"
+            if self._slow_tonight(key):
+                continue
+            await self._async_slow_found(
+                battery, want.power_w, mark["sum"] / mark["n"], now, entry
+            )
+
+    def _slow_tonight(self, key: str) -> bool:
+        """Whether the battery was found slow tonight already (told once a night)."""
+        found = self.data["night_slow"].get(key) or {}
+        return any(n["night"] == self.data["night"] for n in found.get("nights") or [])
+
+    async def _async_slow_found(
+        self,
+        battery: dict[str, Any],
+        planned_w: float,
+        measured_w: float,
+        now: datetime,
+        entry: dict[str, Any] | None,
+    ) -> None:
+        """Noted for the plan (the last SLOW_NIGHTS findings), in the log, as
+        the battery's problem in the panel, and told to the owner."""
+        key = battery["id"]
+        found = self.data["night_slow"].get(key) or {}
+        night = self.data["night"]
+        nights = [n for n in found.get("nights") or [] if n["night"] != night]
+        nights.append(
+            {
+                "night": night,
+                "planned_w": round(planned_w),
+                "measured_w": round(measured_w),
+            }
+        )
+        found = {
+            "planned_w": round(planned_w),
+            "measured_w": round(measured_w),
+            "at": now.isoformat(timespec="seconds"),
+            "nights": nights[-SLOW_NIGHTS:],
+        }
+        self.data["night_slow"][key] = found
+        if entry is not None:
+            entry["slow"] = _slow_view(found)
+        self._log(
+            "charge_slow",
+            battery=key,
+            power=round(measured_w / 1000, 2),
+            planned=round(planned_w / 1000, 2),
+        )
+        self._fire(
+            "charge_slow",
+            battery=key,
+            planned_w=round(planned_w),
+            measured_w=round(measured_w),
+        )
+        if self.notifier:
+            kind = (
+                "charge_slow_fronius"
+                if battery.get("adapter") == "fronius"
+                else "charge_slow"
+            )
+            await self.notifier.async_problem(
+                kind,
+                battery=battery["name"],
+                measured=self._kw_text(measured_w),
+                planned=self._kw_text(planned_w),
+            )
+
+    def _slow_over(
+        self,
+        battery: dict[str, Any],
+        mark: dict[str, Any],
+        power: float,
+        now: datetime,
+        entry: dict[str, Any] | None,
+    ) -> None:
+        """A battery Joe knows as slow takes clearly more than he learned, for
+        SLOW_START: forgotten, the plan goes by its full power again."""
+        key = battery["id"]
+        learned = self.slow_powers().get(key)
+        if learned is None or power < learned * SLOW_AGAIN:
+            mark["fast_since"] = None
+            return
+        if mark["fast_since"] is None:
+            mark["fast_since"] = now.isoformat(timespec="seconds")
+            return
+        if now - _at(mark["fast_since"]) < SLOW_START:
+            return
+        del self.data["night_slow"][key]
+        mark["fast_since"] = None
+        if entry is not None:
+            entry.pop("slow", None)
+        self._log("charge_slow_end", battery=key, power=round(power / 1000, 2))
+        self._fire("charge_slow_end", battery=key, power_w=round(power))
+
+    def slow_powers(self) -> dict[str, float]:
+        """Per battery known to charge much slower than planned: the power to
+        plan it with (W; the most of its last findings)."""
+        result: dict[str, float] = {}
+        for key, found in self.data["night_slow"].items():
+            powers = [n["measured_w"] for n in found.get("nights") or []]
+            result[key] = max(powers) if powers else found["measured_w"]
+        return result
+
+    def _kw_text(self, watts: float) -> str:
+        """A power for a message ("0,5", "3"; kW), in the language Joe speaks."""
+        text = f"{watts / 1000:.1f}".removesuffix(".0")
+        if (self._hass.config.language or "en").startswith("de"):
+            text = text.replace(".", ",")
+        return text
+
+    def _count_energy(self, key: str, power_w: float | None, now: datetime) -> None:
+        """Sum up what a battery takes while Joe charges it (kWh); None ends
+        the stretch (the next one starts with a fresh check)."""
+        energy: dict[str, Any] = self.data["night_energy"]
+        if power_w is None:
+            if key in energy:
+                energy[key]["at"] = None
+            return
+        mark = energy.setdefault(key, {"kwh": 0.0, "at": None})
+        if mark["at"]:
+            gap = min(now - _at(mark["at"]), ENERGY_GAP)
+            mark["kwh"] += power_w / 1000 * gap.total_seconds() / 3600
+        mark["at"] = now.isoformat(timespec="seconds")
+
+    def _review_night(self, plan: dict[str, Any], now: datetime) -> bool:
+        """The window is over: what each battery took against what was planned
+        for it (for the panel, and a line per battery in the log). Returns
+        whether the night was looked back on now.
+        """
+        night = self.data["night"]
+        review = self.data.get("night_review")
+        if plan.get("kind") != "charge" or (review and review.get("night") == night):
+            return False
+        energy: dict[str, Any] = self.data["night_energy"]
+        first: dict[str, Any] = self.data["first"]
+        config = self._config()
+        batteries: dict[str, Any] = {}
+        for planned in plan.get("batteries") or []:
+            key = planned["id"]
+            battery = next((b for b in config["batteries"] if b["id"] == key), None)
+            if battery is None or key not in first:
+                continue
+            counted = energy.get(key)
+            charged = round(counted["kwh"], 2) if counted else None
+            planned_kwh = planned.get("charge_kwh")
+            powers = [s.get("power_kw") or 0 for s in planned.get("slots") or []]
+            planned_kw = max(powers, default=planned.get("power_kw") or 0)
+            batteries[key] = {
+                "planned_kwh": planned_kwh,
+                "charged_kwh": charged,
+                "planned_w": round(planned_kw * 1000) or None,
+                "soc_start": first.get(key),
+                "soc_end": number(self._hass.states.get(battery["soc_entity"])),
+                "slow": self._slow_tonight(key),
+            }
+            if charged is not None and planned_kwh is not None:
+                self._log(
+                    "night_charged", battery=key, charged=charged, planned=planned_kwh
+                )
+        if not batteries:
+            return False
+        self.data["night_review"] = {
+            "night": night,
+            "at": now.isoformat(timespec="seconds"),
+            "batteries": batteries,
+        }
+        return True
+
     def _start_night(self, night: str) -> None:
         self.data.update(
             night=night,
@@ -4777,6 +5065,8 @@ class JoeExecutor:
             paused=None,
             progress={},
             night_caps={},
+            slow_watch={},
+            night_energy={},
         )
         self._log("start", night=night)
         if self.notifier:
@@ -4793,6 +5083,8 @@ class JoeExecutor:
             steered=False,
             done=[],
             night_caps={},
+            slow_watch={},
+            night_energy={},
         )
         # A switch "tonight" is for one night only.
         self.data["tonight"] = {
@@ -5255,6 +5547,10 @@ class JoeExecutor:
             "team": self.team,
             "guard": self.guard,
             "grid_peak": self.data.get("grid_peak"),
+            # Batteries charging much slower than planned, and the last
+            # night's look back (see _async_watch_slow, _review_night).
+            "night_slow": self.data["night_slow"],
+            "night_review": self.data.get("night_review"),
         }
 
     async def async_forget(self) -> None:
@@ -5337,6 +5633,12 @@ def _probe_step(
         "taken": error is None,
         "error": error,
     }
+
+
+def _slow_view(found: dict[str, Any]) -> dict[str, Any]:
+    """What the panel shows of a battery that charges much slower than
+    planned: the planned and the measured power (W), and when."""
+    return {key: found.get(key) for key in ("planned_w", "measured_w", "at")}
 
 
 def _test_power(battery: dict[str, Any]) -> float:

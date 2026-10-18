@@ -60,6 +60,9 @@ class JoePlanner:
         self.held: Callable[[], dict[str, Any]] = dict
         # The highest import from the grid the executor measured (or None).
         self.grid_peak: Callable[[], dict[str, Any] | None] = lambda: None
+        # Batteries the executor measured charging much slower than planned:
+        # battery -> the power (W) to plan them with.
+        self.slow: Callable[[], dict[str, float]] = dict
         # Which car is plugged in at each charge point (set by the runtime).
         self.detected: Callable[[], dict[str, dict[str, Any]]] = self._detect
         self.plan: dict[str, Any] | None = None
@@ -274,6 +277,7 @@ class JoePlanner:
             self.held(),
             self.detected(),
             self.grid_peak(),
+            self.slow(),
         )
         if inp is None:
             return {

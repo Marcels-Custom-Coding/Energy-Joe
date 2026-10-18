@@ -66,6 +66,9 @@ class Battery:
     paced: bool = True
     # The system that regulates it (batteries of one group rise together).
     group: str | None = None
+    # It charges much slower from the grid than it could (the executor
+    # measured it): charge_kw is that power, kept here for the panel.
+    slow_kw: float | None = None
 
 
 @dataclass(slots=True)
@@ -573,6 +576,7 @@ def _plan(inp: PlanInput) -> dict[str, Any]:
             "grid": battery.grid,
             "paced": battery.paced,
             "group": battery.group or battery.id,
+            "slow_kw": battery.slow_kw,
         }
         if shared is not None:
             # Its own target: what it has at the window's start and its share.

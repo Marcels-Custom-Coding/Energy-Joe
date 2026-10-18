@@ -1274,6 +1274,8 @@ export interface PlanBattery {
   how?: PlanPace;
   /** Whether Joe can set its power (else it charges at full power). */
   paced?: boolean;
+  /** It charges much slower than it could (measured): planned with this power (kW). */
+  slow_kw?: number | null;
   /** Its place in the order of charging (0: gets first). */
   rank?: number;
   controllable: boolean;
@@ -1472,6 +1474,36 @@ export interface ControlBattery {
   power_w?: number | null;
   /** Fronius: its charge limit as the ceiling of the night's power, and whether it holds. */
   cap?: { w: number | null; seen_w: number | null; state: "works" | "ignored" | null };
+  /** It charges much slower from the grid than planned (executor._async_watch_slow). */
+  slow?: NightSlow | null;
+}
+
+/** A battery that took far less than the power planned for it: the planned and the measured power (W), and when. */
+export interface NightSlow {
+  planned_w: number;
+  measured_w: number;
+  at: string;
+  /** The last findings by night (the plan goes by the most of them). */
+  nights?: { night: string; planned_w: number; measured_w: number }[];
+}
+
+/** The last night looked back on: what was planned against what each battery took (executor._review_night). */
+export interface NightReview {
+  night: string;
+  at: string;
+  batteries: Record<
+    string,
+    {
+      planned_kwh: number | null;
+      /** Summed up from its power while Joe charged it; null without a power sensor. */
+      charged_kwh: number | null;
+      planned_w: number | null;
+      soc_start: number | null;
+      soc_end: number | null;
+      /** Found charging much slower than planned that night. */
+      slow: boolean;
+    }
+  >;
 }
 
 export interface TestStep {
@@ -1542,6 +1574,10 @@ export interface ControlView {
   guard?: TransferGuard;
   /** The highest import from the grid Joe measured (W), when, and since when he watches. */
   grid_peak?: { w: number; at: string; since: string } | null;
+  /** Batteries that charge much slower from the grid than planned (older backends: missing). */
+  night_slow?: Record<string, NightSlow>;
+  /** The last night looked back on: planned against charged, per battery (older backends: missing). */
+  night_review?: NightReview | null;
   /** Per battery: ready to steer, or why not. */
   ready: Record<string, "ready" | "not_tested" | "outdated" | "not_controllable" | "controls_missing">;
 }

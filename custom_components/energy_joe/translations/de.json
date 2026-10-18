@@ -148,6 +148,14 @@
       "title": "Speicher lädt nicht",
       "description": "{battery} soll laden, der Ladestand steigt aber seit einer halben Stunde nicht. Prüf, ob der Speicher Netzladen erlaubt; ein Testlauf im Energy-Joe-Panel unter Geräte › Speicher hilft."
     },
+    "charge_slow": {
+      "title": "Speicher lädt nachts nur langsam",
+      "description": "{battery} lädt nachts nur mit {measured} kW statt {planned} kW. Vermutlich lässt der Wechselrichter übers Hochsetzen der Reserve nur wenig Netzladen zu. Schau in den Einstellungen des Wechselrichters nach, ob das Laden aus dem Netz erlaubt ist und mit wie viel Leistung. Bis es schneller geht, plant Joe ihn mit {measured} kW."
+    },
+    "charge_slow_fronius": {
+      "title": "Speicher lädt nachts nur langsam",
+      "description": "{battery} lädt nachts nur mit {measured} kW statt {planned} kW. Vermutlich lässt der Wechselrichter übers Hochsetzen der Reserve nur wenig Netzladen zu. Prüf im Fronius-Wechselrichter unter Energiemanagement › Batteriemanagement, ob „Batterieladung aus dem Netz“ zugelassen ist und ob dort nur eine kleine Leistung eingetragen ist. Bis es schneller geht, plant Joe ihn mit {measured} kW."
+    },
     "battery_transfer": {
       "title": "Speicher laden sich gegenseitig",
       "description": "{charging} lädt, während {discharging} entlädt – auch nachdem ich die Regelung des Speichers neu gestartet und ihn kurz gesperrt habe. Vielleicht schreibt etwas anderes dieselben Grenzen, oder eine Sperre greift nicht. Schau im Energy-Joe-Panel unter Geräte › Speicher › Mehrere Speicher nach."
