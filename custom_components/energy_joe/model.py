@@ -25,7 +25,7 @@ import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
 
 from .control import week
-from .control.profiles import ADAPTERS, MODE_OPTIONS, ROLES
+from .control.profiles import ADAPTERS, MODE_OPTIONS, OPERATIONS, ROLES
 
 CONFIG_VERSION = 7
 
@@ -127,7 +127,8 @@ MEASUREMENT = vol.Schema(
 SOLAR_MEASUREMENT = MEASUREMENT.extend({vol.Optional("sleeps", default=False): bool})
 
 # One step of a battery Joe steers through entities the user assigned: an entity
-# and its value; "{floor}", "{target}" and "{power}" stand for the values of the moment.
+# and its value; "{floor}", "{target}", "{power}", "{power_neg}", "{percent}",
+# "{minutes}", "{seconds}" and "{device}" stand for the values of the moment.
 # A step is an entity with a value, or a service call with data.
 _STEP_ENTITY = vol.Schema(
     {
@@ -142,9 +143,9 @@ _STEP_SERVICE = vol.Schema(
     }
 )
 STEP = vol.Any(_STEP_ENTITY, _STEP_SERVICE)
-STEPS = vol.Schema(
-    {vol.Optional(name): [STEP] for name in ("charge", "hold", "release")}
-)
+# Own steps per operation (see control/operations.py): the night's (charge,
+# hold, release) and the day's (block, block_charge, block_discharge, cap).
+STEPS = vol.Schema({vol.Optional(name): [STEP] for name in OPERATIONS})
 
 BATTERY = vol.Schema(
     {

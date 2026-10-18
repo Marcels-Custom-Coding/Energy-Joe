@@ -25,7 +25,15 @@ from .control.cars import CarWatcher
 from .control.climate import ClimateController
 from .control.executor import JoeExecutor
 from .control.notify import JoeNotifier
-from .discovery import async_car_sources, async_car_updates, async_profile_updates
+from .discovery import (
+    adopted_controls,
+    async_car_sources,
+    async_car_updates,
+    async_collect,
+    async_profile_updates,
+    profile_find,
+    role_hash,
+)
 from .learn.learner import JoeLearner
 from .mail import oauth
 from .mail.inbox import CarInboxes
@@ -60,6 +68,10 @@ ONBOARDING_STEPS = ("welcome", "scan", "questions", "done")
 DEFAULT_STATE: dict[str, Any] = {
     "mode": "simulation",
     "onboarding": {"step": "welcome", "completed": False},
+    # Batteries whose levers differ from the profile's find, left as they
+    # are by the owner: battery id -> the hash of that find (asked again
+    # once it changes; see discovery.async_profile_updates).
+    "roles_dismissed": {},
 }
 
 DATA_RUNTIME: HassKey[JoeRuntime] = HassKey(DOMAIN)
@@ -187,6 +199,9 @@ class JoeRuntime:
         self._planned: dict[str, Any] | None = None
         self._observed: dict[str, Any] | None = None
         self._observe_lock = asyncio.Lock()
+        # Batteries whose levers, as the user set them, differ from what
+        # their profile finds (the panel asks whether to take the find over).
+        self._battery_roles: list[dict[str, Any]] = []
 
     async def async_load(self) -> None:
         """Load stored state and configuration."""
@@ -379,15 +394,52 @@ class JoeRuntime:
             _LOGGER.exception("Keeping the learned cutoff failed")
 
     async def _async_profile_updates(self) -> None:
-        """Batteries set up before a profile learned more (e.g. a manual mode)."""
+        """Batteries set up before a profile learned more (e.g. a manual
+        mode), and levers the user set that differ from the profile's find."""
         try:
-            patch = await async_profile_updates(self._hass, self._config)
+            found = await async_profile_updates(
+                self._hass, self._config, self._state.get("roles_dismissed") or {}
+            )
         except Exception:
             _LOGGER.exception("Checking the battery profiles failed")
             return
+        roles = (found or {}).get("battery_roles") or []
+        if roles != self._battery_roles:
+            self._battery_roles = roles
+            self._changed()
+        patch = (found or {}).get("batteries")
         if patch:
-            _LOGGER.info("Battery profiles updated: %s", list(patch["batteries"]))
-            self.async_update_config(patch, "read", "profile")
+            _LOGGER.info("Battery profiles updated: %s", list(patch))
+            self.async_update_config({"batteries": patch}, "read", "profile")
+
+    async def async_battery_roles(self, battery_id: str, action: str) -> dict[str, Any]:
+        """Levers that differ from the profile's find: "adopt" takes the find
+        over (the profile's levers and mode options; the user's roles the
+        profile does not know stay, see discovery.adopted_controls) – a new
+        test run is needed then; "dismiss" leaves them and stops asking until
+        the find changes."""
+        battery = next(
+            (b for b in self._config["batteries"] if b["id"] == battery_id), None
+        )
+        if battery is None:
+            raise ValueError("unknown_battery")
+        found = profile_find(await async_collect(self._hass), battery)
+        dismissed: dict[str, str] = self._state.setdefault("roles_dismissed", {})
+        controls: dict[str, str] = battery.get("controls") or {}
+        if action == "dismiss":
+            dismissed[battery_id] = role_hash(found["controls"])
+            self._changed(state=True)
+        else:
+            controls = adopted_controls(battery, found["controls"])
+            change: dict[str, Any] = {"controls": controls}
+            if found["mode_options"]:
+                change["mode_options"] = found["mode_options"]
+            dismissed.pop(battery_id, None)
+            self.async_update_config(
+                {"batteries": {battery_id: change}}, "read", "profile"
+            )
+        await self._async_profile_updates()
+        return {"ok": True, "controls": controls}
 
     async def async_car_updates(self) -> None:
         """Link the cars Joe sees (evcc's vehicles, car integrations) to his cars."""
@@ -686,6 +738,9 @@ class JoeRuntime:
                 # A configuration Joe could not read at the start (see
                 # _async_load_config): offered to take back.
                 "config_backup": self._backup_view(),
+                # Levers the user set that differ from the profile's find
+                # (see async_battery_roles).
+                "battery_roles": self._battery_roles,
                 # Energy Joe's own apps for signing in (else one's own is needed).
                 "apps": {
                     "microsoft": oauth.client_for(None) is not None,
@@ -742,6 +797,11 @@ class JoeRuntime:
             self.inbox.async_apply()
             self.climate.async_start()
             self.cars.apply()
+            if "batteries" in patch and detail != "profile":
+                # Levers changed: look again whether they differ from the profile.
+                self._hass.async_create_task(
+                    self._async_profile_updates(), eager_start=False
+                )
 
     @callback
     def async_replace_config(self, data: dict[str, Any]) -> None:

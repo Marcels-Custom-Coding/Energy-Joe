@@ -734,6 +734,46 @@ def guard_controls(
     return found
 
 
+def _battery_scope(
+    snap: Snapshot, profile: Profile, battery: dict[str, Any], soc: EntityInfo | None
+) -> list[EntityInfo]:
+    """Where a battery set up before keeps its levers (its device as noted,
+    else the device of its level; the entry or the whole integration where
+    the profile says so)."""
+    if profile.scope == "entry":
+        return snap.of_config_entry(soc.config_entry_id) if soc else []
+    if profile.scope == "integration" and soc:
+        return snap.of_platform(soc.platform or "")
+    return snap.of_device(battery.get("device_id") or (soc.device_id if soc else None))
+
+
+def profile_find(snap: Snapshot, battery: dict[str, Any]) -> dict[str, Any]:
+    """Every lever a battery's profile finds in Home Assistant today (the
+    night's, the system's, the watchdog's and the day's), with the meaning
+    of the mode's options as the select offers them: {"controls", "mode_options"}.
+    Empty for batteries without a profile."""
+    profile = PROFILES.get(battery.get("adapter") or "")
+    soc = snap.get(battery.get("soc_entity"))
+    if profile is None or soc is None:
+        return {"controls": {}, "mode_options": {}}
+    scope = _battery_scope(snap, profile, battery, soc)
+    near = _Near(snap, soc)
+    controls: dict[str, str] = {}
+    for role, keys in profile.roles.items():
+        if found := _find_key(scope, ROLE_DOMAINS[role], keys, near):
+            controls[role] = found.entity_id
+    controls.update(entry_controls(snap, profile, soc.config_entry_id))
+    controls.update(guard_controls(snap, profile, scope, near))
+    mode = snap.get(controls.get("mode"))
+    offered = list((mode.attributes.get("options") if mode else None) or [])
+    mode_options: dict[str, str] = {}
+    for meaning, names in profile.options.items():
+        chosen = next((n for n in names if n in offered), None) if offered else names[0]
+        if chosen:
+            mode_options[meaning] = chosen
+    return {"controls": controls, "mode_options": mode_options}
+
+
 def profile_controls(snap: Snapshot, battery: dict[str, Any]) -> dict[str, str]:
     """The system and watchdog levers a battery's profile knows, as found in
     Home Assistant."""
@@ -741,14 +781,7 @@ def profile_controls(snap: Snapshot, battery: dict[str, Any]) -> dict[str, str]:
     soc = snap.get(battery.get("soc_entity"))
     found = entry_controls(snap, profile, soc.config_entry_id if soc else None)
     if profile and (profile.guard_roles or profile.day_roles):
-        if profile.scope == "entry":
-            scope = snap.of_config_entry(soc.config_entry_id) if soc else []
-        elif profile.scope == "integration" and soc:
-            scope = snap.of_platform(soc.platform or "")
-        else:
-            scope = snap.of_device(
-                battery.get("device_id") or (soc.device_id if soc else None)
-            )
+        scope = _battery_scope(snap, profile, battery, soc)
         near = _Near(snap, soc) if soc else None
         found.update(guard_controls(snap, profile, scope, near))
     # Only levers of the day: the night's stay as they were tested.

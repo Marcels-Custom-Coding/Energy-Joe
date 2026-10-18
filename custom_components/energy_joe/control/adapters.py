@@ -27,6 +27,13 @@ Some batteries need a switch first ("prepare", e.g. Remote Control), some
 take commands only for a while ("command_timeout"), some are steered with
 services ("steps", e.g. Huawei's forcible charge).
 
+Own steps: the owner may give steps of their own for any operation
+(battery.steps: charge, hold, release, block, block_charge, block_discharge,
+cap). Where they exist Joe uses them instead of the profile's levers, by day
+too ("Nacheinander", the watchdog's block, the daytime cap); what they wrote
+goes back from the noted originals, plus the own release steps. Written
+values that stand count as the block being in force (see _own_blocked).
+
 Originals: before Joe changes an entity the first time in a night he notes its
 value ("saved"). Leaving a state puts these values back; the release at the end
 of the night restores all of them, newest first.
@@ -43,10 +50,13 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 
 from .profiles import (
+    BLOCK_OPERATIONS,
+    DAY_OPERATIONS,
     DAY_OPTIONS,
     DAY_ROLES,
     GENERIC,
     MODE_METHODS,
+    OPERATIONS,
     PROFILES,
     SYSTEM_ROLES,
     Profile,
@@ -136,7 +146,12 @@ class Adapter:
                 if k not in DAY_OPTIONS
             },
             "prepare": self.battery.get("prepare") or [],
-            "steps": self.battery.get("steps") or {},
+            # Own steps of the day (a block, the cap) are no part of the night.
+            "steps": {
+                k: v
+                for k, v in (self.battery.get("steps") or {}).items()
+                if k not in DAY_OPERATIONS
+            },
         }
         digest = hashlib.sha256(json.dumps(data, sort_keys=True).encode())
         return digest.hexdigest()[:12]
@@ -208,9 +223,154 @@ class RoleAdapter(Adapter):
             meaning: names[0] for meaning, names in profile.options.items() if names
         }
         self.prepare: list[dict[str, Any]] = list(battery.get("prepare") or [])
+        # The owner's own steps per operation (see own_steps).
+        self.steps: dict[str, list[dict[str, Any]]] = dict(battery.get("steps") or {})
 
     def entities(self) -> list[str]:
-        return [*self.controls.values(), *self.prepare_entities()]
+        return list(
+            dict.fromkeys(
+                [
+                    *self.controls.values(),
+                    *self.prepare_entities(),
+                    *self.own_entities(*OPERATIONS),
+                ]
+            )
+        )
+
+    # --- the owner's own steps ----------------------------------------------------
+
+    def own_steps(self, op: str) -> list[dict[str, Any]] | None:
+        """The owner's own steps for an operation, None where there are none."""
+        steps = self.steps.get(op)
+        return list(steps) if steps else None
+
+    def own_entities(self, *ops: str) -> list[str]:
+        """The entities the own steps of these operations write, in their order."""
+        return list(
+            dict.fromkeys(
+                step["entity_id"]
+                for op in ops
+                for step in self.steps.get(op) or []
+                if step.get("entity_id")
+            )
+        )
+
+    def op_steps(
+        self,
+        op: str,
+        hass: HomeAssistant,
+        soc: float | None = None,
+        desired: Desired | None = None,
+        percent: float | None = None,
+    ) -> list[Write] | None:
+        """The own steps of an operation as writes, with the values of the
+        moment filled in; None where the owner gave none."""
+        if not self.own_steps(op):
+            return None
+        level = self._soc(hass) if soc is None else soc
+        values = self._values(desired or Desired(), level or 0.0, percent)
+        return self._paced(self._render(op, values))
+
+    def own_free(self, saved: dict[str, Any], keep: set[str]) -> list[Write]:
+        """What the own steps of a block wrote back as it was (newest first,
+        but for what the current block writes), then the own release steps."""
+        entities = set(self.own_entities(*BLOCK_OPERATIONS)) - keep
+        back = [
+            self._back(entity_id, saved[entity_id])
+            for entity_id in reversed(list(saved))
+            if entity_id in entities and saved[entity_id] is not None
+        ]
+        if not back:
+            return []
+        return self._paced(back + self._render("release", self._values(Desired(), 0.0)))
+
+    def _own_block_op(self, charge: bool, discharge: bool) -> str | None:
+        """The own steps that block what is wanted: both directions with the
+        own "block" (else the two one-way steps together), one direction with
+        its own steps, else the own "block" (it blocks more than wanted,
+        never less); None where the profile's levers do it."""
+        if charge and discharge:
+            if self.own_steps("block"):
+                return "block"
+            if self.own_steps("block_charge") and self.own_steps("block_discharge"):
+                return "both"
+            return None
+        if charge or discharge:
+            op = "block_charge" if charge else "block_discharge"
+            if self.own_steps(op):
+                return op
+            return "block" if self.own_steps("block") else None
+        return None
+
+    def _own_block(
+        self, hass: HomeAssistant, charge: bool, discharge: bool
+    ) -> list[Write] | None:
+        op = self._own_block_op(charge, discharge)
+        if op is None:
+            return None
+        values = self._values(Desired(), self._soc(hass) or 0.0)
+        if op == "both":
+            return self._render("block_charge", values) + self._render(
+                "block_discharge", values
+            )
+        return self._render(op, values)
+
+    def _own_blocked(self, hass: HomeAssistant, direction: str) -> bool:
+        """Whether own steps that block this direction are in force: every
+        value they write stands (steps that only call services cannot be
+        read back and count as in force)."""
+        for op in (f"block_{direction}", "block"):
+            if not self.own_steps(op):
+                continue
+            values = self._values(Desired(), self._soc(hass) or 0.0)
+            writes = [w for w in self._render(op, values) if not w.is_call]
+            if all(matches(hass, fit(hass, w)) for w in writes):
+                return True
+        return False
+
+    def _own_back(self, saved: dict[str, Any], keep: set[str]) -> list[Write]:
+        """Own steps of other operations undone before this one: their
+        entities back as they were (newest first), but for what this
+        operation writes itself."""
+        entities = set(self.own_entities(*OPERATIONS)) - keep
+        return [
+            self._back(entity_id, saved[entity_id])
+            for entity_id in reversed(list(saved))
+            if entity_id in entities and saved[entity_id] is not None
+        ]
+
+    def _values(
+        self, desired: Desired, soc: float, percent: float | None = None
+    ) -> dict[str, Any]:
+        """The values of the moment for the placeholders of steps."""
+        power = desired.power_w or self.battery.get("max_charge_w") or DEFAULT_CHARGE_W
+        span = (desired.span_s or DEFAULT_SPAN) + 3600
+        return {
+            "{floor}": desired.floor if desired.floor is not None else math.floor(soc),
+            "{target}": desired.charge_to,
+            "{power}": round(power),
+            "{power_neg}": -round(power),
+            "{percent}": 100 if percent is None else percent,
+            "{minutes}": math.ceil(span / 60),
+            "{seconds}": min(MAX_SECONDS, math.ceil(span)),
+            "{device}": self.battery.get("device_id"),
+        }
+
+    def _render(self, name: str, values: dict[str, Any]) -> list[Write]:
+        result = []
+        for step in self.steps.get(name) or []:
+            if step.get("service"):
+                result.append(
+                    Write(
+                        f"service:{step['service']}",
+                        _fill(step.get("data") or {}, values),
+                    )
+                )
+            else:
+                result.append(
+                    Write(step["entity_id"], _fill(step.get("value"), values))
+                )
+        return result
 
     def prepare_entities(self) -> list[str]:
         return [step["entity_id"] for step in self.prepare]
@@ -236,7 +396,8 @@ class RoleAdapter(Adapter):
         return day_only(self.profile)
 
     def charge_methods(self) -> list[str]:
-        result = []
+        # The owner's own steps go before the profile's levers.
+        result = ["own"] if self.own_steps("charge") else []
         for method in self.profile.charge:
             if (
                 method == "mode"
@@ -378,6 +539,8 @@ class RoleAdapter(Adapter):
         return found
 
     def _can_hold(self, method: str) -> bool:
+        if method == "own":
+            return bool(self.own_steps("hold"))
         if method == "min_soc":
             return self._has("min_soc")
         if method == "mode_hold":
@@ -391,7 +554,9 @@ class RoleAdapter(Adapter):
         return False
 
     def hold_methods(self) -> list[str]:
-        return [method for method in self.profile.hold if self._can_hold(method)]
+        return [
+            method for method in ("own", *self.profile.hold) if self._can_hold(method)
+        ]
 
     @property
     def can_charge(self) -> bool:
@@ -401,6 +566,9 @@ class RoleAdapter(Adapter):
         methods = self.charge_methods()
         if not methods:
             return None
+        if methods[0] == "own":
+            text = json.dumps(self.steps.get("charge"))
+            return "power" if "{power}" in text or "{power_neg}" in text else None
         if methods[0] in ("mode", "target"):
             return "power" if self._has("charge_power") else None
         if methods[0] == "switch":
@@ -468,15 +636,37 @@ class RoleAdapter(Adapter):
 
     def can_defer(self) -> bool:
         """Whether charging (from the sun too) can be held back while discharging stays free."""
-        return self._has("charge_limit")
+        return bool(self.own_steps("cap")) or self._has("charge_limit")
 
     def defer(self) -> list[Write]:
         """Hold back charging for a grid-friendly morning: charge limit 0."""
+        own = self._own_cap(0.0, 0.0)
+        if own is not None:
+            return own
         writes = []
         if "charge_limit_enabled" in self.controls:
             writes.append(Write(self.controls["charge_limit_enabled"], True))
         writes.append(Write(self.controls["charge_limit"], 0))
         return self._paced(writes)
+
+    def _own_cap(self, watts: float, percent: float) -> list[Write] | None:
+        """The owner's own steps of the daytime cap at a power ("{power}" in
+        W, "{percent}" of the battery's highest charging power, or of the
+        reference where one is known); None where there are none."""
+        if not self.own_steps("cap"):
+            return None
+        values = self._values(Desired(power_w=max(watts, 1e-9)), 0.0, percent)
+        values["{power}"] = round(watts)
+        values["{power_neg}"] = -round(watts)
+        return self._paced(self._render("cap", values))
+
+    def _own_percent(self, watts: float) -> float:
+        reference = float(
+            self.battery.get("limit_ref_w") or self.battery.get("max_charge_w") or 0
+        )
+        if reference <= 0:
+            return 100.0
+        return min(100.0, math.ceil(100 * watts / reference))
 
     def limit_roles(self) -> tuple[str, str] | None:
         """The lever of the daytime cap: (its switch role, its value role), or None.
@@ -494,6 +684,8 @@ class RoleAdapter(Adapter):
     def limit_entities(self) -> list[str]:
         """The entities the daytime cap writes (its switch, its value; with the
         system's shared switch also its discharge limit)."""
+        if self.own_steps("cap"):
+            return self.own_entities("cap")
         roles = self.limit_roles()
         result = [self.controls[r] for r in roles or () if r in self.controls]
         if self.limit_shared() and "system_discharge_limit" in self.controls:
@@ -502,11 +694,16 @@ class RoleAdapter(Adapter):
 
     def limit_key(self) -> str | None:
         """The value entity of the cap; batteries with the same one are capped together."""
+        if self.own_steps("cap"):
+            own = self.own_entities("cap")
+            return own[0] if own else f"steps:{self.battery.get('id')}"
         roles = self.limit_roles()
         return self.controls[roles[1]] if roles else None
 
     def limit_shared(self) -> bool:
         """Whether the cap is for the whole system (all batteries of the integration)."""
+        if self.own_steps("cap"):
+            return False
         roles = self.limit_roles()
         return bool(roles) and roles[1] == "system_charge_limit"
 
@@ -521,6 +718,12 @@ class RoleAdapter(Adapter):
         the reference is known ("limit_ref_w", set by the owner or learned).
         A limit in A (or without a unit) never takes part.
         """
+        if self.own_steps("cap"):
+            # The owner's own steps: trusted as given, as long as they are there.
+            for entity_id in self.own_entities("cap"):
+                if not available(hass.states.get(entity_id)):
+                    return "unavailable"
+            return None
         roles = self.limit_roles()
         if roles is None:
             return "no_limit"
@@ -560,11 +763,14 @@ class RoleAdapter(Adapter):
 
         Never above a limit that was in force before Joe (the owner's own).
         """
+        watts = max(0.0, kw * 1000)
+        own = self._own_cap(watts, self._own_percent(watts))
+        if own is not None:
+            return own
         roles = self.limit_roles()
         assert roles is not None
         switch, role = roles
         entity_id = self.controls[role]
-        watts = max(0.0, kw * 1000)
         if 0 < watts < self.profile.limit_min_w:
             # Below its smallest power it would not take the value at all.
             watts = self.profile.limit_min_w
@@ -627,7 +833,21 @@ class RoleAdapter(Adapter):
         return float(value)
 
     def unlimit(self, saved: dict[str, Any]) -> list[Write]:
-        """The charge limit back as it was: its switch first, then the value."""
+        """The charge limit back as it was: its switch first, then the value.
+        Own steps of the cap: what they wrote back (newest first), then the
+        own release steps."""
+        if self.own_steps("cap"):
+            entities = set(self.own_entities("cap"))
+            back = [
+                self._back(entity_id, saved[entity_id])
+                for entity_id in reversed(list(saved))
+                if entity_id in entities and saved[entity_id] is not None
+            ]
+            if not back:
+                return []
+            return self._paced(
+                back + self._render("release", self._values(Desired(), 0.0))
+            )
         roles = self.limit_roles()
         if roles is None:
             return []
@@ -662,7 +882,11 @@ class RoleAdapter(Adapter):
         VARTA); "system": the limits of the integration's system device,
         only when every battery behind them is blocked with it
         (`whole_system`). Never manual mode, never a minimum power.
+        "own": the owner's own steps block both directions (one direction
+        with its own steps, too, whatever the profile's lever).
         """
+        if self._own_block_op(True, True):
+            return "own"
         if (
             self._toggle("charge")
             and self._toggle("discharge")
@@ -686,7 +910,7 @@ class RoleAdapter(Adapter):
 
     def team_shared(self, whole_system: bool = True) -> bool:
         """Whether charging and discharging are blocked with one switch (the system's)."""
-        if self.team_lever(whole_system) in ("allow", "mode", "level"):
+        if self.team_lever(whole_system) in ("own", "allow", "mode", "level"):
             return False
         charge, discharge = self.limit_roles(), self.discharge_roles()
         return bool(charge and discharge and charge[0] == discharge[0])
@@ -703,7 +927,7 @@ class RoleAdapter(Adapter):
             return ["mode"]
         if lever == "level":
             return ["min_soc", "charge_target"]
-        if lever is None:
+        if lever in (None, "own"):
             return []
         roles = [*(self.limit_roles() or ()), *(self.discharge_roles() or ())]
         return list(dict.fromkeys(r for r in roles if r in self.controls))
@@ -721,12 +945,23 @@ class RoleAdapter(Adapter):
         return list(dict.fromkeys(r for r in roles if r in self.controls))
 
     def team_entities(self, whole_system: bool = True) -> list[str]:
-        """Every entity Joe writes to block charging or discharging by day."""
-        return [self.controls[r] for r in self.team_roles(whole_system)]
+        """Every entity Joe writes to block charging or discharging by day
+        (the own steps' entities, too)."""
+        return list(
+            dict.fromkeys(
+                [
+                    *(self.controls[r] for r in self.team_roles(whole_system)),
+                    *self.own_entities(*BLOCK_OPERATIONS),
+                ]
+            )
+        )
 
     def team_charge_entities(self, whole_system: bool = True) -> list[str]:
         """The entities that block charging (shared with the daytime cap when
         they are limits)."""
+        own = self._own_block_op(True, False)
+        if own is not None:
+            return self.own_entities(own)
         lever = self.team_lever(whole_system)
         if lever == "allow":
             toggle = self._toggle("charge")
@@ -742,6 +977,11 @@ class RoleAdapter(Adapter):
         self, hass: HomeAssistant, whole_system: bool = True
     ) -> str | None:
         """Why Joe cannot block this battery's charging and discharging by day."""
+        if self.team_lever(whole_system) == "own":
+            for entity_id in self.own_entities(*BLOCK_OPERATIONS):
+                if not available(hass.states.get(entity_id)):
+                    return "unavailable"
+            return None
         if self.team_lever(whole_system) is None:
             if self._has("system_charge_limit") and not self._toggle("charge"):
                 # The system's limits would block batteries of other groups, too.
@@ -792,10 +1032,18 @@ class RoleAdapter(Adapter):
         cap, the grid-friendly morning, a test limit): left as it is.
         Floor and charge target (Kostal): at the battery's level, following
         it while it moves (see _level_write), given back as they were.
+        The owner's own steps where they cover what is wanted (see
+        _own_block_op); what they wrote before goes back through own_free.
         """
         writes: list[Write] = []
         give_back: list[str] = []
+        own = self._own_block(hass, charge, discharge)
+        if own is not None:
+            return self._paced(own), give_back
         lever = self.team_lever(whole_system)
+        if lever == "own":
+            # Nothing wanted: the profile's levers of blocks before go back.
+            return writes, self.team_release_roles()
         if lever == "allow":
             for blocked, direction in ((charge, "charge"), (discharge, "discharge")):
                 toggle = self._toggle(direction)
@@ -869,7 +1117,9 @@ class RoleAdapter(Adapter):
         """Whether one direction is blocked right now, whoever holds the lever:
         its switch set to block, its mode on an option that blocks it, or its
         limit at 0 and in force (Fronius ignores a limit whose switch is off:
-        both must be so)."""
+        both must be so); or the owner's own steps that block it stand."""
+        if self._own_blocked(hass, direction):
+            return True
         toggle = self._toggle(direction)
         if toggle and read(hass, self.controls[toggle[0]]) is toggle[1]:
             return True
@@ -943,9 +1193,18 @@ class RoleAdapter(Adapter):
             found = [r for r in found if not flash & set(r)] or found
         return found[0] if found else ()
 
+    def guard_can_block(self, direction: str, whole_system: bool = False) -> bool:
+        """Whether the watchdog can block one direction for a few seconds:
+        with the owner's own steps for it, else with the profile's levers."""
+        return bool(self.own_steps(f"block_{direction}")) or bool(
+            self.guard_block_roles(direction, whole_system)
+        )
+
     def guard_flash_gap(self, direction: str, whole_system: bool = False) -> float:
         """How long (s) the watchdog waits between two blocks with these
         levers: they write to flash (0: no need to wait)."""
+        if self.own_steps(f"block_{direction}"):
+            return 0.0
         roles = self.guard_block_roles(direction, whole_system)
         flash = set(roles) & set(self.profile.flash)
         return self.profile.flash_gap_s if flash else 0.0
@@ -956,10 +1215,15 @@ class RoleAdapter(Adapter):
         whole_system: bool = False,
         hass: HomeAssistant | None = None,
     ) -> list[Write]:
-        """Writes that block one direction: the switch set to block, the
-        mode's option, or the limit at 0 first and then its switch on
-        (Fronius ignores it while off); with the system's shared switch the
-        other direction opened wide."""
+        """Writes that block one direction: the owner's own steps for it,
+        else the switch set to block, the mode's option, or the limit at 0
+        first and then its switch on (Fronius ignores it while off); with
+        the system's shared switch the other direction opened wide."""
+        if self.own_steps(f"block_{direction}"):
+            soc = self._soc(hass) if hass is not None else None
+            return self._render(
+                f"block_{direction}", self._values(Desired(), soc or 0.0)
+            )
         roles = self.guard_block_roles(direction, whole_system)
         if not roles:
             return []
@@ -1027,8 +1291,16 @@ class RoleAdapter(Adapter):
         return unit or "W"
 
     def release(self, saved: dict[str, Any]) -> list[Write]:
-        return self._paced(
-            [self._back(w.entity_id, w.value) for w in super().release(saved)]
+        """Everything back, newest first; the owner's own release steps first."""
+        own = (
+            self._render("release", self._values(Desired(), 0.0))
+            if self.own_steps("release")
+            else []
+        )
+        return _last_wins(
+            self._paced(
+                own + [self._back(w.entity_id, w.value) for w in super().release(saved)]
+            )
         )
 
     def _back(self, entity_id: str, value: Any) -> Write:
@@ -1086,6 +1358,17 @@ class RoleAdapter(Adapter):
                 continue
             if not available(hass.states.get(entity_id)):
                 result.append(role)
+        # The owner's own steps of the night (the day's are the day's).
+        for op in OPERATIONS:
+            if op in DAY_OPERATIONS:
+                continue
+            for step in self.steps.get(op) or []:
+                if step.get("entity_id") and hass.states.get(step["entity_id"]) is None:
+                    result.append(step["entity_id"])
+                elif step.get("service"):
+                    domain, _, name = step["service"].partition(".")
+                    if not hass.services.has_service(domain, name):
+                        result.append(step["service"])
         return result
 
     # --- writes ---------------------------------------------------------------------------
@@ -1107,27 +1390,30 @@ class RoleAdapter(Adapter):
         saved: dict[str, Any],
     ) -> list[Write]:
         if desired.charge_to is not None and self.can_charge:
-            return _last_wins(self._lift_block(saved) + self._charge(hass, desired))
-        # Out of charging: the forced mode first, then its power, target and switches.
-        result = self._restore(
-            saved,
-            "mode",
-            "charge_power",
-            "charge_target",
-            "command_timeout",
-            "grid_charge",
-        )
-        result += self._unprepare(saved)
-        if desired.block:
-            result += self._block(hass, soc, desired, saved) or []
+            result = self._lift_block(saved) + self._charge(hass, desired, soc)
         else:
-            result += self._lift_block(saved)
-            floor = self._hold_floor(desired, soc)
-            if floor is not None:
-                result += self._hold(hass, floor, soc, desired, saved) or []
+            # Out of charging: the forced mode first, then its power, target and switches.
+            result = self._restore(
+                saved,
+                "mode",
+                "charge_power",
+                "charge_target",
+                "command_timeout",
+                "grid_charge",
+            )
+            result += self._unprepare(saved)
+            if desired.block:
+                result += self._block(hass, soc, desired, saved) or []
             else:
-                result += self._restore(saved, "min_soc")
-        return _last_wins(result)
+                result += self._lift_block(saved)
+                floor = self._hold_floor(desired, soc)
+                if floor is not None:
+                    result += self._hold(hass, floor, soc, desired, saved) or []
+                else:
+                    result += self._restore(saved, "min_soc")
+        # Own steps of another operation undone before this one.
+        back = self._own_back(saved, {w.entity_id for w in result})
+        return _last_wins(back + result)
 
     def steer_problem(
         self,
@@ -1157,11 +1443,15 @@ class RoleAdapter(Adapter):
             return max(0, math.floor(soc))
         return desired.floor
 
-    def _charge(self, hass: HomeAssistant, desired: Desired) -> list[Write]:
+    def _charge(
+        self, hass: HomeAssistant, desired: Desired, soc: float = 0.0
+    ) -> list[Write]:
         c = self.controls
         target = desired.charge_to
         assert target is not None
         for method in self.charge_methods():
+            if method == "own":
+                return self._render("charge", self._values(desired, soc))
             result = self._prepare(method)
             if method == "mode":
                 low, high = self._level_range(hass, "charge_target", 0, 100)
@@ -1212,6 +1502,10 @@ class RoleAdapter(Adapter):
         """Writes that hold the battery at a floor; None: no method of its
         profile can right now."""
         for method in self.hold_methods():
+            if method == "own":
+                values = self._values(desired, soc)
+                values["{floor}"] = floor
+                return self._render("hold", values)
             if method == "min_soc":
                 _, high = self._level_range(hass, "min_soc", 0, 100)
                 if floor > high and soc <= floor + 0.5:
@@ -1233,8 +1527,14 @@ class RoleAdapter(Adapter):
         saved: dict[str, Any],
     ) -> list[Write] | None:
         """Writes that keep the battery from discharging; None: no method of
-        its profile can right now."""
+        its profile can right now. The owner's own steps first (the one-way
+        ones, else the ones for both directions)."""
         c = self.controls
+        for op in ("block_discharge", "block"):
+            if self.own_steps(op):
+                values = self._values(desired, soc)
+                values["{floor}"] = math.floor(soc)
+                return self._render(op, values)
         toggle = self._toggle("discharge")
         if toggle and available(hass.states.get(c[toggle[0]])):
             # Frozen without manual mode: its own control goes on at once after.
@@ -1430,23 +1730,7 @@ class StepsAdapter(RoleAdapter):
     def __init__(self, battery: dict[str, Any], profile: Profile = GENERIC) -> None:
         super().__init__(battery, profile)
         self.kind = battery.get("adapter") or "steps"
-        self.steps: dict[str, list[dict[str, Any]]] = dict(battery.get("steps") or {})
         self.prepare = []
-
-    def entities(self) -> list[str]:
-        return list(
-            dict.fromkeys(
-                [
-                    *(
-                        step["entity_id"]
-                        for steps in self.steps.values()
-                        for step in steps
-                        if step.get("entity_id")
-                    ),
-                    *self.controls.values(),
-                ]
-            )
-        )
 
     def prepare_entities(self) -> list[str]:
         return []
@@ -1484,7 +1768,10 @@ class StepsAdapter(RoleAdapter):
 
     def missing(self, hass: HomeAssistant) -> list[str]:
         result = [] if self.steps.get("hold") else ["hold"]
-        for steps in self.steps.values():
+        for name, steps in self.steps.items():
+            if name in DAY_OPERATIONS:
+                # Only the day needs them (team_problem, limit_problem say so).
+                continue
             for step in steps:
                 if step.get("entity_id") and hass.states.get(step["entity_id"]) is None:
                     result.append(step["entity_id"])
@@ -1509,42 +1796,6 @@ class StepsAdapter(RoleAdapter):
                 values["{floor}"] = math.floor(soc)
             return self._paced(self._render("hold", values))
         return self.release(saved)
-
-    def release(self, saved: dict[str, Any]) -> list[Write]:
-        """The release steps, then every entity Joe changed back."""
-        return _last_wins(
-            self._paced(self._render("release", self._values(Desired(), 0)))
-            + super().release(saved)
-        )
-
-    def _values(self, desired: Desired, soc: float) -> dict[str, Any]:
-        power = desired.power_w or self.battery.get("max_charge_w") or DEFAULT_CHARGE_W
-        span = (desired.span_s or DEFAULT_SPAN) + 3600
-        return {
-            "{floor}": desired.floor if desired.floor is not None else math.floor(soc),
-            "{target}": desired.charge_to,
-            "{power}": round(power),
-            "{power_neg}": -round(power),
-            "{minutes}": math.ceil(span / 60),
-            "{seconds}": min(MAX_SECONDS, math.ceil(span)),
-            "{device}": self.battery.get("device_id"),
-        }
-
-    def _render(self, name: str, values: dict[str, Any]) -> list[Write]:
-        result = []
-        for step in self.steps.get(name) or []:
-            if step.get("service"):
-                result.append(
-                    Write(
-                        f"service:{step['service']}",
-                        _fill(step.get("data") or {}, values),
-                    )
-                )
-            else:
-                result.append(
-                    Write(step["entity_id"], _fill(step.get("value"), values))
-                )
-        return result
 
 
 def _number(value: Any) -> bool:

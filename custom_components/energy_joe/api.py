@@ -26,12 +26,19 @@ from .accounts import AccountError
 from .calendar import unique_id as calendar_unique_id
 from .calendar_feed import feed_path
 from .const import DOMAIN
-from .control import week
+from .control import operations, week
+from .control.adapters import RoleAdapter, make_adapter
 from .control.climate import LOG_SIZE as CLIMATE_LOG_SIZE, arrivals as climate_arrivals
 from .control.executor import LOG_SIZE as CONTROL_LOG_SIZE
 from .control.meters import meter_options, suggest as suggest_meter
-from .control.profiles import PROFILES
-from .discovery import async_check, async_collect, async_discover, discover
+from .control.profiles import OPERATIONS, PROFILES
+from .discovery import (
+    async_check,
+    async_collect,
+    async_discover,
+    discover,
+    profile_find,
+)
 from .discovery.checks import run_config_checks
 from .learn.learner import ANSWERS, MODEL_DAYS, SCOPES
 from .learn.learning import (
@@ -85,6 +92,9 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_learning_answer)
     websocket_api.async_register_command(hass, ws_log)
     websocket_api.async_register_command(hass, ws_control_test)
+    websocket_api.async_register_command(hass, ws_battery_preview)
+    websocket_api.async_register_command(hass, ws_battery_probe)
+    websocket_api.async_register_command(hass, ws_battery_roles)
     websocket_api.async_register_command(hass, ws_control_release)
     websocket_api.async_register_command(hass, ws_control_skip)
     websocket_api.async_register_command(hass, ws_control_answer)
@@ -731,6 +741,143 @@ def ws_control_test(
 
     hass.async_create_task(run(), eager_start=False)
     connection.send_result(msg["id"], {"started": True})
+
+
+# The unsaved state of the panel's dialog (checked like a stored battery).
+_DRAFT = vol.Schema(
+    {
+        vol.Optional("adapter"): str,
+        vol.Optional("controls"): dict,
+        vol.Optional("mode_options"): dict,
+        vol.Optional("steps"): dict,
+        vol.Optional("prepare"): list,
+    },
+    extra=vol.PREVENT_EXTRA,
+)
+
+
+def _battery_of(runtime: JoeRuntime, battery_id: str) -> dict[str, Any] | None:
+    return next((b for b in runtime.config["batteries"] if b["id"] == battery_id), None)
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/battery/preview",
+        vol.Required("battery_id"): str,
+        vol.Optional("draft"): dict,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_battery_preview(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """What Joe would write for each operation on a battery (nothing is
+    written): with `draft` for the dialog's unsaved state, else for the
+    stored one. A draft that does not pass the model's check comes back as
+    {"error": "invalid_draft", "detail": ...}. See control/operations.py."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    battery = _battery_of(runtime, msg["battery_id"])
+    if battery is None:
+        connection.send_error(msg["id"], "unknown_battery", "No such battery.")
+        return
+    if (draft := msg.get("draft")) is not None:
+        try:
+            battery = model.BATTERY({**battery, **_DRAFT(draft)})
+        except vol.Invalid as err:
+            connection.send_result(
+                msg["id"], {"error": "invalid_draft", "detail": str(err)}
+            )
+            return
+    snap = await async_collect(hass)
+    found = profile_find(snap, battery)["controls"]
+    adapter = make_adapter(battery)
+    whole = (
+        runtime.executor.whole_system(battery, adapter)
+        if isinstance(adapter, RoleAdapter)
+        else True
+    )
+    # The night's target and power where tonight's plan has them.
+    planned = next(
+        (
+            b
+            for b in ((runtime.planner.plan or {}).get("batteries") or [])
+            if b.get("id") == battery["id"]
+        ),
+        None,
+    )
+    power_kw = (planned or {}).get("power_kw")
+    connection.send_result(
+        msg["id"],
+        operations.preview(
+            hass,
+            battery,
+            found,
+            target=(planned or {}).get("target"),
+            power_w=power_kw * 1000 if power_kw else None,
+            whole_system=whole,
+        ),
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/battery/probe",
+        vol.Required("battery_id"): str,
+        vol.Required("op"): vol.In((*OPERATIONS, *operations.GUARD_OPERATIONS)),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_battery_probe(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Write one operation's steps once, read them back, put everything
+    back (like the test run, for one operation; see executor.async_probe).
+    Refusals come as `problem` ("steering", "busy", "not_possible", ...)."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    if _battery_of(runtime, msg["battery_id"]) is None:
+        connection.send_error(msg["id"], "unknown_battery", "No such battery.")
+        return
+    try:
+        result = await runtime.executor.async_probe(msg["battery_id"], msg["op"])
+    except ValueError as err:
+        connection.send_error(msg["id"], str(err), str(err))
+        return
+    connection.send_result(msg["id"], result)
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/battery/roles",
+        vol.Required("battery_id"): str,
+        vol.Required("action"): vol.In(("adopt", "dismiss")),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_battery_roles(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Levers that differ from the profile's find: take the find over
+    ("adopt": a new test run is needed then), or leave them and stop asking
+    until the find changes ("dismiss"). See runtime.async_battery_roles."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    try:
+        result = await runtime.async_battery_roles(msg["battery_id"], msg["action"])
+    except ValueError as err:
+        connection.send_error(msg["id"], str(err), str(err))
+        return
+    connection.send_result(msg["id"], result)
 
 
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/control/release"})

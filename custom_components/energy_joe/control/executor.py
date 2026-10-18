@@ -42,6 +42,7 @@ from . import (
     automations as battery_automations,
     evcc,
     guard as guard_rules,
+    operations,
     team as team_rules,
     team_day,
     writes as joe_writes,
@@ -49,7 +50,7 @@ from . import (
 from .actions import ActionAdapter
 from .adapters import Adapter, Desired, RoleAdapter, make_adapter
 from .groups import proposed_group
-from .profiles import profile_for
+from .profiles import BLOCK_OPERATIONS, OPERATIONS, profile_for
 from .writes import Write, WriteError, async_apply, fit, matches, read
 
 _LOGGER = logging.getLogger(__name__)
@@ -117,6 +118,9 @@ LOG_SIZE = 100
 TEST_HOLD = 20
 TEST_CHARGE = 25
 TEST_RELEASE = 8
+# A probe of one operation (see async_probe): a block or the cap stands this
+# long before Joe reads it back; holding and charging as in the test run.
+PROBE_BLOCK = 15
 # A test is valid this long, as long as the way of steering stays the same.
 TEST_VALID = timedelta(days=180)
 # Safety: charging pauses this long when the house draws more than the grid
@@ -188,6 +192,8 @@ DEFAULT_DATA: dict[str, Any] = {
     "skip": None,
     "answer": None,
     "tests": {},
+    # Per battery and operation: the last probe (see async_probe).
+    "probes": {},
     "log": [],
     "failures": 0,
     # Charging paused for the grid limit until then (ISO time).
@@ -358,6 +364,8 @@ class JoeExecutor:
         # Called with a battery id and the reference Joe learned (W).
         self.on_learned: Callable[[str, float], None] | None = None
         self.testing: dict[str, Any] | None = None
+        # A probe of one operation going on (battery, op, started).
+        self.probe_running: dict[str, Any] | None = None
         # Called with a battery id and the cutoff Joe learned (%).
         self.on_cutoff: Callable[[str, float], None] | None = None
         # Called with a battery id and whether its charge limit holds while it
@@ -669,10 +677,10 @@ class JoeExecutor:
 
     async def async_check(self) -> None:
         """Bring the batteries in line with the plan, or release them."""
-        if self._lock.locked() and self.testing:
+        if self._lock.locked() and (self.testing or self.probe_running):
             return
         async with self._lock:
-            if self.testing:
+            if self.testing or self.probe_running:
                 return
             try:
                 await self._async_check(dt_util.now())
@@ -3416,9 +3424,12 @@ class JoeExecutor:
                     problem = "reset"
             if writes and problem is None:
                 problem = await self._async_write(adapter, writes, now, None)
-            if give_back:
-                # Within one battery, too: its new block first, then what is free.
-                await self._async_team_free(adapter, give_back, now)
+            if give_back or adapter.own_entities(*BLOCK_OPERATIONS):
+                # Within one battery, too: its new block first, then what is
+                # free (what own steps of another block wrote, too).
+                await self._async_team_free(
+                    adapter, give_back, now, {w.entity_id for w in writes}
+                )
             if writes:
                 keep |= {w.entity_id for w in writes} | {key}
             if problem is None and not self._team_effective(
@@ -3610,16 +3621,26 @@ class JoeExecutor:
         store["blocks"].pop(key, None)
 
     async def _async_team_free(
-        self, adapter: RoleAdapter, roles: list[str], now: datetime
+        self,
+        adapter: RoleAdapter,
+        roles: list[str],
+        now: datetime,
+        keep: set[str] | None = None,
     ) -> None:
         """These levers back as they were (what an automation set meanwhile
-        stays); what is back is no longer Joe's to restore."""
+        stays), and what the owner's own block steps wrote (but for `keep`,
+        what the current block writes); what is back is no longer Joe's to
+        restore."""
+        keep = keep or set()
         entities = [adapter.controls[r] for r in roles if r in adapter.controls]
+        entities += [
+            e for e in adapter.own_entities(*BLOCK_OPERATIONS) if e not in keep
+        ]
         saved: dict[str, Any] = self.data["saved"]
         if not any(e in saved for e in entities):
             return
         self._drop_foreign(entities)
-        writes = adapter.team_free(saved, roles)
+        writes = adapter.team_free(saved, roles) + adapter.own_free(saved, keep)
         if writes:
             await self._async_write(adapter, writes, now, None)
         for entity_id in entities:
@@ -3640,7 +3661,7 @@ class JoeExecutor:
 
     async def async_guard(self) -> None:
         """One look of the watchdog (every few seconds, see control/guard.py)."""
-        if self.testing:
+        if self.testing or self.probe_running:
             return
         try:
             await self._async_guard(dt_util.now())
@@ -3756,7 +3777,7 @@ class JoeExecutor:
         if stage == 1 and not (role and role.guard_can_restart()):
             stage = 2
         if stage == 2 and not any(
-            adapter.guard_block_roles(direction, whole) for adapter, whole in group
+            adapter.guard_can_block(direction, whole) for adapter, whole in group
         ):
             stage = 3
         # Levers that write to flash (Victron's settings): at most every gap.
@@ -3941,14 +3962,27 @@ class JoeExecutor:
         if dry:
             return None
         writes: list[Write] = []
+        called: list[RoleAdapter] = []
         for adapter, whole in group:
             for write in adapter.guard_block(direction, whole, self._hass):
+                if write.is_call and adapter not in called:
+                    called.append(adapter)
                 if all(w.entity_id != write.entity_id for w in writes):
                     writes.append(write)
         problem = await self._async_guard_hold(writes)
         if problem is None:
             await joe_writes.settle(guard_rules.BLOCK_S)
         failed = await self._async_guard_restore("done")
+        # Own steps that called services: only their own release steps undo them.
+        for adapter in called:
+            for write in adapter.op_steps("release", self._hass) or []:
+                try:
+                    await async_apply(self._hass, write)
+                except WriteError as err:
+                    self._log(
+                        "failed", battery=None, entity=err.entity_id, code=err.code
+                    )
+                    failed.append(err.entity_id)
         return problem or ("restore" if failed else None)
 
     async def _async_guard_hold(self, writes: list[Write]) -> str | None:
@@ -3956,7 +3990,7 @@ class JoeExecutor:
         the stage, after a restart, a stop or an error)."""
         held: dict[str, Any] = self.data["guard"]["held"]
         for write in writes:
-            if write.entity_id not in held:
+            if not write.is_call and write.entity_id not in held:
                 original = read(self._hass, write.entity_id)
                 if original is None:
                     return "unavailable"
@@ -4027,10 +4061,8 @@ class JoeExecutor:
                 whole = self._whole_system(config, groups, battery, adapter)
                 result[battery["id"]] = (
                     adapter.guard_can_restart(),
-                    bool(
-                        adapter.guard_block_roles("charge", whole)
-                        or adapter.guard_block_roles("discharge", whole)
-                    ),
+                    adapter.guard_can_block("charge", whole)
+                    or adapter.guard_can_block("discharge", whole),
                 )
         return result
 
@@ -4041,6 +4073,9 @@ class JoeExecutor:
             return set()
         found = set(adapter.guard_manual()) if adapter.guard_can_restart() else set()
         for direction in ("charge", "discharge"):
+            if adapter.own_steps(f"block_{direction}"):
+                found |= set(adapter.own_entities(f"block_{direction}"))
+                continue
             found |= {
                 adapter.controls[r] for r in adapter.guard_block_roles(direction, True)
             }
@@ -4169,6 +4204,12 @@ class JoeExecutor:
                 sure,
             )
         return result
+
+    def whole_system(self, battery: dict[str, Any], adapter: RoleAdapter) -> bool:
+        """Whether the system's limits may block this battery (see _whole_system)."""
+        config = self._config()
+        groups = {k: v[0] for k, v in self._team_groups(config).items()}
+        return self._whole_system(config, groups, battery, adapter)
 
     def _whole_system(
         self,
@@ -4927,28 +4968,7 @@ class JoeExecutor:
             self.testing["step"] = name
             self._changed()
             writes = [fit(hass, w) for w in adapter.writes(hass, want, soc, saved)]
-            errors = []
-            for write in writes:
-                if not write.is_call and write.entity_id not in saved:
-                    saved[write.entity_id] = read(hass, write.entity_id)
-                try:
-                    await async_apply(hass, write)
-                except WriteError as err:
-                    errors.append({"entity_id": err.entity_id, "code": err.code})
-            await self._async_save()
-            await asyncio.sleep(seconds)
-            wrong = [
-                w.entity_id for w in writes if not w.is_call and not matches(hass, w)
-            ]
-            power = measurement_kw(hass.states.get, battery.get("power"))
-            step = {
-                "step": name,
-                "ok": not errors and not wrong,
-                "errors": errors,
-                "wrong": wrong,
-                "power": None if power is None else round(power, 2),
-                "writes": [w.as_dict() for w in writes],
-            }
+            step = await self._async_try_writes(battery, name, writes, seconds)
             ok = ok and step["ok"]
             result["steps"].append(step)
             self.testing["steps"] = result["steps"]
@@ -4956,7 +4976,50 @@ class JoeExecutor:
         # Release: everything back.
         self.testing["step"] = "release"
         self._changed()
-        restore = adapter.release(saved)
+        step = await self._async_try_back(battery, adapter, adapter.release(saved))
+        result["steps"].append(step)
+        result["ok"] = ok and step["ok"]
+        return result
+
+    async def _async_try_writes(
+        self,
+        battery: dict[str, Any],
+        name: str,
+        writes: list[Write],
+        seconds: float,
+    ) -> dict[str, Any]:
+        """One step of a test run or a probe: the originals noted, the writes
+        made, a wait, every value read back (and the battery's power)."""
+        hass = self._hass
+        saved: dict[str, Any] = self.data["saved"]
+        errors = []
+        for write in writes:
+            if not write.is_call and write.entity_id not in saved:
+                saved[write.entity_id] = read(hass, write.entity_id)
+            try:
+                await async_apply(hass, write)
+            except WriteError as err:
+                errors.append({"entity_id": err.entity_id, "code": err.code})
+        await self._async_save()
+        await asyncio.sleep(seconds)
+        wrong = [w.entity_id for w in writes if not w.is_call and not matches(hass, w)]
+        power = measurement_kw(hass.states.get, battery.get("power"))
+        return {
+            "step": name,
+            "ok": not errors and not wrong,
+            "errors": errors,
+            "wrong": wrong,
+            "power": None if power is None else round(power, 2),
+            "writes": [w.as_dict() for w in writes],
+        }
+
+    async def _async_try_back(
+        self, battery: dict[str, Any], adapter: Adapter, restore: list[Write]
+    ) -> dict[str, Any]:
+        """The last step of a test run or a probe: everything back, a wait,
+        read back; what is back is no longer Joe's to restore."""
+        hass = self._hass
+        saved: dict[str, Any] = self.data["saved"]
         errors = []
         for write in restore:
             try:
@@ -4977,17 +5040,125 @@ class JoeExecutor:
             if write.entity_id not in wrong:
                 saved.pop(write.entity_id, None)
         power = measurement_kw(hass.states.get, battery.get("power"))
-        result["steps"].append(
-            {
-                "step": "release",
-                "ok": not errors and not wrong,
-                "errors": errors,
-                "wrong": wrong,
-                "power": None if power is None else round(power, 2),
-                "writes": [w.as_dict() for w in restore],
+        return {
+            "step": "release",
+            "ok": not errors and not wrong,
+            "errors": errors,
+            "wrong": wrong,
+            "power": None if power is None else round(power, 2),
+            "writes": [w.as_dict() for w in restore],
+        }
+
+    async def async_probe(self, battery_id: str, op: str) -> dict[str, Any]:
+        """One operation written once (its steps as the preview shows them),
+        read back after a while, put back and read back again: the probe of
+        the panel's "Vorgänge". Refused while Joe steers this battery or a
+        test run or probe is going on (`problem`); the result is kept per
+        battery and operation (data["probes"]) and logged."""
+        config = self._config()
+        battery = next((b for b in config["batteries"] if b["id"] == battery_id), None)
+        if battery is None:
+            raise ValueError("unknown_battery")
+        if op not in (*OPERATIONS, *operations.GUARD_OPERATIONS):
+            raise ValueError("unknown_operation")
+        now = dt_util.now()
+        result: dict[str, Any] = {
+            "ok": False,
+            "op": op,
+            "at": now.isoformat(timespec="seconds"),
+            "steps": [],
+            "restored": True,
+            "restore_errors": [],
+            "problem": None,
+            "power_kw": None,
+        }
+        if self.testing or self.probe_running:
+            result["problem"] = "busy"
+            return result
+        if self.status.get("steering"):
+            result["problem"] = "steering"
+            return result
+        adapter = make_adapter(battery)
+        async with self._lock:
+            self.probe_running = {
+                "battery": battery_id,
+                "op": op,
+                "started": result["at"],
             }
+            self._changed()
+            try:
+                if not isinstance(adapter, RoleAdapter):
+                    result["problem"] = "not_possible"
+                else:
+                    result = await self._async_run_probe(
+                        config, battery, adapter, op, result
+                    )
+            finally:
+                self.probe_running = None
+            self.data["probes"].setdefault(battery_id, {})[op] = result
+            self._log("probe", battery=battery_id, op=op, ok=result["ok"])
+            await self._async_save()
+        self._changed()
+        return result
+
+    async def _async_run_probe(
+        self,
+        config: dict[str, Any],
+        battery: dict[str, Any],
+        adapter: RoleAdapter,
+        op: str,
+        result: dict[str, Any],
+    ) -> dict[str, Any]:
+        hass = self._hass
+        if op in ("charge", "hold") and (missing := adapter.missing(hass)):
+            result["problem"] = "controls_missing"
+            result["missing"] = missing
+            return result
+        groups = {k: v[0] for k, v in self._team_groups(config).items()}
+        params = operations.params_for(
+            hass,
+            battery,
+            whole_system=self._whole_system(config, groups, battery, adapter),
         )
-        result["ok"] = ok and not errors and not wrong
+        found = operations.operation(hass, adapter, op, params)
+        if not found.possible:
+            result["problem"] = (
+                "soc_unknown" if found.why == "soc_unknown" else "not_possible"
+            )
+            result["why"] = found.why
+            return result
+        if op == "release" and not found.writes:
+            result["problem"] = "not_possible"
+            result["why"] = "no_lever"
+            return result
+        seconds = {"hold": TEST_HOLD, "charge": TEST_CHARGE}.get(op, PROBE_BLOCK)
+        step = await self._async_try_writes(battery, op, found.writes, seconds)
+        errors = {e["entity_id"]: e["code"] for e in step["errors"]}
+        result["steps"] = [
+            {
+                "entity_id": w.entity_id,
+                "wrote": w.value,
+                "read": _shown(hass, w.entity_id),
+                "taken": w.entity_id not in step["wrong"] and w.entity_id not in errors,
+                "error": errors.get(w.entity_id),
+            }
+            for w in found.writes
+        ]
+        result["power_kw"] = step["power"]
+        restore = operations.restore_writes(
+            adapter, op, found.writes, self.data["saved"], calls=True
+        )
+        back = await self._async_try_back(battery, adapter, restore)
+        result["restored"] = back["ok"]
+        result["restore_errors"] = [
+            *(e["entity_id"] for e in back["errors"]),
+            *(
+                e
+                for e in back["wrong"]
+                if e not in {x["entity_id"] for x in back["errors"]}
+            ),
+        ]
+        result["ok"] = step["ok"] and back["ok"]
         return result
 
     # --- helpers ---------------------------------------------------------------------
@@ -5080,6 +5251,8 @@ class JoeExecutor:
             "ready": self.readiness(),
             "testing": self.testing,
             "tests": self.data["tests"],
+            "probe_running": self.probe_running,
+            "probes": self.data["probes"],
             "log": self.data["log"][-30:],
             "skip": self.data["skip"],
             "answer": self.data["answer"],
@@ -5139,6 +5312,12 @@ def _cap_view(entry: dict[str, Any] | None) -> dict[str, Any] | None:
         "seen_w": entry.get("seen_w"),
         "state": entry.get("state"),
     }
+
+
+def _shown(hass: HomeAssistant, entity_id: str) -> str | None:
+    """An entity's state as the panel shows it (None: no such entity)."""
+    state = hass.states.get(entity_id)
+    return state.state if state else None
 
 
 def _test_power(battery: dict[str, Any]) -> float:
