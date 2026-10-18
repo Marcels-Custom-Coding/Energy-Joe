@@ -254,7 +254,9 @@ def test_quarter_slots_follow_the_cheapest_quarters() -> None:
     """1.5 kWh at 3 kW take two quarters: the two cheapest of the hour."""
     inp = dynamic_input()
     charges = [0.0] * len(inp.hours)
-    index = next(i for i, h in enumerate(inp.hours) if h.start.hour == 4)
+    index = next(
+        i for i, h in enumerate(inp.hours) if dt_util.as_local(h.start).hour == 4
+    )
     inp.hours[index].quarters = (0.25, 0.19, 0.18, 0.26)
     charges[index] = 1.5
     assert charge_slots(inp, charges, 3.0) == [

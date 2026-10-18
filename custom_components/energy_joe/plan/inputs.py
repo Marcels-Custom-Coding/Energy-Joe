@@ -19,7 +19,7 @@ from ..learn.models import class_factor, combined_forecast, expected
 from ..observe.readings import energy_kwh, number, sum_kwh
 from ..observe.records import base_home, hour_starts, local_hour
 from ..observe.store import HistoryStore
-from .actions import plan_actions, reserved_kw
+from .actions import plan_actions, reserved_kw, reserved_quarters
 from .car_calendar import CarCalendarStore, own_events
 from .cars import action_by_id, detect_all, need_for, point_of
 from .ev import car_need
@@ -218,10 +218,13 @@ async def async_solar(
             else:
                 total = stored.get("ahead_kwh") or sum_kwh(get, forecast["tomorrow"])
             if total is not None:
-                all_starts = hour_starts(
-                    dt_util.start_of_local_day(day),
-                    dt_util.start_of_local_day(day + timedelta(days=1)),
-                )
+                all_starts = [
+                    dt_util.as_utc(s)
+                    for s in hour_starts(
+                        dt_util.start_of_local_day(day),
+                        dt_util.start_of_local_day(day + timedelta(days=1)),
+                    )
+                ]
                 spread = _bell(hass, day, total, all_starts)
                 for start in day_starts:
                     values[start] = spread.get(start, 0.0)
@@ -344,7 +347,13 @@ async def async_build_input(
     window_start, window_end = next_window(
         now, tariff["window"] or (DEFAULT_SEARCH if dynamic else {})
     )
-    starts = hour_starts(local_hour(now), window_start + timedelta(days=1))
+    # In UTC: the night the clocks go back has one hour twice on the wall
+    # clock (see planner.Hour); local times only for the hour of the day.
+    starts = [
+        dt_util.as_utc(s)
+        for s in hour_starts(local_hour(now), window_start + timedelta(days=1))
+    ]
+    window_start, window_end = dt_util.as_utc(window_start), dt_util.as_utc(window_end)
     today = dt_util.as_local(now).date()
     flexible = model.flexible_consumers(config)
     profiles, consumption = await async_consumption(history, today, flexible)
@@ -506,6 +515,8 @@ async def async_build_input(
     reserved = [
         reserved_kw(actions, h.start, h.start + timedelta(hours=1)) for h in hours
     ]
+    # Per quarter hour too: a short action takes the limit only in its quarters.
+    quartered = [reserved_quarters(actions, h.start) for h in hours]
     linked = {
         a["consumer_id"]: a
         for a in config["actions"]
@@ -554,6 +565,7 @@ async def async_build_input(
             actions=actions,
             cars=cars,
             reserved=reserved,
+            reserved_quarters=quartered,
             force_target=100.0 if balance else None,
             defer_kw=defer_kw,
             morning_need=(learned.get("morning_need") or {}).get("kwh"),
