@@ -60,7 +60,7 @@ Joe braucht kein Vorwissen. Er findet selbst, was er braucht, fragt in Alltagssp
 | Marstek | `marstek_modbus` | Laden, Halten | Steuer-Entitäten einschalten; nur ein Programm darf per Modbus mit ihm sprechen |
 | Marstek | `marstek` (Open API) | Laden, Halten | – |
 | Kostal | `kostal_plenticore` (HA) | Halten | „Battery min SoC“ einschalten |
-| Kostal | `kostal_modbus_control` | Laden, Halten, Sperren (eine Richtung) | Batteriemanagement „Extern über Protokoll (Modbus TCP)“ im Wechselrichter; Ladestand-Sensor einschalten |
+| Kostal | `kostal_modbus_control` | Laden, Halten, Sperren | Batteriemanagement „Extern über Protokoll (Modbus TCP)“ im Wechselrichter; Ladestand-Sensor einschalten |
 | Huawei | `huawei_solar` | Laden, Halten, Sperren, Drosseln | „Advanced: elevate permissions“ (Installateur-Passwort) |
 | SolarEdge | `solaredge_modbus_multi` | Laden, Halten | erweiterte Speichersteuerung (`adv_storage_control`) |
 | Sigenergy | `sigen` | Laden, Halten, Sperren, Drosseln | „Nur lesen“ (`read_only`) aus, Steuer-Entitäten ein |

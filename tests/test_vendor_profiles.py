@@ -28,8 +28,18 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.util import dt as dt_util
 
 from .snapshots import entity, snapshot
+from .test_control import make_executor
 from .test_guard import guarded, install, kinds
-from .test_team import flows, team_byd, team_venus
+from .test_surplus import day_plan
+from .test_team import (
+    byd_levers,
+    flows,
+    install_team,
+    never_opposite,
+    team_byd,
+    team_config,
+    team_venus,
+)
 
 PERCENT = {"min": 0, "max": 100, "step": 1, "unit_of_measurement": "%"}
 
@@ -213,9 +223,14 @@ def test_block_switches_run_the_other_way_and_one_at_a_time(
     # One direction for the watchdog: on = blocked.
     assert adapter.guard_block("charge") == [Write("switch.k_block_charge", True)]
     assert adapter.guard_block("discharge") == [Write("switch.k_block_discharge", True)]
-    # Both at once never (one on turns the other off): no "Nacheinander".
-    assert adapter.team_lever() is None
-    assert adapter.team_problem(hass) == "exclusive"
+    # Both at once never with them (one on turns the other off): "Nacheinander"
+    # holds it with its minimum and maximum level instead.
+    assert adapter.team_lever() == "level"
+    assert adapter.team_problem(hass) is None
+    without = {k: v for k, v in KOSTAL.items() if k != "charge_target"}
+    alone = make_adapter(battery("kostal_modbus_control", without))
+    assert alone.team_lever() is None
+    assert alone.team_problem(hass) == "exclusive"
     # The night keeps it from discharging with its switch.
     assert adapter.writes(hass, Desired(floor=40, block=True), 40, {}) == [
         Write("switch.k_block_discharge", True)
@@ -240,6 +255,129 @@ def test_block_switches_run_the_other_way_and_one_at_a_time(
         adapter.signature
         == make_adapter(battery("kostal_modbus_control", plain)).signature
     )
+
+
+def kostal_levels(hass: HomeAssistant, soc: float, low: str = "5", high: str = "100"):
+    hass.states.async_set("sensor.kostal_modbus_control_soc", str(soc))
+    hass.states.async_set("number.k_min_soc", low, {"min": 5, "max": 100, "step": 1})
+    hass.states.async_set("number.k_max_soc", high, {"min": 5, "max": 100, "step": 1})
+
+
+def test_kostal_is_held_both_ways_at_its_level_never_above_it(
+    hass: HomeAssistant,
+) -> None:
+    install_kostal(hass)
+    adapter = make_adapter(battery("kostal_modbus_control", KOSTAL))
+    assert isinstance(adapter, RoleAdapter)
+    # 43.7 %: both levels at 43 (rounded down: a minimum above the level
+    # would charge it from the grid).
+    kostal_levels(hass, 43.7)
+    assert not adapter.charge_blocked(hass) and not adapter.discharge_blocked(hass)
+    writes, back = adapter.team_block(hass, True, True, False)
+    assert writes == [Write("number.k_min_soc", 43), Write("number.k_max_soc", 43)]
+    assert back == [] and all(w.pause == 1.0 for w in writes)
+    # Only one direction: the other one given back as it was.
+    writes, back = adapter.team_block(hass, False, True, False)
+    assert writes == [Write("number.k_min_soc", 43)] and back == ["charge_target"]
+    writes, back = adapter.team_block(hass, True, False, False)
+    assert writes == [Write("number.k_max_soc", 43)] and back == ["min_soc"]
+    # Read back: both hold it.
+    kostal_levels(hass, 43.7, "43", "43")
+    assert adapter.charge_blocked(hass) and adapter.discharge_blocked(hass)
+    saved = {"number.k_min_soc": 5.0, "number.k_max_soc": 100.0}
+    # A tenth up or down writes nothing new; a step up follows.
+    kostal_levels(hass, 44.6, "43", "43")
+    assert adapter.team_block(hass, True, True, False, saved=saved)[0] == [
+        Write("number.k_min_soc", 43),
+        Write("number.k_max_soc", 43),
+    ]
+    assert adapter.discharge_blocked(hass)
+    kostal_levels(hass, 45.1, "43", "43")
+    assert not adapter.discharge_blocked(hass) and adapter.charge_blocked(hass)
+    assert adapter.team_block(hass, False, True, False, saved=saved)[0] == [
+        Write("number.k_min_soc", 45)
+    ]
+    # Its level fell below the minimum: down at once (never above the level).
+    kostal_levels(hass, 42.9, "43", "43")
+    assert adapter.discharge_blocked(hass)
+    assert not adapter.charge_blocked(hass)
+    assert adapter.team_block(hass, True, True, False, saved=saved)[0] == [
+        Write("number.k_min_soc", 42),
+        Write("number.k_max_soc", 42),
+    ]
+    # The owner's own values that hold it already stay.
+    kostal_levels(hass, 43.7, "50", "40")
+    assert adapter.team_block(hass, True, True, False)[0] == [
+        Write("number.k_min_soc", 50),
+        Write("number.k_max_soc", 40),
+    ]
+    # A step of 5: down to the step below.
+    hass.states.async_set("number.k_min_soc", "5", {"min": 5, "max": 100, "step": 5})
+    hass.states.async_set("number.k_max_soc", "100", {"min": 5, "max": 100, "step": 5})
+    writes, _ = adapter.team_block(hass, True, True, False)
+    assert writes == [Write("number.k_min_soc", 40), Write("number.k_max_soc", 40)]
+    assert all(fit(hass, w) == w for w in writes)
+    # Level unknown: nothing written.
+    hass.states.async_set("sensor.kostal_modbus_control_soc", "unavailable")
+    assert adapter.team_block(hass, True, True, False) == ([], [])
+    # Back as they were (the integration stops writing at 5 and 100).
+    assert adapter.team_free(saved, adapter.team_release_roles()) == [
+        Write("number.k_min_soc", 5.0, pause=1.0),
+        Write("number.k_max_soc", 100.0, pause=1.0),
+    ]
+    # The watchdog keeps one direction with the switches.
+    assert adapter.guard_block_roles("charge") == ("block_charge",)
+
+
+async def test_nacheinander_with_a_kostal_and_a_fronius(
+    hass: HomeAssistant, freezer
+) -> None:
+    """The Kostal waits at its level (minimum and maximum at 60 %) while the
+    BYD discharges; once the BYD is empty it gets both back (5 and 100)."""
+    freezer.move_to("2026-10-10T19:00:00+02:00")
+    calls = install_team(hass, byd_soc=40)
+    install_kostal(hass)
+    hass.states.async_set("sensor.k_soc", "60.4", {"unit_of_measurement": "%"})
+    hass.states.async_set("sensor.k_power", "0", {"unit_of_measurement": "W"})
+    kostal = battery(
+        "kostal_modbus_control",
+        KOSTAL,
+        id="kostal",
+        name="Kostal",
+        soc_entity="sensor.k_soc",
+        power={"entity_id": "sensor.k_power", "invert": False, "minus_entity_id": None},
+        capacity_kwh=10.0,
+    )
+    config = team_config(team_byd(cutoff_soc=10.5), kostal)
+    executor, _ = await make_executor(hass, config, day_plan(dt_util.now()))
+    flows(hass, grid=0, byd=-800)
+    await executor.async_check()
+    view = executor.view["team"]
+    assert view["state"] == "on" and view["active"] == "byd"
+    never_opposite(view)
+    assert ("number.k_min_soc", "60.0") in calls
+    assert ("number.k_max_soc", "60.0") in calls
+    assert not any(e.startswith("switch.k_") for e, _ in calls)
+    assert executor.data["saved"]["number.k_min_soc"] == 5.0
+    # Its level moves by a tenth: nothing new.
+    calls.clear()
+    hass.states.async_set("sensor.k_soc", "60.1", {"unit_of_measurement": "%"})
+    freezer.tick(timedelta(minutes=1))
+    await executor.async_check()
+    assert calls == []
+    assert executor.view["team"]["state"] == "on"
+    # The BYD is empty: the Kostal's turn, its levels back as they were.
+    hass.states.async_set("sensor.byd_soc", "11.5", {"unit_of_measurement": "%"})
+    for _ in range(3):
+        freezer.tick(timedelta(minutes=1))
+        await executor.async_check()
+    view = executor.view["team"]
+    assert view["active"] == "kostal"
+    never_opposite(view)
+    assert hass.states.get("number.k_min_soc").state == "5.0"
+    assert hass.states.get("number.k_max_soc").state == "100.0"
+    assert byd_levers(hass) == ("0.0", "on", "0.0", "on")
+    assert "number.k_min_soc" not in executor.data["saved"]
 
 
 def test_allow_switches_of_a_venus_stay_as_they_were(hass: HomeAssistant) -> None:

@@ -15,9 +15,10 @@ first lever the battery offers, in the order its profile prefers:
   has one, else as its profile prefers
 
 By day the same adapter blocks charging and discharging for "Nacheinander"
-and the watchdog: switches, a mode with an option per direction, or charge
-and discharge limits at 0 (also without a switch, also below 0, in W, kW
-or A), see team_lever and guard_block_roles.
+and the watchdog: switches, a mode with an option per direction, its floor
+and charge target at its level (Kostal over Modbus), or charge and
+discharge limits at 0 (also without a switch, also below 0, in W, kW or A),
+see team_lever and guard_block_roles.
 
 Some batteries need a switch first ("prepare", e.g. Remote Control), some
 take commands only for a while ("command_timeout"), some are steered with
@@ -271,6 +272,87 @@ class RoleAdapter(Adapter):
             found.add(self.options["hold"])
         return found
 
+    def _level_lever(self) -> bool:
+        """Whether its floor and charge target at its level block it by day
+        (Profile.level_block)."""
+        return (
+            self.profile.level_block
+            and self._has("min_soc", "charge_target")
+            and not {"min_soc", "charge_target"} & set(self.profile.inverted)
+        )
+
+    def _soc(self, hass: HomeAssistant) -> float | None:
+        """The battery's level now (%), None if unknown."""
+        state = hass.states.get(self.battery.get("soc_entity") or "")
+        if not available(state):
+            return None
+        assert state is not None
+        try:
+            return float(state.state)
+        except ValueError:
+            return None
+
+    def _level_steps(
+        self, hass: HomeAssistant, role: str
+    ) -> tuple[float, float, float]:
+        """The range and step of a level (Kostal: 5..100, step 1)."""
+        low, high = _range(hass, self.controls[role], 0, 100)
+        state = hass.states.get(self.controls[role])
+        step = state.attributes.get("step") if state else None
+        if not _number(step) or step <= 0:
+            step = 1.0
+        return low, high, float(step)
+
+    def _level_floor(self, hass: HomeAssistant, role: str, soc: float) -> float:
+        """The battery's level rounded down to the lever's step: never above
+        it (fit() rounds to the nearest step, which may be above)."""
+        low, high, step = self._level_steps(hass, role)
+        level = low + math.floor(round((soc - low) / step, 6)) * step
+        return min(level, high)
+
+    def _level_write(
+        self, hass: HomeAssistant, role: str, soc: float, saved: dict[str, Any]
+    ) -> Write | None:
+        """The floor (role "min_soc") or the charge target that holds the
+        battery at its level, None if it cannot be set.
+
+        The owner's own value stays where it holds the battery already (a
+        floor at or above its level, a target at or below it). A value Joe
+        set stays while it is at most one step below the level, so a level
+        going back and forth by a tenth writes nothing; a floor above the
+        level comes down at once (it would charge from the grid).
+        """
+        entity_id = self.controls[role]
+        original = saved[entity_id] if entity_id in saved else read(hass, entity_id)
+        current = read(hass, entity_id)
+        if not _number(original) or not _number(current):
+            return None
+        low, _, step = self._level_steps(hass, role)
+        target = self._level_floor(hass, role, soc)
+        if role == "min_soc" and original >= target:
+            return Write(entity_id, original)
+        if role == "charge_target" and original <= soc:
+            return Write(entity_id, original)
+        if target - step - 1e-6 <= current <= soc + 1e-6:
+            return Write(entity_id, current)
+        if target < low:
+            # Below its range: a floor would be above the level; a target
+            # at its lowest lets it charge only up to there.
+            return None if role == "min_soc" else Write(entity_id, low)
+        return Write(entity_id, target)
+
+    def _level_blocks(self, hass: HomeAssistant, direction: str) -> bool:
+        """Whether its floor (charge target) holds it at its level now."""
+        soc = self._soc(hass)
+        role = "min_soc" if direction == "discharge" else "charge_target"
+        value = read(hass, self.controls[role])
+        if soc is None or not _number(value):
+            return False
+        low, _, step = self._level_steps(hass, role)
+        if direction == "discharge":
+            return value >= self._level_floor(hass, role, soc) - step - 1e-6
+        return value <= max(soc, low) + 1e-6
+
     def _flash_entities(self) -> set[str]:
         """The entities whose writes end up in flash (see Profile.flash)."""
         flash = set(self.profile.flash)
@@ -450,9 +532,15 @@ class RoleAdapter(Adapter):
         return self.limit_problem(hass) is None
 
     def limit(
-        self, hass: HomeAssistant, kw: float, saved: dict[str, Any] | None = None
+        self,
+        hass: HomeAssistant,
+        kw: float,
+        saved: dict[str, Any] | None = None,
+        discharge_blocked: bool = False,
     ) -> list[Write]:
-        """Cap charging (from the sun, too) at a power; discharging stays free.
+        """Cap charging (from the sun, too) at a power; discharging stays free,
+        unless "Nacheinander" blocks it (`discharge_blocked`: the system's
+        shared switch makes its discharge limit count, too, which then stays 0).
 
         Never above a limit that was in force before Joe (the owner's own).
         """
@@ -483,7 +571,11 @@ class RoleAdapter(Adapter):
             # The same switch makes its discharge limit count, too: open wide.
             writes = [Write(entity_id, value)]
             if "system_discharge_limit" in self.controls:
-                writes.append(self._open_wide(hass, "system_discharge_limit"))
+                writes.append(
+                    Write(self.controls["system_discharge_limit"], 0)
+                    if discharge_blocked
+                    else self._open_wide(hass, "system_discharge_limit")
+                )
             return self._paced([*writes, Write(self.controls[switch], True)])
         return self._paced(
             [Write(self.controls[switch], True), Write(entity_id, value)]
@@ -546,9 +638,10 @@ class RoleAdapter(Adapter):
 
         "allow": its own switches that allow (or block) charging and
         discharging (Omnibattery: its PD controller stays on and goes on at
-        once when they are back; Kostal over Modbus the other way round, but
-        its two exclude each other: never both at once); "mode": its mode
-        has an option for each direction and one for both (HomeWizard);
+        once when they are back); "mode": its mode has an option for each
+        direction and one for both (HomeWizard); "level": its floor and
+        charge target at its level (Kostal over Modbus, whose block switches
+        exclude each other);
         "limit": its own charge and discharge limits at 0 (Fronius, Huawei,
         VARTA); "system": the limits of the integration's system device,
         only when every battery behind them is blocked with it
@@ -562,6 +655,8 @@ class RoleAdapter(Adapter):
             return "allow"
         if self._mode_lever():
             return "mode"
+        if self._level_lever():
+            return "level"
         charge, discharge = self.limit_roles(), self.discharge_roles()
         if not charge or not discharge:
             return None
@@ -575,7 +670,7 @@ class RoleAdapter(Adapter):
 
     def team_shared(self, whole_system: bool = True) -> bool:
         """Whether charging and discharging are blocked with one switch (the system's)."""
-        if self.team_lever(whole_system) in ("allow", "mode"):
+        if self.team_lever(whole_system) in ("allow", "mode", "level"):
             return False
         charge, discharge = self.limit_roles(), self.discharge_roles()
         return bool(charge and discharge and charge[0] == discharge[0])
@@ -590,6 +685,8 @@ class RoleAdapter(Adapter):
             return self._toggle_roles()
         if lever == "mode":
             return ["mode"]
+        if lever == "level":
+            return ["min_soc", "charge_target"]
         if lever is None:
             return []
         roles = [*(self.limit_roles() or ()), *(self.discharge_roles() or ())]
@@ -601,6 +698,7 @@ class RoleAdapter(Adapter):
         roles = [
             *self._toggle_roles(),
             *(("mode",) if self._mode_lever() else ()),
+            *(("min_soc", "charge_target") if self._level_lever() else ()),
             *(self.limit_roles() or ()),
             *(self.discharge_roles() or ()),
         ]
@@ -620,6 +718,8 @@ class RoleAdapter(Adapter):
             return [self.controls[toggle[0]]]
         if lever == "mode":
             return [self.controls["mode"]]
+        if lever == "level":
+            return [self.controls["charge_target"]]
         return self.limit_entities()
 
     def team_problem(
@@ -654,6 +754,7 @@ class RoleAdapter(Adapter):
         discharge: bool,
         charge_taken: bool,
         whole_system: bool = True,
+        saved: dict[str, Any] | None = None,
     ) -> tuple[list[Write], list[str]]:
         """Writes that block charging and/or discharging, and the roles to give back.
 
@@ -666,6 +767,8 @@ class RoleAdapter(Adapter):
         the direction that stays free is opened wide while the switch is on.
         `charge_taken`: the charge limit is someone else's now (the daytime
         cap, the grid-friendly morning, a test limit): left as it is.
+        Floor and charge target (Kostal): at the battery's level, following
+        it while it moves (see _level_write), given back as they were.
         """
         writes: list[Write] = []
         give_back: list[str] = []
@@ -689,6 +792,19 @@ class RoleAdapter(Adapter):
                 writes.append(Write(self.controls["mode"], option))
             else:
                 give_back.append("mode")
+            return self._paced(writes), give_back
+        if lever == "level":
+            soc = self._soc(hass)
+            for blocked, role in ((discharge, "min_soc"), (charge, "charge_target")):
+                write = (
+                    self._level_write(hass, role, soc, saved or {})
+                    if blocked and soc is not None
+                    else None
+                )
+                if write is not None:
+                    writes.append(write)
+                elif not blocked:
+                    give_back.append(role)
             return self._paced(writes), give_back
         charge_roles = self.limit_roles()
         discharge_roles = self.discharge_roles()
@@ -736,6 +852,8 @@ class RoleAdapter(Adapter):
             return True
         blocks = self._mode_blocks(direction)
         if blocks and read(hass, self.controls["mode"]) in blocks:
+            return True
+        if self._level_lever() and self._level_blocks(hass, direction):
             return True
         roles = self.limit_roles() if direction == "charge" else self.discharge_roles()
         if roles is None:
@@ -1306,6 +1424,10 @@ class StepsAdapter(RoleAdapter):
                     Write(step["entity_id"], _fill(step.get("value"), values))
                 )
         return result
+
+
+def _number(value: Any) -> bool:
+    return isinstance(value, int | float) and not isinstance(value, bool)
 
 
 def _zero(level: Any) -> bool:

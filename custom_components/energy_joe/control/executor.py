@@ -1439,7 +1439,15 @@ class JoeExecutor:
                     and store_.id in self._lever_members(lever, items)
                     and store_.room > day_surplus.FULL_KWH
                 )
-                writes = role.limit(self._hass, kw, self.data["saved"])
+                # "Nacheinander" blocks its discharging (side by side): the
+                # system's shared switch must not open it for the cap.
+                stopped = set(team["no_discharge"]) if team else set()
+                writes = role.limit(
+                    self._hass,
+                    kw,
+                    self.data["saved"],
+                    any(key in stopped for key, _ in members),
+                )
                 problem = await self._async_write(role, writes, now, None)
                 keep |= {w.entity_id for w in writes}
                 for key, _ in members:
@@ -2599,6 +2607,8 @@ class JoeExecutor:
                 k for k, (charge, _) in want.items() if charge and k not in group.ids
             ],
             "parallel": sorted(side),
+            # Those whose discharging is blocked (the cap leaves it so).
+            "no_discharge": [k for k, (_, discharge) in want.items() if discharge],
         }
         return want, hint
 
@@ -2811,7 +2821,9 @@ class JoeExecutor:
                 return None
             whole = self._whole_system(config, keys, batteries[key], adapter)
             roles = adapter.discharge_roles()
-            if adapter.team_lever(whole) in (None, "allow") or roles is None:
+            # Only where the block itself is the discharge limit (not a
+            # switch, not a mode: the limit would not be written then).
+            if adapter.team_lever(whole) not in ("limit", "system") or roles is None:
                 return None
             entity_id = adapter.controls.get(roles[1])
             state = self._hass.states.get(entity_id or "")
@@ -3096,14 +3108,12 @@ class JoeExecutor:
                 charge_taken = False
                 self._log("team_taken", battery=key)
             writes, give_back = adapter.team_block(
-                self._hass, charge, discharge, charge_taken, whole
+                self._hass, charge, discharge, charge_taken, whole, self.data["saved"]
             )
             base = self._team_base_w.get(key)
             if base is not None and discharge:
                 # A base load: the discharge limit at that power instead of 0.
                 writes = self._team_base_writes(adapter, whole, writes, base)
-            if give_back:
-                await self._async_team_free(adapter, give_back, now)
             problem = None
             # A block that had arrived and is undone (Fronius sets its
             # registers back when its Modbus control restarts): written again
@@ -3118,6 +3128,9 @@ class JoeExecutor:
                     problem = "reset"
             if writes and problem is None:
                 problem = await self._async_write(adapter, writes, now, None)
+            if give_back:
+                # Within one battery, too: its new block first, then what is free.
+                await self._async_team_free(adapter, give_back, now)
             if writes:
                 keep |= {w.entity_id for w in writes} | {key}
             if problem is None and not self._team_effective(
@@ -3170,7 +3183,9 @@ class JoeExecutor:
         self, adapter: RoleAdapter, whole: bool, writes: list[Write], watts: float
     ) -> list[Write]:
         """The block's writes with the discharge limit at the base load (in
-        the limit's unit) instead of 0."""
+        the limit's unit) instead of 0: never below the limit's smallest
+        power (VARTA would not take it), below 0 where the limit runs so
+        (VARTA's discharge limit runs from -4000 to 0)."""
         config = self._config()
         keys = {k: v[0] for k, v in self._team_groups(config).items()}
         lever = self._team_base_lever(
@@ -3183,6 +3198,15 @@ class JoeExecutor:
         if lever is None or roles is None:
             return writes
         entity_id, unit = lever
+        watts = max(watts, adapter.profile.limit_min_w)
+        state = self._hass.states.get(entity_id)
+        low, high = (state.attributes.get(k) if state else None for k in ("min", "max"))
+        if (
+            isinstance(low, int | float)
+            and isinstance(high, int | float)
+            and high <= 0 < -low
+        ):
+            watts = -watts
         value = round(watts / 1000, 3) if unit == "kW" else round(watts)
         return [
             Write(w.entity_id, value) if w.entity_id == entity_id else w for w in writes
@@ -3693,6 +3717,9 @@ class JoeExecutor:
         if role is None:
             return False
         saved: dict[str, Any] = self.data["saved"]
+        # A lever the day uses, too (Victron's and Sigenergy's charge power is
+        # their charge limit): noted for a block or a cap, no command of Joe's.
+        day = {role.controls[r] for r in role.day_roles() if r in role.controls}
         levers = [
             *(
                 role.controls.get(r)
@@ -3700,7 +3727,7 @@ class JoeExecutor:
             ),
             *role.guard_manual(),
         ]
-        return any(e in saved for e in levers if e)
+        return any(e in saved for e in levers if e and e not in day)
 
     def _guard_levers(self, config: dict[str, Any]) -> dict[str, tuple[bool, bool]]:
         """Per battery: whether Joe can restart its control and block it."""

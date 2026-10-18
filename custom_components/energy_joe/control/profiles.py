@@ -197,6 +197,11 @@ class Profile:
     # Its switches that block charging and discharging exclude each other
     # (one on turns the other off, Kostal over Modbus): one direction at a time.
     exclusive: bool = False
+    # Its floor (min_soc) and charge target at its level hold it both ways by
+    # day, for "Nacheinander" (Kostal over Modbus, whose block switches
+    # exclude each other). Never above its level: a floor above it would
+    # charge it from the grid.
+    level_block: bool = False
     # Roles (and keys of prepare steps) whose writes end up in the device's
     # flash or EEPROM, or in the integration's stored settings (Omnibattery
     # saves its entry and a backup). No daytime cap with them (it follows the
@@ -437,12 +442,16 @@ PROFILES: dict[str, Profile] = {
                 "charge_power": ("charge_rate",),
             },
             # "Block Charge" / "Block Discharge": on = blocked. They exclude
-            # each other and "Charge Start" (one on turns the others off).
+            # each other and "Charge Start" (one on turns the others off):
+            # one direction (the watchdog, the night). Both directions by day
+            # ("Nacheinander"): minimum and maximum level at its level (the
+            # integration keeps writing a limit other than 5 / 100 itself).
             day_roles={
                 "block_charge": ("block_charge",),
                 "block_discharge": ("block_discharge",),
             },
             exclusive=True,
+            level_block=True,
             charge=("target",),
             hold=("min_soc",),
             block=("min_soc",),
