@@ -150,7 +150,7 @@ def varied(**changes: Any):
     prices = {0: 0.25, 1: 0.20, 2: 0.22, 3: 0.18, 4: 0.30}
     for hour in inp.hours:
         if hour.window:
-            hour.price = prices[hour.start.hour]
+            hour.price = prices[dt_util.as_local(hour.start).hour]
     return inp
 
 
@@ -187,7 +187,7 @@ def test_quarter_prices_are_used() -> None:
     """Within an hour the cheaper quarters first (the old slots did so too)."""
     inp = varied(batteries=[Battery("b", "B", 10.0, 50, 3.0, 3.0)], max_target=60)
     for hour in inp.hours:
-        if hour.window and hour.start.hour == 3:
+        if hour.window and dt_util.as_local(hour.start).hour == 3:
             hour.quarters = (0.18, 0.10, 0.10, 0.18)
     slots = night_slots(inp)
     taker = night.Taker("b", "b", 3.0, room=1.0)

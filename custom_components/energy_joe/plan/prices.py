@@ -191,7 +191,9 @@ def _moment(value: Any) -> datetime | None:
         return None
     if moment.tzinfo is None:
         moment = moment.replace(tzinfo=dt_util.get_default_time_zone())
-    return dt_util.as_local(moment)
+    # In UTC: local times of one zone compare and subtract on the wall clock,
+    # so the quarters of the hour that comes twice in autumn would mix.
+    return dt_util.as_utc(moment)
 
 
 async def _async_from_action(

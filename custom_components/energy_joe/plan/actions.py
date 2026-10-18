@@ -17,6 +17,7 @@ import math
 from typing import Any
 
 from homeassistant.core import State
+from homeassistant.util import dt as dt_util
 
 from .ev import sun_before_departure
 
@@ -83,7 +84,11 @@ def plan_actions(
     learned = learned or {}
     needs = needs or {}
     detected = detected or {}
-    night = window_start.isoformat()
+    # The night by its local start (as the plan's window says it); times in
+    # UTC, so a night with a clock change has its real length.
+    night = dt_util.as_local(window_start).isoformat()
+    window_start = dt_util.as_utc(window_start)
+    window_end = dt_util.as_utc(window_end)
     result = []
     for action in actions:
         if not action.get("enabled", True):
@@ -192,8 +197,8 @@ def plan_actions(
         entry.update(
             run=run,
             reasons=reasons,
-            start=start.isoformat(timespec="minutes"),
-            end=end.isoformat(timespec="minutes"),
+            start=dt_util.as_local(start).isoformat(timespec="minutes"),
+            end=dt_util.as_local(end).isoformat(timespec="minutes"),
             energy_kwh=round(power * hours, 2) if run else 0.0,
         )
         result.append(entry)
@@ -201,7 +206,8 @@ def plan_actions(
 
 
 def reserved_kw(actions: list[dict[str, Any]], start: datetime, end: datetime) -> float:
-    """Average power that running actions draw during an hour (for the grid limit)."""
+    """Average power that running actions draw from start to end (an hour or
+    a quarter hour; for the grid limit)."""
     total = 0.0
     for action in actions:
         if not action["run"] or not action.get("power_kw"):
@@ -212,6 +218,19 @@ def reserved_kw(actions: list[dict[str, Any]], start: datetime, end: datetime) -
         if overlap > 0:
             total += action["power_kw"] * overlap / (end - start).total_seconds()
     return total
+
+
+def reserved_quarters(
+    actions: list[dict[str, Any]], start: datetime
+) -> tuple[float, ...]:
+    """What running actions draw in each quarter of the hour from start (kW):
+    11 kW for a quarter hour count in that quarter, not as 2.75 kW for the hour."""
+    start = dt_util.as_utc(start)
+    quarter = timedelta(minutes=15)
+    return tuple(
+        reserved_kw(actions, start + q * quarter, start + (q + 1) * quarter)
+        for q in range(4)
+    )
 
 
 def _number(state: State | None) -> float | None:
