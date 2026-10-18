@@ -204,6 +204,11 @@ export function teamText(t: Translate, team: BatteryTeam): string {
   if (team.state === "taking_over") {
     return t("team.state.taking_over", { names: quoted(team.lent ?? []), time: (team.taking_over_at ?? "").slice(11, 16) });
   }
+  if (team.state === "bridging") {
+    // A value missing for a moment: the blocks stay until the grace is over.
+    const why = t.optional(`team.gap.${team.gap?.reason ?? ""}`) ?? t("team.gap.unknown");
+    return t("team.state.bridging", { why, time: (team.gap?.until ?? "").slice(11, 16) });
+  }
   if (team.state === "not_taken") {
     const ids = Object.keys(team.batteries).filter((id) => team.batteries[id].problem);
     return t("team.state.not_taken", { names: groupName(t, team, ids) });

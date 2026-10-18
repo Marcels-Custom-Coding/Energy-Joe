@@ -127,6 +127,27 @@ export function inboxItems(t: Translate, joe: JoeState, inputs: InboxInputs = {}
     }
   };
 
+  // --- Settings Joe could not read at the start (a step back to an older version …) ---
+  const backup = joe.config_backup;
+  if (backup) {
+    items.push({
+      id: "config_backup",
+      hide: [],
+      icon: "mdi:backup-restore",
+      warn: true,
+      title: t("overview.todo.config_backup"),
+      text: backup.error
+        ? `${t("overview.todo.config_backup.text")} ${t("overview.todo.config_backup.failed", { error: backup.error })}`
+        : t("overview.todo.config_backup.text"),
+      to: { tab: "settings", section: "maintenance", id: "backup" },
+      choices: [
+        { label: t("overview.todo.config_backup.restore"), message: { type: "energy_joe/config/backup", action: "restore" } },
+        { label: t("overview.todo.config_backup.discard"), message: { type: "energy_joe/config/backup", action: "discard" } },
+      ],
+      choicesTip: "config_backup",
+    });
+  }
+
   // --- Cars: which one is plugged in, are two of them one, and one needed but not plugged in ---
   for (const action of config.actions.filter((a) => a.point)) {
     const status = joe.cars?.points?.[action.id];

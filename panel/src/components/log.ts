@@ -193,6 +193,11 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
     }
     return typeof entry.problem === "string" ? `${text} ${t("log.guard.problem", { code: entry.problem })}` : text;
   }
+  if (entry.kind === "automations_back" || entry.kind === "automations_taken") {
+    // Joe stopped (his automations run again), or took them over again after the start.
+    const names = Array.isArray(entry.names) ? entry.names.map((n) => `„${String(n)}“`).join(", ") : "";
+    return t(`log.${entry.kind}`, { ...vars, names });
+  }
   if (entry.kind === "day_buffer") {
     // The buffer of the grid-friendly morning: charging up to it again, or reached.
     return t(entry.fill ? "log.day_buffer.fill" : "log.day_buffer.hold", vars);

@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable
 from copy import deepcopy
+import inspect
 import logging
 from typing import Any
 
@@ -13,7 +14,7 @@ import voluptuous as vol
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.storage import Store
-from homeassistant.util import dt as dt_util
+from homeassistant.util import dt as dt_util, json as json_util
 from homeassistant.util.hass_dict import HassKey
 
 from . import model
@@ -41,6 +42,15 @@ STATE_VERSION = 1
 STATE_KEY = f"{DOMAIN}.state"
 CONFIG_KEY = f"{DOMAIN}.config"
 SAVE_DELAY = 2
+# The kept configuration is read whatever version wrote it (taking it back
+# migrates and checks it).
+BACKUP_READABLE = 1000
+# (Older Home Assistant versions read every version and have no such limit.)
+_READABLE: dict[str, Any] = (
+    {"max_readable_version": BACKUP_READABLE}
+    if "max_readable_version" in inspect.signature(Store.__init__).parameters
+    else {}
+)
 
 # "advisory": Joe asks every evening whether he may steer the night.
 MODES = ("simulation", "advisory", "live", "off")
@@ -60,10 +70,36 @@ type StateListener = Callable[[dict[str, Any]], None]
 class _ConfigStore(Store[dict[str, Any]]):
     """Store that migrates older configuration versions on load."""
 
+    # What the last migration started from (kept apart when it fails).
+    raw: dict[str, Any] | None = None
+
     async def _async_migrate_func(
         self, old_major_version: int, old_minor_version: int, old_data: dict[str, Any]
     ) -> dict[str, Any]:
+        self.raw = old_data
         return model.migrate(old_data)
+
+    async def async_load_raw(self) -> dict[str, Any] | None:
+        """The stored configuration as it is on disk (not migrated, not checked)."""
+        if self.raw is not None:
+            return self.raw
+        try:
+            raw = await self.hass.async_add_executor_job(json_util.load_json, self.path)
+        except Exception:  # noqa: BLE001 - a file that cannot be read is no backup
+            _LOGGER.exception("Reading the stored configuration failed")
+            return None
+        data = raw.get("data") if isinstance(raw, dict) else None
+        return data if isinstance(data, dict) else None
+
+
+class _BackupStore(Store[dict[str, Any]]):
+    """The configuration kept apart, as it was (also one of a newer version:
+    taking it back migrates and checks it)."""
+
+    async def _async_migrate_func(
+        self, old_major_version: int, old_minor_version: int, old_data: dict[str, Any]
+    ) -> dict[str, Any]:
+        return old_data
 
 
 class JoeRuntime:
@@ -73,8 +109,8 @@ class JoeRuntime:
         """Initialize with defaults; call async_load before use."""
         self._state_store: Store[dict[str, Any]] = Store(hass, STATE_VERSION, STATE_KEY)
         self._config_store = _ConfigStore(hass, model.CONFIG_VERSION, CONFIG_KEY)
-        self._backup_store: Store[dict[str, Any]] = Store(
-            hass, model.CONFIG_VERSION, f"{CONFIG_KEY}.unreadable"
+        self._backup_store = _BackupStore(
+            hass, model.CONFIG_VERSION, f"{CONFIG_KEY}.unreadable", **_READABLE
         )
         self._hass = hass
         self._state: dict[str, Any] = deepcopy(DEFAULT_STATE)
@@ -144,6 +180,10 @@ class JoeRuntime:
             hass, lambda: self._config, lambda: self._state["mode"], self._changed
         )
         self._started = False
+        # A configuration Joe could not read at the start, kept apart: whether
+        # one is there, and why taking it back failed (the panel offers it).
+        self._backup = False
+        self._backup_error: str | None = None
         self._planned: dict[str, Any] | None = None
         self._observed: dict[str, Any] | None = None
         self._observe_lock = asyncio.Lock()
@@ -152,15 +192,7 @@ class JoeRuntime:
         """Load stored state and configuration."""
         if stored := await self._state_store.async_load():
             self._state = _with_defaults(stored, DEFAULT_STATE)
-        if stored := await self._config_store.async_load():
-            try:
-                self._config = model.validate(stored)
-            except vol.Invalid as err:
-                # Keep a copy instead of silently overwriting the user's data.
-                _LOGGER.error(
-                    "Stored configuration is invalid, starting fresh: %s", err
-                )
-                await self._backup_store.async_save(stored)
+        await self._async_load_config()
         await self.history.async_load()
         await self.executor.async_load()
         await self.calendars.async_load()
@@ -169,8 +201,76 @@ class JoeRuntime:
         await self.climate.async_load()
         await self.cars.async_load()
 
+    async def _async_load_config(self) -> None:
+        """The stored configuration, migrated and checked. One Joe cannot read
+        (a newer version wrote it, a migration fails) is kept apart, and Joe
+        starts with the defaults; the panel offers to take it back."""
+        try:
+            stored = await self._config_store.async_load()
+        except Exception as err:  # noqa: BLE001 - never stop the setup for it
+            _LOGGER.error(
+                "Stored configuration cannot be read, starting fresh: %s", err
+            )
+            if raw := await self._config_store.async_load_raw():
+                await self._backup_store.async_save(raw)
+        else:
+            if stored:
+                try:
+                    self._config = model.validate(stored)
+                except vol.Invalid as err:
+                    # Keep a copy instead of silently overwriting the user's data.
+                    _LOGGER.error(
+                        "Stored configuration is invalid, starting fresh: %s", err
+                    )
+                    await self._backup_store.async_save(stored)
+        try:
+            self._backup = bool(await self._backup_store.async_load())
+        except Exception:  # noqa: BLE001 - a backup that cannot be read is none
+            _LOGGER.exception("Reading the kept configuration failed")
+            self._backup = False
+
+    def _backup_view(self) -> dict[str, Any] | None:
+        """The configuration kept apart, offered while Joe runs with the
+        defaults (the owner has set nothing since)."""
+        if not self._backup:
+            return None
+        provenance = self._config.get("provenance") or {}
+        if any(e.get("source") == "user" for e in provenance.values()):
+            return None
+        return {"error": self._backup_error}
+
+    async def async_restore_backup(self) -> None:
+        """Take back the configuration kept apart: migrated and checked like
+        any stored one (raises vol.Invalid and the like; it stays kept then)."""
+        data = await self._backup_store.async_load()
+        if not data:
+            self._backup = False
+            raise ValueError("no_backup")
+        try:
+            self.async_replace_config(data)
+        except (vol.Invalid, KeyError, TypeError, ValueError) as err:
+            self._backup_error = str(err)
+            self._changed()
+            raise
+        await self._config_store.async_save(self._config)
+        await self._backup_store.async_remove()
+        self._backup, self._backup_error = False, None
+        self._changed()
+
+    async def async_discard_backup(self) -> None:
+        """Forget the configuration kept apart (the owner starts anew)."""
+        await self._backup_store.async_remove()
+        self._backup, self._backup_error = False, None
+        self._changed()
+
     async def async_unload(self) -> None:
-        """Stop watching and write pending changes immediately."""
+        """Stop watching and write pending changes immediately.
+
+        Joe gives everything back (with a few tries) and switches the owner's
+        automations he switched off on again: without him nobody would
+        coordinate the batteries. After the start he takes them over again
+        once he can steer himself.
+        """
         self._started = False
         self.notifier.stop()
         self.inbox.async_stop()
@@ -178,6 +278,10 @@ class JoeRuntime:
         self.climate.async_stop()
         self.cars.stop()
         await self.executor.async_stop()
+        try:
+            await self.executor.async_hand_back_automations()
+        except Exception:
+            _LOGGER.exception("Switching the battery automations on again failed")
         async with self._observe_lock:
             await self.learner.async_stop()
             await self.planner.async_stop()
@@ -191,27 +295,21 @@ class JoeRuntime:
     async def async_remove(self) -> None:
         """Delete all stored data (integration removed).
 
-        Automations Joe switched off are switched on again first: without Joe
+        Every value Joe noted goes back first (with a few tries; what stays is
+        told to the owner, the originals would be gone with the data), then
+        the automations Joe switched off are switched on again: without Joe
         nobody would know why they are off.
         """
+        await self._async_load_config()
         await self.executor.async_load()
-        switched_off: dict[str, Any] = self.executor.data["automations_off"]
-        mine = [
-            entity_id
-            for entity_id in switched_off
-            if (state := self._hass.states.get(entity_id)) and state.state == "off"
-        ]
-        if mine:
-            german = (self._hass.config.language or "").startswith("de")
-            await battery_automations.async_switch(
-                self._hass,
-                mine,
-                True,
-                switched_off,
-                "wurde wieder eingeschaltet, weil Energy Joe entfernt wurde"
-                if german
-                else "was switched on again because Energy Joe was removed",
-            )
+        try:
+            await self.executor.async_give_back("removed", removed=True)
+        except Exception:
+            _LOGGER.exception("Putting the values back failed")
+        try:
+            await self.executor.async_hand_back_automations(removed=True)
+        except Exception:
+            _LOGGER.exception("Switching the battery automations on again failed")
         await self._state_store.async_remove()
         await self._config_store.async_remove()
         await self._backup_store.async_remove()
@@ -433,17 +531,19 @@ class JoeRuntime:
             # Switched on again by Joe: he takes it over once he can.
             automation["lent"] = lent.get(automation["entity_id"])
         listed = {a["entity_id"] for a in found}
-        for entity_id, record in switched_off.items():
+        # Joe's own ones that write to no battery he knows (any more) are
+        # listed all the same: off, or lent while he is not back.
+        for entity_id in [*switched_off, *(e for e in lent if e not in switched_off)]:
             if entity_id not in listed:
                 state = self._hass.states.get(entity_id)
                 found.append(
                     {
                         "entity_id": entity_id,
                         "name": state.name if state else entity_id,
-                        "on": False,
+                        "on": bool(state and state.state == "on"),
                         "writes": [],
-                        "switched_off": record,
-                        "lent": None,
+                        "switched_off": switched_off.get(entity_id),
+                        "lent": lent.get(entity_id),
                     }
                 )
         return found
@@ -583,6 +683,9 @@ class JoeRuntime:
                     )
                     for b in self._config.get("batteries") or []
                 },
+                # A configuration Joe could not read at the start (see
+                # _async_load_config): offered to take back.
+                "config_backup": self._backup_view(),
                 # Energy Joe's own apps for signing in (else one's own is needed).
                 "apps": {
                     "microsoft": oauth.client_for(None) is not None,

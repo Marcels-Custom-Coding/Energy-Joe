@@ -7,6 +7,10 @@ by Joe, a "default", or set by the "user"), so the panel can explain it.
 Provenance is kept per path: "tariff.kind", "measurements.grid_power" or, for
 lists of items with an id, "batteries[<id>].capacity_kwh". What the user set or
 Joe learned is never overwritten by what Joe reads from Home Assistant.
+
+Keys Joe does not know are kept as they are (extra=vol.ALLOW_EXTRA): what a
+newer version stored survives a step back to an older one and is there again
+after the next update, instead of the whole configuration being rejected.
 """
 
 from __future__ import annotations
@@ -94,6 +98,14 @@ def _time(value: Any) -> str:
 
 
 _ENTITY = vol.Any(None, cv.entity_id)
+
+
+def _strict(mapping: dict[Any, Any]) -> vol.Schema:
+    """A map whose keys are checked (roles, modes, entities): inside a schema
+    that keeps unknown keys, a wrong key is still an error."""
+    return vol.Schema(mapping, extra=vol.PREVENT_EXTRA)
+
+
 _PRICE = vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=10)))
 _POSITIVE = vol.Any(
     None, vol.All(vol.Coerce(float), vol.Range(min=0, min_included=False))
@@ -107,7 +119,8 @@ MEASUREMENT = vol.Schema(
         vol.Required("entity_id"): cv.entity_id,
         vol.Optional("invert", default=False): bool,
         vol.Optional("minus_entity_id", default=None): _ENTITY,
-    }
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 # A solar reading: "sleeps" when the inverter switches off without sun (its
 # entity is unavailable then, which is normal and counts as 0 W at night).
@@ -148,8 +161,10 @@ BATTERY = vol.Schema(
         vol.Optional("floor_soc", default=None): vol.Any(None, _PERCENT),
         vol.Optional("device_id", default=None): vol.Any(None, str),
         # Levers by role (see control/profiles.py) and the mode select's options.
-        vol.Optional("controls", default=dict): {vol.In(ROLES): cv.entity_id},
-        vol.Optional("mode_options", default=dict): {vol.In(MODE_OPTIONS): str},
+        vol.Optional("controls", default=dict): _strict({vol.In(ROLES): cv.entity_id}),
+        vol.Optional("mode_options", default=dict): _strict(
+            {vol.In(MODE_OPTIONS): str}
+        ),
         # Entities set before steering through the mode (e.g. "Remote Control").
         vol.Optional("prepare", default=list): [_STEP_ENTITY],
         vol.Optional("steps", default=dict): STEPS,
@@ -185,7 +200,8 @@ BATTERY = vol.Schema(
         vol.Optional("cutoff_soc", default=None): vol.Any(
             None, vol.All(vol.Coerce(float), vol.Range(min=0, max=60))
         ),
-    }
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 
 TARIFF = vol.Schema(
@@ -202,7 +218,8 @@ TARIFF = vol.Schema(
         # Added to every dynamic price (grid fees, taxes) when the sensor only
         # has the market price (per kWh).
         vol.Optional("surcharge", default=None): _PRICE,
-    }
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 
 # Another forecast for the same panels: Joe learns how well it fits and
@@ -213,7 +230,8 @@ FORECAST_SOURCE = vol.Schema(
         vol.Required("name"): vol.All(str, vol.Length(min=1, max=60)),
         vol.Optional("provider", default=None): vol.Any(None, str),
         vol.Optional("tomorrow", default=list): [cv.entity_id],
-    }
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 
 FORECAST = vol.Schema(
@@ -226,7 +244,8 @@ FORECAST = vol.Schema(
         vol.Optional("alternatives", default=list): [FORECAST_SOURCE],
         # Whether Joe may combine the sources (off: only the main forecast).
         vol.Optional("combine", default=True): bool,
-    }
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 
 PERSON = vol.Schema(
@@ -239,7 +258,8 @@ PERSON = vol.Schema(
         vol.Optional("calendar", default=None): vol.Any(
             None, lambda value: CALENDAR(value)
         ),
-    }
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 
 CONSUMER = vol.Schema(
@@ -254,7 +274,8 @@ CONSUMER = vol.Schema(
             ("energy_dashboard", "manual")
         ),
         vol.Optional("runs", default="auto"): vol.In(CONSUMER_RUNS),
-    }
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 
 
@@ -284,7 +305,8 @@ CONDITION = vol.Schema(
         vol.Required("entity_id"): cv.entity_id,
         vol.Optional("op", default="eq"): vol.In(CONDITION_OPS),
         vol.Required("value"): vol.Any(str, int, float, bool),
-    }
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 
 # A night action: something besides the batteries that should run in the cheap
@@ -307,7 +329,8 @@ CAR_ACCOUNT = vol.Schema(
             str, vol.Length(min=1, max=100)
         ),
         vol.Optional("accept", default=True): bool,
-    }
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 # A car's mailbox without a calendar (see mail/): Joe reads invitations by
 # IMAP, answers by SMTP and keeps the appointments in his own calendar for the
@@ -330,7 +353,8 @@ CAR_MAILBOX = vol.Schema(
             None, vol.In(("starttls", "ssl"))
         ),
         vol.Optional("accept", default=True): bool,
-    }
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 # Where a car's appointments come from: a finished calendar in Home Assistant,
 # the car's mailbox without a calendar (into Joe's calendar for the car), or
@@ -373,7 +397,8 @@ EV_NEED = vol.Schema(
         vol.Optional("max_soc", default=100.0): vol.All(
             vol.Coerce(float), vol.Range(min=20, max=100)
         ),
-    }
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 
 # Where a car's values come from: evcc's vehicle, the car maker's integration
@@ -402,10 +427,11 @@ CAR_SOURCE = vol.Schema(
         # evcc's id of the vehicle ("db:27" or the name in evcc.yaml), as its
         # loadpoints show it; None: not known yet (Joe learns it).
         vol.Optional("vehicle", default=None): vol.Any(None, str),
-        vol.Optional("entities", default=dict): {
-            vol.In(CAR_ENTITY_ROLES): cv.entity_id
-        },
-    }
+        vol.Optional("entities", default=dict): _strict(
+            {vol.In(CAR_ENTITY_ROLES): cv.entity_id}
+        ),
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 # A car: everything about what it needs (see plan/cars.py). Joe charges it at
 # whichever charge point it is plugged into.
@@ -420,7 +446,8 @@ CAR = vol.Schema(
         # In the evening: tell when tomorrow needs charging but the car is not plugged in.
         vol.Optional("remind", default=True): bool,
         vol.Optional("remind_time", default="20:00"): _time,
-    }
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 # What Joe does when he cannot tell which car is plugged into a charge point.
 UNKNOWN_CAR = ("ask", "assume")
@@ -440,7 +467,8 @@ CHARGE_POINT = vol.Schema(
         vol.Optional("cars", default=None): vol.Any(None, [str]),
         vol.Optional("unknown", default="ask"): vol.In(UNKNOWN_CAR),
         vol.Optional("assume_car", default=None): vol.Any(None, str),
-    }
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 
 _CLOCK = vol.Match(r"^([01]?\d|2[0-3]):[0-5]\d$")
@@ -452,7 +480,8 @@ CLIMATE_METER = vol.Schema(
         vol.Required("device_id"): str,
         vol.Optional("power", default=None): _ENTITY,
         vol.Optional("energy", default=None): _ENTITY,
-    }
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 CLIMATE_ROOM = vol.Schema(
     {
@@ -477,14 +506,16 @@ CLIMATE_ROOM = vol.Schema(
         vol.Optional("week", default=dict): vol.Schema(
             {
                 vol.Optional("enabled", default=False): bool,
-                vol.Optional("modes", default=dict): {
-                    vol.In(week.MODES): week.profile_set
-                },
-            }
+                vol.Optional("modes", default=dict): _strict(
+                    {vol.In(week.MODES): week.profile_set}
+                ),
+            },
+            extra=vol.ALLOW_EXTRA,
         ),
         # Thermostats with profiles of their own (Homematic IP): ticks by preset.
         vol.Optional("device_profiles", default=dict): week.device_profiles,
-    }
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 CLIMATE = vol.Schema(
     {
@@ -500,8 +531,9 @@ CLIMATE = vol.Schema(
         # about 100 m, goes to it) instead of an average speed.
         vol.Optional("route_eta", default=True): bool,
         vol.Optional("night_entity", default=None): _ENTITY,
-        vol.Optional("rooms", default=dict): {cv.entity_id: CLIMATE_ROOM},
-    }
+        vol.Optional("rooms", default=dict): _strict({cv.entity_id: CLIMATE_ROOM}),
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 
 ROUTING_SERVICES = ("waze", "google", "osm")
@@ -522,7 +554,8 @@ ROUTING = vol.Schema(
             "router_url",
             default="https://routing.openstreetmap.de/routed-car/route/v1/driving/",
         ): vol.All(str, vol.Length(min=8, max=200)),
-    }
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 
 ACTION = vol.Schema(
@@ -559,7 +592,8 @@ ACTION = vol.Schema(
         ),
         # A wallbox: which car is plugged in decides (see CHARGE_POINT).
         vol.Optional("point", default=None): vol.Any(None, CHARGE_POINT),
-    }
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 
 # How much of the solar forecast Joe counts on for the daytime surplus.
@@ -641,7 +675,8 @@ RULES = vol.Schema(
         vol.Optional("balance_days", default=None): vol.Any(
             None, vol.All(int, vol.Range(min=3, max=90))
         ),
-    }
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 
 # Calendar events become a label per person and day ("office", "vacation", ...):
@@ -676,7 +711,8 @@ CALENDAR = vol.Schema(
         ],
         vol.Optional("default_workday", default="home_office"): vol.In(DAY_LABELS),
         vol.Optional("default_day_off", default="home"): vol.In(DAY_LABELS),
-    }
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 
 # Who hears from Joe: a notify service (e.g. a phone) and what he tells.
@@ -690,7 +726,8 @@ NOTIFY = vol.Schema(
         vol.Optional("morning", default=False): bool,
         # Which car is plugged in, and a car that is not plugged in but needed.
         vol.Optional("cars", default=True): bool,
-    }
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 
 # Answers to Joe's questions. Known keys are checked, others are kept as they are
@@ -756,7 +793,8 @@ CONFIG = vol.Schema(
                 vol.Optional("grid_power", default=None): vol.Any(None, MEASUREMENT),
                 vol.Optional("home_power", default=None): vol.Any(None, MEASUREMENT),
                 vol.Optional("solar_power", default=list): [SOLAR_MEASUREMENT],
-            }
+            },
+            extra=vol.ALLOW_EXTRA,
         ),
         vol.Optional("batteries", default=list): [BATTERY],
         vol.Optional("tariff", default=dict): TARIFF,
@@ -774,7 +812,8 @@ CONFIG = vol.Schema(
                 vol.Optional("guest_tracker", default=None): _ENTITY,
                 # Today is a day off as well while one of these is on.
                 vol.Optional("free_day_entities", default=list): [cv.entity_id],
-            }
+            },
+            extra=vol.ALLOW_EXTRA,
         ),
         vol.Optional("persons", default=list): [PERSON],
         vol.Optional("consumers", default=list): [CONSUMER],
@@ -788,7 +827,8 @@ CONFIG = vol.Schema(
         vol.Optional("answers", default=dict): ANSWERS,
         vol.Optional("learned", default=dict): LEARNED,
         vol.Optional("provenance", default=dict): {str: PROVENANCE},
-    }
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 
 

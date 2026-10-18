@@ -303,6 +303,57 @@ async def test_joe_keeps_and_restores_what_it_switched_off(
     assert hass.states.get("automation.old").state == "on"
 
 
+async def test_unloading_switches_them_on_and_joe_takes_them_over_again(
+    ready_hass: HomeAssistant,
+) -> None:
+    """Disabled, reloaded or updated: without Joe nobody would coordinate, so
+    his automations run again (with a note in their logbook). Set up again,
+    he switches them off once he steers live."""
+    from custom_components.energy_joe.const import DOMAIN
+
+    hass = ready_hass
+    notes: list[str] = []
+    hass.services.async_register(
+        "logbook", "log", lambda call: notes.append(call.data["message"])
+    )
+    assert await async_setup_component(
+        hass,
+        "automation",
+        {
+            "automation": [
+                _automation(
+                    "Old",
+                    [{"action": "light.turn_on", "target": {"entity_id": "light.x"}}],
+                )
+            ]
+        },
+    )
+    entry = MockConfigEntry(domain=DOMAIN, data={})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    await hass.data[DOMAIN].async_switch_automations(False, ["automation.old"])
+    assert hass.states.get("automation.old").state == "off"
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert hass.states.get("automation.old").state == "on"
+    assert "angehalten" in notes[-1] or "stopped" in notes[-1]
+    # Set up again: it runs on while Joe only simulates ...
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    runtime = hass.data[DOMAIN]
+    assert hass.states.get("automation.old").state == "on"
+    listed = {a["entity_id"]: a for a in runtime.automations()}
+    assert listed["automation.old"]["lent"]["reason"] == "stopped"
+    # ... and is Joe's again once he steers live.
+    runtime.async_set_mode("live")
+    await hass.async_block_till_done()
+    assert hass.states.get("automation.old").state == "off"
+    assert runtime.executor.data["automations_lent"] == {}
+    assert "automation.old" in runtime.executor.data["automations_off"]
+    assert await hass.config_entries.async_unload(entry.entry_id)
+
+
 async def test_phones_are_shown_by_their_current_name(
     ready_hass: HomeAssistant, hass_ws_client: Any
 ) -> None:

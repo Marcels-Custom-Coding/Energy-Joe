@@ -62,6 +62,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_presence_create)
     websocket_api.async_register_command(hass, ws_config_export)
     websocket_api.async_register_command(hass, ws_config_import)
+    websocket_api.async_register_command(hass, ws_config_backup)
     websocket_api.async_register_command(hass, ws_places_set)
     websocket_api.async_register_command(hass, ws_subscribe)
     websocket_api.async_register_command(hass, ws_set_mode)
@@ -184,6 +185,35 @@ def ws_config_import(
         return
     try:
         runtime.async_replace_config(msg["config"])
+    except (vol.Invalid, KeyError, TypeError, ValueError) as err:
+        connection.send_error(msg["id"], "invalid_settings", str(err))
+        return
+    connection.send_result(msg["id"], {"ok": True})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/config/backup",
+        vol.Required("action"): vol.In(("restore", "discard")),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_config_backup(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """The configuration Joe could not read at the start: take it back
+    (migrated and checked like a stored one) or forget it."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    if msg["action"] == "discard":
+        await runtime.async_discard_backup()
+        connection.send_result(msg["id"], {"ok": True})
+        return
+    try:
+        await runtime.async_restore_backup()
     except (vol.Invalid, KeyError, TypeError, ValueError) as err:
         connection.send_error(msg["id"], "invalid_settings", str(err))
         return
