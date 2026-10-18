@@ -56,11 +56,12 @@
       ?bnotes=1 (Hinweise zum Steuern: beim ersten Speicher eine Freischaltung im Gerät und eine ausgeschaltete Entität;
       auf der Speicher-Seite ein Kostal ohne Ladestand und ein SMA, den Joe nicht steuern kann)
       ?later=1 (die Frage zum Homeoffice wurde in der Einrichtung mit „Später“ übersprungen: Fragen, Los und Übersicht › Joe braucht dich)
-      ?preview=fronius|venus|huawei (Vorgänge im Dialog „Regler für …“, ?page=devices/battery/storage/control bzw. venus, huawei:
+      ?preview=fronius|venus|huawei (Vorgänge im Dialog „Regler für …“, ?page=devices/battery/storage/control bzw. venus, huawei;
+      die Antworten kommen aus panel/dev/previews/<fall>.json – echtes Backend-Format aus scripts/make_dev_previews.py:
       fronius: Marcels BYD mit alter, falscher Zuordnung – Grenzen unter Lade-/Entladeleistung, Ladegrenze (aktiv) und
       Entladegrenze fehlen, Warnung und „Joe braucht dich“ mit Übernehmen/So lassen; venus: Omnibattery mit Handbetrieb vorn,
-      System-Grenzen tagsüber und Wächter-Schaltern; huawei: Dienst-Schritte, Drossel nicht möglich)
-      ?probe=fail (die Probe: der letzte Schritt wird nicht übernommen)
+      System-Grenzen tagsüber und Wächter-Schaltern; huawei: Dienst-Schritte des Profils; ?steer=1 lehnt die Probe ab)
+      ?probe=fail (die Probe: der letzte Schritt wird nicht übernommen bzw. der Dienst schlägt fehl)
       sample-*.json kommen aus scripts/make_dev_samples.py (erfundene Haushalte aus tests/snapshots.py):
       Funde, die Konfiguration nach dem Übernehmen, ihre Prüfungen, Zustände und Register sowie
       zwei Wochen erfundener Verlauf mit festen Plänen, nachgespielten Nächten und dem, was Joe
@@ -556,7 +557,7 @@
         }
       }
       // Steering: test runs, log and why Joe steers or not (control/executor.py).
-      const control = { tests: {}, log: [], skip: null, answer: null, testing: null, tonight: {} };
+      const control = { tests: {}, log: [], skip: null, answer: null, testing: null, probe_running: null, tonight: {} };
       const controlView = () => {
         const night = state.plan?.window?.start ?? null;
         const reason =
@@ -868,6 +869,16 @@
           { at: dayAt(0, "08:20"), kind: "day_released", remaining: 5.2, headroom: 6.1 },
           { at: dayAt(0, "09:12"), kind: "surplus_cap", power: 1.4, until: dayAt(0, "19:00"), loadpoint: "Fußbodenheizung" },
           { at: dayAt(0, "11:40"), kind: "surplus_raise", power: 1.8, until: dayAt(0, "19:00"), loadpoint: "Fußbodenheizung" },
+          // Charging much slower than planned (executor._async_watch_slow), the night looked back on
+          // (_review_night) and a probe of one operation (async_probe).
+          ...(battery
+            ? [
+                { at: dayAt(1, "23:40"), kind: "charge_slow", battery, power: 0.3, planned: 2.5 },
+                { at: dayAt(0, "06:00"), kind: "night_charged", battery, charged: 3.1, planned: 4.0 },
+                { at: dayAt(0, "14:30"), kind: "probe", battery, op: "block", ok: true },
+                { at: dayAt(0, "14:35"), kind: "probe", battery, op: "cap", ok: false },
+              ]
+            : []),
         );
         const [first, second] = state.config.batteries;
         if (first && second) {
@@ -1255,340 +1266,181 @@
           sample.hass.states[id] = { entity_id: id, state: value, attributes: { friendly_name: name, ...(unit ? { unit_of_measurement: unit } : {}) } };
         }
       }
-      // "Vorgänge statt Regler" (energy_joe/battery/preview, …/probe, …/roles): three cases.
+      // "Vorgänge statt Regler" (energy_joe/battery/preview, …/probe, …/roles): the backend's own answers
+      // from panel/dev/previews/<case>.json, written by scripts/make_dev_previews.py (real previews of
+      // control/operations.py, real probes of executor.async_probe, discovery.role_deviation).
       // ?preview=fronius – Marcel's BYD on a Fronius with an old, wrong assignment: the limits sit under
       //   Ladeleistung/Entladeleistung, Ladegrenze (aktiv) and Entladegrenze are missing (deviates, battery_roles);
       // ?preview=venus – the Venus over Omnibattery: manual mode first, the system's limits by day, the
-      //   watchdog's allow switches (guard_* operations);
-      // ?preview=huawei – a Huawei steered by services (service steps), the daytime cap not possible.
-      // The probe takes 2.5 s and really "writes" nothing; ?probe=fail lets a switch not take.
-      const previewMock = (() => {
+      //   watchdog's allow switches; ?preview=huawei – a Huawei steered by the profile's service steps.
+      // A file holds the preview per variant of the dialog's draft (as saved, the profile's find taken over,
+      // own steps for "Warten"): the closest variant answers; own steps the backend has not previewed
+      // (edited in the dialog) are rendered here like step_view. The probe takes 2.5 s (control.probe_running
+      // meanwhile) and answers the file's probe of the saved levers; ?probe=fail: the last write is not
+      // taken (a service fails); ?steer=1: refused while Joe steers; during a test run: busy.
+      const previewMock = await (async () => {
         const which = params.get("preview") || "";
+        const file = which ? await (await fetch(`./previews/${which}.json`, { cache: "no-store" })).json() : null;
+        const unknown = () => {
+          throw { code: "unknown_battery", message: "No such battery." };
+        };
+        if (!file) {
+          return { preview: unknown, probe: unknown, answer: unknown, roles: () => [] };
+        }
+        // The battery as the file saved it, its entities and what discovery says about it.
+        Object.assign(sample.hass.states, file.hass.states);
+        Object.assign(sample.hass.entities, file.hass.entities);
+        Object.assign(sample.hass.devices, file.hass.devices);
+        // Saving replaces state.config (applyUpdate): the batteries are looked up each time.
+        const batteries = () => state.config.batteries;
+        const battery = { ...structuredClone(ITEM_DEFAULTS.batteries), ...structuredClone(file.battery) };
+        const index = batteries().findIndex((b) => b.id === battery.id);
+        if (index >= 0) batteries()[index] = battery;
+        else batteries().push(battery);
+        const findings = sample.discovery.batteries;
+        const at = findings.findIndex((b) => b.id === file.finding.id);
+        if (at >= 0) findings[at] = file.finding;
+        else findings.push(file.finding);
+        // "Zuletzt geprobt": one good and one failed probe from the days before.
+        const first = file.variants[0];
+        (state.probes ??= {})[battery.id] = {
+          ...(first.probes.hold ? { hold: { ...structuredClone(first.probes.hold), at: dayAt(1, "14:02") } } : {}),
+          ...(first.probe_fail.charge ? { charge: { ...structuredClone(first.probe_fail.charge), at: dayAt(3, "13:10") } } : {}),
+        };
         const S = sample.hass.states;
-        const E = sample.hass.entities;
-        const put = (id, name, value, attrs = {}, device = null) => {
-          S[id] = { entity_id: id, state: value, attributes: { friendly_name: name, ...attrs } };
-          E[id] = { entity_id: id, device_id: device, area_id: null };
-        };
-        const FOUND = {
-          fronius: {
-            min_soc: "number.inverter_minimum_reserve",
-            grid_charge: "switch.inverter_grid_charging",
-            charge_limit: "number.inverter_charge_limit",
-            charge_limit_enabled: "switch.inverter_charge_limit_enabled",
-            discharge_limit: "number.inverter_discharge_limit",
-            discharge_limit_enabled: "switch.inverter_discharge_limit_enabled",
-          },
-          omnibattery: {
-            mode: "select.venus_force_mode",
-            charge_power: "number.venus_charge_power",
-            min_soc: "number.venus_discharge_cutoff",
-            system_charge_limit: "number.omnibattery_system_max_charge_power",
-            system_charge_limit_enabled: "switch.omnibattery_system_power_limits",
-            system_discharge_limit: "number.omnibattery_system_max_discharge_power",
-            system_manual_mode: "switch.omnibattery_system_manual_mode",
-            allow_charge: "switch.marstek_venus_e_3_0_battery_allow_charge",
-            allow_discharge: "switch.marstek_venus_e_3_0_battery_allow_discharge",
-          },
-          huawei_solar: {
-            charge_limit: "number.huawei_storage_maximum_charging_power",
-            discharge_limit: "number.huawei_storage_maximum_discharging_power",
-          },
-        };
-        const BASIC = ["min_soc", "grid_charge", "charge_target", "mode", "charge_power", "discharge_power", "charge_limit", "charge_limit_enabled", "discharge_limit", "discharge_limit_enabled"];
-        // The Huawei profile's service steps (control/profiles.py): saved with the battery, not the owner's own.
-        const HUAWEI_STEPS = {
-          charge: [
-            { entity_id: "switch.huawei_storage_charge_from_grid_function", value: true },
-            { service: "huawei_solar.forcible_charge_soc", data: { device_id: "{device}", target_soc: "{target}", power: "{power}" } },
-          ],
-          hold: [
-            { service: "huawei_solar.stop_forcible_charge", data: { device_id: "{device}" } },
-            { entity_id: "number.huawei_storage_maximum_discharging_power", value: 0 },
-          ],
-          release: [{ service: "huawei_solar.stop_forcible_charge", data: { device_id: "{device}" } }],
-        };
-        let dismissed = false;
-        if (which === "fronius") {
-          // The Fronius entities as the integration names them, plus the discharge limit Joe would find.
-          S["number.inverter_charge_limit"].attributes.friendly_name = "Battery charge power limit";
-          S["switch.inverter_charge_limit_enabled"].attributes.friendly_name = "Battery charge power limiting";
-          put("number.inverter_discharge_limit", "Battery discharge power limit", "100", { unit_of_measurement: "%", min: 0, max: 100, step: 1 }, "inverter");
-          put("switch.inverter_discharge_limit_enabled", "Battery discharge power limiting", "off", {}, "inverter");
-          const byd = state.config.batteries.find((b) => b.adapter === "fronius");
-          if (byd) {
-            byd.controls = {
-              min_soc: "number.inverter_minimum_reserve",
-              grid_charge: "switch.inverter_grid_charging",
-              charge_power: "number.inverter_charge_limit",
-              discharge_power: "number.inverter_discharge_limit",
-            };
-          }
-        }
-        if (which === "venus") {
-          put("switch.venus_battery_manual_mode", "Venus Handbetrieb", "off", {}, "venus");
-          put("switch.marstek_venus_e_3_0_battery_allow_discharge", "Marstek Venus E Entladen erlauben", "on", {}, "venus");
-          put("switch.omnibattery_system_manual_mode", "Omnibattery System Handbetrieb", "off", {});
-          const venus = state.config.batteries.find((b) => b.adapter === "omnibattery");
-          if (venus) {
-            venus.controls = {
-              ...venus.controls,
-              system_manual_mode: "switch.omnibattery_system_manual_mode",
-              allow_charge: "switch.marstek_venus_e_3_0_battery_allow_charge",
-              allow_discharge: "switch.marstek_venus_e_3_0_battery_allow_discharge",
-            };
-            venus.prepare = [{ entity_id: "switch.venus_battery_manual_mode", value: true }];
-          }
-        }
-        if (which === "huawei") {
-          put("sensor.huawei_battery_soc", "Huawei Batterie Ladestand", "47", { unit_of_measurement: "%", device_class: "battery" }, "huawei");
-          put("switch.huawei_storage_charge_from_grid_function", "Huawei Laden aus dem Netz", "off", {}, "huawei");
-          put("number.huawei_storage_maximum_charging_power", "Huawei Maximale Ladeleistung", "5000", { unit_of_measurement: "W", min: 0, max: 5000, step: 100 }, "huawei");
-          put("number.huawei_storage_maximum_discharging_power", "Huawei Maximale Entladeleistung", "5000", { unit_of_measurement: "W", min: 0, max: 5000, step: 100 }, "huawei");
-          sample.hass.devices.huawei = { id: "huawei", name: "Huawei LUNA2000", manufacturer: "Huawei", model: "LUNA2000-10-S0" };
-          if (!state.config.batteries.some((b) => b.id === "huawei")) {
-            state.config.batteries.push({
-              ...structuredClone(ITEM_DEFAULTS.batteries),
-              id: "huawei",
-              name: "Huawei LUNA2000",
-              adapter: "huawei_solar",
-              soc_entity: "sensor.huawei_battery_soc",
-              device_id: "huawei",
-              capacity_kwh: 10,
-              max_charge_w: 5000,
-              max_discharge_w: 5000,
-              mode_options: {},
-              prepare: [],
-              steps: structuredClone(HUAWEI_STEPS),
-              controls: {
-                charge_limit: "number.huawei_storage_maximum_charging_power",
-                discharge_limit: "number.huawei_storage_maximum_discharging_power",
-              },
-              day_surplus: true,
-              limit_ref_w: null,
-              self_regulating: null,
-              cutoff_soc: null,
-            });
-            sample.discovery.batteries.push({
-              id: "huawei",
-              name: "Huawei LUNA2000",
-              integration: "huawei_solar",
-              soc: { entity_id: "sensor.huawei_battery_soc", name: "Huawei Batterie Ladestand", area: null, device: "Huawei LUNA2000", value: 47, unit: "%", integration: "huawei_solar" },
-              soc_entity: "sensor.huawei_battery_soc",
-              power: null,
-              capacity_kwh: 10,
-              capacity_entity: null,
-              max_charge_w: 5000,
-              max_discharge_w: 5000,
-              device_id: "huawei",
-              controllable: true,
-              controls: { charge_limit: "number.huawei_storage_maximum_charging_power", discharge_limit: "number.huawei_storage_maximum_discharging_power" },
-              mode_options: {},
-              prepare: [],
-              steps: structuredClone(HUAWEI_STEPS),
-              adapter: "huawei_solar",
-              can_charge: true,
-              confidence: 0.9,
-              reasons: [],
-            });
-          }
-        }
-        const nameOf = (id) => S[id]?.attributes.friendly_name ?? id;
-        const unitOf = (id) => S[id]?.attributes.unit_of_measurement ?? null;
-        const stateOf = (id) => S[id]?.state ?? null;
-        const kindOf = (role, id) => {
-          const domain = (id ?? "").split(".")[0];
-          if (!id) return ["min_soc", "charge_target"].includes(role) ? "level" : /enabled|allow|block|grid_charge|manual/.test(role) ? "toggle" : role === "mode" ? "option" : "setpoint";
-          if (domain === "switch" || domain === "input_boolean") return "toggle";
-          if (domain === "select" || domain === "input_select") return "option";
-          return ["min_soc", "charge_target"].includes(role) ? "level" : "setpoint";
-        };
-        // One write of the preview, as the adapter would do it.
-        const set = (role, id, value) => ({ kind: "set", role, entity_id: id, name: nameOf(id), value, unit: unitOf(id), current: stateOf(id) });
-        const call = (service, data) => ({ kind: "call", service, data });
-        const back = (id) => ({ entity_id: id, name: nameOf(id), value: "saved", current: stateOf(id) });
-        const op = (key, steps, extra = {}) => ({
-          op: key,
-          possible: true,
-          why: null,
-          source: "profile",
-          params: {},
-          steps,
-          // Back in reverse order: switches off first (they come last in the steps).
-          restore: [...steps].reverse().filter((s) => s.kind === "set").map((s) => back(s.entity_id)),
-          note: null,
-          ...extra,
-        });
-        const no = (key, why) => ({ op: key, possible: false, why, source: "none", params: {}, steps: [], restore: [], note: null });
-        const own = (key, steps) =>
-          op(
-            key,
-            steps.map((s) => (s.service ? call(s.service, s.data ?? {}) : set(null, s.entity_id, s.value))),
-            { source: "own" },
+        const OPS = ["charge", "hold", "block", "block_charge", "block_discharge", "cap", "release", "guard_charge", "guard_discharge"];
+        const draftOf = (b) => ({ adapter: b.adapter, controls: b.controls, mode_options: b.mode_options, steps: b.steps, prepare: b.prepare });
+        const canon = (value) => JSON.stringify(Object.fromEntries(Object.entries(value ?? {}).sort()));
+        const canonSteps = (steps) =>
+          JSON.stringify(
+            Object.fromEntries(
+              Object.entries(steps ?? {})
+                .filter(([, list]) => list?.length)
+                .sort()
+                .map(([op, list]) => [op, list.map((s) => (s.service ? { service: s.service, data: s.data ?? {} } : { entity_id: s.entity_id, value: s.value ?? null }))]),
+            ),
           );
-        const build = (battery, draft) => {
-          const adapter = draft.adapter;
-          const c = draft.controls ?? {};
-          const soc = Number(S[battery.soc_entity]?.state ?? 50);
-          const params = { target: Math.min(100, Math.ceil(soc) + 20), power_w: battery.max_charge_w ?? 2000, floor: Math.floor(soc), percent: 50, seconds: 5 };
-          const found = FOUND[adapter] ?? {};
-          const ops = [];
-          const limit = (key, lim, enabled, value, note) => {
-            if (!c[lim]) return no(key, "no_lever");
-            const steps = [set(lim, c[lim], value)];
-            if (c[enabled]) steps.push(set(enabled, c[enabled], true));
-            return op(key, steps, { note: c[enabled] ? (note ?? "value_before_switch") : null });
-          };
-          if (adapter === "fronius" || adapter === "generic") {
-            if (c.min_soc && c.grid_charge) {
-              const steps = [set("grid_charge", c.grid_charge, true), set("min_soc", c.min_soc, "{target}")];
-              if (c.charge_limit && c.charge_limit_enabled) steps.push(set("charge_limit", c.charge_limit, 40), set("charge_limit_enabled", c.charge_limit_enabled, true));
-              ops.push(op("charge", steps, { note: c.charge_limit && c.charge_limit_enabled ? "value_before_switch" : null }));
-            } else if (c.mode && draft.mode_options?.force_charge && c.charge_power) {
-              ops.push(op("charge", [set("charge_power", c.charge_power, "{power}"), set("mode", c.mode, draft.mode_options.force_charge)]));
-            } else {
-              ops.push(no("charge", "no_lever"));
+        // The variant closest to a draft: the same way of steering, then the same levers, mode options, steps.
+        const closest = (draft) => {
+          let best = null;
+          let score = -1;
+          for (const variant of file.variants) {
+            const v = variant.draft;
+            if (v.adapter !== draft.adapter) continue;
+            const s =
+              (canon(v.controls) === canon(draft.controls) ? 4 : 0) +
+              (canon(v.mode_options) === canon(draft.mode_options) ? 2 : 0) +
+              (canonSteps(v.steps) === canonSteps(draft.steps) ? 1 : 0);
+            if (s > score) {
+              best = variant;
+              score = s;
             }
-            if (c.min_soc) ops.push(op("hold", [set("min_soc", c.min_soc, "{floor}")]));
-            else if (c.discharge_limit) ops.push(limit("hold", "discharge_limit", "discharge_limit_enabled", 0));
-            else ops.push(no("hold", "no_lever"));
-            const bc = limit("block_charge", "charge_limit", "charge_limit_enabled", 0);
-            const bd = limit("block_discharge", "discharge_limit", "discharge_limit_enabled", 0);
-            ops.push(
-              bc.possible && bd.possible ? op("block", [...bc.steps, ...bd.steps], { note: bc.note ?? bd.note }) : no("block", "no_lever"),
-              bc,
-              bd,
-              c.charge_limit && c.charge_limit_enabled ? limit("cap", "charge_limit", "charge_limit_enabled", unitOf(c.charge_limit) === "W" ? "{power}" : "{percent}") : no("cap", "no_lever"),
-            );
-          } else if (adapter === "omnibattery") {
-            const prepare = (draft.prepare ?? []).map((p) => set("prepare", p.entity_id, p.value));
-            const standby = c.mode && c.charge_power ? [...prepare, set("charge_power", c.charge_power, 0), set("mode", c.mode, draft.mode_options?.force_charge ?? "Charge")] : null;
-            ops.push(
-              c.mode && c.charge_power
-                ? op("charge", [...prepare, set("charge_power", c.charge_power, "{power}"), set("mode", c.mode, draft.mode_options?.force_charge ?? "Charge")], { note: prepare.length ? "prepare" : null })
-                : no("charge", "no_lever"),
-              standby ? op("hold", standby, { note: prepare.length ? "prepare" : null }) : no("hold", "no_lever"),
-              standby ? op("block", standby, { note: prepare.length ? "prepare" : null }) : no("block", "no_lever"),
-              limit("block_charge", "system_charge_limit", "system_charge_limit_enabled", 0),
-              limit("block_discharge", "system_discharge_limit", "system_charge_limit_enabled", 0),
-              limit("cap", "system_charge_limit", "system_charge_limit_enabled", "{power}"),
-            );
-          } else if (adapter === "huawei_solar") {
-            const steps = draft.steps ?? {};
-            const svc = (key) => (steps[key] ?? []).map((s) => (s.service ? call(s.service, s.data) : set(null, s.entity_id, s.value)));
-            ops.push(
-              op("charge", svc("charge"), { source: "service", restore: [back("switch.huawei_storage_charge_from_grid_function")] }),
-              op("hold", svc("hold"), { source: "service", restore: [back("number.huawei_storage_maximum_discharging_power")] }),
-              c.charge_limit && c.discharge_limit
-                ? op("block", [call("huawei_solar.stop_forcible_charge", { device_id: "{device}" }), set("discharge_limit", c.discharge_limit, 0), set("charge_limit", c.charge_limit, 0)], { source: "service" })
-                : no("block", "no_lever"),
-              c.charge_limit ? op("block_charge", [set("charge_limit", c.charge_limit, 0)]) : no("block_charge", "no_lever"),
-              c.discharge_limit ? op("block_discharge", [set("discharge_limit", c.discharge_limit, 0)]) : no("block_discharge", "no_lever"),
-              no("cap", "unavailable"),
-            );
-          } else {
-            for (const key of ["charge", "hold", "block", "block_charge", "block_discharge", "cap"]) ops.push(no(key, "no_steps"));
           }
-          // Own steps win over the profile (a profile's own service steps are not the owner's);
-          // "release" puts back everything the others wrote.
-          const profileSteps = adapter === "huawei_solar" ? HUAWEI_STEPS : {};
-          const isOwn = (key) => draft.steps?.[key]?.length && JSON.stringify(draft.steps[key]) !== JSON.stringify(profileSteps[key] ?? null);
-          const result = ops.map((o) => (isOwn(o.op) ? own(o.op, draft.steps[o.op]) : o));
-          const written = [];
-          for (const o of result) for (const r of o.restore) if (!written.some((w) => w.entity_id === r.entity_id)) written.push(r);
-          result.push(
-            isOwn("release")
-              ? own("release", draft.steps.release)
-              : adapter === "huawei_solar"
-                ? op("release", [call("huawei_solar.stop_forcible_charge", { device_id: "{device}" })], { source: "service", restore: written })
-                : { ...op("release", []), restore: written, source: written.length ? result[0].source : "none", possible: true },
+          return best;
+        };
+        const nameOf = (id) => S[id]?.attributes.friendly_name ?? id;
+        const roleOf = (controls, id) => Object.keys(controls ?? {}).find((role) => controls[role] === id) ?? null;
+        const isPlaceholder = (v) => typeof v === "string" && /^\{\w+\}$/.test(v);
+        // Own steps the backend has not previewed, rendered like operations.step_view: the placeholders
+        // filled from the example's parameters, values fitted to the entity (writes.fit).
+        const ownOp = (op, steps, p, controls) => {
+          const fill = (v) =>
+            ({ "{target}": p.target, "{power}": p.power_w, "{power_neg}": -p.power_w, "{floor}": p.floor, "{percent}": p.percent, "{seconds}": p.seconds, "{device}": battery.device_id })[v];
+          const fit = (s) => {
+            const raw = isPlaceholder(s.value) ? fill(s.value) : s.value;
+            const domain = s.entity_id.split(".")[0];
+            if (["switch", "input_boolean"].includes(domain)) return typeof raw === "string" ? ["on", "true", "1", "an", "ein"].includes(raw.toLowerCase()) : Boolean(raw);
+            if (["number", "input_number"].includes(domain) && raw != null && raw !== "" && Number.isFinite(Number(raw))) return Number(raw);
+            return raw ?? null;
+          };
+          const rendered = steps.map((s) =>
+            s.service
+              ? { kind: "call", service: s.service, data: Object.fromEntries(Object.entries(s.data ?? {}).map(([k, v]) => [k, isPlaceholder(v) && fill(v) !== undefined ? fill(v) : v])) }
+              : {
+                  kind: "set",
+                  role: roleOf(controls, s.entity_id),
+                  entity_id: s.entity_id,
+                  name: nameOf(s.entity_id),
+                  value: fit(s),
+                  param: isPlaceholder(s.value) ? s.value.slice(1, -1) : null,
+                  unit: S[s.entity_id]?.attributes.unit_of_measurement ?? null,
+                  current: S[s.entity_id]?.state ?? null,
+                },
           );
-          if (adapter === "omnibattery") {
-            result.push(
-              c.allow_charge ? op("guard_charge", [set("allow_charge", c.allow_charge, false)], { note: "flash" }) : no("guard_charge", "no_lever"),
-              c.allow_discharge ? op("guard_discharge", [set("allow_discharge", c.allow_discharge, false)], { note: "flash" }) : no("guard_discharge", "no_lever"),
-            );
+          const sets = rendered.filter((s) => s.kind === "set");
+          return {
+            op,
+            possible: rendered.length > 0,
+            why: rendered.length ? null : "no_steps",
+            source: rendered.length ? "own" : "none",
+            params: p,
+            steps: rendered,
+            restore: [...sets].reverse().map((s) => ({ role: s.role, entity_id: s.entity_id, name: s.name, value: "saved", current: s.current })),
+            note: null,
+          };
+        };
+        const previewFor = (draft) => {
+          const variant = closest(draft);
+          if (!variant) {
+            // Another way of steering than the file knows (assigned levers, own steps only): every
+            // operation from the draft's own steps, nothing else – the backend would know more.
+            console.info(`[dev] preview: no variant for adapter "${draft.adapter}" – own steps only`);
+            const p = first.preview.params;
+            return { profile: null, deviates: false, params: p, operations: OPS.slice(0, 7).map((op) => ownOp(op, draft.steps?.[op] ?? [], p, draft.controls)), roles: [] };
           }
-          for (const o of result) o.params = params;
-          // The levers: the profile's, the basic set and everything assigned, with who uses them.
-          const roles = [];
-          const foundEntities = new Set(Object.values(found));
-          for (const role of [...new Set([...Object.keys(found), ...BASIC, ...Object.keys(c)])]) {
-            const entity_id = c[role] ?? null;
-            const f = found[role] ?? null;
-            const used_by = result.filter((o) => o.steps.some((s) => s.role === role)).map((o) => o.op);
-            const known = role in found;
-            const deviates = known ? entity_id !== f : Boolean(entity_id && foundEntities.has(entity_id));
-            roles.push({ role, entity_id, found: f, kind: kindOf(role, entity_id ?? f), unit: unitOf(entity_id ?? f), used_by, deviates, relevant: used_by.length > 0 || Boolean(entity_id) });
-          }
-          const profile = adapter === "generic" || adapter === "steps" || adapter === "none" ? null : { key: adapter, name: sample.profiles[adapter] ?? adapter };
-          return { profile, deviates: Boolean(profile) && roles.some((r) => r.deviates), operations: result, roles };
+          const result = structuredClone(variant.preview);
+          const changed = (op) => canonSteps({ [op]: draft.steps?.[op] }) !== canonSteps({ [op]: variant.draft.steps?.[op] });
+          result.operations = result.operations.map((o) => (draft.steps?.[o.op]?.length && changed(o.op) ? ownOp(o.op, draft.steps[o.op], o.params, draft.controls) : o));
+          return result;
         };
         let probing = false;
-        const saved = (battery) => ({ adapter: battery.adapter, controls: battery.controls, mode_options: battery.mode_options, steps: battery.steps, prepare: battery.prepare });
+        let dismissed = false;
         return {
           preview(msg) {
-            const battery = state.config.batteries.find((b) => b.id === msg.battery_id);
-            if (!battery) throw { code: "unknown_battery", message: "Diesen Speicher kenne ich nicht." };
-            return build(battery, msg.draft ?? saved(battery));
+            const saved = batteries().find((b) => b.id === msg.battery_id) ?? unknown();
+            return previewFor(msg.draft ?? draftOf(saved));
           },
           async probe(msg) {
-            const battery = state.config.batteries.find((b) => b.id === msg.battery_id);
-            if (!battery) throw { code: "unknown_battery", message: "Diesen Speicher kenne ich nicht." };
-            const result = { ok: false, op: msg.op, at: stamp(), steps: [], restored: true, restore_errors: [], problem: null, power_kw: null };
-            if (probing || control.testing) return { ...result, problem: "busy" };
-            if (params.get("steer") === "1") return { ...result, problem: "steering" };
-            const info = build(battery, saved(battery)).operations.find((o) => o.op === msg.op);
-            if (!info?.possible) return { ...result, problem: "not_possible" };
+            const saved = batteries().find((b) => b.id === msg.battery_id) ?? unknown();
+            if (!OPS.includes(msg.op)) throw { code: "invalid_format", message: `value must be one of ${OPS.join(", ")} for dictionary value @ data['op']` };
+            if (probing || control.testing) return { ...structuredClone(file.refused.busy), op: msg.op, at: stamp() };
+            if (params.get("steer") === "1") return { ...structuredClone(file.refused.steering), op: msg.op, at: stamp() };
+            const variant = closest(draftOf(saved));
+            const found = (params.get("probe") === "fail" ? variant?.probe_fail?.[msg.op] : null) ?? variant?.probes?.[msg.op];
+            const result = found
+              ? { ...structuredClone(found), at: stamp() }
+              : { ok: false, op: msg.op, at: stamp(), steps: [], restored: true, restore_errors: [], problem: "not_possible", why: "no_steps", power_kw: null };
             probing = true;
+            control.probe_running = { battery: saved.id, op: msg.op, started: result.at };
+            push();
             await new Promise((resolve) => setTimeout(resolve, 2500));
             probing = false;
-            const fail = params.get("probe") === "fail";
-            const p = info.params;
-            const fill = (v) => (v === "{target}" ? p.target : v === "{power}" ? p.power_w : v === "{floor}" ? p.floor : v === "{percent}" ? p.percent : v);
-            result.steps = info.steps.map((s, i) =>
-              s.kind === "call"
-                ? { service: s.service, wrote: null, read: null, taken: true, error: null }
-                : {
-                    entity_id: s.entity_id,
-                    wrote: fill(s.value),
-                    read: fail && i === info.steps.length - 1 ? s.current : String(fill(s.value) === true ? "on" : fill(s.value) === false ? "off" : fill(s.value)),
-                    taken: !(fail && i === info.steps.length - 1),
-                    error: fail && i === info.steps.length - 1 ? "not_taken" : null,
-                  },
-            );
-            result.ok = result.steps.every((s) => s.taken);
-            result.power_kw = msg.op === "charge" ? 0.48 : msg.op === "hold" ? 0.02 : null;
-            (state.probes ??= {})[battery.id] = { ...(state.probes[battery.id] ?? {}), [msg.op]: result };
-            log("probe", { battery: battery.id, op: msg.op, ok: result.ok });
+            control.probe_running = null;
+            (state.probes ??= {})[saved.id] = { ...(state.probes[saved.id] ?? {}), [msg.op]: result };
+            log("probe", { battery: saved.id, op: msg.op, ok: result.ok });
             push();
             return result;
           },
           answer(msg) {
-            const battery = state.config.batteries.find((b) => b.id === msg.battery_id);
-            if (!battery) throw { code: "unknown_battery", message: "Diesen Speicher kenne ich nicht." };
+            const saved = batteries().find((b) => b.id === msg.battery_id) ?? unknown();
             if (msg.action === "adopt") {
-              const found = FOUND[battery.adapter] ?? {};
-              const foundEntities = new Set(Object.values(found));
-              const controls = Object.fromEntries(Object.entries(battery.controls).filter(([role, id]) => !(foundEntities.has(id) && found[role] !== id)));
-              battery.controls = { ...controls, ...found };
-              (control.outdated ??= new Set()).add(battery.id);
+              saved.controls = structuredClone(file.adopted.controls);
+              if (Object.keys(file.adopted.mode_options).length) saved.mode_options = structuredClone(file.adopted.mode_options);
+              // The levers changed: a new test run is needed (runtime.async_battery_roles).
+              (control.outdated ??= new Set()).add(saved.id);
             }
             dismissed = true;
             push();
-            return null;
+            return { ok: true, controls: structuredClone(saved.controls) };
           },
-          // state.battery_roles: the Fronius case until answered.
+          // state.battery_roles: as long as the saved levers differ from the find and nobody answered.
           roles() {
-            if (which !== "fronius" || dismissed) return [];
-            const byd = state.config.batteries.find((b) => b.adapter === "fronius");
-            if (!byd) return [];
-            const found = FOUND.fronius;
-            const missing = Object.keys(found).filter((role) => !byd.controls[role]);
-            const wrong = Object.keys(found)
-              .filter((role) => byd.controls[role] && byd.controls[role] !== found[role])
-              .map((role) => ({ role, is: byd.controls[role], found: found[role] }));
-            return missing.length || wrong.length ? [{ battery_id: byd.id, name: byd.name, profile: "fronius", missing, wrong }] : [];
+            const saved = batteries().find((b) => b.id === file.battery.id);
+            if (dismissed || !saved) return [];
+            const differs = file.battery_roles.some(
+              (item) => item.missing.some((role) => !saved.controls[role]) || item.wrong.some((w) => saved.controls[w.role] !== w.found),
+            );
+            return differs ? structuredClone(file.battery_roles) : [];
           },
         };
       })();

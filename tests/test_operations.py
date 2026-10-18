@@ -909,3 +909,52 @@ def test_the_values_of_the_moment(hass: HomeAssistant) -> None:
     assert params.cap_w == 2500 and params.percent == 50 and params.seconds == 5
     planned = operations.params_for(hass, team_byd(), target=60, power_w=1500)
     assert planned.target == 60 and planned.power_w == 1500
+
+
+async def test_the_probe_and_the_test_run_wait_for_each_other(
+    ready_hass: HomeAssistant, hass_ws_client: WebSocketGenerator, quick
+) -> None:
+    """Over the websocket: refused while Joe steers ("steering") or a test
+    run goes on ("busy"), and no test run while a probe goes on."""
+    hass = ready_hass
+    install_team(hass, byd_soc=34)
+    entry = MockConfigEntry(domain=DOMAIN, data={})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    runtime = hass.data[DOMAIN]
+    runtime.async_update_config({"batteries": [fronius_battery()]}, "user")
+    await hass.async_block_till_done()
+    executor = runtime.executor
+    client = await hass_ws_client(hass)
+
+    async def probe(op: str = "hold") -> dict[str, Any]:
+        await client.send_json_auto_id(
+            {"type": f"{DOMAIN}/battery/probe", "battery_id": "byd", "op": op}
+        )
+        msg = await client.receive_json()
+        assert msg["success"], msg
+        return msg["result"]
+
+    executor.status = {**executor.status, "steering": True}
+    result = await probe()
+    assert not result["ok"] and result["problem"] == "steering"
+    assert result["steps"] == [] and result["op"] == "hold"
+    executor.status = {**executor.status, "steering": False}
+    executor.testing = {"battery": "byd", "step": "hold", "steps": [], "started": ""}
+    result = await probe()
+    assert result["problem"] == "busy"
+    executor.testing = None
+    # The other way round: a probe going on keeps the test run from starting.
+    executor.probe_running = {"battery": "byd", "op": "hold", "started": ""}
+    assert runtime.state["control"]["probe_running"]["op"] == "hold"
+    await client.send_json_auto_id(
+        {"type": f"{DOMAIN}/control/test", "battery_id": "byd"}
+    )
+    msg = await client.receive_json()
+    assert not msg["success"] and msg["error"]["code"] == "busy"
+    executor.probe_running = None
+    result = await probe()
+    assert result["ok"] and result["problem"] is None
+    # Not possible: the reason comes along.
+    result = await probe("cap")
+    assert result["problem"] == "not_possible" and result["why"] == "no_lever"

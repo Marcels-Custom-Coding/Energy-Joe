@@ -184,6 +184,7 @@ export interface PreviewStep {
 
 /** What "zurückstellen" writes afterwards; "saved" is the value kept before the operation. */
 export interface PreviewRestore {
+  role?: string | null;
   entity_id: string;
   name?: string | null;
   value: string | number | boolean | null | "saved";
@@ -232,8 +233,10 @@ export interface BatteryPreview {
   deviates: boolean;
   operations: PreviewOperation[];
   roles: PreviewRole[];
-  /** The preview could not be worked out (a code or message the panel shows). */
+  /** The preview could not be worked out: the message, its code ("invalid_draft", "preview_failed") and the detail. */
   error?: string | null;
+  code?: string | null;
+  detail?: string | null;
 }
 
 /** One step of a probe: what was written and what came back. */
@@ -254,7 +257,12 @@ export interface ProbeResult {
   steps: ProbeStep[];
   restored: boolean;
   restore_errors: string[];
+  /** Refused or not possible: why ("steering", "busy", "not_possible", "controls_missing", "soc_unknown"). */
   problem: string | null;
+  /** With "not_possible": the operation's reason (a why code). */
+  why?: string | null;
+  /** With "controls_missing": the roles that are missing. */
+  missing?: string[];
   power_kw: number | null;
 }
 
@@ -265,6 +273,8 @@ export interface BatteryRolesItem {
   profile: string;
   missing: string[];
   wrong: { role: string; is: string | null; found: string | null }[];
+  /** The find's hash: "So lassen" holds until the find changes. */
+  hash?: string;
 }
 
 export interface BatteryConfig {
@@ -1556,6 +1566,8 @@ export interface ControlView {
   >;
   pending: boolean;
   testing: { battery: string; step: string; steps: TestStep[]; started: string } | null;
+  /** A probe of one operation going on, from any session (older backends: missing). */
+  probe_running?: { battery: string; op: OperationKey; started: string } | null;
   tests: Record<string, TestResult>;
   log: ControlLogEntry[];
   skip: string | null;

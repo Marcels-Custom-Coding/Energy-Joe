@@ -1,4 +1,4 @@
-import { $ as e, A as t, B as n, C as r, D as i, E as a, F as o, G as s, H as c, I as l, J as u, K as d, L as f, M as p, N as m, O as h, P as g, Q as ee, R as _, S as v, T as te, U as y, V as b, W as ne, X as re, Y as ie, Z as x, _ as ae, a as oe, at as S, b as se, c as ce, ct as le, d as C, dt as ue, et as w, f as T, ft as E, g as de, h as fe, i as pe, it as D, j as me, k as he, l as O, lt as k, m as ge, n as _e, nt as ve, o as ye, ot as A, p as be, q as j, r as M, rt as xe, s as Se, st as N, t as Ce, tt as P, u as we, ut as Te, v as Ee, w as De, x as F, y as Oe, z as ke } from "./tokens-P-4hjd6I.js";
+import { $ as e, A as t, B as n, C as r, D as i, E as a, F as o, G as s, H as c, I as l, J as u, K as d, L as f, M as p, N as m, O as h, P as g, Q as ee, R as _, S as v, T as te, U as y, V as b, W as ne, X as re, Y as ie, Z as x, _ as ae, a as oe, at as S, b as se, c as ce, ct as le, d as C, dt as ue, et as w, f as T, ft as E, g as de, h as fe, i as pe, it as D, j as me, k as he, l as O, lt as k, m as ge, n as _e, nt as ve, o as ye, ot as A, p as be, q as j, r as M, rt as xe, s as Se, st as N, t as Ce, tt as P, u as we, ut as Te, v as Ee, w as De, x as F, y as Oe, z as ke } from "./tokens-0MveU0eo.js";
 //#region src/assets.ts
 var Ae = import.meta.url.replace(/[^/]*$/, ""), je = (e) => `${Ae}${e}`, Me = /* @__PURE__ */ new Set(["welcome"]), Ne = /* @__PURE__ */ new Set([
 	"night-charge",
@@ -3823,7 +3823,7 @@ function tr(e) {
 }
 var K = class extends A {
 	constructor(...e) {
-		super(...e), this.dirty = !1, this.previewState = "idle", this.previewError = "", this.open = /* @__PURE__ */ new Set(), this.editing = /* @__PURE__ */ new Set(), this.probing = null, this.probeResults = {}, this.probeErrors = {}, this.previewSeq = 0, this.previewFor = "", this.resetToProfile = () => {
+		super(...e), this.dirty = !1, this.busy = !1, this.previewState = "idle", this.previewFailure = null, this.open = /* @__PURE__ */ new Set(), this.editing = /* @__PURE__ */ new Set(), this.probing = null, this.probeResults = {}, this.probeErrors = {}, this.previewSeq = 0, this.previewFor = "", this.resetToProfile = () => {
 			let e = this.value, t = this.preview?.roles ?? [];
 			if (!e || !t.length) return;
 			let n = { ...e.controls }, r = new Set(t.map((e) => e.found).filter((e) => !!e));
@@ -4251,11 +4251,25 @@ var K = class extends A {
 				draft: t
 			});
 			if (r !== this.previewSeq) return;
-			this.preview = i, this.previewError = i?.error ?? "", this.previewState = this.previewError ? "error" : "ok";
+			if (i?.error) {
+				this.previewFailure = {
+					error: i.error,
+					code: i.code,
+					detail: i.detail
+				}, this.previewState = "error";
+				return;
+			}
+			this.preview = i, this.previewFailure = null, this.previewState = "ok";
 		} catch (e) {
 			if (r !== this.previewSeq) return;
-			this.previewError = Qn(e), this.previewState = "error";
+			this.previewFailure = { error: Qn(e) }, this.previewState = "error";
 		}
+	}
+	failureText(e) {
+		let t = this.previewFailure;
+		if (!t) return "";
+		let n = t.detail || t.error;
+		return t.code && e.optional(`preview.error.${t.code}`, { detail: n }) || e("preview.error", { error: t.error });
 	}
 	render() {
 		let { t: e, value: t } = this;
@@ -4308,11 +4322,11 @@ var K = class extends A {
 		});
 	}
 	renderOperations(e, t) {
-		let n = this.previewState === "loading", r = this.previewState === "error" ? this.previewError : "";
+		let n = this.previewState === "loading", r = this.previewState === "error" ? this.failureText(e) : "";
 		return k`<div class="sub" data-tipped>${e("preview.title")} ${l(e, "operations")}</div>
       ${this.choice === "steps" ? k`<p class="field-hint hint">${e("preview.steps_tab")}</p>` : N}
       ${this.dirty ? k`<p class="field-hint hint" role="status">${e("preview.dirty")}</p>` : N}
-      ${r ? k`<div class="note warn" role="status"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${e("preview.error", { error: r })}</span></div>` : N}
+      ${r ? k`<div class="note warn" role="status"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${r}</span></div>` : N}
       ${n ? k`<p class="field-hint hint" role="status">${e("preview.loading")}</p>` : N}
       <div class="ops">${this.operations(t).map((n) => this.renderOperation(e, t, n))}</div>`;
 	}
@@ -4347,7 +4361,7 @@ var K = class extends A {
 			case "profile": return k`<span class="chip read">${e("op.source.profile", { name: this.profileName })}</span>`;
 			case "generic": return k`<span class="chip">${e("op.source.generic")}</span>`;
 			case "own": return k`<span class="chip user">${e("op.source.own")}</span>`;
-			case "service": return k`<span class="chip read">${e("op.source.service")}</span>`;
+			case "service": return k`<span class="chip read">${e("op.source.service", { name: this.profileName })}</span>`;
 			default: return N;
 		}
 	}
@@ -4360,8 +4374,8 @@ var K = class extends A {
 			}) : "";
 			case "hold": return n.floor == null ? "" : e("op.example.hold", { floor: r(n.floor) });
 			case "cap": {
-				let i = t.steps.some((e) => e.value === "{power}" || e.unit === "W" || e.unit === "kW"), a = t.steps.some((e) => e.value === "{percent}" || e.unit === "%");
-				return i && !a && n.power_w != null || n.percent == null && n.power_w != null ? e("op.example.cap.power", { power: r(n.power_w) }) : n.percent == null ? "" : e("op.example.cap.percent", { percent: r(n.percent) });
+				let i = t.steps.find((e) => e.kind === "set" && (e.param === "power" || e.param === "percent"));
+				return i?.param === "power" && typeof i.value == "number" ? e("op.example.cap.power", { power: r(i.value) }) : i?.param === "power" && n.power_w != null && n.percent != null ? e("op.example.cap.power", { power: r(n.power_w * n.percent / 100) }) : n.percent == null ? "" : e("op.example.cap.percent", { percent: r(n.percent) });
 			}
 			case "guard_charge":
 			case "guard_discharge": return n.seconds == null ? "" : e("op.example.guard", { seconds: r(n.seconds) });
@@ -4389,7 +4403,9 @@ var K = class extends A {
             ${t.restore.map((t, i) => k`<li>
                 <span class="n">${i + 1}.</span>
                 <span class="what"
-                  ><b>${t.name || _(n, t.entity_id)}</b><span class="arrow">→</span
+                  >${t.role ? k`<span class="role">${e.optional(`role.${t.role}`) ?? t.role} · </span>` : N}<b
+                    >${t.name || _(n, t.entity_id)}</b
+                  ><span class="arrow">→</span
                   ><b>${t.value === "saved" ? e("op.step.saved") : this.valueText(e, t.value, this.unitOf(t.entity_id), r)}</b>
                   ${t.current == null ? N : k` <span class="now">(${e("op.step.now", { value: this.currentText(e, t.current, this.unitOf(t.entity_id)) })})</span>`}
                 </span>
@@ -4400,7 +4416,7 @@ var K = class extends A {
 	stepText(e, t, n) {
 		let r = this.hass;
 		if (t.kind === "call" || t.service) {
-			let r = Object.entries(t.data ?? {}).filter(([e]) => e !== "device_id" && e !== "entity_id").map(([t, r]) => `${e.optional(`op.data.${t}`) ?? t} ${this.valueText(e, r, void 0, n)}`);
+			let r = Object.entries(t.data ?? {}).filter(([e]) => e !== "device_id" && e !== "entity_id").map(([t, r]) => `${e.optional(`op.data.${t}`) ?? t} ${this.valueText(e, r, e.optional(`op.data.unit.${t}`), n)}`);
 			return k`<b>${e("op.step.service", { service: t.service ?? "" })}</b>${r.length ? k` <span class="now">(${r.join(" · ")})</span>` : N}`;
 		}
 		let i = t.role && t.role !== "prepare" ? e.optional(`role.${t.role}`) ?? t.role : "", a = t.name || (t.entity_id ? _(r, t.entity_id) : ""), o = t.unit ?? this.unitOf(t.entity_id);
@@ -4436,21 +4452,22 @@ var K = class extends A {
 		return t.trim() !== "" && Number.isFinite(r) ? `${b(e.lang, r, 2)}${n ? ` ${n}` : ""}` : t;
 	}
 	renderActions(e, t, n, r) {
-		let i = t.op, a = Kn.has(i), o = t.possible && !this.dirty && !this.probing && !r, s = this.lastProbe(i), c = this.choice === "steps" ? e("op.own.back.steps") : this.choice === "generic" ? e("op.own.back.generic") : e("op.own.back.profile");
+		let i = t.op, a = Kn.has(i), o = this.probeRunning && this.battery && this.probeRunning.battery === this.battery.id ? this.probeRunning.op : null, s = this.probing === i || o === i, c = !!(this.probing || this.probeRunning || this.busy), u = t.possible && !t.steps.length, d = t.possible && !u && !this.dirty && !c && !r, f = this.lastProbe(i), p = this.choice === "steps" ? e("op.own.back.steps") : this.choice === "generic" ? e("op.own.back.generic") : e("op.own.back.profile");
 		return k`<div class="op-actions" data-tipped>
-      ${this.probing === i ? k`<span class="chip">${e("op.probe.running")}</span>` : k`<button type="button" class="mini-btn" ?disabled=${!o} @click=${() => this.probe(i)}>
-            <ha-icon icon="mdi:test-tube"></ha-icon>${e("op.probe")}
-          </button>`}
+      ${s ? k`<span class="chip">${e("op.probe.running")}</span>` : u ? k`<span class="last">${e("op.probe.nothing")}</span>` : k`<button type="button" class="mini-btn" ?disabled=${!d} @click=${() => this.probe(i)}>
+              <ha-icon icon="mdi:test-tube"></ha-icon>${e("op.probe")}
+            </button>`}
       ${l(e, "probe")}
-      <span class="last ${s ? s.ok ? "ok" : "bad" : ""}">
-        ${s ? e(s.ok ? "op.probe.last.ok" : "op.probe.last.failed", { when: `${G(e.lang, s.at, "short")}, ${F(s.at)}` }) : e("op.probe.never")}
-      </span>
+      ${u ? N : k`<span class="last ${f ? f.ok ? "ok" : "bad" : ""}">
+            ${f ? e(f.ok ? "op.probe.last.ok" : "op.probe.last.failed", { when: `${G(e.lang, f.at, "short")}, ${F(f.at)}` }) : e("op.probe.never")}
+          </span>`}
+      ${c && !s && t.possible && !u ? k`<span class="last" role="status">${e("op.probe.busy")}</span>` : N}
       ${a ? r ? k`<button type="button" class="mini-btn go" @click=${() => this.stopEditing(i)}>${e("op.own.done")}</button>
               ${l(e, "own_steps", Yn)}` : k`<button type="button" class="mini-btn" @click=${() => this.startEditing(i, t, n)}>
                 <ha-icon icon="mdi:pencil-outline"></ha-icon>${e(n ? "op.own.edit" : "op.own")}
               </button>
               ${l(e, "own_steps", Yn)}` : N}
-      ${a && n ? k`<button type="button" class="mini-btn quiet" @click=${() => this.resetOwn(i)}>${c}</button> ${l(e, "own_back")}` : N}
+      ${a && n ? k`<button type="button" class="mini-btn quiet" @click=${() => this.resetOwn(i)}>${p}</button> ${l(e, "own_back")}` : N}
     </div>`;
 	}
 	renderEditor(e, t, n) {
@@ -4551,7 +4568,7 @@ var K = class extends A {
 	}
 	async probe(e) {
 		let t = this.hass, n = this.battery;
-		if (!t || !n || this.probing) return;
+		if (!t || !n || this.probing || this.probeRunning || this.busy) return;
 		this.probing = e;
 		let r = { ...this.probeErrors };
 		delete r[e], this.probeErrors = r;
@@ -4581,18 +4598,18 @@ var K = class extends A {
       </div>`;
 		let i = this.probeResults[t];
 		if (!i) return N;
-		let a = i.problem ? e.optional(`op.probe.problem.${i.problem}`) ?? e("op.probe.problem.other", { code: i.problem }) : "", o = (t) => t.service ? e("op.step.service", { service: t.service }) : t.entity_id ? _(n, t.entity_id) : "";
+		let a = i.problem ? this.problemText(e, i) : "", o = (t) => t.service ? e("op.step.service", { service: t.service }) : t.entity_id ? _(n, t.entity_id) : "", s = i.power_kw != null && Math.abs(i.power_kw) < .005 ? 0 : i.power_kw;
 		return k`<div class="probe ${i.ok ? "ok" : "bad"}" role="status">
       ${a ? k`<p class="problem">${a}</p>` : N}
       ${i.steps?.length || !a ? k`<ul>
             ${(i.steps ?? []).map((t) => {
-			let n = t.taken && !t.error, r = this.unitOf(t.entity_id), i = [e("op.probe.wrote", {
+			let n = t.taken && !t.error, r = this.unitOf(t.entity_id), i = t.error ? e("op.probe.error", { error: e.optional(`devices.problem.${t.error}`) ?? t.error }) : e(n ? t.service ? "op.probe.call_taken" : "op.probe.taken" : "op.probe.not_taken"), a = t.service ? [i] : [e("op.probe.wrote", {
 				wrote: this.valueText(e, t.wrote, r, {}),
 				read: t.read == null ? "–" : this.currentText(e, String(t.read), r)
-			}), t.error ? e("op.probe.error", { error: e.optional(`devices.problem.${t.error}`) ?? t.error }) : e(n ? "op.probe.taken" : "op.probe.not_taken")];
+			}), i];
 			return k`<li class=${n ? "ok" : "bad"}>
                 <ha-icon icon=${n ? "mdi:check-circle" : "mdi:close-circle"}></ha-icon>
-                <span><b>${o(t)}</b><small>${i.join(" · ")}</small></span>
+                <span><b>${o(t)}</b><small>${a.join(" · ")}</small></span>
               </li>`;
 		})}
             <li class=${i.restored ? "ok" : "bad"}>
@@ -4602,8 +4619,12 @@ var K = class extends A {
               >
             </li>
           </ul>` : N}
-      ${i.power_kw == null ? N : k`<small>${e("devices.test.power", { value: b(e.lang, i.power_kw, 2) })}</small>`}
+      ${s == null ? N : k`<small>${e("devices.test.power", { value: b(e.lang, s, 2) })}</small>`}
     </div>`;
+	}
+	problemText(e, t) {
+		let n = t.problem ?? "";
+		return n === "not_possible" && t.why ? `${e("op.probe.problem.not_possible")} ${this.whyText(e, t.why)}` : n === "controls_missing" && t.missing?.length ? e("op.probe.problem.controls_missing.list", { missing: t.missing.map((t) => e.optional(`role.${t}`) ?? t).join(", ") }) : e.optional(`op.probe.problem.${n}`) ?? e("op.probe.problem.other", { code: n });
 	}
 	roleRows(e) {
 		let t = this.hass, n = (this.preview?.roles ?? []).filter((t) => t.relevant || t.deviates || t.found || e.controls[t.role]), r = new Set(n.map((e) => e.role)), i = [...n], a = [...Fn, ...Object.keys(e.controls)];
@@ -4665,7 +4686,7 @@ var K = class extends A {
               ${o ? k`<small>${e("roles.used_by", { ops: o })}</small>` : N}
             </span>
             <span class="entity">
-              ${i ? k`<b>${_(n, i)}</b><small>${c(n, i, e.lang)}</small>` : k`<small>${e("find.none")}</small>`}
+              ${i ? k`<b>${_(n, i)}</b><small>${c(n, i, e.lang)}</small>` : k`<small>${e("roles.unassigned")}</small>`}
               ${t.deviates && t.found && t.found !== i ? k`<small class="found">${e("roles.by_profile", { name: _(n, t.found) })}</small>` : N}
               ${t.deviates ? k`<span class="chip warn">${e("roles.deviates")}</span>` : N}
             </span>
@@ -4856,7 +4877,7 @@ var K = class extends A {
 		this.dispatchEvent(new CustomEvent("joe-control-change", { detail: e }));
 	}
 };
-d([S({ attribute: !1 })], K.prototype, "hass", void 0), d([S({ attribute: !1 })], K.prototype, "t", void 0), d([S({ attribute: !1 })], K.prototype, "battery", void 0), d([S({ attribute: !1 })], K.prototype, "found", void 0), d([S({ attribute: !1 })], K.prototype, "value", void 0), d([S({ attribute: !1 })], K.prototype, "profiles", void 0), d([S({ type: Boolean })], K.prototype, "dirty", void 0), d([S({ attribute: !1 })], K.prototype, "probes", void 0), d([D()], K.prototype, "preview", void 0), d([D()], K.prototype, "previewState", void 0), d([D()], K.prototype, "previewError", void 0), d([D()], K.prototype, "open", void 0), d([D()], K.prototype, "editing", void 0), d([D()], K.prototype, "probing", void 0), d([D()], K.prototype, "probeResults", void 0), d([D()], K.prototype, "probeErrors", void 0), u("joe-battery-control", K);
+d([S({ attribute: !1 })], K.prototype, "hass", void 0), d([S({ attribute: !1 })], K.prototype, "t", void 0), d([S({ attribute: !1 })], K.prototype, "battery", void 0), d([S({ attribute: !1 })], K.prototype, "found", void 0), d([S({ attribute: !1 })], K.prototype, "value", void 0), d([S({ attribute: !1 })], K.prototype, "profiles", void 0), d([S({ type: Boolean })], K.prototype, "dirty", void 0), d([S({ attribute: !1 })], K.prototype, "probes", void 0), d([S({ attribute: !1 })], K.prototype, "probeRunning", void 0), d([S({ type: Boolean })], K.prototype, "busy", void 0), d([D()], K.prototype, "preview", void 0), d([D()], K.prototype, "previewState", void 0), d([D()], K.prototype, "previewFailure", void 0), d([D()], K.prototype, "open", void 0), d([D()], K.prototype, "editing", void 0), d([D()], K.prototype, "probing", void 0), d([D()], K.prototype, "probeResults", void 0), d([D()], K.prototype, "probeErrors", void 0), u("joe-battery-control", K);
 //#endregion
 //#region src/editors/battery-editor.ts
 var nr = [
@@ -6183,7 +6204,22 @@ function Ii(e, t, n, r) {
 			names: t
 		});
 	}
-	return n.kind === "day_buffer" ? e(n.fill ? "log.day_buffer.fill" : "log.day_buffer.hold", a) : n.kind === "day" && typeof n.level == "number" ? e("log.day.buffer", a) : n.kind === "released" && n.reason === "day_buffer" ? e("log.released.day_buffer", a) : n.kind === "surplus_end" ? e.optional(`log.surplus_end.${String(n.reason)}`, a) ?? e("log.surplus_end", a) : n.kind === "limit_ref_failed" ? e.optional(`log.limit_ref_failed.${String(n.reason)}`, a) ?? e("log.limit_ref_failed", a) : n.kind === "boost_end" ? e.optional(`log.boost_end.${String(n.reason)}`, a) ?? e("log.boost_end.stopped", a) : n.kind === "answer" ? e(n.yes ? "log.answer.yes" : "log.answer.no") : n.kind === "test" ? e(n.ok ? "log.test.ok" : "log.test.failed", a) : e.optional(`log.${n.kind}`, a) ?? n.kind;
+	if (n.kind === "day_buffer") return e(n.fill ? "log.day_buffer.fill" : "log.day_buffer.hold", a);
+	if (n.kind === "day" && typeof n.level == "number") return e("log.day.buffer", a);
+	if (n.kind === "released" && n.reason === "day_buffer") return e("log.released.day_buffer", a);
+	if (n.kind === "surplus_end") return e.optional(`log.surplus_end.${String(n.reason)}`, a) ?? e("log.surplus_end", a);
+	if (n.kind === "limit_ref_failed") return e.optional(`log.limit_ref_failed.${String(n.reason)}`, a) ?? e("log.limit_ref_failed", a);
+	if (n.kind === "boost_end") return e.optional(`log.boost_end.${String(n.reason)}`, a) ?? e("log.boost_end.stopped", a);
+	if (n.kind === "answer") return e(n.yes ? "log.answer.yes" : "log.answer.no");
+	if (n.kind === "test") return e(n.ok ? "log.test.ok" : "log.test.failed", a);
+	if (n.kind === "probe") {
+		let t = String(n.op ?? "");
+		return e(n.ok ? "log.probe.ok" : "log.probe.failed", {
+			...a,
+			op: e.optional(`op.short.${t}`) ?? t
+		});
+	}
+	return e.optional(`log.${n.kind}`, a) ?? n.kind;
 }
 function Li(e, t, n, r) {
 	let i = n[t.entity] ?? (r ? _(r, t.entity) : t.entity);
@@ -10131,16 +10167,16 @@ var Yo = class extends J {
       ${this.notice ? k`<div class="note warn" role="status"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${this.notice}</span></div>` : N}`;
 	}
 	renderTest(e, t, n) {
-		let r = n?.ready[t.id] ?? "not_controllable", i = n?.testing?.battery === t.id ? n.testing : null, a = n?.tests[t.id], o = !!n?.testing, s = !!n?.steering, c = i ? k`<span class="chip">${e("devices.test.running")}</span>` : r === "outdated" ? k`<span class="chip warn">${e("devices.test.outdated")}</span>` : a ? k`<span class="chip ${a.ok ? "ok" : "warn"}"
+		let r = n?.ready[t.id] ?? "not_controllable", i = n?.testing?.battery === t.id ? n.testing : null, a = n?.tests[t.id], o = n?.probe_running, s = !!n?.testing || !!o, c = !!n?.steering, l = o?.battery === t.id ? k`<span class="chip">${e("battery.probe.running", { op: e.optional(`op.short.${o.op}`) ?? o.op })}</span>` : N, u = i ? k`<span class="chip">${e("devices.test.running")}</span>` : r === "outdated" ? k`<span class="chip warn">${e("devices.test.outdated")}</span>` : a ? k`<span class="chip ${a.ok ? "ok" : "warn"}"
               >${e(a.ok ? "devices.test.ok" : "devices.test.failed", { day: G(e.lang, a.at, "short") })}</span
-            >` : k`<span class="chip">${e("devices.test.none")}</span>`, l = i?.steps ?? a?.steps ?? [];
+            >` : k`<span class="chip">${e("devices.test.none")}</span>`, d = i?.steps ?? a?.steps ?? [];
 		return k`<div class="test">
-        ${c}
-        <button type="button" class="btn btn-secondary" ?disabled=${o || s} @click=${() => this.confirm = !0}>
+        ${u} ${l}
+        <button type="button" class="btn btn-secondary" ?disabled=${s || c} @click=${() => this.confirm = !0}>
           <ha-icon icon="mdi:play-circle-outline"></ha-icon>${e(a ? "devices.test.again" : "devices.test.start")}
         </button>
       </div>
-      ${i || a ? this.renderSteps(e, l, i?.step ?? null, a) : N}
+      ${i || a ? this.renderSteps(e, d, i?.step ?? null, a) : N}
       ${this.renderProbes(e, t)}`;
 	}
 	renderProbes(e, t) {
@@ -10432,6 +10468,8 @@ var Yo = class extends J {
           .value=${r}
           .dirty=${i}
           .probes=${this.state?.probes?.[t.id]}
+          .probeRunning=${this.state?.control?.probe_running ?? null}
+          .busy=${!!this.state?.control?.testing}
           @joe-control-change=${(e) => {
 			Ho.set(t.id, {
 				base: Uo(t),

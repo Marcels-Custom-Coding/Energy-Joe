@@ -729,8 +729,8 @@ def ws_control_test(
     if battery is None:
         connection.send_error(msg["id"], "unknown_battery", "No such battery.")
         return
-    if executor.testing is not None:
-        connection.send_error(msg["id"], "busy", "A test run is going on.")
+    if executor.testing is not None or executor.probe_running:
+        connection.send_error(msg["id"], "busy", "A test run or a probe is going on.")
         return
     if executor.status.get("steering"):
         connection.send_error(msg["id"], "steering", "Joe is steering right now.")

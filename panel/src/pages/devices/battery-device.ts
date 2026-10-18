@@ -370,8 +370,14 @@ export class JoeBatteryDevice extends DeviceSection {
     const ready = control?.ready[battery.id] ?? "not_controllable";
     const testing = control?.testing?.battery === battery.id ? control.testing : null;
     const test = control?.tests[battery.id];
-    const busy = Boolean(control?.testing);
+    // A probe of one operation (the dialog) and a test run never run at once.
+    const probe = control?.probe_running;
+    const busy = Boolean(control?.testing) || Boolean(probe);
     const steering = Boolean(control?.steering);
+    const probing =
+      probe?.battery === battery.id
+        ? html`<span class="chip">${t("battery.probe.running", { op: t.optional(`op.short.${probe.op}`) ?? probe.op })}</span>`
+        : nothing;
     const chip = testing
       ? html`<span class="chip">${t("devices.test.running")}</span>`
       : ready === "outdated"
@@ -383,7 +389,7 @@ export class JoeBatteryDevice extends DeviceSection {
           : html`<span class="chip">${t("devices.test.none")}</span>`;
     const steps = testing?.steps ?? test?.steps ?? [];
     return html`<div class="test">
-        ${chip}
+        ${chip} ${probing}
         <button type="button" class="btn btn-secondary" ?disabled=${busy || steering} @click=${() => (this.confirm = true)}>
           <ha-icon icon="mdi:play-circle-outline"></ha-icon>${t(test ? "devices.test.again" : "devices.test.start")}
         </button>
@@ -795,6 +801,8 @@ export class JoeBatteryDevice extends DeviceSection {
           .value=${draft as ControlValue}
           .dirty=${dirty}
           .probes=${this.state?.probes?.[battery.id]}
+          .probeRunning=${this.state?.control?.probe_running ?? null}
+          .busy=${Boolean(this.state?.control?.testing)}
           @joe-control-change=${(ev: CustomEvent<ControlValue>) => {
             drafts.set(battery.id, { base: controlOf(battery), draft: withPrepare(battery, ev.detail, found) });
             this.requestUpdate();

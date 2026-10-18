@@ -1,0 +1,2183 @@
+{
+ "battery": {
+  "id": "huawei",
+  "name": "Huawei LUNA2000",
+  "adapter": "huawei_solar",
+  "soc_entity": "sensor.luna_soc",
+  "power": {
+   "entity_id": "sensor.luna_power",
+   "invert": false,
+   "minus_entity_id": null
+  },
+  "capacity_kwh": null,
+  "capacity_entity": null,
+  "max_charge_w": 5000.0,
+  "max_discharge_w": null,
+  "device_id": "luna",
+  "controls": {
+   "charge_limit": "number.luna_charging",
+   "discharge_limit": "number.luna_discharging"
+  },
+  "mode_options": {},
+  "prepare": [],
+  "steps": {
+   "charge": [
+    {
+     "entity_id": "switch.luna_grid",
+     "value": true
+    },
+    {
+     "service": "huawei_solar.forcible_charge_soc",
+     "data": {
+      "device_id": "{device}",
+      "target_soc": "{target}",
+      "power": "{power}"
+     }
+    }
+   ],
+   "hold": [
+    {
+     "service": "huawei_solar.stop_forcible_charge",
+     "data": {
+      "device_id": "{device}"
+     }
+    },
+    {
+     "entity_id": "number.luna_discharging",
+     "value": 0
+    }
+   ],
+   "release": [
+    {
+     "service": "huawei_solar.stop_forcible_charge",
+     "data": {
+      "device_id": "{device}"
+     }
+    }
+   ]
+  },
+  "priority": 1,
+  "floor_soc": null,
+  "day_surplus": true,
+  "limit_ref_w": null,
+  "self_regulating": null,
+  "control_group": null,
+  "night_cap": null,
+  "cutoff_soc": null
+ },
+ "finding": {
+  "id": "huawei",
+  "name": "Huawei LUNA2000",
+  "device_id": "luna",
+  "integration": "huawei_solar",
+  "soc": {
+   "entity_id": "sensor.luna_soc",
+   "name": "Battery state of capacity",
+   "area": null,
+   "device": "LUNA2000 Batteries",
+   "value": 40.0,
+   "unit": "%",
+   "integration": "huawei_solar"
+  },
+  "soc_entity": "sensor.luna_soc",
+  "power": {
+   "entity_id": "sensor.luna_power",
+   "invert": false,
+   "minus_entity_id": null
+  },
+  "capacity_kwh": null,
+  "capacity_entity": null,
+  "max_charge_w": 5000.0,
+  "max_discharge_w": null,
+  "adapter": "huawei_solar",
+  "controls": {
+   "charge_limit": "number.luna_charging",
+   "discharge_limit": "number.luna_discharging"
+  },
+  "mode_options": {},
+  "prepare": [],
+  "steps": {
+   "charge": [
+    {
+     "entity_id": "switch.luna_grid",
+     "value": true
+    },
+    {
+     "service": "huawei_solar.forcible_charge_soc",
+     "data": {
+      "device_id": "{device}",
+      "target_soc": "{target}",
+      "power": "{power}"
+     }
+    }
+   ],
+   "hold": [
+    {
+     "service": "huawei_solar.stop_forcible_charge",
+     "data": {
+      "device_id": "{device}"
+     }
+    },
+    {
+     "entity_id": "number.luna_discharging",
+     "value": 0
+    }
+   ],
+   "release": [
+    {
+     "service": "huawei_solar.stop_forcible_charge",
+     "data": {
+      "device_id": "{device}"
+     }
+    }
+   ]
+  },
+  "controllable": true,
+  "can_charge": true,
+  "suggested": null,
+  "unsure": [],
+  "confidence": 0.55,
+  "reasons": [
+   {
+    "code": "storage_name",
+    "word": "luna"
+   },
+   {
+    "code": "power_guess"
+   },
+   {
+    "code": "controls_found",
+    "count": 5
+   }
+  ],
+  "notes": []
+ },
+ "hass": {
+  "states": {
+   "sensor.luna_soc": {
+    "entity_id": "sensor.luna_soc",
+    "state": "40",
+    "attributes": {
+     "friendly_name": "Battery state of capacity",
+     "unit_of_measurement": "%",
+     "device_class": "battery"
+    }
+   },
+   "sensor.luna_power": {
+    "entity_id": "sensor.luna_power",
+    "state": "0",
+    "attributes": {
+     "friendly_name": "Charge/Discharge power",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "number.luna_charging": {
+    "entity_id": "number.luna_charging",
+    "state": "5000",
+    "attributes": {
+     "friendly_name": "Maximum charging power",
+     "unit_of_measurement": "W",
+     "min": 0,
+     "max": 5000,
+     "step": 100
+    }
+   },
+   "number.luna_discharging": {
+    "entity_id": "number.luna_discharging",
+    "state": "5000",
+    "attributes": {
+     "friendly_name": "Maximum discharging power",
+     "unit_of_measurement": "W",
+     "min": 0,
+     "max": 5000,
+     "step": 100
+    }
+   },
+   "sensor.luna_max_charge": {
+    "entity_id": "sensor.luna_max_charge",
+    "state": "5000",
+    "attributes": {
+     "friendly_name": "Maximum charge power",
+     "unit_of_measurement": "W"
+    }
+   },
+   "switch.luna_grid": {
+    "entity_id": "switch.luna_grid",
+    "state": "off",
+    "attributes": {
+     "friendly_name": "Charge from grid"
+    }
+   }
+  },
+  "entities": {
+   "sensor.luna_soc": {
+    "entity_id": "sensor.luna_soc",
+    "device_id": "luna",
+    "area_id": null,
+    "platform": "huawei_solar"
+   },
+   "sensor.luna_power": {
+    "entity_id": "sensor.luna_power",
+    "device_id": "luna",
+    "area_id": null,
+    "platform": "huawei_solar"
+   },
+   "number.luna_charging": {
+    "entity_id": "number.luna_charging",
+    "device_id": "inverter",
+    "area_id": null,
+    "platform": "huawei_solar"
+   },
+   "number.luna_discharging": {
+    "entity_id": "number.luna_discharging",
+    "device_id": "inverter",
+    "area_id": null,
+    "platform": "huawei_solar"
+   },
+   "sensor.luna_max_charge": {
+    "entity_id": "sensor.luna_max_charge",
+    "device_id": "inverter",
+    "area_id": null,
+    "platform": "huawei_solar"
+   },
+   "switch.luna_grid": {
+    "entity_id": "switch.luna_grid",
+    "device_id": "luna",
+    "area_id": null,
+    "platform": "huawei_solar"
+   }
+  },
+  "devices": {
+   "luna": {
+    "id": "luna",
+    "name": "LUNA2000 Batteries",
+    "manufacturer": "Huawei",
+    "model": "LUNA2000",
+    "area_id": null
+   }
+  },
+  "areas": {}
+ },
+ "found": {
+  "controls": {
+   "charge_limit": "number.luna_charging",
+   "discharge_limit": "number.luna_discharging"
+  },
+  "mode_options": {}
+ },
+ "adopted": {
+  "controls": {
+   "charge_limit": "number.luna_charging",
+   "discharge_limit": "number.luna_discharging"
+  },
+  "mode_options": {}
+ },
+ "battery_roles": [],
+ "variants": [
+  {
+   "name": "saved",
+   "draft": {
+    "adapter": "huawei_solar",
+    "controls": {
+     "charge_limit": "number.luna_charging",
+     "discharge_limit": "number.luna_discharging"
+    },
+    "mode_options": {},
+    "steps": {
+     "charge": [
+      {
+       "entity_id": "switch.luna_grid",
+       "value": true
+      },
+      {
+       "service": "huawei_solar.forcible_charge_soc",
+       "data": {
+        "device_id": "{device}",
+        "target_soc": "{target}",
+        "power": "{power}"
+       }
+      }
+     ],
+     "hold": [
+      {
+       "service": "huawei_solar.stop_forcible_charge",
+       "data": {
+        "device_id": "{device}"
+       }
+      },
+      {
+       "entity_id": "number.luna_discharging",
+       "value": 0
+      }
+     ],
+     "release": [
+      {
+       "service": "huawei_solar.stop_forcible_charge",
+       "data": {
+        "device_id": "{device}"
+       }
+      }
+     ]
+    },
+    "prepare": []
+   },
+   "battery": {
+    "id": "huawei",
+    "name": "Huawei LUNA2000",
+    "adapter": "huawei_solar",
+    "soc_entity": "sensor.luna_soc",
+    "power": {
+     "entity_id": "sensor.luna_power",
+     "invert": false,
+     "minus_entity_id": null
+    },
+    "capacity_kwh": null,
+    "capacity_entity": null,
+    "max_charge_w": 5000.0,
+    "max_discharge_w": null,
+    "device_id": "luna",
+    "controls": {
+     "charge_limit": "number.luna_charging",
+     "discharge_limit": "number.luna_discharging"
+    },
+    "mode_options": {},
+    "prepare": [],
+    "steps": {
+     "charge": [
+      {
+       "entity_id": "switch.luna_grid",
+       "value": true
+      },
+      {
+       "service": "huawei_solar.forcible_charge_soc",
+       "data": {
+        "device_id": "{device}",
+        "target_soc": "{target}",
+        "power": "{power}"
+       }
+      }
+     ],
+     "hold": [
+      {
+       "service": "huawei_solar.stop_forcible_charge",
+       "data": {
+        "device_id": "{device}"
+       }
+      },
+      {
+       "entity_id": "number.luna_discharging",
+       "value": 0
+      }
+     ],
+     "release": [
+      {
+       "service": "huawei_solar.stop_forcible_charge",
+       "data": {
+        "device_id": "{device}"
+       }
+      }
+     ]
+    },
+    "priority": 1,
+    "floor_soc": null,
+    "day_surplus": true,
+    "limit_ref_w": null,
+    "self_regulating": null,
+    "control_group": null,
+    "night_cap": null,
+    "cutoff_soc": null
+   },
+   "preview": {
+    "profile": {
+     "key": "huawei_solar",
+     "name": "Huawei"
+    },
+    "deviates": false,
+    "params": {
+     "target": 60,
+     "power_w": 5000,
+     "floor": 40,
+     "percent": 50,
+     "seconds": 5.0
+    },
+    "operations": [
+     {
+      "op": "charge",
+      "possible": true,
+      "why": null,
+      "source": "service",
+      "params": {
+       "target": 60,
+       "power_w": 5000,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": null,
+        "entity_id": "switch.luna_grid",
+        "name": "Charge from grid",
+        "value": true,
+        "param": null,
+        "unit": null,
+        "current": "off"
+       },
+       {
+        "kind": "call",
+        "service": "huawei_solar.forcible_charge_soc",
+        "data": {
+         "device_id": "luna",
+         "target_soc": 60,
+         "power": 5000
+        }
+       }
+      ],
+      "restore": [
+       {
+        "role": null,
+        "entity_id": "switch.luna_grid",
+        "name": "Charge from grid",
+        "value": "saved",
+        "current": "off"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "hold",
+      "possible": true,
+      "why": null,
+      "source": "service",
+      "params": {
+       "target": 60,
+       "power_w": 5000,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "call",
+        "service": "huawei_solar.stop_forcible_charge",
+        "data": {
+         "device_id": "luna"
+        }
+       },
+       {
+        "kind": "set",
+        "role": "discharge_limit",
+        "entity_id": "number.luna_discharging",
+        "name": "Maximum discharging power",
+        "value": 0.0,
+        "param": null,
+        "unit": "W",
+        "current": "5000"
+       }
+      ],
+      "restore": [
+       {
+        "role": "discharge_limit",
+        "entity_id": "number.luna_discharging",
+        "name": "Maximum discharging power",
+        "value": "saved",
+        "current": "5000"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "block",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 60,
+       "power_w": 5000,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "charge_limit",
+        "entity_id": "number.luna_charging",
+        "name": "Maximum charging power",
+        "value": 0.0,
+        "param": null,
+        "unit": "W",
+        "current": "5000"
+       },
+       {
+        "kind": "set",
+        "role": "discharge_limit",
+        "entity_id": "number.luna_discharging",
+        "name": "Maximum discharging power",
+        "value": 0.0,
+        "param": null,
+        "unit": "W",
+        "current": "5000"
+       }
+      ],
+      "restore": [
+       {
+        "role": "charge_limit",
+        "entity_id": "number.luna_charging",
+        "name": "Maximum charging power",
+        "value": "saved",
+        "current": "5000"
+       },
+       {
+        "role": "discharge_limit",
+        "entity_id": "number.luna_discharging",
+        "name": "Maximum discharging power",
+        "value": "saved",
+        "current": "5000"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "block_charge",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 60,
+       "power_w": 5000,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "charge_limit",
+        "entity_id": "number.luna_charging",
+        "name": "Maximum charging power",
+        "value": 0.0,
+        "param": null,
+        "unit": "W",
+        "current": "5000"
+       }
+      ],
+      "restore": [
+       {
+        "role": "charge_limit",
+        "entity_id": "number.luna_charging",
+        "name": "Maximum charging power",
+        "value": "saved",
+        "current": "5000"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "block_discharge",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 60,
+       "power_w": 5000,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "discharge_limit",
+        "entity_id": "number.luna_discharging",
+        "name": "Maximum discharging power",
+        "value": 0.0,
+        "param": null,
+        "unit": "W",
+        "current": "5000"
+       }
+      ],
+      "restore": [
+       {
+        "role": "discharge_limit",
+        "entity_id": "number.luna_discharging",
+        "name": "Maximum discharging power",
+        "value": "saved",
+        "current": "5000"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "cap",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 60,
+       "power_w": 5000,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "charge_limit",
+        "entity_id": "number.luna_charging",
+        "name": "Maximum charging power",
+        "value": 2500.0,
+        "param": "power",
+        "unit": "W",
+        "current": "5000"
+       }
+      ],
+      "restore": [
+       {
+        "role": "charge_limit",
+        "entity_id": "number.luna_charging",
+        "name": "Maximum charging power",
+        "value": "saved",
+        "current": "5000"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "release",
+      "possible": true,
+      "why": null,
+      "source": "service",
+      "params": {
+       "target": 60,
+       "power_w": 5000,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "call",
+        "service": "huawei_solar.stop_forcible_charge",
+        "data": {
+         "device_id": "luna"
+        }
+       }
+      ],
+      "restore": [
+       {
+        "role": "charge_limit",
+        "entity_id": "number.luna_charging",
+        "name": "Maximum charging power",
+        "value": "saved",
+        "current": "5000"
+       },
+       {
+        "role": "discharge_limit",
+        "entity_id": "number.luna_discharging",
+        "name": "Maximum discharging power",
+        "value": "saved",
+        "current": "5000"
+       },
+       {
+        "role": null,
+        "entity_id": "switch.luna_grid",
+        "name": "Charge from grid",
+        "value": "saved",
+        "current": "off"
+       }
+      ],
+      "note": null
+     }
+    ],
+    "roles": [
+     {
+      "role": "min_soc",
+      "entity_id": null,
+      "found": null,
+      "kind": "level",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "charge_target",
+      "entity_id": null,
+      "found": null,
+      "kind": "level",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "grid_charge",
+      "entity_id": null,
+      "found": null,
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "mode",
+      "entity_id": null,
+      "found": null,
+      "kind": "option",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "charge_power",
+      "entity_id": null,
+      "found": null,
+      "kind": "setpoint",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "discharge_power",
+      "entity_id": null,
+      "found": null,
+      "kind": "setpoint",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "discharge_limit",
+      "entity_id": "number.luna_discharging",
+      "found": "number.luna_discharging",
+      "kind": "setpoint",
+      "unit": "W",
+      "used_by": [
+       "hold",
+       "block",
+       "block_discharge"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "discharge_limit_enabled",
+      "entity_id": null,
+      "found": null,
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "charge_limit",
+      "entity_id": "number.luna_charging",
+      "found": "number.luna_charging",
+      "kind": "setpoint",
+      "unit": "W",
+      "used_by": [
+       "block",
+       "block_charge",
+       "cap"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "charge_limit_enabled",
+      "entity_id": null,
+      "found": null,
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     }
+    ]
+   },
+   "probes": {
+    "charge": {
+     "ok": true,
+     "op": "charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.luna_grid",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      },
+      {
+       "service": "huawei_solar.forcible_charge_soc",
+       "wrote": null,
+       "read": null,
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "hold": {
+     "ok": true,
+     "op": "hold",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "service": "huawei_solar.stop_forcible_charge",
+       "wrote": null,
+       "read": null,
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.luna_discharging",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "block": {
+     "ok": true,
+     "op": "block",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.luna_charging",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.luna_discharging",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "block_charge": {
+     "ok": true,
+     "op": "block_charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.luna_charging",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "block_discharge": {
+     "ok": true,
+     "op": "block_discharge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.luna_discharging",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "cap": {
+     "ok": true,
+     "op": "cap",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.luna_charging",
+       "wrote": 2500.0,
+       "read": "2500.0",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "release": {
+     "ok": true,
+     "op": "release",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "service": "huawei_solar.stop_forcible_charge",
+       "wrote": null,
+       "read": null,
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    }
+   },
+   "probe_fail": {
+    "charge": {
+     "ok": false,
+     "op": "charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.luna_grid",
+       "wrote": true,
+       "read": "off",
+       "taken": false,
+       "error": "not_taken"
+      },
+      {
+       "service": "huawei_solar.forcible_charge_soc",
+       "wrote": null,
+       "read": null,
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "hold": {
+     "ok": false,
+     "op": "hold",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "service": "huawei_solar.stop_forcible_charge",
+       "wrote": null,
+       "read": null,
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.luna_discharging",
+       "wrote": 0.0,
+       "read": "5000.0",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "block": {
+     "ok": false,
+     "op": "block",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.luna_charging",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.luna_discharging",
+       "wrote": 0.0,
+       "read": "5000.0",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "block_charge": {
+     "ok": false,
+     "op": "block_charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.luna_charging",
+       "wrote": 0.0,
+       "read": "5000.0",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "block_discharge": {
+     "ok": false,
+     "op": "block_discharge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.luna_discharging",
+       "wrote": 0.0,
+       "read": "5000.0",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "cap": {
+     "ok": false,
+     "op": "cap",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.luna_charging",
+       "wrote": 2500.0,
+       "read": "5000.0",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "release": {
+     "ok": false,
+     "op": "release",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "service": "huawei_solar.stop_forcible_charge",
+       "wrote": null,
+       "read": null,
+       "taken": false,
+       "error": "failed"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    }
+   }
+  },
+  {
+   "name": "own",
+   "draft": {
+    "adapter": "huawei_solar",
+    "controls": {
+     "charge_limit": "number.luna_charging",
+     "discharge_limit": "number.luna_discharging"
+    },
+    "mode_options": {},
+    "steps": {
+     "charge": [
+      {
+       "entity_id": "switch.luna_grid",
+       "value": true
+      },
+      {
+       "service": "huawei_solar.forcible_charge_soc",
+       "data": {
+        "device_id": "{device}",
+        "target_soc": "{target}",
+        "power": "{power}"
+       }
+      }
+     ],
+     "hold": [
+      {
+       "service": "huawei_solar.stop_forcible_charge",
+       "data": {
+        "device_id": "{device}"
+       }
+      },
+      {
+       "entity_id": "number.luna_discharging",
+       "value": 0
+      }
+     ],
+     "release": [
+      {
+       "service": "huawei_solar.stop_forcible_charge",
+       "data": {
+        "device_id": "{device}"
+       }
+      }
+     ],
+     "block": [
+      {
+       "entity_id": "number.luna_charging",
+       "value": 0.0
+      },
+      {
+       "entity_id": "number.luna_discharging",
+       "value": 0.0
+      }
+     ]
+    },
+    "prepare": []
+   },
+   "battery": {
+    "id": "huawei",
+    "name": "Huawei LUNA2000",
+    "adapter": "huawei_solar",
+    "soc_entity": "sensor.luna_soc",
+    "power": {
+     "entity_id": "sensor.luna_power",
+     "invert": false,
+     "minus_entity_id": null
+    },
+    "capacity_kwh": null,
+    "capacity_entity": null,
+    "max_charge_w": 5000.0,
+    "max_discharge_w": null,
+    "device_id": "luna",
+    "controls": {
+     "charge_limit": "number.luna_charging",
+     "discharge_limit": "number.luna_discharging"
+    },
+    "mode_options": {},
+    "prepare": [],
+    "steps": {
+     "charge": [
+      {
+       "entity_id": "switch.luna_grid",
+       "value": true
+      },
+      {
+       "service": "huawei_solar.forcible_charge_soc",
+       "data": {
+        "device_id": "{device}",
+        "target_soc": "{target}",
+        "power": "{power}"
+       }
+      }
+     ],
+     "hold": [
+      {
+       "service": "huawei_solar.stop_forcible_charge",
+       "data": {
+        "device_id": "{device}"
+       }
+      },
+      {
+       "entity_id": "number.luna_discharging",
+       "value": 0
+      }
+     ],
+     "release": [
+      {
+       "service": "huawei_solar.stop_forcible_charge",
+       "data": {
+        "device_id": "{device}"
+       }
+      }
+     ],
+     "block": [
+      {
+       "entity_id": "number.luna_charging",
+       "value": 0.0
+      },
+      {
+       "entity_id": "number.luna_discharging",
+       "value": 0.0
+      }
+     ]
+    },
+    "priority": 1,
+    "floor_soc": null,
+    "day_surplus": true,
+    "limit_ref_w": null,
+    "self_regulating": null,
+    "control_group": null,
+    "night_cap": null,
+    "cutoff_soc": null
+   },
+   "preview": {
+    "profile": {
+     "key": "huawei_solar",
+     "name": "Huawei"
+    },
+    "deviates": false,
+    "params": {
+     "target": 60,
+     "power_w": 5000,
+     "floor": 40,
+     "percent": 50,
+     "seconds": 5.0
+    },
+    "operations": [
+     {
+      "op": "charge",
+      "possible": true,
+      "why": null,
+      "source": "service",
+      "params": {
+       "target": 60,
+       "power_w": 5000,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": null,
+        "entity_id": "switch.luna_grid",
+        "name": "Charge from grid",
+        "value": true,
+        "param": null,
+        "unit": null,
+        "current": "off"
+       },
+       {
+        "kind": "call",
+        "service": "huawei_solar.forcible_charge_soc",
+        "data": {
+         "device_id": "luna",
+         "target_soc": 60,
+         "power": 5000
+        }
+       }
+      ],
+      "restore": [
+       {
+        "role": null,
+        "entity_id": "switch.luna_grid",
+        "name": "Charge from grid",
+        "value": "saved",
+        "current": "off"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "hold",
+      "possible": true,
+      "why": null,
+      "source": "service",
+      "params": {
+       "target": 60,
+       "power_w": 5000,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "call",
+        "service": "huawei_solar.stop_forcible_charge",
+        "data": {
+         "device_id": "luna"
+        }
+       },
+       {
+        "kind": "set",
+        "role": "discharge_limit",
+        "entity_id": "number.luna_discharging",
+        "name": "Maximum discharging power",
+        "value": 0.0,
+        "param": null,
+        "unit": "W",
+        "current": "5000.0"
+       }
+      ],
+      "restore": [
+       {
+        "role": "discharge_limit",
+        "entity_id": "number.luna_discharging",
+        "name": "Maximum discharging power",
+        "value": "saved",
+        "current": "5000.0"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "block",
+      "possible": true,
+      "why": null,
+      "source": "own",
+      "params": {
+       "target": 60,
+       "power_w": 5000,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "charge_limit",
+        "entity_id": "number.luna_charging",
+        "name": "Maximum charging power",
+        "value": 0.0,
+        "param": null,
+        "unit": "W",
+        "current": "5000.0"
+       },
+       {
+        "kind": "set",
+        "role": "discharge_limit",
+        "entity_id": "number.luna_discharging",
+        "name": "Maximum discharging power",
+        "value": 0.0,
+        "param": null,
+        "unit": "W",
+        "current": "5000.0"
+       }
+      ],
+      "restore": [
+       {
+        "role": "discharge_limit",
+        "entity_id": "number.luna_discharging",
+        "name": "Maximum discharging power",
+        "value": "saved",
+        "current": "5000.0"
+       },
+       {
+        "role": "charge_limit",
+        "entity_id": "number.luna_charging",
+        "name": "Maximum charging power",
+        "value": "saved",
+        "current": "5000.0"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "block_charge",
+      "possible": true,
+      "why": null,
+      "source": "own",
+      "params": {
+       "target": 60,
+       "power_w": 5000,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "charge_limit",
+        "entity_id": "number.luna_charging",
+        "name": "Maximum charging power",
+        "value": 0.0,
+        "param": null,
+        "unit": "W",
+        "current": "5000.0"
+       },
+       {
+        "kind": "set",
+        "role": "discharge_limit",
+        "entity_id": "number.luna_discharging",
+        "name": "Maximum discharging power",
+        "value": 0.0,
+        "param": null,
+        "unit": "W",
+        "current": "5000.0"
+       }
+      ],
+      "restore": [
+       {
+        "role": "discharge_limit",
+        "entity_id": "number.luna_discharging",
+        "name": "Maximum discharging power",
+        "value": "saved",
+        "current": "5000.0"
+       },
+       {
+        "role": "charge_limit",
+        "entity_id": "number.luna_charging",
+        "name": "Maximum charging power",
+        "value": "saved",
+        "current": "5000.0"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "block_discharge",
+      "possible": true,
+      "why": null,
+      "source": "own",
+      "params": {
+       "target": 60,
+       "power_w": 5000,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "charge_limit",
+        "entity_id": "number.luna_charging",
+        "name": "Maximum charging power",
+        "value": 0.0,
+        "param": null,
+        "unit": "W",
+        "current": "5000.0"
+       },
+       {
+        "kind": "set",
+        "role": "discharge_limit",
+        "entity_id": "number.luna_discharging",
+        "name": "Maximum discharging power",
+        "value": 0.0,
+        "param": null,
+        "unit": "W",
+        "current": "5000.0"
+       }
+      ],
+      "restore": [
+       {
+        "role": "discharge_limit",
+        "entity_id": "number.luna_discharging",
+        "name": "Maximum discharging power",
+        "value": "saved",
+        "current": "5000.0"
+       },
+       {
+        "role": "charge_limit",
+        "entity_id": "number.luna_charging",
+        "name": "Maximum charging power",
+        "value": "saved",
+        "current": "5000.0"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "cap",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 60,
+       "power_w": 5000,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "charge_limit",
+        "entity_id": "number.luna_charging",
+        "name": "Maximum charging power",
+        "value": 2500.0,
+        "param": "power",
+        "unit": "W",
+        "current": "5000.0"
+       }
+      ],
+      "restore": [
+       {
+        "role": "charge_limit",
+        "entity_id": "number.luna_charging",
+        "name": "Maximum charging power",
+        "value": "saved",
+        "current": "5000.0"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "release",
+      "possible": true,
+      "why": null,
+      "source": "service",
+      "params": {
+       "target": 60,
+       "power_w": 5000,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "call",
+        "service": "huawei_solar.stop_forcible_charge",
+        "data": {
+         "device_id": "luna"
+        }
+       }
+      ],
+      "restore": [
+       {
+        "role": "charge_limit",
+        "entity_id": "number.luna_charging",
+        "name": "Maximum charging power",
+        "value": "saved",
+        "current": "5000.0"
+       },
+       {
+        "role": "discharge_limit",
+        "entity_id": "number.luna_discharging",
+        "name": "Maximum discharging power",
+        "value": "saved",
+        "current": "5000.0"
+       },
+       {
+        "role": null,
+        "entity_id": "switch.luna_grid",
+        "name": "Charge from grid",
+        "value": "saved",
+        "current": "off"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "guard_charge",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 60,
+       "power_w": 5000,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "charge_limit",
+        "entity_id": "number.luna_charging",
+        "name": "Maximum charging power",
+        "value": 0.0,
+        "param": null,
+        "unit": "W",
+        "current": "5000.0"
+       }
+      ],
+      "restore": [
+       {
+        "role": "charge_limit",
+        "entity_id": "number.luna_charging",
+        "name": "Maximum charging power",
+        "value": "saved",
+        "current": "5000.0"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "guard_discharge",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 60,
+       "power_w": 5000,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "discharge_limit",
+        "entity_id": "number.luna_discharging",
+        "name": "Maximum discharging power",
+        "value": 0.0,
+        "param": null,
+        "unit": "W",
+        "current": "5000.0"
+       }
+      ],
+      "restore": [
+       {
+        "role": "discharge_limit",
+        "entity_id": "number.luna_discharging",
+        "name": "Maximum discharging power",
+        "value": "saved",
+        "current": "5000.0"
+       }
+      ],
+      "note": null
+     }
+    ],
+    "roles": [
+     {
+      "role": "min_soc",
+      "entity_id": null,
+      "found": null,
+      "kind": "level",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "charge_target",
+      "entity_id": null,
+      "found": null,
+      "kind": "level",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "grid_charge",
+      "entity_id": null,
+      "found": null,
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "mode",
+      "entity_id": null,
+      "found": null,
+      "kind": "option",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "charge_power",
+      "entity_id": null,
+      "found": null,
+      "kind": "setpoint",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "discharge_power",
+      "entity_id": null,
+      "found": null,
+      "kind": "setpoint",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "discharge_limit",
+      "entity_id": "number.luna_discharging",
+      "found": "number.luna_discharging",
+      "kind": "setpoint",
+      "unit": "W",
+      "used_by": [
+       "hold",
+       "block",
+       "block_charge",
+       "block_discharge",
+       "guard_discharge"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "discharge_limit_enabled",
+      "entity_id": null,
+      "found": null,
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "charge_limit",
+      "entity_id": "number.luna_charging",
+      "found": "number.luna_charging",
+      "kind": "setpoint",
+      "unit": "W",
+      "used_by": [
+       "block",
+       "block_charge",
+       "block_discharge",
+       "cap",
+       "guard_charge"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "charge_limit_enabled",
+      "entity_id": null,
+      "found": null,
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     }
+    ]
+   },
+   "probes": {
+    "charge": {
+     "ok": true,
+     "op": "charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.luna_grid",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      },
+      {
+       "service": "huawei_solar.forcible_charge_soc",
+       "wrote": null,
+       "read": null,
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "hold": {
+     "ok": true,
+     "op": "hold",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "service": "huawei_solar.stop_forcible_charge",
+       "wrote": null,
+       "read": null,
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.luna_discharging",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "block": {
+     "ok": true,
+     "op": "block",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.luna_charging",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.luna_discharging",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "block_charge": {
+     "ok": true,
+     "op": "block_charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.luna_charging",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.luna_discharging",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "block_discharge": {
+     "ok": true,
+     "op": "block_discharge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.luna_charging",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.luna_discharging",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "cap": {
+     "ok": true,
+     "op": "cap",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.luna_charging",
+       "wrote": 2500.0,
+       "read": "2500.0",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "release": {
+     "ok": true,
+     "op": "release",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "service": "huawei_solar.stop_forcible_charge",
+       "wrote": null,
+       "read": null,
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "guard_charge": {
+     "ok": true,
+     "op": "guard_charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.luna_charging",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "guard_discharge": {
+     "ok": true,
+     "op": "guard_discharge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.luna_discharging",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    }
+   },
+   "probe_fail": {
+    "charge": {
+     "ok": false,
+     "op": "charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.luna_grid",
+       "wrote": true,
+       "read": "off",
+       "taken": false,
+       "error": "not_taken"
+      },
+      {
+       "service": "huawei_solar.forcible_charge_soc",
+       "wrote": null,
+       "read": null,
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "hold": {
+     "ok": false,
+     "op": "hold",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "service": "huawei_solar.stop_forcible_charge",
+       "wrote": null,
+       "read": null,
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.luna_discharging",
+       "wrote": 0.0,
+       "read": "5000.0",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "block": {
+     "ok": false,
+     "op": "block",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.luna_charging",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.luna_discharging",
+       "wrote": 0.0,
+       "read": "5000.0",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "block_charge": {
+     "ok": false,
+     "op": "block_charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.luna_charging",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.luna_discharging",
+       "wrote": 0.0,
+       "read": "5000.0",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "block_discharge": {
+     "ok": false,
+     "op": "block_discharge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.luna_charging",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.luna_discharging",
+       "wrote": 0.0,
+       "read": "5000.0",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "cap": {
+     "ok": false,
+     "op": "cap",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.luna_charging",
+       "wrote": 2500.0,
+       "read": "5000.0",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "release": {
+     "ok": false,
+     "op": "release",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "service": "huawei_solar.stop_forcible_charge",
+       "wrote": null,
+       "read": null,
+       "taken": false,
+       "error": "failed"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "guard_charge": {
+     "ok": false,
+     "op": "guard_charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.luna_charging",
+       "wrote": 0.0,
+       "read": "5000.0",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    },
+    "guard_discharge": {
+     "ok": false,
+     "op": "guard_discharge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.luna_discharging",
+       "wrote": 0.0,
+       "read": "5000.0",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 0.0
+    }
+   }
+  }
+ ],
+ "refused": {
+  "steering": {
+   "ok": false,
+   "op": "block",
+   "at": "2026-10-18T09:30:35-07:00",
+   "steps": [],
+   "restored": true,
+   "restore_errors": [],
+   "problem": "steering",
+   "power_kw": null
+  },
+  "busy": {
+   "ok": false,
+   "op": "block",
+   "at": "2026-10-18T09:30:35-07:00",
+   "steps": [],
+   "restored": true,
+   "restore_errors": [],
+   "problem": "busy",
+   "power_kw": null
+  }
+ }
+}

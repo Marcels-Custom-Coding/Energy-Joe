@@ -159,10 +159,15 @@ export class JoeBatteryControl extends LitElement {
   @property({ type: Boolean }) dirty = false;
   /** The battery's last probes from the state ("zuletzt geprobt"). */
   @property({ attribute: false }) probes?: Partial<Record<OperationKey, ProbeResult>>;
+  /** A probe going on anywhere (any battery, any session, from control.probe_running): no second one meanwhile. */
+  @property({ attribute: false }) probeRunning?: { battery: string; op: string; started: string } | null;
+  /** A test run is going on: the probe waits. */
+  @property({ type: Boolean }) busy = false;
 
   @state() private preview?: BatteryPreview;
   @state() private previewState: "idle" | "loading" | "ok" | "error" = "idle";
-  @state() private previewError = "";
+  /** Why the preview failed: the backend's message, its code and detail, or a failed command. */
+  @state() private previewFailure: { error: string; code?: string | null; detail?: string | null } | null = null;
   @state() private open = new Set<OperationKey>();
   @state() private editing = new Set<OperationKey>();
   @state() private probing: OperationKey | null = null;
@@ -608,14 +613,28 @@ export class JoeBatteryControl extends LitElement {
     try {
       const result = await hass.callWS<BatteryPreview>({ type: "energy_joe/battery/preview", battery_id: batteryId, draft });
       if (seq !== this.previewSeq) return;
+      if (result?.error) {
+        // A draft the backend cannot read, or a preview that failed: an answer, not an exception.
+        this.previewFailure = { error: result.error, code: result.code, detail: result.detail };
+        this.previewState = "error";
+        return;
+      }
       this.preview = result;
-      this.previewError = result?.error ?? "";
-      this.previewState = this.previewError ? "error" : "ok";
+      this.previewFailure = null;
+      this.previewState = "ok";
     } catch (err) {
       if (seq !== this.previewSeq) return;
-      this.previewError = messageOf(err);
+      this.previewFailure = { error: messageOf(err) };
       this.previewState = "error";
     }
+  }
+
+  /** The preview's failure in the owner's words (by its code), else with the backend's message. */
+  private failureText(t: Translate): string {
+    const failure = this.previewFailure;
+    if (!failure) return "";
+    const detail = failure.detail || failure.error;
+    return (failure.code && t.optional(`preview.error.${failure.code}`, { detail })) || t("preview.error", { error: failure.error });
   }
 
   // --- Rendering ---
@@ -684,13 +703,11 @@ export class JoeBatteryControl extends LitElement {
 
   private renderOperations(t: Translate, value: ControlValue): TemplateResult {
     const loading = this.previewState === "loading";
-    const error = this.previewState === "error" ? this.previewError : "";
+    const error = this.previewState === "error" ? this.failureText(t) : "";
     return html`<div class="sub" data-tipped>${t("preview.title")} ${tip(t, "operations")}</div>
       ${this.choice === "steps" ? html`<p class="field-hint hint">${t("preview.steps_tab")}</p>` : nothing}
       ${this.dirty ? html`<p class="field-hint hint" role="status">${t("preview.dirty")}</p>` : nothing}
-      ${error
-        ? html`<div class="note warn" role="status"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${t("preview.error", { error })}</span></div>`
-        : nothing}
+      ${error ? html`<div class="note warn" role="status"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${error}</span></div>` : nothing}
       ${loading ? html`<p class="field-hint hint" role="status">${t("preview.loading")}</p>` : nothing}
       <div class="ops">${this.operations(value).map((info) => this.renderOperation(t, value, info))}</div>`;
   }
@@ -747,7 +764,7 @@ export class JoeBatteryControl extends LitElement {
       case "own":
         return html`<span class="chip user">${t("op.source.own")}</span>`;
       case "service":
-        return html`<span class="chip read">${t("op.source.service")}</span>`;
+        return html`<span class="chip read">${t("op.source.service", { name: this.profileName })}</span>`;
       default:
         return nothing;
     }
@@ -763,11 +780,14 @@ export class JoeBatteryControl extends LitElement {
       case "hold":
         return p.floor != null ? t("op.example.hold", { floor: n(p.floor) }) : "";
       case "cap": {
-        // A limit in W or in %: what the steps write decides, else what the example brings.
-        const inWatts = info.steps.some((s) => s.value === "{power}" || s.unit === "W" || s.unit === "kW");
-        const inPercent = info.steps.some((s) => s.value === "{percent}" || s.unit === "%");
-        if ((inWatts && !inPercent && p.power_w != null) || (p.percent == null && p.power_w != null)) {
-          return t("op.example.cap.power", { power: n(p.power_w) });
+        // The cap is a share of the highest charging power ({percent}) or that share in W: the
+        // step that stands for it says which, with the value the backend worked out.
+        const step = info.steps.find((s) => s.kind === "set" && (s.param === "power" || s.param === "percent"));
+        if (step?.param === "power" && typeof step.value === "number") {
+          return t("op.example.cap.power", { power: n(step.value) });
+        }
+        if (step?.param === "power" && p.power_w != null && p.percent != null) {
+          return t("op.example.cap.power", { power: n((p.power_w * p.percent) / 100) });
         }
         return p.percent != null ? t("op.example.cap.percent", { percent: n(p.percent) }) : "";
       }
@@ -813,7 +833,9 @@ export class JoeBatteryControl extends LitElement {
               (item, index) => html`<li>
                 <span class="n">${index + 1}.</span>
                 <span class="what"
-                  ><b>${item.name || entityName(hass, item.entity_id)}</b><span class="arrow">→</span
+                  >${item.role ? html`<span class="role">${t.optional(`role.${item.role}`) ?? item.role} · </span>` : nothing}<b
+                    >${item.name || entityName(hass, item.entity_id)}</b
+                  ><span class="arrow">→</span
                   ><b>${item.value === "saved" ? t("op.step.saved") : this.valueText(t, item.value, this.unitOf(item.entity_id), params)}</b>
                   ${item.current != null
                     ? html` <span class="now">(${t("op.step.now", { value: this.currentText(t, item.current, this.unitOf(item.entity_id)) })})</span>`
@@ -833,7 +855,10 @@ export class JoeBatteryControl extends LitElement {
     const hass = this.hass!;
     if (step.kind === "call" || step.service) {
       const data = Object.entries(step.data ?? {}).filter(([key]) => key !== "device_id" && key !== "entity_id");
-      const parts = data.map(([key, value]) => `${t.optional(`op.data.${key}`) ?? key} ${this.valueText(t, value as never, undefined, params)}`);
+      // "Ziel 80 % · Leistung 2.000 W": the unit a field of the service takes, where the panel knows it.
+      const parts = data.map(
+        ([key, value]) => `${t.optional(`op.data.${key}`) ?? key} ${this.valueText(t, value as never, t.optional(`op.data.unit.${key}`), params)}`,
+      );
       return html`<b>${t("op.step.service", { service: step.service ?? "" })}</b>${parts.length ? html` <span class="now">(${parts.join(" · ")})</span>` : nothing}`;
     }
     const role = step.role && step.role !== "prepare" ? (t.optional(`role.${step.role}`) ?? step.role) : "";
@@ -896,22 +921,34 @@ export class JoeBatteryControl extends LitElement {
   private renderActions(t: Translate, info: PreviewOperation, hasOwn: boolean, editing: boolean): TemplateResult {
     const op = info.op;
     const editable = EDITABLE.has(op);
-    const canProbe = info.possible && !this.dirty && !this.probing && !editing;
+    // A probe of this operation going on: started here, or by another session (control.probe_running).
+    const elsewhere = this.probeRunning && this.battery && this.probeRunning.battery === this.battery.id ? this.probeRunning.op : null;
+    const running = this.probing === op || elsewhere === op;
+    // While any probe or a test run goes on, no other probe starts (the backend says "busy" too).
+    const blocked = Boolean(this.probing || this.probeRunning || this.busy);
+    // Nothing of its own to write (the release without own steps): nothing to probe.
+    const nothingToProbe = info.possible && !info.steps.length;
+    const canProbe = info.possible && !nothingToProbe && !this.dirty && !blocked && !editing;
     const last = this.lastProbe(op);
     const back: TipName = "own_back";
     const backLabel = this.choice === "steps" ? t("op.own.back.steps") : this.choice === "generic" ? t("op.own.back.generic") : t("op.own.back.profile");
     return html`<div class="op-actions" data-tipped>
-      ${this.probing === op
+      ${running
         ? html`<span class="chip">${t("op.probe.running")}</span>`
-        : html`<button type="button" class="mini-btn" ?disabled=${!canProbe} @click=${() => this.probe(op)}>
-            <ha-icon icon="mdi:test-tube"></ha-icon>${t("op.probe")}
-          </button>`}
+        : nothingToProbe
+          ? html`<span class="last">${t("op.probe.nothing")}</span>`
+          : html`<button type="button" class="mini-btn" ?disabled=${!canProbe} @click=${() => this.probe(op)}>
+              <ha-icon icon="mdi:test-tube"></ha-icon>${t("op.probe")}
+            </button>`}
       ${tip(t, "probe")}
-      <span class="last ${last ? (last.ok ? "ok" : "bad") : ""}">
-        ${last
-          ? t(last.ok ? "op.probe.last.ok" : "op.probe.last.failed", { when: `${dayText(t.lang, last.at, "short")}, ${timeOf(last.at)}` })
-          : t("op.probe.never")}
-      </span>
+      ${nothingToProbe
+        ? nothing
+        : html`<span class="last ${last ? (last.ok ? "ok" : "bad") : ""}">
+            ${last
+              ? t(last.ok ? "op.probe.last.ok" : "op.probe.last.failed", { when: `${dayText(t.lang, last.at, "short")}, ${timeOf(last.at)}` })
+              : t("op.probe.never")}
+          </span>`}
+      ${blocked && !running && info.possible && !nothingToProbe ? html`<span class="last" role="status">${t("op.probe.busy")}</span>` : nothing}
       ${editable
         ? editing
           ? html`<button type="button" class="mini-btn go" @click=${() => this.stopEditing(op)}>${t("op.own.done")}</button>
@@ -1067,7 +1104,7 @@ export class JoeBatteryControl extends LitElement {
   private async probe(op: OperationKey): Promise<void> {
     const hass = this.hass;
     const battery = this.battery;
-    if (!hass || !battery || this.probing) {
+    if (!hass || !battery || this.probing || this.probeRunning || this.busy) {
       return;
     }
     this.probing = op;
@@ -1096,11 +1133,10 @@ export class JoeBatteryControl extends LitElement {
     if (!result) {
       return nothing;
     }
-    const problem = result.problem
-      ? (t.optional(`op.probe.problem.${result.problem}`) ?? t("op.probe.problem.other", { code: result.problem }))
-      : "";
+    const problem = result.problem ? this.problemText(t, result) : "";
     const nameOf = (step: { entity_id?: string; service?: string }) =>
       step.service ? t("op.step.service", { service: step.service }) : step.entity_id ? entityName(hass, step.entity_id) : "";
+    const power = result.power_kw != null && Math.abs(result.power_kw) < 0.005 ? 0 : result.power_kw;
     return html`<div class="probe ${result.ok ? "ok" : "bad"}" role="status">
       ${problem ? html`<p class="problem">${problem}</p>` : nothing}
       ${result.steps?.length || !problem
@@ -1108,13 +1144,19 @@ export class JoeBatteryControl extends LitElement {
             ${(result.steps ?? []).map((step) => {
               const good = step.taken && !step.error;
               const unit = this.unitOf(step.entity_id);
-              const parts = [
-                t("op.probe.wrote", {
-                  wrote: this.valueText(t, step.wrote, unit, {}),
-                  read: step.read == null ? "–" : this.currentText(t, String(step.read), unit),
-                }),
-                step.error ? t("op.probe.error", { error: t.optional(`devices.problem.${step.error}`) ?? step.error }) : t(good ? "op.probe.taken" : "op.probe.not_taken"),
-              ];
+              const outcome = step.error
+                ? t("op.probe.error", { error: t.optional(`devices.problem.${step.error}`) ?? step.error })
+                : t(good ? (step.service ? "op.probe.call_taken" : "op.probe.taken") : "op.probe.not_taken");
+              // A service call writes no value to read back: only whether it went through.
+              const parts = step.service
+                ? [outcome]
+                : [
+                    t("op.probe.wrote", {
+                      wrote: this.valueText(t, step.wrote, unit, {}),
+                      read: step.read == null ? "–" : this.currentText(t, String(step.read), unit),
+                    }),
+                    outcome,
+                  ];
               return html`<li class=${good ? "ok" : "bad"}>
                 <ha-icon icon=${good ? "mdi:check-circle" : "mdi:close-circle"}></ha-icon>
                 <span><b>${nameOf(step)}</b><small>${parts.join(" · ")}</small></span>
@@ -1130,8 +1172,20 @@ export class JoeBatteryControl extends LitElement {
             </li>
           </ul>`
         : nothing}
-      ${result.power_kw != null ? html`<small>${t("devices.test.power", { value: formatNumber(t.lang, result.power_kw, 2) })}</small>` : nothing}
+      ${power != null ? html`<small>${t("devices.test.power", { value: formatNumber(t.lang, power, 2) })}</small>` : nothing}
     </div>`;
+  }
+
+  /** Why a probe was refused or could not run, in the owner's words (with the operation's reason or the missing levers). */
+  private problemText(t: Translate, result: ProbeResult): string {
+    const code = result.problem ?? "";
+    if (code === "not_possible" && result.why) {
+      return `${t("op.probe.problem.not_possible")} ${this.whyText(t, result.why)}`;
+    }
+    if (code === "controls_missing" && result.missing?.length) {
+      return t("op.probe.problem.controls_missing.list", { missing: result.missing.map((role) => t.optional(`role.${role}`) ?? role).join(", ") });
+    }
+    return t.optional(`op.probe.problem.${code}`) ?? t("op.probe.problem.other", { code });
   }
 
   // --- The assignment of the levers ---
@@ -1233,7 +1287,7 @@ export class JoeBatteryControl extends LitElement {
             <span class="entity">
               ${entityId
                 ? html`<b>${entityName(hass, entityId)}</b><small>${formatState(hass, entityId, t.lang)}</small>`
-                : html`<small>${t("find.none")}</small>`}
+                : html`<small>${t("roles.unassigned")}</small>`}
               ${row.deviates && row.found && row.found !== entityId
                 ? html`<small class="found">${t("roles.by_profile", { name: entityName(hass, row.found) })}</small>`
                 : nothing}

@@ -1,0 +1,3295 @@
+{
+ "battery": {
+  "id": "venus",
+  "name": "Marstek Venus E",
+  "adapter": "omnibattery",
+  "soc_entity": "sensor.venus_soc",
+  "power": {
+   "entity_id": "sensor.venus_ac_power",
+   "invert": true,
+   "minus_entity_id": null
+  },
+  "capacity_kwh": 5.12,
+  "capacity_entity": "sensor.venus_total_energy",
+  "max_charge_w": 2500.0,
+  "max_discharge_w": null,
+  "device_id": "venus",
+  "controls": {
+   "mode": "select.venus_force_mode",
+   "charge_power": "number.venus_charge_power",
+   "min_soc": "number.venus_discharge_cutoff",
+   "system_charge_limit": "number.omnibattery_system_max_charge_power",
+   "system_charge_limit_enabled": "switch.omnibattery_system_power_limits",
+   "system_discharge_limit": "number.omnibattery_system_max_discharge_power",
+   "system_manual_mode": "switch.omnibattery_system_manual_mode",
+   "allow_charge": "switch.marstek_venus_e_3_0_battery_allow_charge",
+   "allow_discharge": "switch.marstek_venus_e_3_0_battery_allow_discharge"
+  },
+  "mode_options": {
+   "normal": "None",
+   "force_charge": "Charge",
+   "force_discharge": "Discharge"
+  },
+  "prepare": [
+   {
+    "entity_id": "switch.venus_battery_manual_mode",
+    "value": true
+   }
+  ],
+  "steps": {},
+  "priority": 2,
+  "floor_soc": null,
+  "day_surplus": true,
+  "limit_ref_w": null,
+  "self_regulating": null,
+  "control_group": null,
+  "night_cap": null,
+  "cutoff_soc": null
+ },
+ "finding": {
+  "id": "venus",
+  "name": "Marstek Venus E",
+  "device_id": "venus",
+  "integration": "omnibattery",
+  "soc": {
+   "entity_id": "sensor.venus_soc",
+   "name": "Venus Battery SoC",
+   "area": null,
+   "device": "Marstek Venus E",
+   "value": 40.0,
+   "unit": "%",
+   "integration": "omnibattery"
+  },
+  "soc_entity": "sensor.venus_soc",
+  "power": {
+   "entity_id": "sensor.venus_ac_power",
+   "invert": true,
+   "minus_entity_id": null
+  },
+  "capacity_kwh": 5.12,
+  "capacity_entity": "sensor.venus_total_energy",
+  "max_charge_w": 2500.0,
+  "max_discharge_w": null,
+  "adapter": "omnibattery",
+  "controls": {
+   "mode": "select.venus_force_mode",
+   "charge_power": "number.venus_charge_power",
+   "min_soc": "number.venus_discharge_cutoff",
+   "system_charge_limit": "number.omnibattery_system_max_charge_power",
+   "system_charge_limit_enabled": "switch.omnibattery_system_power_limits",
+   "system_discharge_limit": "number.omnibattery_system_max_discharge_power",
+   "system_manual_mode": "switch.omnibattery_system_manual_mode",
+   "allow_charge": "switch.marstek_venus_e_3_0_battery_allow_charge",
+   "allow_discharge": "switch.marstek_venus_e_3_0_battery_allow_discharge"
+  },
+  "mode_options": {
+   "normal": "None",
+   "force_charge": "Charge",
+   "force_discharge": "Discharge"
+  },
+  "prepare": [
+   {
+    "entity_id": "switch.venus_battery_manual_mode",
+    "value": true
+   }
+  ],
+  "steps": {},
+  "controllable": true,
+  "can_charge": true,
+  "suggested": null,
+  "unsure": [],
+  "confidence": 0.95,
+  "reasons": [
+   {
+    "code": "integration_key",
+    "integration": "omnibattery"
+   },
+   {
+    "code": "capacity_read"
+   },
+   {
+    "code": "controls_found",
+    "count": 9
+   }
+  ],
+  "notes": []
+ },
+ "hass": {
+  "states": {
+   "sensor.solarnet_power_grid": {
+    "entity_id": "sensor.solarnet_power_grid",
+    "state": "-60",
+    "attributes": {
+     "friendly_name": "SolarNet Grid",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.solarnet_power_load_consumed": {
+    "entity_id": "sensor.solarnet_power_load_consumed",
+    "state": "1500",
+    "attributes": {
+     "friendly_name": "SolarNet Consumption",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.solarnet_power_load": {
+    "entity_id": "sensor.solarnet_power_load",
+    "state": "-1500",
+    "attributes": {
+     "friendly_name": "SolarNet Load",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.solarnet_power_photovoltaics": {
+    "entity_id": "sensor.solarnet_power_photovoltaics",
+    "state": "3000",
+    "attributes": {
+     "friendly_name": "SolarNet PV",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.solarnet_power_battery": {
+    "entity_id": "sensor.solarnet_power_battery",
+    "state": "-1450",
+    "attributes": {
+     "friendly_name": "SolarNet Battery",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.storage_soc": {
+    "entity_id": "sensor.storage_soc",
+    "state": "55",
+    "attributes": {
+     "friendly_name": "Storage State of charge",
+     "unit_of_measurement": "%",
+     "device_class": "battery"
+    }
+   },
+   "sensor.storage_capacity": {
+    "entity_id": "sensor.storage_capacity",
+    "state": "10240",
+    "attributes": {
+     "friendly_name": "Storage Maximum capacity",
+     "unit_of_measurement": "Wh"
+    }
+   },
+   "number.inverter_minimum_reserve": {
+    "entity_id": "number.inverter_minimum_reserve",
+    "state": "5",
+    "attributes": {
+     "friendly_name": "Minimum reserve",
+     "unit_of_measurement": "%",
+     "min": 0,
+     "max": 100,
+     "step": 1
+    }
+   },
+   "switch.inverter_grid_charging": {
+    "entity_id": "switch.inverter_grid_charging",
+    "state": "on",
+    "attributes": {
+     "friendly_name": "Grid charging"
+    }
+   },
+   "number.inverter_charge_limit": {
+    "entity_id": "number.inverter_charge_limit",
+    "state": "100",
+    "attributes": {
+     "friendly_name": "Charge limit",
+     "unit_of_measurement": "%",
+     "min": 0,
+     "max": 100,
+     "step": 1
+    }
+   },
+   "switch.inverter_charge_limit_enabled": {
+    "entity_id": "switch.inverter_charge_limit_enabled",
+    "state": "off",
+    "attributes": {
+     "friendly_name": "Charge limit active"
+    }
+   },
+   "sensor.venus_soc": {
+    "entity_id": "sensor.venus_soc",
+    "state": "40",
+    "attributes": {
+     "friendly_name": "Venus Battery SoC",
+     "unit_of_measurement": "%",
+     "device_class": "battery"
+    }
+   },
+   "sensor.venus_ac_power": {
+    "entity_id": "sensor.venus_ac_power",
+    "state": "0",
+    "attributes": {
+     "friendly_name": "Venus AC power",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.venus_total_energy": {
+    "entity_id": "sensor.venus_total_energy",
+    "state": "5.12",
+    "attributes": {
+     "friendly_name": "Venus Total energy",
+     "unit_of_measurement": "kWh",
+     "device_class": "energy"
+    }
+   },
+   "select.venus_force_mode": {
+    "entity_id": "select.venus_force_mode",
+    "state": "None",
+    "attributes": {
+     "friendly_name": "Venus Force mode",
+     "options": [
+      "None",
+      "Charge",
+      "Discharge"
+     ]
+    }
+   },
+   "number.venus_charge_power": {
+    "entity_id": "number.venus_charge_power",
+    "state": "0",
+    "attributes": {
+     "friendly_name": "Venus Charge power",
+     "unit_of_measurement": "W",
+     "min": 0,
+     "max": 2500,
+     "step": 50
+    }
+   },
+   "number.venus_discharge_cutoff": {
+    "entity_id": "number.venus_discharge_cutoff",
+    "state": "12",
+    "attributes": {
+     "friendly_name": "Venus Discharge cutoff",
+     "unit_of_measurement": "%",
+     "min": 12,
+     "max": 50,
+     "step": 1
+    }
+   },
+   "number.venus_max_charge": {
+    "entity_id": "number.venus_max_charge",
+    "state": "2500",
+    "attributes": {
+     "friendly_name": "Venus Max charge power",
+     "unit_of_measurement": "W"
+    }
+   },
+   "sensor.house_meter_power": {
+    "entity_id": "sensor.house_meter_power",
+    "state": "-60",
+    "attributes": {
+     "friendly_name": "Meter power",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.house_power": {
+    "entity_id": "sensor.house_power",
+    "state": "1400",
+    "attributes": {
+     "friendly_name": "House power",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.fs_east_today": {
+    "entity_id": "sensor.fs_east_today",
+    "state": "12.5",
+    "attributes": {
+     "friendly_name": "East today",
+     "unit_of_measurement": "kWh",
+     "device_class": "energy"
+    }
+   },
+   "sensor.fs_east_tomorrow": {
+    "entity_id": "sensor.fs_east_tomorrow",
+    "state": "11.0",
+    "attributes": {
+     "friendly_name": "East tomorrow",
+     "unit_of_measurement": "kWh",
+     "device_class": "energy"
+    }
+   },
+   "sensor.fs_east_remaining": {
+    "entity_id": "sensor.fs_east_remaining",
+    "state": "9.3",
+    "attributes": {
+     "friendly_name": "East remaining",
+     "unit_of_measurement": "kWh",
+     "device_class": "energy"
+    }
+   },
+   "sensor.fs_east_power_now": {
+    "entity_id": "sensor.fs_east_power_now",
+    "state": "1150",
+    "attributes": {
+     "friendly_name": "East estimated power now",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.fs_west_today": {
+    "entity_id": "sensor.fs_west_today",
+    "state": "16.5",
+    "attributes": {
+     "friendly_name": "West today",
+     "unit_of_measurement": "kWh",
+     "device_class": "energy"
+    }
+   },
+   "sensor.fs_west_tomorrow": {
+    "entity_id": "sensor.fs_west_tomorrow",
+    "state": "16.3",
+    "attributes": {
+     "friendly_name": "West tomorrow",
+     "unit_of_measurement": "kWh",
+     "device_class": "energy"
+    }
+   },
+   "sensor.octopus_price": {
+    "entity_id": "sensor.octopus_price",
+    "state": "0.285719",
+    "attributes": {
+     "friendly_name": "Electricity price",
+     "unit_of_measurement": "€/kWh",
+     "device_class": "monetary",
+     "timeslots": [
+      {
+       "name": "GO",
+       "rate": "18.564",
+       "activation_rules": [
+        {
+         "from_time": "00:00:00",
+         "to_time": "05:00:00"
+        }
+       ]
+      },
+      {
+       "name": "STANDARD",
+       "rate": "28.5719",
+       "activation_rules": [
+        {
+         "from_time": "05:00:00",
+         "to_time": "00:00:00"
+        }
+       ]
+      }
+     ],
+     "rates": [],
+     "unit_rate_forecast": []
+    }
+   },
+   "select.evcc_carport_mode": {
+    "entity_id": "select.evcc_carport_mode",
+    "state": "pv",
+    "attributes": {
+     "friendly_name": "Carport mode",
+     "options": [
+      "off",
+      "pv",
+      "minpv",
+      "now"
+     ]
+    }
+   },
+   "binary_sensor.evcc_carport_connected": {
+    "entity_id": "binary_sensor.evcc_carport_connected",
+    "state": "on",
+    "attributes": {
+     "friendly_name": "Carport connected"
+    }
+   },
+   "sensor.evcc_carport_charge_power": {
+    "entity_id": "sensor.evcc_carport_charge_power",
+    "state": "0",
+    "attributes": {
+     "friendly_name": "Carport charge power",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "select.evcc_floor_mode": {
+    "entity_id": "select.evcc_floor_mode",
+    "state": "pv",
+    "attributes": {
+     "friendly_name": "Floor heating mode",
+     "options": [
+      "off",
+      "pv",
+      "minpv",
+      "now"
+     ]
+    }
+   },
+   "sensor.evcc_floor_vehicle_soc": {
+    "entity_id": "sensor.evcc_floor_vehicle_soc",
+    "state": "26.9",
+    "attributes": {
+     "friendly_name": "Floor heating vehicle soc",
+     "unit_of_measurement": "°C",
+     "device_class": "temperature"
+    }
+   },
+   "sensor.ww_speicher_temperatur": {
+    "entity_id": "sensor.ww_speicher_temperatur",
+    "state": "52.5",
+    "attributes": {
+     "friendly_name": "Warmwasserspeicher Temperatur",
+     "unit_of_measurement": "°C",
+     "device_class": "temperature"
+    }
+   },
+   "sensor.ww_zirkulation_temperatur": {
+    "entity_id": "sensor.ww_zirkulation_temperatur",
+    "state": "47.0",
+    "attributes": {
+     "friendly_name": "Warmwasser Zirkulation Temperatur",
+     "unit_of_measurement": "°C",
+     "device_class": "temperature"
+    }
+   },
+   "switch.ww_boost": {
+    "entity_id": "switch.ww_boost",
+    "state": "off",
+    "attributes": {
+     "friendly_name": "Warmwasser Boost"
+    }
+   },
+   "weather.home": {
+    "entity_id": "weather.home",
+    "state": "sunny",
+    "attributes": {
+     "friendly_name": "Home",
+     "supported_features": 3
+    }
+   },
+   "person.alex": {
+    "entity_id": "person.alex",
+    "state": "home",
+    "attributes": {
+     "friendly_name": "Alex"
+    }
+   },
+   "person.sam": {
+    "entity_id": "person.sam",
+    "state": "not_home",
+    "attributes": {
+     "friendly_name": "Sam"
+    }
+   },
+   "calendar.alex_work": {
+    "entity_id": "calendar.alex_work",
+    "state": "off",
+    "attributes": {
+     "friendly_name": "Alex Arbeit"
+    }
+   },
+   "calendar.family": {
+    "entity_id": "calendar.family",
+    "state": "off",
+    "attributes": {
+     "friendly_name": "Familie"
+    }
+   },
+   "binary_sensor.workday": {
+    "entity_id": "binary_sensor.workday",
+    "state": "on",
+    "attributes": {
+     "friendly_name": "Workday"
+    }
+   },
+   "sensor.battery_total_soc": {
+    "entity_id": "sensor.battery_total_soc",
+    "state": "48",
+    "attributes": {
+     "friendly_name": "Total SoC",
+     "unit_of_measurement": "%",
+     "device_class": "battery"
+    }
+   },
+   "sensor.window_battery": {
+    "entity_id": "sensor.window_battery",
+    "state": "90",
+    "attributes": {
+     "friendly_name": "Fenster Bad Batterie",
+     "unit_of_measurement": "%",
+     "device_class": "battery"
+    }
+   },
+   "sensor.ev_battery": {
+    "entity_id": "sensor.ev_battery",
+    "state": "23",
+    "attributes": {
+     "friendly_name": "EV Battery Level",
+     "unit_of_measurement": "%",
+     "device_class": "battery"
+    }
+   },
+   "sensor.ev_range": {
+    "entity_id": "sensor.ev_range",
+    "state": "214",
+    "attributes": {
+     "friendly_name": "EV Range",
+     "unit_of_measurement": "km",
+     "device_class": "distance"
+    }
+   },
+   "sensor.ev_battery_capacity": {
+    "entity_id": "sensor.ev_battery_capacity",
+    "state": "280800",
+    "attributes": {
+     "friendly_name": "EV Battery Capacity",
+     "unit_of_measurement": "kJ"
+    }
+   },
+   "sensor.ev_odometer": {
+    "entity_id": "sensor.ev_odometer",
+    "state": "23456",
+    "attributes": {
+     "friendly_name": "EV Odometer",
+     "unit_of_measurement": "km",
+     "device_class": "distance"
+    }
+   },
+   "binary_sensor.ev_plugged_in": {
+    "entity_id": "binary_sensor.ev_plugged_in",
+    "state": "on",
+    "attributes": {
+     "friendly_name": "EV Plugged In"
+    }
+   },
+   "sensor.ev_charging_power": {
+    "entity_id": "sensor.ev_charging_power",
+    "state": "0",
+    "attributes": {
+     "friendly_name": "EV Charging Power",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.network_power": {
+    "entity_id": "sensor.network_power",
+    "state": "45",
+    "attributes": {
+     "friendly_name": "Netzwerk Leistung",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.phone_battery": {
+    "entity_id": "sensor.phone_battery",
+    "state": "80",
+    "attributes": {
+     "friendly_name": "Phone battery",
+     "unit_of_measurement": "%",
+     "device_class": "battery"
+    }
+   },
+   "switch.venus_battery_manual_mode": {
+    "entity_id": "switch.venus_battery_manual_mode",
+    "state": "off",
+    "attributes": {
+     "friendly_name": "Venus Manual mode"
+    }
+   },
+   "switch.marstek_venus_e_3_0_battery_allow_charge": {
+    "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+    "state": "on",
+    "attributes": {
+     "friendly_name": "Venus Allow charge"
+    }
+   },
+   "switch.marstek_venus_e_3_0_battery_allow_discharge": {
+    "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+    "state": "on",
+    "attributes": {
+     "friendly_name": "Venus Allow discharge"
+    }
+   },
+   "switch.omnibattery_system_power_limits": {
+    "entity_id": "switch.omnibattery_system_power_limits",
+    "state": "off",
+    "attributes": {
+     "friendly_name": "Omnibattery System Power limits"
+    }
+   },
+   "number.omnibattery_system_max_charge_power": {
+    "entity_id": "number.omnibattery_system_max_charge_power",
+    "state": "2500",
+    "attributes": {
+     "friendly_name": "Omnibattery System Max charge power",
+     "unit_of_measurement": "W",
+     "min": 0,
+     "max": 2500,
+     "step": 50
+    }
+   },
+   "number.omnibattery_system_max_discharge_power": {
+    "entity_id": "number.omnibattery_system_max_discharge_power",
+    "state": "2500",
+    "attributes": {
+     "friendly_name": "Omnibattery System Max discharge power",
+     "unit_of_measurement": "W",
+     "min": 0,
+     "max": 2500,
+     "step": 50
+    }
+   },
+   "switch.omnibattery_system_manual_mode": {
+    "entity_id": "switch.omnibattery_system_manual_mode",
+    "state": "off",
+    "attributes": {
+     "friendly_name": "Omnibattery System Manual mode"
+    }
+   }
+  },
+  "entities": {
+   "sensor.solarnet_power_grid": {
+    "entity_id": "sensor.solarnet_power_grid",
+    "device_id": "flow",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "sensor.solarnet_power_load_consumed": {
+    "entity_id": "sensor.solarnet_power_load_consumed",
+    "device_id": "flow",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "sensor.solarnet_power_load": {
+    "entity_id": "sensor.solarnet_power_load",
+    "device_id": "flow",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "sensor.solarnet_power_photovoltaics": {
+    "entity_id": "sensor.solarnet_power_photovoltaics",
+    "device_id": "flow",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "sensor.solarnet_power_battery": {
+    "entity_id": "sensor.solarnet_power_battery",
+    "device_id": "flow",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "sensor.storage_soc": {
+    "entity_id": "sensor.storage_soc",
+    "device_id": "storage",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "sensor.storage_capacity": {
+    "entity_id": "sensor.storage_capacity",
+    "device_id": "storage",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "number.inverter_minimum_reserve": {
+    "entity_id": "number.inverter_minimum_reserve",
+    "device_id": "inverter",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "switch.inverter_grid_charging": {
+    "entity_id": "switch.inverter_grid_charging",
+    "device_id": "inverter",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "number.inverter_charge_limit": {
+    "entity_id": "number.inverter_charge_limit",
+    "device_id": "inverter",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "switch.inverter_charge_limit_enabled": {
+    "entity_id": "switch.inverter_charge_limit_enabled",
+    "device_id": "inverter",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "sensor.venus_soc": {
+    "entity_id": "sensor.venus_soc",
+    "device_id": "venus",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "sensor.venus_ac_power": {
+    "entity_id": "sensor.venus_ac_power",
+    "device_id": "venus",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "sensor.venus_total_energy": {
+    "entity_id": "sensor.venus_total_energy",
+    "device_id": "venus",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "select.venus_force_mode": {
+    "entity_id": "select.venus_force_mode",
+    "device_id": "venus",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "number.venus_charge_power": {
+    "entity_id": "number.venus_charge_power",
+    "device_id": "venus",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "number.venus_discharge_cutoff": {
+    "entity_id": "number.venus_discharge_cutoff",
+    "device_id": "venus",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "number.venus_max_charge": {
+    "entity_id": "number.venus_max_charge",
+    "device_id": "venus",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "sensor.house_meter_power": {
+    "entity_id": "sensor.house_meter_power",
+    "device_id": "meter",
+    "area_id": null,
+    "platform": "tasmota"
+   },
+   "sensor.house_power": {
+    "entity_id": "sensor.house_power",
+    "device_id": "em",
+    "area_id": null,
+    "platform": "shelly"
+   },
+   "sensor.fs_east_today": {
+    "entity_id": "sensor.fs_east_today",
+    "device_id": null,
+    "area_id": null,
+    "platform": "forecast_solar"
+   },
+   "sensor.fs_east_tomorrow": {
+    "entity_id": "sensor.fs_east_tomorrow",
+    "device_id": null,
+    "area_id": null,
+    "platform": "forecast_solar"
+   },
+   "sensor.fs_east_remaining": {
+    "entity_id": "sensor.fs_east_remaining",
+    "device_id": null,
+    "area_id": null,
+    "platform": "forecast_solar"
+   },
+   "sensor.fs_east_power_now": {
+    "entity_id": "sensor.fs_east_power_now",
+    "device_id": null,
+    "area_id": null,
+    "platform": "forecast_solar"
+   },
+   "sensor.fs_west_today": {
+    "entity_id": "sensor.fs_west_today",
+    "device_id": null,
+    "area_id": null,
+    "platform": "forecast_solar"
+   },
+   "sensor.fs_west_tomorrow": {
+    "entity_id": "sensor.fs_west_tomorrow",
+    "device_id": null,
+    "area_id": null,
+    "platform": "forecast_solar"
+   },
+   "sensor.octopus_price": {
+    "entity_id": "sensor.octopus_price",
+    "device_id": null,
+    "area_id": null,
+    "platform": "octopus_germany"
+   },
+   "select.evcc_carport_mode": {
+    "entity_id": "select.evcc_carport_mode",
+    "device_id": "carport",
+    "area_id": null,
+    "platform": "evcc_intg"
+   },
+   "binary_sensor.evcc_carport_connected": {
+    "entity_id": "binary_sensor.evcc_carport_connected",
+    "device_id": "carport",
+    "area_id": null,
+    "platform": "evcc_intg"
+   },
+   "sensor.evcc_carport_charge_power": {
+    "entity_id": "sensor.evcc_carport_charge_power",
+    "device_id": "carport",
+    "area_id": null,
+    "platform": "evcc_intg"
+   },
+   "select.evcc_floor_mode": {
+    "entity_id": "select.evcc_floor_mode",
+    "device_id": "floor",
+    "area_id": null,
+    "platform": "evcc_intg"
+   },
+   "sensor.evcc_floor_vehicle_soc": {
+    "entity_id": "sensor.evcc_floor_vehicle_soc",
+    "device_id": "floor",
+    "area_id": null,
+    "platform": "evcc_intg"
+   },
+   "sensor.ww_speicher_temperatur": {
+    "entity_id": "sensor.ww_speicher_temperatur",
+    "device_id": null,
+    "area_id": null,
+    "platform": "shelly"
+   },
+   "sensor.ww_zirkulation_temperatur": {
+    "entity_id": "sensor.ww_zirkulation_temperatur",
+    "device_id": null,
+    "area_id": null,
+    "platform": "shelly"
+   },
+   "switch.ww_boost": {
+    "entity_id": "switch.ww_boost",
+    "device_id": null,
+    "area_id": null,
+    "platform": "shelly"
+   },
+   "weather.home": {
+    "entity_id": "weather.home",
+    "device_id": null,
+    "area_id": null,
+    "platform": "met"
+   },
+   "person.alex": {
+    "entity_id": "person.alex",
+    "device_id": null,
+    "area_id": null,
+    "platform": null
+   },
+   "person.sam": {
+    "entity_id": "person.sam",
+    "device_id": null,
+    "area_id": null,
+    "platform": null
+   },
+   "calendar.alex_work": {
+    "entity_id": "calendar.alex_work",
+    "device_id": null,
+    "area_id": null,
+    "platform": "local_calendar"
+   },
+   "calendar.family": {
+    "entity_id": "calendar.family",
+    "device_id": null,
+    "area_id": null,
+    "platform": "local_calendar"
+   },
+   "binary_sensor.workday": {
+    "entity_id": "binary_sensor.workday",
+    "device_id": null,
+    "area_id": null,
+    "platform": "workday"
+   },
+   "sensor.battery_total_soc": {
+    "entity_id": "sensor.battery_total_soc",
+    "device_id": null,
+    "area_id": null,
+    "platform": "template"
+   },
+   "sensor.window_battery": {
+    "entity_id": "sensor.window_battery",
+    "device_id": "window",
+    "area_id": null,
+    "platform": "acme_sensors"
+   },
+   "sensor.ev_battery": {
+    "entity_id": "sensor.ev_battery",
+    "device_id": "car",
+    "area_id": null,
+    "platform": "kia_uvo"
+   },
+   "sensor.ev_range": {
+    "entity_id": "sensor.ev_range",
+    "device_id": "car",
+    "area_id": null,
+    "platform": "kia_uvo"
+   },
+   "sensor.ev_battery_capacity": {
+    "entity_id": "sensor.ev_battery_capacity",
+    "device_id": "car",
+    "area_id": null,
+    "platform": "kia_uvo"
+   },
+   "sensor.ev_odometer": {
+    "entity_id": "sensor.ev_odometer",
+    "device_id": "car",
+    "area_id": null,
+    "platform": "kia_uvo"
+   },
+   "binary_sensor.ev_plugged_in": {
+    "entity_id": "binary_sensor.ev_plugged_in",
+    "device_id": "car",
+    "area_id": null,
+    "platform": "kia_uvo"
+   },
+   "sensor.ev_charging_power": {
+    "entity_id": "sensor.ev_charging_power",
+    "device_id": "car",
+    "area_id": null,
+    "platform": "kia_uvo"
+   },
+   "sensor.network_power": {
+    "entity_id": "sensor.network_power",
+    "device_id": "plug",
+    "area_id": null,
+    "platform": "tasmota"
+   },
+   "sensor.phone_battery": {
+    "entity_id": "sensor.phone_battery",
+    "device_id": "phone",
+    "area_id": null,
+    "platform": "mobile_app"
+   },
+   "switch.venus_battery_manual_mode": {
+    "entity_id": "switch.venus_battery_manual_mode",
+    "device_id": "venus",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "switch.marstek_venus_e_3_0_battery_allow_charge": {
+    "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+    "device_id": "venus",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "switch.marstek_venus_e_3_0_battery_allow_discharge": {
+    "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+    "device_id": "venus",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "switch.omnibattery_system_power_limits": {
+    "entity_id": "switch.omnibattery_system_power_limits",
+    "device_id": "omni_system",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "number.omnibattery_system_max_charge_power": {
+    "entity_id": "number.omnibattery_system_max_charge_power",
+    "device_id": "omni_system",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "number.omnibattery_system_max_discharge_power": {
+    "entity_id": "number.omnibattery_system_max_discharge_power",
+    "device_id": "omni_system",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "switch.omnibattery_system_manual_mode": {
+    "entity_id": "switch.omnibattery_system_manual_mode",
+    "device_id": "omni_system",
+    "area_id": null,
+    "platform": "omnibattery"
+   }
+  },
+  "devices": {
+   "storage": {
+    "id": "storage",
+    "name": "BYD Battery-Box Premium HV",
+    "manufacturer": "BYD",
+    "model": "Battery-Box Premium HV",
+    "area_id": null
+   },
+   "inverter": {
+    "id": "inverter",
+    "name": "Symo GEN24 10.0",
+    "manufacturer": "Fronius",
+    "model": "Symo GEN24 10.0 Plus",
+    "area_id": null
+   },
+   "flow": {
+    "id": "flow",
+    "name": "SolarNet",
+    "manufacturer": "Fronius",
+    "model": "SolarNet",
+    "area_id": null
+   },
+   "venus": {
+    "id": "venus",
+    "name": "Marstek Venus E",
+    "manufacturer": "Marstek",
+    "model": "Venus E",
+    "area_id": null
+   },
+   "carport": {
+    "id": "carport",
+    "name": "Carport",
+    "manufacturer": "evcc",
+    "model": "loadpoint",
+    "area_id": null
+   },
+   "floor": {
+    "id": "floor",
+    "name": "Floor heating",
+    "manufacturer": "evcc",
+    "model": "loadpoint",
+    "area_id": null
+   },
+   "phone": {
+    "id": "phone",
+    "name": "Alex Phone",
+    "manufacturer": "Apple",
+    "model": "iPhone",
+    "area_id": null
+   },
+   "window": {
+    "id": "window",
+    "name": "Fenster Bad",
+    "manufacturer": "Acme",
+    "model": "Window sensor",
+    "area_id": null
+   },
+   "car": {
+    "id": "car",
+    "name": "Electric car",
+    "manufacturer": "Hyundai",
+    "model": "Battery electric vehicle",
+    "area_id": null
+   },
+   "plug": {
+    "id": "plug",
+    "name": "Netzwerk",
+    "manufacturer": "Tasmota",
+    "model": "Plug",
+    "area_id": null
+   },
+   "omni_system": {
+    "id": "omni_system",
+    "name": "Omnibattery System",
+    "manufacturer": "Marstek",
+    "model": "System",
+    "area_id": null
+   }
+  },
+  "areas": {}
+ },
+ "found": {
+  "controls": {
+   "mode": "select.venus_force_mode",
+   "charge_power": "number.venus_charge_power",
+   "min_soc": "number.venus_discharge_cutoff",
+   "system_charge_limit": "number.omnibattery_system_max_charge_power",
+   "system_charge_limit_enabled": "switch.omnibattery_system_power_limits",
+   "system_discharge_limit": "number.omnibattery_system_max_discharge_power",
+   "system_manual_mode": "switch.omnibattery_system_manual_mode",
+   "allow_charge": "switch.marstek_venus_e_3_0_battery_allow_charge",
+   "allow_discharge": "switch.marstek_venus_e_3_0_battery_allow_discharge"
+  },
+  "mode_options": {
+   "normal": "None",
+   "force_charge": "Charge",
+   "force_discharge": "Discharge"
+  }
+ },
+ "adopted": {
+  "controls": {
+   "mode": "select.venus_force_mode",
+   "charge_power": "number.venus_charge_power",
+   "min_soc": "number.venus_discharge_cutoff",
+   "system_charge_limit": "number.omnibattery_system_max_charge_power",
+   "system_charge_limit_enabled": "switch.omnibattery_system_power_limits",
+   "system_discharge_limit": "number.omnibattery_system_max_discharge_power",
+   "system_manual_mode": "switch.omnibattery_system_manual_mode",
+   "allow_charge": "switch.marstek_venus_e_3_0_battery_allow_charge",
+   "allow_discharge": "switch.marstek_venus_e_3_0_battery_allow_discharge"
+  },
+  "mode_options": {
+   "normal": "None",
+   "force_charge": "Charge",
+   "force_discharge": "Discharge"
+  }
+ },
+ "battery_roles": [],
+ "variants": [
+  {
+   "name": "saved",
+   "draft": {
+    "adapter": "omnibattery",
+    "controls": {
+     "mode": "select.venus_force_mode",
+     "charge_power": "number.venus_charge_power",
+     "min_soc": "number.venus_discharge_cutoff",
+     "system_charge_limit": "number.omnibattery_system_max_charge_power",
+     "system_charge_limit_enabled": "switch.omnibattery_system_power_limits",
+     "system_discharge_limit": "number.omnibattery_system_max_discharge_power",
+     "system_manual_mode": "switch.omnibattery_system_manual_mode",
+     "allow_charge": "switch.marstek_venus_e_3_0_battery_allow_charge",
+     "allow_discharge": "switch.marstek_venus_e_3_0_battery_allow_discharge"
+    },
+    "mode_options": {
+     "normal": "None",
+     "force_charge": "Charge",
+     "force_discharge": "Discharge"
+    },
+    "steps": {},
+    "prepare": [
+     {
+      "entity_id": "switch.venus_battery_manual_mode",
+      "value": true
+     }
+    ]
+   },
+   "battery": {
+    "id": "venus",
+    "name": "Marstek Venus E",
+    "adapter": "omnibattery",
+    "soc_entity": "sensor.venus_soc",
+    "power": {
+     "entity_id": "sensor.venus_ac_power",
+     "invert": true,
+     "minus_entity_id": null
+    },
+    "capacity_kwh": 5.12,
+    "capacity_entity": "sensor.venus_total_energy",
+    "max_charge_w": 2500.0,
+    "max_discharge_w": null,
+    "device_id": "venus",
+    "controls": {
+     "mode": "select.venus_force_mode",
+     "charge_power": "number.venus_charge_power",
+     "min_soc": "number.venus_discharge_cutoff",
+     "system_charge_limit": "number.omnibattery_system_max_charge_power",
+     "system_charge_limit_enabled": "switch.omnibattery_system_power_limits",
+     "system_discharge_limit": "number.omnibattery_system_max_discharge_power",
+     "system_manual_mode": "switch.omnibattery_system_manual_mode",
+     "allow_charge": "switch.marstek_venus_e_3_0_battery_allow_charge",
+     "allow_discharge": "switch.marstek_venus_e_3_0_battery_allow_discharge"
+    },
+    "mode_options": {
+     "normal": "None",
+     "force_charge": "Charge",
+     "force_discharge": "Discharge"
+    },
+    "prepare": [
+     {
+      "entity_id": "switch.venus_battery_manual_mode",
+      "value": true
+     }
+    ],
+    "steps": {},
+    "priority": 2,
+    "floor_soc": null,
+    "day_surplus": true,
+    "limit_ref_w": null,
+    "self_regulating": null,
+    "control_group": null,
+    "night_cap": null,
+    "cutoff_soc": null
+   },
+   "preview": {
+    "profile": {
+     "key": "omnibattery",
+     "name": "Omnibattery"
+    },
+    "deviates": false,
+    "params": {
+     "target": 60,
+     "power_w": 2500,
+     "floor": 40,
+     "percent": 50,
+     "seconds": 5.0
+    },
+    "operations": [
+     {
+      "op": "charge",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 60,
+       "power_w": 2500,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": null,
+        "entity_id": "switch.venus_battery_manual_mode",
+        "name": "Venus Manual mode",
+        "value": true,
+        "param": null,
+        "unit": null,
+        "current": "off"
+       },
+       {
+        "kind": "set",
+        "role": "charge_power",
+        "entity_id": "number.venus_charge_power",
+        "name": "Venus Charge power",
+        "value": 2500.0,
+        "param": "power",
+        "unit": "W",
+        "current": "0"
+       },
+       {
+        "kind": "set",
+        "role": "mode",
+        "entity_id": "select.venus_force_mode",
+        "name": "Venus Force mode",
+        "value": "Charge",
+        "param": null,
+        "unit": null,
+        "current": "None"
+       }
+      ],
+      "restore": [
+       {
+        "role": "mode",
+        "entity_id": "select.venus_force_mode",
+        "name": "Venus Force mode",
+        "value": "saved",
+        "current": "None"
+       },
+       {
+        "role": "charge_power",
+        "entity_id": "number.venus_charge_power",
+        "name": "Venus Charge power",
+        "value": "saved",
+        "current": "0"
+       },
+       {
+        "role": null,
+        "entity_id": "switch.venus_battery_manual_mode",
+        "name": "Venus Manual mode",
+        "value": "saved",
+        "current": "off"
+       }
+      ],
+      "note": "prepare"
+     },
+     {
+      "op": "hold",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 60,
+       "power_w": 2500,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "min_soc",
+        "entity_id": "number.venus_discharge_cutoff",
+        "name": "Venus Discharge cutoff",
+        "value": 40.0,
+        "param": "floor",
+        "unit": "%",
+        "current": "12"
+       }
+      ],
+      "restore": [
+       {
+        "role": "min_soc",
+        "entity_id": "number.venus_discharge_cutoff",
+        "name": "Venus Discharge cutoff",
+        "value": "saved",
+        "current": "12"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "block",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 60,
+       "power_w": 2500,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "allow_charge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+        "name": "Venus Allow charge",
+        "value": false,
+        "param": null,
+        "unit": null,
+        "current": "on"
+       },
+       {
+        "kind": "set",
+        "role": "allow_discharge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+        "name": "Venus Allow discharge",
+        "value": false,
+        "param": null,
+        "unit": null,
+        "current": "on"
+       }
+      ],
+      "restore": [
+       {
+        "role": "allow_charge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+        "name": "Venus Allow charge",
+        "value": "saved",
+        "current": "on"
+       },
+       {
+        "role": "allow_discharge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+        "name": "Venus Allow discharge",
+        "value": "saved",
+        "current": "on"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "block_charge",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 60,
+       "power_w": 2500,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "allow_charge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+        "name": "Venus Allow charge",
+        "value": false,
+        "param": null,
+        "unit": null,
+        "current": "on"
+       }
+      ],
+      "restore": [
+       {
+        "role": "allow_charge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+        "name": "Venus Allow charge",
+        "value": "saved",
+        "current": "on"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "block_discharge",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 60,
+       "power_w": 2500,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "allow_discharge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+        "name": "Venus Allow discharge",
+        "value": false,
+        "param": null,
+        "unit": null,
+        "current": "on"
+       }
+      ],
+      "restore": [
+       {
+        "role": "allow_discharge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+        "name": "Venus Allow discharge",
+        "value": "saved",
+        "current": "on"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "cap",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 60,
+       "power_w": 2500,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "system_charge_limit",
+        "entity_id": "number.omnibattery_system_max_charge_power",
+        "name": "Omnibattery System Max charge power",
+        "value": 1250.0,
+        "param": "power",
+        "unit": "W",
+        "current": "2500"
+       },
+       {
+        "kind": "set",
+        "role": "system_discharge_limit",
+        "entity_id": "number.omnibattery_system_max_discharge_power",
+        "name": "Omnibattery System Max discharge power",
+        "value": 2500.0,
+        "param": null,
+        "unit": "W",
+        "current": "2500"
+       },
+       {
+        "kind": "set",
+        "role": "system_charge_limit_enabled",
+        "entity_id": "switch.omnibattery_system_power_limits",
+        "name": "Omnibattery System Power limits",
+        "value": true,
+        "param": null,
+        "unit": null,
+        "current": "off"
+       }
+      ],
+      "restore": [
+       {
+        "role": "system_charge_limit_enabled",
+        "entity_id": "switch.omnibattery_system_power_limits",
+        "name": "Omnibattery System Power limits",
+        "value": "saved",
+        "current": "off"
+       },
+       {
+        "role": "system_charge_limit",
+        "entity_id": "number.omnibattery_system_max_charge_power",
+        "name": "Omnibattery System Max charge power",
+        "value": "saved",
+        "current": "2500"
+       },
+       {
+        "role": "system_discharge_limit",
+        "entity_id": "number.omnibattery_system_max_discharge_power",
+        "name": "Omnibattery System Max discharge power",
+        "value": "saved",
+        "current": "2500"
+       }
+      ],
+      "note": "value_before_switch"
+     },
+     {
+      "op": "release",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 60,
+       "power_w": 2500,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [],
+      "restore": [
+       {
+        "role": "system_charge_limit_enabled",
+        "entity_id": "switch.omnibattery_system_power_limits",
+        "name": "Omnibattery System Power limits",
+        "value": "saved",
+        "current": "off"
+       },
+       {
+        "role": "system_discharge_limit",
+        "entity_id": "number.omnibattery_system_max_discharge_power",
+        "name": "Omnibattery System Max discharge power",
+        "value": "saved",
+        "current": "2500"
+       },
+       {
+        "role": "system_charge_limit",
+        "entity_id": "number.omnibattery_system_max_charge_power",
+        "name": "Omnibattery System Max charge power",
+        "value": "saved",
+        "current": "2500"
+       },
+       {
+        "role": "allow_discharge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+        "name": "Venus Allow discharge",
+        "value": "saved",
+        "current": "on"
+       },
+       {
+        "role": "allow_charge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+        "name": "Venus Allow charge",
+        "value": "saved",
+        "current": "on"
+       },
+       {
+        "role": "min_soc",
+        "entity_id": "number.venus_discharge_cutoff",
+        "name": "Venus Discharge cutoff",
+        "value": "saved",
+        "current": "12"
+       },
+       {
+        "role": "mode",
+        "entity_id": "select.venus_force_mode",
+        "name": "Venus Force mode",
+        "value": "saved",
+        "current": "None"
+       },
+       {
+        "role": "charge_power",
+        "entity_id": "number.venus_charge_power",
+        "name": "Venus Charge power",
+        "value": "saved",
+        "current": "0"
+       },
+       {
+        "role": null,
+        "entity_id": "switch.venus_battery_manual_mode",
+        "name": "Venus Manual mode",
+        "value": "saved",
+        "current": "off"
+       }
+      ],
+      "note": null
+     }
+    ],
+    "roles": [
+     {
+      "role": "min_soc",
+      "entity_id": "number.venus_discharge_cutoff",
+      "found": "number.venus_discharge_cutoff",
+      "kind": "level",
+      "unit": "%",
+      "used_by": [
+       "hold"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "charge_target",
+      "entity_id": null,
+      "found": null,
+      "kind": "level",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "grid_charge",
+      "entity_id": null,
+      "found": null,
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "mode",
+      "entity_id": "select.venus_force_mode",
+      "found": "select.venus_force_mode",
+      "kind": "option",
+      "unit": null,
+      "used_by": [
+       "charge"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "charge_power",
+      "entity_id": "number.venus_charge_power",
+      "found": "number.venus_charge_power",
+      "kind": "setpoint",
+      "unit": "W",
+      "used_by": [
+       "charge"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "discharge_power",
+      "entity_id": null,
+      "found": null,
+      "kind": "setpoint",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "discharge_limit",
+      "entity_id": null,
+      "found": null,
+      "kind": "setpoint",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "discharge_limit_enabled",
+      "entity_id": null,
+      "found": null,
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "charge_limit",
+      "entity_id": null,
+      "found": null,
+      "kind": "setpoint",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "charge_limit_enabled",
+      "entity_id": null,
+      "found": null,
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "system_charge_limit",
+      "entity_id": "number.omnibattery_system_max_charge_power",
+      "found": "number.omnibattery_system_max_charge_power",
+      "kind": "setpoint",
+      "unit": "W",
+      "used_by": [
+       "cap"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "system_charge_limit_enabled",
+      "entity_id": "switch.omnibattery_system_power_limits",
+      "found": "switch.omnibattery_system_power_limits",
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [
+       "cap"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "system_discharge_limit",
+      "entity_id": "number.omnibattery_system_max_discharge_power",
+      "found": "number.omnibattery_system_max_discharge_power",
+      "kind": "setpoint",
+      "unit": "W",
+      "used_by": [
+       "cap"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "system_manual_mode",
+      "entity_id": "switch.omnibattery_system_manual_mode",
+      "found": "switch.omnibattery_system_manual_mode",
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "allow_charge",
+      "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+      "found": "switch.marstek_venus_e_3_0_battery_allow_charge",
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [
+       "block",
+       "block_charge"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "allow_discharge",
+      "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+      "found": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [
+       "block",
+       "block_discharge"
+      ],
+      "deviates": false,
+      "relevant": true
+     }
+    ]
+   },
+   "probes": {
+    "charge": {
+     "ok": true,
+     "op": "charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.venus_battery_manual_mode",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.venus_charge_power",
+       "wrote": 2500.0,
+       "read": "2500.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "select.venus_force_mode",
+       "wrote": "Charge",
+       "read": "Charge",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "hold": {
+     "ok": true,
+     "op": "hold",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.venus_discharge_cutoff",
+       "wrote": 40.0,
+       "read": "40.0",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "block": {
+     "ok": true,
+     "op": "block",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+       "wrote": false,
+       "read": "off",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+       "wrote": false,
+       "read": "off",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "block_charge": {
+     "ok": true,
+     "op": "block_charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+       "wrote": false,
+       "read": "off",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "block_discharge": {
+     "ok": true,
+     "op": "block_discharge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+       "wrote": false,
+       "read": "off",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "cap": {
+     "ok": true,
+     "op": "cap",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.omnibattery_system_max_charge_power",
+       "wrote": 1250.0,
+       "read": "1250.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.omnibattery_system_max_discharge_power",
+       "wrote": 2500.0,
+       "read": "2500.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.omnibattery_system_power_limits",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "release": {
+     "ok": false,
+     "op": "release",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [],
+     "restored": true,
+     "restore_errors": [],
+     "problem": "not_possible",
+     "power_kw": null,
+     "why": "no_steps"
+    }
+   },
+   "probe_fail": {
+    "charge": {
+     "ok": false,
+     "op": "charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.venus_battery_manual_mode",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.venus_charge_power",
+       "wrote": 2500.0,
+       "read": "2500.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "select.venus_force_mode",
+       "wrote": "Charge",
+       "read": "None",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "hold": {
+     "ok": false,
+     "op": "hold",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.venus_discharge_cutoff",
+       "wrote": 40.0,
+       "read": "12.0",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "block": {
+     "ok": false,
+     "op": "block",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+       "wrote": false,
+       "read": "off",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+       "wrote": false,
+       "read": "on",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "block_charge": {
+     "ok": false,
+     "op": "block_charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+       "wrote": false,
+       "read": "on",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "block_discharge": {
+     "ok": false,
+     "op": "block_discharge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+       "wrote": false,
+       "read": "on",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "cap": {
+     "ok": false,
+     "op": "cap",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.omnibattery_system_max_charge_power",
+       "wrote": 1250.0,
+       "read": "1250.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.omnibattery_system_max_discharge_power",
+       "wrote": 2500.0,
+       "read": "2500.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.omnibattery_system_power_limits",
+       "wrote": true,
+       "read": "off",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "release": {
+     "ok": false,
+     "op": "release",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [],
+     "restored": true,
+     "restore_errors": [],
+     "problem": "not_possible",
+     "power_kw": null,
+     "why": "no_steps"
+    }
+   }
+  },
+  {
+   "name": "own",
+   "draft": {
+    "adapter": "omnibattery",
+    "controls": {
+     "mode": "select.venus_force_mode",
+     "charge_power": "number.venus_charge_power",
+     "min_soc": "number.venus_discharge_cutoff",
+     "system_charge_limit": "number.omnibattery_system_max_charge_power",
+     "system_charge_limit_enabled": "switch.omnibattery_system_power_limits",
+     "system_discharge_limit": "number.omnibattery_system_max_discharge_power",
+     "system_manual_mode": "switch.omnibattery_system_manual_mode",
+     "allow_charge": "switch.marstek_venus_e_3_0_battery_allow_charge",
+     "allow_discharge": "switch.marstek_venus_e_3_0_battery_allow_discharge"
+    },
+    "mode_options": {
+     "normal": "None",
+     "force_charge": "Charge",
+     "force_discharge": "Discharge"
+    },
+    "steps": {
+     "block": [
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+       "value": "off"
+      },
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+       "value": "off"
+      }
+     ]
+    },
+    "prepare": [
+     {
+      "entity_id": "switch.venus_battery_manual_mode",
+      "value": true
+     }
+    ]
+   },
+   "battery": {
+    "id": "venus",
+    "name": "Marstek Venus E",
+    "adapter": "omnibattery",
+    "soc_entity": "sensor.venus_soc",
+    "power": {
+     "entity_id": "sensor.venus_ac_power",
+     "invert": true,
+     "minus_entity_id": null
+    },
+    "capacity_kwh": 5.12,
+    "capacity_entity": "sensor.venus_total_energy",
+    "max_charge_w": 2500.0,
+    "max_discharge_w": null,
+    "device_id": "venus",
+    "controls": {
+     "mode": "select.venus_force_mode",
+     "charge_power": "number.venus_charge_power",
+     "min_soc": "number.venus_discharge_cutoff",
+     "system_charge_limit": "number.omnibattery_system_max_charge_power",
+     "system_charge_limit_enabled": "switch.omnibattery_system_power_limits",
+     "system_discharge_limit": "number.omnibattery_system_max_discharge_power",
+     "system_manual_mode": "switch.omnibattery_system_manual_mode",
+     "allow_charge": "switch.marstek_venus_e_3_0_battery_allow_charge",
+     "allow_discharge": "switch.marstek_venus_e_3_0_battery_allow_discharge"
+    },
+    "mode_options": {
+     "normal": "None",
+     "force_charge": "Charge",
+     "force_discharge": "Discharge"
+    },
+    "prepare": [
+     {
+      "entity_id": "switch.venus_battery_manual_mode",
+      "value": true
+     }
+    ],
+    "steps": {
+     "block": [
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+       "value": "off"
+      },
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+       "value": "off"
+      }
+     ]
+    },
+    "priority": 2,
+    "floor_soc": null,
+    "day_surplus": true,
+    "limit_ref_w": null,
+    "self_regulating": null,
+    "control_group": null,
+    "night_cap": null,
+    "cutoff_soc": null
+   },
+   "preview": {
+    "profile": {
+     "key": "omnibattery",
+     "name": "Omnibattery"
+    },
+    "deviates": false,
+    "params": {
+     "target": 60,
+     "power_w": 2500,
+     "floor": 40,
+     "percent": 50,
+     "seconds": 5.0
+    },
+    "operations": [
+     {
+      "op": "charge",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 60,
+       "power_w": 2500,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": null,
+        "entity_id": "switch.venus_battery_manual_mode",
+        "name": "Venus Manual mode",
+        "value": true,
+        "param": null,
+        "unit": null,
+        "current": "off"
+       },
+       {
+        "kind": "set",
+        "role": "charge_power",
+        "entity_id": "number.venus_charge_power",
+        "name": "Venus Charge power",
+        "value": 2500.0,
+        "param": "power",
+        "unit": "W",
+        "current": "0.0"
+       },
+       {
+        "kind": "set",
+        "role": "mode",
+        "entity_id": "select.venus_force_mode",
+        "name": "Venus Force mode",
+        "value": "Charge",
+        "param": null,
+        "unit": null,
+        "current": "None"
+       }
+      ],
+      "restore": [
+       {
+        "role": "mode",
+        "entity_id": "select.venus_force_mode",
+        "name": "Venus Force mode",
+        "value": "saved",
+        "current": "None"
+       },
+       {
+        "role": "charge_power",
+        "entity_id": "number.venus_charge_power",
+        "name": "Venus Charge power",
+        "value": "saved",
+        "current": "0.0"
+       },
+       {
+        "role": null,
+        "entity_id": "switch.venus_battery_manual_mode",
+        "name": "Venus Manual mode",
+        "value": "saved",
+        "current": "off"
+       }
+      ],
+      "note": "prepare"
+     },
+     {
+      "op": "hold",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 60,
+       "power_w": 2500,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "min_soc",
+        "entity_id": "number.venus_discharge_cutoff",
+        "name": "Venus Discharge cutoff",
+        "value": 40.0,
+        "param": "floor",
+        "unit": "%",
+        "current": "12.0"
+       }
+      ],
+      "restore": [
+       {
+        "role": "min_soc",
+        "entity_id": "number.venus_discharge_cutoff",
+        "name": "Venus Discharge cutoff",
+        "value": "saved",
+        "current": "12.0"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "block",
+      "possible": true,
+      "why": null,
+      "source": "own",
+      "params": {
+       "target": 60,
+       "power_w": 2500,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "allow_charge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+        "name": "Venus Allow charge",
+        "value": false,
+        "param": null,
+        "unit": null,
+        "current": "on"
+       },
+       {
+        "kind": "set",
+        "role": "allow_discharge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+        "name": "Venus Allow discharge",
+        "value": false,
+        "param": null,
+        "unit": null,
+        "current": "on"
+       }
+      ],
+      "restore": [
+       {
+        "role": "allow_discharge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+        "name": "Venus Allow discharge",
+        "value": "saved",
+        "current": "on"
+       },
+       {
+        "role": "allow_charge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+        "name": "Venus Allow charge",
+        "value": "saved",
+        "current": "on"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "block_charge",
+      "possible": true,
+      "why": null,
+      "source": "own",
+      "params": {
+       "target": 60,
+       "power_w": 2500,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "allow_charge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+        "name": "Venus Allow charge",
+        "value": false,
+        "param": null,
+        "unit": null,
+        "current": "on"
+       },
+       {
+        "kind": "set",
+        "role": "allow_discharge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+        "name": "Venus Allow discharge",
+        "value": false,
+        "param": null,
+        "unit": null,
+        "current": "on"
+       }
+      ],
+      "restore": [
+       {
+        "role": "allow_discharge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+        "name": "Venus Allow discharge",
+        "value": "saved",
+        "current": "on"
+       },
+       {
+        "role": "allow_charge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+        "name": "Venus Allow charge",
+        "value": "saved",
+        "current": "on"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "block_discharge",
+      "possible": true,
+      "why": null,
+      "source": "own",
+      "params": {
+       "target": 60,
+       "power_w": 2500,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "allow_charge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+        "name": "Venus Allow charge",
+        "value": false,
+        "param": null,
+        "unit": null,
+        "current": "on"
+       },
+       {
+        "kind": "set",
+        "role": "allow_discharge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+        "name": "Venus Allow discharge",
+        "value": false,
+        "param": null,
+        "unit": null,
+        "current": "on"
+       }
+      ],
+      "restore": [
+       {
+        "role": "allow_discharge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+        "name": "Venus Allow discharge",
+        "value": "saved",
+        "current": "on"
+       },
+       {
+        "role": "allow_charge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+        "name": "Venus Allow charge",
+        "value": "saved",
+        "current": "on"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "cap",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 60,
+       "power_w": 2500,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "system_charge_limit",
+        "entity_id": "number.omnibattery_system_max_charge_power",
+        "name": "Omnibattery System Max charge power",
+        "value": 1250.0,
+        "param": "power",
+        "unit": "W",
+        "current": "2500.0"
+       },
+       {
+        "kind": "set",
+        "role": "system_discharge_limit",
+        "entity_id": "number.omnibattery_system_max_discharge_power",
+        "name": "Omnibattery System Max discharge power",
+        "value": 2500.0,
+        "param": null,
+        "unit": "W",
+        "current": "2500.0"
+       },
+       {
+        "kind": "set",
+        "role": "system_charge_limit_enabled",
+        "entity_id": "switch.omnibattery_system_power_limits",
+        "name": "Omnibattery System Power limits",
+        "value": true,
+        "param": null,
+        "unit": null,
+        "current": "off"
+       }
+      ],
+      "restore": [
+       {
+        "role": "system_charge_limit_enabled",
+        "entity_id": "switch.omnibattery_system_power_limits",
+        "name": "Omnibattery System Power limits",
+        "value": "saved",
+        "current": "off"
+       },
+       {
+        "role": "system_charge_limit",
+        "entity_id": "number.omnibattery_system_max_charge_power",
+        "name": "Omnibattery System Max charge power",
+        "value": "saved",
+        "current": "2500.0"
+       },
+       {
+        "role": "system_discharge_limit",
+        "entity_id": "number.omnibattery_system_max_discharge_power",
+        "name": "Omnibattery System Max discharge power",
+        "value": "saved",
+        "current": "2500.0"
+       }
+      ],
+      "note": "value_before_switch"
+     },
+     {
+      "op": "release",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 60,
+       "power_w": 2500,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [],
+      "restore": [
+       {
+        "role": "system_charge_limit_enabled",
+        "entity_id": "switch.omnibattery_system_power_limits",
+        "name": "Omnibattery System Power limits",
+        "value": "saved",
+        "current": "off"
+       },
+       {
+        "role": "system_discharge_limit",
+        "entity_id": "number.omnibattery_system_max_discharge_power",
+        "name": "Omnibattery System Max discharge power",
+        "value": "saved",
+        "current": "2500.0"
+       },
+       {
+        "role": "system_charge_limit",
+        "entity_id": "number.omnibattery_system_max_charge_power",
+        "name": "Omnibattery System Max charge power",
+        "value": "saved",
+        "current": "2500.0"
+       },
+       {
+        "role": "allow_discharge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+        "name": "Venus Allow discharge",
+        "value": "saved",
+        "current": "on"
+       },
+       {
+        "role": "allow_charge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+        "name": "Venus Allow charge",
+        "value": "saved",
+        "current": "on"
+       },
+       {
+        "role": "min_soc",
+        "entity_id": "number.venus_discharge_cutoff",
+        "name": "Venus Discharge cutoff",
+        "value": "saved",
+        "current": "12.0"
+       },
+       {
+        "role": "mode",
+        "entity_id": "select.venus_force_mode",
+        "name": "Venus Force mode",
+        "value": "saved",
+        "current": "None"
+       },
+       {
+        "role": "charge_power",
+        "entity_id": "number.venus_charge_power",
+        "name": "Venus Charge power",
+        "value": "saved",
+        "current": "0.0"
+       },
+       {
+        "role": null,
+        "entity_id": "switch.venus_battery_manual_mode",
+        "name": "Venus Manual mode",
+        "value": "saved",
+        "current": "off"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "guard_charge",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 60,
+       "power_w": 2500,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "allow_charge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+        "name": "Venus Allow charge",
+        "value": false,
+        "param": null,
+        "unit": null,
+        "current": "on"
+       }
+      ],
+      "restore": [
+       {
+        "role": "allow_charge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+        "name": "Venus Allow charge",
+        "value": "saved",
+        "current": "on"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "guard_discharge",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 60,
+       "power_w": 2500,
+       "floor": 40,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "allow_discharge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+        "name": "Venus Allow discharge",
+        "value": false,
+        "param": null,
+        "unit": null,
+        "current": "on"
+       }
+      ],
+      "restore": [
+       {
+        "role": "allow_discharge",
+        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+        "name": "Venus Allow discharge",
+        "value": "saved",
+        "current": "on"
+       }
+      ],
+      "note": null
+     }
+    ],
+    "roles": [
+     {
+      "role": "min_soc",
+      "entity_id": "number.venus_discharge_cutoff",
+      "found": "number.venus_discharge_cutoff",
+      "kind": "level",
+      "unit": "%",
+      "used_by": [
+       "hold"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "charge_target",
+      "entity_id": null,
+      "found": null,
+      "kind": "level",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "grid_charge",
+      "entity_id": null,
+      "found": null,
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "mode",
+      "entity_id": "select.venus_force_mode",
+      "found": "select.venus_force_mode",
+      "kind": "option",
+      "unit": null,
+      "used_by": [
+       "charge"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "charge_power",
+      "entity_id": "number.venus_charge_power",
+      "found": "number.venus_charge_power",
+      "kind": "setpoint",
+      "unit": "W",
+      "used_by": [
+       "charge"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "discharge_power",
+      "entity_id": null,
+      "found": null,
+      "kind": "setpoint",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "discharge_limit",
+      "entity_id": null,
+      "found": null,
+      "kind": "setpoint",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "discharge_limit_enabled",
+      "entity_id": null,
+      "found": null,
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "charge_limit",
+      "entity_id": null,
+      "found": null,
+      "kind": "setpoint",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "charge_limit_enabled",
+      "entity_id": null,
+      "found": null,
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "system_charge_limit",
+      "entity_id": "number.omnibattery_system_max_charge_power",
+      "found": "number.omnibattery_system_max_charge_power",
+      "kind": "setpoint",
+      "unit": "W",
+      "used_by": [
+       "cap"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "system_charge_limit_enabled",
+      "entity_id": "switch.omnibattery_system_power_limits",
+      "found": "switch.omnibattery_system_power_limits",
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [
+       "cap"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "system_discharge_limit",
+      "entity_id": "number.omnibattery_system_max_discharge_power",
+      "found": "number.omnibattery_system_max_discharge_power",
+      "kind": "setpoint",
+      "unit": "W",
+      "used_by": [
+       "cap"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "system_manual_mode",
+      "entity_id": "switch.omnibattery_system_manual_mode",
+      "found": "switch.omnibattery_system_manual_mode",
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "allow_charge",
+      "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+      "found": "switch.marstek_venus_e_3_0_battery_allow_charge",
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [
+       "block",
+       "block_charge",
+       "block_discharge",
+       "guard_charge"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "allow_discharge",
+      "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+      "found": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [
+       "block",
+       "block_charge",
+       "block_discharge",
+       "guard_discharge"
+      ],
+      "deviates": false,
+      "relevant": true
+     }
+    ]
+   },
+   "probes": {
+    "charge": {
+     "ok": true,
+     "op": "charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.venus_battery_manual_mode",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.venus_charge_power",
+       "wrote": 2500.0,
+       "read": "2500.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "select.venus_force_mode",
+       "wrote": "Charge",
+       "read": "Charge",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "hold": {
+     "ok": true,
+     "op": "hold",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.venus_discharge_cutoff",
+       "wrote": 40.0,
+       "read": "40.0",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "block": {
+     "ok": true,
+     "op": "block",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+       "wrote": false,
+       "read": "off",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+       "wrote": false,
+       "read": "off",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "block_charge": {
+     "ok": true,
+     "op": "block_charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+       "wrote": false,
+       "read": "off",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+       "wrote": false,
+       "read": "off",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "block_discharge": {
+     "ok": true,
+     "op": "block_discharge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+       "wrote": false,
+       "read": "off",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+       "wrote": false,
+       "read": "off",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "cap": {
+     "ok": true,
+     "op": "cap",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.omnibattery_system_max_charge_power",
+       "wrote": 1250.0,
+       "read": "1250.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.omnibattery_system_max_discharge_power",
+       "wrote": 2500.0,
+       "read": "2500.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.omnibattery_system_power_limits",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "release": {
+     "ok": false,
+     "op": "release",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [],
+     "restored": true,
+     "restore_errors": [],
+     "problem": "not_possible",
+     "power_kw": null,
+     "why": "no_steps"
+    },
+    "guard_charge": {
+     "ok": true,
+     "op": "guard_charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+       "wrote": false,
+       "read": "off",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "guard_discharge": {
+     "ok": true,
+     "op": "guard_discharge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+       "wrote": false,
+       "read": "off",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    }
+   },
+   "probe_fail": {
+    "charge": {
+     "ok": false,
+     "op": "charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.venus_battery_manual_mode",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.venus_charge_power",
+       "wrote": 2500.0,
+       "read": "2500.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "select.venus_force_mode",
+       "wrote": "Charge",
+       "read": "None",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "hold": {
+     "ok": false,
+     "op": "hold",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.venus_discharge_cutoff",
+       "wrote": 40.0,
+       "read": "12.0",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "block": {
+     "ok": false,
+     "op": "block",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+       "wrote": false,
+       "read": "off",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+       "wrote": false,
+       "read": "on",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "block_charge": {
+     "ok": false,
+     "op": "block_charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+       "wrote": false,
+       "read": "off",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+       "wrote": false,
+       "read": "on",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "block_discharge": {
+     "ok": false,
+     "op": "block_discharge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+       "wrote": false,
+       "read": "off",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+       "wrote": false,
+       "read": "on",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "cap": {
+     "ok": false,
+     "op": "cap",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.omnibattery_system_max_charge_power",
+       "wrote": 1250.0,
+       "read": "1250.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.omnibattery_system_max_discharge_power",
+       "wrote": 2500.0,
+       "read": "2500.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.omnibattery_system_power_limits",
+       "wrote": true,
+       "read": "off",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "release": {
+     "ok": false,
+     "op": "release",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [],
+     "restored": true,
+     "restore_errors": [],
+     "problem": "not_possible",
+     "power_kw": null,
+     "why": "no_steps"
+    },
+    "guard_charge": {
+     "ok": false,
+     "op": "guard_charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
+       "wrote": false,
+       "read": "on",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    },
+    "guard_discharge": {
+     "ok": false,
+     "op": "guard_discharge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
+       "wrote": false,
+       "read": "on",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": -0.0
+    }
+   }
+  }
+ ],
+ "refused": {
+  "steering": {
+   "ok": false,
+   "op": "block",
+   "at": "2026-10-18T09:30:35-07:00",
+   "steps": [],
+   "restored": true,
+   "restore_errors": [],
+   "problem": "steering",
+   "power_kw": null
+  },
+  "busy": {
+   "ok": false,
+   "op": "block",
+   "at": "2026-10-18T09:30:35-07:00",
+   "steps": [],
+   "restored": true,
+   "restore_errors": [],
+   "problem": "busy",
+   "power_kw": null
+  }
+ }
+}

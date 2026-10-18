@@ -225,6 +225,10 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
   if (entry.kind === "test") {
     return t(entry.ok ? "log.test.ok" : "log.test.failed", vars);
   }
+  if (entry.kind === "probe") {
+    const op = String(entry.op ?? "");
+    return t(entry.ok ? "log.probe.ok" : "log.probe.failed", { ...vars, op: t.optional(`op.short.${op}`) ?? op });
+  }
   return t.optional(`log.${entry.kind}`, vars) ?? entry.kind;
 }
 
