@@ -23,6 +23,7 @@ import "../../components/control-status";
 import { daySurplus, surplusConflictNote, surplusText } from "../../components/day-surplus";
 import { deviceState } from "../../components/device-card";
 import { mirrorRow } from "../../components/mirror";
+import { batteryNotes } from "../../components/battery-notes";
 import { tip } from "../../components/tip";
 import { saveConfig, sourceOf } from "../../config";
 import { define } from "../../define";
@@ -815,7 +816,9 @@ export class JoeBatteryGroup extends DeviceSection {
     const config = this.state!.config;
     const found = newFindings(config, this.discovery).filter((f) => f.kind === "battery" && f.battery);
     const ignored = ignoredBatteries(config, this.discovery);
-    if (!found.length && !ignored.length) {
+    // Battery integrations without a battery Joe found (its level switched off).
+    const notes = this.discovery?.battery_notes ?? [];
+    if (!found.length && !ignored.length && !notes.length) {
       return nothing;
     }
     const row = (battery: BatteryFinding, left: boolean, key: string) =>
@@ -840,9 +843,12 @@ export class JoeBatteryGroup extends DeviceSection {
         <div class="eyebrow"><ha-icon icon="mdi:home-battery-outline"></ha-icon>${t("battery.page.found")}</div>
         ${tip(t, "battery_found")}
       </div>
-      <ul class="found">
-        ${found.map((f) => row(f.battery!, false, f.key))} ${ignored.map((b) => row(b, true, `battery:${b.id}`))}
-      </ul>
+      ${found.length || ignored.length
+        ? html`<ul class="found">
+            ${found.map((f) => row(f.battery!, false, f.key))} ${ignored.map((b) => row(b, true, `battery:${b.id}`))}
+          </ul>`
+        : nothing}
+      ${batteryNotes(t, notes)}
     </section>`;
   }
 

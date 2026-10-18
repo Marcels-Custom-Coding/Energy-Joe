@@ -1,5 +1,6 @@
 import { LitElement, css, html, nothing, type TemplateResult } from "lit";
 import { property } from "lit/decorators.js";
+import { batteryNotes } from "../components/battery-notes";
 import { tip } from "../components/tip";
 import { pickEntity } from "../config";
 import { define } from "../define";
@@ -44,6 +45,8 @@ const ROLE_FILTER: Record<ControlRole, FilterName> = {
   system_manual_mode: "toggle",
   allow_charge: "toggle",
   allow_discharge: "toggle",
+  block_charge: "toggle",
+  block_discharge: "toggle",
 };
 const STEP_NAMES: StepName[] = ["charge", "hold", "release"];
 
@@ -227,6 +230,7 @@ export class JoeBatteryControl extends LitElement {
           )}
         </div>
       </div>
+      ${this.choice === "watch" ? batteryNotes(t, this.found?.notes) : nothing}
       ${this.choice === "watch" && suggested?.complete
         ? html`<div class="note" data-tipped>
             <ha-icon icon="mdi:lightbulb-on-outline"></ha-icon>
@@ -239,7 +243,8 @@ export class JoeBatteryControl extends LitElement {
             >
           </div>`
         : nothing}
-      ${this.choice === "profile" && Object.keys(value.steps).length && !Object.keys(value.controls).length
+      ${this.choice === "profile" ? batteryNotes(t, this.found?.notes) : nothing}
+      ${this.choice === "profile" && Object.keys(value.steps).length
         ? this.renderServiceSteps(t, value)
         : this.choice === "profile" || this.choice === "generic"
           ? this.renderRoles(t, value)

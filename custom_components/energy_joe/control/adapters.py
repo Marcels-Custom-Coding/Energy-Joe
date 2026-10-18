@@ -10,8 +10,14 @@ first lever the battery offers, in the order its profile prefers:
 - hold(floor): the floor as minimum level, else a hold mode, else forced
   charging with 0 W ("standby"), else the discharge limit
 - block: no discharge at all (while another battery charges from the grid):
-  its own "allow discharging" switch off where it has one (Omnibattery: its
-  control stays in automatic mode), else as its profile prefers
+  its own "allow discharging" switch off (Omnibattery: its control stays in
+  automatic mode) or "block discharging" on (Kostal over Modbus) where it
+  has one, else as its profile prefers
+
+By day the same adapter blocks charging and discharging for "Nacheinander"
+and the watchdog: switches, a mode with an option per direction, or charge
+and discharge limits at 0 (also without a switch, also below 0, in W, kW
+or A), see team_lever and guard_block_roles.
 
 Some batteries need a switch first ("prepare", e.g. Remote Control), some
 take commands only for a while ("command_timeout"), some are steered with
@@ -33,12 +39,14 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 
 from .profiles import (
+    DAY_OPTIONS,
     DAY_ROLES,
     GENERIC,
     MODE_METHODS,
     PROFILES,
     SYSTEM_ROLES,
     Profile,
+    day_only,
     profile_for,
 )
 from .writes import Write, available, fit, matches, read
@@ -47,6 +55,8 @@ from .writes import Write, available, fit, matches, read
 DEFAULT_CHARGE_W = 1000
 # How long a command lasts when the battery wants a duration (seconds).
 DEFAULT_SPAN = 6 * 3600
+# The longest duration a service takes ("{seconds}": Marstek, a day).
+MAX_SECONDS = 86400
 
 
 @dataclass(frozen=True, slots=True)
@@ -104,14 +114,23 @@ class Adapter:
     def missing(self, hass: HomeAssistant) -> list[str]:
         raise NotImplementedError
 
+    def day_roles(self) -> set[str]:
+        """The roles only the day uses (cap, "Nacheinander", watchdog)."""
+        return set(DAY_ROLES)
+
     @property
     def signature(self) -> str:
         """Changes when the way of steering changes (a new test run is needed)."""
+        day = self.day_roles()
         data = {
             "kind": self.kind,
             # The levers of the day (cap, watchdog) are no part of the night.
-            "controls": {k: v for k, v in self.controls.items() if k not in DAY_ROLES},
-            "options": self.battery.get("mode_options") or {},
+            "controls": {k: v for k, v in self.controls.items() if k not in day},
+            "options": {
+                k: v
+                for k, v in (self.battery.get("mode_options") or {}).items()
+                if k not in DAY_OPTIONS
+            },
             "prepare": self.battery.get("prepare") or [],
             "steps": self.battery.get("steps") or {},
         }
@@ -165,11 +184,11 @@ class RoleAdapter(Adapter):
         super().__init__(battery)
         self.profile = profile
         self.kind = battery.get("adapter") or profile.key
-        self.options: dict[str, str] = {
-            **{
-                meaning: names[0] for meaning, names in profile.options.items() if names
-            },
-            **(battery.get("mode_options") or {}),
+        # The profile's first options only where discovery noted none: a
+        # meaning missing from the options it noted is not offered by the
+        # select (GoodWe's core integration has no "eco_charge").
+        self.options: dict[str, str] = dict(battery.get("mode_options") or {}) or {
+            meaning: names[0] for meaning, names in profile.options.items() if names
         }
         self.prepare: list[dict[str, Any]] = list(battery.get("prepare") or [])
 
@@ -196,6 +215,9 @@ class RoleAdapter(Adapter):
     def _has(self, *roles: str) -> bool:
         return all(role in self.controls for role in roles)
 
+    def day_roles(self) -> set[str]:
+        return day_only(self.profile)
+
     def charge_methods(self) -> list[str]:
         result = []
         for method in self.profile.charge:
@@ -207,9 +229,55 @@ class RoleAdapter(Adapter):
                 and self._has("grid_charge", "charge_target")
                 or method == "min_soc"
                 and self._has("grid_charge", "min_soc")
+                or method == "switch"
+                and self._has("grid_charge")
             ):
                 result.append(method)
         return result
+
+    # --- the day's switches and modes ---------------------------------------------
+
+    def _toggle(self, direction: str) -> tuple[str, bool] | None:
+        """The battery's own switch for one direction ("charge", "discharge")
+        and the value that blocks it: "allow_…" off (Venus) or "block_…" on
+        (Kostal over Modbus)."""
+        if self._has(f"allow_{direction}"):
+            return f"allow_{direction}", False
+        if self._has(f"block_{direction}"):
+            return f"block_{direction}", True
+        return None
+
+    def _day_option(self, meaning: str) -> str | None:
+        """A mode option only the day uses ("no_charge", "no_discharge"), as
+        discovery found it offered by the select (never assumed)."""
+        return (self.battery.get("mode_options") or {}).get(meaning)
+
+    def _mode_lever(self) -> bool:
+        """Whether its mode blocks either direction and both (HomeWizard)."""
+        return (
+            self._has("mode")
+            and bool(self._day_option("no_charge"))
+            and bool(self._day_option("no_discharge"))
+            and bool(self.options.get("hold"))
+        )
+
+    def _mode_blocks(self, direction: str) -> set[str]:
+        """The mode options that keep the battery from charging (discharging)."""
+        if not self._has("mode"):
+            return set()
+        own = self._day_option(f"no_{direction}")
+        found = {own} if own else set()
+        if self._mode_lever():
+            found.add(self.options["hold"])
+        return found
+
+    def _flash_entities(self) -> set[str]:
+        """The entities whose writes end up in flash (see Profile.flash)."""
+        flash = set(self.profile.flash)
+        found = {self.controls[r] for r in flash if r in self.controls}
+        if any(step.key in flash for step in self.profile.prepare):
+            found |= set(self.prepare_entities())
+        return found
 
     def _can_hold(self, method: str) -> bool:
         if method == "min_soc":
@@ -237,6 +305,8 @@ class RoleAdapter(Adapter):
             return None
         if methods[0] in ("mode", "target"):
             return "power" if self._has("charge_power") else None
+        if methods[0] == "switch":
+            return None
         return "cap" if self.night_cap_problem(hass) is None else None
 
     # --- the night's charging power as a ceiling (Fronius) ------------------------
@@ -356,6 +426,9 @@ class RoleAdapter(Adapter):
         roles = self.limit_roles()
         if roles is None:
             return "no_limit"
+        if self.controls[roles[1]] in self._flash_entities():
+            # The cap follows the sun: written too often for a flash setting.
+            return "flash"
         # The battery's own levers are checked by missing(), the system's here.
         for role in (r for r in roles if r in SYSTEM_ROLES or r == roles[1]):
             if role in self.controls and not available(
@@ -388,6 +461,9 @@ class RoleAdapter(Adapter):
         switch, role = roles
         entity_id = self.controls[role]
         watts = max(0.0, kw * 1000)
+        if 0 < watts < self.profile.limit_min_w:
+            # Below its smallest power it would not take the value at all.
+            watts = self.profile.limit_min_w
         unit = self._limit_unit(hass)
         if unit == "kW":
             value: float = math.ceil(watts / 10) / 100
@@ -468,15 +544,24 @@ class RoleAdapter(Adapter):
     def team_lever(self, whole_system: bool = True) -> str | None:
         """How Joe blocks this battery by day while another group works.
 
-        "allow": its own switches that allow charging and discharging
-        (Omnibattery: its PD controller stays on and goes on at once when
-        they are back); "limit": its own charge and discharge limits at 0
-        (Fronius); "system": the limits of the integration's system device,
+        "allow": its own switches that allow (or block) charging and
+        discharging (Omnibattery: its PD controller stays on and goes on at
+        once when they are back; Kostal over Modbus the other way round, but
+        its two exclude each other: never both at once); "mode": its mode
+        has an option for each direction and one for both (HomeWizard);
+        "limit": its own charge and discharge limits at 0 (Fronius, Huawei,
+        VARTA); "system": the limits of the integration's system device,
         only when every battery behind them is blocked with it
         (`whole_system`). Never manual mode, never a minimum power.
         """
-        if self._has("allow_charge", "allow_discharge"):
+        if (
+            self._toggle("charge")
+            and self._toggle("discharge")
+            and not self.profile.exclusive
+        ):
             return "allow"
+        if self._mode_lever():
+            return "mode"
         charge, discharge = self.limit_roles(), self.discharge_roles()
         if not charge or not discharge:
             return None
@@ -490,16 +575,21 @@ class RoleAdapter(Adapter):
 
     def team_shared(self, whole_system: bool = True) -> bool:
         """Whether charging and discharging are blocked with one switch (the system's)."""
-        if self.team_lever(whole_system) == "allow":
+        if self.team_lever(whole_system) in ("allow", "mode"):
             return False
         charge, discharge = self.limit_roles(), self.discharge_roles()
         return bool(charge and discharge and charge[0] == discharge[0])
+
+    def _toggle_roles(self) -> list[str]:
+        return [t[0] for t in (self._toggle("charge"), self._toggle("discharge")) if t]
 
     def team_roles(self, whole_system: bool = True) -> list[str]:
         """The roles Joe writes to block charging or discharging by day."""
         lever = self.team_lever(whole_system)
         if lever == "allow":
-            return ["allow_charge", "allow_discharge"]
+            return self._toggle_roles()
+        if lever == "mode":
+            return ["mode"]
         if lever is None:
             return []
         roles = [*(self.limit_roles() or ()), *(self.discharge_roles() or ())]
@@ -509,8 +599,8 @@ class RoleAdapter(Adapter):
         """Every role a block by day may have written (the lever may have
         changed since): given back as far as Joe noted it."""
         roles = [
-            "allow_charge",
-            "allow_discharge",
+            *self._toggle_roles(),
+            *(("mode",) if self._mode_lever() else ()),
             *(self.limit_roles() or ()),
             *(self.discharge_roles() or ()),
         ]
@@ -523,8 +613,13 @@ class RoleAdapter(Adapter):
     def team_charge_entities(self, whole_system: bool = True) -> list[str]:
         """The entities that block charging (shared with the daytime cap when
         they are limits)."""
-        if self.team_lever(whole_system) == "allow":
-            return [self.controls["allow_charge"]]
+        lever = self.team_lever(whole_system)
+        if lever == "allow":
+            toggle = self._toggle("charge")
+            assert toggle is not None
+            return [self.controls[toggle[0]]]
+        if lever == "mode":
+            return [self.controls["mode"]]
         return self.limit_entities()
 
     def team_problem(
@@ -532,15 +627,24 @@ class RoleAdapter(Adapter):
     ) -> str | None:
         """Why Joe cannot block this battery's charging and discharging by day."""
         if self.team_lever(whole_system) is None:
-            if self._has("system_charge_limit") and not self._has("allow_charge"):
+            if self._has("system_charge_limit") and not self._toggle("charge"):
                 # The system's limits would block batteries of other groups, too.
                 return "system_shared"
+            if self.profile.exclusive and self._toggle("charge"):
+                # One switch on turns the other off: never both at once.
+                return "exclusive"
             if self.limit_roles() is None:
                 return "no_charge_lever"
             return "no_discharge_lever"
         for entity_id in self.team_entities(whole_system):
             if not available(hass.states.get(entity_id)):
                 return "unavailable"
+        if self.team_lever(whole_system) == "mode":
+            state = hass.states.get(self.controls["mode"])
+            offered = (state.attributes.get("options") if state else None) or []
+            wanted = (self._day_option("no_charge"), self._day_option("no_discharge"))
+            if any(option not in offered for option in wanted):
+                return "no_charge_lever"
         return None
 
     def team_block(
@@ -553,26 +657,38 @@ class RoleAdapter(Adapter):
     ) -> tuple[list[Write], list[str]]:
         """Writes that block charging and/or discharging, and the roles to give back.
 
-        Allow switches: off to block, given back as they were. A limit block
-        is the limit at 0, written before its switch goes on (Fronius ignores
-        the limit while its switch is off; R2/R3 of the owner's automations
-        learned it so). Giving back is the switch off first, then the value
-        (see free). With the system's shared switch the direction that stays
-        free is opened wide while the switch is on. `charge_taken`: the charge
-        limit is someone else's now (the daytime cap, the grid-friendly
-        morning, a test limit): left as it is.
+        Switches: set to block (allow off, block on), given back as they
+        were. A mode: the option for what is blocked, given back as it was.
+        A limit block is the limit at 0, written before its switch goes on
+        (Fronius ignores the limit while its switch is off; R2/R3 of the
+        owner's automations learned it so). Giving back is the switch off
+        first, then the value (see free). With the system's shared switch
+        the direction that stays free is opened wide while the switch is on.
+        `charge_taken`: the charge limit is someone else's now (the daytime
+        cap, the grid-friendly morning, a test limit): left as it is.
         """
         writes: list[Write] = []
         give_back: list[str] = []
-        if self.team_lever(whole_system) == "allow":
-            for blocked, role in (
-                (charge, "allow_charge"),
-                (discharge, "allow_discharge"),
-            ):
+        lever = self.team_lever(whole_system)
+        if lever == "allow":
+            for blocked, direction in ((charge, "charge"), (discharge, "discharge")):
+                toggle = self._toggle(direction)
+                assert toggle is not None
                 if blocked:
-                    writes.append(Write(self.controls[role], False))
+                    writes.append(Write(self.controls[toggle[0]], toggle[1]))
                 else:
-                    give_back.append(role)
+                    give_back.append(toggle[0])
+            return self._paced(writes), give_back
+        if lever == "mode":
+            if charge or discharge:
+                option = (
+                    self.options["hold"]
+                    if charge and discharge
+                    else self._day_option("no_charge" if charge else "no_discharge")
+                )
+                writes.append(Write(self.controls["mode"], option))
+            else:
+                give_back.append("mode")
             return self._paced(writes), give_back
         charge_roles = self.limit_roles()
         discharge_roles = self.discharge_roles()
@@ -610,48 +726,32 @@ class RoleAdapter(Adapter):
                 give_back += [r for r in (switch, value) if r in self.controls]
         return self._paced(writes), give_back
 
-    def charge_blocked(self, hass: HomeAssistant) -> bool:
-        """Whether charging is blocked right now, whoever holds the lever: its
-        allow switch off, or its charge limit at 0 and in force."""
-        if (
-            self._has("allow_charge")
-            and read(hass, self.controls["allow_charge"]) is False
-        ):
+    def _blocked(self, hass: HomeAssistant, direction: str) -> bool:
+        """Whether one direction is blocked right now, whoever holds the lever:
+        its switch set to block, its mode on an option that blocks it, or its
+        limit at 0 and in force (Fronius ignores a limit whose switch is off:
+        both must be so)."""
+        toggle = self._toggle(direction)
+        if toggle and read(hass, self.controls[toggle[0]]) is toggle[1]:
             return True
-        roles = self.limit_roles()
+        blocks = self._mode_blocks(direction)
+        if blocks and read(hass, self.controls["mode"]) in blocks:
+            return True
+        roles = self.limit_roles() if direction == "charge" else self.discharge_roles()
         if roles is None:
             return False
         switch, value = roles
         if switch in self.controls and read(hass, self.controls[switch]) is not True:
             return False
-        level = read(hass, self.controls[value])
-        return (
-            isinstance(level, int | float)
-            and not isinstance(level, bool)
-            and level <= 0
-        )
+        return _zero(read(hass, self.controls[value]))
+
+    def charge_blocked(self, hass: HomeAssistant) -> bool:
+        """Whether charging is blocked right now, whoever holds the lever."""
+        return self._blocked(hass, "charge")
 
     def discharge_blocked(self, hass: HomeAssistant) -> bool:
-        """Whether discharging is blocked right now: its allow switch off, or
-        its discharge limit at 0 and in force (Fronius ignores a limit whose
-        switch is off – both must be so)."""
-        if (
-            self._has("allow_discharge")
-            and read(hass, self.controls["allow_discharge"]) is False
-        ):
-            return True
-        roles = self.discharge_roles()
-        if roles is None:
-            return False
-        switch, value = roles
-        if switch in self.controls and read(hass, self.controls[switch]) is not True:
-            return False
-        level = read(hass, self.controls[value])
-        return (
-            isinstance(level, int | float)
-            and not isinstance(level, bool)
-            and level <= 0
-        )
+        """Whether discharging is blocked right now, whoever holds the lever."""
+        return self._blocked(hass, "discharge")
 
     def team_free(self, saved: dict[str, Any], roles: list[str]) -> list[Write]:
         """These levers back as they were: each switch first, then its value."""
@@ -665,27 +765,49 @@ class RoleAdapter(Adapter):
         """Whether Joe can restart the battery's own control (stage 1)."""
         return self._has("system_manual_mode")
 
+    def _guard_candidates(
+        self, direction: str, whole_system: bool
+    ) -> list[tuple[str, ...]]:
+        """Every way to block one direction, in Joe's order."""
+        found: list[tuple[str, ...]] = []
+        toggle = self._toggle(direction)
+        if toggle:
+            found.append((toggle[0],))
+        switch, value = f"{direction}_limit_enabled", f"{direction}_limit"
+        if self._has(value):
+            found.append((switch, value) if self._has(switch) else (value,))
+        if whole_system and self._has(
+            f"system_{direction}_limit", "system_charge_limit_enabled"
+        ):
+            found.append(("system_charge_limit_enabled", f"system_{direction}_limit"))
+        if self._day_option(f"no_{direction}") and self._has("mode"):
+            found.append(("mode",))
+        return found
+
     def guard_block_roles(
         self, direction: str, whole_system: bool = False
     ) -> tuple[str, ...]:
         """The roles that block one direction ("charge" or "discharge") for a
         few seconds (stage 2), switch before value; empty: none.
 
-        A battery's own allow switch (Venus), else its own limit at 0 with its
-        switch (Fronius), else the system's limits when every battery behind
-        them is blocked with it (`whole_system`).
+        A battery's own switch (Venus: allow off; Kostal: block on), else its
+        own limit at 0 with its switch (Fronius), else the system's limits
+        when every battery behind them is blocked with it (`whole_system`),
+        else a mode that blocks it. Where flash is to be spared
+        (flash_gap_s), a lever that writes to it only without a gentler one.
         """
-        allow = f"allow_{direction}"
-        if self._has(allow):
-            return (allow,)
-        switch, value = f"{direction}_limit_enabled", f"{direction}_limit"
-        if self._has(value):
-            return (switch, value) if self._has(switch) else (value,)
-        if whole_system and self._has(
-            f"system_{direction}_limit", "system_charge_limit_enabled"
-        ):
-            return ("system_charge_limit_enabled", f"system_{direction}_limit")
-        return ()
+        found = self._guard_candidates(direction, whole_system)
+        if self.profile.flash_gap_s:
+            flash = set(self.profile.flash)
+            found = [r for r in found if not flash & set(r)] or found
+        return found[0] if found else ()
+
+    def guard_flash_gap(self, direction: str, whole_system: bool = False) -> float:
+        """How long (s) the watchdog waits between two blocks with these
+        levers: they write to flash (0: no need to wait)."""
+        roles = self.guard_block_roles(direction, whole_system)
+        flash = set(roles) & set(self.profile.flash)
+        return self.profile.flash_gap_s if flash else 0.0
 
     def guard_block(
         self,
@@ -693,14 +815,18 @@ class RoleAdapter(Adapter):
         whole_system: bool = False,
         hass: HomeAssistant | None = None,
     ) -> list[Write]:
-        """Writes that block one direction: the allow switch off, or the
-        limit at 0 first and then its switch on (Fronius ignores it while
-        off); with the system's shared switch the other direction opened wide."""
+        """Writes that block one direction: the switch set to block, the
+        mode's option, or the limit at 0 first and then its switch on
+        (Fronius ignores it while off); with the system's shared switch the
+        other direction opened wide."""
         roles = self.guard_block_roles(direction, whole_system)
-        if roles == (f"allow_{direction}",):
-            return [Write(self.controls[roles[0]], False)]
         if not roles:
             return []
+        toggle = self._toggle(direction)
+        if toggle and roles == (toggle[0],):
+            return [Write(self.controls[roles[0]], toggle[1])]
+        if roles == ("mode",):
+            return [Write(self.controls["mode"], self._day_option(f"no_{direction}"))]
         switch = roles[0] if len(roles) == 2 else None
         writes = [Write(self.controls[roles[-1]], 0)]
         if switch == "system_charge_limit_enabled" and hass is not None:
@@ -736,12 +862,23 @@ class RoleAdapter(Adapter):
         return writes
 
     def _open_wide(self, hass: HomeAssistant, role: str) -> Write:
-        """A limit at its highest (no limit while the shared switch is on)."""
+        """A limit wide open (no limit while the shared switch is on): the end
+        of its range farthest from 0 (VARTA's discharge limit runs from -4000
+        to 0), else the battery's highest power in the entity's unit."""
         entity_id = self.controls[role]
+        state = hass.states.get(entity_id)
+        attrs = state.attributes if state else {}
+        ends = [
+            float(attrs[k])
+            for k in ("max", "min")
+            if isinstance(attrs.get(k), int | float) and not isinstance(attrs[k], bool)
+        ]
+        if ends and max(ends, key=abs):
+            return Write(entity_id, max(ends, key=abs))
         key = "max_discharge_w" if "discharge" in role else "max_charge_w"
-        fallback = float(self.battery.get(key) or 10000)
-        _, high = _range(hass, entity_id, 0, fallback)
-        return Write(entity_id, high)
+        watts = float(self.battery.get(key) or 10000)
+        unit = attrs.get("unit_of_measurement")
+        return Write(entity_id, watts / 1000 if unit == "kW" else watts)
 
     def _limit_unit(self, hass: HomeAssistant) -> str:
         state = hass.states.get(self.limit_key() or "")
@@ -749,18 +886,48 @@ class RoleAdapter(Adapter):
         return unit or "W"
 
     def release(self, saved: dict[str, Any]) -> list[Write]:
-        return self._paced(super().release(saved))
+        return self._paced(
+            [self._back(w.entity_id, w.value) for w in super().release(saved)]
+        )
+
+    def _back(self, entity_id: str, value: Any) -> Write:
+        """A value given back: a mode option the select would not take comes
+        back as its normal option (see Profile.restore_as)."""
+        if entity_id != self.controls.get("mode") or not isinstance(value, str):
+            return Write(entity_id, value)
+        return Write(
+            entity_id,
+            self.profile.restore_as.get(value, value),
+            fallback=self.options.get("normal"),
+        )
 
     def _paced(self, writes: list[Write]) -> list[Write]:
-        """Pauses between commands for devices that need them (Modbus)."""
+        """Pauses between commands for devices that need them (Modbus); after a
+        prepare step Joe waits for the entities it makes available; writes to
+        flash are marked (written again less often)."""
         pace = self.profile.pace
-        if not pace:
-            return writes
-        prepared = {step["entity_id"] for step in self.prepare}
-        return [
-            replace(w, pause=pace * 2 if w.entity_id in prepared else pace)
-            for w in writes
-        ]
+        prepared = set(self.prepare_entities())
+        # Only where flash is to be spared (Omnibattery's switches are noted
+        # as such, but its watchdog and "Nacheinander" keep their pace).
+        flash = self._flash_entities() if self.profile.flash_gap_s else set()
+        result = []
+        for index, write in enumerate(writes):
+            changes: dict[str, Any] = {}
+            if pace:
+                changes["pause"] = pace * 2 if write.entity_id in prepared else pace
+            if write.entity_id in flash:
+                changes["flash"] = True
+            if write.entity_id in prepared and self.profile.ready_s:
+                later = tuple(
+                    w.entity_id
+                    for w in writes[index + 1 :]
+                    if not w.is_call and w.entity_id not in prepared
+                )
+                if later:
+                    changes["ready_for"] = later
+                    changes["ready_s"] = self.profile.ready_s
+            result.append(replace(write, **changes) if changes else write)
+        return result
 
     def missing(self, hass: HomeAssistant) -> list[str]:
         """What keeps Joe from steering: no way to hold, or entities gone.
@@ -771,8 +938,9 @@ class RoleAdapter(Adapter):
         result = []
         if not self.hold_methods():
             result.append("hold")
+        day = self.day_roles()
         for role, entity_id in self.controls.items():
-            if role in DAY_ROLES:
+            if role in day:
                 # Only the day needs them (limit_problem, the watchdog say so).
                 continue
             if not available(hass.states.get(entity_id)):
@@ -839,6 +1007,12 @@ class RoleAdapter(Adapter):
                         Write(c["charge_power"], self._power(hass, desired.power_w))
                     )
                 result += self._timeout(hass, desired)
+                if "grid_charge" in c:
+                    # Growatt's "Battery First" charges from the grid only so.
+                    result.insert(
+                        len(self._prepare(method)),
+                        Write(c["grid_charge"], self._on("grid_charge")),
+                    )
                 return [*result, Write(c["mode"], self.options["force_charge"])]
             if method == "target":
                 result.append(
@@ -848,6 +1022,9 @@ class RoleAdapter(Adapter):
                     result.append(
                         Write(c["charge_power"], self._power(hass, desired.power_w))
                     )
+                return [*result, Write(c["grid_charge"], self._on("grid_charge"))]
+            if method == "switch":
+                # No level, no power: Joe stops it at the target.
                 return [*result, Write(c["grid_charge"], self._on("grid_charge"))]
             if method == "min_soc":
                 return [
@@ -877,9 +1054,10 @@ class RoleAdapter(Adapter):
 
     def _block(self, hass: HomeAssistant, soc: float, desired: Desired) -> list[Write]:
         c = self.controls
-        if "allow_discharge" in c and available(hass.states.get(c["allow_discharge"])):
+        toggle = self._toggle("discharge")
+        if toggle and available(hass.states.get(c[toggle[0]])):
             # Frozen without manual mode: its own control goes on at once after.
-            return [Write(c["allow_discharge"], False)]
+            return [Write(c[toggle[0]], toggle[1])]
         for method in self.profile.block:
             if method == "min_soc":
                 if "min_soc" not in c:
@@ -920,9 +1098,14 @@ class RoleAdapter(Adapter):
         return result
 
     def _lift_block(self, saved: dict[str, Any]) -> list[Write]:
-        """The limit's switch off first, then the limit back; the allow switch back."""
+        """The limit's switch off first, then the limit back; the allow (or
+        block) switch back."""
         return self._restore(
-            saved, "discharge_limit_enabled", "discharge_limit", "allow_discharge"
+            saved,
+            "discharge_limit_enabled",
+            "discharge_limit",
+            "allow_discharge",
+            "block_discharge",
         )
 
     def _prepare(self, method: str) -> list[Write]:
@@ -962,7 +1145,7 @@ class RoleAdapter(Adapter):
         for role in roles:
             entity_id = self.controls.get(role)
             if entity_id and entity_id in saved and saved[entity_id] is not None:
-                result.append(Write(entity_id, saved[entity_id]))
+                result.append(self._back(entity_id, saved[entity_id]))
         return result
 
     def _on(self, role: str) -> Any:
@@ -988,6 +1171,10 @@ class RoleAdapter(Adapter):
         state = hass.states.get(entity_id)
         unit = (state.attributes.get("unit_of_measurement") if state else None) or "W"
         maximum_w = self.battery.get("max_charge_w") or watts
+        low, _ = _range(hass, entity_id, 0, 0)
+        if self.profile.charge_negative and low < 0:
+            # Its setpoint charges below 0 (Zendure's manual power).
+            watts = -watts
         if unit == "kW":
             return watts / 1000
         if unit == "%":
@@ -998,28 +1185,54 @@ class RoleAdapter(Adapter):
         return watts
 
 
-class StepsAdapter(Adapter):
+class StepsAdapter(RoleAdapter):
     """Batteries steered with steps: entity values or service calls.
 
     The user assigns steps in the panel for odd devices; profiles of
     integrations steered by services bring their own (resolved by discovery).
-    Values may be "{floor}", "{target}", "{power}", "{minutes}" or "{device}".
+    Values may be "{floor}", "{target}", "{power}", "{power_neg}" (the power
+    below 0, for setpoints that charge below 0), "{minutes}", "{seconds}"
+    (the window and an hour, at most a day) or "{device}".
+
+    The night runs on the steps alone; levers of the profile only the day
+    uses (day_roles, e.g. Huawei's power limits) work as for other batteries.
     """
 
-    def __init__(self, battery: dict[str, Any]) -> None:
-        super().__init__(battery)
+    def __init__(self, battery: dict[str, Any], profile: Profile = GENERIC) -> None:
+        super().__init__(battery, profile)
         self.kind = battery.get("adapter") or "steps"
         self.steps: dict[str, list[dict[str, Any]]] = dict(battery.get("steps") or {})
+        self.prepare = []
 
     def entities(self) -> list[str]:
         return list(
             dict.fromkeys(
-                step["entity_id"]
-                for steps in self.steps.values()
-                for step in steps
-                if step.get("entity_id")
+                [
+                    *(
+                        step["entity_id"]
+                        for steps in self.steps.values()
+                        for step in steps
+                        if step.get("entity_id")
+                    ),
+                    *self.controls.values(),
+                ]
             )
         )
+
+    def prepare_entities(self) -> list[str]:
+        return []
+
+    def loop_owned(self) -> set[str]:
+        return set()
+
+    def prepared(self, hass: HomeAssistant) -> bool:
+        return False
+
+    def hold_methods(self) -> list[str]:
+        return ["steps"] if self.steps.get("hold") else []
+
+    def charge_methods(self) -> list[str]:
+        return ["steps"] if self.steps.get("charge") else []
 
     @property
     def can_charge(self) -> bool:
@@ -1027,7 +1240,8 @@ class StepsAdapter(Adapter):
 
     def power_lever(self, hass: HomeAssistant) -> str | None:
         """Steps that take "{power}" set it."""
-        return "power" if "{power}" in json.dumps(self.steps.get("charge")) else None
+        text = json.dumps(self.steps.get("charge"))
+        return "power" if "{power}" in text or "{power_neg}" in text else None
 
     def missing(self, hass: HomeAssistant) -> list[str]:
         result = [] if self.steps.get("hold") else ["hold"]
@@ -1050,26 +1264,30 @@ class StepsAdapter(Adapter):
     ) -> list[Write]:
         values = self._values(desired, soc)
         if desired.charge_to is not None and self.can_charge:
-            return self._render("charge", values)
+            return self._paced(self._render("charge", values))
         if desired.block or desired.floor is not None or desired.charge_to is not None:
             if desired.block or desired.floor is None:
                 values["{floor}"] = math.floor(soc)
-            return self._render("hold", values)
+            return self._paced(self._render("hold", values))
         return self.release(saved)
 
     def release(self, saved: dict[str, Any]) -> list[Write]:
         """The release steps, then every entity Joe changed back."""
         return _last_wins(
-            self._render("release", self._values(Desired(), 0)) + super().release(saved)
+            self._paced(self._render("release", self._values(Desired(), 0)))
+            + super().release(saved)
         )
 
     def _values(self, desired: Desired, soc: float) -> dict[str, Any]:
         power = desired.power_w or self.battery.get("max_charge_w") or DEFAULT_CHARGE_W
+        span = (desired.span_s or DEFAULT_SPAN) + 3600
         return {
             "{floor}": desired.floor if desired.floor is not None else math.floor(soc),
             "{target}": desired.charge_to,
             "{power}": round(power),
-            "{minutes}": math.ceil(((desired.span_s or DEFAULT_SPAN) + 3600) / 60),
+            "{power_neg}": -round(power),
+            "{minutes}": math.ceil(span / 60),
+            "{seconds}": min(MAX_SECONDS, math.ceil(span)),
             "{device}": self.battery.get("device_id"),
         }
 
@@ -1088,6 +1306,15 @@ class StepsAdapter(Adapter):
                     Write(step["entity_id"], _fill(step.get("value"), values))
                 )
         return result
+
+
+def _zero(level: Any) -> bool:
+    """Whether a limit's value is 0 (a block); -1 often means no limit."""
+    return (
+        isinstance(level, int | float)
+        and not isinstance(level, bool)
+        and abs(level) < 1e-3
+    )
 
 
 def _fill(value: Any, values: dict[str, Any]) -> Any:
@@ -1110,7 +1337,7 @@ def make_adapter(battery: dict[str, Any]) -> Adapter | None:
     if profile is None:
         return None
     if profile.steps:
-        return StepsAdapter(battery)
+        return StepsAdapter(battery, profile)
     return RoleAdapter(battery, profile)
 
 

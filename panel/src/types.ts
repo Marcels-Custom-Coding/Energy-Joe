@@ -112,7 +112,10 @@ export type ControlRole =
   | "system_manual_mode"
   /** The watchdog: a battery's switches that allow charging and discharging at all (Venus). */
   | "allow_charge"
-  | "allow_discharge";
+  | "allow_discharge"
+  /** The other way round: on = blocked (Kostal over Modbus), by day only. */
+  | "block_charge"
+  | "block_discharge";
 export const CONTROL_ROLES: ControlRole[] = [
   "min_soc",
   "grid_charge",
@@ -123,7 +126,9 @@ export const CONTROL_ROLES: ControlRole[] = [
   "discharge_limit",
   "discharge_limit_enabled",
 ];
-export type ModeMeaning = "normal" | "force_charge" | "hold" | "force_discharge";
+/** Meanings of mode options; "no_charge"/"no_discharge" only by day (found by discovery). */
+export type ModeMeaning = "normal" | "force_charge" | "hold" | "force_discharge" | "no_charge" | "no_discharge";
+/** The meanings the owner assigns (the night's). */
 export const MODE_MEANINGS: ModeMeaning[] = ["normal", "force_charge", "hold", "force_discharge"];
 
 export interface ControlStep {
@@ -480,6 +485,8 @@ export type SurplusBatteryState =
   | "no_limit"
   /** A charge limit in A (or without a unit): no power Joe can trust. */
   | "unit"
+  /** Its charge limit is a setting in the device's flash (Victron): no cap that follows the sun. */
+  | "flash"
   /** A charge limit in %: Joe needs to know what 100 % stand for (limit_ref_w). */
   | "need_ref"
   /** Joe is finding out right now what 100 % stand for (a test limit for a few minutes). */
@@ -1639,6 +1646,10 @@ export interface BatteryFinding {
   prepare?: ControlStep[];
   steps?: Partial<Record<StepName, ControlStep[]>>;
   adapter: Adapter;
+  /** Whether Joe can charge it from the grid (not only keep it from discharging). */
+  can_charge?: boolean;
+  /** What the owner should know: why Joe cannot steer it, what to switch on first. */
+  notes?: BatteryNote[];
   /** Levers Joe guesses for batteries without a profile (to confirm in the panel). */
   suggested?: {
     controls: Partial<Record<ControlRole, string>>;
@@ -1707,6 +1718,18 @@ export interface Check {
   [key: string]: unknown;
 }
 
+/** A hint about steering a battery: a code the panel explains, maybe entities to switch on. */
+export interface BatteryNote {
+  code: string;
+  entities?: { entity_id: string; name: string }[];
+}
+
+/** A battery integration Joe sees without a battery in it (its level switched off). */
+export interface BatteryIntegrationNote extends BatteryNote {
+  integration: string;
+  name: string;
+}
+
 export interface Discovery {
   energy_dashboard: { configured: boolean; grid?: number; solar?: number; battery?: number; devices?: number };
   measurements: {
@@ -1715,6 +1738,7 @@ export interface Discovery {
     solar_power: SolarFinding | null;
   };
   batteries: BatteryFinding[];
+  battery_notes?: BatteryIntegrationNote[];
   tariff: TariffFinding;
   forecast: ForecastFinding | null;
   wallboxes: WallboxFinding[];

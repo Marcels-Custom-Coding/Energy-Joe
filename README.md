@@ -42,11 +42,49 @@ Joe braucht kein Vorwissen. Er findet selbst, was er braucht, fragt in Alltagssp
 
 ### Speicher steuern
 
-- Joe steuert über wenige Grundgriffe (Mindest-Ladestand, Netzladen, Betriebsart mit Zwangsladen, Entladegrenze) und kennt sie für viele Integrationen, u. a. Fronius, Marstek (Omnibattery), Huawei, SolarEdge, Fox ESS, SolaX, Sigenergy, Sungrow, GoodWe, Enphase, Tesla, Kostal, Victron, Zendure, sonnen, E3/DC und Growatt. Für andere schlägt er passende Regler vor.
+- Joe steuert über wenige Grundgriffe (Mindest-Ladestand, Netzladen, Betriebsart mit Zwangsladen, Lade- und Entladegrenze, Sperr-Schalter) und kennt sie für viele Integrationen – siehe „Unterstützte Speicher“. Für andere schlägt er passende Regler vor.
 - Vor dem ersten Steuern macht er einen Testlauf.
 - In den Modi „Vorschlagen“ (fragt jeden Abend) und „Live“ hält und lädt er die Speicher und stellt am Ende alles zurück – auch nach einem Neustart oder per Notfall-Knopf.
 - Automationen, die auf dieselben Regler schreiben, listet er auf und kann sie mit einem Klick aus- und wieder einschalten.
 - Sicherheitsgrenzen: Höchstpreis fürs Netzladen, Mindestersparnis, Schutz der Hauptsicherung, Meldung, wenn ein Speicher trotz Laden nicht voller wird. Auf Wunsch gelegentlich eine Pflegeladung bis 100 %.
+- Sieht Joe einen Speicher, den er nicht steuern kann, sagt er dir im Panel, warum – und was du tun kannst (eine Freischaltung im Gerät, eine Option der Integration, eine ausgeschaltete Entität).
+
+### Unterstützte Speicher
+
+**Laden** heißt nachts aus dem Netz laden, **Halten** nicht entladen, **Sperren** tagsüber Laden oder Entladen sperren (für „Mehrere Speicher: nacheinander“ und den Speicher-Wächter), **Drosseln** tagsüber langsamer laden („Tagsüber Überschuss abgeben“). Am echten Gerät erprobt sind Fronius und Omnibattery; alle anderen kennt Joe aus dem Quellcode ihrer Integration (Stand Oktober 2026) – deshalb steuert er jeden Speicher erst nach einem bestandenen Testlauf.
+
+| Hersteller | Integration | Was Joe kann | Voraussetzungen |
+|---|---|---|---|
+| Fronius (mit BYD u. a.) | `fronius` (HA) | Laden, Halten, Sperren, Drosseln | – |
+| Marstek Venus | `omnibattery` | Laden, Halten, Sperren, Drosseln, Wächter | – |
+| Marstek | `marstek_modbus` | Laden, Halten | Steuer-Entitäten einschalten; nur ein Programm darf per Modbus mit ihm sprechen |
+| Marstek | `marstek` (Open API) | Laden, Halten | – |
+| Kostal | `kostal_plenticore` (HA) | Halten | „Battery min SoC“ einschalten |
+| Kostal | `kostal_modbus_control` | Laden, Halten, Sperren (eine Richtung) | Batteriemanagement „Extern über Protokoll (Modbus TCP)“ im Wechselrichter; Ladestand-Sensor einschalten |
+| Huawei | `huawei_solar` | Laden, Halten, Sperren, Drosseln | „Advanced: elevate permissions“ (Installateur-Passwort) |
+| SolarEdge | `solaredge_modbus_multi` | Laden, Halten | erweiterte Speichersteuerung (`adv_storage_control`) |
+| Sigenergy | `sigen` | Laden, Halten, Sperren, Drosseln | „Nur lesen“ (`read_only`) aus, Steuer-Entitäten ein |
+| Victron (GX) | `victron_gx` (HA), `victron_mqtt` | Laden, Halten, Sperren (schont den Flash) | ESS eingerichtet; `victron_mqtt` nicht auf „READ_ONLY“ |
+| Victron (Modbus) | `victron` | Laden (volle Leistung), Halten, Sperren | Schreibzugriff in den erweiterten Optionen |
+| E3/DC | `e3dc_rscp` | Laden, Halten | – |
+| sonnen | `sonnenbatterie`, `sonnenbatterie_v2` | Laden, Halten | Schreibzugriff in der sonnen-Oberfläche |
+| SENEC | `senec` | Laden (ohne Leistung), Halten bis 50 % | lokal (V2/V3) und mein-senec-Konto mit „Backup Power pro“ |
+| VARTA | `varta_modbus` | Halten, Sperren, Drosseln | – |
+| Fox ESS | `foxess_modbus` | Laden, Halten, Sperren | – |
+| GoodWe | `goodwe` | Halten; Laden nur mit der experimentellen Integration (HACS) | – |
+| SolaX, Solis, Growatt | `solax_modbus` | Laden, Halten | – |
+| Growatt | `growatt_server` (HA), `growatt_modbus` | Laden, Halten | – |
+| Deye | `solarman` (davidrapan) | Laden, Halten, Sperren | „Time of Use“ im Wechselrichter ein |
+| Sungrow | `sungrow` | Laden, Halten | – |
+| Zendure | `zendure_ha` | Laden, Halten, Wächter (über den Zendure Manager) | P1-Zähler im Manager |
+| Anker SOLIX | `anker_solix` | Laden (Backup-Laden), Halten | Eigentümer-Konto (Cloud, Antworten dauern Minuten) |
+| HomeWizard | `homewizard` (HA) | Laden, Halten, Sperren (ab API 2.2.0) | – |
+| Indevolt | `indevolt` (HA) | Laden, Halten | – |
+| Tesla Powerwall | `teslemetry`, `tessie`, `tesla_fleet` (HA) | Laden, Halten | – |
+| Enphase | `enphase_envoy` (HA) | Laden, Halten | – |
+| Zinvolt, Tuya | `zinvolt`, `tuya` | Laden (Zinvolt), Halten | – |
+
+Nur beobachten (Joe sagt dir im Panel, warum): SMA (`sma`, `pysmaplus`, `sma_ennexos` lesen nur), RCT (`rct_power`), EcoFlow (`ecoflow_cloud`), VARTA (`varta_storage`, `varta_pulse_neo`), BYD Battery-Box (wird über ihren Wechselrichter gesteuert), Powerwall über die lokale Integration, Hoymiles und Growatt NOAH über MQTT. Für Speicher ohne Profil schlägt Joe passende Regler vor, die du bestätigst.
 
 ### E-Auto und Warmwasser
 

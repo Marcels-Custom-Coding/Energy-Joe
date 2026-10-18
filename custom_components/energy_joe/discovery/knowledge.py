@@ -40,6 +40,16 @@ INTEGRATION_ROLES: dict[str, dict[str, KeyRole]] = {
         "ac_power": KeyRole("battery_power", invert=True),  # positive = discharging
         "battery_total_energy": KeyRole("battery_capacity"),
     },
+    # mbuhansen/kostal_plenticore_battery_control: unique id "<entry>_<key>";
+    # its level is switched off by default.
+    "kostal_modbus_control": {
+        "battery_soc": KeyRole("battery_soc"),
+    },
+    # andreasreinhardt81/varta_modbus_hacs: unique id "<serial>_<key>".
+    "varta_modbus": {
+        "state_of_charge": KeyRole("battery_soc"),
+        "installed_capacity": KeyRole("battery_capacity"),
+    },
 }
 
 # Solar forecast integrations and the keys of their daily sums.
