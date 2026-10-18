@@ -161,6 +161,7 @@
     "prepare": [],
     "steps": {},
     "controllable": true,
+    "can_charge": true,
     "suggested": null,
     "confidence": 1.0,
     "reasons": [
@@ -179,7 +180,8 @@
       "code": "energy_dashboard",
       "part": "battery"
      }
-    ]
+    ],
+    "notes": []
    },
    {
     "id": "venus",
@@ -219,6 +221,7 @@
     "prepare": [],
     "steps": {},
     "controllable": true,
+    "can_charge": true,
     "suggested": null,
     "confidence": 0.95,
     "reasons": [
@@ -233,7 +236,8 @@
       "code": "controls_found",
       "count": 3
      }
-    ]
+    ],
+    "notes": []
    }
   ],
   "tariff": {
@@ -383,6 +387,23 @@
       "integration": "kia_uvo"
      }
     ]
+   }
+  ],
+  "car_sources": [
+   {
+    "id": "car:car",
+    "kind": "car",
+    "platform": "kia_uvo",
+    "device_id": "car",
+    "name": "Electric car",
+    "vehicle": null,
+    "entities": {
+     "soc": "sensor.ev_battery",
+     "range": "sensor.ev_range",
+     "capacity": "sensor.ev_battery_capacity",
+     "plugged": "binary_sensor.ev_plugged_in",
+     "odometer": "sensor.ev_odometer"
+    }
    }
   ],
   "weather": {
@@ -553,6 +574,7 @@
     ]
    }
   ],
+  "battery_notes": [],
   "checks": [],
   "proposal": {
    "measurements": {
@@ -652,13 +674,12 @@
      "power_kw": 11.0,
      "power_entity": "sensor.evcc_carport_charge_power",
      "priority": 1,
-     "need": {
-      "enabled": false,
-      "soc_entity": "sensor.ev_battery",
-      "range_entity": "sensor.ev_range",
-      "capacity_entity": "sensor.ev_battery_capacity",
-      "odometer_entity": "sensor.ev_odometer",
-      "consumption_entity": null
+     "point": {
+      "vehicle_entity": null,
+      "connected_entity": "binary_sensor.evcc_carport_connected",
+      "soc_entity": null,
+      "range_entity": null,
+      "odometer_entity": null
      }
     }
    ],
@@ -784,7 +805,7 @@
   ]
  },
  "default_config": {
-  "version": 4,
+  "version": 7,
   "measurements": {
    "grid_power": null,
    "home_power": null,
@@ -812,11 +833,16 @@
   },
   "context": {
    "weather_entity": null,
-   "holiday_entity": null
+   "holiday_entity": null,
+   "presence_entity": null,
+   "guest_switch": null,
+   "guest_tracker": null,
+   "free_day_entities": []
   },
   "persons": [],
   "consumers": [],
   "actions": [],
+  "cars": [],
   "rules": {
    "reserve_soc": 10.0,
    "max_target_soc": 100.0,
@@ -838,13 +864,24 @@
    "guard_grid": true,
    "grid_friendly": true,
    "grid_first": false,
+   "morning_buffer_soc": null,
+   "day_surplus": false,
+   "day_caution": "normal",
+   "battery_team": null,
+   "team_charge_order": [],
+   "team_discharge_order": [],
+   "team_style": null,
+   "team_early": null,
+   "transfer_guard": true,
+   "converter_losses": false,
    "balance_days": null
   },
   "notify": {
    "service": null,
    "ask": true,
    "problems": true,
-   "morning": false
+   "morning": false,
+   "cars": true
   },
   "calendar": {
    "rules": [
@@ -942,6 +979,14 @@
    "geocoder_url": "https://photon.komoot.io/api/",
    "router_url": "https://routing.openstreetmap.de/routed-car/route/v1/driving/"
   },
+  "climate": {
+   "enabled": false,
+   "away_after_min": 15,
+   "night_by": "time",
+   "route_eta": true,
+   "night_entity": null,
+   "rooms": {}
+  },
   "answers": {
    "ignored": [],
    "confirmed": []
@@ -953,6 +998,7 @@
    "shift_days": 0,
    "buffer": null,
    "buffer_days": 0,
+   "morning_need": null,
    "since": null,
    "updated": null,
    "consumption_model": null,
@@ -970,7 +1016,7 @@
   "provenance": {}
  },
  "adopted_config": {
-  "version": 4,
+  "version": 7,
   "measurements": {
    "grid_power": {
     "entity_id": "sensor.house_meter_power",
@@ -986,7 +1032,8 @@
     {
      "entity_id": "sensor.solarnet_power_photovoltaics",
      "invert": false,
-     "minus_entity_id": null
+     "minus_entity_id": null,
+     "sleeps": false
     }
    ]
   },
@@ -1015,7 +1062,14 @@
     "mode_options": {},
     "prepare": [],
     "steps": {},
-    "priority": 1
+    "priority": 1,
+    "floor_soc": null,
+    "day_surplus": true,
+    "limit_ref_w": null,
+    "self_regulating": null,
+    "control_group": null,
+    "night_cap": null,
+    "cutoff_soc": null
    },
    {
     "id": "venus",
@@ -1044,7 +1098,14 @@
     },
     "prepare": [],
     "steps": {},
-    "priority": 2
+    "priority": 2,
+    "floor_soc": null,
+    "day_surplus": true,
+    "limit_ref_w": null,
+    "self_regulating": null,
+    "control_group": null,
+    "night_cap": null,
+    "cutoff_soc": null
    }
   ],
   "tariff": {
@@ -1082,7 +1143,11 @@
   },
   "context": {
    "weather_entity": "weather.home",
-   "holiday_entity": "binary_sensor.workday"
+   "holiday_entity": "binary_sensor.workday",
+   "presence_entity": null,
+   "guest_switch": null,
+   "guest_tracker": null,
+   "free_day_entities": []
   },
   "persons": [
    {
@@ -1091,13 +1156,15 @@
     "person_entity": "person.alex",
     "calendars": [
      "calendar.alex_work"
-    ]
+    ],
+    "calendar": null
    },
    {
     "id": "person.sam",
     "name": "Sam",
     "person_entity": "person.sam",
-    "calendars": []
+    "calendars": [],
+    "calendar": null
    }
   ],
   "consumers": [
@@ -1193,14 +1260,55 @@
     "power_kw": 11.0,
     "power_entity": "sensor.evcc_carport_charge_power",
     "priority": 1,
+    "point": {
+     "vehicle_entity": null,
+     "connected_entity": "binary_sensor.evcc_carport_connected",
+     "soc_entity": null,
+     "range_entity": null,
+     "odometer_entity": null,
+     "cars": null,
+     "unknown": "ask",
+     "assume_car": null
+    },
+    "enabled": true,
+    "reset_value": null,
+    "consumer_id": null,
+    "sensor_entity": null,
+    "comfort": 45.0,
+    "maximum": 62.0,
+    "buffer": 3.0
+   }
+  ],
+  "cars": [
+   {
+    "name": "Electric car",
+    "sources": [
+     {
+      "id": "car:car",
+      "kind": "car",
+      "platform": "kia_uvo",
+      "device_id": "car",
+      "name": "Electric car",
+      "vehicle": null,
+      "entities": {
+       "soc": "sensor.ev_battery",
+       "range": "sensor.ev_range",
+       "capacity": "sensor.ev_battery_capacity",
+       "plugged": "binary_sensor.ev_plugged_in",
+       "odometer": "sensor.ev_odometer"
+      }
+     }
+    ],
+    "id": "car_electric_car",
+    "tracker_entity": null,
     "need": {
      "enabled": false,
-     "soc_entity": "sensor.ev_battery",
-     "range_entity": "sensor.ev_range",
-     "capacity_entity": "sensor.ev_battery_capacity",
-     "odometer_entity": "sensor.ev_odometer",
-     "consumption_entity": null,
+     "soc_entity": null,
+     "range_entity": null,
      "capacity_kwh": null,
+     "capacity_entity": null,
+     "odometer_entity": null,
+     "consumption_entity": null,
      "reserve_km": 50.0,
      "consumption": null,
      "daily_km": null,
@@ -1228,15 +1336,11 @@
       "accept": true
      },
      "allowed": [],
-     "round_trip": true
+     "round_trip": true,
+     "max_soc": 100.0
     },
-    "enabled": true,
-    "reset_value": null,
-    "consumer_id": null,
-    "sensor_entity": null,
-    "comfort": 45.0,
-    "maximum": 62.0,
-    "buffer": 3.0
+    "remind": true,
+    "remind_time": "20:00"
    }
   ],
   "rules": {
@@ -1260,13 +1364,24 @@
    "guard_grid": true,
    "grid_friendly": true,
    "grid_first": false,
+   "morning_buffer_soc": null,
+   "day_surplus": false,
+   "day_caution": "normal",
+   "battery_team": null,
+   "team_charge_order": [],
+   "team_discharge_order": [],
+   "team_style": null,
+   "team_early": null,
+   "transfer_guard": true,
+   "converter_losses": false,
    "balance_days": null
   },
   "notify": {
    "service": null,
    "ask": true,
    "problems": true,
-   "morning": false
+   "morning": false,
+   "cars": true
   },
   "calendar": {
    "rules": [
@@ -1364,6 +1479,14 @@
    "geocoder_url": "https://photon.komoot.io/api/",
    "router_url": "https://routing.openstreetmap.de/routed-car/route/v1/driving/"
   },
+  "climate": {
+   "enabled": false,
+   "away_after_min": 15,
+   "night_by": "time",
+   "route_eta": true,
+   "night_entity": null,
+   "rooms": {}
+  },
   "answers": {
    "ignored": [],
    "confirmed": []
@@ -1375,6 +1498,7 @@
    "shift_days": 0,
    "buffer": null,
    "buffer_days": 0,
+   "morning_need": null,
    "since": null,
    "updated": null,
    "consumption_model": null,
@@ -1392,451 +1516,455 @@
   "provenance": {
    "measurements.grid_power": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "measurements.home_power": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "measurements.solar_power": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "tariff.kind": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "tariff.price_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "tariff.window": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "tariff.night_price": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "tariff.day_price": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "tariff.feed_in_price": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "tariff.feed_in_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "forecast.provider": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "forecast.config_entries": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "forecast.today": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "forecast.tomorrow": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "forecast.remaining_today": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "forecast.alternatives": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "context.weather_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "context.holiday_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[storage].name": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[storage].adapter": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[storage].soc_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[storage].power": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[storage].capacity_kwh": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[storage].capacity_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[storage].max_charge_w": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[storage].max_discharge_w": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[storage].device_id": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[storage].controls": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[storage].mode_options": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[storage].prepare": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[storage].steps": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[storage].priority": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[venus].name": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[venus].adapter": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[venus].soc_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[venus].power": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[venus].capacity_kwh": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[venus].capacity_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[venus].max_charge_w": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[venus].max_discharge_w": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[venus].device_id": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[venus].controls": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[venus].mode_options": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[venus].prepare": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[venus].steps": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[venus].priority": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "persons[person.alex].name": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "persons[person.alex].person_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "persons[person.alex].calendars": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "persons[person.sam].name": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "persons[person.sam].person_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "persons[person.sam].calendars": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.house_energy].name": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.house_energy].kind": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.house_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.house_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.house_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.house_energy].source": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.ac_office_energy].name": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.ac_office_energy].kind": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.ac_office_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.ac_office_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.ac_office_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.ac_office_energy].source": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.basement_energy].name": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.basement_energy].kind": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.basement_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.basement_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.basement_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.basement_energy].source": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.hot_water_energy].name": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.hot_water_energy].kind": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.hot_water_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.hot_water_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.hot_water_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.hot_water_energy].source": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.floor_heating_energy].name": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.floor_heating_energy].kind": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.floor_heating_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.floor_heating_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.floor_heating_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.floor_heating_energy].source": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.fridge_energy].name": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.fridge_energy].kind": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.fridge_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.fridge_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.fridge_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.fridge_energy].source": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.wallbox_energy].name": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.wallbox_energy].kind": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.wallbox_energy].energy_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.wallbox_energy].power_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.wallbox_energy].included_in": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "consumers[sensor.wallbox_energy].source": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "actions[ev_carport].name": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "actions[ev_carport].kind": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "actions[ev_carport].entity_id": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "actions[ev_carport].on_value": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "actions[ev_carport].reset": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "actions[ev_carport].lead_min": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "actions[ev_carport].auto": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "actions[ev_carport].forecast_below_kwh": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "actions[ev_carport].conditions": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "actions[ev_carport].power_kw": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "actions[ev_carport].power_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "actions[ev_carport].priority": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
-   "actions[ev_carport].need.enabled": {
+   "actions[ev_carport].point.vehicle_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
-   "actions[ev_carport].need.soc_entity": {
+   "actions[ev_carport].point.connected_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
-   "actions[ev_carport].need.range_entity": {
+   "actions[ev_carport].point.soc_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
-   "actions[ev_carport].need.capacity_entity": {
+   "actions[ev_carport].point.range_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
-   "actions[ev_carport].need.odometer_entity": {
+   "actions[ev_carport].point.odometer_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
-   "actions[ev_carport].need.consumption_entity": {
+   "cars[car_electric_car].name": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
+   },
+   "cars[car_electric_car].sources": {
+    "source": "read",
+    "updated": "2026-10-18T08:17:23+00:00"
    }
   }
  },
@@ -2709,6 +2837,7 @@
      "live": 15
     },
     "workday": false,
+    "answer": null,
     "grid_in_cheap": 3.477,
     "fc_ahead": 21.0,
     "fc_latest": null,
@@ -2752,6 +2881,7 @@
      "live": 24
     },
     "workday": true,
+    "answer": null,
     "grid_in_cheap": 3.552,
     "fc_ahead": 14.2,
     "fc_latest": null,
@@ -2795,6 +2925,7 @@
      "live": 24
     },
     "workday": true,
+    "answer": null,
     "grid_in_cheap": 8.528,
     "fc_ahead": 5.0,
     "fc_latest": null,
@@ -2838,6 +2969,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "grid_in_cheap": 8.477,
     "fc_ahead": 6.2,
     "fc_latest": null,
@@ -2881,6 +3013,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "grid_in_cheap": 2.728,
     "fc_ahead": 26.6,
     "fc_latest": null,
@@ -2924,6 +3057,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "grid_in_cheap": 3.128,
     "fc_ahead": 17.1,
     "fc_latest": null,
@@ -2967,6 +3101,7 @@
      "stats": 24
     },
     "workday": false,
+    "answer": null,
     "grid_in_cheap": 8.299,
     "fc_ahead": 9.8,
     "fc_latest": null,
@@ -3010,6 +3145,7 @@
      "stats": 24
     },
     "workday": false,
+    "answer": null,
     "grid_in_cheap": 2.478,
     "fc_ahead": 26.0,
     "fc_latest": null,
@@ -3053,6 +3189,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "grid_in_cheap": 2.433,
     "fc_ahead": 25.3,
     "fc_latest": null,
@@ -3096,6 +3233,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "grid_in_cheap": 8.191,
     "fc_ahead": 7.6,
     "fc_latest": null,
@@ -3139,6 +3277,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "grid_in_cheap": 2.242,
     "fc_ahead": 22.6,
     "fc_latest": null,
@@ -3182,6 +3321,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "grid_in_cheap": 2.045,
     "fc_ahead": 25.4,
     "fc_latest": null,
@@ -3225,6 +3365,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "grid_in_cheap": 2.953,
     "fc_ahead": 21.2,
     "fc_latest": null,
@@ -3268,6 +3409,7 @@
      "stats": 24
     },
     "workday": false,
+    "answer": null,
     "grid_in_cheap": 8.28,
     "fc_ahead": 5.0,
     "fc_latest": null,
@@ -3311,6 +3453,7 @@
      "stats": 24
     },
     "workday": false,
+    "answer": null,
     "grid_in_cheap": 3.16,
     "fc_ahead": 21.0,
     "fc_latest": null,
@@ -3354,6 +3497,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "grid_in_cheap": 7.963,
     "fc_ahead": 6.0,
     "fc_latest": null,
@@ -3397,6 +3541,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "grid_in_cheap": 1.978,
     "fc_ahead": 23.3,
     "fc_latest": null,
@@ -3440,6 +3585,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "grid_in_cheap": 3.224,
     "fc_ahead": 27.6,
     "fc_latest": null,
@@ -3483,6 +3629,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "grid_in_cheap": 7.742,
     "fc_ahead": 12.6,
     "fc_latest": null,
@@ -3526,6 +3673,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "grid_in_cheap": 8.061,
     "fc_ahead": 5.4,
     "fc_latest": null,
@@ -3569,6 +3717,7 @@
      "stats": 24
     },
     "workday": false,
+    "answer": null,
     "grid_in_cheap": 1.304,
     "fc_ahead": 18.9,
     "fc_latest": null,
@@ -4631,6 +4780,7 @@
      null
     ],
     "workday": false,
+    "answer": null,
     "summary": {
      "date": "2026-09-13",
      "hours": 24,
@@ -4646,6 +4796,7 @@
       "stats": 24
      },
      "workday": false,
+     "answer": null,
      "grid_in_cheap": 1.304,
      "fc_ahead": 18.9,
      "fc_latest": null,
@@ -4807,13 +4958,15 @@
      "soc_now": 10.0,
      "soc_start": 10.0,
      "grid_charge_kwh": 14.57,
-     "charge_from": "2026-09-14T02:00+02:00",
+     "charge_from": "2026-09-14T00:00+02:00",
      "charge_slots": [
       {
-       "start": "2026-09-14T02:00+02:00",
-       "end": "2026-09-14T05:00+02:00"
+       "start": "2026-09-14T00:00+02:00",
+       "end": "2026-09-14T04:30+02:00"
       }
      ],
+     "unplaced_kwh": 0.0,
+     "order": [],
      "tariff": "fixed",
      "charge_kw": 5.0,
      "discharge_kw": 5.0,
@@ -4826,9 +4979,22 @@
        "soc_start": 10.0,
        "target": 100,
        "charge_kwh": 9.22,
-       "power_kw": 2.5,
+       "grid_kwh": 9.71,
+       "power_kw": 2.48,
+       "max_kw": 2.5,
+       "slots": [
+        {
+         "start": "2026-09-14T00:00+02:00",
+         "end": "2026-09-14T04:30+02:00",
+         "power_kw": 2.48
+        }
+       ],
+       "how": "full",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "storage",
+       "rank": 0
       },
       {
        "id": "venus",
@@ -4838,9 +5004,22 @@
        "soc_start": 10.0,
        "target": 100,
        "charge_kwh": 4.61,
-       "power_kw": 2.5,
+       "grid_kwh": 4.86,
+       "power_kw": 1.24,
+       "max_kw": 2.5,
+       "slots": [
+        {
+         "start": "2026-09-14T00:00+02:00",
+         "end": "2026-09-14T04:30+02:00",
+         "power_kw": 1.24
+        }
+       ],
+       "how": "spread",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "venus",
+       "rank": 1
       }
      ],
      "sun_takes_over": null,
@@ -4867,27 +5046,31 @@
       "discharge_mode": "until_target",
       "evening_min": null,
       "grid_limit_kw": null,
+      "grid_limit_source": null,
       "max_night_kwh": null,
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
       "force_target": null,
       "grid_friendly": false,
-      "grid_first": false
+      "grid_first": false,
+      "morning_buffer": null
      },
      "day": null,
+     "morning_buffer": null,
      "reasons": [
       "no_sun"
      ],
      "notes": [],
      "actions": [],
+     "cars": {},
      "fixed": true
     },
     "plan_soc_slots": [
-     10.0,
-     10.0,
-     38.2,
-     69.1,
+     30.0,
+     50.0,
+     70.0,
+     90.0,
      100.0,
      96.1,
      92.2,
@@ -5857,6 +6040,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-14",
      "hours": 24,
@@ -5872,6 +6056,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "grid_in_cheap": 8.061,
      "fc_ahead": 5.4,
      "fc_latest": null,
@@ -6033,13 +6218,15 @@
      "soc_now": 10.0,
      "soc_start": 10.0,
      "grid_charge_kwh": 9.55,
-     "charge_from": "2026-09-15T03:00+02:00",
+     "charge_from": "2026-09-15T00:00+02:00",
      "charge_slots": [
       {
-       "start": "2026-09-15T03:00+02:00",
-       "end": "2026-09-15T05:00+02:00"
+       "start": "2026-09-15T00:00+02:00",
+       "end": "2026-09-15T04:30+02:00"
       }
      ],
+     "unplaced_kwh": 0.0,
+     "order": [],
      "tariff": "fixed",
      "charge_kw": 5.0,
      "discharge_kw": 5.0,
@@ -6050,11 +6237,24 @@
        "capacity": 10.24,
        "soc": 10.0,
        "soc_start": 10.0,
-       "target": 69,
-       "charge_kwh": 6.04,
-       "power_kw": 2.5,
+       "target": 99,
+       "charge_kwh": 9.06,
+       "grid_kwh": 9.55,
+       "power_kw": 2.44,
+       "max_kw": 2.5,
+       "slots": [
+        {
+         "start": "2026-09-15T00:00+02:00",
+         "end": "2026-09-15T04:30+02:00",
+         "power_kw": 2.44
+        }
+       ],
+       "how": "full",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "storage",
+       "rank": 0
       },
       {
        "id": "venus",
@@ -6062,11 +6262,17 @@
        "capacity": 5.12,
        "soc": 10.0,
        "soc_start": 10.0,
-       "target": 69,
-       "charge_kwh": 3.02,
-       "power_kw": 2.5,
+       "target": 10,
+       "charge_kwh": 0.0,
+       "grid_kwh": 0.0,
+       "power_kw": 0.0,
+       "max_kw": 2.5,
+       "slots": [],
+       "how": "none",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "venus"
       }
      ],
      "sun_takes_over": "2026-09-15T09:02+02:00",
@@ -6093,27 +6299,31 @@
       "discharge_mode": "until_target",
       "evening_min": null,
       "grid_limit_kw": null,
+      "grid_limit_source": null,
       "max_night_kwh": null,
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
       "force_target": null,
       "grid_friendly": false,
-      "grid_first": false
+      "grid_first": false,
+      "morning_buffer": null
      },
      "day": null,
+     "morning_buffer": null,
      "reasons": [
       "bridge"
      ],
      "notes": [],
      "actions": [],
+     "cars": {},
      "fixed": true
     },
     "plan_soc_slots": [
-     10.0,
-     10.0,
-     10.0,
-     38.1,
+     23.1,
+     36.2,
+     49.3,
+     62.4,
      69.0,
      64.8,
      60.8,
@@ -7083,6 +7293,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-15",
      "hours": 24,
@@ -7098,6 +7309,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "grid_in_cheap": 7.742,
      "fc_ahead": 12.6,
      "fc_latest": null,
@@ -7259,13 +7471,15 @@
      "soc_now": 10.0,
      "soc_start": 10.0,
      "grid_charge_kwh": 3.08,
-     "charge_from": "2026-09-16T04:15+02:00",
+     "charge_from": "2026-09-16T00:00+02:00",
      "charge_slots": [
       {
-       "start": "2026-09-16T04:15+02:00",
-       "end": "2026-09-16T05:00+02:00"
+       "start": "2026-09-16T00:00+02:00",
+       "end": "2026-09-16T04:30+02:00"
       }
      ],
+     "unplaced_kwh": 0.0,
+     "order": [],
      "tariff": "fixed",
      "charge_kw": 5.0,
      "discharge_kw": 5.0,
@@ -7276,11 +7490,24 @@
        "capacity": 10.24,
        "soc": 10.0,
        "soc_start": 10.0,
-       "target": 29,
-       "charge_kwh": 1.95,
-       "power_kw": 2.5,
+       "target": 39,
+       "charge_kwh": 2.92,
+       "grid_kwh": 3.08,
+       "power_kw": 0.79,
+       "max_kw": 2.5,
+       "slots": [
+        {
+         "start": "2026-09-16T00:00+02:00",
+         "end": "2026-09-16T04:30+02:00",
+         "power_kw": 0.79
+        }
+       ],
+       "how": "spread",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "storage",
+       "rank": 0
       },
       {
        "id": "venus",
@@ -7288,11 +7515,17 @@
        "capacity": 5.12,
        "soc": 10.0,
        "soc_start": 10.0,
-       "target": 29,
-       "charge_kwh": 0.97,
-       "power_kw": 2.5,
+       "target": 10,
+       "charge_kwh": 0.0,
+       "grid_kwh": 0.0,
+       "power_kw": 0.0,
+       "max_kw": 2.5,
+       "slots": [],
+       "how": "none",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "venus"
       }
      ],
      "sun_takes_over": "2026-09-16T08:21+02:00",
@@ -7319,27 +7552,31 @@
       "discharge_mode": "until_target",
       "evening_min": null,
       "grid_limit_kw": null,
+      "grid_limit_source": null,
       "max_night_kwh": null,
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
       "force_target": null,
       "grid_friendly": false,
-      "grid_first": false
+      "grid_first": false,
+      "morning_buffer": null
      },
      "day": null,
+     "morning_buffer": null,
      "reasons": [
       "bridge"
      ],
      "notes": [],
      "actions": [],
+     "cars": {},
      "fixed": true
     },
     "plan_soc_slots": [
-     10.0,
-     10.0,
-     10.0,
-     10.0,
+     14.2,
+     18.4,
+     22.7,
+     26.9,
      29.0,
      24.7,
      20.6,
@@ -8309,6 +8546,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-16",
      "hours": 24,
@@ -8324,6 +8562,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "grid_in_cheap": 3.224,
      "fc_ahead": 27.6,
      "fc_latest": null,
@@ -8487,6 +8726,8 @@
      "grid_charge_kwh": 0.0,
      "charge_from": null,
      "charge_slots": [],
+     "unplaced_kwh": 0.0,
+     "order": [],
      "tariff": "fixed",
      "charge_kw": 5.0,
      "discharge_kw": 5.0,
@@ -8499,9 +8740,15 @@
        "soc_start": 52.5,
        "target": 30,
        "charge_kwh": 0.0,
+       "grid_kwh": 0.0,
        "power_kw": 0.0,
+       "max_kw": 2.5,
+       "slots": [],
+       "how": "none",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "storage"
       },
       {
        "id": "venus",
@@ -8511,9 +8758,15 @@
        "soc_start": 14.2,
        "target": 30,
        "charge_kwh": 0.0,
+       "grid_kwh": 0.0,
        "power_kw": 0.0,
+       "max_kw": 2.5,
+       "slots": [],
+       "how": "none",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "venus"
       }
      ],
      "sun_takes_over": "2026-09-17T08:34+02:00",
@@ -8540,20 +8793,24 @@
       "discharge_mode": "until_target",
       "evening_min": null,
       "grid_limit_kw": null,
+      "grid_limit_source": null,
       "max_night_kwh": null,
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
       "force_target": null,
       "grid_friendly": false,
-      "grid_first": false
+      "grid_first": false,
+      "morning_buffer": null
      },
      "day": null,
+     "morning_buffer": null,
      "reasons": [
       "small_saving"
      ],
      "notes": [],
      "actions": [],
+     "cars": {},
      "fixed": true
     },
     "plan_soc_slots": [
@@ -9530,6 +9787,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-17",
      "hours": 24,
@@ -9545,6 +9803,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "grid_in_cheap": 1.978,
      "fc_ahead": 23.3,
      "fc_latest": null,
@@ -9706,13 +9965,15 @@
      "soc_now": 46.0,
      "soc_start": 45.0,
      "grid_charge_kwh": 8.91,
-     "charge_from": "2026-09-18T03:00+02:00",
+     "charge_from": "2026-09-18T00:00+02:00",
      "charge_slots": [
       {
-       "start": "2026-09-18T03:00+02:00",
-       "end": "2026-09-18T05:00+02:00"
+       "start": "2026-09-18T00:00+02:00",
+       "end": "2026-09-18T04:30+02:00"
       }
      ],
+     "unplaced_kwh": 0.0,
+     "order": [],
      "tariff": "fixed",
      "charge_kw": 5.0,
      "discharge_kw": 5.0,
@@ -9725,9 +9986,22 @@
        "soc_start": 58.5,
        "target": 100,
        "charge_kwh": 4.25,
-       "power_kw": 2.5,
+       "grid_kwh": 4.48,
+       "power_kw": 1.15,
+       "max_kw": 2.5,
+       "slots": [
+        {
+         "start": "2026-09-18T00:00+02:00",
+         "end": "2026-09-18T04:30+02:00",
+         "power_kw": 1.15
+        }
+       ],
+       "how": "spread",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "storage",
+       "rank": 0
       },
       {
        "id": "venus",
@@ -9737,9 +10011,22 @@
        "soc_start": 18.0,
        "target": 100,
        "charge_kwh": 4.2,
-       "power_kw": 2.5,
+       "grid_kwh": 4.43,
+       "power_kw": 1.13,
+       "max_kw": 2.5,
+       "slots": [
+        {
+         "start": "2026-09-18T00:00+02:00",
+         "end": "2026-09-18T04:30+02:00",
+         "power_kw": 1.13
+        }
+       ],
+       "how": "spread",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "venus",
+       "rank": 1
       }
      ],
      "sun_takes_over": "2026-09-18T12:28+02:00",
@@ -9766,27 +10053,31 @@
       "discharge_mode": "until_target",
       "evening_min": null,
       "grid_limit_kw": null,
+      "grid_limit_source": null,
       "max_night_kwh": null,
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
       "force_target": null,
       "grid_friendly": false,
-      "grid_first": false
+      "grid_first": false,
+      "morning_buffer": null
      },
      "day": null,
+     "morning_buffer": null,
      "reasons": [
       "bridge"
      ],
      "notes": [],
      "actions": [],
+     "cars": {},
      "fixed": true
     },
     "plan_soc_slots": [
-     45.0,
-     45.0,
-     45.0,
-     69.1,
+     57.2,
+     69.4,
+     81.7,
+     93.9,
      100.0,
      95.7,
      91.6,
@@ -10756,6 +11047,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-18",
      "hours": 24,
@@ -10771,6 +11063,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "grid_in_cheap": 7.963,
      "fc_ahead": 6.0,
      "fc_latest": null,
@@ -10932,13 +11225,15 @@
      "soc_now": 10.0,
      "soc_start": 10.0,
      "grid_charge_kwh": 3.56,
-     "charge_from": "2026-09-19T04:15+02:00",
+     "charge_from": "2026-09-19T00:00+02:00",
      "charge_slots": [
       {
-       "start": "2026-09-19T04:15+02:00",
-       "end": "2026-09-19T05:00+02:00"
+       "start": "2026-09-19T00:00+02:00",
+       "end": "2026-09-19T04:30+02:00"
       }
      ],
+     "unplaced_kwh": 0.0,
+     "order": [],
      "tariff": "fixed",
      "charge_kw": 5.0,
      "discharge_kw": 5.0,
@@ -10949,11 +11244,24 @@
        "capacity": 10.24,
        "soc": 10.0,
        "soc_start": 10.0,
-       "target": 32,
-       "charge_kwh": 2.25,
-       "power_kw": 2.5,
+       "target": 43,
+       "charge_kwh": 3.38,
+       "grid_kwh": 3.56,
+       "power_kw": 0.91,
+       "max_kw": 2.5,
+       "slots": [
+        {
+         "start": "2026-09-19T00:00+02:00",
+         "end": "2026-09-19T04:30+02:00",
+         "power_kw": 0.91
+        }
+       ],
+       "how": "spread",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "storage",
+       "rank": 0
       },
       {
        "id": "venus",
@@ -10961,11 +11269,17 @@
        "capacity": 5.12,
        "soc": 10.0,
        "soc_start": 10.0,
-       "target": 32,
-       "charge_kwh": 1.13,
-       "power_kw": 2.5,
+       "target": 10,
+       "charge_kwh": 0.0,
+       "grid_kwh": 0.0,
+       "power_kw": 0.0,
+       "max_kw": 2.5,
+       "slots": [],
+       "how": "none",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "venus"
       }
      ],
      "sun_takes_over": "2026-09-19T08:39+02:00",
@@ -10992,27 +11306,31 @@
       "discharge_mode": "until_target",
       "evening_min": null,
       "grid_limit_kw": null,
+      "grid_limit_source": null,
       "max_night_kwh": null,
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
       "force_target": null,
       "grid_friendly": false,
-      "grid_first": false
+      "grid_first": false,
+      "morning_buffer": null
      },
      "day": null,
+     "morning_buffer": null,
      "reasons": [
       "bridge"
      ],
      "notes": [],
      "actions": [],
+     "cars": {},
      "fixed": true
     },
     "plan_soc_slots": [
-     10.0,
-     10.0,
-     10.0,
-     10.0,
+     14.9,
+     19.8,
+     24.7,
+     29.6,
      32.0,
      27.8,
      23.6,
@@ -11982,6 +12300,7 @@
      null
     ],
     "workday": false,
+    "answer": null,
     "summary": {
      "date": "2026-09-19",
      "hours": 24,
@@ -11997,6 +12316,7 @@
       "stats": 24
      },
      "workday": false,
+     "answer": null,
      "grid_in_cheap": 3.16,
      "fc_ahead": 21.0,
      "fc_latest": null,
@@ -12158,13 +12478,15 @@
      "soc_now": 10.0,
      "soc_start": 10.0,
      "grid_charge_kwh": 14.57,
-     "charge_from": "2026-09-20T02:00+02:00",
+     "charge_from": "2026-09-20T00:00+02:00",
      "charge_slots": [
       {
-       "start": "2026-09-20T02:00+02:00",
-       "end": "2026-09-20T05:00+02:00"
+       "start": "2026-09-20T00:00+02:00",
+       "end": "2026-09-20T04:30+02:00"
       }
      ],
+     "unplaced_kwh": 0.0,
+     "order": [],
      "tariff": "fixed",
      "charge_kw": 5.0,
      "discharge_kw": 5.0,
@@ -12177,9 +12499,22 @@
        "soc_start": 10.0,
        "target": 100,
        "charge_kwh": 9.22,
-       "power_kw": 2.5,
+       "grid_kwh": 9.71,
+       "power_kw": 2.48,
+       "max_kw": 2.5,
+       "slots": [
+        {
+         "start": "2026-09-20T00:00+02:00",
+         "end": "2026-09-20T04:30+02:00",
+         "power_kw": 2.48
+        }
+       ],
+       "how": "full",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "storage",
+       "rank": 0
       },
       {
        "id": "venus",
@@ -12189,9 +12524,22 @@
        "soc_start": 10.0,
        "target": 100,
        "charge_kwh": 4.61,
-       "power_kw": 2.5,
+       "grid_kwh": 4.86,
+       "power_kw": 1.24,
+       "max_kw": 2.5,
+       "slots": [
+        {
+         "start": "2026-09-20T00:00+02:00",
+         "end": "2026-09-20T04:30+02:00",
+         "power_kw": 1.24
+        }
+       ],
+       "how": "spread",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "venus",
+       "rank": 1
       }
      ],
      "sun_takes_over": null,
@@ -12218,27 +12566,31 @@
       "discharge_mode": "until_target",
       "evening_min": null,
       "grid_limit_kw": null,
+      "grid_limit_source": null,
       "max_night_kwh": null,
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
       "force_target": null,
       "grid_friendly": false,
-      "grid_first": false
+      "grid_first": false,
+      "morning_buffer": null
      },
      "day": null,
+     "morning_buffer": null,
      "reasons": [
       "no_sun"
      ],
      "notes": [],
      "actions": [],
+     "cars": {},
      "fixed": true
     },
     "plan_soc_slots": [
-     10.0,
-     10.0,
-     38.2,
-     69.1,
+     30.0,
+     50.0,
+     70.0,
+     90.0,
      100.0,
      95.8,
      91.7,
@@ -13208,6 +13560,7 @@
      null
     ],
     "workday": false,
+    "answer": null,
     "summary": {
      "date": "2026-09-20",
      "hours": 24,
@@ -13223,6 +13576,7 @@
       "stats": 24
      },
      "workday": false,
+     "answer": null,
      "grid_in_cheap": 8.28,
      "fc_ahead": 5.0,
      "fc_latest": null,
@@ -13384,13 +13738,15 @@
      "soc_now": 10.0,
      "soc_start": 10.0,
      "grid_charge_kwh": 3.56,
-     "charge_from": "2026-09-21T04:15+02:00",
+     "charge_from": "2026-09-21T00:00+02:00",
      "charge_slots": [
       {
-       "start": "2026-09-21T04:15+02:00",
-       "end": "2026-09-21T05:00+02:00"
+       "start": "2026-09-21T00:00+02:00",
+       "end": "2026-09-21T04:30+02:00"
       }
      ],
+     "unplaced_kwh": 0.0,
+     "order": [],
      "tariff": "fixed",
      "charge_kw": 5.0,
      "discharge_kw": 5.0,
@@ -13401,11 +13757,24 @@
        "capacity": 10.24,
        "soc": 10.0,
        "soc_start": 10.0,
-       "target": 32,
-       "charge_kwh": 2.25,
-       "power_kw": 2.5,
+       "target": 43,
+       "charge_kwh": 3.38,
+       "grid_kwh": 3.56,
+       "power_kw": 0.91,
+       "max_kw": 2.5,
+       "slots": [
+        {
+         "start": "2026-09-21T00:00+02:00",
+         "end": "2026-09-21T04:30+02:00",
+         "power_kw": 0.91
+        }
+       ],
+       "how": "spread",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "storage",
+       "rank": 0
       },
       {
        "id": "venus",
@@ -13413,11 +13782,17 @@
        "capacity": 5.12,
        "soc": 10.0,
        "soc_start": 10.0,
-       "target": 32,
-       "charge_kwh": 1.13,
-       "power_kw": 2.5,
+       "target": 10,
+       "charge_kwh": 0.0,
+       "grid_kwh": 0.0,
+       "power_kw": 0.0,
+       "max_kw": 2.5,
+       "slots": [],
+       "how": "none",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "venus"
       }
      ],
      "sun_takes_over": "2026-09-21T08:39+02:00",
@@ -13444,27 +13819,31 @@
       "discharge_mode": "until_target",
       "evening_min": null,
       "grid_limit_kw": null,
+      "grid_limit_source": null,
       "max_night_kwh": null,
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
       "force_target": null,
       "grid_friendly": false,
-      "grid_first": false
+      "grid_first": false,
+      "morning_buffer": null
      },
      "day": null,
+     "morning_buffer": null,
      "reasons": [
       "bridge"
      ],
      "notes": [],
      "actions": [],
+     "cars": {},
      "fixed": true
     },
     "plan_soc_slots": [
-     10.0,
-     10.0,
-     10.0,
-     10.0,
+     14.9,
+     19.8,
+     24.7,
+     29.6,
      32.0,
      27.8,
      23.6,
@@ -14434,6 +14813,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-21",
      "hours": 24,
@@ -14449,6 +14829,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "grid_in_cheap": 2.953,
      "fc_ahead": 21.2,
      "fc_latest": null,
@@ -14612,6 +14993,8 @@
      "grid_charge_kwh": 0.0,
      "charge_from": null,
      "charge_slots": [],
+     "unplaced_kwh": 0.0,
+     "order": [],
      "tariff": "fixed",
      "charge_kw": 5.0,
      "discharge_kw": 5.0,
@@ -14624,9 +15007,15 @@
        "soc_start": 54.8,
        "target": 29,
        "charge_kwh": 0.0,
+       "grid_kwh": 0.0,
        "power_kw": 0.0,
+       "max_kw": 2.5,
+       "slots": [],
+       "how": "none",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "storage"
       },
       {
        "id": "venus",
@@ -14636,9 +15025,15 @@
        "soc_start": 14.9,
        "target": 29,
        "charge_kwh": 0.0,
+       "grid_kwh": 0.0,
        "power_kw": 0.0,
+       "max_kw": 2.5,
+       "slots": [],
+       "how": "none",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "venus"
       }
      ],
      "sun_takes_over": "2026-09-22T08:28+02:00",
@@ -14665,20 +15060,24 @@
       "discharge_mode": "until_target",
       "evening_min": null,
       "grid_limit_kw": null,
+      "grid_limit_source": null,
       "max_night_kwh": null,
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
       "force_target": null,
       "grid_friendly": false,
-      "grid_first": false
+      "grid_first": false,
+      "morning_buffer": null
      },
      "day": null,
+     "morning_buffer": null,
      "reasons": [
       "small_saving"
      ],
      "notes": [],
      "actions": [],
+     "cars": {},
      "fixed": true
     },
     "plan_soc_slots": [
@@ -15655,6 +16054,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-22",
      "hours": 24,
@@ -15670,6 +16070,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "grid_in_cheap": 2.045,
      "fc_ahead": 25.4,
      "fc_latest": null,
@@ -15833,6 +16234,8 @@
      "grid_charge_kwh": 0.0,
      "charge_from": null,
      "charge_slots": [],
+     "unplaced_kwh": 0.0,
+     "order": [],
      "tariff": "fixed",
      "charge_kw": 5.0,
      "discharge_kw": 5.0,
@@ -15845,9 +16248,15 @@
        "soc_start": 57.6,
        "target": 32,
        "charge_kwh": 0.0,
+       "grid_kwh": 0.0,
        "power_kw": 0.0,
+       "max_kw": 2.5,
+       "slots": [],
+       "how": "none",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "storage"
       },
       {
        "id": "venus",
@@ -15857,9 +16266,15 @@
        "soc_start": 16.5,
        "target": 32,
        "charge_kwh": 0.0,
+       "grid_kwh": 0.0,
        "power_kw": 0.0,
+       "max_kw": 2.5,
+       "slots": [],
+       "how": "none",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "venus"
       }
      ],
      "sun_takes_over": "2026-09-23T08:35+02:00",
@@ -15886,20 +16301,24 @@
       "discharge_mode": "until_target",
       "evening_min": null,
       "grid_limit_kw": null,
+      "grid_limit_source": null,
       "max_night_kwh": null,
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
       "force_target": null,
       "grid_friendly": false,
-      "grid_first": false
+      "grid_first": false,
+      "morning_buffer": null
      },
      "day": null,
+     "morning_buffer": null,
      "reasons": [
       "small_saving"
      ],
      "notes": [],
      "actions": [],
+     "cars": {},
      "fixed": true
     },
     "plan_soc_slots": [
@@ -16876,6 +17295,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-23",
      "hours": 24,
@@ -16891,6 +17311,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "grid_in_cheap": 2.242,
      "fc_ahead": 22.6,
      "fc_latest": null,
@@ -17052,13 +17473,15 @@
      "soc_now": 42.7,
      "soc_start": 41.6,
      "grid_charge_kwh": 9.45,
-     "charge_from": "2026-09-24T03:00+02:00",
+     "charge_from": "2026-09-24T00:00+02:00",
      "charge_slots": [
       {
-       "start": "2026-09-24T03:00+02:00",
-       "end": "2026-09-24T05:00+02:00"
+       "start": "2026-09-24T00:00+02:00",
+       "end": "2026-09-24T04:30+02:00"
       }
      ],
+     "unplaced_kwh": 0.0,
+     "order": [],
      "tariff": "fixed",
      "charge_kw": 5.0,
      "discharge_kw": 5.0,
@@ -17071,9 +17494,22 @@
        "soc_start": 56.0,
        "target": 100,
        "charge_kwh": 4.51,
-       "power_kw": 2.5,
+       "grid_kwh": 4.75,
+       "power_kw": 1.21,
+       "max_kw": 2.5,
+       "slots": [
+        {
+         "start": "2026-09-24T00:00+02:00",
+         "end": "2026-09-24T04:30+02:00",
+         "power_kw": 1.21
+        }
+       ],
+       "how": "spread",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "storage",
+       "rank": 0
       },
       {
        "id": "venus",
@@ -17083,9 +17519,22 @@
        "soc_start": 13.0,
        "target": 100,
        "charge_kwh": 4.46,
-       "power_kw": 2.5,
+       "grid_kwh": 4.7,
+       "power_kw": 1.2,
+       "max_kw": 2.5,
+       "slots": [
+        {
+         "start": "2026-09-24T00:00+02:00",
+         "end": "2026-09-24T04:30+02:00",
+         "power_kw": 1.2
+        }
+       ],
+       "how": "spread",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "venus",
+       "rank": 1
       }
      ],
      "sun_takes_over": "2026-09-24T10:59+02:00",
@@ -17112,27 +17561,31 @@
       "discharge_mode": "until_target",
       "evening_min": null,
       "grid_limit_kw": null,
+      "grid_limit_source": null,
       "max_night_kwh": null,
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
       "force_target": null,
       "grid_friendly": false,
-      "grid_first": false
+      "grid_first": false,
+      "morning_buffer": null
      },
      "day": null,
+     "morning_buffer": null,
      "reasons": [
       "bridge"
      ],
      "notes": [],
      "actions": [],
+     "cars": {},
      "fixed": true
     },
     "plan_soc_slots": [
-     41.6,
-     41.6,
-     41.6,
-     69.1,
+     54.6,
+     67.6,
+     80.5,
+     93.5,
      100.0,
      95.7,
      91.6,
@@ -18102,6 +18555,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-24",
      "hours": 24,
@@ -18117,6 +18571,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "grid_in_cheap": 8.191,
      "fc_ahead": 7.6,
      "fc_latest": null,
@@ -18278,13 +18733,15 @@
      "soc_now": 16.4,
      "soc_start": 15.4,
      "grid_charge_kwh": 2.21,
-     "charge_from": "2026-09-25T04:30+02:00",
+     "charge_from": "2026-09-25T00:00+02:00",
      "charge_slots": [
       {
-       "start": "2026-09-25T04:30+02:00",
-       "end": "2026-09-25T05:00+02:00"
+       "start": "2026-09-25T00:00+02:00",
+       "end": "2026-09-25T04:30+02:00"
       }
      ],
+     "unplaced_kwh": 0.0,
+     "order": [],
      "tariff": "fixed",
      "charge_kw": 5.0,
      "discharge_kw": 5.0,
@@ -18295,11 +18752,24 @@
        "capacity": 10.24,
        "soc": 19.6,
        "soc_start": 18.6,
-       "target": 29,
-       "charge_kwh": 1.07,
-       "power_kw": 2.5,
+       "target": 39,
+       "charge_kwh": 2.1,
+       "grid_kwh": 2.21,
+       "power_kw": 0.57,
+       "max_kw": 2.5,
+       "slots": [
+        {
+         "start": "2026-09-25T00:00+02:00",
+         "end": "2026-09-25T04:30+02:00",
+         "power_kw": 0.57
+        }
+       ],
+       "how": "short",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "storage",
+       "rank": 0
       },
       {
        "id": "venus",
@@ -18307,11 +18777,17 @@
        "capacity": 5.12,
        "soc": 10.0,
        "soc_start": 10.0,
-       "target": 29,
-       "charge_kwh": 0.97,
-       "power_kw": 2.5,
+       "target": 10,
+       "charge_kwh": 0.0,
+       "grid_kwh": 0.0,
+       "power_kw": 0.0,
+       "max_kw": 2.5,
+       "slots": [],
+       "how": "none",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "venus"
       }
      ],
      "sun_takes_over": "2026-09-25T08:29+02:00",
@@ -18338,27 +18814,31 @@
       "discharge_mode": "until_target",
       "evening_min": null,
       "grid_limit_kw": null,
+      "grid_limit_source": null,
       "max_night_kwh": null,
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
       "force_target": null,
       "grid_friendly": false,
-      "grid_first": false
+      "grid_first": false,
+      "morning_buffer": null
      },
      "day": null,
+     "morning_buffer": null,
      "reasons": [
       "bridge"
      ],
      "notes": [],
      "actions": [],
+     "cars": {},
      "fixed": true
     },
     "plan_soc_slots": [
-     15.4,
-     15.4,
-     15.4,
-     15.4,
+     18.4,
+     21.5,
+     24.6,
+     27.7,
      29.0,
      24.7,
      20.6,
@@ -19328,6 +19808,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-25",
      "hours": 24,
@@ -19343,6 +19824,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "grid_in_cheap": 2.433,
      "fc_ahead": 25.3,
      "fc_latest": null,
@@ -19504,13 +19986,15 @@
      "soc_now": 20.2,
      "soc_start": 19.1,
      "grid_charge_kwh": 1.6,
-     "charge_from": "2026-09-26T04:30+02:00",
+     "charge_from": "2026-09-26T01:15+02:00",
      "charge_slots": [
       {
-       "start": "2026-09-26T04:30+02:00",
-       "end": "2026-09-26T05:00+02:00"
+       "start": "2026-09-26T01:15+02:00",
+       "end": "2026-09-26T04:30+02:00"
       }
      ],
+     "unplaced_kwh": 0.0,
+     "order": [],
      "tariff": "fixed",
      "charge_kw": 5.0,
      "discharge_kw": 5.0,
@@ -19521,11 +20005,24 @@
        "capacity": 10.24,
        "soc": 23.5,
        "soc_start": 22.5,
-       "target": 29,
-       "charge_kwh": 0.67,
-       "power_kw": 2.5,
+       "target": 38,
+       "charge_kwh": 1.52,
+       "grid_kwh": 1.6,
+       "power_kw": 0.57,
+       "max_kw": 2.5,
+       "slots": [
+        {
+         "start": "2026-09-26T01:15+02:00",
+         "end": "2026-09-26T04:30+02:00",
+         "power_kw": 0.57
+        }
+       ],
+       "how": "short",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "storage",
+       "rank": 0
       },
       {
        "id": "venus",
@@ -19533,11 +20030,17 @@
        "capacity": 5.12,
        "soc": 13.5,
        "soc_start": 12.5,
-       "target": 29,
-       "charge_kwh": 0.85,
-       "power_kw": 2.5,
+       "target": 12,
+       "charge_kwh": 0.0,
+       "grid_kwh": 0.0,
+       "power_kw": 0.0,
+       "max_kw": 2.5,
+       "slots": [],
+       "how": "none",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "venus"
       }
      ],
      "sun_takes_over": "2026-09-26T08:28+02:00",
@@ -19564,27 +20067,31 @@
       "discharge_mode": "until_target",
       "evening_min": null,
       "grid_limit_kw": null,
+      "grid_limit_source": null,
       "max_night_kwh": null,
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
       "force_target": null,
       "grid_friendly": false,
-      "grid_first": false
+      "grid_first": false,
+      "morning_buffer": null
      },
      "day": null,
+     "morning_buffer": null,
      "reasons": [
       "bridge"
      ],
      "notes": [],
      "actions": [],
+     "cars": {},
      "fixed": true
     },
     "plan_soc_slots": [
      19.1,
-     19.1,
-     19.1,
-     19.1,
+     21.4,
+     24.5,
+     27.6,
      29.0,
      24.7,
      20.6,
@@ -20554,6 +21061,7 @@
      null
     ],
     "workday": false,
+    "answer": null,
     "summary": {
      "date": "2026-09-26",
      "hours": 24,
@@ -20569,6 +21077,7 @@
       "stats": 24
      },
      "workday": false,
+     "answer": null,
      "grid_in_cheap": 2.478,
      "fc_ahead": 26.0,
      "fc_latest": null,
@@ -20730,13 +21239,15 @@
      "soc_now": 20.1,
      "soc_start": 19.1,
      "grid_charge_kwh": 13.1,
-     "charge_from": "2026-09-27T02:15+02:00",
+     "charge_from": "2026-09-27T00:00+02:00",
      "charge_slots": [
       {
-       "start": "2026-09-27T02:15+02:00",
-       "end": "2026-09-27T05:00+02:00"
+       "start": "2026-09-27T00:00+02:00",
+       "end": "2026-09-27T04:30+02:00"
       }
      ],
+     "unplaced_kwh": 0.0,
+     "order": [],
      "tariff": "fixed",
      "charge_kw": 5.0,
      "discharge_kw": 5.0,
@@ -20749,9 +21260,22 @@
        "soc_start": 22.7,
        "target": 100,
        "charge_kwh": 7.91,
-       "power_kw": 2.5,
+       "grid_kwh": 8.34,
+       "power_kw": 2.13,
+       "max_kw": 2.5,
+       "slots": [
+        {
+         "start": "2026-09-27T00:00+02:00",
+         "end": "2026-09-27T04:30+02:00",
+         "power_kw": 2.13
+        }
+       ],
+       "how": "spread",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "storage",
+       "rank": 0
       },
       {
        "id": "venus",
@@ -20761,9 +21285,22 @@
        "soc_start": 11.7,
        "target": 100,
        "charge_kwh": 4.52,
-       "power_kw": 2.5,
+       "grid_kwh": 4.76,
+       "power_kw": 1.22,
+       "max_kw": 2.5,
+       "slots": [
+        {
+         "start": "2026-09-27T00:00+02:00",
+         "end": "2026-09-27T04:30+02:00",
+         "power_kw": 1.22
+        }
+       ],
+       "how": "spread",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "venus",
+       "rank": 1
       }
      ],
      "sun_takes_over": "2026-09-27T09:25+02:00",
@@ -20790,27 +21327,31 @@
       "discharge_mode": "until_target",
       "evening_min": null,
       "grid_limit_kw": null,
+      "grid_limit_source": null,
       "max_night_kwh": null,
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
       "force_target": null,
       "grid_friendly": false,
-      "grid_first": false
+      "grid_first": false,
+      "morning_buffer": null
      },
      "day": null,
+     "morning_buffer": null,
      "reasons": [
       "bridge"
      ],
      "notes": [],
      "actions": [],
+     "cars": {},
      "fixed": true
     },
     "plan_soc_slots": [
-     19.1,
-     19.1,
-     38.2,
-     69.1,
+     37.1,
+     55.0,
+     73.0,
+     91.0,
      100.0,
      95.7,
      91.5,
@@ -21780,6 +22321,7 @@
      null
     ],
     "workday": false,
+    "answer": null,
     "summary": {
      "date": "2026-09-27",
      "hours": 24,
@@ -21795,6 +22337,7 @@
       "stats": 24
      },
      "workday": false,
+     "answer": null,
      "grid_in_cheap": 8.299,
      "fc_ahead": 9.8,
      "fc_latest": null,
@@ -21956,13 +22499,15 @@
      "soc_now": 10.0,
      "soc_start": 10.0,
      "grid_charge_kwh": 4.86,
-     "charge_from": "2026-09-28T04:00+02:00",
+     "charge_from": "2026-09-28T00:00+02:00",
      "charge_slots": [
       {
-       "start": "2026-09-28T04:00+02:00",
-       "end": "2026-09-28T05:00+02:00"
+       "start": "2026-09-28T00:00+02:00",
+       "end": "2026-09-28T04:30+02:00"
       }
      ],
+     "unplaced_kwh": 0.0,
+     "order": [],
      "tariff": "fixed",
      "charge_kw": 5.0,
      "discharge_kw": 5.0,
@@ -21973,11 +22518,24 @@
        "capacity": 10.24,
        "soc": 10.0,
        "soc_start": 10.0,
-       "target": 40,
-       "charge_kwh": 3.07,
-       "power_kw": 2.5,
+       "target": 55,
+       "charge_kwh": 4.61,
+       "grid_kwh": 4.86,
+       "power_kw": 1.24,
+       "max_kw": 2.5,
+       "slots": [
+        {
+         "start": "2026-09-28T00:00+02:00",
+         "end": "2026-09-28T04:30+02:00",
+         "power_kw": 1.24
+        }
+       ],
+       "how": "spread",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "storage",
+       "rank": 0
       },
       {
        "id": "venus",
@@ -21985,11 +22543,17 @@
        "capacity": 5.12,
        "soc": 10.0,
        "soc_start": 10.0,
-       "target": 40,
-       "charge_kwh": 1.54,
-       "power_kw": 2.5,
+       "target": 10,
+       "charge_kwh": 0.0,
+       "grid_kwh": 0.0,
+       "power_kw": 0.0,
+       "max_kw": 2.5,
+       "slots": [],
+       "how": "none",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "venus"
       }
      ],
      "sun_takes_over": "2026-09-28T08:53+02:00",
@@ -22016,27 +22580,31 @@
       "discharge_mode": "until_target",
       "evening_min": null,
       "grid_limit_kw": null,
+      "grid_limit_source": null,
       "max_night_kwh": null,
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
       "force_target": null,
       "grid_friendly": false,
-      "grid_first": false
+      "grid_first": false,
+      "morning_buffer": null
      },
      "day": null,
+     "morning_buffer": null,
      "reasons": [
       "bridge"
      ],
      "notes": [],
      "actions": [],
+     "cars": {},
      "fixed": true
     },
     "plan_soc_slots": [
-     10.0,
-     10.0,
-     10.0,
-     10.0,
+     16.7,
+     23.3,
+     30.0,
+     36.7,
      40.0,
      35.7,
      31.5,
@@ -23006,6 +23574,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-28",
      "hours": 24,
@@ -23021,6 +23590,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "grid_in_cheap": 3.128,
      "fc_ahead": 17.1,
      "fc_latest": null,
@@ -23182,13 +23752,15 @@
      "soc_now": 17.0,
      "soc_start": 15.9,
      "grid_charge_kwh": 2.12,
-     "charge_from": "2026-09-29T04:30+02:00",
+     "charge_from": "2026-09-29T00:15+02:00",
      "charge_slots": [
       {
-       "start": "2026-09-29T04:30+02:00",
-       "end": "2026-09-29T05:00+02:00"
+       "start": "2026-09-29T00:15+02:00",
+       "end": "2026-09-29T04:30+02:00"
       }
      ],
+     "unplaced_kwh": 0.0,
+     "order": [],
      "tariff": "fixed",
      "charge_kw": 5.0,
      "discharge_kw": 5.0,
@@ -23199,11 +23771,24 @@
        "capacity": 10.24,
        "soc": 19.3,
        "soc_start": 18.2,
-       "target": 29,
-       "charge_kwh": 1.1,
-       "power_kw": 2.5,
+       "target": 38,
+       "charge_kwh": 2.01,
+       "grid_kwh": 2.12,
+       "power_kw": 0.57,
+       "max_kw": 2.5,
+       "slots": [
+        {
+         "start": "2026-09-29T00:15+02:00",
+         "end": "2026-09-29T04:30+02:00",
+         "power_kw": 0.57
+        }
+       ],
+       "how": "short",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "storage",
+       "rank": 0
       },
       {
        "id": "venus",
@@ -23211,11 +23796,17 @@
        "capacity": 5.12,
        "soc": 12.3,
        "soc_start": 11.2,
-       "target": 29,
-       "charge_kwh": 0.91,
-       "power_kw": 2.5,
+       "target": 11,
+       "charge_kwh": 0.0,
+       "grid_kwh": 0.0,
+       "power_kw": 0.0,
+       "max_kw": 2.5,
+       "slots": [],
+       "how": "none",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "venus"
       }
      ],
      "sun_takes_over": "2026-09-29T08:26+02:00",
@@ -23242,27 +23833,31 @@
       "discharge_mode": "until_target",
       "evening_min": null,
       "grid_limit_kw": null,
+      "grid_limit_source": null,
       "max_night_kwh": null,
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
       "force_target": null,
       "grid_friendly": false,
-      "grid_first": false
+      "grid_first": false,
+      "morning_buffer": null
      },
      "day": null,
+     "morning_buffer": null,
      "reasons": [
       "bridge"
      ],
      "notes": [],
      "actions": [],
+     "cars": {},
      "fixed": true
     },
     "plan_soc_slots": [
-     15.9,
-     15.9,
-     15.9,
-     15.9,
+     18.2,
+     21.3,
+     24.4,
+     27.5,
      29.0,
      24.7,
      20.5,
@@ -24232,6 +24827,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-29",
      "hours": 24,
@@ -24247,6 +24843,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "grid_in_cheap": 2.728,
      "fc_ahead": 26.6,
      "fc_latest": null,
@@ -24408,13 +25005,15 @@
      "soc_now": 25.1,
      "soc_start": 24.0,
      "grid_charge_kwh": 12.3,
-     "charge_from": "2026-09-30T02:30+02:00",
+     "charge_from": "2026-09-30T00:00+02:00",
      "charge_slots": [
       {
-       "start": "2026-09-30T02:30+02:00",
-       "end": "2026-09-30T05:00+02:00"
+       "start": "2026-09-30T00:00+02:00",
+       "end": "2026-09-30T04:30+02:00"
       }
      ],
+     "unplaced_kwh": 0.0,
+     "order": [],
      "tariff": "fixed",
      "charge_kw": 5.0,
      "discharge_kw": 5.0,
@@ -24427,9 +25026,22 @@
        "soc_start": 30.6,
        "target": 100,
        "charge_kwh": 7.1,
-       "power_kw": 2.5,
+       "grid_kwh": 7.49,
+       "power_kw": 1.91,
+       "max_kw": 2.5,
+       "slots": [
+        {
+         "start": "2026-09-30T00:00+02:00",
+         "end": "2026-09-30T04:30+02:00",
+         "power_kw": 1.91
+        }
+       ],
+       "how": "spread",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "storage",
+       "rank": 0
       },
       {
        "id": "venus",
@@ -24439,9 +25051,22 @@
        "soc_start": 10.7,
        "target": 100,
        "charge_kwh": 4.57,
-       "power_kw": 2.5,
+       "grid_kwh": 4.82,
+       "power_kw": 1.23,
+       "max_kw": 2.5,
+       "slots": [
+        {
+         "start": "2026-09-30T00:00+02:00",
+         "end": "2026-09-30T04:30+02:00",
+         "power_kw": 1.23
+        }
+       ],
+       "how": "spread",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "venus",
+       "rank": 1
       }
      ],
      "sun_takes_over": null,
@@ -24468,27 +25093,31 @@
       "discharge_mode": "until_target",
       "evening_min": null,
       "grid_limit_kw": null,
+      "grid_limit_source": null,
       "max_night_kwh": null,
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
       "force_target": null,
       "grid_friendly": false,
-      "grid_first": false
+      "grid_first": false,
+      "morning_buffer": null
      },
      "day": null,
+     "morning_buffer": null,
      "reasons": [
       "no_sun"
      ],
      "notes": [],
      "actions": [],
+     "cars": {},
      "fixed": true
     },
     "plan_soc_slots": [
-     24.0,
-     24.0,
-     38.2,
-     69.1,
+     40.9,
+     57.8,
+     74.7,
+     91.6,
      100.0,
      95.7,
      91.5,
@@ -25458,6 +26087,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-30",
      "hours": 24,
@@ -25473,6 +26103,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "grid_in_cheap": 8.477,
      "fc_ahead": 6.2,
      "fc_latest": null,
@@ -25634,13 +26265,15 @@
      "soc_now": 10.0,
      "soc_start": 10.0,
      "grid_charge_kwh": 14.57,
-     "charge_from": "2026-10-01T02:00+02:00",
+     "charge_from": "2026-10-01T00:00+02:00",
      "charge_slots": [
       {
-       "start": "2026-10-01T02:00+02:00",
-       "end": "2026-10-01T05:00+02:00"
+       "start": "2026-10-01T00:00+02:00",
+       "end": "2026-10-01T04:30+02:00"
       }
      ],
+     "unplaced_kwh": 0.0,
+     "order": [],
      "tariff": "fixed",
      "charge_kw": 5.0,
      "discharge_kw": 5.0,
@@ -25653,9 +26286,22 @@
        "soc_start": 10.0,
        "target": 100,
        "charge_kwh": 9.22,
-       "power_kw": 2.5,
+       "grid_kwh": 9.71,
+       "power_kw": 2.48,
+       "max_kw": 2.5,
+       "slots": [
+        {
+         "start": "2026-10-01T00:00+02:00",
+         "end": "2026-10-01T04:30+02:00",
+         "power_kw": 2.48
+        }
+       ],
+       "how": "full",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "storage",
+       "rank": 0
       },
       {
        "id": "venus",
@@ -25665,9 +26311,22 @@
        "soc_start": 10.0,
        "target": 100,
        "charge_kwh": 4.61,
-       "power_kw": 2.5,
+       "grid_kwh": 4.86,
+       "power_kw": 1.24,
+       "max_kw": 2.5,
+       "slots": [
+        {
+         "start": "2026-10-01T00:00+02:00",
+         "end": "2026-10-01T04:30+02:00",
+         "power_kw": 1.24
+        }
+       ],
+       "how": "spread",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "venus",
+       "rank": 1
       }
      ],
      "sun_takes_over": null,
@@ -25694,27 +26353,31 @@
       "discharge_mode": "until_target",
       "evening_min": null,
       "grid_limit_kw": null,
+      "grid_limit_source": null,
       "max_night_kwh": null,
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
       "force_target": null,
       "grid_friendly": false,
-      "grid_first": false
+      "grid_first": false,
+      "morning_buffer": null
      },
      "day": null,
+     "morning_buffer": null,
      "reasons": [
       "no_sun"
      ],
      "notes": [],
      "actions": [],
+     "cars": {},
      "fixed": true
     },
     "plan_soc_slots": [
-     10.0,
-     10.0,
-     38.2,
-     69.1,
+     30.0,
+     50.0,
+     70.0,
+     90.0,
      100.0,
      95.7,
      91.4,
@@ -26684,6 +27347,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-10-01",
      "hours": 24,
@@ -26699,6 +27363,7 @@
       "live": 24
      },
      "workday": true,
+     "answer": null,
      "grid_in_cheap": 8.528,
      "fc_ahead": 5.0,
      "fc_latest": null,
@@ -26860,13 +27525,15 @@
      "soc_now": 10.0,
      "soc_start": 10.0,
      "grid_charge_kwh": 9.39,
-     "charge_from": "2026-10-02T03:00+02:00",
+     "charge_from": "2026-10-02T00:00+02:00",
      "charge_slots": [
       {
-       "start": "2026-10-02T03:00+02:00",
-       "end": "2026-10-02T05:00+02:00"
+       "start": "2026-10-02T00:00+02:00",
+       "end": "2026-10-02T04:30+02:00"
       }
      ],
+     "unplaced_kwh": 0.0,
+     "order": [],
      "tariff": "fixed",
      "charge_kw": 5.0,
      "discharge_kw": 5.0,
@@ -26877,11 +27544,24 @@
        "capacity": 10.24,
        "soc": 10.0,
        "soc_start": 10.0,
-       "target": 68,
-       "charge_kwh": 5.94,
-       "power_kw": 2.5,
+       "target": 97,
+       "charge_kwh": 8.91,
+       "grid_kwh": 9.39,
+       "power_kw": 2.4,
+       "max_kw": 2.5,
+       "slots": [
+        {
+         "start": "2026-10-02T00:00+02:00",
+         "end": "2026-10-02T04:30+02:00",
+         "power_kw": 2.4
+        }
+       ],
+       "how": "full",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "storage",
+       "rank": 0
       },
       {
        "id": "venus",
@@ -26889,11 +27569,17 @@
        "capacity": 5.12,
        "soc": 10.0,
        "soc_start": 10.0,
-       "target": 68,
-       "charge_kwh": 2.97,
-       "power_kw": 2.5,
+       "target": 10,
+       "charge_kwh": 0.0,
+       "grid_kwh": 0.0,
+       "power_kw": 0.0,
+       "max_kw": 2.5,
+       "slots": [],
+       "how": "none",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "venus"
       }
      ],
      "sun_takes_over": "2026-10-02T09:05+02:00",
@@ -26920,27 +27606,31 @@
       "discharge_mode": "until_target",
       "evening_min": null,
       "grid_limit_kw": null,
+      "grid_limit_source": null,
       "max_night_kwh": null,
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
       "force_target": null,
       "grid_friendly": false,
-      "grid_first": false
+      "grid_first": false,
+      "morning_buffer": null
      },
      "day": null,
+     "morning_buffer": null,
      "reasons": [
       "bridge"
      ],
      "notes": [],
      "actions": [],
+     "cars": {},
      "fixed": true
     },
     "plan_soc_slots": [
-     10.0,
-     10.0,
-     10.0,
-     37.1,
+     22.9,
+     35.8,
+     48.7,
+     61.6,
      68.0,
      63.7,
      59.4,
@@ -27910,6 +28600,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-10-02",
      "hours": 24,
@@ -27925,6 +28616,7 @@
       "live": 24
      },
      "workday": true,
+     "answer": null,
      "grid_in_cheap": 3.552,
      "fc_ahead": 14.2,
      "fc_latest": null,
@@ -28086,13 +28778,15 @@
      "soc_now": 10.0,
      "soc_start": 10.0,
      "grid_charge_kwh": 3.72,
-     "charge_from": "2026-10-03T04:15+02:00",
+     "charge_from": "2026-10-03T00:00+02:00",
      "charge_slots": [
       {
-       "start": "2026-10-03T04:15+02:00",
-       "end": "2026-10-03T05:00+02:00"
+       "start": "2026-10-03T00:00+02:00",
+       "end": "2026-10-03T04:30+02:00"
       }
      ],
+     "unplaced_kwh": 0.0,
+     "order": [],
      "tariff": "fixed",
      "charge_kw": 5.0,
      "discharge_kw": 5.0,
@@ -28103,11 +28797,24 @@
        "capacity": 10.24,
        "soc": 10.0,
        "soc_start": 10.0,
-       "target": 33,
-       "charge_kwh": 2.36,
-       "power_kw": 2.5,
+       "target": 45,
+       "charge_kwh": 3.53,
+       "grid_kwh": 3.72,
+       "power_kw": 0.95,
+       "max_kw": 2.5,
+       "slots": [
+        {
+         "start": "2026-10-03T00:00+02:00",
+         "end": "2026-10-03T04:30+02:00",
+         "power_kw": 0.95
+        }
+       ],
+       "how": "spread",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "storage",
+       "rank": 0
       },
       {
        "id": "venus",
@@ -28115,11 +28822,17 @@
        "capacity": 5.12,
        "soc": 10.0,
        "soc_start": 10.0,
-       "target": 33,
-       "charge_kwh": 1.18,
-       "power_kw": 2.5,
+       "target": 10,
+       "charge_kwh": 0.0,
+       "grid_kwh": 0.0,
+       "power_kw": 0.0,
+       "max_kw": 2.5,
+       "slots": [],
+       "how": "none",
        "controllable": true,
-       "grid": true
+       "grid": true,
+       "paced": true,
+       "group": "venus"
       }
      ],
      "sun_takes_over": "2026-10-03T08:42+02:00",
@@ -28146,27 +28859,31 @@
       "discharge_mode": "until_target",
       "evening_min": null,
       "grid_limit_kw": null,
+      "grid_limit_source": null,
       "max_night_kwh": null,
       "efficiency": 0.9,
       "max_price": null,
       "min_saving": 0.05,
       "force_target": null,
       "grid_friendly": false,
-      "grid_first": false
+      "grid_first": false,
+      "morning_buffer": null
      },
      "day": null,
+     "morning_buffer": null,
      "reasons": [
       "bridge"
      ],
      "notes": [],
      "actions": [],
+     "cars": {},
      "fixed": true
     },
     "plan_soc_slots": [
-     10.0,
-     10.0,
-     10.0,
-     10.0,
+     15.1,
+     20.2,
+     25.3,
+     30.4,
      33.0,
      28.7,
      24.4,
@@ -28812,6 +29529,7 @@
      null
     ],
     "workday": false,
+    "answer": null,
     "summary": {
      "date": "2026-10-03",
      "hours": 15,
@@ -28827,6 +29545,7 @@
       "live": 15
      },
      "workday": false,
+     "answer": null,
      "grid_in_cheap": 3.477,
      "fc_ahead": 21.0,
      "fc_latest": null,
@@ -28889,7 +29608,7 @@
    "capacity_kwh": 15.36,
    "soc_now": 52.8,
    "soc_start": 10.0,
-   "grid_charge_kwh": 14.57,
+   "grid_charge_kwh": 13.42,
    "charge_from": "2026-10-04T00:00+02:00",
    "charge_slots": [
     {
@@ -28897,6 +29616,8 @@
      "end": "2026-10-04T04:30+02:00"
     }
    ],
+   "unplaced_kwh": 1.15,
+   "order": [],
    "tariff": "fixed",
    "charge_kw": 5.0,
    "discharge_kw": 5.0,
@@ -28909,10 +29630,8 @@
      "soc_start": 10.0,
      "target": 100,
      "charge_kwh": 9.22,
-     "power_kw": 2.48,
-     "controllable": true,
-     "grid": true,
      "grid_kwh": 9.71,
+     "power_kw": 2.48,
      "max_kw": 2.5,
      "slots": [
       {
@@ -28922,6 +29641,8 @@
       }
      ],
      "how": "full",
+     "controllable": true,
+     "grid": true,
      "paced": true,
      "group": "storage",
      "rank": 0
@@ -28934,10 +29655,8 @@
      "soc_start": 31.4,
      "target": 100,
      "charge_kwh": 3.51,
-     "power_kw": 0.95,
-     "controllable": true,
-     "grid": true,
      "grid_kwh": 3.7,
+     "power_kw": 0.95,
      "max_kw": 2.5,
      "slots": [
       {
@@ -28947,6 +29666,8 @@
       }
      ],
      "how": "spread",
+     "controllable": true,
+     "grid": true,
      "paced": true,
      "group": "venus",
      "rank": 1
@@ -28958,10 +29679,10 @@
    "solar_kwh": 5.5,
    "home_kwh": 20.06,
    "cost": {
-    "night_charge": 2.71,
-    "plan": 4.55,
+    "night_charge": 2.49,
+    "plan": 4.63,
     "without": 5.59,
-    "saving": 1.04
+    "saving": 0.96
    },
    "prices": {
     "night": 0.18564,
@@ -28976,15 +29697,18 @@
     "discharge_mode": "until_target",
     "evening_min": null,
     "grid_limit_kw": null,
+    "grid_limit_source": null,
     "max_night_kwh": null,
     "efficiency": 0.9,
     "max_price": null,
     "min_saving": 0.05,
     "force_target": null,
     "grid_friendly": false,
-    "grid_first": false
+    "grid_first": false,
+    "morning_buffer": null
    },
    "day": null,
+   "morning_buffer": null,
    "reasons": [
     "no_sun"
    ],
@@ -29039,6 +29763,7 @@
      "cost": 10.11
     }
    ],
+   "cars": {},
    "hours": [
     {
      "start": "2026-10-03T14:00:00+02:00",
@@ -29155,10 +29880,10 @@
      "solar": 0.0,
      "home": 0.646,
      "window": true,
-     "soc": 10.0,
+     "soc": 28.4,
      "soc_without": 10.0,
-     "charge": 0.0,
-     "grid_in": 0.646,
+     "charge": 2.982,
+     "grid_in": 3.628,
      "grid_out": 0.0
     },
     {
@@ -29166,10 +29891,10 @@
      "solar": 0.0,
      "home": 0.631,
      "window": true,
-     "soc": 10.0,
+     "soc": 46.8,
      "soc_without": 10.0,
-     "charge": 0.0,
-     "grid_in": 0.631,
+     "charge": 2.982,
+     "grid_in": 3.613,
      "grid_out": 0.0
     },
     {
@@ -29177,10 +29902,10 @@
      "solar": 0.0,
      "home": 0.637,
      "window": true,
-     "soc": 38.2,
+     "soc": 65.2,
      "soc_without": 10.0,
-     "charge": 4.572,
-     "grid_in": 5.209,
+     "charge": 2.982,
+     "grid_in": 3.618,
      "grid_out": 0.0
     },
     {
@@ -29188,10 +29913,10 @@
      "solar": 0.0,
      "home": 0.66,
      "window": true,
-     "soc": 69.1,
+     "soc": 83.7,
      "soc_without": 10.0,
-     "charge": 5.0,
-     "grid_in": 5.66,
+     "charge": 2.982,
+     "grid_in": 3.642,
      "grid_out": 0.0
     },
     {
@@ -29199,10 +29924,10 @@
      "solar": 0.0,
      "home": 0.637,
      "window": true,
-     "soc": 100.0,
+     "soc": 92.9,
      "soc_without": 10.0,
-     "charge": 5.0,
-     "grid_in": 5.637,
+     "charge": 1.491,
+     "grid_in": 2.128,
      "grid_out": 0.0
     },
     {
@@ -29210,7 +29935,7 @@
      "solar": 0.0,
      "home": 0.634,
      "window": false,
-     "soc": 95.6,
+     "soc": 88.5,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29221,7 +29946,7 @@
      "solar": 0.0,
      "home": 0.622,
      "window": false,
-     "soc": 91.4,
+     "soc": 84.2,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29232,7 +29957,7 @@
      "solar": 0.094,
      "home": 1.335,
      "window": false,
-     "soc": 82.9,
+     "soc": 75.7,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29243,7 +29968,7 @@
      "solar": 0.275,
      "home": 1.299,
      "window": false,
-     "soc": 75.8,
+     "soc": 68.7,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29254,7 +29979,7 @@
      "solar": 0.437,
      "home": 0.749,
      "window": false,
-     "soc": 73.7,
+     "soc": 66.6,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29265,7 +29990,7 @@
      "solar": 0.57,
      "home": 0.898,
      "window": false,
-     "soc": 71.4,
+     "soc": 64.3,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29276,7 +30001,7 @@
      "solar": 0.663,
      "home": 0.904,
      "window": false,
-     "soc": 69.8,
+     "soc": 62.7,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29287,7 +30012,7 @@
      "solar": 0.712,
      "home": 0.899,
      "window": false,
-     "soc": 68.5,
+     "soc": 61.4,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29298,7 +30023,7 @@
      "solar": 0.712,
      "home": 0.886,
      "window": false,
-     "soc": 67.3,
+     "soc": 60.2,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29309,7 +30034,7 @@
      "solar": 0.663,
      "home": 0.908,
      "window": false,
-     "soc": 65.6,
+     "soc": 58.5,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29320,7 +30045,7 @@
      "solar": 0.57,
      "home": 0.881,
      "window": false,
-     "soc": 63.5,
+     "soc": 56.4,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29331,7 +30056,7 @@
      "solar": 0.437,
      "home": 0.74,
      "window": false,
-     "soc": 61.4,
+     "soc": 54.3,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29342,7 +30067,7 @@
      "solar": 0.275,
      "home": 0.597,
      "window": false,
-     "soc": 59.2,
+     "soc": 52.1,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29353,7 +30078,7 @@
      "solar": 0.094,
      "home": 1.851,
      "window": false,
-     "soc": 47.1,
+     "soc": 40.0,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29364,7 +30089,7 @@
      "solar": 0.0,
      "home": 1.858,
      "window": false,
-     "soc": 34.4,
+     "soc": 27.2,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29375,7 +30100,7 @@
      "solar": 0.0,
      "home": 1.847,
      "window": false,
-     "soc": 21.7,
+     "soc": 14.6,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29389,7 +30114,7 @@
      "soc": 10.0,
      "soc_without": 10.0,
      "charge": 0.0,
-     "grid_in": 0.162,
+     "grid_in": 1.201,
      "grid_out": 0.0
     },
     {
@@ -29429,7 +30154,7 @@
    "capacity_kwh": 15.36,
    "soc_now": 52.8,
    "soc_start": 10.0,
-   "grid_charge_kwh": 14.57,
+   "grid_charge_kwh": 13.42,
    "charge_from": "2026-10-04T00:00+02:00",
    "charge_slots": [
     {
@@ -29437,6 +30162,8 @@
      "end": "2026-10-04T04:30+02:00"
     }
    ],
+   "unplaced_kwh": 1.15,
+   "order": [],
    "tariff": "fixed",
    "charge_kw": 5.0,
    "discharge_kw": 5.0,
@@ -29449,10 +30176,8 @@
      "soc_start": 10.0,
      "target": 100,
      "charge_kwh": 9.22,
-     "power_kw": 2.48,
-     "controllable": true,
-     "grid": true,
      "grid_kwh": 9.71,
+     "power_kw": 2.48,
      "max_kw": 2.5,
      "slots": [
       {
@@ -29462,6 +30187,8 @@
       }
      ],
      "how": "full",
+     "controllable": true,
+     "grid": true,
      "paced": true,
      "group": "storage",
      "rank": 0
@@ -29474,10 +30201,8 @@
      "soc_start": 31.4,
      "target": 100,
      "charge_kwh": 3.51,
-     "power_kw": 0.95,
-     "controllable": true,
-     "grid": true,
      "grid_kwh": 3.7,
+     "power_kw": 0.95,
      "max_kw": 2.5,
      "slots": [
       {
@@ -29487,6 +30212,8 @@
       }
      ],
      "how": "spread",
+     "controllable": true,
+     "grid": true,
      "paced": true,
      "group": "venus",
      "rank": 1
@@ -29498,10 +30225,10 @@
    "solar_kwh": 5.5,
    "home_kwh": 20.06,
    "cost": {
-    "night_charge": 2.71,
-    "plan": 4.55,
+    "night_charge": 2.49,
+    "plan": 4.63,
     "without": 5.59,
-    "saving": 1.04
+    "saving": 0.96
    },
    "prices": {
     "night": 0.18564,
@@ -29516,15 +30243,18 @@
     "discharge_mode": "until_target",
     "evening_min": null,
     "grid_limit_kw": null,
+    "grid_limit_source": null,
     "max_night_kwh": null,
     "efficiency": 0.9,
     "max_price": null,
     "min_saving": 0.05,
     "force_target": null,
     "grid_friendly": false,
-    "grid_first": false
+    "grid_first": false,
+    "morning_buffer": null
    },
    "day": null,
+   "morning_buffer": null,
    "reasons": [
     "no_sun"
    ],
@@ -29552,6 +30282,9 @@
      "priority": 1,
      "manual": false,
      "power_kw": 11.0,
+     "plugged": "car",
+     "car": "car_electric_car",
+     "how": "plugged",
      "need": {
       "trips_km": 72.4,
       "usual_km": null,
@@ -29589,7 +30322,10 @@
         "minutes": null,
         "source": null
        }
-      ]
+      ],
+      "car": "car_electric_car",
+      "name": "Electric car",
+      "point": "ev_carport"
      },
      "target": 37,
      "sensor": "sensor.ev_battery",
@@ -29603,6 +30339,50 @@
      "cost": 2.64
     }
    ],
+   "cars": {
+    "car_electric_car": {
+     "trips_km": 72.4,
+     "usual_km": null,
+     "needed_km": 122.4,
+     "reserve_km": 50.0,
+     "consumption": 23.1,
+     "consumption_source": "default",
+     "temp": 7.0,
+     "rain": true,
+     "soc": 23.0,
+     "range_km": 214.0,
+     "capacity_kwh": 78.0,
+     "departure": "2026-10-04T08:48+02:00",
+     "unknown_trips": 1,
+     "known": true,
+     "have_km": 77.7,
+     "target": 37,
+     "target_unit": "%",
+     "sensor": "sensor.ev_battery",
+     "fits": true,
+     "missing_kwh": 10.33,
+     "wall_kwh": 11.48,
+     "trips": [
+      {
+       "start": "2026-10-04T09:30:00+02:00",
+       "location": "Hauptstraße 1, Potsdam",
+       "km": 72.4,
+       "minutes": 42,
+       "source": "waze"
+      },
+      {
+       "start": "2026-10-04T15:00:00+02:00",
+       "location": "Zahnarztpraxis Dr. Weber",
+       "km": null,
+       "minutes": null,
+       "source": null
+      }
+     ],
+     "car": "car_electric_car",
+     "name": "Electric car",
+     "point": "ev_carport"
+    }
+   },
    "hours": [
     {
      "start": "2026-10-03T14:00:00+02:00",
@@ -29719,10 +30499,10 @@
      "solar": 0.0,
      "home": 0.646,
      "window": true,
-     "soc": 10.0,
+     "soc": 28.4,
      "soc_without": 10.0,
-     "charge": 0.0,
-     "grid_in": 0.646,
+     "charge": 2.982,
+     "grid_in": 3.628,
      "grid_out": 0.0
     },
     {
@@ -29730,10 +30510,10 @@
      "solar": 0.0,
      "home": 0.631,
      "window": true,
-     "soc": 10.0,
+     "soc": 46.8,
      "soc_without": 10.0,
-     "charge": 0.0,
-     "grid_in": 0.631,
+     "charge": 2.982,
+     "grid_in": 3.613,
      "grid_out": 0.0
     },
     {
@@ -29741,10 +30521,10 @@
      "solar": 0.0,
      "home": 0.637,
      "window": true,
-     "soc": 38.2,
+     "soc": 65.2,
      "soc_without": 10.0,
-     "charge": 4.572,
-     "grid_in": 5.209,
+     "charge": 2.982,
+     "grid_in": 3.618,
      "grid_out": 0.0
     },
     {
@@ -29752,10 +30532,10 @@
      "solar": 0.0,
      "home": 0.66,
      "window": true,
-     "soc": 69.1,
+     "soc": 83.7,
      "soc_without": 10.0,
-     "charge": 5.0,
-     "grid_in": 5.66,
+     "charge": 2.982,
+     "grid_in": 3.642,
      "grid_out": 0.0
     },
     {
@@ -29763,10 +30543,10 @@
      "solar": 0.0,
      "home": 0.637,
      "window": true,
-     "soc": 100.0,
+     "soc": 92.9,
      "soc_without": 10.0,
-     "charge": 5.0,
-     "grid_in": 5.637,
+     "charge": 1.491,
+     "grid_in": 2.128,
      "grid_out": 0.0
     },
     {
@@ -29774,7 +30554,7 @@
      "solar": 0.0,
      "home": 0.634,
      "window": false,
-     "soc": 95.6,
+     "soc": 88.5,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29785,7 +30565,7 @@
      "solar": 0.0,
      "home": 0.622,
      "window": false,
-     "soc": 91.4,
+     "soc": 84.2,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29796,7 +30576,7 @@
      "solar": 0.094,
      "home": 1.335,
      "window": false,
-     "soc": 82.9,
+     "soc": 75.7,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29807,7 +30587,7 @@
      "solar": 0.275,
      "home": 1.299,
      "window": false,
-     "soc": 75.8,
+     "soc": 68.7,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29818,7 +30598,7 @@
      "solar": 0.437,
      "home": 0.749,
      "window": false,
-     "soc": 73.7,
+     "soc": 66.6,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29829,7 +30609,7 @@
      "solar": 0.57,
      "home": 0.898,
      "window": false,
-     "soc": 71.4,
+     "soc": 64.3,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29840,7 +30620,7 @@
      "solar": 0.663,
      "home": 0.904,
      "window": false,
-     "soc": 69.8,
+     "soc": 62.7,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29851,7 +30631,7 @@
      "solar": 0.712,
      "home": 0.899,
      "window": false,
-     "soc": 68.5,
+     "soc": 61.4,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29862,7 +30642,7 @@
      "solar": 0.712,
      "home": 0.886,
      "window": false,
-     "soc": 67.3,
+     "soc": 60.2,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29873,7 +30653,7 @@
      "solar": 0.663,
      "home": 0.908,
      "window": false,
-     "soc": 65.6,
+     "soc": 58.5,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29884,7 +30664,7 @@
      "solar": 0.57,
      "home": 0.881,
      "window": false,
-     "soc": 63.5,
+     "soc": 56.4,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29895,7 +30675,7 @@
      "solar": 0.437,
      "home": 0.74,
      "window": false,
-     "soc": 61.4,
+     "soc": 54.3,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29906,7 +30686,7 @@
      "solar": 0.275,
      "home": 0.597,
      "window": false,
-     "soc": 59.2,
+     "soc": 52.1,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29917,7 +30697,7 @@
      "solar": 0.094,
      "home": 1.851,
      "window": false,
-     "soc": 47.1,
+     "soc": 40.0,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29928,7 +30708,7 @@
      "solar": 0.0,
      "home": 1.858,
      "window": false,
-     "soc": 34.4,
+     "soc": 27.2,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29939,7 +30719,7 @@
      "solar": 0.0,
      "home": 1.847,
      "window": false,
-     "soc": 21.7,
+     "soc": 14.6,
      "soc_without": 10.0,
      "charge": 0.0,
      "grid_in": 0.0,
@@ -29953,7 +30733,7 @@
      "soc": 10.0,
      "soc_without": 10.0,
      "charge": 0.0,
-     "grid_in": 0.162,
+     "grid_in": 1.201,
      "grid_out": 0.0
     },
     {
@@ -29990,11 +30770,11 @@
    "since": null,
    "updated": "2026-10-03T14:10:00+02:00",
    "consumption_model": {
-    "base": 11.983,
-    "workday": 0.316,
-    "heat": 0.441,
+    "base": 12.158,
+    "workday": 0.309,
+    "heat": 0.446,
     "cool": 0.0,
-    "presence": 0.43,
+    "presence": 0.421,
     "presence_mean": 20.9,
     "r2": 0.49,
     "days": 20
@@ -30002,7 +30782,7 @@
    "group_models": {
     "sensor.ac_office_energy": {
      "base": 0.401,
-     "workday": -0.0,
+     "workday": 0.0,
      "heat": 0.0,
      "cool": 0.0,
      "presence": null,
@@ -30024,7 +30804,7 @@
     },
     "sensor.floor_heating_energy": {
      "base": 0.301,
-     "workday": 0.032,
+     "workday": 0.031,
      "heat": 0.268,
      "cool": 0.0,
      "presence": null,
@@ -30868,14 +31648,7 @@
      }
     }
    ],
-   "questions": [
-    {
-     "date": "2026-10-01",
-     "actual": 31.3,
-     "expected": 23.2,
-     "kind": "more"
-    }
-   ],
+   "questions": [],
    "needs": {
     "solar": 5,
     "shift": 5,
@@ -30991,12 +31764,14 @@
  },
  "profiles": {
   "fronius": "Fronius",
-  "omnibattery": "Marstek",
+  "omnibattery": "Omnibattery",
   "enphase_envoy": "Enphase",
   "goodwe": "GoodWe",
   "kostal_plenticore": "Kostal",
+  "kostal_modbus_control": "Kostal",
   "teslemetry": "Tesla Powerwall",
   "tessie": "Tesla Powerwall",
+  "tesla_fleet": "Tesla Powerwall",
   "growatt_server": "Growatt",
   "growatt_modbus": "Growatt",
   "foxess_modbus": "Fox ESS",
@@ -31005,8 +31780,10 @@
   "sigen": "Sigenergy",
   "sungrow": "Sungrow",
   "sonnenbatterie": "sonnen",
+  "sonnenbatterie_v2": "sonnen",
   "zendure_ha": "Zendure",
   "victron_gx": "Victron",
+  "victron_mqtt": "Victron",
   "victron": "Victron",
   "homewizard": "HomeWizard",
   "zinvolt": "Zinvolt",
@@ -31014,6 +31791,11 @@
   "huawei_solar": "Huawei",
   "e3dc_rscp": "E3/DC",
   "indevolt": "Indevolt",
-  "tesla_fleet": "Tesla Powerwall"
+  "varta_modbus": "VARTA",
+  "senec": "SENEC",
+  "marstek_modbus": "Marstek",
+  "marstek": "Marstek",
+  "anker_solix": "Anker SOLIX",
+  "solarman": "Deye"
  }
 }
