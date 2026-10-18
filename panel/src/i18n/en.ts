@@ -3256,4 +3256,5 @@ export const en: Record<Key, string> = {
     "I can't reach the integration. Reload the page – if that doesn't help, check Settings → System → Logs.",
   "error.action": "Saving failed",
   "loading": "Joe is saddling up …",
+  "menu.sidebar": "Home Assistant menu",
 };

@@ -3574,7 +3574,8 @@ var Ne = {
 	"error.title": "Joe antwortet |nicht",
 	"error.text": "Ich erreiche die Integration nicht. Lade die Seite neu – hilft das nicht, schau unter Einstellungen → System → Protokolle nach.",
 	"error.action": "Fehler beim Speichern",
-	loading: "Joe sattelt auf …"
+	loading: "Joe sattelt auf …",
+	"menu.sidebar": "Home-Assistant-Menü"
 }, Pe = {
 	"tab.overview": "Overview",
 	"tab.plan": "Plan",
@@ -6548,7 +6549,8 @@ var Ne = {
 	"error.title": "Joe isn't |answering",
 	"error.text": "I can't reach the integration. Reload the page – if that doesn't help, check Settings → System → Logs.",
 	"error.action": "Saving failed",
-	loading: "Joe is saddling up …"
+	loading: "Joe is saddling up …",
+	"menu.sidebar": "Home Assistant menu"
 }, Fe = /* @__PURE__ */ new Map();
 function Ie(e, t) {
 	return e.replace(/\{(\w+)\}/g, (e, n) => String(t?.[n] ?? ""));

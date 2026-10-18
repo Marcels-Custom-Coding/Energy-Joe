@@ -1,4 +1,4 @@
-import { $ as e, A as t, B as n, C as r, D as i, E as a, F as o, G as s, H as c, I as l, J as u, K as d, L as f, M as p, N as m, O as h, P as g, Q as _, R as v, S as ee, T as te, U as ne, V as re, W as ie, X as y, Y as ae, Z as oe, _ as se, a as ce, at as b, b as x, c as le, ct as S, d as C, dt as w, et as T, f as E, g as ue, h as de, i as fe, it as D, j as pe, k as me, l as O, lt as he, m as ge, n as _e, nt as ve, o as ye, ot as k, p as be, q as A, r as j, rt as M, s as xe, st as Se, t as Ce, tt as we, u as Te, ut as Ee, v as De, w as Oe, x as ke, y as Ae, z as je } from "./tokens-CyiKIMww.js";
+import { $ as e, A as t, B as n, C as r, D as i, E as a, F as o, G as s, H as c, I as l, J as u, K as d, L as f, M as p, N as m, O as h, P as g, Q as _, R as v, S as ee, T as te, U as ne, V as re, W as ie, X as y, Y as ae, Z as oe, _ as se, a as ce, at as b, b as x, c as le, ct as S, d as C, dt as w, et as T, f as E, g as ue, h as de, i as fe, it as D, j as pe, k as me, l as O, lt as he, m as ge, n as _e, nt as ve, o as ye, ot as k, p as be, q as A, r as j, rt as M, s as xe, st as Se, t as Ce, tt as we, u as Te, ut as Ee, v as De, w as Oe, x as ke, y as Ae, z as je } from "./tokens-Bl1VvGtp.js";
 //#region src/assets.ts
 var Me = import.meta.url.replace(/[^/]*$/, ""), Ne = (e) => `${Me}${e}`, Pe = /* @__PURE__ */ new Set(["welcome"]), Fe = /* @__PURE__ */ new Set([
 	"night-charge",
@@ -23045,6 +23045,12 @@ var Xl = [
 			this.failed = !0, this.unsubscribe = void 0;
 		}));
 	}
+	toggleSidebar() {
+		this.dispatchEvent(new Event("hass-toggle-menu", {
+			bubbles: !0,
+			composed: !0
+		}));
+	}
 	render() {
 		let e = this.t;
 		if (this.failed) return S`<main><joe-empty-state pose="puzzled" heading=${e("error.title")} text=${e("error.text")}></joe-empty-state></main>`;
@@ -23054,7 +23060,9 @@ var Xl = [
       <header>
         ${this.joe.mode === "simulation" ? S`<div class="simband" aria-hidden="true"></div>` : k}
         <div class="bar">
-          ${this.narrow ? S`<ha-menu-button .hass=${this.hass} .narrow=${this.narrow}></ha-menu-button>` : k}
+          ${this.narrow || this.hass?.dockedSidebar === "always_hidden" ? S`<button class="menu" type="button" data-notip aria-label=${e("menu.sidebar")} @click=${this.toggleSidebar}>
+                <ha-icon icon="mdi:menu"></ha-icon>
+              </button>` : k}
           <div class="brand">
             <img class="light" src=${Ne("joe-head.webp")} alt="" width="36" height="36" />
             <img class="dark" src=${Ne("joe-head-dark.webp")} alt="" width="36" height="36" />
@@ -23452,6 +23460,25 @@ var Xl = [
         gap: 10px 18px;
         padding: 10px 20px;
         min-height: 64px;
+      }
+      .menu {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        margin-left: -8px;
+        border: 0;
+        border-radius: 50%;
+        background: none;
+        color: var(--joe-ink);
+        cursor: pointer;
+      }
+      .menu:hover {
+        background: var(--joe-line);
+      }
+      .menu:focus-visible {
+        outline: 3px solid var(--joe-amber);
+        outline-offset: 2px;
       }
       .brand {
         display: flex;
