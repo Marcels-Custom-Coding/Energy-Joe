@@ -3,6 +3,27 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.24
+
+- **Speicher-Wächter:** Laden sich zwei Speicher gegenseitig (je über 20 W, 20 Sekunden lang), greife ich in Stufen ein. Zuerst starte ich die eigene Regelung des Speichers neu; läuft gerade Laden oder Entladen per Hand, beende ich es sauber. Danach sperre ich 5 Sekunden die laufende Richtung. Hilft das nicht, schicke ich eine Meldung, höchstens einmal pro Stunde. Jeder Schritt steht im Protokoll, und alles, was ich umschalte, stelle ich sofort zurück – auch nach einem Neustart oder Fehler. Ein- und ausschalten kannst du ihn unter Einstellungen › Regeln › Speicher.
+- **Regelgruppen:** Speicher, die dasselbe System regelt (z. B. Omnibattery mit Venus und Victron), arbeiten zusammen. Ich stimme nur zwischen verschiedenen Systemen ab. Unter Geräte › Speicher › Mehrere Speicher steht bei jedem Speicher „Wer regelt ihn?“. Die Zuordnung schlage ich selbst vor, und wenn ich unsicher bin, frage ich nach.
+- **„Nacheinander“ ist Standard:** Gibt es zwei Systeme, sorge ich von selbst dafür, dass immer nur eines arbeitet. Die wartenden Speicher sperre ich vorher komplett, nicht erst ab einer Schwelle. Wer das nicht will, wählt „Gleichzeitig“.
+- **Deine Speicher-Automationen bleiben nur aus, solange ich wirklich selbst sperre.** Kann ich das nicht, schalte ich sie sofort wieder ein und sage dir, warum. Läuft gerade ein Speicher, halte ich meine Sperre, bis er aufhört – so verpasst deine Automation ihren Auslöser nicht.
+- **Ich prüfe, ob meine Sperre wirklich ankommt.** Beim Fronius heißt das: Grenze 0 und Schalter an. Setzt der Wechselrichter sie zurück, schreibe ich sie neu; klappt das nicht, melde ich mich und gebe an deine Automationen ab.
+- **Marstek über Omnibattery:** Gesperrt wird über „Laden erlauben“ und „Entladen erlauben“ der Batterie. Omnibattery regelt dabei weiter selbst und macht nach der Freigabe sofort weiter, auch nachts.
+- **Nachts laden mit Verstand:** Mehrere Speicher laden nicht mehr alle auf denselben Stand. Wer morgens zuerst entlädt, bekommt zuerst. Ich lade so langsam wie möglich und so schnell wie nötig: bei gleichem Preis verteilt über die Nacht, sonst in den günstigsten Viertelstunden. Teurer wird es dadurch nie. Der Plan zeigt je Speicher, wie viel er wann mit welcher Leistung lädt und warum.
+- **Hausanschluss:** Laden und Haus bleiben zusammen unter dem Netzlimit. Ohne eigenes Limit nehme ich den höchsten gemessenen Netzbezug und schlage ihn unter Einstellungen vor.
+- **Fronius:** Ich bremse das Laden aus dem Netz über die Ladegrenze. Hält sich der Wechselrichter nicht daran, merke ich mir das und lade mit voller Leistung.
+- **Tagsüber:** Kommt mittags mehr Sonne, als ein Speicher aufnehmen kann, lädt der nächste mit, statt dass die Sonne ins Netz geht. Entladen bleibt dabei gesperrt, und bei einer Wolke wartet er sofort wieder. Braucht das Haus mehr, als ein Speicher liefern kann (z. B. Backofen), hilft der nächste kurz beim Entladen.
+- **Ich lerne aus jedem Tag:** Abends schaue ich zurück, lerne, wie früh der zweite Speicher mitladen sollte, und frage dich einmal, ob ich das künftig so machen soll.
+- **Neu unter „Selbst einstellen“:** Automatisch, Nur nacheinander (wirklich nur einer, auch an schwachen Tagen) oder Grundlast teilen – mit Hinweis, dass das bei kleinen Lasten weniger effizient ist.
+- **Netzdienlicher Morgen mit Puffer:** Morgens lade ich erst einen kleinen Puffer aus der Sonne, dann geht die Morgensonne ins Netz, und mittags lade ich den Rest. Braucht das Haus mehr, als die Sonne gerade liefert, kommt es aus dem Speicher statt aus dem Netz. Wie groß der Puffer sein soll, lerne ich aus deinen sonnigen Vormittagen. Unter Einstellungen › Regeln kannst du auch einen eigenen Wert setzen.
+- **Viel mehr Speicher:** Neu sind Kostal über Modbus („Kostal Plenticore Battery Control“, auch bei „Nacheinander“), VARTA, sonnen (neue Integration), SENEC, Marstek über Modbus und Open API, Anker SOLIX und Deye. Huawei, Victron, Sigenergy, Fox ESS, GoodWe, Zendure, Solis, Growatt und weitere steuere ich genauer.
+- **Mehr Speicher können tagsüber „nacheinander“ arbeiten und vom Wächter kurz gesperrt werden** – auch ohne eigene Sperr-Schalter, dann über ihre Leistungsgrenzen.
+- **Speicher, die Einstellungen dauerhaft speichern** (z. B. Victron, SolarEdge), schone ich: Ich schreibe dort nicht ständig neu.
+- **Kann ich einen Speicher nicht steuern, sage ich dir, warum** – und was du tun kannst, z. B. eine Freischaltung im Gerät oder eine ausgeschaltete Entität. Neue Übersicht „Unterstützte Speicher“ in der Anleitung.
+- **Menüknopf am Desktop:** Ist die Home-Assistant-Seitenleiste ausgeblendet, gibt es links oben einen Menüknopf. Damit kommst du wieder ins HA-Menü.
+
 ## 0.9.22
 
 - **Autos wiederfinden und zuordnen:** „Nochmal nach Autos suchen“ unter Geräte › Auto & Laden zeigt alle Autos, die Home Assistant kennt – aus evcc und aus den Integrationen der Hersteller, auch früher weggelassene, und bei welchem Auto sie schon hängen.
