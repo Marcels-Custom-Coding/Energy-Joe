@@ -8,14 +8,15 @@ type Note = BatteryNote & { name?: string };
 
 /** Notes that keep Joe from steering (or from charging) look like a warning. */
 function isWarning(code: string): boolean {
-  return code.startsWith("cannot.") || code.startsWith("no_charge.") || code === "no_level";
+  return code.startsWith("cannot.") || code.startsWith("check.") || code.startsWith("no_charge.") || code === "no_level";
 }
 
 /**
  * What the owner should know about steering a battery, in plain words: why
  * Joe sees it but cannot steer it yet and what to do ("cannot.…"), what he
  * cannot do with it ("no_charge.…"), what must be switched on first
- * ("needs.…") and entities switched off in Home Assistant ("enable"). Each
+ * ("needs.…"), levers of several inverters to check ("check.…") and
+ * entities switched off in Home Assistant ("enable"). Each
  * note has its tooltip.
  */
 export function batteryNotes(t: Translate, notes: Note[] | undefined, name = ""): TemplateResult | typeof nothing {

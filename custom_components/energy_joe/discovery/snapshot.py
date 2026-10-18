@@ -79,6 +79,8 @@ class DeviceInfo:
     manufacturer: str | None = None
     model: str | None = None
     area: str | None = None
+    # The device it is connected through (Huawei's batteries: their inverter).
+    via_device_id: str | None = None
 
 
 @dataclass(slots=True)
@@ -161,6 +163,7 @@ async def async_collect(hass: HomeAssistant) -> Snapshot:
                 manufacturer=device.manufacturer,
                 model=device.model,
                 area=area_name(device.area_id),
+                via_device_id=device.via_device_id,
             )
         reported = getattr(state, "last_reported", None) or state.last_updated
         entities[state.entity_id] = EntityInfo(

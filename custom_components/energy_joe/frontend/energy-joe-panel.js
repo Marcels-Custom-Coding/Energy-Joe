@@ -1,4 +1,4 @@
-import { $ as e, A as t, B as n, C as r, D as i, E as a, F as o, G as s, H as c, I as l, J as u, K as d, L as f, M as p, N as m, O as h, P as g, Q as ee, R as _, S as te, T as v, U as ne, V as y, W as re, X as ie, Y as ae, Z as b, _ as oe, a as se, at as x, b as ce, c as le, ct as ue, d as S, dt as de, et as C, f as w, ft as T, g as fe, h as pe, i as me, it as E, j as he, k as ge, l as D, lt as O, m as _e, n as ve, nt as ye, o as be, ot as k, p as xe, q as A, r as j, rt as Se, s as Ce, st as M, t as we, tt as N, u as Te, ut as Ee, v as De, w as Oe, x as P, y as ke, z as Ae } from "./tokens-CbeKEES2.js";
+import { $ as e, A as t, B as n, C as r, D as i, E as a, F as o, G as s, H as c, I as l, J as u, K as d, L as f, M as p, N as m, O as h, P as g, Q as ee, R as _, S as te, T as v, U as ne, V as y, W as re, X as ie, Y as ae, Z as b, _ as oe, a as se, at as x, b as ce, c as le, ct as ue, d as S, dt as de, et as C, f as w, ft as T, g as fe, h as pe, i as me, it as E, j as he, k as ge, l as D, lt as O, m as _e, n as ve, nt as ye, o as be, ot as k, p as xe, q as A, r as j, rt as Se, s as Ce, st as M, t as we, tt as N, u as Te, ut as Ee, v as De, w as Oe, x as P, y as ke, z as Ae } from "./tokens-BlVfxXda.js";
 //#region src/assets.ts
 var je = import.meta.url.replace(/[^/]*$/, ""), Me = (e) => `${je}${e}`, Ne = /* @__PURE__ */ new Set(["welcome"]), Pe = /* @__PURE__ */ new Set([
 	"night-charge",
@@ -3637,7 +3637,7 @@ d([x({ attribute: !1 })], jn.prototype, "hass", void 0), d([x({ attribute: !1 })
 //#endregion
 //#region src/components/battery-notes.ts
 function Mn(e) {
-	return e.startsWith("cannot.") || e.startsWith("no_charge.") || e === "no_level";
+	return e.startsWith("cannot.") || e.startsWith("check.") || e.startsWith("no_charge.") || e === "no_level";
 }
 function Nn(e, t, n = "") {
 	return t?.length ? O`<div class="battery-notes" style="display:grid;gap:8px;margin:12px 0" data-tipped>
