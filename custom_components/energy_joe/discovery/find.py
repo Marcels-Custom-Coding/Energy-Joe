@@ -33,6 +33,8 @@ from .snapshot import EntityInfo, Snapshot
 from .tariff import analyze_price_entity
 
 POWER_UNITS = ("W", "kW", "MW")
+# How sure Joe is of a battery whose levers he could not tell apart.
+UNSURE = 0.6
 ENERGY_UNITS = ("Wh", "kWh", "MWh")
 
 # Whole words; a trailing "*" also matches longer words.
@@ -304,7 +306,10 @@ def _known_battery(snap: Snapshot, soc: EntityInfo) -> dict[str, Any]:
         "controllable": controllable,
         "can_charge": steering["can_charge"],
         "suggested": None if controllable else suggest_controls(snap, soc),
-        "confidence": _round(0.95 if controllable else 0.85),
+        "unsure": steering["unsure"],
+        "confidence": _round(
+            UNSURE if steering["unsure"] else 0.95 if controllable else 0.85
+        ),
         "reasons": reasons,
     }
 
@@ -321,14 +326,15 @@ def _profile_steering(
     steps: dict[str, list[dict[str, Any]]] = {}
     controllable = False
     can_charge = False
+    near = _Near(snap, soc)
     if profile:
         for role, keys in profile.roles.items():
-            if found := _find_key(scope, ROLE_DOMAINS[role], keys):
+            if found := _find_key(scope, ROLE_DOMAINS[role], keys, near):
                 controls[role] = found.entity_id
         controls.update(entry_controls(snap, profile, soc.config_entry_id))
-        controls.update(guard_controls(snap, profile, scope))
+        controls.update(guard_controls(snap, profile, scope, near))
         for name, keys in profile.limits.items():
-            found = _find_key(scope, (), keys)
+            found = _find_key(scope, (), keys, near, note=False)
             limits[name] = _control_value(snap, found.entity_id if found else None)
         mode = snap.get(controls.get("mode"))
         offered = list((mode.attributes.get("options") if mode else None) or [])
@@ -339,7 +345,7 @@ def _profile_steering(
             if chosen:
                 mode_options[meaning] = chosen
         for item in profile.prepare:
-            if found := _find_key(scope, (), (item.key,)):
+            if found := _find_key(scope, (), (item.key,), near):
                 prepare.append({"entity_id": found.entity_id, "value": item.value})
         complete = True
         for name, items in profile.steps.items():
@@ -348,7 +354,7 @@ def _profile_steering(
             for item in items:
                 if isinstance(item, Call):
                     resolved.append({"service": item.service, "data": dict(item.data)})
-                elif found := _find_key(scope, (), (item.key,)):
+                elif found := _find_key(scope, (), (item.key,), near):
                     resolved.append(_step_of(found, item.value))
                 else:
                     whole = False
@@ -379,6 +385,11 @@ def _profile_steering(
         "steps": steps,
         "limits": limits,
         "count": len(controls) + len(steps),
+        # Levers Joe found for several inverters and could not tell apart.
+        "unsure": [
+            {"entity_id": e.entity_id, "name": e.name}
+            for e in sorted(near.unsure.values(), key=lambda e: e.entity_id)
+        ],
     }
 
 
@@ -420,7 +431,10 @@ def battery_notes(snap: Snapshot, battery: dict[str, Any]) -> list[dict[str, Any
     platform = battery.get("integration") or ""
     profile = PROFILES.get(platform)
     notes: list[dict[str, Any]] = []
-    if not battery.get("controllable"):
+    if battery.get("unsure"):
+        # Several inverters in one entry: Joe assumes none of their levers.
+        notes.append({"code": "check.levers", "entities": battery["unsure"]})
+    elif not battery.get("controllable"):
         code = (profile.note if profile else None) or NOT_STEERABLE.get(platform)
         if not code and platform == "mqtt":
             device = snap.devices.get(battery.get("device_id") or "")
@@ -537,10 +551,14 @@ def _generic_battery(
         "controllable": False,
         "can_charge": False,
         "suggested": suggest_controls(snap, soc),
+        "unsure": [],
         "confidence": _round(confidence),
         "reasons": reasons,
     }
     steering = _profile_steering(snap, soc, _scope(snap, soc))
+    if steering["unsure"]:
+        battery["unsure"] = steering["unsure"]
+        battery["confidence"] = min(battery["confidence"], UNSURE)
     if steering["controllable"]:
         battery.update(
             adapter=soc.platform,
@@ -700,7 +718,10 @@ def entry_controls(
 
 
 def guard_controls(
-    snap: Snapshot, profile: Profile | None, scope: list[EntityInfo]
+    snap: Snapshot,
+    profile: Profile | None,
+    scope: list[EntityInfo],
+    near: _Near | None = None,
 ) -> dict[str, str]:
     """The day's levers of the battery itself: the watchdog's (a Venus' allow
     switches) and the others only the day uses (Huawei's power limits)."""
@@ -708,7 +729,7 @@ def guard_controls(
         return {}
     found = {}
     for role, keys in (*profile.guard_roles.items(), *profile.day_roles.items()):
-        if entity := _find_key(scope, ROLE_DOMAINS[role], keys):
+        if entity := _find_key(scope, ROLE_DOMAINS[role], keys, near):
             found[role] = entity.entity_id
     return found
 
@@ -728,7 +749,8 @@ def profile_controls(snap: Snapshot, battery: dict[str, Any]) -> dict[str, str]:
             scope = snap.of_device(
                 battery.get("device_id") or (soc.device_id if soc else None)
             )
-        found.update(guard_controls(snap, profile, scope))
+        near = _Near(snap, soc) if soc else None
+        found.update(guard_controls(snap, profile, scope, near))
     # Only levers of the day: the night's stay as they were tested.
     day = day_only(profile)
     return {role: entity_id for role, entity_id in found.items() if role in day}
@@ -739,14 +761,15 @@ def profile_prepare(snap: Snapshot, battery: dict[str, Any]) -> list[dict[str, A
     profile = PROFILES.get(battery.get("adapter") or "")
     if not profile or not profile.prepare or profile.steps:
         return []
+    soc = snap.get(battery.get("soc_entity"))
     if profile.scope == "entry":
-        soc = snap.get(battery.get("soc_entity"))
         scope = snap.of_config_entry(soc.config_entry_id) if soc else []
     else:
         scope = snap.of_device(battery.get("device_id"))
+    near = _Near(snap, soc) if soc else None
     found = []
     for item in profile.prepare:
-        if entity := _find_key(scope, (), (item.key,)):
+        if entity := _find_key(scope, (), (item.key,), near):
             found.append({"entity_id": entity.entity_id, "value": item.value})
     return found
 
@@ -766,23 +789,87 @@ def _key_score(entity: EntityInfo, key: str) -> int:
     return 0
 
 
+_UID_TOKENS = re.compile(r"([-_. ])")
+
+
+def _uid_tokens(entity: EntityInfo) -> list[str]:
+    return [t for t in _UID_TOKENS.split(entity.unique_id or "") if t]
+
+
+class _Near:
+    """Where a battery's own levers are, in an integration entry with several
+    inverters (SolarEdge, Fox ESS, Huawei, Sungrow): on the device of its
+    level or the device that one is connected through (SolarEdge's and
+    Huawei's batteries: their inverter, which has the levers), else with the
+    longest unique id prefix in common with its level (SolarEdge
+    "<model>_<serial>_B1_…" under "<model>_<serial>_…", Huawei "<serial>_…").
+    Only when all candidates sit on one device, the surest as ever. Else Joe
+    assumes nothing and notes them ("unsure", the panel asks to check).
+    """
+
+    def __init__(self, snap: Snapshot, soc: EntityInfo) -> None:
+        device = snap.devices.get(soc.device_id or "")
+        self.devices = {
+            d for d in (soc.device_id, device.via_device_id if device else None) if d
+        }
+        self.tokens = _uid_tokens(soc)
+        self.unsure: dict[str, EntityInfo] = {}
+
+    def _shared(self, entity: EntityInfo) -> int:
+        """Words of the unique id in common with the level's, from the start."""
+        count = 0
+        for mine, theirs in zip(self.tokens, _uid_tokens(entity), strict=False):
+            if mine != theirs:
+                break
+            count += not _UID_TOKENS.fullmatch(mine)
+        return count
+
+    def narrow(self, candidates: list[EntityInfo]) -> list[EntityInfo]:
+        """The candidates of this battery; empty when Joe cannot tell."""
+        own = [e for e in candidates if e.device_id in self.devices]
+        if own:
+            return own
+        if self.tokens:
+            shared = [(self._shared(e), e) for e in candidates]
+            best = max(n for n, _ in shared)
+            if best:
+                top = [e for n, e in shared if n == best]
+                return top if len({e.device_id for e in top}) == 1 else []
+        return candidates if len({e.device_id for e in candidates}) == 1 else []
+
+
 def _find_key(
-    entities: list[EntityInfo], domains: Iterable[str], keys: Iterable[str]
+    entities: list[EntityInfo],
+    domains: Iterable[str],
+    keys: Iterable[str],
+    near: _Near | None = None,
+    note: bool = True,
 ) -> EntityInfo | None:
     """The entity for the first key that matches; the surest, then the shortest id.
 
     Shortest id: "x_max_soc" before "x_force_charge_max_soc" for the key "max_soc".
+    With `near` only one of the battery's own (see _Near); when Joe cannot
+    tell, none, and the candidates are noted (`note`).
     """
     domains = tuple(domains)
     for key in keys:
         candidates = [
-            (_key_score(e, key), -len(e.unique_id or ""), e)
+            e
             for e in entities
-            if not domains or e.domain in domains
+            if (not domains or e.domain in domains) and _key_score(e, key)
         ]
-        candidates = [c for c in candidates if c[0]]
-        if candidates:
-            return max(candidates, key=lambda c: (c[0], c[1]))[2]
+        if not candidates:
+            continue
+        if near is not None:
+            found = near.narrow(candidates)
+            if not found:
+                if note:
+                    near.unsure.update((e.entity_id, e) for e in candidates)
+                return None
+            candidates = found
+        return max(
+            candidates, key=lambda e: (_key_score(e, key), -len(e.unique_id or ""))
+        )
     return None
 
 

@@ -768,6 +768,7 @@ class JoeExecutor:
         }
         desired = self._desired(plan, items, socs, now)
         desired = self._guard_grid(config, desired, socs, now)
+        desired, stuck = self._guard_block(items, desired, socs)
         await self._async_watch_progress(items, desired, socs, now)
         batteries: dict[str, Any] = {}
         for battery, planned, adapter in items:
@@ -796,6 +797,9 @@ class JoeExecutor:
             elif want is not None:
                 problem = await self._async_steer(adapter, want, soc, now)
                 entry["problem"] = problem
+                if battery["id"] in stuck and problem in (None, "cannot_hold"):
+                    # Why no other battery charges from the grid now.
+                    entry["problem"] = "cannot_block"
             if adapter is not None and soc is not None and not capped:
                 cap = await self._async_night_cap(battery, adapter, want, now)
             if cap:
@@ -1040,14 +1044,59 @@ class JoeExecutor:
                     result[key] = Desired(floor=want.floor, block=True, span_s=span)
         return result
 
+    def _guard_block(
+        self,
+        items: list[tuple[dict[str, Any], dict[str, Any], Adapter | None]],
+        desired: dict[str, Desired],
+        socs: dict[str, float | None],
+    ) -> tuple[dict[str, Desired], set[str]]:
+        """No battery charges from the grid while another cannot be kept from
+        discharging (its level below the lowest floor it takes): it would
+        discharge into the others, as without a lever. Those that should
+        charge hold instead, the others hold as they would. Returns the
+        batteries that cannot be blocked."""
+        if not any(d.charge_to is not None for d in desired.values()):
+            return desired, set()
+        adapters = {battery["id"]: adapter for battery, _, adapter in items}
+        stuck: set[str] = set()
+        for key, want in desired.items():
+            adapter, soc = adapters.get(key), socs.get(key)
+            if (
+                want.block
+                and adapter is not None
+                and soc is not None
+                and adapter.steer_problem(
+                    self._hass, self._floored(adapter, want), soc, self.data["saved"]
+                )
+                == "cannot_block"
+            ):
+                stuck.add(key)
+        if not stuck:
+            return desired, stuck
+        result: dict[str, Desired] = {}
+        for key, want in desired.items():
+            soc = socs.get(key)
+            if want.charge_to is not None:
+                result[key] = Desired(
+                    floor=max(0, math.floor(soc)) if soc is not None else None,
+                    span_s=want.span_s,
+                )
+            elif want.block:
+                result[key] = Desired(floor=want.floor, span_s=want.span_s)
+            else:
+                result[key] = want
+        return result, stuck
+
     async def _async_steer(
         self, adapter: Adapter, want: Desired, soc: float, now: datetime
     ) -> str | None:
-        """Write what differs; note originals first. Returns a problem, if any."""
-        writes = adapter.writes(
-            self._hass, self._floored(adapter, want), soc, self.data["saved"]
-        )
+        """Write what differs; note originals first. Returns a problem, if any
+        (also when no lever does what is wanted: "cannot_hold", "cannot_block")."""
+        floored = self._floored(adapter, want)
+        writes = adapter.writes(self._hass, floored, soc, self.data["saved"])
+        unheld = adapter.steer_problem(self._hass, floored, soc, self.data["saved"])
         problem = await self._async_write(adapter, writes, now, _action(want))
+        problem = problem or unheld
         if (
             want.charge_to is not None
             and self.status["batteries"].get(adapter.battery["id"], {}).get("action")
