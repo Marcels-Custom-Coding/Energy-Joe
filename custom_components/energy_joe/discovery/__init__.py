@@ -13,6 +13,7 @@ from .energy import parse_energy_prefs
 from .find import (
     car_sources,
     find_batteries,
+    find_battery_notes,
     find_cars,
     find_consumers,
     find_forecast,
@@ -56,9 +57,10 @@ async def async_profile_updates(
 ) -> dict[str, Any] | None:
     """What newer profiles know about batteries set up before (a config patch).
 
-    So far the prepare steps (e.g. a battery's manual mode) and the levers on
-    the integration's system device (e.g. Omnibattery's power limits for the
-    daytime cap); what the user set stays as it is.
+    So far the prepare steps (e.g. a battery's manual mode) and the levers
+    only the day uses (Omnibattery's power limits on its system device for
+    the daytime cap, Huawei's or Victron's power limits); what the user set
+    stays as it is, the night's levers stay as they were tested.
     """
     snap = await async_collect(hass)
     patch: dict[str, Any] = {}
@@ -162,6 +164,8 @@ def discover(snap: Snapshot) -> dict[str, Any]:
         "calendars": calendars,
         "consumers": find_consumers(snap, energy),
     }
+    # Battery integrations without a battery Joe found (its level switched off).
+    result["battery_notes"] = find_battery_notes(snap, result["batteries"])
     result["checks"] = run_checks(snap, result)
     result["proposal"] = build_proposal(result)
     # Night actions Joe once proposed for charge points that turned out not to

@@ -83,6 +83,9 @@ def fresh() -> dict[str, Any]:
         "handed": None,
         # The last time it happened, for the panel.
         "last": None,
+        # The last block with levers that write to flash (stage 2 waits
+        # Profile.flash_gap_s between two).
+        "flash_at": None,
     }
 
 

@@ -89,6 +89,9 @@ class Snapshot:
     devices: dict[str, DeviceInfo] = field(default_factory=dict)
     energy_prefs: dict[str, Any] | None = None
     sun_elevation: float | None = None
+    # Entities switched off in Home Assistant (no state): what Joe would use
+    # if the owner switched them on.
+    disabled: dict[str, EntityInfo] = field(default_factory=dict)
 
     def get(self, entity_id: str | None) -> EntityInfo | None:
         return self.entities.get(entity_id) if entity_id else None
@@ -108,6 +111,25 @@ class Snapshot:
         if not entry_id:
             return []
         return [e for e in self.entities.values() if e.config_entry_id == entry_id]
+
+    def disabled_of(
+        self, *, entry_id: str | None = None, platform: str | None = None
+    ) -> list[EntityInfo]:
+        """Switched-off entities of an integration entry (or a whole integration)."""
+        return [
+            e
+            for e in self.disabled.values()
+            if (entry_id and e.config_entry_id == entry_id)
+            or (platform and not entry_id and e.platform == platform)
+        ]
+
+    def platforms(self) -> set[str]:
+        """Every integration with an entity, switched off ones included."""
+        return {
+            e.platform
+            for e in (*self.entities.values(), *self.disabled.values())
+            if e.platform
+        }
 
     def device_name(self, device_id: str | None) -> str | None:
         device = self.devices.get(device_id) if device_id else None
@@ -158,12 +180,27 @@ async def async_collect(hass: HomeAssistant) -> Snapshot:
             seconds_since_report=(now - reported).total_seconds(),
         )
 
+    disabled: dict[str, EntityInfo] = {}
+    for item in ent_reg.entities.values():
+        if item.disabled_by is None or item.entity_id in entities:
+            continue
+        disabled[item.entity_id] = EntityInfo(
+            entity_id=item.entity_id,
+            name=item.name or item.original_name or item.entity_id,
+            platform=item.platform,
+            config_entry_id=item.config_entry_id,
+            device_id=item.device_id,
+            unique_id=item.unique_id,
+            translation_key=item.translation_key,
+        )
+
     sun = hass.states.get("sun.sun")
     return Snapshot(
         entities=entities,
         devices=devices,
         energy_prefs=await _async_energy_prefs(hass),
         sun_elevation=sun.attributes.get("elevation") if sun else None,
+        disabled=disabled,
     )
 
 

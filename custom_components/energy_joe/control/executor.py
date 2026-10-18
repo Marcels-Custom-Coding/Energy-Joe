@@ -57,8 +57,10 @@ STORE_VERSION = 1
 CHECK_EVERY = timedelta(minutes=1)
 # A value Joe wrote may take this long to show; after that it counts as not taken.
 SETTLE = timedelta(seconds=90)
-# How often Joe writes the same value again when the device does not take it.
+# How often Joe writes the same value again when the device does not take it;
+# a value that ends up in flash (Profile.flash) less often.
 RETRY = timedelta(minutes=5)
+FLASH_RETRY = timedelta(minutes=30)
 # Several batteries: the owner's automations Joe gave back are taken over again
 # only after he could coordinate this long without a break (giving back is at
 # once). A block that did not arrive keeps him out this long, the second time
@@ -901,7 +903,8 @@ class JoeExecutor:
             if (
                 entry
                 and entry["value"] == write.value
-                and now - datetime.fromisoformat(entry["at"]) < RETRY
+                and now - datetime.fromisoformat(entry["at"])
+                < (FLASH_RETRY if write.flash else RETRY)
             ):
                 if (
                     not entry.get("confirmed")
@@ -2844,6 +2847,20 @@ class JoeExecutor:
             adapter.guard_block_roles(direction, whole) for adapter, whole in group
         ):
             stage = 3
+        # Levers that write to flash (Victron's settings): at most every gap.
+        gap = max(
+            (adapter.guard_flash_gap(direction, whole) for adapter, whole in group),
+            default=0.0,
+        )
+        flash_at = store.get("flash_at")
+        if (
+            stage == 2
+            and gap
+            and flash_at
+            and (now - datetime.fromisoformat(flash_at)).total_seconds() < gap
+        ):
+            self._log("guard_flash", **detail)
+            stage = 3
         problem: str | None = None
         if stage == 1:
             assert role is not None
@@ -2851,6 +2868,8 @@ class JoeExecutor:
             self._log("guard_restart", clean=clean, dry=dry, problem=problem, **detail)
         elif stage == 2:
             problem = await self._async_guard_block(group, direction, dry)
+            if gap and not dry:
+                store["flash_at"] = now.isoformat(timespec="seconds")
             self._log(
                 "guard_block", direction=direction, dry=dry, problem=problem, **detail
             )
@@ -3199,11 +3218,13 @@ class JoeExecutor:
 
     def _proposed_regulating(self, battery: dict[str, Any]) -> bool:
         """Whether a battery regulates itself to 0 W at the grid meter, as its
-        profile says: Fronius and Kostal always, Omnibattery in automatic mode."""
-        adapter = battery.get("adapter")
-        if adapter in ("fronius", "kostal_plenticore"):
+        profile says (Profile.regulating): Fronius and Kostal always,
+        Omnibattery in automatic mode."""
+        profile = profile_for(battery.get("adapter"))
+        regulating = profile.regulating if profile else "no"
+        if regulating == "yes":
             return True
-        if adapter != "omnibattery":
+        if regulating != "auto":
             return False
         for step in battery.get("prepare") or []:
             entity_id = step["entity_id"]
