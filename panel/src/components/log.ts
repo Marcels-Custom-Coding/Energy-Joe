@@ -6,6 +6,7 @@ import { entityName, formatNumber } from "../entities";
 import type { Translate } from "../i18n";
 import { shared } from "../styles/shared";
 import type { ClimateLogEntry, ControlLogEntry, HomeAssistant, JoeConfig } from "../types";
+import { together } from "./battery-team";
 import { dayText } from "./look-back";
 
 // What Joe switched: the steering log (control/executor.py) and the climate
@@ -109,8 +110,8 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
   if (entry.kind.startsWith("team_")) {
     const team = {
       ...vars,
-      // A group hands over as one ("Venus + Victron").
-      battery: Array.isArray(entry.batteries) && entry.batteries.length > 1 ? entry.batteries.map(nameOf).join(" + ") : battery,
+      // A group hands over as one ("Venus mit Victron").
+      battery: Array.isArray(entry.batteries) && entry.batteries.length > 1 ? together(t, entry.batteries.map(nameOf)) : battery,
       previous: nameOf(entry.previous),
       charging: names(entry.charging),
       discharging: names(entry.discharging),
@@ -121,7 +122,7 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
       direction: t.optional(`log.team_hold.${String(entry.direction ?? "")}`) ?? "",
       // Charging along, helping, a base load (control/team_day.py): the active one and the others.
       active: nameOf(entry.battery),
-      others: Array.isArray(entry.batteries) ? entry.batteries.map(nameOf).join(" + ") : "",
+      others: Array.isArray(entry.batteries) ? together(t, entry.batteries.map(nameOf)) : "",
       energy: typeof entry.energy === "number" ? formatNumber(t.lang, entry.energy, 1) : "–",
       lead: typeof entry.value === "number" ? formatNumber(t.lang, entry.value, 0) : "–",
       watts: typeof entry.power === "number" ? formatNumber(t.lang, entry.power, 0) : "–",

@@ -353,6 +353,8 @@
         "number.omnibattery_system_max_charge_power": { state: "0", attributes: { friendly_name: "Omnibattery System System-Maximal-Ladeleistung", unit_of_measurement: "W", min: 0, max: 2500, step: 50 } },
         "switch.omnibattery_charge_delay": { state: params.get("omni") === "ok" ? "off" : "on", attributes: { friendly_name: "Omnibattery System Ladeverzögerung" } },
         "switch.omnibattery_predictive_charging": { state: "off", attributes: { friendly_name: "Omnibattery System Prädiktives Laden" } },
+        // The Venus' own switch the watchdog put back after a restart (the log of ?done=1).
+        "switch.marstek_venus_e_3_0_battery_allow_charge": { state: "on", attributes: { friendly_name: "Marstek Venus E Laden erlauben" } },
       };
       for (const [entity_id, value] of Object.entries(omniStates)) sample.hass.states[entity_id] = { entity_id, ...value };
       sample.hass.states["number.omnibattery_system_max_discharge_power"] = {

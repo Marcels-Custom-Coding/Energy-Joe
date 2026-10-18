@@ -42,9 +42,15 @@ export function teamGroups(config: JoeConfig, team: BatteryTeam | undefined, bat
   return [...result.values()];
 }
 
-/** A group by its batteries' names ("Venus + Victron"). */
-export function groupName(team: BatteryTeam, ids: string[]): string {
-  return ids.map((id) => team.batteries[id]?.name ?? id).join(" + ");
+/** Batteries that work as one group, in a sentence ("Venus mit Victron lädt"): one subject, the verb stays singular. */
+export function together(t: Translate, names: string[]): string {
+  if (names.length < 2) return names[0] ?? "";
+  return t("team.together", { first: names[0], rest: names.slice(1).join(", ") });
+}
+
+/** A group by its batteries' names ("Venus mit Victron"). */
+export function groupName(t: Translate, team: BatteryTeam, ids: string[]): string {
+  return together(t, ids.map((id) => team.batteries[id]?.name ?? id));
 }
 
 /** The batteries of each group Joe coordinates (older backends: one battery each). */
@@ -66,8 +72,8 @@ function activeIds(team: BatteryTeam): string[] {
 /** One group's part right now ("BYD lädt", "Venus + Victron gesperrt (wartet, bis BYD voll ist)"). */
 function part(t: Translate, team: BatteryTeam, ids: string[]): string {
   const entry = team.batteries[ids[0]];
-  const active = groupName(team, activeIds(team));
-  const vars = { name: groupName(team, ids), active };
+  const active = groupName(t, team, activeIds(team));
+  const vars = { name: groupName(t, team, ids), active };
   if (entry.why === "active") {
     const power = ids.reduce((sum, id) => sum + (team.batteries[id]?.power_w ?? 0), 0);
     const key = power > 50 ? "charging" : power < -50 ? "discharging" : "idle";
@@ -112,21 +118,21 @@ function reasonNow(t: Translate, team: BatteryTeam | undefined): string | null {
   if (!team || team.state !== "on" || !team.active) {
     return null;
   }
-  const active = groupName(team, activeIds(team));
+  const active = groupName(t, team, activeIds(team));
   const along = withWhy(team, "along");
   if (team.along && along.length) {
-    return t(`team.reason.along.${team.along}`, { active, others: groupName(team, along) });
+    return t(`team.reason.along.${team.along}`, { active, others: groupName(t, team, along) });
   }
   const helps = withWhy(team, "helps");
   if (team.help && helps.length) {
-    return t("team.reason.help", { active, others: groupName(team, helps) });
+    return t("team.reason.help", { active, others: groupName(t, team, helps) });
   }
   if (team.base?.batteries.length) {
-    return t("team.reason.base", { active, others: groupName(team, team.base.batteries), w: formatNumber(t.lang, team.base.w, 0) });
+    return t("team.reason.base", { active, others: groupName(t, team, team.base.batteries), w: formatNumber(t.lang, team.base.w, 0) });
   }
   const plan = team.along_plan;
   if (plan && !team.parallel && new Date(plan.until).getTime() > Date.now()) {
-    const vars = { active, others: groupName(team, plan.batteries), time: plan.from.slice(11, 16) };
+    const vars = { active, others: groupName(t, team, plan.batteries), time: plan.from.slice(11, 16) };
     return t(plan.lead_min > 0 ? "team.reason.plan.lead" : "team.reason.plan", { ...vars, lead: plan.lead_min });
   }
   return null;
@@ -142,7 +148,7 @@ export function teamReviewText(t: Translate, team: BatteryTeam | undefined): str
   if (review.room_kwh >= 0.3 && review.short) {
     return t("team.review.room", {
       ...vars,
-      name: groupName(team, review.short.batteries),
+      name: groupName(t, team, review.short.batteries),
       soc: formatNumber(t.lang, review.short.soc ?? 0, 0),
     });
   }
@@ -171,7 +177,7 @@ export function teamSuggest(t: Translate, config: JoeConfig, team: BatteryTeam |
   if (!team || !suggest || config.rules.team_early != null) {
     return null;
   }
-  const name = groupName(team, suggest.batteries);
+  const name = groupName(t, team, suggest.batteries);
   return {
     title: t("team.suggest.title", {
       when: dayWord(t, suggest.day),
@@ -200,7 +206,7 @@ export function teamText(t: Translate, team: BatteryTeam): string {
   }
   if (team.state === "not_taken") {
     const ids = Object.keys(team.batteries).filter((id) => team.batteries[id].problem);
-    return t("team.state.not_taken", { names: groupName(team, ids) });
+    return t("team.state.not_taken", { names: groupName(t, team, ids) });
   }
   return t.optional(`team.state.${team.state}`) ?? team.state;
 }
@@ -238,7 +244,7 @@ export function teamHold(t: Translate, team: BatteryTeam | undefined): string | 
     return null;
   }
   return t(hold.direction === "discharge" ? "team.hold.discharge" : "team.hold.charge", {
-    name: groupName(team, hold.batteries),
+    name: groupName(t, team, hold.batteries),
     names: quoted(hold.names),
   });
 }
@@ -251,13 +257,13 @@ export function teamDoing(t: Translate, team: BatteryTeam | undefined): string |
   const active = activeIds(team);
   const others = liveGroups(team)
     .filter((ids) => !ids.some((id) => active.includes(id)))
-    .map((ids) => groupName(team, ids));
+    .map((ids) => groupName(t, team, ids));
   const reason = team.along || team.help || team.base ? teamReason(t, team) : null;
   if (reason) {
     return reason;
   }
   return t(team.parallel && Object.values(team.batteries).some((b) => b.why === "parallel") ? "team.doing.parallel" : "team.doing", {
-    active: groupName(team, active),
+    active: groupName(t, team, active),
     others: others.join(", "),
   });
 }
