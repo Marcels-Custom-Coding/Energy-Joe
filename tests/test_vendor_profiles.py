@@ -1304,3 +1304,24 @@ def test_every_profile_names_known_roles_and_valid_options() -> None:
         assert set(profile.options) <= set(MODE_OPTIONS), profile.key
         assert profile.regulating in ("yes", "auto", "no"), profile.key
         assert profile.scope in ("device", "entry", "integration"), profile.key
+
+
+def test_an_inverter_without_a_battery_gets_no_note() -> None:
+    """SMA, Growatt or Hoymiles may run without a battery: nothing to say then."""
+    sma = {"platform": "sma", "entry": "sma", "device_id": "stp"}
+    snap = snapshot(
+        [
+            entity(
+                "sensor.stp_power",
+                "Grid power",
+                3000,
+                unit="W",
+                device_class="power",
+                unique_id="sma_grid_power",
+                **sma,
+            )
+        ],
+        devices=[DeviceInfo("stp", "Sunny Tripower", "SMA", "STP 10.0")],
+    )
+    result = discover(snap)
+    assert result["batteries"] == [] and result["battery_notes"] == []

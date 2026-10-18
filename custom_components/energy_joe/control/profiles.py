@@ -1312,7 +1312,8 @@ MQTT_NOTES: dict[str, str] = {
     "deye": "mqtt_sunsynk",
 }
 # Integrations that are batteries (or battery systems) only: when Joe sees
-# them but finds no level, he says so (its level may be switched off).
+# them but finds no level, he says so (its level may be switched off). Not
+# those of inverters that may run without a battery (SMA, Growatt, Hoymiles).
 BATTERY_PLATFORMS = (
     "kostal_modbus_control",
     "varta_modbus",
@@ -1325,7 +1326,11 @@ BATTERY_PLATFORMS = (
     "marstek",
     "anker_solix",
     "indevolt",
-    *NOT_STEERABLE,
+    "ecoflow_cloud",
+    "powerwall",
+    "varta_storage",
+    "varta_pulse_neo",
+    "byd_battery_box",
 )
 
 
