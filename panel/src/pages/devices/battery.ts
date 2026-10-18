@@ -1,7 +1,7 @@
 import { css, html, nothing, type PropertyValues, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
 import "../../components/battery-automations";
-import { batteryTeam, selfRegulating, teamOrder, teamText, teamTransfer } from "../../components/battery-team";
+import { batteryTeam, guardText, selfRegulating, teamOrder, teamText, transferGuard } from "../../components/battery-team";
 import { sourceChip } from "../../components/bits";
 import "../../components/control-status";
 import { daySurplus, surplusConflictNote, surplusText } from "../../components/day-surplus";
@@ -35,6 +35,7 @@ const BATTERY_RULES: readonly RuleKey[] = [
   "discharge_in_window",
   "converter_losses",
   "day_surplus",
+  "transfer_guard",
 ];
 
 /**
@@ -339,7 +340,6 @@ export class JoeBatteryGroup extends DeviceSection {
         void saveConfig(this, { rules: { battery_team: next } });
       }
     };
-    const transfer = teamTransfer(t, team);
     const automations = team?.state === "automation";
     return html`<section class="card" data-tipped data-anchor=${TEAM_ANCHOR}>
       <div class="head">
@@ -373,11 +373,7 @@ export class JoeBatteryGroup extends DeviceSection {
               </span>
             </div>`
           : nothing}
-        ${transfer
-          ? html`<div class="note ${team?.transfer?.despite ? "warn" : ""}" role="status">
-              <ha-icon icon="mdi:swap-horizontal"></ha-icon><span>${transfer}</span>
-            </div>`
-          : nothing}
+        ${this.renderGuard(t, config)}
       </div>
       ${mode === "sequence"
         ? html`<div class="team-orders">
@@ -388,6 +384,33 @@ export class JoeBatteryGroup extends DeviceSection {
         ${config.batteries.map((battery) => this.teamBattery(t, config, battery))}
       </ul>
     </section>`;
+  }
+
+  /**
+   * "Speicher-Wächter": the last time two batteries ran against each other
+   * and what Joe did (control/guard.py); an automation doing it so far
+   * points to the automations below.
+   */
+  private renderGuard(t: Translate, config: JoeConfig): TemplateResult | typeof nothing {
+    const guard = transferGuard(this.state);
+    if (!guard) {
+      return nothing;
+    }
+    const alarm = guard.state === "on" && guard.last?.result === "alarm" && !guard.last.dry;
+    const handed = guard.state === "on" && guard.automations.length > 0;
+    return html`<div class="note guard ${alarm || handed ? "warn" : ""}" role="status" data-tipped data-anchor="guard">
+      <ha-icon icon="mdi:shield-sync-outline"></ha-icon>
+      <span>
+        <b>${t("guard.title")}</b> ${tip(t, "guard")} · ${guardText(t, guard, config)}
+        ${handed
+          ? html`<span class="note-actions">
+              <button type="button" class="mini-btn go" @click=${() => revealAnchor(this.renderRoot, "automations")}>
+                ${t("team.automations.go")}
+              </button>
+            </span>`
+          : nothing}
+      </span>
+    </div>`;
   }
 
   /** "Laden: zuerst …" / "Entladen: zuerst …": the batteries in their order, with up and down. */

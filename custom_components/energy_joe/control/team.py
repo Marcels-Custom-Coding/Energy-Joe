@@ -74,9 +74,6 @@ KEEP = 5
 # A battery that charges no more while the house gives to the grid is full,
 # too (its own charge target, a BMS limit).
 EXPORT_W = 300.0
-# Two batteries running against each other: above this, for this long.
-TRANSFER_W = 150.0
-TRANSFER_SPAN = timedelta(minutes=2)
 
 
 @dataclass(slots=True)
@@ -259,10 +256,3 @@ def watch_full(
         return now - datetime.fromisoformat(since) >= SPAN
     watch.pop("full_since", None)
     return False
-
-
-def opposite(powers: dict[str, float]) -> tuple[list[str], list[str]]:
-    """Batteries that charge and ones that discharge (W, above TRANSFER_W)."""
-    charging = [k for k, p in powers.items() if p >= TRANSFER_W]
-    discharging = [k for k, p in powers.items() if p <= -TRANSFER_W]
-    return (charging, discharging) if charging and discharging else ([], [])

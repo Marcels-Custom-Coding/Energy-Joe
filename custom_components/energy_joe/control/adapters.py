@@ -31,6 +31,7 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 
 from .profiles import (
+    DAY_ROLES,
     GENERIC,
     MODE_METHODS,
     PROFILES,
@@ -100,10 +101,8 @@ class Adapter:
         """Changes when the way of steering changes (a new test run is needed)."""
         data = {
             "kind": self.kind,
-            # The system levers of the daytime cap are no part of the night.
-            "controls": {
-                k: v for k, v in self.controls.items() if k not in SYSTEM_ROLES
-            },
+            # The levers of the day (cap, watchdog) are no part of the night.
+            "controls": {k: v for k, v in self.controls.items() if k not in DAY_ROLES},
             "options": self.battery.get("mode_options") or {},
             "prepare": self.battery.get("prepare") or [],
             "steps": self.battery.get("steps") or {},
@@ -471,6 +470,63 @@ class RoleAdapter(Adapter):
         values = [r for r in roles if not r.endswith("_enabled")]
         return self._paced(self._restore(saved, *switches, *values))
 
+    # --- the watchdog (control/guard.py) -----------------------------------------
+
+    def guard_can_restart(self) -> bool:
+        """Whether Joe can restart the battery's own control (stage 1)."""
+        return self._has("system_manual_mode")
+
+    def guard_block_roles(self, direction: str) -> tuple[str, ...]:
+        """The roles that block one direction ("charge" or "discharge") for a
+        few seconds (stage 2), switch before value; empty: none.
+
+        A battery's own allow switch (Venus), else its own limit at 0 with its
+        switch (Fronius). Never the system's limits: they are for all
+        batteries of the integration at once.
+        """
+        allow = f"allow_{direction}"
+        if self._has(allow):
+            return (allow,)
+        switch, value = f"{direction}_limit_enabled", f"{direction}_limit"
+        if self._has(value):
+            return (switch, value) if self._has(switch) else (value,)
+        return ()
+
+    def guard_block(self, direction: str) -> list[Write]:
+        """Writes that block one direction: the allow switch off, or the
+        limit at 0 first and then its switch on (Fronius ignores it while off)."""
+        roles = self.guard_block_roles(direction)
+        if roles == (f"allow_{direction}",):
+            return [Write(self.controls[roles[0]], False)]
+        writes = [Write(self.controls[f"{direction}_limit"], 0)]
+        if f"{direction}_limit_enabled" in roles:
+            writes.append(Write(self.controls[f"{direction}_limit_enabled"], True))
+        return writes
+
+    def guard_manual(self) -> list[str]:
+        """The manual-mode switches of this battery (the system's, its own)."""
+        found = (
+            [self.controls["system_manual_mode"]]
+            if self._has("system_manual_mode")
+            else []
+        )
+        return [*found, *(e for e in self.prepare_entities() if e not in found)]
+
+    def guard_exit(self, hass: HomeAssistant) -> list[Write]:
+        """End a forced charge or discharge cleanly and give the battery back
+        to its own control: force mode to normal, the setpoints to 0, then
+        every manual mode that is on off."""
+        writes: list[Write] = []
+        if self._has("mode") and self.options.get("normal"):
+            writes.append(Write(self.controls["mode"], self.options["normal"]))
+        for role in ("charge_power", "discharge_power"):
+            if self._has(role):
+                writes.append(Write(self.controls[role], 0))
+        for entity_id in self.guard_manual():
+            if read(hass, entity_id) is True:
+                writes.append(Write(entity_id, False))
+        return writes
+
     def _open_wide(self, hass: HomeAssistant, role: str) -> Write:
         """A limit at its highest (no limit while the shared switch is on)."""
         entity_id = self.controls[role]
@@ -508,8 +564,8 @@ class RoleAdapter(Adapter):
         if not self.hold_methods():
             result.append("hold")
         for role, entity_id in self.controls.items():
-            if role in SYSTEM_ROLES:
-                # Only the daytime cap needs them (limit_problem says so).
+            if role in DAY_ROLES:
+                # Only the day needs them (limit_problem, the watchdog say so).
                 continue
             if not available(hass.states.get(entity_id)):
                 result.append(role)

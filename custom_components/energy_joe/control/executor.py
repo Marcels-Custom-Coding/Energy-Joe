@@ -37,7 +37,13 @@ from ..const import DOMAIN
 from ..observe.readings import distance_km, measurement_kw, number, solar_kw
 from ..plan import cars, surplus as day_surplus
 from ..plan.actions import condition_met
-from . import automations as battery_automations, evcc, team as team_rules
+from . import (
+    automations as battery_automations,
+    evcc,
+    guard as guard_rules,
+    team as team_rules,
+    writes as joe_writes,
+)
 from .actions import ActionAdapter
 from .adapters import Adapter, Desired, RoleAdapter, make_adapter
 from .profiles import profile_for
@@ -160,12 +166,12 @@ DEFAULT_DATA: dict[str, Any] = {
         # levels it stopped discharging at.
         "watch": {},
         "cutoffs": {},
-        # Two batteries running against each other (see _team_transfer).
-        "transfer": None,
-        "told": None,
         # The day "Sofort freigeben" paused it.
         "paused": None,
     },
+    # The watchdog: two batteries running against each other (see
+    # _async_guard and control/guard.py).
+    "guard": guard_rules.fresh(),
 }
 
 type Changed = Callable[[], None]
@@ -229,6 +235,10 @@ class JoeExecutor:
         # What several batteries do together now, for the panel.
         self.team: dict[str, Any] = {"state": "off", "batteries": {}}
         self._team_shown: dict[str, Any] = {}
+        # What the watchdog does now, for the panel.
+        self.guard: dict[str, Any] = {"state": "off"}
+        # The automations writing the watchdog's levers: battery, when, names.
+        self._guard_seen: tuple[str, datetime, list[str]] | None = None
         self.status: dict[str, Any] = {
             "steering": False,
             "reason": "simulation",
@@ -252,6 +262,13 @@ class JoeExecutor:
                 **deepcopy(DEFAULT_DATA["team"]),
                 **(stored.get("team") or {}),
             }
+            # Older data: the watchdog's notes of the team are gone.
+            for key in ("transfer", "told"):
+                self.data["team"].pop(key, None)
+            self.data["guard"] = {
+                **guard_rules.fresh(),
+                **(stored.get("guard") or {}),
+            }
 
     @property
     def active(self) -> bool:
@@ -260,8 +277,16 @@ class JoeExecutor:
     async def async_start(self) -> None:
         """Start checking (also releases what a crash left behind)."""
         await self.async_stop(release=False)
+        # What the watchdog switched before a restart goes back first.
+        async with self._lock:
+            await self._async_guard_restore("start")
         self._unsubs.append(
             async_track_time_interval(self._hass, self._on_tick, CHECK_EVERY)
+        )
+        self._unsubs.append(
+            async_track_time_interval(
+                self._hass, self._on_guard_tick, guard_rules.EVERY
+            )
         )
         self._unsubs.append(
             self._hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, self._on_stop)
@@ -281,9 +306,11 @@ class JoeExecutor:
             self._soc_unsub()
             self._soc_unsub = None
             self._watched = ()
-        if release and self._dirty:
+        if release and (self._dirty or self.data["guard"]["held"]):
             async with self._lock:
-                await self._async_release("stopped")
+                await self._async_guard_restore("stopped")
+                if self._dirty:
+                    await self._async_release("stopped")
 
     @callback
     def _on_tick(self, now: datetime) -> None:
@@ -328,6 +355,12 @@ class JoeExecutor:
 
     async def _on_stop(self, event: Event) -> None:
         """Home Assistant stops: give everything back, so nothing stays set if it stays down."""
+        if self.data["guard"]["held"]:
+            try:
+                async with asyncio.timeout(15), self._lock:
+                    await self._async_guard_restore("ha_stop")
+            except TimeoutError:
+                _LOGGER.warning("The watchdog's switches go back after the start")
         if self._dirty:
             try:
                 async with asyncio.timeout(15), self._lock:
@@ -1583,7 +1616,6 @@ class JoeExecutor:
             "parallel": False,
             "batteries": {},
             "automations": [],
-            "transfer": None,
             "proposal": False,
         }
         candidates: list[tuple[dict[str, Any], RoleAdapter | None]] = []
@@ -1627,7 +1659,6 @@ class JoeExecutor:
             )
         else:
             store.update(active=None, since=None)
-        await self._async_team_transfer(config, info, powers, now, today)
         self.team = info
         if state != "on":
             self._team_publish()
@@ -2039,67 +2070,392 @@ class JoeExecutor:
             key = adapter.battery["id"]
             self.data["active"] = [k for k in self.data["active"] if k != key]
 
-    async def _async_team_transfer(
+    # --- the watchdog: batteries running against each other -------------------
+
+    @callback
+    def _on_guard_tick(self, now: datetime) -> None:
+        self._hass.async_create_task(self.async_guard(), eager_start=False)
+
+    async def async_guard(self) -> None:
+        """One look of the watchdog (every few seconds, see control/guard.py)."""
+        if self.testing:
+            return
+        try:
+            await self._async_guard(dt_util.now())
+        except Exception:
+            _LOGGER.exception("The watchdog failed")
+            # Never leave a switch of the watchdog as it is.
+            async with self._lock:
+                await self._async_guard_restore("error")
+
+    async def _async_guard(self, now: datetime) -> None:
+        """Two batteries running against each other: step in by stages.
+
+        Runs whenever at least two batteries have a power meter, with or
+        without "Nacheinander". Writes only live; the simulation and
+        "suggest" log what Joe would do. During the night's plan Joe steers
+        the batteries himself (and blocks the others while one charges from
+        the grid): then he only notes it. An automation that writes the same
+        levers (the owner's own watchdog) keeps his hands off.
+        """
+        config, mode = self._config(), self._mode()
+        store: dict[str, Any] = self.data["guard"]
+        powers: dict[str, float] = {}
+        for battery in config["batteries"]:
+            power = _charge_w(self._hass, battery)
+            if power is not None:
+                powers[battery["id"]] = power
+        state = "on"
+        if not config["rules"].get("transfer_guard", True):
+            state = "off"
+        elif mode == "off":
+            state = "mode_off"
+        elif len(powers) < 2:
+            state = "single"
+        dry = mode != "live"
+        if store["held"]:
+            # Left over (a failed write, a mode change): back first.
+            async with self._lock:
+                await self._async_guard_restore("retry" if state == "on" else state)
+        if state != "on":
+            if store["since"] is not None:
+                store.update(since=None, stage=0, stage_at=None, noted=None)
+            self._guard_publish(config, state, dry, False, now)
+            return
+        charging, discharging = guard_rules.opposite(powers)
+        running = bool(charging)
+        since, stage = store["since"], store["stage"]
+        due = guard_rules.step(store, running, now)
+        if due == "fixed":
+            await self._async_guard_fixed(store, since, stage, now)
+        elif due is not None and due != "ended":
+            async with self._lock:
+                await self._async_guard_stage(
+                    config, store, int(due[-1]), charging, discharging, dry, now
+                )
+        self._guard_publish(config, state, dry, running, now)
+
+    async def _async_guard_stage(
         self,
         config: dict[str, Any],
-        info: dict[str, Any],
-        powers: dict[str, float],
+        store: dict[str, Any],
+        stage: int,
+        charging: list[str],
+        discharging: list[str],
+        dry: bool,
         now: datetime,
-        today: str,
     ) -> None:
-        """The watchdog: two batteries running against each other for a while.
-
-        Logged once per time it happens; while Joe blocks for real it should
-        not happen at all: then "Joe braucht dich" and, if wanted, a push
-        (once a day).
-        """
-        store: dict[str, Any] = self.data["team"]
-        names = {b["id"]: b["name"] for b in config["batteries"]}
-        charging, discharging = team_rules.opposite(powers)
-        last = store.get("transfer")
-        if charging:
-            stamp = now.isoformat(timespec="seconds")
-            if not last or not last.get("active"):
-                last = {"since": stamp, "active": True, "logged": False}
-            last.update(
-                charging=[names.get(k, k) for k in charging],
-                discharging=[names.get(k, k) for k in discharging],
-                at=stamp,
+        """Step in: restart the battery's own control, block its direction for
+        a few seconds or speak up; a stage it has no lever for is skipped."""
+        batteries = {b["id"]: b for b in config["batteries"]}
+        if store["battery"] not in (*charging, *discharging):
+            store["battery"] = guard_rules.cause(
+                list(batteries),
+                charging,
+                discharging,
+                self._guard_levers(config),
+                self.data["team"]["active"],
             )
-            if (
-                now - datetime.fromisoformat(last["since"]) >= team_rules.TRANSFER_SPAN
-                and not last["logged"]
-            ):
-                last["logged"] = True
-                live = info["state"] == "on" and not info["dry"]
-                last["despite"] = live
-                if info["state"] in ("together", "off"):
-                    # Left to themselves on purpose: nothing to tell.
-                    store["transfer"] = last
-                    return
-                self._log(
-                    "team_transfer",
-                    battery=charging[0],
-                    charging=charging,
-                    discharging=discharging,
-                    blocked=live,
+        key = store["battery"]
+        adapter = make_adapter(batteries[key])
+        role = adapter if isinstance(adapter, RoleAdapter) else None
+        direction = "charge" if key in charging else "discharge"
+        detail = {"battery": key, "charging": charging, "discharging": discharging}
+        if self.status.get("reason") == "steering" or self._guard_joe_holds(role):
+            # Joe's own command (the night, charging by hand): not fought.
+            if store["noted"] != "joe":
+                store["noted"] = "joe"
+                self._log("guard_joe", **detail)
+                self._guard_last(store, now, 0, "joe", detail, dry, direction)
+                await self._async_save()
+            return
+        names = self._guard_automations(config, key, now)
+        if names:
+            if store.get("handed") != names:
+                store["handed"] = names
+                self._log("guard_automation", names=names, **detail)
+            if store["noted"] != "automation":
+                store["noted"] = "automation"
+                self._guard_last(store, now, 0, "automation", detail, dry, direction)
+                await self._async_save()
+            return
+        store["handed"] = None
+        store["noted"] = None
+        if stage == 1 and not (role and role.guard_can_restart()):
+            stage = 2
+        if stage == 2 and not (role and role.guard_block_roles(direction)):
+            stage = 3
+        problem: str | None = None
+        if stage == 1:
+            assert role is not None
+            clean, problem = await self._async_guard_restart(role, dry)
+            self._log("guard_restart", clean=clean, dry=dry, problem=problem, **detail)
+        elif stage == 2:
+            assert role is not None
+            problem = await self._async_guard_block(role, direction, dry)
+            self._log(
+                "guard_block", direction=direction, dry=dry, problem=problem, **detail
+            )
+        else:
+            self._log("guard_alarm", dry=dry, **detail)
+            if not dry and self.notifier and guard_rules.may_tell(store, now):
+                store["told"] = now.isoformat(timespec="seconds")
+                names_of = {k: b["name"] for k, b in batteries.items()}
+                await self.notifier.async_problem(
+                    "battery_transfer",
+                    charging=", ".join(names_of.get(k, k) for k in charging),
+                    discharging=", ".join(names_of.get(k, k) for k in discharging),
                 )
-                if live and store["told"] != today and self.notifier:
-                    store["told"] = today
-                    await self.notifier.async_problem(
-                        "battery_transfer",
-                        charging=", ".join(last["charging"]),
-                        discharging=", ".join(last["discharging"]),
-                    )
-            store["transfer"] = last
-        elif last and last.get("active"):
-            last["active"] = False
-            store["transfer"] = last
-        if last and last.get("logged") and last.get("at", "")[:10] == today:
-            info["transfer"] = {
-                k: last.get(k)
-                for k in ("since", "at", "active", "charging", "discharging", "despite")
-            }
+        after = dt_util.now()
+        guard_rules.done(store, stage, after)
+        self._guard_last(
+            store,
+            after,
+            stage,
+            "alarm" if stage == 3 else "running",
+            detail,
+            dry,
+            direction,
+        )
+        await self._async_save()
+
+    async def _async_guard_fixed(
+        self, store: dict[str, Any], since: str | None, stage: int, now: datetime
+    ) -> None:
+        """It stopped after Joe stepped in: "Behoben nach …"."""
+        seconds = guard_rules.seconds_since(since, now)
+        last = store["last"] or {}
+        self._log(
+            "guard_fixed",
+            battery=store["battery"],
+            stage=stage,
+            seconds=seconds,
+            dry=bool(last.get("dry")),
+        )
+        if last.get("since") == since:
+            last.update(
+                result="fixed", at=now.isoformat(timespec="seconds"), seconds=seconds
+            )
+        if stage >= 3 and self.notifier:
+            await self.notifier.async_clear("battery_transfer")
+        store["battery"] = None
+        await self._async_save()
+
+    def _guard_last(
+        self,
+        store: dict[str, Any],
+        now: datetime,
+        stage: int,
+        result: str,
+        detail: dict[str, Any],
+        dry: bool,
+        direction: str,
+    ) -> None:
+        """The last time it happened, for the panel."""
+        store["last"] = {
+            **detail,
+            "since": store["since"],
+            "at": now.isoformat(timespec="seconds"),
+            "stage": stage,
+            "result": result,
+            "dry": dry,
+            "direction": direction,
+            "seconds": guard_rules.seconds_since(store["since"], now),
+        }
+
+    async def _async_guard_restart(
+        self, role: RoleAdapter, dry: bool
+    ) -> tuple[bool, str | None]:
+        """Stage 1: the battery's own control starts again. Returns whether a
+        manual mode held by something else was ended cleanly, and a problem.
+
+        Manual mode off: on for a moment and off again (a restart of
+        Omnibattery's PD controller). Manual mode on (a forced charge or
+        discharge of something else): force mode "None", the setpoints 0,
+        manual mode off, a second between them; that is no value of Joe's
+        to put back.
+        """
+        clean = any(read(self._hass, e) is True for e in role.guard_manual())
+        if dry:
+            return clean, None
+        if clean:
+            for write in role.guard_exit(self._hass):
+                try:
+                    await async_apply(self._hass, write)
+                except WriteError as err:
+                    return True, err.code
+                await joe_writes.settle(max(write.pause, guard_rules.PACE_S))
+            return True, None
+        manual = role.controls["system_manual_mode"]
+        problem = await self._async_guard_hold([Write(manual, True)])
+        if problem is None:
+            await joe_writes.settle(guard_rules.PULSE_S)
+        failed = await self._async_guard_restore("done")
+        return False, problem or ("restore" if failed else None)
+
+    async def _async_guard_block(
+        self, role: RoleAdapter, direction: str, dry: bool
+    ) -> str | None:
+        """Stage 2: the battery's current direction blocked for a few seconds,
+        then back as it was."""
+        if dry:
+            return None
+        problem = await self._async_guard_hold(role.guard_block(direction))
+        if problem is None:
+            await joe_writes.settle(guard_rules.BLOCK_S)
+        failed = await self._async_guard_restore("done")
+        return problem or ("restore" if failed else None)
+
+    async def _async_guard_hold(self, writes: list[Write]) -> str | None:
+        """Write, noting each value before on disk first (it goes back after
+        the stage, after a restart, a stop or an error)."""
+        held: dict[str, Any] = self.data["guard"]["held"]
+        for write in writes:
+            if write.entity_id not in held:
+                original = read(self._hass, write.entity_id)
+                if original is None:
+                    return "unavailable"
+                held[write.entity_id] = original
+        await self._async_save()
+        for index, write in enumerate(writes):
+            if index:
+                await joe_writes.settle(guard_rules.PACE_S)
+            try:
+                await async_apply(self._hass, write)
+            except WriteError as err:
+                self._log("failed", battery=None, entity=err.entity_id, code=err.code)
+                return err.code
+        return None
+
+    async def _async_guard_restore(self, reason: str) -> list[str]:
+        """What the watchdog switched back as it was, newest first; returns
+        what failed (kept for the next try)."""
+        held: dict[str, Any] = self.data["guard"]["held"]
+        if not held:
+            return []
+        back: list[str] = []
+        failed: list[str] = []
+        for index, entity_id in enumerate(reversed(list(held))):
+            write = Write(entity_id, held[entity_id])
+            if index:
+                await joe_writes.settle(guard_rules.PACE_S)
+            if not matches(self._hass, fit(self._hass, write)):
+                try:
+                    await async_apply(self._hass, write)
+                except WriteError:
+                    failed.append(entity_id)
+                    continue
+            held.pop(entity_id, None)
+            back.append(entity_id)
+        # Logged when something came back outside a stage, or failed (a retry
+        # that fails again every few seconds is no news).
+        if (back and reason != "done") or (failed and reason != "retry"):
+            self._log("guard_restored", reason=reason, entities=back, failed=failed)
+        await self._async_save()
+        return failed
+
+    def _guard_joe_holds(self, role: RoleAdapter | None) -> bool:
+        """Whether Joe himself commands the battery now (its mode, power or
+        manual mode noted to put back: the night, charging by hand, a test)."""
+        if role is None:
+            return False
+        saved: dict[str, Any] = self.data["saved"]
+        levers = [
+            *(
+                role.controls.get(r)
+                for r in ("mode", "charge_power", "discharge_power")
+            ),
+            *role.guard_manual(),
+        ]
+        return any(e in saved for e in levers if e)
+
+    def _guard_levers(self, config: dict[str, Any]) -> dict[str, tuple[bool, bool]]:
+        """Per battery: whether Joe can restart its control and block it."""
+        result = {}
+        for battery in config["batteries"]:
+            adapter = make_adapter(battery)
+            if isinstance(adapter, RoleAdapter):
+                result[battery["id"]] = (
+                    adapter.guard_can_restart(),
+                    bool(
+                        adapter.guard_block_roles("charge")
+                        or adapter.guard_block_roles("discharge")
+                    ),
+                )
+        return result
+
+    def _guard_entities(self, battery: dict[str, Any]) -> set[str]:
+        """The levers the watchdog writes for a battery."""
+        adapter = make_adapter(battery)
+        if not isinstance(adapter, RoleAdapter):
+            return set()
+        found = set(adapter.guard_manual()) if adapter.guard_can_restart() else set()
+        for direction in ("charge", "discharge"):
+            found |= {adapter.controls[r] for r in adapter.guard_block_roles(direction)}
+        return found
+
+    def _guard_automations(
+        self, config: dict[str, Any], key: str | None, now: datetime
+    ) -> list[str]:
+        """Automations (switched on) that write the watchdog's levers of this
+        battery (None: of the one Joe would pick first): the owner's own
+        watchdog does it so far. Looked up at most once a minute."""
+        if key is None:
+            levers = self._guard_levers(config)
+            ids = [k for k in levers if any(levers[k])]
+            if not ids:
+                return []
+            key = guard_rules.cause(ids, ids, [], levers)
+        cached = self._guard_seen
+        if cached and cached[0] == key and now - cached[1] < CHECK_EVERY:
+            return list(cached[2])
+        battery = next((b for b in config["batteries"] if b["id"] == key), None)
+        names: list[str] = []
+        if battery is not None:
+            entities = self._guard_entities(battery)
+            try:
+                found = battery_automations.find(
+                    self._hass, config, self.data["automations_off"]
+                )
+            except Exception:
+                _LOGGER.exception("Looking for automations failed")
+                found = []
+            names = [
+                a["name"]
+                for a in found
+                if a["on"]
+                and any(
+                    w["entity_id"] in entities
+                    or (w["entity_id"] is None and w["battery_id"] == key)
+                    for w in a["writes"]
+                )
+            ]
+        self._guard_seen = (key, now, names)
+        return list(names)
+
+    def _guard_publish(
+        self,
+        config: dict[str, Any],
+        state: str,
+        dry: bool,
+        running: bool,
+        now: datetime,
+    ) -> None:
+        """Tell the panel when what the watchdog does changed."""
+        store: dict[str, Any] = self.data["guard"]
+        info = {
+            "state": state,
+            "dry": dry,
+            "running": running,
+            "stage": store["stage"] if running else 0,
+            "automations": self._guard_automations(config, None, now)
+            if state == "on"
+            else [],
+            "last": deepcopy(store["last"]),
+        }
+        if info != self.guard:
+            self.guard = info
+            self._changed()
 
     def _team_automations(self, config: dict[str, Any], ids: set[str]) -> list[str]:
         """Automations (switched on) that write to these batteries: the owner's
@@ -2902,6 +3258,7 @@ class JoeExecutor:
             "boost": self.data["boost"],
             "surplus": self.surplus,
             "team": self.team,
+            "guard": self.guard,
         }
 
     async def async_forget(self) -> None:

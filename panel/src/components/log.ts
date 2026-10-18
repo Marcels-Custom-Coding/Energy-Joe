@@ -128,6 +128,43 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
     }
     return t.optional(`log.${entry.kind}`, team) ?? entry.kind;
   }
+  if (entry.kind.startsWith("guard_")) {
+    // The watchdog (control/guard.py): every stage, plain words.
+    const seconds = typeof entry.seconds === "number" ? entry.seconds : 0;
+    const guard = {
+      ...vars,
+      charging: names(entry.charging),
+      discharging: names(entry.discharging),
+      names: Array.isArray(entry.names) ? entry.names.map((n) => `„${String(n)}“`).join(", ") : "",
+      entities: Array.isArray(entry.entities)
+        ? entry.entities.map((e) => (hass ? entityName(hass, String(e)) : String(e))).join(", ")
+        : "",
+      duration: seconds < 120 ? t("guard.seconds", { n: seconds }) : t("guard.minutes", { n: Math.round(seconds / 60) }),
+    };
+    const dry = entry.dry ? ".dry" : "";
+    let text: string;
+    if (entry.kind === "guard_restart") {
+      text = t(entry.clean ? `log.guard_restart.clean${dry}` : `log.guard_restart${dry}`, guard);
+    } else if (entry.kind === "guard_block") {
+      text = t(`log.guard_block.${entry.direction === "discharge" ? "discharge" : "charge"}${dry}`, guard);
+    } else if (entry.kind === "guard_alarm") {
+      text = t(`log.guard_alarm${dry}`, guard);
+    } else if (entry.kind === "guard_fixed") {
+      const stage = Math.min(3, Math.max(1, Number(entry.stage) || 1)) as 1 | 2 | 3;
+      text = t(`log.guard_fixed.${stage}`, guard);
+    } else if (entry.kind === "guard_restored") {
+      const failed = Array.isArray(entry.failed) && entry.failed.length > 0;
+      text = failed
+        ? t("log.guard_restored.failed", {
+            ...guard,
+            entities: (entry.failed as unknown[]).map((e) => (hass ? entityName(hass, String(e)) : String(e))).join(", "),
+          })
+        : t(entry.reason === "start" ? "log.guard_restored.start" : "log.guard_restored", guard);
+    } else {
+      text = t.optional(`log.${entry.kind}`, guard) ?? entry.kind;
+    }
+    return typeof entry.problem === "string" ? `${text} ${t("log.guard.problem", { code: entry.problem })}` : text;
+  }
   if (entry.kind === "surplus_end") {
     return t.optional(`log.surplus_end.${String(entry.reason)}`, vars) ?? t("log.surplus_end", vars);
   }

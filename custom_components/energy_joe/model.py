@@ -602,6 +602,10 @@ RULES = vol.Schema(
         # order of the batteries).
         vol.Optional("team_charge_order", default=list): [str],
         vol.Optional("team_discharge_order", default=list): [str],
+        # The watchdog: two batteries running against each other (one charges,
+        # the other discharges): Joe restarts the culprit's own control, blocks
+        # it for a few seconds and speaks up (see control/guard.py).
+        vol.Optional("transfer_guard", default=True): bool,
         # Expert: count the inverter's losses when charging from the grid,
         # measured at the grid meter (a battery's own meter may sit behind it).
         vol.Optional("converter_losses", default=False): bool,

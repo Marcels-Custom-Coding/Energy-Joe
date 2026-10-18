@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 from typing import Any
-from unittest.mock import AsyncMock
 
 import pytest
 
@@ -147,12 +146,6 @@ def test_side_by_side_when_one_after_the_other_would_not_finish() -> None:
     # Already full: nothing to do.
     full = member("byd", 100, capacity=10.24)
     assert team.sequential_fills(weak, [full], end)
-
-
-def test_opposite_directions_are_found() -> None:
-    assert team.opposite({"byd": 600, "venus": -500}) == (["byd"], ["venus"])
-    assert team.opposite({"byd": 600, "venus": 100}) == ([], [])
-    assert team.opposite({"byd": -600, "venus": -500}) == ([], [])
 
 
 # --- the levers ----------------------------------------------------------------------
@@ -682,30 +675,6 @@ async def test_the_night_plan_goes_first(hass: HomeAssistant, freezer) -> None:
     # The night holds the BYD with its reserve (its own lever), nothing else.
     assert hass.states.get("number.reserve").state == "40.0"
     assert "number.omni_max_charge" not in executor.data["saved"]
-
-
-async def test_running_against_each_other_is_told(hass: HomeAssistant, freezer) -> None:
-    freezer.move_to("2026-10-10T19:00:00+02:00")
-    install_team(hass, byd_soc=40, venus_soc=60)
-    flows(hass, grid=0, byd=-800)
-    executor, _ = await make_executor(hass, team_config(), day_plan(dt_util.now()))
-    executor.notifier = AsyncMock()
-    await executor.async_check()
-    # Despite the blocks (something else writes them): the Venus charges.
-    flows(hass, grid=0, byd=-600, venus=500)
-    await executor.async_check()
-    freezer.tick(timedelta(minutes=2))
-    await executor.async_check()
-    transfer = executor.view["team"]["transfer"]
-    assert transfer["despite"] is True
-    assert transfer["charging"] == ["Venus"] and transfer["discharging"] == ["BYD"]
-    executor.notifier.async_problem.assert_awaited_once()
-    assert executor.notifier.async_problem.await_args.args[0] == "battery_transfer"
-    assert [e["kind"] for e in executor.data["log"]].count("team_transfer") == 1
-    # Once a day, once per time.
-    freezer.tick(timedelta(minutes=2))
-    await executor.async_check()
-    assert executor.notifier.async_problem.await_count == 1
 
 
 async def test_joe_proposes_from_the_profile(hass: HomeAssistant, freezer) -> None:

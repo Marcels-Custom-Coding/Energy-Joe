@@ -306,6 +306,7 @@ def _profile_steering(
             if found := _find_key(scope, ROLE_DOMAINS[role], keys):
                 controls[role] = found.entity_id
         controls.update(entry_controls(snap, profile, soc.config_entry_id))
+        controls.update(guard_controls(snap, profile, scope))
         for name, keys in profile.limits.items():
             found = _find_key(scope, (), keys)
             limits[name] = _control_value(snap, found.entity_id if found else None)
@@ -543,11 +544,34 @@ def entry_controls(
     return found
 
 
+def guard_controls(
+    snap: Snapshot, profile: Profile | None, scope: list[EntityInfo]
+) -> dict[str, str]:
+    """The watchdog's levers on the battery's own device (e.g. a Venus' allow switches)."""
+    if not profile or not profile.guard_roles:
+        return {}
+    found = {}
+    for role, keys in profile.guard_roles.items():
+        if entity := _find_key(scope, ROLE_DOMAINS[role], keys):
+            found[role] = entity.entity_id
+    return found
+
+
 def profile_controls(snap: Snapshot, battery: dict[str, Any]) -> dict[str, str]:
-    """The system levers a battery's profile knows, as found in Home Assistant."""
+    """The system and watchdog levers a battery's profile knows, as found in
+    Home Assistant."""
     profile = PROFILES.get(battery.get("adapter") or "")
     soc = snap.get(battery.get("soc_entity"))
-    return entry_controls(snap, profile, soc.config_entry_id if soc else None)
+    found = entry_controls(snap, profile, soc.config_entry_id if soc else None)
+    if profile and profile.guard_roles:
+        if profile.scope == "entry":
+            scope = snap.of_config_entry(soc.config_entry_id) if soc else []
+        else:
+            scope = snap.of_device(
+                battery.get("device_id") or (soc.device_id if soc else None)
+            )
+        found.update(guard_controls(snap, profile, scope))
+    return found
 
 
 def profile_prepare(snap: Snapshot, battery: dict[str, Any]) -> list[dict[str, Any]]:

@@ -2,7 +2,7 @@ import { LitElement, css, html, nothing, type PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
 import "../../components/day-questions";
 import "../../components/steer-tonight";
-import { batteryTeam, teamTransfer } from "../../components/battery-team";
+import { batteryTeam, guardAlarm, transferGuard } from "../../components/battery-team";
 import { mergeAnswers, mergeQuestion } from "../../components/car-sources";
 import { daySurplus, surplusAbility, surplusConflicts } from "../../components/day-surplus";
 import { checkText } from "../../components/texts";
@@ -219,15 +219,18 @@ export function inboxItems(t: Translate, joe: JoeState, inputs: InboxInputs = {}
       });
     }
   }
-  // Several batteries: running against each other despite Joe's blocks, the
-  // owner's automations doing it so far, or "Nacheinander" not chosen yet.
+  // Several batteries: still running against each other after the watchdog's
+  // stages, the owner's automations doing it so far, or "Nacheinander" not
+  // chosen yet.
   const team = batteryTeam(joe);
   const teamTo: Route = { tab: "devices", section: "battery", id: "together" };
-  if (team?.transfer?.despite) {
+  const guard = transferGuard(joe);
+  const alarm = guardAlarm(t, guard, config);
+  if (alarm && guard?.last) {
     warn({
-      id: `team:transfer:${team.transfer.since}`,
-      title: t("team.title"),
-      text: teamTransfer(t, team) ?? "",
+      id: `guard:alarm:${guard.last.since ?? guard.last.at}`,
+      title: t("guard.alarm.title"),
+      text: alarm,
       to: teamTo,
     });
   }

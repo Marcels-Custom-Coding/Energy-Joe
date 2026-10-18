@@ -105,7 +105,12 @@ export type ControlRole =
   | "system_charge_limit"
   | "system_charge_limit_enabled"
   /** On the system device too: blocks discharging by day (several batteries one after the other). */
-  | "system_discharge_limit";
+  | "system_discharge_limit"
+  /** The watchdog (control/guard.py): the system's manual mode, a pulse restarts Omnibattery's own control. */
+  | "system_manual_mode"
+  /** The watchdog: a battery's switches that allow charging and discharging at all (Venus). */
+  | "allow_charge"
+  | "allow_discharge";
 export const CONTROL_ROLES: ControlRole[] = [
   "min_soc",
   "grid_charge",
@@ -295,6 +300,8 @@ export interface Rules {
   /** Battery ids in the order they charge and discharge (the others follow). */
   team_charge_order?: string[];
   team_discharge_order?: string[];
+  /** The watchdog: step in when batteries charge each other (older backends: missing, on). */
+  transfer_guard?: boolean;
 }
 
 export type BatteryTeamMode = "sequence" | "together";
@@ -344,17 +351,35 @@ export interface BatteryTeam {
   >;
   /** state "automation": the owner's automations that do it so far. */
   automations: string[];
-  /** Two batteries ran against each other today (despite: while Joe blocked for real). */
-  transfer: {
-    since: string;
-    at: string;
-    active: boolean;
-    charging: string[];
-    discharging: string[];
-    despite: boolean;
-  } | null;
   /** Two or more regulate themselves and nothing is chosen yet: Joe proposes "Nacheinander". */
   proposal: boolean;
+}
+
+/** The watchdog ("Speicher-Wächter", control/guard.py): two batteries running against each other. */
+export interface TransferGuard {
+  /** on: watching; off: the rule is off; mode_off: Joe is off; single: fewer than two batteries with a power meter. */
+  state: "on" | "off" | "mode_off" | "single";
+  /** Not live: Joe only says what he would do. */
+  dry: boolean;
+  /** Running against each other right now (more than 20 W each). */
+  running: boolean;
+  /** The stage reached this time (0: none yet). */
+  stage: number;
+  /** Automations switched on that write the same levers: they do it so far. */
+  automations: string[];
+  /** The last time it happened. */
+  last: {
+    since: string | null;
+    at: string;
+    battery: string;
+    charging: string[];
+    discharging: string[];
+    stage: number;
+    result: "running" | "fixed" | "alarm" | "automation" | "joe";
+    dry: boolean;
+    direction: "charge" | "discharge";
+    seconds: number;
+  } | null;
 }
 
 export type DayCaution = "tight" | "normal" | "careful";
@@ -1233,6 +1258,8 @@ export interface ControlView {
   surplus?: DaySurplus;
   /** Several batteries one after the other (older backends: missing). */
   team?: BatteryTeam;
+  /** The watchdog: batteries running against each other (older backends: missing). */
+  guard?: TransferGuard;
   /** Per battery: ready to steer, or why not. */
   ready: Record<string, "ready" | "not_tested" | "outdated" | "not_controllable" | "controls_missing">;
 }

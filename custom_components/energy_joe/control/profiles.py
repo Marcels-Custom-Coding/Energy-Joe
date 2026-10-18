@@ -40,6 +40,9 @@ ROLES = (
     "system_charge_limit",
     "system_charge_limit_enabled",
     "system_discharge_limit",
+    "system_manual_mode",
+    "allow_charge",
+    "allow_discharge",
 )
 # Levers only for the day (the daytime cap, several batteries one after the
 # other), on the integration's system device (all its batteries at once): no
@@ -51,6 +54,14 @@ SYSTEM_ROLES = (
     "system_charge_limit_enabled",
     "system_discharge_limit",
 )
+# Levers only for the watchdog (control/guard.py: two batteries running
+# against each other): the system's manual mode, whose short pulse restarts
+# Omnibattery's own control (its PD controller), and a battery's switches that
+# allow charging and discharging at all. Like the system's levers no part of
+# the night's steering, its test run or its signature.
+GUARD_ROLES = ("system_manual_mode", "allow_charge", "allow_discharge")
+# Every lever outside the night's steering.
+DAY_ROLES = (*SYSTEM_ROLES, *GUARD_ROLES)
 # Meanings of mode options.
 MODE_OPTIONS = ("normal", "force_charge", "hold", "force_discharge")
 # Entity domains per role.
@@ -69,6 +80,9 @@ ROLE_DOMAINS: dict[str, tuple[str, ...]] = {
     "system_charge_limit": ("number", "input_number"),
     "system_charge_limit_enabled": ("switch", "input_boolean"),
     "system_discharge_limit": ("number", "input_number"),
+    "system_manual_mode": ("switch", "input_boolean"),
+    "allow_charge": ("switch", "input_boolean"),
+    "allow_discharge": ("switch", "input_boolean"),
 }
 
 # Ways to charge from the grid:
@@ -114,6 +128,9 @@ class Profile:
     # Roles looked for in the whole integration entry (a system device that
     # steers all its batteries at once, see SYSTEM_ROLES).
     entry_roles: dict[str, tuple[str, ...]] = field(default_factory=dict)
+    # Roles of the watchdog (GUARD_ROLES) on the battery's own device, looked
+    # for in batteries set up before, too (the system's are in entry_roles).
+    guard_roles: dict[str, tuple[str, ...]] = field(default_factory=dict)
     # Keys of switches in the integration entry that work against a daytime
     # cap while they are on (the panel warns about them).
     day_conflicts: tuple[str, ...] = ()
@@ -215,6 +232,17 @@ PROFILES: dict[str, Profile] = {
                 "system_charge_limit": ("system_max_charge_power",),
                 "system_charge_limit_enabled": ("system_power_limits",),
                 "system_discharge_limit": ("system_max_discharge_power",),
+                # The watchdog restarts Omnibattery's PD controller with a short
+                # pulse of the system's manual mode (unique id
+                # "marstek_venus_system_manual_mode"; the battery's own one ends
+                # in "battery_manual_mode" and is no match).
+                "system_manual_mode": ("system_manual_mode",),
+            },
+            # The watchdog blocks one direction of a Venus for a few seconds
+            # (unique ids "…_battery_allow_charge", "…_battery_allow_discharge").
+            guard_roles={
+                "allow_charge": ("battery_allow_charge",),
+                "allow_discharge": ("battery_allow_discharge",),
             },
             # Its own charge delay and predictive charging hold charging back, too.
             day_conflicts=("charge_delay", "predictive_charging"),

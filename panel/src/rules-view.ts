@@ -24,7 +24,7 @@ export type NumberRuleKey =
   | "balance_days";
 
 /** Rules with a row of their own (switches, order, choice). */
-export type OtherRuleKey = "guard_grid" | "priority" | "discharge_in_window" | "converter_losses" | "day_surplus";
+export type OtherRuleKey = "guard_grid" | "priority" | "discharge_in_window" | "converter_losses" | "day_surplus" | "transfer_guard";
 export type RuleKey = NumberRuleKey | OtherRuleKey;
 
 export interface NumberRule {
@@ -59,7 +59,16 @@ export const NUMBER_RULES: Record<NumberRuleKey, NumberRule> = {
 export type RuleGroup = "battery" | "grid" | "plan";
 
 export const RULE_GROUPS: Record<RuleGroup, readonly RuleKey[]> = {
-  battery: ["reserve_soc", "max_target_soc", "evening_min_soc", "balance_days", "discharge_in_window", "converter_losses", "day_surplus"],
+  battery: [
+    "reserve_soc",
+    "max_target_soc",
+    "evening_min_soc",
+    "balance_days",
+    "discharge_in_window",
+    "converter_losses",
+    "day_surplus",
+    "transfer_guard",
+  ],
   grid: ["grid_limit_w", "max_night_kwh", "guard_grid", "max_price", "min_saving"],
   plan: ["priority", "buffer_factor", "plan_offset_min", "reset_lead_min"],
 };
@@ -108,6 +117,8 @@ export function ruleValue(t: Translate, config: JoeConfig, key: RuleKey): string
       return t(`rule.discharge.${rules.discharge_in_window}`);
     case "day_surplus":
       return rules.day_surplus ? `${t("rule.on")} · ${t(`rule.day_caution.${rules.day_caution}`)}` : t("rule.off");
+    case "transfer_guard":
+      return t(rules.transfer_guard !== false ? "rule.on" : "rule.off");
     default:
       return t(rules[key] ? "rule.on" : "rule.off");
   }
@@ -132,6 +143,8 @@ export function ruleRow(t: Translate, host: HTMLElement, config: JoeConfig, info
       return dischargeRow(t, host, config);
     case "day_surplus":
       return daySurplusRow(t, host, config);
+    case "transfer_guard":
+      return transferGuardRow(t, host, config);
   }
 }
 
@@ -233,6 +246,28 @@ function converterRow(t: Translate, host: HTMLElement, config: JoeConfig): Templ
         aria-checked=${String(rules.converter_losses)}
         aria-labelledby="converter-losses"
         @click=${() => saveConfig(host, { rules: { converter_losses: !rules.converter_losses } })}
+      ></button>
+    </div>
+  </div>`;
+}
+
+/** The watchdog: Joe steps in when batteries charge each other (control/guard.py). */
+function transferGuardRow(t: Translate, host: HTMLElement, config: JoeConfig): TemplateResult {
+  const on = config.rules.transfer_guard !== false;
+  return html`<div class="row" data-tipped data-anchor="transfer_guard">
+    <div>
+      <div class="name"><b id="transfer-guard">${t("rule.transfer_guard")}</b>${tip(t, "r_transfer_guard")}</div>
+      <small>${t("rule.transfer_guard.hint")}</small>
+    </div>
+    <div class="control">
+      ${sourceChip(t, sourceOf(config, "rules.transfer_guard"))}
+      <button
+        type="button"
+        class="switch"
+        role="switch"
+        aria-checked=${String(on)}
+        aria-labelledby="transfer-guard"
+        @click=${() => saveConfig(host, { rules: { transfer_guard: !on } })}
       ></button>
     </div>
   </div>`;
