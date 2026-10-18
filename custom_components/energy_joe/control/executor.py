@@ -77,6 +77,12 @@ TEAM_RESETS = 3
 TEAM_HOLD_W = 50
 TEAM_HOLD_MAX = timedelta(hours=12)
 TEAM_HOLD_REASONS = ("together", "automation", "unknown", "no_grid", "not_tested")
+# A value missing only for a moment (a Modbus dropout, a restart of the
+# integration): Joe keeps the blocks in force this long, writing nothing new,
+# before he gives them back (at least one check, CHECK_EVERY, is bridged). A
+# lever that is gone for real goes back at once.
+TEAM_GRACE = timedelta(seconds=90)
+TEAM_GRACE_REASONS = ("unknown", "levers", "no_grid")
 # Why Joe gave the owner's automations back, for their logbook (German, English).
 TEAM_REASONS = {
     "off": ("Joe ist ausgeschaltet", "Joe is switched off"),
@@ -99,6 +105,13 @@ TEAM_REASONS = {
 }
 # Release attempts before Joe raises the alarm (he keeps trying anyway).
 RELEASE_ALARM = 3
+# Joe stops (unloaded, Home Assistant stops, removed): no later check tries
+# again, so everything is put back this often, this many seconds apart.
+STOP_TRIES = 3
+STOP_PAUSE_S = 4
+# Why Joe switched the owner's automations on again when he stopped: he takes
+# them over again after the start, once he can steer himself.
+STOPPED = "stopped"
 LOG_SIZE = 100
 # A test run: how long each step lasts (seconds).
 TEST_HOLD = 20
@@ -240,6 +253,8 @@ DEFAULT_DATA: dict[str, Any] = {
         "given_back": None,
         # Blocks Joe holds before he gives them back (see _team_hold).
         "hold": None,
+        # A value missing for a moment: since when and why (see _team_grace).
+        "gap": None,
         # Per battery: when a block that had arrived was found undone.
         "resets": {},
         # By day with sense (see control/team_day.py): charging along and
@@ -359,6 +374,10 @@ class JoeExecutor:
         self._team_samples: list[tuple[datetime, float]] = []
         self._team_prev: dict[str, float] = {}
         self._team_base_w: dict[str, float] = {}
+        # The last hint for the daytime cap while Joe coordinated (kept while
+        # a value is missing for a moment), and whether a lever is gone for real.
+        self._team_hint: dict[str, Any] | None = None
+        self._team_lasting = False
         # What the last check saw for the day's look back (see _team_note).
         self._team_pending: dict[str, Any] | None = None
         # The buffer of the grid-friendly morning let a held battery charge
@@ -422,6 +441,10 @@ class JoeExecutor:
         )
         self.schedule_ask()
         await self.async_check()
+        # Joe runs again: what he could not put back when he stopped is his
+        # again (the release keeps trying and speaks up itself).
+        if self.notifier:
+            await self.notifier.async_clear("not_restored")
 
     async def async_stop(self, release: bool = True) -> None:
         for unsub in self._unsubs:
@@ -435,11 +458,152 @@ class JoeExecutor:
             self._soc_unsub()
             self._soc_unsub = None
             self._watched = ()
-        if release and (self._dirty or self.data["guard"]["held"]):
-            async with self._lock:
-                await self._async_guard_restore("stopped")
-                if self._dirty:
-                    await self._async_release("stopped")
+        if release:
+            await self.async_give_back(STOPPED)
+
+    async def async_give_back(
+        self, reason: str, removed: bool = False
+    ) -> dict[str, Any]:
+        """Joe stops (unloaded, removed): every value he noted goes back, with a
+        few tries (no later check would try again). What stays is logged and
+        told to the owner; returns it (entity -> the value to put back)."""
+        if not (self._dirty or self.data["guard"]["held"]):
+            return {}
+        async with self._lock:
+            left = await self._async_give_all_back(reason)
+        if left:
+            _LOGGER.warning(
+                "Could not put these values back (%s): %s",
+                reason,
+                ", ".join(f"{k} = {v}" for k, v in left.items()),
+            )
+            if self.notifier:
+                await self.notifier.async_not_restored(left, removed)
+        return left
+
+    async def _async_give_all_back(self, reason: str) -> dict[str, Any]:
+        """The watchdog's switches and every noted value back, STOP_TRIES times
+        at most (the caller holds the lock); returns what stayed."""
+        for attempt in range(STOP_TRIES):
+            if attempt:
+                await joe_writes.settle(STOP_PAUSE_S)
+            failed = await self._async_guard_restore(reason)
+            if self._dirty:
+                await self._async_release(reason, force=True, alarm=False)
+            if not failed and not self._dirty:
+                return {}
+        return {**self.data["saved"], **self.data["guard"]["held"]}
+
+    async def async_hand_back_automations(self, removed: bool = False) -> list[str]:
+        """Joe stops: every automation he switched off goes on again – without
+        him nobody would coordinate the batteries (or know why it is off).
+        Unloaded (disabled, reloaded, updated) they are lent: after the start
+        he takes them over again once he can steer himself (_async_team_hands,
+        _async_retake). Returns the ones that failed."""
+        switched_off: dict[str, Any] = self.data["automations_off"]
+        mine = [
+            entity_id
+            for entity_id in switched_off
+            if (state := self._hass.states.get(entity_id)) and state.state == "off"
+        ]
+        if not mine:
+            return []
+        german = (self._hass.config.language or "").startswith("de")
+        if removed:
+            message = (
+                "wurde wieder eingeschaltet, weil Energy Joe entfernt wurde"
+                if german
+                else "was switched on again because Energy Joe was removed"
+            )
+        else:
+            message = (
+                "wurde wieder eingeschaltet, weil Energy Joe angehalten wurde "
+                "(deaktiviert, neu geladen oder aktualisiert)"
+                if german
+                else "was switched on again because Energy Joe stopped "
+                "(disabled, reloaded or updated)"
+            )
+        stamp = dt_util.now().isoformat(timespec="seconds")
+        failed = await battery_automations.async_switch(
+            self._hass, mine, True, switched_off, message
+        )
+        back = [e for e in mine if e not in failed]
+        if not removed:
+            for entity_id in back:
+                self.data["automations_lent"][entity_id] = {
+                    "at": stamp,
+                    "reason": STOPPED,
+                }
+            self._log("automations_back", names=self._names(back))
+        if failed:
+            _LOGGER.warning("Could not switch these automations on again: %s", failed)
+        _LOGGER.info("Battery automations switched on again (Joe stops): %s", back)
+        await self._async_save()
+        return failed
+
+    def _names(self, entity_ids: list[str]) -> list[str]:
+        """The names of entities as Home Assistant shows them."""
+        return [
+            state.name if (state := self._hass.states.get(e)) else e for e in entity_ids
+        ]
+
+    async def _async_retake(self, mode: str) -> None:
+        """The automations Joe switched on when he stopped: the ones of
+        batteries he coordinates by day come back through _async_team_hands
+        (once he could for a while); the others he switches off again as soon
+        as he steers live again."""
+        lent: dict[str, Any] = self.data["automations_lent"]
+        waiting = [e for e, r in lent.items() if (r or {}).get("reason") == STOPPED]
+        if not waiting or mode != "live":
+            return
+        config = self._config()
+        ids = self._team_ids(config)
+        theirs: set[str] = set()
+        if ids:
+            found = battery_automations.find(
+                self._hass, config, self.data["automations_off"]
+            )
+            theirs = {
+                a["entity_id"]
+                for a in found
+                if any(w["battery_id"] in ids for w in a["writes"])
+            }
+        back = [e for e in waiting if e not in theirs]
+        if not back:
+            return
+        stamp = dt_util.now().isoformat(timespec="seconds")
+        on: list[str] = []
+        for entity_id in back:
+            state = self._hass.states.get(entity_id)
+            if state is None:
+                # Deleted meanwhile: nothing to take over.
+                del lent[entity_id]
+            elif state.state == "on":
+                on.append(entity_id)
+            else:
+                # Switched off by hand meanwhile: Joe's again.
+                self.data["automations_off"].setdefault(
+                    entity_id, {"at": stamp, "reason": battery_automations.REASON}
+                )
+                del lent[entity_id]
+        german = (self._hass.config.language or "").startswith("de")
+        failed = await battery_automations.async_switch(
+            self._hass,
+            on,
+            False,
+            self.data["automations_off"],
+            "wurde von Energy Joe wieder ausgeschaltet: Joe steuert die Speicher "
+            "wieder selbst"
+            if german
+            else "was switched off again by Energy Joe: Joe steers the batteries "
+            "himself again",
+        )
+        taken = [e for e in on if e not in failed]
+        for entity_id in taken:
+            lent.pop(entity_id, None)
+        if taken:
+            self._log("automations_taken", names=self._names(taken))
+        await self._async_save()
 
     @callback
     def _on_tick(self, now: datetime) -> None:
@@ -484,20 +648,22 @@ class JoeExecutor:
 
     async def _on_stop(self, event: Event) -> None:
         """Home Assistant stops: give everything back, so nothing stays set if it stays down."""
-        if self.data["guard"]["held"]:
-            try:
-                async with asyncio.timeout(15), self._lock:
-                    await self._async_guard_restore("ha_stop")
-            except TimeoutError:
-                _LOGGER.warning("The watchdog's switches go back after the start")
-        if self._dirty:
-            try:
-                async with asyncio.timeout(15), self._lock:
-                    await self._async_release("ha_stop")
-            except TimeoutError:
-                _LOGGER.warning(
-                    "Release at shutdown did not finish; it runs after the start"
-                )
+        if not (self._dirty or self.data["guard"]["held"]):
+            return
+        try:
+            async with asyncio.timeout(30), self._lock:
+                left = await self._async_give_all_back("ha_stop")
+        except TimeoutError:
+            _LOGGER.warning(
+                "Release at shutdown did not finish; it runs after the start"
+            )
+            return
+        if left:
+            _LOGGER.warning(
+                "Could not put these values back at shutdown (again after the "
+                "start): %s",
+                ", ".join(f"{k} = {v}" for k, v in left.items()),
+            )
 
     # --- the check -------------------------------------------------------------
 
@@ -515,6 +681,10 @@ class JoeExecutor:
 
     async def _async_check(self, now: datetime) -> None:
         config, plan, mode = self._config(), self._plan(), self._mode()
+        try:
+            await self._async_retake(mode)
+        except Exception:
+            _LOGGER.exception("Taking the automations over again failed")
         reason, night = self._why(now, config, plan, mode)
         peaked = self._track_grid_peak(config, now)
         boosts, keep, ended = await self._async_boosts(config, mode, now)
@@ -598,6 +768,7 @@ class JoeExecutor:
         }
         desired = self._desired(plan, items, socs, now)
         desired = self._guard_grid(config, desired, socs, now)
+        desired, stuck = self._guard_block(items, desired, socs)
         await self._async_watch_progress(items, desired, socs, now)
         batteries: dict[str, Any] = {}
         for battery, planned, adapter in items:
@@ -626,6 +797,9 @@ class JoeExecutor:
             elif want is not None:
                 problem = await self._async_steer(adapter, want, soc, now)
                 entry["problem"] = problem
+                if battery["id"] in stuck and problem in (None, "cannot_hold"):
+                    # Why no other battery charges from the grid now.
+                    entry["problem"] = "cannot_block"
             if adapter is not None and soc is not None and not capped:
                 cap = await self._async_night_cap(battery, adapter, want, now)
             if cap:
@@ -870,14 +1044,59 @@ class JoeExecutor:
                     result[key] = Desired(floor=want.floor, block=True, span_s=span)
         return result
 
+    def _guard_block(
+        self,
+        items: list[tuple[dict[str, Any], dict[str, Any], Adapter | None]],
+        desired: dict[str, Desired],
+        socs: dict[str, float | None],
+    ) -> tuple[dict[str, Desired], set[str]]:
+        """No battery charges from the grid while another cannot be kept from
+        discharging (its level below the lowest floor it takes): it would
+        discharge into the others, as without a lever. Those that should
+        charge hold instead, the others hold as they would. Returns the
+        batteries that cannot be blocked."""
+        if not any(d.charge_to is not None for d in desired.values()):
+            return desired, set()
+        adapters = {battery["id"]: adapter for battery, _, adapter in items}
+        stuck: set[str] = set()
+        for key, want in desired.items():
+            adapter, soc = adapters.get(key), socs.get(key)
+            if (
+                want.block
+                and adapter is not None
+                and soc is not None
+                and adapter.steer_problem(
+                    self._hass, self._floored(adapter, want), soc, self.data["saved"]
+                )
+                == "cannot_block"
+            ):
+                stuck.add(key)
+        if not stuck:
+            return desired, stuck
+        result: dict[str, Desired] = {}
+        for key, want in desired.items():
+            soc = socs.get(key)
+            if want.charge_to is not None:
+                result[key] = Desired(
+                    floor=max(0, math.floor(soc)) if soc is not None else None,
+                    span_s=want.span_s,
+                )
+            elif want.block:
+                result[key] = Desired(floor=want.floor, span_s=want.span_s)
+            else:
+                result[key] = want
+        return result, stuck
+
     async def _async_steer(
         self, adapter: Adapter, want: Desired, soc: float, now: datetime
     ) -> str | None:
-        """Write what differs; note originals first. Returns a problem, if any."""
-        writes = adapter.writes(
-            self._hass, self._floored(adapter, want), soc, self.data["saved"]
-        )
+        """Write what differs; note originals first. Returns a problem, if any
+        (also when no lever does what is wanted: "cannot_hold", "cannot_block")."""
+        floored = self._floored(adapter, want)
+        writes = adapter.writes(self._hass, floored, soc, self.data["saved"])
+        unheld = adapter.steer_problem(self._hass, floored, soc, self.data["saved"])
         problem = await self._async_write(adapter, writes, now, _action(want))
+        problem = problem or unheld
         if (
             want.charge_to is not None
             and self.status["batteries"].get(adapter.battery["id"], {}).get("action")
@@ -1968,6 +2187,7 @@ class JoeExecutor:
         if mode != "off":
             self._team_peaks(powers)
         state = self._team_gate(config, candidates, mode, today, night, info, groups)
+        state = self._team_grace(state, info, now)
         state = await self._async_team_hands(
             config, info, state, {b["id"] for b, _ in candidates}, now
         )
@@ -1979,7 +2199,12 @@ class JoeExecutor:
             want, hint = self._team_choose(
                 config, plan, candidates, deficit, powers, now, today, info, groups
             )
+            self._team_hint = hint
+        elif state == "bridging":
+            # Everything stays as it is for a moment, the cap's hint, too.
+            hint = self._team_hint
         else:
+            self._team_hint = None
             store.update(active=None, since=None)
             store["along"], store["help"] = {}, {}
             self._team_base_w = {}
@@ -2021,6 +2246,9 @@ class JoeExecutor:
         """
         store: dict[str, Any] = self.data["team"]
         lent: dict[str, Any] = self.data["automations_lent"]
+        if state == "bridging":
+            # A value missing for a moment: nothing given back or taken over.
+            return state
         if had_blocks is None:
             had_blocks = bool(store["blocks"])
         if len(info["groups"]) < 2:
@@ -2062,6 +2290,11 @@ class JoeExecutor:
                 a["name"] for a in mine if a["entity_id"] in lent and self._on(a)
             ]
             return state
+        if store.get("hold"):
+            # Joe coordinates again: a block held from before is his own again
+            # (a later hold starts anew, with its own flow and time).
+            self._log("team_hold_end", reason="coordinates")
+            store["hold"] = None
         if state != "on":
             # The night's plan: what is off stays off, nothing is taken over.
             return state
@@ -2100,6 +2333,38 @@ class JoeExecutor:
             return "automation"
         store["given_back"] = None
         return state
+
+    def _team_grace(self, state: str, info: dict[str, Any], now: datetime) -> str:
+        """A value missing only for a moment (a charge level, a lever, the grid
+        meter): "bridging" while Joe keeps his blocks in force (TEAM_GRACE,
+        nothing new written, nothing given back), else the state. A lever gone
+        for real, or the grace over: the state, so everything goes back."""
+        store: dict[str, Any] = self.data["team"]
+        gap = store.get("gap")
+        if (
+            state not in TEAM_GRACE_REASONS
+            or self._team_lasting
+            or info["dry"]
+            or not store["blocks"]
+        ):
+            if gap and state == "on" and now - _at(gap["since"]) < TEAM_GRACE:
+                self._log("team_gap_end", reason=gap["reason"])
+            store["gap"] = None
+            return state
+        if gap is None:
+            gap = store["gap"] = {
+                "since": now.isoformat(timespec="seconds"),
+                "reason": state,
+            }
+            self._log("team_gap", reason=state)
+        since = _at(gap["since"])
+        if now - since >= TEAM_GRACE:
+            return state
+        info["gap"] = {
+            "reason": state,
+            "until": (since + TEAM_GRACE).isoformat(timespec="seconds"),
+        }
+        return "bridging"
 
     def team_cannot_take(
         self, found: list[dict[str, Any]]
@@ -2237,17 +2502,8 @@ class JoeExecutor:
     ) -> None:
         """Something went wrong while coordinating: every automation Joe
         switched off that writes to a battery regulating itself goes back on."""
-        groups = self._team_groups(config)
-        ids = {
-            b["id"]
-            for b in config["batteries"]
-            if (
-                self._proposed_regulating(b)
-                if b.get("self_regulating") is None
-                else bool(b["self_regulating"])
-            )
-        }
-        if len({groups[k][0] for k in ids}) < 2:
+        ids = self._team_ids(config)
+        if not ids:
             return
         try:
             found = battery_automations.find(
@@ -2260,6 +2516,21 @@ class JoeExecutor:
         self.data["team"]["free_since"] = None
         self.data["team"]["hold"] = None
         await self._async_team_give_back(mine, reason, unblocked=True)
+
+    def _team_ids(self, config: dict[str, Any]) -> set[str]:
+        """The batteries that regulate themselves, when two systems or more
+        regulate them (Joe coordinates them by day), else none."""
+        groups = self._team_groups(config)
+        ids = {
+            b["id"]
+            for b in config["batteries"]
+            if (
+                self._proposed_regulating(b)
+                if b.get("self_regulating") is None
+                else bool(b["self_regulating"])
+            )
+        }
+        return ids if len({groups[k][0] for k in ids}) >= 2 else set()
 
     async def _async_team_switch(
         self, entity_ids: list[str], on: bool, reason: str
@@ -2332,6 +2603,7 @@ class JoeExecutor:
     ) -> str:
         """Why Joe could not coordinate now even without the owner's
         automations, or "on"."""
+        self._team_lasting = False
         # Not chosen yet: "Nacheinander" (only "Gleichzeitig" leaves them alone).
         choice = config["rules"].get("battery_team") or "sequence"
         if choice != "sequence":
@@ -2361,6 +2633,17 @@ class JoeExecutor:
             if problem:
                 entry["problem"] = problem
                 state = "levers"
+                # Only a lever that is there but cannot be reached right now
+                # may be a moment's dropout (see _team_grace).
+                if (
+                    role is None
+                    or problem != "unavailable"
+                    or any(
+                        self._hass.states.get(e) is None
+                        for e in role.team_entities(whole)
+                    )
+                ):
+                    self._team_lasting = True
                 continue
             assert role is not None
             for entity_id in role.team_entities(whole):
@@ -2371,6 +2654,7 @@ class JoeExecutor:
                     # Two groups behind one limit cannot take turns.
                     entry["problem"] = "shared"
                     state = "levers"
+                    self._team_lasting = True
             if state == "on" and not self.tested(battery):
                 entry["problem"] = "not_tested"
                 state = "not_tested"
@@ -3074,6 +3358,10 @@ class JoeExecutor:
         discharges). Returns the entities (and batteries) to leave as they are.
         """
         store: dict[str, Any] = self.data["team"]
+        if self.team.get("state") == "bridging":
+            # A value missing for a moment: the blocks stay, nothing new.
+            self._team_publish()
+            return self._team_held(config)
         if store.get("hold") and self.team.get("state") != "on":
             # Held until the active group's flow ends (see _async_team_hands).
             self._team_publish()
@@ -4100,11 +4388,19 @@ class JoeExecutor:
             await self._async_save()
 
     async def _async_release(
-        self, reason: str, now: datetime | None = None, keep: set[str] | None = None
+        self,
+        reason: str,
+        now: datetime | None = None,
+        keep: set[str] | None = None,
+        *,
+        force: bool = False,
+        alarm: bool = True,
     ) -> None:
         """Put back every value Joe noted; keep what fails for the next try.
 
         Entities in `keep` (a car charging to a level by hand) stay as they are.
+        `force` tries again at once (a stop: no later check would); without
+        `alarm` failures are not told (the caller does).
         """
         now = now or dt_util.now()
         keep = keep or set()
@@ -4113,7 +4409,8 @@ class JoeExecutor:
         if not self._dirty_except(keep):
             return
         if (
-            self.data["failures"]
+            not force
+            and self.data["failures"]
             and self._last_release_try
             and now - self._last_release_try < RETRY
         ):
@@ -4208,7 +4505,7 @@ class JoeExecutor:
         if errors:
             self.data["failures"] += 1
             self._log("release_failed", reason=reason, entities=errors)
-            if self.data["failures"] >= RELEASE_ALARM and self.notifier:
+            if alarm and self.data["failures"] >= RELEASE_ALARM and self.notifier:
                 await self.notifier.async_problem("release_failed", entities=errors)
         else:
             if self.data["failures"] >= RELEASE_ALARM and self.notifier:
@@ -4810,6 +5107,10 @@ def _kept(key: str, keep: set[str], config: dict[str, Any]) -> bool:
     return any(
         a["id"] == action_id and a["entity_id"] in keep for a in config["actions"]
     )
+
+
+def _at(stamp: str) -> datetime:
+    return datetime.fromisoformat(stamp)
 
 
 def _fresh() -> dict[str, Any]:

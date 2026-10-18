@@ -6,6 +6,7 @@ import voluptuous as vol
 
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import ServiceValidationError
+from homeassistant.helpers.service import async_register_admin_service
 
 from .const import DOMAIN
 from .runtime import DATA_RUNTIME, MODES, JoeRuntime
@@ -21,7 +22,8 @@ def _runtime(hass: HomeAssistant) -> JoeRuntime:
 
 @callback
 def async_register(hass: HomeAssistant) -> None:
-    """Register Joe's services once per Home Assistant run."""
+    """Register Joe's services once per Home Assistant run (admins only: a
+    user who is no admin may not steer the batteries; automations may)."""
 
     async def release(call: ServiceCall) -> None:
         await _runtime(hass).executor.async_release_now()
@@ -43,21 +45,27 @@ def async_register(hass: HomeAssistant) -> None:
     async def answer(call: ServiceCall) -> None:
         await _runtime(hass).executor.async_answer_tonight(call.data["accept"])
 
-    hass.services.async_register(DOMAIN, "release", release)
-    hass.services.async_register(DOMAIN, "replan", replan)
-    hass.services.async_register(
+    async_register_admin_service(hass, DOMAIN, "release", release)
+    async_register_admin_service(hass, DOMAIN, "replan", replan)
+    async_register_admin_service(
+        hass,
         DOMAIN,
         "skip_tonight",
         skip_tonight,
         vol.Schema({vol.Optional("skip", default=True): bool}),
     )
-    hass.services.async_register(
-        DOMAIN, "set_mode", set_mode, vol.Schema({vol.Required("mode"): vol.In(MODES)})
+    async_register_admin_service(
+        hass,
+        DOMAIN,
+        "set_mode",
+        set_mode,
+        vol.Schema({vol.Required("mode"): vol.In(MODES)}),
     )
-    hass.services.async_register(
-        DOMAIN, "answer", answer, vol.Schema({vol.Required("accept"): bool})
+    async_register_admin_service(
+        hass, DOMAIN, "answer", answer, vol.Schema({vol.Required("accept"): bool})
     )
-    hass.services.async_register(
+    async_register_admin_service(
+        hass,
         DOMAIN,
         "trigger_action",
         trigger_action,

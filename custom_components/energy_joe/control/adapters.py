@@ -7,12 +7,15 @@ first lever the battery offers, in the order its profile prefers:
 
 - charge(target, power): forced-charge mode, or grid charging with a target
   level, or (for inverters like Fronius) the reserve raised to the target
-- hold(floor): the floor as minimum level, else a hold mode, else forced
-  charging with 0 W ("standby"), else the discharge limit
+- hold(floor): the floor as minimum level (on its step, never above the
+  battery's level), else a hold mode, else forced charging with 0 W
+  ("standby"), else the discharge limit
 - block: no discharge at all (while another battery charges from the grid):
   its own "allow discharging" switch off (Omnibattery: its control stays in
   automatic mode) or "block discharging" on (Kostal over Modbus) where it
   has one, else as its profile prefers
+- where no method applies (its level below the lowest floor its entity
+  takes) the adapter says so (steer_problem), never silently
 
 By day the same adapter blocks charging and discharging for "Nacheinander"
 and the watchdog: switches, a mode with an option per direction, its floor
@@ -146,6 +149,19 @@ class Adapter:
         saved: dict[str, Any],
     ) -> list[Write]:
         raise NotImplementedError
+
+    def steer_problem(
+        self,
+        hass: HomeAssistant,
+        desired: Desired,
+        soc: float,
+        saved: dict[str, Any],
+    ) -> str | None:
+        """Why the writes do not do what is desired right now, or None:
+        "cannot_block" (no way to keep it from discharging while another
+        charges), "cannot_hold" (no way to hold it at its floor), e.g. its
+        level below the lowest floor its entity takes."""
+        return None
 
     def release(self, saved: dict[str, Any]) -> list[Write]:
         """Everything this adapter changed back, newest first (undoes order rules too)."""
@@ -739,6 +755,13 @@ class RoleAdapter(Adapter):
         for entity_id in self.team_entities(whole_system):
             if not available(hass.states.get(entity_id)):
                 return "unavailable"
+        if self.team_lever(whole_system) == "level":
+            soc = self._soc(hass)
+            low, _, _ = self._level_steps(hass, "min_soc")
+            if soc is not None and self._level_floor(hass, "min_soc", soc) < low:
+                # Its level below the lowest floor it takes: a floor would be
+                # above it (it would charge from the grid), so none holds it.
+                return "cannot_block"
         if self.team_lever(whole_system) == "mode":
             state = hass.states.get(self.controls["mode"])
             offered = (state.attributes.get("options") if state else None) or []
@@ -1096,17 +1119,43 @@ class RoleAdapter(Adapter):
         )
         result += self._unprepare(saved)
         if desired.block:
-            result += self._block(hass, soc, desired)
+            result += self._block(hass, soc, desired, saved) or []
         else:
             result += self._lift_block(saved)
-            floor = desired.floor
-            if floor is None and desired.charge_to is not None:
-                floor = max(0, math.floor(soc))
+            floor = self._hold_floor(desired, soc)
             if floor is not None:
-                result += self._hold(hass, floor, soc, desired)
+                result += self._hold(hass, floor, soc, desired, saved) or []
             else:
                 result += self._restore(saved, "min_soc")
         return _last_wins(result)
+
+    def steer_problem(
+        self,
+        hass: HomeAssistant,
+        desired: Desired,
+        soc: float,
+        saved: dict[str, Any],
+    ) -> str | None:
+        if desired.charge_to is not None and self.can_charge:
+            return None
+        if desired.block:
+            return (
+                "cannot_block"
+                if self._block(hass, soc, desired, saved) is None
+                else None
+            )
+        floor = self._hold_floor(desired, soc)
+        if floor is None or self._hold(hass, floor, soc, desired, saved) is not None:
+            return None
+        return "cannot_hold"
+
+    @staticmethod
+    def _hold_floor(desired: Desired, soc: float) -> int | None:
+        """The floor to hold at: the desired one, else (charging wanted, but
+        it cannot charge) its level now."""
+        if desired.floor is None and desired.charge_to is not None:
+            return max(0, math.floor(soc))
+        return desired.floor
 
     def _charge(self, hass: HomeAssistant, desired: Desired) -> list[Write]:
         c = self.controls
@@ -1153,24 +1202,38 @@ class RoleAdapter(Adapter):
         return []
 
     def _hold(
-        self, hass: HomeAssistant, floor: int, soc: float, desired: Desired
-    ) -> list[Write]:
-        c = self.controls
+        self,
+        hass: HomeAssistant,
+        floor: int,
+        soc: float,
+        desired: Desired,
+        saved: dict[str, Any],
+    ) -> list[Write] | None:
+        """Writes that hold the battery at a floor; None: no method of its
+        profile can right now."""
         for method in self.hold_methods():
             if method == "min_soc":
-                low, high = self._level_range(hass, "min_soc", 0, 100)
-                if floor <= high:
-                    return [
-                        Write(c["min_soc"], self._level("min_soc", max(floor, low)))
-                    ]
-                if soc > floor + 0.5:
-                    # Above its range: discharge allowed for now, Joe watches the level.
-                    return [Write(c["min_soc"], self._level("min_soc", high))]
-                continue
+                _, high = self._level_range(hass, "min_soc", 0, 100)
+                if floor > high and soc <= floor + 0.5:
+                    continue
+                # Above its range: discharge allowed down to its highest
+                # floor for now, Joe watches the level.
+                write = self._floor_write(hass, min(floor, high), soc, saved)
+                if write is None:
+                    continue
+                return [write]
             return self._prepare(method) + self._still(hass, method, desired)
-        return []
+        return None
 
-    def _block(self, hass: HomeAssistant, soc: float, desired: Desired) -> list[Write]:
+    def _block(
+        self,
+        hass: HomeAssistant,
+        soc: float,
+        desired: Desired,
+        saved: dict[str, Any],
+    ) -> list[Write] | None:
+        """Writes that keep the battery from discharging; None: no method of
+        its profile can right now."""
         c = self.controls
         toggle = self._toggle("discharge")
         if toggle and available(hass.states.get(c[toggle[0]])):
@@ -1180,14 +1243,62 @@ class RoleAdapter(Adapter):
             if method == "min_soc":
                 if "min_soc" not in c:
                     continue
-                low, high = self._level_range(hass, "min_soc", 0, 100)
-                level = math.floor(soc)
-                if low <= level <= high:
-                    return [Write(c["min_soc"], self._level("min_soc", level))]
-                continue
+                _, high = self._level_range(hass, "min_soc", 0, 100)
+                if math.floor(soc) > high:
+                    # Its highest floor would let it discharge.
+                    continue
+                write = self._floor_write(hass, soc, soc, saved)
+                if write is None:
+                    continue
+                return [write]
             if self._can_hold(method):
                 return self._prepare(method) + self._still(hass, method, desired)
-        return []
+        return None
+
+    def _floor_step(self, hass: HomeAssistant, level: float) -> float | None:
+        """A level as the floor entity takes it, on its step and never above
+        the level (fit() rounds to the nearest step, which may be above);
+        None below its range (its lowest floor would be above the level)."""
+        low, high, step = self._level_steps(hass, "min_soc")
+        if "min_soc" in self.profile.inverted:
+            # Depth of discharge: the entity runs the other way.
+            value = low + math.ceil(round((100 - level - low) / step, 6)) * step
+            return None if value > high + 1e-6 else max(value, low)
+        value = low + math.floor(round((level - low) / step, 6)) * step
+        return None if value < low - 1e-6 else min(value, high)
+
+    def _floor_write(
+        self, hass: HomeAssistant, floor: float, soc: float, saved: dict[str, Any]
+    ) -> Write | None:
+        """The floor (min_soc) that holds the battery at `floor` (at least its
+        lowest floor), never above its level: a floor above it would charge
+        it from the grid (Victron & Co.). None: its level is below the lowest
+        floor the entity takes.
+
+        The owner's own floor stays where it holds the battery already (Joe
+        never holds it below that). A floor Joe set stays while it is at most
+        one step below, so a level going back and forth writes nothing (some
+        write it to flash).
+        """
+        entity_id = self.controls["min_soc"]
+        low, _ = self._level_range(hass, "min_soc", 0, 100)
+        level = min(max(floor, low), soc)
+        value = self._floor_step(hass, level)
+        if value is None:
+            return None
+        wanted = self._level("min_soc", value)
+        original = saved[entity_id] if entity_id in saved else read(hass, entity_id)
+        if _number(original) and self._level("min_soc", original) >= wanted - 1e-6:
+            return Write(entity_id, original)
+        current = read(hass, entity_id)
+        _, _, step = self._level_steps(hass, "min_soc")
+        if (
+            entity_id in saved
+            and _number(current)
+            and wanted - step - 1e-6 <= self._level("min_soc", current) <= level + 1e-6
+        ):
+            return Write(entity_id, current)
+        return Write(entity_id, value)
 
     def _still(self, hass: HomeAssistant, method: str, desired: Desired) -> list[Write]:
         """Writes that keep a battery from discharging with a mode or a limit."""
@@ -1355,6 +1466,16 @@ class StepsAdapter(RoleAdapter):
     @property
     def can_charge(self) -> bool:
         return bool(self.steps.get("charge"))
+
+    def steer_problem(
+        self,
+        hass: HomeAssistant,
+        desired: Desired,
+        soc: float,
+        saved: dict[str, Any],
+    ) -> str | None:
+        # Its hold steps always apply (missing() says when there are none).
+        return None
 
     def power_lever(self, hass: HomeAssistant) -> str | None:
         """Steps that take "{power}" set it."""

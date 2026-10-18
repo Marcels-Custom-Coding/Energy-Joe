@@ -193,7 +193,7 @@ export class JoeBatteryAutomations extends LitElement {
               : nothing}
             ${item.lent && active
               ? html`<small>
-                  ${t("automations.lent", {
+                  ${t(item.lent.reason === "stopped" ? "automations.lent.stopped" : "automations.lent", {
                     day: dayText(t.lang, item.lent.at, "short"),
                     time: item.lent.at.slice(11, 16),
                   })}

@@ -40,6 +40,12 @@ class Hour:
     # The price of each of its quarter hours, if the tariff has them.
     quarters: tuple[float | None, ...] = ()
 
+    def __post_init__(self) -> None:
+        # Joe counts in UTC: on the night the clocks go back an hour comes
+        # twice on the wall clock, in spring one is missing. Local times are
+        # only for showing (and the hour of the day of a profile).
+        self.start = dt_util.as_utc(self.start)
+
 
 @dataclass(slots=True)
 class Battery:
@@ -90,11 +96,14 @@ class PlanInput:
     efficiency: float = 0.9
     notes: list[str] = field(default_factory=list)
     meta: dict[str, Any] = field(default_factory=dict)
-    # Night actions (see actions.py) and the power they take per hour (kW).
+    # Night actions (see actions.py) and the power they take per hour (kW),
+    # and per quarter hour (four per hour; an action of a quarter hour takes
+    # the grid limit away in that quarter, not spread over the hour).
     actions: list[dict[str, Any]] = field(default_factory=list)
     # Each car charged by need: what tomorrow needs and where it is plugged in.
     cars: dict[str, Any] = field(default_factory=dict)
     reserved: list[float] = field(default_factory=list)
+    reserved_quarters: list[tuple[float, ...]] = field(default_factory=list)
     # Dynamic tariff: the span in which Joe looks for the best window.
     search: tuple[datetime, datetime] | None = None
     # Safety limits: no grid charging above this price, no action for less.
@@ -129,6 +138,19 @@ class PlanInput:
     # Where the grid limit comes from: "user", "learned" (the highest import
     # Joe measured) or None.
     grid_limit_source: str | None = None
+
+    def __post_init__(self) -> None:
+        # In UTC, like the hours (see Hour).
+        self.now = dt_util.as_utc(self.now)
+        self.window_start = dt_util.as_utc(self.window_start)
+        self.window_end = dt_util.as_utc(self.window_end)
+        if self.search is not None:
+            self.search = (
+                dt_util.as_utc(self.search[0]),
+                dt_util.as_utc(self.search[1]),
+            )
+        if self.defer_until is not None:
+            self.defer_until = dt_util.as_utc(self.defer_until)
 
     @property
     def capacity(self) -> float:
@@ -180,15 +202,9 @@ def simulate(
     for index, hour in enumerate(inp.hours):
         power = grid_kw
         if inp.grid_limit_kw is not None:
-            # The home and running night actions come first, the batteries take the rest.
-            taken = inp.reserved[index] if index < len(inp.reserved) else 0.0
-            power = min(
-                power,
-                max(
-                    0.0,
-                    inp.grid_limit_kw - hour.home / max(hour.fraction, 0.01) - taken,
-                ),
-            )
+            # The home and running night actions come first, the batteries
+            # take the rest (quarter by quarter).
+            power = sum(min(grid_kw, room) for room in grid_room(inp, index)) / 4
         price = _price(inp, hour)
         allowed = inp.max_price is None or price <= inp.max_price + 1e-9
         limits.append(power * hour.fraction if hour.window and allowed else 0.0)
@@ -952,7 +968,11 @@ def _share(
 def night_slots(inp: PlanInput) -> list[sharing.Slot]:
     """The window's quarter hours from now on, with their price and what all
     batteries together may take in them (the grid limit after the home and
-    the night actions)."""
+    the night actions of that quarter).
+
+    In UTC, so the night the clocks go back has nine hours (36 quarters) and
+    the night they go forward seven.
+    """
     tail = inp.window_end - timedelta(minutes=sharing.TAIL_MIN)
     result = []
     for index, hour in enumerate(inp.hours):
@@ -961,12 +981,7 @@ def night_slots(inp: PlanInput) -> list[sharing.Slot]:
         price = _price(inp, hour)
         if inp.max_price is not None and price > inp.max_price + 1e-9:
             continue
-        cap = math.inf
-        if inp.grid_limit_kw is not None:
-            taken = inp.reserved[index] if index < len(inp.reserved) else 0.0
-            cap = max(
-                0.0, inp.grid_limit_kw - hour.home / max(hour.fraction, 0.01) - taken
-            )
+        rooms = grid_room(inp, index)
         for quarter in range(4):
             start = hour.start + timedelta(minutes=15 * quarter)
             end = start + timedelta(minutes=15)
@@ -979,9 +994,26 @@ def night_slots(inp: PlanInput) -> list[sharing.Slot]:
             if inp.max_price is not None and value > inp.max_price + 1e-9:
                 continue
             result.append(
-                sharing.Slot(begin, end, hours, value, cap, index, end > tail)
+                sharing.Slot(
+                    begin, end, hours, value, rooms[quarter], index, end > tail
+                )
             )
     return result
+
+
+def grid_room(inp: PlanInput, index: int) -> list[float]:
+    """What the batteries may take from the grid in each quarter of an hour
+    (kW; inf without a grid limit): the limit after the home and the night
+    actions running in that quarter (per hour where the quarters are not known)."""
+    if inp.grid_limit_kw is None:
+        return [math.inf] * 4
+    hour = inp.hours[index]
+    home = hour.home / max(hour.fraction, 0.01)
+    if index < len(inp.reserved_quarters) and len(inp.reserved_quarters[index]) == 4:
+        taken = list(inp.reserved_quarters[index])
+    else:
+        taken = [inp.reserved[index] if index < len(inp.reserved) else 0.0] * 4
+    return [max(0.0, inp.grid_limit_kw - home - value) for value in taken]
 
 
 def _starts(inp: PlanInput, at_start: float) -> dict[str, float]:

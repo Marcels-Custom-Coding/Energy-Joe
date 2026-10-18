@@ -37,6 +37,8 @@ TEXTS: dict[str, dict[str, str]] = {
         "no": "Heute nicht",
         "problem.title": "Energy Joe braucht dich",
         "problem.release_failed": "Ich konnte nicht alle Werte zurückstellen: {entities}. Ich versuche es weiter – schau bitte im Panel unter Geräte nach.",
+        "problem.not_restored.stop": "Diese Werte konnte ich nicht zurückstellen, als ich angehalten wurde: {values}. Sobald ich wieder laufe, versuche ich es erneut – bleibe ich aus, stelle sie bitte selbst zurück.",
+        "problem.not_restored.remove": "Diese Werte konnte ich nicht zurückstellen, bevor ich entfernt wurde: {values}. Bitte stelle sie selbst zurück.",
         "problem.control_failed": "Beim Steuern von {battery} hat etwas nicht geklappt ({code}). Ich lasse den Speicher für heute Nacht in Ruhe.",
         "problem.no_progress": "{battery} soll laden, der Ladestand steigt aber seit einer halben Stunde nicht. Schau bitte nach, ob der Speicher Netzladen erlaubt – im Panel unter Geräte hilft ein Testlauf.",
         "problem.battery_transfer": "{charging} lädt, während {discharging} entlädt – auch nachdem ich die Regelung neu gestartet und den Speicher kurz gesperrt habe. Schau bitte im Panel unter Geräte › Speicher › Mehrere Speicher nach.",
@@ -59,6 +61,8 @@ TEXTS: dict[str, dict[str, str]] = {
         "no": "Not tonight",
         "problem.title": "Energy Joe needs you",
         "problem.release_failed": "I could not put all values back: {entities}. I keep trying – please have a look in the panel under Devices.",
+        "problem.not_restored.stop": "I could not put these values back when I stopped: {values}. Once I run again I try again – if I stay off, please put them back yourself.",
+        "problem.not_restored.remove": "I could not put these values back before I was removed: {values}. Please put them back yourself.",
         "problem.control_failed": "Something went wrong steering {battery} ({code}). I leave this battery alone tonight.",
         "problem.no_progress": "{battery} should charge, but its level has not risen for half an hour. Please check whether the battery allows charging from the grid – a test run under Devices in the panel helps.",
         "problem.battery_transfer": "{charging} charges while {discharging} discharges, even after I restarted the battery's own control and blocked it for a few seconds. Please have a look in the panel under Devices › Batteries › Several batteries.",
@@ -160,6 +164,23 @@ class JoeNotifier:
             await self._push(
                 self._text("problem.title"), message, {"tag": f"{DOMAIN}_{kind}"}
             )
+
+    async def async_not_restored(self, values: dict[str, Any], removed: bool) -> None:
+        """Joe stopped (or was removed) with values he could not put back: the
+        owner gets them in a notification, with the value each should have."""
+
+        def line(entity_id: str, value: Any) -> str:
+            state = self._hass.states.get(entity_id)
+            name = state.name if state else entity_id
+            return f"„{name}“ ({entity_id}) → {value}"
+
+        text = self._text(
+            "problem.not_restored.remove" if removed else "problem.not_restored.stop",
+            values="; ".join(line(k, v) for k, v in values.items()),
+        )
+        persistent_notification.async_create(
+            self._hass, text, self._text("problem.title"), f"{DOMAIN}_not_restored"
+        )
 
     async def async_clear(self, kind: str) -> None:
         persistent_notification.async_dismiss(self._hass, f"{DOMAIN}_{kind}")

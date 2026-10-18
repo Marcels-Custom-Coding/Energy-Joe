@@ -341,6 +341,7 @@ export interface BatteryTeam {
     | "no_grid"
     | "not_taken"
     | "taking_over"
+    | "bridging"
     | "error";
   mode: BatteryTeamMode | null;
   /** Not chosen: "Nacheinander" all the same (older backends: missing). */
@@ -390,6 +391,8 @@ export interface BatteryTeam {
   lent?: string[];
   /** state "taking_over": when Joe switches them off again (if all stays well). */
   taking_over_at?: string | null;
+  /** state "bridging": a value missing for a moment (why) – the blocks stay until then. */
+  gap?: { reason: "unknown" | "levers" | "no_grid"; until: string } | null;
   /** The last time Joe switched the owner's automations on again, why and which. */
   given_back?: {
     at: string;
@@ -1299,6 +1302,8 @@ export interface JoeState {
   cars?: CarsStatus;
   /** Each battery's floor (%), where it comes from, and the device's own setting. */
   floors?: Record<string, BatteryFloor>;
+  /** Settings Joe could not read at the start, kept apart (offered while he runs with the defaults); why taking them back failed. */
+  config_backup?: { error: string | null } | null;
 }
 
 export interface BatteryFloor {
