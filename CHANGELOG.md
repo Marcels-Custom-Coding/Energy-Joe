@@ -3,6 +3,17 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.25
+
+- **Anhalten ohne Folgen:** Wenn du mich deaktivierst, neu lädst oder aktualisierst, stelle ich alle Werte zurück (mit mehreren Versuchen) und schalte deine Speicher-Automationen wieder ein. Beim Entfernen stelle ich erst zurück und lösche dann. Klappt etwas nicht, bekommst du eine Nachricht mit den Werten.
+- **Kurze Aussetzer:** Fehlt ein Wert nur kurz (z. B. Modbus), lasse ich die Sperren zwischen mehreren Speichern nicht sofort fallen, sondern warte 90 Sekunden, ob er zurückkommt.
+- **Einstellungen sicher:** Kann ich deine Einstellungen beim Start nicht lesen (z. B. nach dem Wechsel auf eine ältere Version), fange ich neu an, hebe die alten auf und biete unter „Joe braucht dich“ an, sie zurückzuholen. Künftige Versionen werfen unbekannte Einstellungen nicht mehr weg.
+- **Zeitumstellung:** Die Nachtplanung rechnet richtig über die Zeitumstellung. In der Herbstnacht (25.10.) bekommt die doppelte Stunde 2–3 Uhr eigene Viertelstunden, Preise und ihr eigenes Netzlimit.
+- **Netzlimit genauer:** Geräte, die nachts nur kurz laufen, belegen das Netzlimit nur in den Viertelstunden, in denen sie laufen.
+- **Mindest-Ladestand nie zu hoch:** Nachts setze ich ihn nie über den aktuellen Ladestand, sondern runde auf die Stufe des Geräts ab (z. B. Victron 20 statt 25 %). Kann ich einen Speicher gerade nicht sperren, sage ich das – und solange lädt kein anderer Speicher aus dem Netz.
+- **Mehrere Wechselrichter in einer Integration** (SolarEdge, Fox ESS, Huawei, Sungrow): Jeder Speicher bekommt die Regler seines eigenen Geräts. Kann ich sie nicht sicher zuordnen, zeige ich „Bitte prüfen“.
+- **Dienste nur für Admins:** Meine Dienste dürfen nur noch Administratoren und Automationen aufrufen.
+
 ## 0.9.24
 
 - **Speicher-Wächter:** Laden sich zwei Speicher gegenseitig (je über 20 W, 20 Sekunden lang), greife ich in Stufen ein. Zuerst starte ich die eigene Regelung des Speichers neu; läuft gerade Laden oder Entladen per Hand, beende ich es sauber. Danach sperre ich 5 Sekunden die laufende Richtung. Hilft das nicht, schicke ich eine Meldung, höchstens einmal pro Stunde. Jeder Schritt steht im Protokoll, und alles, was ich umschalte, stelle ich sofort zurück – auch nach einem Neustart oder Fehler. Ein- und ausschalten kannst du ihn unter Einstellungen › Regeln › Speicher.
