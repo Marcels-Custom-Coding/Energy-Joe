@@ -2,7 +2,16 @@ import { LitElement, css, html, nothing, type PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
 import "../../components/day-questions";
 import "../../components/steer-tonight";
-import { batteryTeam, givenBack, groupsPatch, guardAlarm, guardInside, transferGuard, unsureNames } from "../../components/battery-team";
+import {
+  batteryTeam,
+  givenBack,
+  groupsPatch,
+  guardAlarm,
+  guardInside,
+  teamSuggest,
+  transferGuard,
+  unsureNames,
+} from "../../components/battery-team";
 import { mergeAnswers, mergeQuestion } from "../../components/car-sources";
 import { daySurplus, surplusAbility, surplusConflicts } from "../../components/day-surplus";
 import { checkText } from "../../components/texts";
@@ -37,8 +46,8 @@ export interface TodoItem {
   to: Route;
   /** A quick answer right in the row (e.g. "Ist nachts aus – normal"): a config patch, its label and tooltip. */
   fix?: { label: string; tip: TipName; patch: Record<string, unknown> };
-  /** Answers right in the row ("Welches Auto hängt …?": one per car): a command each, one tooltip for all. */
-  choices?: { label: string; message: { type: string; [key: string]: unknown } }[];
+  /** Answers right in the row ("Welches Auto hängt …?": one per car): a command (or a config patch) each, one tooltip for all. */
+  choices?: { label: string; message?: { type: string; [key: string]: unknown }; patch?: Record<string, unknown> }[];
   choicesTip?: TipName;
 }
 
@@ -253,6 +262,25 @@ export function inboxItems(t: Translate, joe: JoeState, inputs: InboxInputs = {}
       text: t("team.groups.question.text", { names: unsureNames(config, team) }),
       to: teamTo,
       fix: { label: t("team.groups.confirm"), tip: "team_groups_confirm", patch: groupsPatch(config, team) },
+    });
+  }
+  // "Gestern gingen 3 kWh ins Netz, obwohl die Venus nur 70 % hatte. Soll
+  // ich sie künftig früher mitladen lassen?" Ja: Joe uses the lead he
+  // learned; Nein: he remembers it and does not ask again.
+  const suggest = teamSuggest(t, config, team);
+  if (suggest && team?.suggest) {
+    items.push({
+      id: `team:early:${team.suggest.day}`,
+      hide: [],
+      icon: "mdi:battery-clock-outline",
+      title: suggest.title,
+      text: suggest.text,
+      to: teamTo,
+      choices: [
+        { label: t("team.suggest.yes"), patch: { rules: { team_early: true } } },
+        { label: t("team.suggest.no"), patch: { rules: { team_early: false } } },
+      ],
+      choicesTip: "team_early",
     });
   }
   if (team?.state === "automation") {
@@ -673,7 +701,7 @@ export class JoeOverviewInbox extends LitElement {
                 type="button"
                 class="mini-btn"
                 ?disabled=${this.fixing.has(item.id)}
-                @click=${() => this.choose(item, choice.message)}
+                @click=${() => this.choose(item, choice)}
               >
                 ${choice.label}
               </button>`,
@@ -713,13 +741,17 @@ export class JoeOverviewInbox extends LitElement {
   }
 
   /** An answer right in the row (a command): the row goes once the backend has it. */
-  private async choose(item: TodoItem, message: { type: string; [key: string]: unknown }): Promise<void> {
+  private async choose(item: TodoItem, choice: NonNullable<TodoItem["choices"]>[number]): Promise<void> {
     this.fixing = new Set([...this.fixing, item.id]);
     let ok = true;
-    try {
-      await this.hass?.callWS(message);
-    } catch {
-      ok = false;
+    if (choice.patch) {
+      ok = await saveConfig(this, choice.patch);
+    } else if (choice.message) {
+      try {
+        await this.hass?.callWS(choice.message);
+      } catch {
+        ok = false;
+      }
     }
     const rest = new Set(this.fixing);
     rest.delete(item.id);

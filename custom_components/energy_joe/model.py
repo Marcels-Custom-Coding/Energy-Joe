@@ -566,6 +566,7 @@ ACTION = vol.Schema(
 DAY_CAUTIONS = ("tight", "normal", "careful")
 # How several batteries that regulate themselves work together.
 TEAM_MODES = ("sequence", "together")
+TEAM_STYLES = ("auto", "strict", "base")
 
 RULES = vol.Schema(
     {
@@ -616,6 +617,14 @@ RULES = vol.Schema(
         # order of the batteries).
         vol.Optional("team_charge_order", default=list): [str],
         vol.Optional("team_discharge_order", default=list): [str],
+        # "Selbst einstellen" (see control/team_day.py): None automatic
+        # (charging along, helping on big loads), "strict" one after the
+        # other only, "base" the next group gives a base load.
+        vol.Optional("team_style", default=None): vol.Any(None, vol.In(TEAM_STYLES)),
+        # The answer to "Soll ich … künftig früher mitladen lassen?": True
+        # Joe uses the lead he learned, False not (and does not ask again),
+        # None not answered (no lead).
+        vol.Optional("team_early", default=None): vol.Any(None, bool),
         # The watchdog: two batteries running against each other (one charges,
         # the other discharges): Joe restarts the culprit's own control, blocks
         # it for a few seconds and speaks up (see control/guard.py).

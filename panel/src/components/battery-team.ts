@@ -1,3 +1,4 @@
+import { formatNumber } from "../entities";
 import type { Translate } from "../i18n";
 import type { BatteryConfig, BatteryTeam, JoeConfig, JoeState, TransferGuard } from "../types";
 
@@ -70,9 +71,116 @@ function part(t: Translate, team: BatteryTeam, ids: string[]): string {
   if (entry.why === "active") {
     const power = ids.reduce((sum, id) => sum + (team.batteries[id]?.power_w ?? 0), 0);
     const key = power > 50 ? "charging" : power < -50 ? "discharging" : "idle";
+    if (entry.charge === "blocked") {
+      return t("team.part.active_discharge_only", vars);
+    }
     return t(entry.discharge === "blocked" ? "team.part.active_charge_only" : `team.part.active_${key}`, vars);
   }
+  if (entry.why === "base") {
+    return t("team.part.base", { ...vars, w: formatNumber(t.lang, team.base?.w ?? 0, 0) });
+  }
   return t(`team.part.${entry.why ?? "waits_empty"}`, vars);
+}
+
+/** The batteries that work with the active group now for this reason. */
+function withWhy(team: BatteryTeam, why: string): string[] {
+  return Object.keys(team.batteries).filter((id) => team.batteries[id].why === why);
+}
+
+/** "heute", "gestern" or "am 17.10." for a day of a look back. */
+function dayWord(t: Translate, day: string): string {
+  const local = (offset: number) => {
+    const date = new Date(Date.now() - offset * 86400e3);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  };
+  if (day === local(0)) return t("team.day.today");
+  if (day === local(1)) return t("team.day.yesterday");
+  return t("team.day.on", { date: `${day.slice(8, 10)}.${day.slice(5, 7)}.` });
+}
+
+/**
+ * Why more than one group works right now, in plain words ("Venus lädt mit,
+ * weil mittags mehr Sonne kommt, als der BYD aufnehmen kann"), or from when
+ * the forecast lets the next one charge along today. Null when one works alone.
+ */
+export function teamReason(t: Translate, team: BatteryTeam | undefined): string | null {
+  const text = reasonNow(t, team);
+  return text && team?.dry ? `${text} ${t("team.reason.dry")}` : text;
+}
+
+function reasonNow(t: Translate, team: BatteryTeam | undefined): string | null {
+  if (!team || team.state !== "on" || !team.active) {
+    return null;
+  }
+  const active = groupName(team, activeIds(team));
+  const along = withWhy(team, "along");
+  if (team.along && along.length) {
+    return t(`team.reason.along.${team.along}`, { active, others: groupName(team, along) });
+  }
+  const helps = withWhy(team, "helps");
+  if (team.help && helps.length) {
+    return t("team.reason.help", { active, others: groupName(team, helps) });
+  }
+  if (team.base?.batteries.length) {
+    return t("team.reason.base", { active, others: groupName(team, team.base.batteries), w: formatNumber(t.lang, team.base.w, 0) });
+  }
+  const plan = team.along_plan;
+  if (plan && !team.parallel && new Date(plan.until).getTime() > Date.now()) {
+    const vars = { active, others: groupName(team, plan.batteries), time: plan.from.slice(11, 16) };
+    return t(plan.lead_min > 0 ? "team.reason.plan.lead" : "team.reason.plan", { ...vars, lead: plan.lead_min });
+  }
+  return null;
+}
+
+/** The last day looked back on, in one line: what went to the grid while a group had room. */
+export function teamReviewText(t: Translate, team: BatteryTeam | undefined): string | null {
+  const review = team?.review;
+  if (!team || !review) {
+    return null;
+  }
+  const vars = { when: dayWord(t, review.day), kwh: formatNumber(t.lang, review.room_kwh, 1) };
+  if (review.room_kwh >= 0.3 && review.short) {
+    return t("team.review.room", {
+      ...vars,
+      name: groupName(team, review.short.batteries),
+      soc: formatNumber(t.lang, review.short.soc ?? 0, 0),
+    });
+  }
+  if (review.room_kwh >= 0.3) {
+    return t("team.review.room_full", vars);
+  }
+  if (review.along_at || review.planned_at) {
+    return t("team.review.fine", vars);
+  }
+  return null;
+}
+
+/** What Joe learned about charging along earlier, for "Selbst einstellen". */
+export function teamLearnedText(t: Translate, team: BatteryTeam | undefined): string {
+  const learned = team?.learned;
+  if (!learned || !learned.days) {
+    return t("team.learned.none");
+  }
+  const minutes = Math.round(learned.minutes);
+  return minutes < 5 ? t("team.learned.no_lead", { days: learned.days }) : t("team.learned.lead", { minutes, days: learned.days });
+}
+
+/** "Soll ich … künftig früher mitladen lassen?": the question for "Joe braucht dich", while unanswered. */
+export function teamSuggest(t: Translate, config: JoeConfig, team: BatteryTeam | undefined): { title: string; text: string } | null {
+  const suggest = team?.suggest;
+  if (!team || !suggest || config.rules.team_early != null) {
+    return null;
+  }
+  const name = groupName(team, suggest.batteries);
+  return {
+    title: t("team.suggest.title", {
+      when: dayWord(t, suggest.day),
+      kwh: formatNumber(t.lang, suggest.kwh, 1),
+      name,
+      soc: formatNumber(t.lang, suggest.soc ?? 0, 0),
+    }),
+    text: t("team.suggest.text", { name, minutes: suggest.lead_min }),
+  };
 }
 
 /** The line under "Mehrere Speicher": who works now and why the others wait, or why Joe does nothing. */
@@ -144,6 +252,10 @@ export function teamDoing(t: Translate, team: BatteryTeam | undefined): string |
   const others = liveGroups(team)
     .filter((ids) => !ids.some((id) => active.includes(id)))
     .map((ids) => groupName(team, ids));
+  const reason = team.along || team.help || team.base ? teamReason(t, team) : null;
+  if (reason) {
+    return reason;
+  }
   return t(team.parallel && Object.values(team.batteries).some((b) => b.why === "parallel") ? "team.doing.parallel" : "team.doing", {
     active: groupName(team, active),
     others: others.join(", "),

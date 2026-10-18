@@ -22,7 +22,7 @@ import logging
 import math
 from typing import Any
 
-from homeassistant.const import EVENT_HOMEASSISTANT_STOP
+from homeassistant.const import EVENT_HOMEASSISTANT_STOP, SUN_EVENT_SUNSET
 from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import (
@@ -31,6 +31,7 @@ from homeassistant.helpers.event import (
     async_track_time_interval,
 )
 from homeassistant.helpers.storage import Store
+from homeassistant.helpers.sun import get_astral_event_date
 from homeassistant.util import dt as dt_util
 
 from ..const import DOMAIN
@@ -42,6 +43,7 @@ from . import (
     evcc,
     guard as guard_rules,
     team as team_rules,
+    team_day,
     writes as joe_writes,
 )
 from .actions import ActionAdapter
@@ -235,6 +237,20 @@ DEFAULT_DATA: dict[str, Any] = {
         "hold": None,
         # Per battery: when a block that had arrived was found undone.
         "resets": {},
+        # By day with sense (see control/team_day.py): charging along and
+        # helping to discharge (their hysteresis), why the later groups
+        # charge along now, the base load written, the most each battery
+        # was seen to take and give (W), the day so far, the days looked
+        # back on, the lead learned from them and the day last looked back on.
+        "along": {},
+        "along_why": None,
+        "help": {},
+        "base": None,
+        "peaks": {},
+        "today": None,
+        "reviews": [],
+        "lead": None,
+        "reviewed": None,
     },
     # The watchdog: two batteries running against each other (see
     # _async_guard and control/guard.py).
@@ -332,6 +348,14 @@ class JoeExecutor:
         # What several batteries do together now, for the panel.
         self.team: dict[str, Any] = {"state": "off", "batteries": {}}
         self._team_shown: dict[str, Any] = {}
+        # The house's need every few seconds (W, for a base load), the
+        # batteries' powers of the last check (for the most they do) and the
+        # base load per battery to write now.
+        self._team_samples: list[tuple[datetime, float]] = []
+        self._team_prev: dict[str, float] = {}
+        self._team_base_w: dict[str, float] = {}
+        # What the last check saw for the day's look back (see _team_note).
+        self._team_pending: dict[str, Any] | None = None
         # What the watchdog does now, for the panel.
         self.guard: dict[str, Any] = {"state": "off"}
         # The automations writing the watchdog's levers: battery, when, names.
@@ -512,6 +536,7 @@ class JoeExecutor:
                 capped = set()
                 self._surplus_forget("error")
             keep |= capped
+            self._team_note(now)
             try:
                 keep |= await self._async_team_apply(config, want, keep, now)
             except Exception:
@@ -992,6 +1017,10 @@ class JoeExecutor:
             dict(self.data["team"]["empty"]),
             dict(self.data["team"]["full"]),
             self.data["team"]["parallel"],
+            # The day so far every ten minutes, what Joe learned and looked back on.
+            ((self.data["team"].get("today") or {}).get("at") or "")[:15],
+            self.data["team"].get("reviewed"),
+            deepcopy(self.data["team"].get("peaks")),
         )
 
     def _mark_active(self, key: str) -> None:
@@ -1768,6 +1797,21 @@ class JoeExecutor:
             "taking_over_at": None,
             "given_back": store.get("given_back"),
             "hold": None,
+            # By day with sense (see control/team_day.py): the owner's choice,
+            # why the later groups charge along now ("forecast", "export"),
+            # from when the forecast lets them, whether one helps discharging,
+            # the base load, what Joe learned, the last day he looked back on
+            # and what he asks.
+            "style": team_day.style_of(rules),
+            "along": None,
+            "along_plan": None,
+            "help": False,
+            "base": None,
+            "base_problem": None,
+            "learned": deepcopy(store.get("lead")),
+            "early": rules.get("team_early"),
+            "review": deepcopy((store.get("reviews") or [None])[-1]),
+            "suggest": None,
         }
         candidates: list[tuple[dict[str, Any], RoleAdapter | None]] = []
         powers: dict[str, float] = {}
@@ -1812,6 +1856,8 @@ class JoeExecutor:
         deficit = self._team_deficit(config, powers)
         if mode != "off" and not night:
             self._team_learn(candidates, powers, deficit, now)
+        if mode != "off":
+            self._team_peaks(powers)
         state = self._team_gate(config, candidates, mode, today, night, info, groups)
         state = await self._async_team_hands(
             config, info, state, {b["id"] for b, _ in candidates}, now
@@ -1826,6 +1872,12 @@ class JoeExecutor:
             )
         else:
             store.update(active=None, since=None)
+            store["along"], store["help"] = {}, {}
+            self._team_base_w = {}
+            if store.get("along_why"):
+                store["along_why"] = None
+                self._log("team_along_end", reason=state)
+        self._team_review(config, info, groups, now)
         self.team = info
         if state != "on":
             self._team_publish()
@@ -2256,17 +2308,29 @@ class JoeExecutor:
             b["id"]: b.get("capacity") for b in (plan or {}).get("batteries") or []
         }
         members: list[team_rules.Member] = []
+        # What each battery can give (kW): as set, else the most Joe saw.
+        give: dict[str, float] = {}
+        peaks: dict[str, dict[str, float]] = store.get("peaks") or {}
         for battery, role in candidates:
             entry = info["batteries"][battery["id"]]
             size = sizes.get(battery["id"]) or battery.get("capacity_kwh") or 5.0
+            seen = peaks.get(battery["id"]) or {}
+            give[battery["id"]] = team_day.capability(
+                battery.get("max_discharge_w"),
+                seen.get("discharge"),
+                min(5.0, size * 0.5),
+            )
             member = team_rules.Member(
                 id=battery["id"],
                 soc=entry["soc"],
                 cutoff=battery.get("cutoff_soc"),
                 floor=entry["floor"],
                 capacity=size,
-                max_kw=(battery.get("max_charge_w") or min(5.0, size * 0.5) * 1000)
-                / 1000,
+                max_kw=team_day.capability(
+                    battery.get("max_charge_w"),
+                    seen.get("charge"),
+                    min(5.0, size * 0.5),
+                ),
                 full_at=self._team_full_at(role),
                 empty=battery["id"] in store["empty"],
                 full=battery["id"] in store["full"],
@@ -2334,6 +2398,8 @@ class JoeExecutor:
                     ),
                 )
             store.update(active=chosen, since=now.isoformat(timespec="seconds"))
+            # Charging along and helping count for the group whose turn it was.
+            store["along"], store["help"] = {}, {}
         # The panel names the group by its batteries (the first one leads).
         info["active"] = group.ids[0]
         info["active_group"] = chosen
@@ -2345,25 +2411,60 @@ class JoeExecutor:
             )
         parallel = self._team_parallel(config, plan, charge_order, now, today)
         info["parallel"] = parallel
+        grid = measurement_kw(
+            self._hass.states.get, config["measurements"]["grid_power"]
+        )
+        style = team_day.style_of(rules)
+        # The later groups with room (charging along) and those not empty
+        # (helping, a base load), each in its own order.
+        waiting = [g for g in charge_order if g.id != chosen and not g.full]
+        givers = [g for g in discharge_order if g.id != chosen and not g.empty]
+        along = self._team_along(
+            config, plan, charge_order, group, waiting, flow, deficit, grid, now, info
+        )
         side: set[str] = set()
-        if parallel and flow == "surplus" and raw == "surplus":
-            side = {k for g in teams if g.id != chosen and not g.full for k in g.ids}
+        if (parallel or along) and flow == "surplus" and raw == "surplus":
+            side = {k for g in waiting for k in g.ids}
+        helping = self._team_help(
+            group, givers, flow, deficit, grid, powers, give, style, now, info
+        )
+        helpers: set[str] = set()
+        why_helper = "helps"
+        self._team_base_w = {}
+        if helping and raw == "deficit":
+            helpers = {k for g in givers for k in g.ids}
+        elif style == "base" and flow == "deficit" and raw == "deficit":
+            base = self._team_base(config, givers, give, groups, info)
+            if base is not None:
+                base_group, watts = base
+                helpers = set(base_group.ids)
+                why_helper = "base"
+                self._team_base_w = dict.fromkeys(base_group.ids, watts)
+        self._team_base_log(info)
         want: dict[str, tuple[bool, bool]] = {}
         for team_group in teams:
             for member in team_group.members:
                 entry = info["batteries"][member.id]
                 if team_group.id == chosen:
-                    # Side by side, nobody may discharge into the others: on a
-                    # cloud they are blocked again and the active group is free.
-                    want[member.id] = (False, bool(side))
+                    # Side by side, nobody may discharge into the others (nor
+                    # charge from them while they help): on a cloud they are
+                    # blocked again and the active group is free.
+                    want[member.id] = (bool(helpers), bool(side))
                     entry.update(
-                        charge="free",
+                        charge="blocked" if helpers else "free",
                         discharge="blocked" if side else "free",
                         why="active",
                     )
                 elif member.id in side:
                     want[member.id] = (False, True)
-                    entry.update(charge="free", discharge="blocked", why="parallel")
+                    entry.update(
+                        charge="free",
+                        discharge="blocked",
+                        why="along" if along and not parallel else "parallel",
+                    )
+                elif member.id in helpers:
+                    want[member.id] = (True, why_helper == "base")
+                    entry.update(charge="blocked", discharge="free", why=why_helper)
                 else:
                     want[member.id] = (True, True)
                     entry.update(charge="blocked", discharge="blocked")
@@ -2373,13 +2474,359 @@ class JoeExecutor:
                         entry["why"] = "empty" if team_group.empty else "waits_empty"
                 entry["empty"] = member.empty
                 entry["full"] = member.full
+        # The day so far is noted once the daytime cap had its say (see _team_note).
+        self._team_pending = None
+        if not info["dry"]:
+            plan_from = (info.get("along_plan") or {}).get("from")
+            self._team_pending = {
+                "room": flow == "surplus"
+                and any(not set(g.ids) & side for g in waiting),
+                "along": bool(side),
+                "planned": datetime.fromisoformat(plan_from) if plan_from else None,
+                "export_kw": max(0.0, -(grid or 0.0)),
+                "socs": {m.id: m.soc for m in members},
+            }
         hint = {
             "active": chosen,
             "active_batteries": group.ids,
-            "blocked": [k for k, (charge, _) in want.items() if charge],
+            # Those that wait (the active group's charging blocked while
+            # another helps is not waiting: there is no sun to share then).
+            "blocked": [
+                k for k, (charge, _) in want.items() if charge and k not in group.ids
+            ],
             "parallel": sorted(side),
         }
         return want, hint
+
+    def _team_note(self, now: datetime) -> None:
+        """One minute of the day for the evening's look back: what went to the
+        grid, and how much while a group waited with room – not while the
+        daytime cap or the grid-friendly morning leave the sun to others on
+        purpose (control/team_day.py)."""
+        pending, self._team_pending = self._team_pending, None
+        if pending is None:
+            return
+        store: dict[str, Any] = self.data["team"]
+        today = dt_util.as_local(now).date().isoformat()
+        held = bool(self.data["surplus"]["caps"]) or bool(self.data.get("day"))
+        day = store.get("today")
+        if not day or day.get("day") != today:
+            day = store["today"] = team_day.fresh_day(today)
+        team_day.note(
+            day,
+            now,
+            pending["export_kw"],
+            pending["room"] and not held,
+            pending["along"],
+            pending["planned"],
+        )
+        # The highest level of the day counts in the evening (not what the
+        # house took since the sun went).
+        top: dict[str, float] = day.setdefault("top", {})
+        for key, soc in pending["socs"].items():
+            if soc is not None:
+                top[key] = max(top.get(key, soc), soc)
+
+    def _team_along(
+        self,
+        config: dict[str, Any],
+        plan: dict[str, Any] | None,
+        order: list[team_rules.Group],
+        active: team_rules.Group,
+        waiting: list[team_rules.Group],
+        flow: str | None,
+        deficit: float | None,
+        grid: float | None,
+        now: datetime,
+        info: dict[str, Any],
+    ) -> str | None:
+        """Why the later groups charge along now: "forecast" (from the hour on
+        in which the surplus is more than the active group can take, the
+        learned lead before it once the owner said yes), "export" (the house
+        gives to the grid although the active group is free to charge), or
+        None (see control/team_day.py).
+
+        Not while something holds the surplus back on purpose: the daytime
+        cap leaves it to evcc (and counts the waiting groups' room for the
+        active one), the grid-friendly morning leaves it to the grid.
+        """
+        rules = config["rules"]
+        store: dict[str, Any] = self.data["team"]
+        style = team_day.style_of(rules)
+        held = bool(self.data["surplus"]["caps"]) or bool(self.data.get("day"))
+        window = None
+        if style != "strict" and plan and plan.get("hours") and waiting:
+            created = (
+                datetime.fromisoformat(plan["created"]) if plan.get("created") else None
+            )
+            # The forecast as it is (the learned factor is in it): starting a
+            # little early costs nothing, starting late sends sun to the grid.
+            found = day_surplus.slots(plan["hours"], created, now, 1.0)
+            window = team_day.overflow(
+                found, order, active.id, day_surplus.pv_end(found, now)
+            )
+        lead = 0.0
+        if rules.get("team_early") is True:
+            lead = float((store.get("lead") or {}).get("minutes") or 0.0)
+        start = team_day.lead_start(window, lead)
+        if window is not None and start is not None:
+            info["along_plan"] = {
+                "from": start.isoformat(timespec="minutes"),
+                "until": window[1].isoformat(timespec="minutes"),
+                "lead_min": round(lead),
+                "batteries": [k for g in waiting for k in g.ids],
+            }
+        can = (
+            style != "strict"
+            and flow == "surplus"
+            and bool(waiting)
+            and not active.full
+            and not held
+            and deficit is not None
+        )
+        by_meter = team_day.along_step(
+            store["along"],
+            can,
+            max(0.0, -(grid or 0.0)) * 1000,
+            max(0.0, -(deficit or 0.0)),
+            active.max_kw,
+            now,
+        )
+        by_forecast = (
+            can
+            and window is not None
+            and start is not None
+            and start <= now < window[1]
+        )
+        why = "export" if by_meter else "forecast" if by_forecast else None
+        before = store.get("along_why")
+        if why != before:
+            store["along_why"] = why
+            if why:
+                self._log(
+                    "team_along",
+                    reason=why,
+                    battery=active.ids[0],
+                    batteries=[k for g in waiting for k in g.ids],
+                    until=window[1].isoformat(timespec="minutes") if window else None,
+                )
+            else:
+                self._log(
+                    "team_along_end", reason="flow" if flow != "surplus" else "less"
+                )
+        info["along"] = why
+        return why
+
+    def _team_help(
+        self,
+        active: team_rules.Group,
+        givers: list[team_rules.Group],
+        flow: str | None,
+        deficit: float | None,
+        grid: float | None,
+        powers: dict[str, float],
+        give: dict[str, float],
+        style: str,
+        now: datetime,
+        info: dict[str, Any],
+    ) -> bool:
+        """Whether the next groups help discharging: the house draws from the
+        grid for a while although the active group gives about all it can
+        (see control/team_day.py); not in "Nur nacheinander"."""
+        store: dict[str, Any] = self.data["team"]
+        can = (
+            style != "strict"
+            and flow == "deficit"
+            and bool(givers)
+            and not active.empty
+            and deficit is not None
+            and grid is not None
+            and all(k in powers for k in active.ids)
+        )
+        before = bool(store["help"].get("on"))
+        on = team_day.help_step(
+            store["help"],
+            can,
+            max(0.0, grid or 0.0) * 1000,
+            max(0.0, -sum(powers.get(k, 0.0) for k in active.ids)),
+            max(0.0, deficit or 0.0),
+            sum(give.get(k, 0.0) for k in active.ids),
+            now,
+        )
+        if on != before:
+            self._log(
+                "team_help" if on else "team_help_end",
+                battery=active.ids[0],
+                batteries=[k for g in givers for k in g.ids],
+                power=round(max(0.0, deficit or 0.0), 1),
+            )
+        info["help"] = on
+        return on
+
+    def _team_base(
+        self,
+        config: dict[str, Any],
+        givers: list[team_rules.Group],
+        give: dict[str, float],
+        groups: dict[str, tuple[str, str, bool]],
+        info: dict[str, Any],
+    ) -> tuple[team_rules.Group, float] | None:
+        """ "Grundlast teilen": the first group (in the discharge order) whose
+        discharge power Joe can set gives the house's base load, the rest
+        comes from the active one. None while there is none or no base."""
+        batteries = {b["id"]: b for b in config["batteries"]}
+        keys = {k: v[0] for k, v in groups.items()}
+        for candidate in givers:
+            if self._team_base_lever(config, candidate.ids, batteries, keys) is None:
+                continue
+            cap_w = sum(give.get(k, 0.0) for k in candidate.ids) * 1000
+            now = dt_util.now()
+            team_day.trim(self._team_samples, now)
+            watts = team_day.base_w([w for _, w in self._team_samples], cap_w)
+            if watts <= 0:
+                return None
+            info["base"] = {"w": watts, "batteries": candidate.ids}
+            return candidate, watts
+        info["base_problem"] = "no_power_lever" if givers else None
+        return None
+
+    def _team_base_lever(
+        self,
+        config: dict[str, Any],
+        ids: list[str],
+        batteries: dict[str, dict[str, Any]],
+        keys: dict[str, str],
+    ) -> tuple[str, str] | None:
+        """The one discharge limit (in W or kW) of a group Joe can set a power
+        with: its entity and unit; None if it has none (only switches, a
+        limit in %) or several."""
+        found: set[tuple[str, str]] = set()
+        for key in ids:
+            adapter = make_adapter(batteries[key])
+            if not isinstance(adapter, RoleAdapter):
+                return None
+            whole = self._whole_system(config, keys, batteries[key], adapter)
+            roles = adapter.discharge_roles()
+            if adapter.team_lever(whole) in (None, "allow") or roles is None:
+                return None
+            entity_id = adapter.controls.get(roles[1])
+            state = self._hass.states.get(entity_id or "")
+            unit = state.attributes.get("unit_of_measurement") if state else None
+            if not entity_id or unit not in ("W", "kW"):
+                return None
+            found.add((entity_id, unit))
+        return next(iter(found)) if len(found) == 1 else None
+
+    def _team_base_log(self, info: dict[str, Any]) -> None:
+        """A base load begins or ends (not every step of it)."""
+        store: dict[str, Any] = self.data["team"]
+        base = info.get("base") if self._team_base_w else None
+        before = store.get("base")
+        if bool(base) != bool(before):
+            if base:
+                self._log("team_base", batteries=base["batteries"], power=base["w"])
+            else:
+                self._log("team_base_end", batteries=(before or {}).get("batteries"))
+        store["base"] = deepcopy(base)
+        if not self._team_base_w:
+            info["base"] = None
+
+    def _team_peaks(self, powers: dict[str, float]) -> None:
+        """The most each battery takes and gives for a while (W)."""
+        store: dict[str, Any] = self.data["team"]
+        peaks: dict[str, dict[str, float]] = store.setdefault("peaks", {})
+        for key, power in powers.items():
+            before = self._team_prev.get(key)
+            side = "charge" if power > 0 else "discharge"
+            seen = peaks.get(key, {}).get(side)
+            found = team_day.peak(seen, power, before)
+            if found is not None and found != seen:
+                peaks.setdefault(key, {})[side] = found
+        self._team_prev = dict(powers)
+
+    def _team_sample(
+        self, config: dict[str, Any], powers: dict[str, float], now: datetime
+    ) -> None:
+        """The house's need right now (W), every few seconds, for a base load."""
+        if team_day.style_of(config["rules"]) != "base":
+            self._team_samples = []
+            return
+        deficit = self._team_deficit(config, powers)
+        if deficit is None:
+            return
+        self._team_samples.append((now, deficit * 1000))
+        team_day.trim(self._team_samples, now)
+
+    def _team_review(
+        self,
+        config: dict[str, Any],
+        info: dict[str, Any],
+        groups: dict[str, tuple[str, str, bool]],
+        now: datetime,
+    ) -> None:
+        """Once a day after sunset: the day in short, the lead learned from it,
+        and what Joe asks (see control/team_day.py)."""
+        store: dict[str, Any] = self.data["team"]
+        local = dt_util.as_local(now)
+        today = local.date().isoformat()
+        day = store.get("today")
+        if day and day.get("day") != today:
+            # A day not looked back on (Home Assistant was off): it tells too little.
+            store["today"] = day = None
+        if day and store.get("reviewed") != today and self._team_evening(local):
+            members: dict[str, list[str]] = {}
+            for key, entry in info["batteries"].items():
+                if entry.get("self_regulating"):
+                    members.setdefault(groups[key][0], []).append(key)
+            summary = team_day.review(
+                day,
+                [
+                    {
+                        "batteries": ids,
+                        "socs": {
+                            k: (day.get("top") or {}).get(
+                                k, info["batteries"][k]["soc"]
+                            )
+                            for k in ids
+                        },
+                    }
+                    for ids in members.values()
+                ],
+            )
+            store["reviewed"] = today
+            lead = team_day.learn(store.get("lead"), summary)
+            summary["lead_min"] = lead.get("minutes")
+            store["lead"] = lead
+            reviews: list[dict[str, Any]] = store.setdefault("reviews", [])
+            reviews.append(summary)
+            del reviews[: -team_day.KEEP_REVIEWS]
+            self._log(
+                "team_review",
+                energy=summary["room_kwh"],
+                batteries=(summary["short"] or {}).get("batteries"),
+                soc=(summary["short"] or {}).get("soc"),
+                value=lead.get("minutes"),
+            )
+            info["learned"] = deepcopy(lead)
+            info["review"] = deepcopy(summary)
+        if config["rules"].get("team_early") is None:
+            review = (store.get("reviews") or [None])[-1]
+            if review and (
+                local.date() - datetime.fromisoformat(review["day"]).date()
+            ) <= timedelta(days=1):
+                info["suggest"] = team_day.suggestion(review, store.get("lead"))
+
+    def _team_evening(self, local: datetime) -> bool:
+        """After sunset (half an hour), at 22:00 at the latest."""
+        if local.hour >= 22:
+            return True
+        if local.hour < 16:
+            return False
+        try:
+            sunset = get_astral_event_date(self._hass, SUN_EVENT_SUNSET, local.date())
+        except Exception:  # noqa: BLE001 - no place known: 22:00 it is
+            sunset = None
+        return sunset is not None and local >= sunset + timedelta(minutes=30)
 
     def _team_flow(
         self, deficit: float | None, now: datetime
@@ -2524,7 +2971,18 @@ class JoeExecutor:
         batteries = {b["id"]: b for b in config["batteries"]}
         groups = {k: v[0] for k, v in self._team_groups(config).items()}
         broken: list[tuple[str, str, str]] = []
-        for key, (charge, discharge) in want.items():
+
+        def adds(item: tuple[str, tuple[bool, bool]]) -> int:
+            """Blocks first, then what is freed: never a moment in which one
+            may charge while another may discharge."""
+            before = store["blocks"].get(item[0]) or {}
+            charge, discharge = item[1]
+            more = (charge and not before.get("charge")) or (
+                discharge and not before.get("discharge")
+            )
+            return 0 if more else 1
+
+        for key, (charge, discharge) in sorted(want.items(), key=adds):
             adapter = make_adapter(batteries[key])
             assert isinstance(adapter, RoleAdapter)
             whole = self._whole_system(config, groups, batteries[key], adapter)
@@ -2536,6 +2994,10 @@ class JoeExecutor:
             writes, give_back = adapter.team_block(
                 self._hass, charge, discharge, charge_taken, whole
             )
+            base = self._team_base_w.get(key)
+            if base is not None and discharge:
+                # A base load: the discharge limit at that power instead of 0.
+                writes = self._team_base_writes(adapter, whole, writes, base)
             if give_back:
                 await self._async_team_free(adapter, give_back, now)
             problem = None
@@ -2555,7 +3017,11 @@ class JoeExecutor:
             if writes:
                 keep |= {w.entity_id for w in writes} | {key}
             if problem is None and not self._team_effective(
-                adapter, whole, charge and not charge_taken, discharge, now
+                adapter,
+                whole,
+                charge and not charge_taken,
+                discharge and base is None,
+                now,
             ):
                 # Each value may show what Joe wrote, the block counts only
                 # with both: the limit at 0 and its switch on.
@@ -2564,15 +3030,25 @@ class JoeExecutor:
             entry["problem"] = problem
             if problem:
                 broken.append((key, groups[key], problem))
-            blocks = {"charge": charge and not charge_taken, "discharge": discharge}
+            blocks: dict[str, Any] = {
+                "charge": charge and not charge_taken,
+                "discharge": discharge and base is None,
+            }
+            if base is not None and discharge:
+                blocks["base_w"] = base
             if charge and charge_taken:
                 # Blocked all the same, by the limit someone else holds at 0.
                 entry["charge"] = "blocked"
-            if store["blocks"].get(key, {"charge": False, "discharge": False}) != (
-                blocks
-            ):
-                self._log("team_block", battery=key, **blocks)
-            if blocks["charge"] or blocks["discharge"]:
+            shown = {k: v for k, v in blocks.items() if k != "base_w"}
+            if {
+                k: v
+                for k, v in store["blocks"]
+                .get(key, {"charge": False, "discharge": False})
+                .items()
+                if k != "base_w"
+            } != shown:
+                self._log("team_block", battery=key, **shown)
+            if blocks["charge"] or blocks["discharge"] or "base_w" in blocks:
                 store["blocks"][key] = blocks
             else:
                 store["blocks"].pop(key, None)
@@ -2585,6 +3061,28 @@ class JoeExecutor:
             return set()
         self._team_publish()
         return keep
+
+    def _team_base_writes(
+        self, adapter: RoleAdapter, whole: bool, writes: list[Write], watts: float
+    ) -> list[Write]:
+        """The block's writes with the discharge limit at the base load (in
+        the limit's unit) instead of 0."""
+        config = self._config()
+        keys = {k: v[0] for k, v in self._team_groups(config).items()}
+        lever = self._team_base_lever(
+            config,
+            [adapter.battery["id"]],
+            {adapter.battery["id"]: adapter.battery},
+            keys,
+        )
+        roles = adapter.discharge_roles()
+        if lever is None or roles is None:
+            return writes
+        entity_id, unit = lever
+        value = round(watts / 1000, 3) if unit == "kW" else round(watts)
+        return [
+            Write(w.entity_id, value) if w.entity_id == entity_id else w for w in writes
+        ]
 
     def _team_undone(self, adapter: RoleAdapter, whole: bool, now: datetime) -> bool:
         """Blocks of this battery that had arrived and show something else now:
@@ -2754,6 +3252,7 @@ class JoeExecutor:
             power = _charge_w(self._hass, battery)
             if power is not None:
                 powers[battery["id"]] = power
+        self._team_sample(config, powers, now)
         state = "on"
         if not config["rules"].get("transfer_guard", True):
             state = "off"

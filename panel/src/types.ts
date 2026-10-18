@@ -306,6 +306,10 @@ export interface Rules {
   /** Battery ids in the order they charge and discharge (the others follow). */
   team_charge_order?: string[];
   team_discharge_order?: string[];
+  /** "Selbst einstellen": null automatic (charging along, helping), "strict" one after the other only, "base" a base load. */
+  team_style?: BatteryTeamStyle | null;
+  /** "Früher mitladen?": true Joe uses the lead he learned, false not (and does not ask again), null not answered. */
+  team_early?: boolean | null;
   /** The watchdog: step in when batteries charge each other (older backends: missing, on). */
   transfer_guard?: boolean;
 }
@@ -357,7 +361,7 @@ export interface BatteryTeam {
       floor: number;
       charge: "free" | "blocked" | null;
       discharge: "free" | "blocked" | null;
-      why: "active" | "parallel" | "waits_full" | "waits_empty" | "full" | "empty" | null;
+      why: "active" | "parallel" | "along" | "helps" | "base" | "waits_full" | "waits_empty" | "full" | "empty" | null;
       problem: string | null;
       empty?: boolean;
       full?: boolean;
@@ -390,6 +394,45 @@ export interface BatteryTeam {
   } | null;
   /** Joe holds his blocks until the active group stops charging or discharging, then gives the automations back. */
   hold?: { since: string; direction: "charge" | "discharge"; batteries: string[]; reason: string; names: string[] } | null;
+  /** "Selbst einstellen" (control/team_day.py; older backends: missing). */
+  style?: BatteryTeamStyle;
+  /** Why the later groups charge along now: the forecast, or the meter shows sun going to the grid. */
+  along?: "forecast" | "export" | null;
+  /** From when (and until when) the forecast lets the later groups charge along today, and the lead in it. */
+  along_plan?: { from: string; until: string; lead_min: number; batteries: string[] } | null;
+  /** The next groups help discharging (a big load). */
+  help?: boolean;
+  /** The base load the next group gives now (W). */
+  base?: { w: number; batteries: string[] } | null;
+  /** "Grundlast teilen" chosen, but no waiting group's power can be set. */
+  base_problem?: "no_power_lever" | null;
+  /** The lead Joe learned from the days (minutes) and from how many days. */
+  learned?: { minutes: number; days: number; updated?: string } | null;
+  /** The owner's answer to "früher mitladen?" (null: not answered). */
+  early?: boolean | null;
+  /** The last day Joe looked back on. */
+  review?: TeamReview | null;
+  /** What Joe asks: "Soll ich … künftig früher mitladen lassen?" */
+  suggest?: { day: string; kwh: number; batteries: string[]; soc: number | null; lead_min: number } | null;
+}
+
+/** "Selbst einstellen": automatic (null), one after the other only, or the next one gives a base load. */
+export type BatteryTeamStyle = "auto" | "strict" | "base";
+
+/** One day looked back on (control/team_day.py review). */
+export interface TeamReview {
+  day: string;
+  export_kwh: number;
+  /** Sent to the grid while a group waited with room. */
+  room_kwh: number;
+  tight_at: string | null;
+  along_at: string | null;
+  planned_at: string | null;
+  groups: { batteries: string[]; soc: number | null }[];
+  /** The group that stayed lowest (below 95 %), if any. */
+  short: { batteries: string[]; soc: number | null } | null;
+  need_min: number | null;
+  lead_min?: number | null;
 }
 
 /** The watchdog ("Speicher-Wächter", control/guard.py): two batteries running against each other. */

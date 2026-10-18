@@ -118,7 +118,19 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
       names: Array.isArray(entry.names) ? entry.names.map((n) => `„${String(n)}“`).join(", ") : "",
       why: t.optional(`team.given_back.why.${String(entry.reason ?? entry.problem ?? "")}`) ?? "",
       direction: t.optional(`log.team_hold.${String(entry.direction ?? "")}`) ?? "",
+      // Charging along, helping, a base load (control/team_day.py): the active one and the others.
+      active: nameOf(entry.battery),
+      others: Array.isArray(entry.batteries) ? entry.batteries.map(nameOf).join(" + ") : "",
+      energy: typeof entry.energy === "number" ? formatNumber(t.lang, entry.energy, 1) : "–",
+      lead: typeof entry.value === "number" ? formatNumber(t.lang, entry.value, 0) : "–",
+      watts: typeof entry.power === "number" ? formatNumber(t.lang, entry.power, 0) : "–",
     };
+    if (entry.kind === "team_along" || entry.kind === "team_along_end") {
+      return t.optional(`log.${entry.kind}.${String(entry.reason)}`, team) ?? t(`log.${entry.kind}`, team);
+    }
+    if (entry.kind === "team_review") {
+      return t(typeof entry.batteries === "object" && entry.batteries ? "log.team_review.short" : "log.team_review", team);
+    }
     if (entry.kind === "team_hold_end") {
       return t.optional(`log.team_hold_end.${String(entry.reason)}`, team) ?? t("log.team_hold_end", team);
     }

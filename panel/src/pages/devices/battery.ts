@@ -11,6 +11,9 @@ import {
   teamGroups,
   teamOrder,
   teamHold,
+  teamLearnedText,
+  teamReason,
+  teamReviewText,
   teamText,
   transferGuard,
   unsureNames,
@@ -29,7 +32,7 @@ import { formatNumber } from "../../entities";
 import { href, navigate, onLink, revealAnchor, type Route } from "../../router";
 import { ruleStyles, ruleValue, type RuleKey } from "../../rules-view";
 import { shared } from "../../styles/shared";
-import type { BatteryConfig, BatteryFinding, BatteryTeamMode, JoeConfig } from "../../types";
+import type { BatteryConfig, BatteryFinding, BatteryTeamMode, BatteryTeamStyle, JoeConfig } from "../../types";
 import "./battery-device";
 import { batteryNow, controlRoute, hasSuggestion } from "./battery-device";
 import { ignoreFinding, useBattery } from "./device-actions";
@@ -261,6 +264,77 @@ export class JoeBatteryGroup extends DeviceSection {
         max-width: min(240px, 48vw);
         font-size: 14px;
       }
+      .note.amber {
+        background: color-mix(in srgb, var(--joe-amber, #fea707) 16%, var(--joe-surface));
+      }
+      .note.amber > ha-icon {
+        color: var(--joe-amber, #fea707);
+      }
+      details.team-style {
+        margin-top: 16px;
+        border-radius: 12px;
+        background: var(--joe-surface-2);
+      }
+      details.team-style summary {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .team-style-body {
+        display: grid;
+        gap: 10px;
+        padding: 0 12px 12px;
+      }
+      .team-style-body > p {
+        margin: 0;
+        color: var(--joe-ink-2);
+        font-size: 14px;
+      }
+      .team-options {
+        display: grid;
+        gap: 8px;
+      }
+      .team-option {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .team-option .way {
+        flex: 1 1 0;
+        min-width: 0;
+        display: grid;
+        gap: 2px;
+        min-height: 44px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 2px solid var(--joe-line);
+        background: var(--joe-surface);
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+        transition:
+          border-color 120ms,
+          transform 120ms;
+      }
+      .team-option .way:hover {
+        border-color: color-mix(in srgb, var(--joe-amber, #fea707) 55%, var(--joe-line));
+      }
+      .team-option .way:active {
+        transform: scale(0.98);
+      }
+      .team-option .way[aria-checked="true"] {
+        border-color: var(--joe-amber, #fea707);
+        background: color-mix(in srgb, var(--joe-amber, #fea707) 12%, var(--joe-surface));
+      }
+      .team-option .way small {
+        color: var(--joe-muted);
+        font-size: 13px;
+        line-height: 1.4;
+      }
     `,
   ];
 
@@ -363,6 +437,8 @@ export class JoeBatteryGroup extends DeviceSection {
     const automations = team?.state === "automation";
     const back = givenBack(t, team);
     const hold = teamHold(t, team);
+    const reason = shown === "sequence" ? teamReason(t, team) : null;
+    const review = shown === "sequence" ? teamReviewText(t, team) : null;
     return html`<section class="card" data-tipped data-anchor=${TEAM_ANCHOR}>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:battery-sync-outline"></ha-icon>${t("team.title")}</div>
@@ -383,6 +459,18 @@ export class JoeBatteryGroup extends DeviceSection {
       </div>
       ${team && !automations ? html`<p class="team-now">${teamText(t, team)}</p>` : nothing}
       <div class="team-notes">
+        ${reason
+          ? html`<div class="note" role="status" data-tipped>
+              <ha-icon icon="mdi:weather-sunny"></ha-icon>
+              <span>${reason} ${tip(t, "team_reason")}</span>
+            </div>`
+          : nothing}
+        ${review
+          ? html`<div class="note" role="status" data-tipped>
+              <ha-icon icon="mdi:history"></ha-icon>
+              <span>${review} ${tip(t, "team_review")}</span>
+            </div>`
+          : nothing}
         ${!mode && team && Object.keys(team.groups ?? {}).length >= 2
           ? html`<div class="note" role="status" data-tipped>
               <ha-icon icon="mdi:shield-check-outline"></ha-icon>
@@ -426,13 +514,84 @@ export class JoeBatteryGroup extends DeviceSection {
       </div>
       ${shown === "sequence"
         ? html`<div class="team-orders">
-            ${this.orderList(t, config, "team_charge_order")} ${this.orderList(t, config, "team_discharge_order")}
-          </div>`
+              ${this.orderList(t, config, "team_charge_order")} ${this.orderList(t, config, "team_discharge_order")}
+            </div>
+            ${this.renderStyle(t, config)}`
         : nothing}
       <ul class="team-list">
         ${config.batteries.map((battery) => this.teamBattery(t, config, battery))}
       </ul>
     </section>`;
+  }
+
+  /**
+   * "Selbst einstellen" (for those who want to, folded): automatic (charging
+   * along by the forecast, helping on a big load), one after the other only,
+   * or the next one gives a base load – with the efficiency warning. And
+   * whether Joe uses the lead he learned (the answer to his question).
+   */
+  private renderStyle(t: Translate, config: JoeConfig): TemplateResult {
+    const team = batteryTeam(this.state);
+    const style: BatteryTeamStyle = config.rules.team_style ?? "auto";
+    const pick = (next: BatteryTeamStyle) => {
+      if (next !== style) {
+        void saveConfig(this, { rules: { team_style: next === "auto" ? null : next } });
+      }
+    };
+    const early = config.rules.team_early ?? null;
+    return html`<details class="team-style" ?open=${style !== "auto"} data-notip>
+      <summary>${t("team.style.title")}</summary>
+      <div class="team-style-body">
+        <p>${t("team.style.intro")}</p>
+        <div class="team-options" role="radiogroup" aria-label=${t("team.style.title")}>
+          ${(["auto", "strict", "base"] as const).map(
+            (option) => html`<div class="team-option" data-tipped>
+              <button type="button" class="way" role="radio" aria-checked=${String(style === option)} @click=${() => pick(option)}>
+                <b>${t(`team.style.${option}`)}</b>
+                <small>${t(`team.style.${option}.text`)}</small>
+              </button>
+              ${tip(t, `team_style_${option}`)}
+            </div>`,
+          )}
+        </div>
+        ${style === "base"
+          ? html`<div class="note amber" role="status" data-tipped>
+              <ha-icon icon="mdi:alert-outline"></ha-icon>
+              <span>${t("team.style.base.warn")} ${tip(t, "team_base_warn")}</span>
+            </div>`
+          : nothing}
+        ${style === "base" && team?.base_problem
+          ? html`<div class="note warn" role="status" data-tipped>
+              <ha-icon icon="mdi:information-outline"></ha-icon>
+              <span>${t("team.style.base.no_lever")} ${tip(t, "team_base_lever")}</span>
+            </div>`
+          : nothing}
+        ${style !== "strict"
+          ? html`<div class="team-line" data-tipped>
+              <span class="what">
+                <b id="team-early">${t("team.early")}</b>
+                <small>
+                  ${teamLearnedText(t, team)}
+                  ${early != null
+                    ? sourceChip(t, sourceOf(config, "rules.team_early"))
+                    : html`<span class="chip">${t("team.early.unanswered")}</span>`}
+                </small>
+              </span>
+              <span class="team-ctl">
+                ${tip(t, "team_early")}
+                <button
+                  type="button"
+                  class="switch"
+                  role="switch"
+                  aria-checked=${String(early === true)}
+                  aria-labelledby="team-early"
+                  @click=${() => saveConfig(this, { rules: { team_early: early !== true } })}
+                ></button>
+              </span>
+            </div>`
+          : nothing}
+      </div>
+    </details>`;
   }
 
   /**
