@@ -293,6 +293,8 @@ export interface Rules {
   /** Batteries take the midday sun, the car charges with the sun; saving first unless grid_first. */
   grid_friendly: boolean;
   grid_first: boolean;
+  /** The buffer of the grid-friendly morning (%); null: as Joe suggests (planner.morning_buffer). */
+  morning_buffer_soc: number | null;
   /** Expert: count the inverter's losses when charging from the grid (measured at the grid meter). */
   converter_losses: boolean;
   /** Charge full once every so many days (maintenance); null: off. */
@@ -1142,6 +1144,22 @@ export interface PlanBattery {
   grid?: boolean;
 }
 
+/** Up to this level the batteries take the morning sun, then Joe holds back (planner.morning_buffer). */
+export interface MorningBuffer {
+  /** The level in force (%). */
+  soc: number;
+  /** What Joe suggests (%). */
+  suggested: number;
+  /** What a sunny morning needs beyond the sun (kWh). */
+  need_kwh: number;
+  /** "learned" from the mornings, "start" before Joe learned it, "user" the owner's value. */
+  source: "learned" | "start" | "user";
+  floor: number;
+  batteries: string[];
+  group: string;
+  back: number;
+}
+
 /** Tonight's plan (see custom_components/energy_joe/plan). */
 export interface Plan {
   kind: "charge" | "hold" | "none" | "unavailable";
@@ -1167,7 +1185,17 @@ export interface Plan {
   batteries?: PlanBattery[];
   sun_takes_over?: string | null;
   /** Grid-friendly morning: batteries hold back charging until then (see planner._grid_friendly). */
-  day?: { defer_until: string; held_kwh: number; grid_first: boolean; cost?: number } | null;
+  day?: {
+    defer_until: string;
+    held_kwh: number;
+    grid_first: boolean;
+    cost?: number;
+    buffer?: MorningBuffer | null;
+  } | null;
+  /** The buffer of the grid-friendly morning, also on days without one (the settings show the suggestion). */
+  morning_buffer?: MorningBuffer | null;
+  /** After the window: last night's plan for its grid-friendly morning (plan/scheduler.py _morning_part). */
+  morning?: { fixed: boolean; window: { start: string; end: string }; day: Plan["day"] } | null;
   full_at?: string | null;
   empty_without?: string | null;
   solar_kwh?: number;
@@ -1288,9 +1316,11 @@ export type ControlReason =
   | "done";
 
 export interface ControlBattery {
-  action: "charge" | "hold" | "block" | "free" | "watch" | "defer" | null;
+  action: "charge" | "hold" | "block" | "free" | "watch" | "defer" | "buffer" | null;
   /** A grid-friendly morning: charging held back until then. */
   until?: string;
+  /** Its buffer on that morning (%): "buffer" charges up to it, "defer" holds back above it. */
+  level?: number | null;
   floor: number | null;
   target: number;
   soc: number | null;

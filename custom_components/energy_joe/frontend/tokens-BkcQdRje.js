@@ -29,11 +29,11 @@ var e = globalThis, t = e.ShadowRoot && (e.ShadyCSS === void 0 || e.ShadyCSS.nat
 	let t = "";
 	for (let n of e.cssRules) t += n.cssText;
 	return a(t);
-})(e) : e, { is: l, defineProperty: u, getOwnPropertyDescriptor: d, getOwnPropertyNames: f, getOwnPropertySymbols: p, getPrototypeOf: m } = Object, h = globalThis, g = h.trustedTypes, ee = g ? g.emptyScript : "", te = h.reactiveElementPolyfillSupport, _ = (e, t) => e, v = {
+})(e) : e, { is: l, defineProperty: u, getOwnPropertyDescriptor: d, getOwnPropertyNames: f, getOwnPropertySymbols: p, getPrototypeOf: m } = Object, h = globalThis, g = h.trustedTypes, _ = g ? g.emptyScript : "", ee = h.reactiveElementPolyfillSupport, v = (e, t) => e, y = {
 	toAttribute(e, t) {
 		switch (t) {
 			case Boolean:
-				e = e ? ee : null;
+				e = e ? _ : null;
 				break;
 			case Object:
 			case Array: e = e == null ? e : JSON.stringify(e);
@@ -58,13 +58,13 @@ var e = globalThis, t = e.ShadowRoot && (e.ShadyCSS === void 0 || e.ShadyCSS.nat
 		}
 		return n;
 	}
-}, y = (e, t) => !l(e, t), ne = {
+}, te = (e, t) => !l(e, t), ne = {
 	attribute: !0,
 	type: String,
-	converter: v,
+	converter: y,
 	reflect: !1,
 	useDefault: !1,
-	hasChanged: y
+	hasChanged: te
 };
 Symbol.metadata ??= Symbol("metadata"), h.litPropertyMetadata ??= /* @__PURE__ */ new WeakMap();
 var b = class extends HTMLElement {
@@ -103,13 +103,13 @@ var b = class extends HTMLElement {
 		return this.elementProperties.get(e) ?? ne;
 	}
 	static _$Ei() {
-		if (this.hasOwnProperty(_("elementProperties"))) return;
+		if (this.hasOwnProperty(v("elementProperties"))) return;
 		let e = m(this);
 		e.finalize(), e.l !== void 0 && (this.l = [...e.l]), this.elementProperties = new Map(e.elementProperties);
 	}
 	static finalize() {
-		if (this.hasOwnProperty(_("finalized"))) return;
-		if (this.finalized = !0, this._$Ei(), this.hasOwnProperty(_("properties"))) {
+		if (this.hasOwnProperty(v("finalized"))) return;
+		if (this.finalized = !0, this._$Ei(), this.hasOwnProperty(v("properties"))) {
 			let e = this.properties, t = [...f(e), ...p(e)];
 			for (let n of t) this.createProperty(n, e[n]);
 		}
@@ -171,14 +171,14 @@ var b = class extends HTMLElement {
 	_$ET(e, t) {
 		let n = this.constructor.elementProperties.get(e), r = this.constructor._$Eu(e, n);
 		if (r !== void 0 && !0 === n.reflect) {
-			let i = (n.converter?.toAttribute === void 0 ? v : n.converter).toAttribute(t, n.type);
+			let i = (n.converter?.toAttribute === void 0 ? y : n.converter).toAttribute(t, n.type);
 			this._$Em = e, i == null ? this.removeAttribute(r) : this.setAttribute(r, i), this._$Em = null;
 		}
 	}
 	_$AK(e, t) {
 		let n = this.constructor, r = n._$Eh.get(e);
 		if (r !== void 0 && this._$Em !== r) {
-			let e = n.getPropertyOptions(r), i = typeof e.converter == "function" ? { fromAttribute: e.converter } : e.converter?.fromAttribute === void 0 ? v : e.converter;
+			let e = n.getPropertyOptions(r), i = typeof e.converter == "function" ? { fromAttribute: e.converter } : e.converter?.fromAttribute === void 0 ? y : e.converter;
 			this._$Em = r;
 			let a = i.fromAttribute(t, e.type);
 			this[r] = a ?? this._$Ej?.get(r) ?? a, this._$Em = null;
@@ -187,7 +187,7 @@ var b = class extends HTMLElement {
 	requestUpdate(e, t, n, r = !1, i) {
 		if (e !== void 0) {
 			let a = this.constructor;
-			if (!1 === r && (i = this[e]), n ??= a.getPropertyOptions(e), !((n.hasChanged ?? y)(i, t) || n.useDefault && n.reflect && i === this._$Ej?.get(e) && !this.hasAttribute(a._$Eu(e, n)))) return;
+			if (!1 === r && (i = this[e]), n ??= a.getPropertyOptions(e), !((n.hasChanged ?? te)(i, t) || n.useDefault && n.reflect && i === this._$Ej?.get(e) && !this.hasAttribute(a._$Eu(e, n)))) return;
 			this.C(e, t, n);
 		}
 		!1 === this.isUpdatePending && (this._$ES = this._$EP());
@@ -251,17 +251,17 @@ var b = class extends HTMLElement {
 	updated(e) {}
 	firstUpdated(e) {}
 };
-b.elementStyles = [], b.shadowRootOptions = { mode: "open" }, b[_("elementProperties")] = /* @__PURE__ */ new Map(), b[_("finalized")] = /* @__PURE__ */ new Map(), te?.({ ReactiveElement: b }), (h.reactiveElementVersions ??= []).push("2.1.2");
+b.elementStyles = [], b.shadowRootOptions = { mode: "open" }, b[v("elementProperties")] = /* @__PURE__ */ new Map(), b[v("finalized")] = /* @__PURE__ */ new Map(), ee?.({ ReactiveElement: b }), (h.reactiveElementVersions ??= []).push("2.1.2");
 //#endregion
 //#region node_modules/lit-html/lit-html.js
-var x = globalThis, re = (e) => e, S = x.trustedTypes, ie = S ? S.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, C = "$lit$", w = `lit$${Math.random().toFixed(9).slice(2)}$`, ae = "?" + w, oe = `<${ae}>`, T = document, E = () => T.createComment(""), D = (e) => e === null || typeof e != "object" && typeof e != "function", se = Array.isArray, ce = (e) => se(e) || typeof e?.[Symbol.iterator] == "function", le = "[ 	\n\f\r]", O = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, ue = /-->/g, de = />/g, k = RegExp(`>|${le}(?:([^\\s"'>=/]+)(${le}*=${le}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`, "g"), fe = /'/g, pe = /"/g, me = /^(?:script|style|textarea|title)$/i, he = (e) => (t, ...n) => ({
+var re = globalThis, ie = (e) => e, x = re.trustedTypes, ae = x ? x.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, S = "$lit$", C = `lit$${Math.random().toFixed(9).slice(2)}$`, oe = "?" + C, se = `<${oe}>`, w = document, T = () => w.createComment(""), E = (e) => e === null || typeof e != "object" && typeof e != "function", D = Array.isArray, ce = (e) => D(e) || typeof e?.[Symbol.iterator] == "function", le = "[ 	\n\f\r]", O = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, ue = /-->/g, de = />/g, k = RegExp(`>|${le}(?:([^\\s"'>=/]+)(${le}*=${le}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`, "g"), fe = /'/g, pe = /"/g, me = /^(?:script|style|textarea|title)$/i, he = (e) => (t, ...n) => ({
 	_$litType$: e,
 	strings: t,
 	values: n
-}), A = he(1), ge = he(2), j = Symbol.for("lit-noChange"), M = Symbol.for("lit-nothing"), _e = /* @__PURE__ */ new WeakMap(), N = T.createTreeWalker(T, 129);
+}), A = he(1), ge = he(2), j = Symbol.for("lit-noChange"), M = Symbol.for("lit-nothing"), _e = /* @__PURE__ */ new WeakMap(), N = w.createTreeWalker(w, 129);
 function ve(e, t) {
-	if (!se(e) || !e.hasOwnProperty("raw")) throw Error("invalid template strings array");
-	return ie === void 0 ? t : ie.createHTML(t);
+	if (!D(e) || !e.hasOwnProperty("raw")) throw Error("invalid template strings array");
+	return ae === void 0 ? t : ae.createHTML(t);
 }
 var ye = (e, t) => {
 	let n = e.length - 1, r = [], i, a = t === 2 ? "<svg>" : t === 3 ? "<math>" : "", o = O;
@@ -269,10 +269,10 @@ var ye = (e, t) => {
 		let n = e[t], s, c, l = -1, u = 0;
 		for (; u < n.length && (o.lastIndex = u, c = o.exec(n), c !== null);) u = o.lastIndex, o === O ? c[1] === "!--" ? o = ue : c[1] === void 0 ? c[2] === void 0 ? c[3] !== void 0 && (o = k) : (me.test(c[2]) && (i = RegExp("</" + c[2], "g")), o = k) : o = de : o === k ? c[0] === ">" ? (o = i ?? O, l = -1) : c[1] === void 0 ? l = -2 : (l = o.lastIndex - c[2].length, s = c[1], o = c[3] === void 0 ? k : c[3] === "\"" ? pe : fe) : o === pe || o === fe ? o = k : o === ue || o === de ? o = O : (o = k, i = void 0);
 		let d = o === k && e[t + 1].startsWith("/>") ? " " : "";
-		a += o === O ? n + oe : l >= 0 ? (r.push(s), n.slice(0, l) + C + n.slice(l) + w + d) : n + w + (l === -2 ? t : d);
+		a += o === O ? n + se : l >= 0 ? (r.push(s), n.slice(0, l) + S + n.slice(l) + C + d) : n + C + (l === -2 ? t : d);
 	}
 	return [ve(e, a + (e[n] || "<?>") + (t === 2 ? "</svg>" : t === 3 ? "</math>" : "")), r];
-}, P = class e {
+}, be = class e {
 	constructor({ strings: t, _$litType$: n }, r) {
 		let i;
 		this.parts = [];
@@ -283,57 +283,57 @@ var ye = (e, t) => {
 		}
 		for (; (i = N.nextNode()) !== null && c.length < s;) {
 			if (i.nodeType === 1) {
-				if (i.hasAttributes()) for (let e of i.getAttributeNames()) if (e.endsWith(C)) {
-					let t = u[o++], n = i.getAttribute(e).split(w), r = /([.?@])?(.*)/.exec(t);
+				if (i.hasAttributes()) for (let e of i.getAttributeNames()) if (e.endsWith(S)) {
+					let t = u[o++], n = i.getAttribute(e).split(C), r = /([.?@])?(.*)/.exec(t);
 					c.push({
 						type: 1,
 						index: a,
 						name: r[2],
 						strings: n,
-						ctor: r[1] === "." ? xe : r[1] === "?" ? Se : r[1] === "@" ? Ce : L
+						ctor: r[1] === "." ? Se : r[1] === "?" ? Ce : r[1] === "@" ? we : I
 					}), i.removeAttribute(e);
-				} else e.startsWith(w) && (c.push({
+				} else e.startsWith(C) && (c.push({
 					type: 6,
 					index: a
 				}), i.removeAttribute(e));
 				if (me.test(i.tagName)) {
-					let e = i.textContent.split(w), t = e.length - 1;
+					let e = i.textContent.split(C), t = e.length - 1;
 					if (t > 0) {
-						i.textContent = S ? S.emptyScript : "";
-						for (let n = 0; n < t; n++) i.append(e[n], E()), N.nextNode(), c.push({
+						i.textContent = x ? x.emptyScript : "";
+						for (let n = 0; n < t; n++) i.append(e[n], T()), N.nextNode(), c.push({
 							type: 2,
 							index: ++a
 						});
-						i.append(e[t], E());
+						i.append(e[t], T());
 					}
 				}
 			} else if (i.nodeType === 8) {
-				if (i.data === ae) c.push({
+				if (i.data === oe) c.push({
 					type: 2,
 					index: a
 				});
 				else {
 					let e = -1;
-					for (; (e = i.data.indexOf(w, e + 1)) !== -1;) c.push({
+					for (; (e = i.data.indexOf(C, e + 1)) !== -1;) c.push({
 						type: 7,
 						index: a
-					}), e += w.length - 1;
+					}), e += C.length - 1;
 				}
 			}
 			a++;
 		}
 	}
 	static createElement(e, t) {
-		let n = T.createElement("template");
+		let n = w.createElement("template");
 		return n.innerHTML = e, n;
 	}
 };
-function F(e, t, n = e, r) {
+function P(e, t, n = e, r) {
 	if (t === j) return t;
-	let i = r === void 0 ? n._$Cl : n._$Co?.[r], a = D(t) ? void 0 : t._$litDirective$;
-	return i?.constructor !== a && (i?._$AO?.(!1), a === void 0 ? i = void 0 : (i = new a(e), i._$AT(e, n, r)), r === void 0 ? n._$Cl = i : (n._$Co ??= [])[r] = i), i !== void 0 && (t = F(e, i._$AS(e, t.values), i, r)), t;
+	let i = r === void 0 ? n._$Cl : n._$Co?.[r], a = E(t) ? void 0 : t._$litDirective$;
+	return i?.constructor !== a && (i?._$AO?.(!1), a === void 0 ? i = void 0 : (i = new a(e), i._$AT(e, n, r)), r === void 0 ? n._$Cl = i : (n._$Co ??= [])[r] = i), i !== void 0 && (t = P(e, i._$AS(e, t.values), i, r)), t;
 }
-var be = class {
+var xe = class {
 	constructor(e, t) {
 		this._$AV = [], this._$AN = void 0, this._$AD = e, this._$AM = t;
 	}
@@ -344,23 +344,23 @@ var be = class {
 		return this._$AM._$AU;
 	}
 	u(e) {
-		let { el: { content: t }, parts: n } = this._$AD, r = (e?.creationScope ?? T).importNode(t, !0);
+		let { el: { content: t }, parts: n } = this._$AD, r = (e?.creationScope ?? w).importNode(t, !0);
 		N.currentNode = r;
 		let i = N.nextNode(), a = 0, o = 0, s = n[0];
 		for (; s !== void 0;) {
 			if (a === s.index) {
 				let t;
-				s.type === 2 ? t = new I(i, i.nextSibling, this, e) : s.type === 1 ? t = new s.ctor(i, s.name, s.strings, this, e) : s.type === 6 && (t = new we(i, this, e)), this._$AV.push(t), s = n[++o];
+				s.type === 2 ? t = new F(i, i.nextSibling, this, e) : s.type === 1 ? t = new s.ctor(i, s.name, s.strings, this, e) : s.type === 6 && (t = new Te(i, this, e)), this._$AV.push(t), s = n[++o];
 			}
 			a !== s?.index && (i = N.nextNode(), a++);
 		}
-		return N.currentNode = T, r;
+		return N.currentNode = w, r;
 	}
 	p(e) {
 		let t = 0;
 		for (let n of this._$AV) n !== void 0 && (n.strings === void 0 ? n._$AI(e[t]) : (n._$AI(e, n, t), t += n.strings.length - 2)), t++;
 	}
-}, I = class e {
+}, F = class e {
 	get _$AU() {
 		return this._$AM?._$AU ?? this._$Cv;
 	}
@@ -378,7 +378,7 @@ var be = class {
 		return this._$AB;
 	}
 	_$AI(e, t = this) {
-		e = F(this, e, t), D(e) ? e === M || e == null || e === "" ? (this._$AH !== M && this._$AR(), this._$AH = M) : e !== this._$AH && e !== j && this._(e) : e._$litType$ === void 0 ? e.nodeType === void 0 ? ce(e) ? this.k(e) : this._(e) : this.T(e) : this.$(e);
+		e = P(this, e, t), E(e) ? e === M || e == null || e === "" ? (this._$AH !== M && this._$AR(), this._$AH = M) : e !== this._$AH && e !== j && this._(e) : e._$litType$ === void 0 ? e.nodeType === void 0 ? ce(e) ? this.k(e) : this._(e) : this.T(e) : this.$(e);
 	}
 	O(e) {
 		return this._$AA.parentNode.insertBefore(e, this._$AB);
@@ -387,36 +387,36 @@ var be = class {
 		this._$AH !== e && (this._$AR(), this._$AH = this.O(e));
 	}
 	_(e) {
-		this._$AH !== M && D(this._$AH) ? this._$AA.nextSibling.data = e : this.T(T.createTextNode(e)), this._$AH = e;
+		this._$AH !== M && E(this._$AH) ? this._$AA.nextSibling.data = e : this.T(w.createTextNode(e)), this._$AH = e;
 	}
 	$(e) {
-		let { values: t, _$litType$: n } = e, r = typeof n == "number" ? this._$AC(e) : (n.el === void 0 && (n.el = P.createElement(ve(n.h, n.h[0]), this.options)), n);
+		let { values: t, _$litType$: n } = e, r = typeof n == "number" ? this._$AC(e) : (n.el === void 0 && (n.el = be.createElement(ve(n.h, n.h[0]), this.options)), n);
 		if (this._$AH?._$AD === r) this._$AH.p(t);
 		else {
-			let e = new be(r, this), n = e.u(this.options);
+			let e = new xe(r, this), n = e.u(this.options);
 			e.p(t), this.T(n), this._$AH = e;
 		}
 	}
 	_$AC(e) {
 		let t = _e.get(e.strings);
-		return t === void 0 && _e.set(e.strings, t = new P(e)), t;
+		return t === void 0 && _e.set(e.strings, t = new be(e)), t;
 	}
 	k(t) {
-		se(this._$AH) || (this._$AH = [], this._$AR());
+		D(this._$AH) || (this._$AH = [], this._$AR());
 		let n = this._$AH, r, i = 0;
-		for (let a of t) i === n.length ? n.push(r = new e(this.O(E()), this.O(E()), this, this.options)) : r = n[i], r._$AI(a), i++;
+		for (let a of t) i === n.length ? n.push(r = new e(this.O(T()), this.O(T()), this, this.options)) : r = n[i], r._$AI(a), i++;
 		i < n.length && (this._$AR(r && r._$AB.nextSibling, i), n.length = i);
 	}
 	_$AR(e = this._$AA.nextSibling, t) {
 		for (this._$AP?.(!1, !0, t); e !== this._$AB;) {
-			let t = re(e).nextSibling;
-			re(e).remove(), e = t;
+			let t = ie(e).nextSibling;
+			ie(e).remove(), e = t;
 		}
 	}
 	setConnected(e) {
 		this._$AM === void 0 && (this._$Cv = e, this._$AP?.(e));
 	}
-}, L = class {
+}, I = class {
 	get tagName() {
 		return this.element.tagName;
 	}
@@ -428,43 +428,43 @@ var be = class {
 	}
 	_$AI(e, t = this, n, r) {
 		let i = this.strings, a = !1;
-		if (i === void 0) e = F(this, e, t, 0), a = !D(e) || e !== this._$AH && e !== j, a && (this._$AH = e);
+		if (i === void 0) e = P(this, e, t, 0), a = !E(e) || e !== this._$AH && e !== j, a && (this._$AH = e);
 		else {
 			let r = e, o, s;
-			for (e = i[0], o = 0; o < i.length - 1; o++) s = F(this, r[n + o], t, o), s === j && (s = this._$AH[o]), a ||= !D(s) || s !== this._$AH[o], s === M ? e = M : e !== M && (e += (s ?? "") + i[o + 1]), this._$AH[o] = s;
+			for (e = i[0], o = 0; o < i.length - 1; o++) s = P(this, r[n + o], t, o), s === j && (s = this._$AH[o]), a ||= !E(s) || s !== this._$AH[o], s === M ? e = M : e !== M && (e += (s ?? "") + i[o + 1]), this._$AH[o] = s;
 		}
 		a && !r && this.j(e);
 	}
 	j(e) {
 		e === M ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, e ?? "");
 	}
-}, xe = class extends L {
+}, Se = class extends I {
 	constructor() {
 		super(...arguments), this.type = 3;
 	}
 	j(e) {
 		this.element[this.name] = e === M ? void 0 : e;
 	}
-}, Se = class extends L {
+}, Ce = class extends I {
 	constructor() {
 		super(...arguments), this.type = 4;
 	}
 	j(e) {
 		this.element.toggleAttribute(this.name, !!e && e !== M);
 	}
-}, Ce = class extends L {
+}, we = class extends I {
 	constructor(e, t, n, r, i) {
 		super(e, t, n, r, i), this.type = 5;
 	}
 	_$AI(e, t = this) {
-		if ((e = F(this, e, t, 0) ?? M) === j) return;
+		if ((e = P(this, e, t, 0) ?? M) === j) return;
 		let n = this._$AH, r = e === M && n !== M || e.capture !== n.capture || e.once !== n.once || e.passive !== n.passive, i = e !== M && (n === M || r);
 		r && this.element.removeEventListener(this.name, this, n), i && this.element.addEventListener(this.name, this, e), this._$AH = e;
 	}
 	handleEvent(e) {
 		typeof this._$AH == "function" ? this._$AH.call(this.options?.host ?? this.element, e) : this._$AH.handleEvent(e);
 	}
-}, we = class {
+}, Te = class {
 	constructor(e, t, n) {
 		this.element = e, this.type = 6, this._$AN = void 0, this._$AM = t, this.options = n;
 	}
@@ -472,33 +472,33 @@ var be = class {
 		return this._$AM._$AU;
 	}
 	_$AI(e) {
-		F(this, e);
+		P(this, e);
 	}
-}, Te = {
-	M: C,
-	P: w,
-	A: ae,
+}, Ee = {
+	M: S,
+	P: C,
+	A: oe,
 	C: 1,
 	L: ye,
-	R: be,
+	R: xe,
 	D: ce,
-	V: F,
-	I,
-	H: L,
-	N: Se,
-	U: Ce,
-	B: xe,
-	F: we
-}, Ee = x.litHtmlPolyfillSupport;
-Ee?.(P, I), (x.litHtmlVersions ??= []).push("3.3.3");
-var De = (e, t, n) => {
+	V: P,
+	I: F,
+	H: I,
+	N: Ce,
+	U: we,
+	B: Se,
+	F: Te
+}, De = re.litHtmlPolyfillSupport;
+De?.(be, F), (re.litHtmlVersions ??= []).push("3.3.3");
+var Oe = (e, t, n) => {
 	let r = n?.renderBefore ?? t, i = r._$litPart$;
 	if (i === void 0) {
 		let e = n?.renderBefore ?? null;
-		r._$litPart$ = i = new I(t.insertBefore(E(), e), e, void 0, n ?? {});
+		r._$litPart$ = i = new F(t.insertBefore(T(), e), e, void 0, n ?? {});
 	}
 	return i._$AI(e), i;
-}, R = globalThis, z = class extends b {
+}, ke = globalThis, L = class extends b {
 	constructor() {
 		super(...arguments), this.renderOptions = { host: this }, this._$Do = void 0;
 	}
@@ -508,7 +508,7 @@ var De = (e, t, n) => {
 	}
 	update(e) {
 		let t = this.render();
-		this.hasUpdated || (this.renderOptions.isConnected = this.isConnected), super.update(e), this._$Do = De(t, this.renderRoot, this.renderOptions);
+		this.hasUpdated || (this.renderOptions.isConnected = this.isConnected), super.update(e), this._$Do = Oe(t, this.renderRoot, this.renderOptions);
 	}
 	connectedCallback() {
 		super.connectedCallback(), this._$Do?.setConnected(!0);
@@ -520,18 +520,18 @@ var De = (e, t, n) => {
 		return j;
 	}
 };
-z._$litElement$ = !0, z.finalized = !0, R.litElementHydrateSupport?.({ LitElement: z });
-var Oe = R.litElementPolyfillSupport;
-Oe?.({ LitElement: z }), (R.litElementVersions ??= []).push("4.2.2");
+L._$litElement$ = !0, L.finalized = !0, ke.litElementHydrateSupport?.({ LitElement: L });
+var Ae = ke.litElementPolyfillSupport;
+Ae?.({ LitElement: L }), (ke.litElementVersions ??= []).push("4.2.2");
 //#endregion
 //#region node_modules/@lit/reactive-element/decorators/property.js
-var ke = {
+var je = {
 	attribute: !0,
 	type: String,
-	converter: v,
+	converter: y,
 	reflect: !1,
-	hasChanged: y
-}, Ae = (e = ke, t, n) => {
+	hasChanged: te
+}, Me = (e = je, t, n) => {
 	let { kind: r, metadata: i } = n, a = globalThis.litPropertyMetadata.get(i);
 	if (a === void 0 && globalThis.litPropertyMetadata.set(i, a = /* @__PURE__ */ new Map()), r === "setter" && ((e = Object.create(e)).wrapped = !0), a.set(n.name, e), r === "accessor") {
 		let { name: r } = n;
@@ -554,16 +554,16 @@ var ke = {
 	}
 	throw Error("Unsupported decorator location: " + r);
 };
-function B(e) {
-	return (t, n) => typeof n == "object" ? Ae(e, t, n) : ((e, t, n) => {
+function R(e) {
+	return (t, n) => typeof n == "object" ? Me(e, t, n) : ((e, t, n) => {
 		let r = t.hasOwnProperty(n);
 		return t.constructor.createProperty(n, e), r ? Object.getOwnPropertyDescriptor(t, n) : void 0;
 	})(e, t, n);
 }
 //#endregion
 //#region node_modules/@lit/reactive-element/decorators/state.js
-function V(e) {
-	return B({
+function z(e) {
+	return R({
 		...e,
 		state: !0,
 		attribute: !1
@@ -571,10 +571,10 @@ function V(e) {
 }
 //#endregion
 //#region node_modules/@lit/reactive-element/decorators/base.js
-var je = (e, t, n) => (n.configurable = !0, n.enumerable = !0, Reflect.decorate && typeof t != "object" && Object.defineProperty(e, t, n), n);
+var Ne = (e, t, n) => (n.configurable = !0, n.enumerable = !0, Reflect.decorate && typeof t != "object" && Object.defineProperty(e, t, n), n);
 //#endregion
 //#region node_modules/@lit/reactive-element/decorators/query.js
-function Me(e, t) {
+function B(e, t) {
 	return (n, r, i) => {
 		let a = (t) => t.renderRoot?.querySelector(e) ?? null;
 		if (t) {
@@ -589,19 +589,19 @@ function Me(e, t) {
 					}
 				};
 			})();
-			return je(n, r, { get() {
+			return Ne(n, r, { get() {
 				let n = e.call(this);
 				return n === void 0 && (n = a(this), (n !== null || this.hasUpdated) && t.call(this, n)), n;
 			} });
 		}
-		return je(n, r, { get() {
+		return Ne(n, r, { get() {
 			return a(this);
 		} });
 	};
 }
 //#endregion
 //#region src/i18n/de.ts
-var Ne = {
+var Pe = {
 	"tab.overview": "Übersicht",
 	"tab.plan": "Plan",
 	"tab.review": "Rückblick",
@@ -1269,6 +1269,7 @@ var Ne = {
 	"overview.night.empty.title": "Noch kein |Plan",
 	"overview.night.empty.text": "Sobald ich deine Speicher und deinen Tarif kenne, rechne ich hier jede Nacht aus, wie viel ich lade – und warum.",
 	"plan.day": "Netzdienlich: Bis {time} Uhr geht die Morgensonne ins Netz (etwa {kwh} kWh), dann lädt der Speicher in der Mittagsspitze.",
+	"plan.day.buffer": "Netzdienlich: Ich lade erst bis {level} % als Puffer für dich, dann bekommt das Netz die Morgensonne (etwa {kwh} kWh), ab {time} Uhr lade ich voll.",
 	"plan.day.cost": "Kostet etwa {cost}.",
 	"plan.title": "Hier |rechne ich",
 	"history.title": "Jeder Tag |unter der Lupe",
@@ -1647,7 +1648,27 @@ var Ne = {
 	"tip.r_transfer_guard.title": "Was macht der Speicher-Wächter?",
 	"tip.r_transfer_guard.text": "Speicher-Wächter: Ich greife ein, wenn sich Speicher gegenseitig laden. Lädt einer mit mehr als 20 W, während ein anderer mit mehr als 20 W entlädt, und das 20 Sekunden lang, starte ich zuerst die Regelung des Speichers neu, der meistens schuld ist (beim Marstek den PD-Regler von Omnibattery). Hilft das nach 20 Sekunden nicht, sperre ich bei ihm kurz die Richtung, in die er gerade läuft – 5 Sekunden lang. Läuft es dann immer noch gegeneinander, melde ich mich bei dir.",
 	"tip.r_transfer_guard.hint": "Das gilt auch ohne „Nacheinander“. Ich schreibe nur im Live-Betrieb, sonst sage ich nur, was ich tun würde. Nachts, wenn ich selbst steuere, greife ich nicht ein. Macht das schon eine Automation von dir, lasse ich ihr den Vortritt.",
+	"rule.morning_buffer": "Puffer am netzdienlichen Morgen",
+	"rule.morning_buffer.auto": "Automatisch",
+	"rule.morning_buffer.auto_n": "Automatisch ({soc} %)",
+	"rule.morning_buffer.own": "Eigener Wert",
+	"rule.morning_buffer.own_label": "Eigener Puffer in Prozent",
+	"rule.morning_buffer.off_hint": "Gilt nur, wenn „Netzdienlich verhalten“ an ist (Einstellungen › Betrieb).",
+	"rule.morning_buffer.learned_hint": "Morgens lade ich erst bis {soc} % aus der Sonne – so viel braucht dein Haus an sonnigen Vormittagen meist über die Sonne hinaus (etwa {kwh} kWh), plus etwas Reserve. Dann bekommt das Netz die Morgensonne.",
+	"rule.morning_buffer.start_hint": "Morgens lade ich erst bis {soc} % aus der Sonne, dann bekommt das Netz die Morgensonne. Den Wert schätze ich, bis ich genug sonnige Vormittage bei dir gesehen habe.",
+	"rule.morning_buffer.pending_hint": "Morgens lade ich erst einen Puffer aus der Sonne, dann bekommt das Netz die Morgensonne. Wie viel, sage ich, sobald ich den nächsten Plan gerechnet habe.",
+	"rule.morning_buffer.own_hint": "Morgens lade ich erst bis {soc} % aus der Sonne, dann bekommt das Netz die Morgensonne.",
+	"tip.r_morning_buffer.title": "Wozu der Puffer?",
+	"tip.r_morning_buffer.text": "Am netzdienlichen Morgen lasse ich die Morgensonne ins Netz und lade den Speicher erst mittags voll. Damit du dabei nichts aus dem Netz kaufen musst, lade ich vorher einen kleinen Puffer: Zieht eine Wolke durch oder läuft der Backofen und das Haus braucht mehr, als die Sonne gerade liefert, kommt der Strom aus dem Speicher.\nSinkt der Speicher unter den Puffer, lade ich ihn aus der Sonne wieder auf – nie aus dem Netz. Erst dann halte ich das Laden wieder zurück.",
+	"tip.r_morning_buffer.hint": "Nie weniger als deine Reserve. Arbeiten mehrere Speicher nacheinander, hält ihn der, der morgens zuerst entlädt.",
+	"tip.r_morning_buffer_auto.title": "Wie rechne ich den Vorschlag?",
+	"tip.r_morning_buffer_auto.text": "Ich schaue mir deine sonnigen Vormittage an: Wie viel Strom brauchte das Haus zwischen dem Moment, ab dem die Sonne reicht, und der Mittagsspitze zusätzlich – weil eine Wolke kam oder ein großes Gerät lief? Was an den meisten Tagen gereicht hätte, nehme ich mal 1,25 als Sicherheit und lege es auf deine Reserve.\nDas lerne ich über Jahre und vergesse nichts – neue Tage zählen etwas mehr.",
+	"tip.r_morning_buffer_auto.hint": "Höchstens 60 %, sonst bliebe für das Netz kaum Morgensonne.",
+	"tip.r_morning_buffer_own.title": "Eigener Puffer",
+	"tip.r_morning_buffer_own.text": "Bis zu diesem Ladestand lade ich morgens aus der Sonne. Mehr Puffer ist sicherer, lässt aber weniger Morgensonne fürs Netz. Weniger Puffer gibt dem Netz mehr – dafür kann bei einer Wolke etwas aus dem Netz kommen.",
+	"tip.r_morning_buffer_own.hint": "Liegt der Wert unter deiner Reserve, nehme ich die Reserve.",
 	"signpost.rule_transfer_guard.terms": "Wächter, gegenseitig laden, gegeneinander, Transfer, PD-Regler, Omnibattery, Marstek, Venus",
+	"signpost.rule_morning_buffer.terms": "Puffer, netzdienlich, Morgensonne, Vormittag, Wolke, Backofen, Reserve am Morgen",
 	"rule.day_caution": "Wie vorsichtig?",
 	"rule.day_caution.tight": "Knapp",
 	"rule.day_caution.normal": "Normal",
@@ -1843,7 +1864,7 @@ var Ne = {
 	"tip.r_min_saving.title": "Warum eine Mindestersparnis?",
 	"tip.r_min_saving.text": "Jedes Mal, wenn ich steuere, schreibe ich Werte in deine Geräte. Bringt eine Nacht weniger als diesen Betrag, lasse ich es und die Speicher laufen wie ohne mich. Pflegenächte sind ausgenommen.",
 	"tip.r_grid_friendly.title": "Was heißt netzdienlich?",
-	"tip.r_grid_friendly.text": "Mittags liefern alle Solaranlagen gleichzeitig am meisten – dann ist das Netz voll. Morgens und abends brauchen alle Strom – dann ist es knapp.\n**Speicher**: An sonnigen Tagen halte ich das Laden morgens zurück, der Überschuss geht ins Netz, und der Speicher lädt in der Mittagsspitze. Ich rechne vorsichtig mit 80 % der Prognose und gebe früher frei, wenn die Sonne zurückbleibt. Das geht bei Speichern, deren Ladeleistung ich begrenzen kann.\n**Morgens und abends** nimmt das Haus Strom aus dem Speicher statt aus dem Netz.\n**Auto**: Fährt es erst nachmittags, lädt es mit Sonne statt nachts.",
+	"tip.r_grid_friendly.text": "Mittags liefern alle Solaranlagen gleichzeitig am meisten – dann ist das Netz voll. Morgens und abends brauchen alle Strom – dann ist es knapp.\n**Speicher**: An sonnigen Tagen lade ich morgens erst einen kleinen Puffer aus der Sonne, dann halte ich das Laden zurück, der Überschuss geht ins Netz, und der Speicher lädt in der Mittagsspitze voll. Ich rechne vorsichtig mit 80 % der Prognose und gebe früher frei, wenn die Sonne zurückbleibt. Das geht bei Speichern, deren Ladeleistung ich begrenzen kann.\n**Morgens und abends** nimmt das Haus Strom aus dem Speicher statt aus dem Netz.\n**Auto**: Fährt es erst nachmittags, lädt es mit Sonne statt nachts.",
 	"tip.r_grid_friendly.hint": "Steuern tue ich das nur in den Modi „Vorschlagen“ und „Live“, in der Simulation zeige ich es nur.",
 	"tip.r_grid_first.title": "Ersparnis oder Netz?",
 	"tip.r_grid_first.text": "**Ersparnis**: Ich warte morgens nur so lange, dass der Speicher trotzdem so voll wird wie sonst – es kostet dich nichts.\n**Netz**: Ich warte auch länger, wenn der Speicher dann nicht ganz voll wird – das darf bis zu 30 ct am Tag kosten.",
@@ -3054,6 +3075,7 @@ var Ne = {
 	"devices.status.nothing": "Heute Nacht gibt es nichts zu tun.",
 	"devices.status.no_plan": "Noch kein Plan für heute Nacht.",
 	"devices.status.day": "Netzdienlich: Ich halte das Laden der Speicher bis {time} Uhr zurück – die Morgensonne geht ins Netz.",
+	"devices.status.day_buffer": "Netzdienlich: Ich lade erst bis {level} % als Puffer für dich, dann bekommt das Netz die Morgensonne – ab {time} Uhr lade ich voll.",
 	"devices.status.done": "Die Nacht ist vorbei, alles ist zurückgestellt.",
 	"devices.pending": "Ein paar Werte stehen noch nicht wieder auf ihrem Ausgangswert. Ich versuche es weiter.",
 	"devices.power.charge": "lädt mit {value} kW",
@@ -3069,6 +3091,8 @@ var Ne = {
 	"devices.action.hold": "Hält bei {floor} %",
 	"devices.action.block": "Entladen gesperrt, solange ein anderer lädt",
 	"devices.action.defer": "Lädt erst ab {until} Uhr – die Morgensonne geht ins Netz",
+	"devices.action.buffer": "Lädt aus der Sonne bis {level} % – dein Puffer für den Vormittag",
+	"devices.action.defer_buffer": "Puffer {level} % da – lädt erst ab {until} Uhr weiter, die Morgensonne geht ins Netz",
 	"devices.action.free": "Frei – ich greife nicht ein",
 	"devices.action.watch": "Nur beobachtet",
 	"devices.action.idle": "Frei – ich greife gerade nicht ein",
@@ -3298,7 +3322,7 @@ var Ne = {
 	"team.style.auto": "Automatisch (empfohlen)",
 	"team.style.auto.text": "Nacheinander – aber der nächste lädt mit, wenn mehr Sonne kommt, als einer aufnehmen kann, und hilft bei großer Last.",
 	"team.style.strict": "Nur nacheinander",
-	"team.style.strict.text": "Immer nur einer. Der nächste lädt nur mit, wenn sonst nicht beide bis zum Abend voll würden.",
+	"team.style.strict.text": "Immer nur einer – auch an schwachen Tagen. Der nächste wartet, bis der erste voll ist.",
 	"team.style.base": "Grundlast teilen",
 	"team.style.base.text": "Der nächste liefert ständig einen kleinen Sockel, der erste den Rest.",
 	"team.style.base.warn": "Achtung: Bei kleinen Lasten verlierst du so mehr als nacheinander, weil Wechselrichter bei wenig Leistung schlecht arbeiten.",
@@ -3315,8 +3339,8 @@ var Ne = {
 	"tip.team_style_auto.text": "Grundsätzlich nacheinander. Zeigt die Vorhersage mehr Sonne, als der erste aufnehmen kann, oder geht gerade Sonne ins Netz, lädt der nächste mit. Braucht das Haus länger als eine Minute mehr, als der erste liefern kann, entlädt der nächste mit. Danach wartet er wieder.",
 	"tip.team_style_auto.hint": "Empfohlen – so geht am wenigsten Sonne ins Netz und keiner lädt den anderen.",
 	"tip.team_style_strict.title": "Nur nacheinander",
-	"tip.team_style_strict.text": "Immer nur ein Speicher arbeitet. Kein früheres Mitladen und keine Hilfe bei großer Last. Nur wenn sonst nicht beide bis zum Abend voll würden, laden beide (so war es bisher).",
-	"tip.team_style_strict.hint": "Dabei kann mittags Sonne ins Netz gehen, obwohl der zweite noch Platz hätte.",
+	"tip.team_style_strict.text": "Immer nur ein Speicher arbeitet. Kein früheres Mitladen, keine Hilfe bei großer Last und auch an schwachen Tagen kein gemeinsames Laden.",
+	"tip.team_style_strict.hint": "Dabei kann Sonne ins Netz gehen, obwohl der zweite noch Platz hätte, und an schwachen Tagen wird der zweite vielleicht nicht voll.",
 	"tip.team_style_base.title": "Grundlast teilen",
 	"tip.team_style_base.text": "Braucht das Haus Strom, liefert der nächste Speicher einen festen Sockel: den unteren Verbrauch der letzten halben Stunde (das, was fast immer läuft – nicht den Durchschnitt). Den Rest liefert der erste. Ich führe den Sockel laufend nach.",
 	"tip.team_style_base.hint": "Geht nur, wenn ich beim nächsten Speicher die Entladeleistung in Watt vorgeben kann (z. B. Marstek über Omnibattery).",
@@ -3424,6 +3448,7 @@ var Ne = {
 	"log.night_cap_works": "{battery}: Die Ladegrenze hält auch beim Laden aus dem Netz ({cap} kW)",
 	"log.external": "{entity} hat jemand anderes geändert – ich lasse es so",
 	"log.released": "Alles zurückgestellt",
+	"log.released.day_buffer": "Ladegrenze zurückgestellt – der Speicher lädt aus der Sonne wieder bis zum Puffer",
 	"log.release_failed": "Zurückstellen hat noch nicht ganz geklappt",
 	"log.failed": "{battery}: {entity} ließ sich nicht schreiben",
 	"log.emergency": "Sofort freigegeben",
@@ -3452,6 +3477,9 @@ var Ne = {
 	"log.surplus_end.no_plan": "Tagsüber Überschuss beendet: keine Vorhersage – Speicher laden wieder normal",
 	"log.surplus_end.no_battery": "Tagsüber Überschuss beendet: kein Speicher kann mehr mitmachen",
 	"log.day": "Netzdienlicher Morgen: Speicher laden erst ab {until} Uhr, die Morgensonne geht ins Netz",
+	"log.day.buffer": "Netzdienlicher Morgen: Speicher laden erst bis {level} % als Puffer, dann geht die Morgensonne bis {until} Uhr ins Netz",
+	"log.day_buffer.fill": "{battery}: unter dem Puffer ({soc} %) – lädt aus der Sonne bis {level} %",
+	"log.day_buffer.hold": "{battery}: Puffer {level} % erreicht – jetzt bekommt das Netz die Morgensonne",
 	"log.day_released": "Netzdienlicher Morgen vorzeitig beendet: die Sonne hinkt hinterher ({remaining} kWh übrig, {headroom} kWh Platz) – Speicher laden jetzt",
 	"log.team_handover": "Speicherwechsel: {battery} ist jetzt dran (vorher {previous})",
 	"log.team_handover.empty": "Speicherwechsel: {previous} ist leer ({level} %) – {battery} übernimmt",
@@ -3783,7 +3811,7 @@ var Ne = {
 	"error.action": "Fehler beim Speichern",
 	loading: "Joe sattelt auf …",
 	"menu.sidebar": "Home-Assistant-Menü"
-}, Pe = {
+}, Fe = {
 	"tab.overview": "Overview",
 	"tab.plan": "Plan",
 	"tab.review": "Review",
@@ -4451,6 +4479,7 @@ var Ne = {
 	"overview.night.empty.title": "No plan |yet",
 	"overview.night.empty.text": "Once I know your batteries and your tariff, I'll work out here every night how much to charge – and why.",
 	"plan.day": "Grid-friendly: until {time} the morning sun goes to the grid (about {kwh} kWh), then the battery charges at the midday peak.",
+	"plan.day.buffer": "Grid-friendly: I first charge up to {level} % as a buffer for you, then the grid gets the morning sun (about {kwh} kWh), from {time} I charge full.",
 	"plan.day.cost": "Costs about {cost}.",
 	"plan.title": "Where I |do the math",
 	"history.title": "Every day |up close",
@@ -4829,7 +4858,27 @@ var Ne = {
 	"tip.r_transfer_guard.title": "What does the battery watchdog do?",
 	"tip.r_transfer_guard.text": "Battery watchdog: I step in when batteries charge each other. If one charges with more than 20 W while another discharges with more than 20 W, for 20 seconds, I first restart the own control of the battery that is usually the cause (for a Marstek, Omnibattery's PD controller). If that has not helped after 20 seconds, I briefly block the direction it is running in – for 5 seconds. If they still run against each other after that, I let you know.",
 	"tip.r_transfer_guard.hint": "This works without “One after the other”, too. I only write in live mode; otherwise I only say what I would do. At night, while I steer myself, I do not step in. If one of your automations already does this, I leave it to that one.",
+	"rule.morning_buffer": "Buffer on a grid-friendly morning",
+	"rule.morning_buffer.auto": "Automatic",
+	"rule.morning_buffer.auto_n": "Automatic ({soc} %)",
+	"rule.morning_buffer.own": "My own value",
+	"rule.morning_buffer.own_label": "Own buffer in percent",
+	"rule.morning_buffer.off_hint": "Only applies while “Be grid-friendly” is on (Settings › Operation).",
+	"rule.morning_buffer.learned_hint": "In the morning I first charge up to {soc} % from the sun – that is what your home usually needs beyond the sun on sunny mornings (about {kwh} kWh), plus a little extra. Then the grid gets the morning sun.",
+	"rule.morning_buffer.start_hint": "In the morning I first charge up to {soc} % from the sun, then the grid gets the morning sun. I estimate this until I have seen enough sunny mornings at your place.",
+	"rule.morning_buffer.pending_hint": "In the morning I first charge a buffer from the sun, then the grid gets the morning sun. How much, I'll tell you once I have worked out the next plan.",
+	"rule.morning_buffer.own_hint": "In the morning I first charge up to {soc} % from the sun, then the grid gets the morning sun.",
+	"tip.r_morning_buffer.title": "What is the buffer for?",
+	"tip.r_morning_buffer.text": "On a grid-friendly morning I let the morning sun go to the grid and fill the battery only at midday. So you don't have to buy from the grid meanwhile, I first charge a small buffer: when a cloud passes or the oven runs and the home needs more than the sun gives right now, the power comes from the battery.\nIf the battery drops below the buffer, I charge it again from the sun – never from the grid. Only then do I hold back charging again.",
+	"tip.r_morning_buffer.hint": "Never less than your reserve. With several batteries working one after the other, the one that discharges first in the morning keeps it.",
+	"tip.r_morning_buffer_auto.title": "How do I work out the suggestion?",
+	"tip.r_morning_buffer_auto.text": "I look at your sunny mornings: how much extra power did the home need between the moment the sun covers it and the midday peak – because a cloud came or a big appliance ran? What would have been enough on most days, I take times 1.25 for safety and put on top of your reserve.\nI learn this over years and forget nothing – recent days count a little more.",
+	"tip.r_morning_buffer_auto.hint": "At most 60 %, otherwise hardly any morning sun would be left for the grid.",
+	"tip.r_morning_buffer_own.title": "Own buffer",
+	"tip.r_morning_buffer_own.text": "Up to this level I charge from the sun in the morning. More buffer is safer but leaves less morning sun for the grid. Less buffer gives the grid more – but on a cloud a little may come from the grid.",
+	"tip.r_morning_buffer_own.hint": "If the value is below your reserve, I use the reserve.",
 	"signpost.rule_transfer_guard.terms": "watchdog, charge each other, against each other, transfer, PD controller, Omnibattery, Marstek, Venus",
+	"signpost.rule_morning_buffer.terms": "buffer, grid-friendly, morning sun, forenoon, cloud, oven, morning reserve",
 	"rule.day_caution": "How careful?",
 	"rule.day_caution.tight": "Tight",
 	"rule.day_caution.normal": "Normal",
@@ -5025,7 +5074,7 @@ var Ne = {
 	"tip.r_min_saving.title": "Why a minimum saving?",
 	"tip.r_min_saving.text": "Every time I take control, I write values into your devices. If a night would bring less than this amount, I skip it and the batteries run as if I weren't there. Maintenance nights are exempt.",
 	"tip.r_grid_friendly.title": "What does grid-friendly mean?",
-	"tip.r_grid_friendly.text": "At midday all solar systems deliver the most at once – the grid is full. In the morning and evening everyone needs power – it is short.\n**Batteries**: On sunny days I hold back charging in the morning, the surplus goes to the grid and the battery charges at the midday peak. I take only 80 % of the forecast and let go early when the sun lags. This works with batteries whose charging power I can limit.\n**Morning and evening** the home takes power from the battery instead of the grid.\n**Car**: If it leaves only in the afternoon, it charges with the sun instead of at night.",
+	"tip.r_grid_friendly.text": "At midday all solar systems deliver the most at once – the grid is full. In the morning and evening everyone needs power – it is short.\n**Batteries**: On sunny days I first charge a small buffer from the sun in the morning, then I hold back charging, the surplus goes to the grid and the battery fills at the midday peak. I take only 80 % of the forecast and let go early when the sun lags. This works with batteries whose charging power I can limit.\n**Morning and evening** the home takes power from the battery instead of the grid.\n**Car**: If it leaves only in the afternoon, it charges with the sun instead of at night.",
 	"tip.r_grid_friendly.hint": "I only steer this in the modes “Suggest” and “Live”; in simulation I only show it.",
 	"tip.r_grid_first.title": "Saving or grid?",
 	"tip.r_grid_first.text": "**Saving**: I only wait in the morning as long as the battery still gets as full as otherwise – it costs you nothing.\n**Grid**: I also wait longer when the battery then doesn't get quite full – that may cost up to 30 ct a day.",
@@ -6236,6 +6285,7 @@ var Ne = {
 	"devices.status.nothing": "Nothing to do tonight.",
 	"devices.status.no_plan": "No plan for tonight yet.",
 	"devices.status.day": "Grid-friendly: I hold back charging the batteries until {time} – the morning sun goes to the grid.",
+	"devices.status.day_buffer": "Grid-friendly: I first charge up to {level} % as a buffer for you, then the grid gets the morning sun – from {time} I charge full.",
 	"devices.status.done": "The night is over, everything is back.",
 	"devices.pending": "A few values are not back where they were yet. I keep trying.",
 	"devices.power.charge": "charging at {value} kW",
@@ -6251,6 +6301,8 @@ var Ne = {
 	"devices.action.hold": "Holding at {floor} %",
 	"devices.action.block": "No discharge while another one charges",
 	"devices.action.defer": "Charges only from {until} – the morning sun goes to the grid",
+	"devices.action.buffer": "Charges from the sun up to {level} % – your buffer for the morning",
+	"devices.action.defer_buffer": "Buffer of {level} % reached – charges again from {until}, the morning sun goes to the grid",
 	"devices.action.free": "Free – I don't interfere",
 	"devices.action.watch": "Watched only",
 	"devices.action.idle": "Free – I don't interfere right now",
@@ -6480,7 +6532,7 @@ var Ne = {
 	"team.style.auto": "Automatic (recommended)",
 	"team.style.auto.text": "One after the other – but the next one charges along when more sun comes than one can take, and helps with big loads.",
 	"team.style.strict": "One after the other only",
-	"team.style.strict.text": "Always just one. The next one only charges along if otherwise not both would be full by the evening.",
+	"team.style.strict.text": "Always just one – on weak days too. The next one waits until the first is full.",
 	"team.style.base": "Share the base load",
 	"team.style.base.text": "The next one always supplies a small base, the first one the rest.",
 	"team.style.base.warn": "Note: with small loads you lose more this way than one after the other, because inverters work poorly at low power.",
@@ -6497,8 +6549,8 @@ var Ne = {
 	"tip.team_style_auto.text": "One after the other in principle. If the forecast shows more sun than the first can take, or sun is going to the grid right now, the next one charges along. If the house needs more than the first can deliver for longer than a minute, the next one discharges too. Afterwards it waits again.",
 	"tip.team_style_auto.hint": "Recommended – the least sun goes to the grid and neither charges the other.",
 	"tip.team_style_strict.title": "One after the other only",
-	"tip.team_style_strict.text": "Only one battery works at a time. No earlier charging along and no help with big loads. Only if otherwise not both would be full by the evening do both charge (as before).",
-	"tip.team_style_strict.hint": "At noon, sun may go to the grid although the second one would still have room.",
+	"tip.team_style_strict.text": "Only one battery works at a time. No earlier charging along, no help with big loads, and no charging side by side on weak days either.",
+	"tip.team_style_strict.hint": "Sun may go to the grid although the second one would still have room, and on weak days the second may not get full.",
 	"tip.team_style_base.title": "Share the base load",
 	"tip.team_style_base.text": "When the house needs power, the next battery supplies a fixed base: the lower consumption of the last half hour (what is almost always running – not the average). The first one delivers the rest. I keep adjusting the base.",
 	"tip.team_style_base.hint": "Only works if I can set the next battery's discharge power in watts (e.g. Marstek via Omnibattery).",
@@ -6606,6 +6658,7 @@ var Ne = {
 	"log.night_cap_works": "{battery}: the charge limit holds while charging from the grid, too ({cap} kW)",
 	"log.external": "Someone else changed {entity} – I leave it",
 	"log.released": "Everything put back",
+	"log.released.day_buffer": "Charge limit set back – the battery charges from the sun up to the buffer again",
 	"log.release_failed": "Putting back did not fully work yet",
 	"log.failed": "{battery}: {entity} could not be written",
 	"log.emergency": "Released right away",
@@ -6634,6 +6687,9 @@ var Ne = {
 	"log.surplus_end.no_plan": "Daytime surplus ended: no forecast – batteries charge normally again",
 	"log.surplus_end.no_battery": "Daytime surplus ended: no battery can take part any more",
 	"log.day": "Grid-friendly morning: batteries charge only from {until}, the morning sun goes to the grid",
+	"log.day.buffer": "Grid-friendly morning: batteries first charge up to {level} % as a buffer, then the morning sun goes to the grid until {until}",
+	"log.day_buffer.fill": "{battery}: below the buffer ({soc} %) – charges from the sun up to {level} %",
+	"log.day_buffer.hold": "{battery}: buffer of {level} % reached – now the grid gets the morning sun",
 	"log.day_released": "Grid-friendly morning ended early: the sun lags behind ({remaining} kWh left, {headroom} kWh of room) – batteries charge now",
 	"log.team_handover": "Battery change: {battery} is up now (before: {previous})",
 	"log.team_handover.empty": "Battery change: {previous} is empty ({level} %) – {battery} takes over",
@@ -6965,22 +7021,22 @@ var Ne = {
 	"error.action": "Saving failed",
 	loading: "Joe is saddling up …",
 	"menu.sidebar": "Home Assistant menu"
-}, Fe = /* @__PURE__ */ new Map();
-function Ie(e, t) {
+}, Ie = /* @__PURE__ */ new Map();
+function Le(e, t) {
 	return e.replace(/\{(\w+)\}/g, (e, n) => String(t?.[n] ?? ""));
 }
-function Le(e) {
-	let t = e || "en", n = Fe.get(t);
-	if (n) return n;
-	let r = t.startsWith("de") ? Ne : Pe, i = ((e, t) => Ie(r[e], t));
-	return i.optional = (e, t) => e in r ? Ie(r[e], t) : void 0, Object.defineProperty(i, "lang", { value: t }), Fe.set(t, i), i;
-}
 function Re(e) {
+	let t = e || "en", n = Ie.get(t);
+	if (n) return n;
+	let r = t.startsWith("de") ? Pe : Fe, i = ((e, t) => Le(r[e], t));
+	return i.optional = (e, t) => e in r ? Le(r[e], t) : void 0, Object.defineProperty(i, "lang", { value: t }), Ie.set(t, i), i;
+}
+function ze(e) {
 	return e.split("|");
 }
 //#endregion
 //#region src/components/bits.ts
-var ze = A`<svg
+var Be = A`<svg
   class="swoosh"
   viewBox="0 0 300 16"
   preserveAspectRatio="none"
@@ -6988,11 +7044,11 @@ var ze = A`<svg
 >
   <path d="M2 13 C 70 5, 190 1, 298 3 L 298 6 C 190 5, 80 9, 4 15 Z" fill="currentColor" />
 </svg>`;
-function Be(e, t = "h2", n) {
-	let r = Re(e), i = r.length - 1, a = r.map((e, t) => t === i && r.length > 1 ? A`<span class="hl">${e}</span>` : e.endsWith("!") ? A`${e}<br />` : A`${e}`), o = n ? A`<span class="title-tip">${n}</span>` : "";
+function Ve(e, t = "h2", n) {
+	let r = ze(e), i = r.length - 1, a = r.map((e, t) => t === i && r.length > 1 ? A`<span class="hl">${e}</span>` : e.endsWith("!") ? A`${e}<br />` : A`${e}`), o = n ? A`<span class="title-tip">${n}</span>` : "";
 	return t === "h1" ? A`<h1 class="display">${a}${o}</h1>` : A`<h2 class="display">${a}${o}</h2>`;
 }
-function Ve(e, t) {
+function He(e, t) {
 	let n = t >= .85 ? 4 : t >= .65 ? 3 : t >= .45 ? 2 : 1, r = e(`conf.${n}`);
 	return A`<span class="conf" role="img" aria-label=${r} title=${r}>
     ${[
@@ -7003,27 +7059,27 @@ function Ve(e, t) {
 	].map((e) => A`<i class=${e <= n ? "on" : ""}></i>`)}
   </span>`;
 }
-var He = {
+var Ue = {
 	read: "mdi:eye-outline",
 	learned: "mdi:auto-fix",
 	user: "mdi:account-edit-outline",
 	default: "mdi:tune-variant"
 };
-function Ue(e, t) {
+function We(e, t) {
 	let n = t?.source ?? "default";
 	return A`<span class="chip ${n}"
-    ><ha-icon icon=${He[n]}></ha-icon>${e(`source.${n}`)}</span
+    ><ha-icon icon=${Ue[n]}></ha-icon>${e(`source.${n}`)}</span
   >`;
 }
-function We(e, t) {
+function Ge(e, t) {
 	let n = {};
 	for (let [e, r] of Object.entries(t)) (typeof r == "string" || typeof r == "number") && (n[e] = r);
 	return e.optional(`reason.${t.code}`, n) ?? t.code;
 }
-function Ge(e) {
+function Ke(e) {
 	history.pushState(null, "", e), window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: !1 } }));
 }
-function Ke(e, t, n) {
+function qe(e, t, n) {
 	if (!e) return A`<span title=${n ?? ""}>${t}</span>`;
 	let r = `/config/devices/device/${e}`;
 	return A`<a
@@ -7031,18 +7087,18 @@ function Ke(e, t, n) {
     href=${r}
     title=${n ?? ""}
     @click=${(e) => {
-		e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0 || (e.preventDefault(), Ge(r));
+		e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0 || (e.preventDefault(), Ke(r));
 	}}
     >${t}</a
   >`;
 }
 //#endregion
 //#region src/define.ts
-var qe = "0.9.22";
-function Je(e, t) {
+var Je = "0.9.22";
+function V(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
-		t.joeVersion = qe, customElements.define(e, t);
+		t.joeVersion = Je, customElements.define(e, t);
 		return;
 	}
 	n.joeVersion !== "0.9.22" && Xe();
@@ -8089,7 +8145,7 @@ function lt(e, t) {
 }
 //#endregion
 //#region src/components/tip.ts
-var ut = 120, dt = 220, ft = 8, pt = 10, q, J = class extends z {
+var ut = 120, dt = 220, ft = 8, pt = 10, q, J = class extends L {
 	constructor(...e) {
 		super(...e), this.label = "", this.open = !1, this.pinned = !1, this.keepOnBlur = !1, this.onOutside = (e) => {
 			e.composedPath().includes(this) || this.close();
@@ -8333,7 +8389,7 @@ var ut = 120, dt = 220, ft = 8, pt = 10, q, J = class extends z {
 		t.style.left = `${Math.round(c)}px`, t.style.top = `${Math.round(a)}px`, t.style.setProperty("--arrow", `${Math.round(l)}px`), t.dataset.place = o;
 	}
 };
-H([B({ attribute: !1 })], J.prototype, "tip", void 0), H([B()], J.prototype, "label", void 0), H([V()], J.prototype, "open", void 0), H([Me("button")], J.prototype, "button", void 0), H([Me(".bubble")], J.prototype, "bubble", void 0);
+H([R({ attribute: !1 })], J.prototype, "tip", void 0), H([R()], J.prototype, "label", void 0), H([z()], J.prototype, "open", void 0), H([B("button")], J.prototype, "button", void 0), H([B(".bubble")], J.prototype, "bubble", void 0);
 function mt(e) {
 	return e.split("\n").map((e) => A`<p>
         ${e.split(/\*\*(.+?)\*\*/).map((e, t) => t % 2 ? A`<strong>${e}</strong>` : e)}
@@ -8350,7 +8406,7 @@ function ht(e, t, n, r = []) {
 function Y(e, t, n, r) {
 	return A`<joe-tip .tip=${ht(e, t, n, r)} label=${e("tip.label")}></joe-tip>`;
 }
-Je("joe-tip", J);
+V("joe-tip", J);
 //#endregion
 //#region src/cars.ts
 function gt(e, t) {
@@ -8446,16 +8502,23 @@ function Mt(e, t) {
 		return e.optional(`plan.why.${n}`) ?? "";
 	}
 	let n = [], r = K(e.lang, t.target ?? 0, 0), i = t.sun_takes_over;
-	return t.reasons.includes("balance") && n.push(e("plan.say.balance")), t.kind === "charge" && t.tariff === "dynamic" && t.charge_slots?.length ? n.push(e("plan.say.charge_slots", {
+	if (t.reasons.includes("balance") && n.push(e("plan.say.balance")), t.kind === "charge" && t.tariff === "dynamic" && t.charge_slots?.length ? n.push(e("plan.say.charge_slots", {
 		slots: At(t),
 		target: r
 	})) : t.kind === "charge" ? n.push(e("plan.say.charge", {
 		from: Z(t.charge_from),
 		target: r
-	})) : t.kind === "hold" ? (n.push(e("plan.say.hold", { target: r })), t.empty_without && n.push(e("plan.say.empty", { time: Z(t.empty_without) }))) : t.reasons.includes("small_saving") ? n.push(e("plan.say.small_saving")) : n.push(i ? e("plan.say.none", { time: Z(i) }) : e("plan.say.none_nosun")), t.reasons.includes("max_price") && t.kind !== "charge" && n.push(e("plan.say.max_price")), t.day && (n.push(e("plan.day", {
-		time: Z(t.day.defer_until),
-		kwh: K(e.lang, t.day.held_kwh, 0)
-	})), t.day.cost && t.day.cost >= .01 && n.push(e("plan.day.cost", { cost: `${K(e.lang, t.day.cost * 100, 0)} ct` }))), t.kind !== "none" && (i && t.full_at && Ot(t.full_at) === Ot(i) ? n.push(e("plan.say.sun_full", {
+	})) : t.kind === "hold" ? (n.push(e("plan.say.hold", { target: r })), t.empty_without && n.push(e("plan.say.empty", { time: Z(t.empty_without) }))) : t.reasons.includes("small_saving") ? n.push(e("plan.say.small_saving")) : n.push(i ? e("plan.say.none", { time: Z(i) }) : e("plan.say.none_nosun")), t.reasons.includes("max_price") && t.kind !== "charge" && n.push(e("plan.say.max_price")), t.day) {
+		let r = {
+			time: Z(t.day.defer_until),
+			kwh: K(e.lang, t.day.held_kwh, 0)
+		}, i = t.day.buffer;
+		n.push(i && i.soc > i.floor ? e("plan.day.buffer", {
+			...r,
+			level: K(e.lang, i.soc, 0)
+		}) : e("plan.day", r)), t.day.cost && t.day.cost >= .01 && n.push(e("plan.day.cost", { cost: `${K(e.lang, t.day.cost * 100, 0)} ct` }));
+	}
+	return t.kind !== "none" && (i && t.full_at && Ot(t.full_at) === Ot(i) ? n.push(e("plan.say.sun_full", {
 		sun: Z(i),
 		full: Z(t.full_at)
 	})) : i ? n.push(e("plan.say.sun", { sun: Z(i) })) : n.push(e("plan.say.nosun"))), n.join(" ");
@@ -8474,20 +8537,27 @@ function Pt(e, t, n = "EUR") {
 	}).format(t), i = [];
 	return t.kind === "charge" && i.push(e("plan.cost.night", { value: r(t.cost.night_charge) })), t.cost.saving > .005 && i.push(e("plan.cost.saving", { value: r(t.cost.saving) })), i.join(" · ");
 }
+function Ft(e, t) {
+	let n = t?.morning?.day ?? t?.day, r = n ? Z(n.defer_until) : "–", i = n?.buffer;
+	return i && i.soc > i.floor ? e("devices.status.day_buffer", {
+		time: r,
+		level: String(i.soc)
+	}) : e("devices.status.day", { time: r });
+}
 //#endregion
 //#region src/router.ts
-var Ft = "/energy-joe", It = [
+var It = "/energy-joe", Lt = [
 	"overview",
 	"plan",
 	"review",
 	"devices",
 	"household",
 	"settings"
-], Lt = [
+], Rt = [
 	"overview",
 	"plan",
 	"review"
-], Rt = {
+], zt = {
 	review: [
 		"result",
 		"days",
@@ -8523,29 +8593,29 @@ var Ft = "/energy-joe", It = [
 	devices: "all",
 	household: "people",
 	settings: "operation"
-}, zt = {
+}, Bt = {
 	history: "/review/days",
 	learn: "/review/learned",
 	climate: "/devices/climate"
 };
-function Bt(e) {
-	return e in Rt;
-}
 function Vt(e) {
+	return e in zt;
+}
+function Ht(e) {
 	try {
 		return decodeURIComponent(e);
 	} catch {
 		return e;
 	}
 }
-function Ht(e) {
-	let t = e.split(/[?#]/, 1)[0].split("/").filter(Boolean).map(Vt), [n, r, i, a, ...o] = t;
+function Ut(e) {
+	let t = e.split(/[?#]/, 1)[0].split("/").filter(Boolean).map(Ht), [n, r, i, a, ...o] = t;
 	if (!n) return { route: { tab: "overview" } };
-	let s = zt[n];
+	let s = Bt[n];
 	if (s) {
 		let e = [s, ...t.slice(1).map(encodeURIComponent)].join("/");
 		return {
-			route: Ht(e).route,
+			route: Ut(e).route,
 			redirect: e
 		};
 	}
@@ -8554,11 +8624,11 @@ function Ht(e) {
 		redirect: "/plan"
 	} : { route: { tab: "plan" } };
 	let c = n;
-	if (!It.includes(c) || !Bt(c)) return {
+	if (!Lt.includes(c) || !Vt(c)) return {
 		route: { tab: "overview" },
 		redirect: "/"
 	};
-	if (r && !Rt[c].includes(r)) return {
+	if (r && !zt[c].includes(r)) return {
 		route: {
 			tab: c,
 			section: Q[c]
@@ -8571,49 +8641,49 @@ function Ht(e) {
 	};
 	return i && (l.id = i), a && (l.sub = a), o.length && (l.rest = o), { route: l };
 }
-function Ut(e) {
+function Wt(e) {
 	if (typeof e == "string") return e.startsWith("/") ? e : `/${e}`;
 	if (e.tab === "overview") return "/";
-	let t = [e.tab], n = e.section ?? (e.id && Bt(e.tab) ? Q[e.tab] : void 0);
+	let t = [e.tab], n = e.section ?? (e.id && Vt(e.tab) ? Q[e.tab] : void 0);
 	return n && (t.push(n), e.id && (t.push(e.id), e.sub && t.push(e.sub, ...e.rest ?? []))), `/${t.map(encodeURIComponent).join("/")}`;
 }
-function Wt(e, t) {
-	let n = Ut(t);
+function Gt(e, t) {
+	let n = Wt(t);
 	return n === "/" ? e : `${e}${n}`;
 }
-function Gt(e, t, n = {}) {
+function Kt(e, t, n = {}) {
 	e.dispatchEvent(new CustomEvent("joe-navigate", {
 		detail: {
-			path: Ut(t),
+			path: Wt(t),
 			...n
 		},
 		bubbles: !0,
 		composed: !0
 	}));
 }
-function Kt(e, t) {
+function qt(e, t) {
 	return (n) => {
-		n.defaultPrevented || n.metaKey || n.ctrlKey || n.shiftKey || n.altKey || n.button !== 0 || (n.preventDefault(), Gt(n.currentTarget ?? window, e, t));
+		n.defaultPrevented || n.metaKey || n.ctrlKey || n.shiftKey || n.altKey || n.button !== 0 || (n.preventDefault(), Kt(n.currentTarget ?? window, e, t));
 	};
 }
-function qt(e, t, n, r) {
-	return A`<a class=${r ?? ""} href=${Wt(e, t)} @click=${Kt(t)}>${n}</a>`;
+function Jt(e, t, n, r) {
+	return A`<a class=${r ?? ""} href=${Gt(e, t)} @click=${qt(t)}>${n}</a>`;
 }
-function Jt(e, t) {
+function Yt(e, t) {
 	if (history.state?.joeSheet) {
 		history.back();
 		return;
 	}
-	Gt(e, t, { replace: !0 });
+	Kt(e, t, { replace: !0 });
 }
-function Yt(e, t) {
+function Xt(e, t) {
 	let n = e.querySelector(`[data-anchor="${CSS.escape(t)}"]`);
 	return n ? (n.scrollIntoView({
 		block: "start",
 		behavior: "smooth"
-	}), n.classList.remove("flash"), n.offsetWidth, n.classList.add("flash"), window.setTimeout(() => n.classList.remove("flash"), 1500), Xt(n), !0) : !1;
+	}), n.classList.remove("flash"), n.offsetWidth, n.classList.add("flash"), window.setTimeout(() => n.classList.remove("flash"), 1500), Zt(n), !0) : !1;
 }
-function Xt(e) {
+function Zt(e) {
 	let t = !1, n = () => {
 		t = !0;
 	}, r = [
@@ -8634,7 +8704,7 @@ function Xt(e) {
 }
 //#endregion
 //#region src/components/car-charge.ts
-var $ = class extends z {
+var $ = class extends L {
 	constructor(...e) {
 		super(...e), this.flush = !1, this.values = {}, this.failed = !1;
 	}
@@ -8753,7 +8823,7 @@ var $ = class extends z {
 		}
 		let p = [...u.soc ? ["%"] : [], ...u.range ? ["km"] : []];
 		if (!p.length) return A`<p class="boost off">${e("devices.charge.no_level", { car: n.name })}</p>`;
-		let m = this.unit && p.includes(this.unit) ? this.unit : p[0], h = this.values[m] ?? (m === "%" ? 80 : 200), g = m === "%" ? 100 : 1500, ee = (e) => {
+		let m = this.unit && p.includes(this.unit) ? this.unit : p[0], h = this.values[m] ?? (m === "%" ? 80 : 200), g = m === "%" ? 100 : 1500, _ = (e) => {
 			let t = e?.querySelector("input"), n = Number.parseFloat((t?.value ?? "").replace(",", "."));
 			return Math.round(Math.min(g, Math.max(1, Number.isFinite(n) ? n : h)));
 		};
@@ -8762,7 +8832,7 @@ var $ = class extends z {
       data-tipped
       novalidate
       @submit=${(e) => {
-			e.preventDefault(), this.boost(ee(e.target), m);
+			e.preventDefault(), this.boost(_(e.target), m);
 		}}
     >
       <label class="toggle-label" for="boost-${r.id}">${e("devices.charge.label_at", { point: r.name })}</label>
@@ -8804,7 +8874,7 @@ var $ = class extends z {
           type="button"
           class="mini-btn"
           ?disabled=${!i || !r.enabled}
-          @click=${(e) => this.tonight(!0, ee(e.target.closest("form")), m)}
+          @click=${(e) => this.tonight(!0, _(e.target.closest("form")), m)}
         >
           <ha-icon icon="mdi:weather-night"></ha-icon>${e("devices.charge.tonight")}
         </button>
@@ -8845,13 +8915,13 @@ var $ = class extends z {
 		}
 	}
 };
-H([B({ attribute: !1 })], $.prototype, "hass", void 0), H([B({ attribute: !1 })], $.prototype, "t", void 0), H([B({ attribute: !1 })], $.prototype, "state", void 0), H([B({ attribute: !1 })], $.prototype, "car", void 0), H([B({
+H([R({ attribute: !1 })], $.prototype, "hass", void 0), H([R({ attribute: !1 })], $.prototype, "t", void 0), H([R({ attribute: !1 })], $.prototype, "state", void 0), H([R({ attribute: !1 })], $.prototype, "car", void 0), H([R({
 	type: Boolean,
 	reflect: !0
-})], $.prototype, "flush", void 0), H([V()], $.prototype, "values", void 0), H([V()], $.prototype, "unit", void 0), H([V()], $.prototype, "failed", void 0), Je("joe-car-charge", $);
+})], $.prototype, "flush", void 0), H([z()], $.prototype, "values", void 0), H([z()], $.prototype, "unit", void 0), H([z()], $.prototype, "failed", void 0), V("joe-car-charge", $);
 //#endregion
 //#region src/styles/tokens.ts
-var Zt = o`
+var Qt = o`
   :host {
     --joe-bg: #fbf6ec;
     --joe-surface: #ffffff;
@@ -8940,4 +9010,4 @@ var Zt = o`
   }
 `;
 //#endregion
-export { Ue as $, Tt as A, K as B, vt as C, X as D, Ct as E, Y as F, H as G, st as H, ct as I, Ve as J, Ze as K, rt as L, bt as M, wt as N, gt as O, St as P, We as Q, it as R, yt as S, Et as T, G as U, at as V, lt as W, Be as X, Ke as Y, Ge as Z, kt as _, It as a, z as at, Z as b, Ut as c, A as ct, Gt as d, o as dt, ze as et, Kt as f, Nt as g, Pt as h, Rt as i, B as it, _t as j, xt as k, Wt as l, Te as lt, Yt as m, Q as n, Me as nt, Lt as o, M as ot, Ht as p, Je as q, Ft as r, V as rt, Jt as s, j as st, Zt as t, Le as tt, qt as u, ge as ut, Mt as v, Dt as w, jt as x, At as y, nt as z };
+export { Ge as $, xt as A, nt as B, yt as C, Ct as D, Et as E, St as F, lt as G, at as H, Y as I, V as J, H as K, ct as L, _t as M, bt as N, X as O, wt as P, Ke as Q, rt as R, jt as S, Dt as T, st as U, K as V, G as W, qe as X, He as Y, Ve as Z, Nt as _, Lt as a, R as at, At as b, Wt as c, j as ct, Kt as d, ge as dt, We as et, qt as f, o as ft, Pt as g, Ft as h, zt as i, z as it, Tt as j, gt as k, Gt as l, A as lt, Xt as m, Q as n, Re as nt, Rt as o, L as ot, Ut as p, Ze as q, It as r, B as rt, Yt as s, M as st, Qt as t, Be as tt, Jt as u, Ee as ut, kt as v, vt as w, Z as x, Mt as y, it as z };

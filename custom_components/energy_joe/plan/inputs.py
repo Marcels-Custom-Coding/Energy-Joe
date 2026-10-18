@@ -556,6 +556,7 @@ async def async_build_input(
             reserved=reserved,
             force_target=100.0 if balance else None,
             defer_kw=defer_kw,
+            morning_need=(learned.get("morning_need") or {}).get("kwh"),
             meta={
                 "consumption": consumption,
                 "solar": sun_meta,
@@ -676,6 +677,9 @@ def _input(
         sequence=rules.get("battery_team") == "sequence",
         grid_friendly=rules["grid_friendly"],
         grid_first=rules["grid_first"],
+        morning_buffer=rules.get("morning_buffer_soc"),
+        # By day one group at a time unless the owner chose "Gleichzeitig".
+        one_by_one=rules.get("battery_team") != "together",
         max_night_kwh=rules["max_night_kwh"],
         discharge_mode=rules["discharge_in_window"],
         buffer=rules["buffer_factor"],

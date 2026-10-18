@@ -485,6 +485,74 @@ async def test_side_by_side_on_a_weak_day(hass: HomeAssistant, freezer) -> None:
     assert byd_levers(hass) == ("100.0", "off", "100.0", "off")
 
 
+async def test_only_one_after_the_other_is_strict_on_a_weak_day_too(
+    hass: HomeAssistant, freezer
+) -> None:
+    """ "Nur nacheinander": no charging side by side, not even on a weak day."""
+    freezer.move_to("2026-06-20T09:00:00+02:00")
+    install_team(hass, byd_soc=20, venus_soc=20)
+    flows(hass, grid=-800, byd=1200)
+    plan = day_plan(dt_util.now(), peak=2.6)
+    executor, _ = await make_executor(hass, team_config(team_style="strict"), plan)
+    await executor.async_check()
+    view = executor.view["team"]
+    assert view["parallel"] is False
+    assert view["active"] == "byd"
+    assert view["batteries"]["venus"]["charge"] == "blocked"
+    assert venus_levers(hass) == ("0.0", "0.0", "on")
+    assert not any(e["kind"] == "team_parallel" for e in executor.data["log"])
+
+
+async def test_the_morning_buffer_with_two_groups(hass: HomeAssistant, freezer) -> None:
+    """The buffer belongs to the group that covers the morning: it works
+    (charging comes to it first), the other group waits blocked; at the
+    buffer the BYD holds back too and the sun goes to the grid."""
+    from .test_control import sunny_morning_plan
+
+    freezer.move_to("2026-10-04T08:00:00+02:00")
+    install_team(hass, byd_soc=20, venus_soc=40)
+    flows(hass, grid=-1500)
+    plan = sunny_morning_plan(dt_util.now())
+    plan["day"]["buffer"] = {
+        "soc": 30,
+        "suggested": 30,
+        "source": "learned",
+        "batteries": ["byd"],
+        "group": "byd",
+        "back": 2.0,
+    }
+    config = team_config(
+        grid_friendly=True,
+        team_charge_order=["venus", "byd"],
+        team_discharge_order=["byd", "venus"],
+    )
+    executor, _ = await make_executor(hass, config, plan)
+    for _ in range(15):
+        await executor.async_check()
+        freezer.tick(timedelta(minutes=1))
+    view = executor.view["team"]
+    # The charge order says Venus, the morning says the BYD with its buffer.
+    assert view["active"] == "byd"
+    assert executor.status["batteries"]["byd"]["action"] == "buffer"
+    assert byd_levers(hass)[:2] == ("100.0", "off")
+    assert venus_levers(hass) == ("0.0", "0.0", "on")
+    never_opposite(view)
+    # The buffer is there: the BYD's charging held back by the morning, the
+    # Venus still waits; nothing is noted twice.
+    levels(hass, byd=30)
+    await executor.async_check()
+    assert executor.status["batteries"]["byd"]["action"] == "defer"
+    assert byd_levers(hass)[:2] == ("0.0", "on")
+    assert executor.view["team"]["active"] == "byd"
+    assert venus_levers(hass) == ("0.0", "0.0", "on")
+    assert executor.data["saved"]["number.charge_limit"] == 100.0
+    # Midday: everything back as it was once the turns end.
+    freezer.move_to("2026-10-04T12:00:00+02:00")
+    await executor.async_check()
+    assert byd_levers(hass)[:2] == ("100.0", "off")
+    assert executor.data["day_buffer"] is None
+
+
 async def test_every_exit_gives_the_blocks_back(hass: HomeAssistant, freezer) -> None:
     freezer.move_to("2026-10-10T19:00:00+02:00")
     calls = install_team(hass, byd_soc=40, venus_soc=60)

@@ -7,11 +7,14 @@ None: then Joe keeps what he had.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from collections.abc import Iterable
+from datetime import date, datetime, timedelta
 from statistics import median
 from typing import Any
 
 from homeassistant.util import dt as dt_util
+
+from ..observe.records import base_home
 
 # Days a value needs before Joe uses it.
 SOLAR_DAYS = 5
@@ -22,6 +25,15 @@ BUFFER_QUANTILE = 0.8
 BUFFER_LIMITS = (0.05, 1.0)
 # A forecast this small says little about how well it fits.
 SMALL_FORECAST = 1.0
+# The morning buffer (see morning_need): sunny mornings it needs, the share of
+# them it should cover, how fast older ones lose weight (never below
+# MORNING_OLD: a morning from two years ago still counts), and what a morning
+# needs to count as sunny (the most surplus in one hour, kWh).
+MORNING_DAYS = 5
+MORNING_QUANTILE = 0.8
+MORNING_HALF_LIFE = 365
+MORNING_OLD = 0.2
+MORNING_SUNNY_KWH = 1.0
 
 
 def _complete_solar(hours: list[dict[str, Any]]) -> bool:
@@ -149,6 +161,76 @@ def buffer(evaluations: list[dict[str, Any]]) -> tuple[float | None, int]:
     return round(max(low, min(high, _quantile(errors, BUFFER_QUANTILE))), 2), len(
         errors
     )
+
+
+def _morning(hours: list[dict[str, Any]], flexible: Iterable[str]) -> float | None:
+    """What one sunny morning needed above the sun (kWh): from the hour in
+    which the sun first covers the home up to the hour with the most surplus
+    (where Joe would charge again at the latest). An hour counts with what
+    the home took beyond the sun, or – when the meters show it – with what
+    came from the battery and the grid within it (an oven on a sunny hour:
+    the hour's sum hides it, the battery's own meter does not)."""
+    complete = [h for h in hours if "home" in h and "solar" in h]
+    if len(complete) < 20 or any(h.get("cov", 0) < 0.8 for h in complete):
+        return None
+    ordered = sorted(complete, key=lambda h: h["start"])
+    surplus = [h["solar"] - (base_home(h, flexible) or 0.0) for h in ordered]
+    peak = max(range(len(ordered)), key=surplus.__getitem__)
+    if surplus[peak] < MORNING_SUNNY_KWH:
+        return None
+    first = next(
+        (i for i in range(peak + 1) if surplus[i] >= 0 and ordered[i]["solar"] > 0.1),
+        None,
+    )
+    if first is None:
+        return None
+    need = 0.0
+    for index in range(first, peak):
+        hour = ordered[index]
+        flex = sum((hour.get("use") or {}).get(c, 0.0) for c in flexible)
+        inside = None
+        if "bat_out" in hour and "grid_in" in hour:
+            inside = max(0.0, hour["bat_out"] + hour["grid_in"] - flex)
+        need += max(max(0.0, -surplus[index]), inside or 0.0)
+    return need
+
+
+def morning_need(
+    days: dict[str, dict[str, Any]], flexible: Iterable[str] = ()
+) -> dict[str, Any] | None:
+    """The energy a sunny morning typically needs beyond the sun (kWh), for
+    the buffer of the grid-friendly morning (plan/planner.py): what most of
+    the mornings needed (MORNING_QUANTILE), recent ones weighing most and
+    older ones never forgotten (no window of weeks: a summer morning of last
+    year still counts). None with too few sunny mornings."""
+    flexible = list(flexible)
+    found: list[tuple[str, float]] = []
+    for day, data in days.items():
+        value = _morning(data.get("hours") or [], flexible)
+        if value is not None:
+            found.append((day, value))
+    if len(found) < MORNING_DAYS:
+        return None
+    newest = max(date.fromisoformat(day) for day, _ in found)
+    weighted = sorted(
+        (
+            value,
+            max(
+                MORNING_OLD,
+                0.5 ** ((newest - date.fromisoformat(day)).days / MORNING_HALF_LIFE),
+            ),
+        )
+        for day, value in found
+    )
+    total = sum(weight for _, weight in weighted)
+    running = 0.0
+    need = weighted[-1][0]
+    for value, weight in weighted:
+        running += weight
+        if running >= MORNING_QUANTILE * total - 1e-9:
+            need = value
+            break
+    return {"kwh": round(need, 2), "days": len(found)}
 
 
 def results(days: dict[str, dict[str, Any]], since: str | None) -> dict[str, Any]:

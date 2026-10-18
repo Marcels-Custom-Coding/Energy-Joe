@@ -108,6 +108,19 @@ class PlanInput:
     grid_first: bool = False
     defer_kw: float = 0.0
     defer_until: datetime | None = None
+    # The buffer of the grid-friendly morning (see morning_buffer): the
+    # owner's level (None: Joe's suggestion) and what a sunny morning needs
+    # beyond the sun as Joe learned it (kWh; None: not learned yet).
+    morning_buffer: float | None = None
+    morning_need: float | None = None
+    # While holding back: below this much stored (kWh, all batteries) the
+    # batteries of the buffer charge from the sun all the same, at most at
+    # this power (kW).
+    defer_buffer: float = 0.0
+    defer_buffer_kw: float = 0.0
+    # By day one group works at a time (control/team.py): the buffer belongs
+    # to the first in the discharge order.
+    one_by_one: bool = False
     # The order in which the batteries discharge by day (battery ids): the
     # first gets tonight's energy first (see night.py). With "sequence" they
     # also discharge one after the other in the evening.
@@ -205,16 +218,20 @@ def simulate(
         if surplus >= 0:
             # Sun first: into the batteries, the rest to the grid (grid-friendly
             # batteries wait until defer_until).
-            power = charge_kw
+            power = charge_kw * hour.fraction
             if (
                 inp.defer_until is not None
                 and not hour.window
                 and inp.window_end <= hour.start < inp.defer_until
             ):
-                power = max(0.0, charge_kw - inp.defer_kw)
-            take = min(
-                surplus, power * hour.fraction, max(0.0, capacity - stored) / eta
-            )
+                power = max(0.0, charge_kw - inp.defer_kw) * hour.fraction
+                if stored < inp.defer_buffer:
+                    # The buffer first: up to it they charge from the sun.
+                    power += min(
+                        inp.defer_buffer_kw * hour.fraction,
+                        (inp.defer_buffer - stored) / eta,
+                    )
+            take = min(surplus, power, max(0.0, capacity - stored) / eta)
             stored += take * eta
             sold = surplus - take
         else:
@@ -461,10 +478,14 @@ def _plan(inp: PlanInput) -> dict[str, Any]:
         shared = _share(inp, run, highest, target if "balance" in reasons else None)
         run = simulate(inp, capacity * target / 100, shared.hourly)
     night = run
-    day = _grid_friendly(inp, capacity * target / 100)
+    buffer = morning_buffer(inp)
+    day = _grid_friendly(inp, capacity * target / 100, buffer)
     if day is not None:
         run = simulate(
-            replace(inp, defer_until=datetime.fromisoformat(day["defer_until"])),
+            replace(
+                _buffered(inp, buffer),
+                defer_until=datetime.fromisoformat(day["defer_until"]),
+            ),
             capacity * target / 100,
             shared.hourly if shared else None,
         )
@@ -637,8 +658,12 @@ def _plan(inp: PlanInput) -> dict[str, Any]:
             "force_target": inp.force_target,
             "grid_friendly": inp.grid_friendly,
             "grid_first": inp.grid_first,
+            "morning_buffer": inp.morning_buffer,
         },
         "day": day,
+        # The buffer Joe keeps on a grid-friendly morning (also on a day
+        # without one: the settings show the suggestion).
+        "morning_buffer": buffer,
         "reasons": reasons,
         "notes": list(inp.notes),
         "meta": inp.meta,
@@ -673,14 +698,20 @@ ALLOW_GRID_FIRST = 0.3
 MIN_HELD_KWH = 0.5
 
 
-def _grid_friendly(inp: PlanInput, target: float) -> dict[str, Any] | None:
+def _grid_friendly(
+    inp: PlanInput, target: float, buffer: dict[str, Any] | None = None
+) -> dict[str, Any] | None:
     """Until when batteries can leave the morning sun to the grid and still fill.
 
     The midday peak is when the grid has too much solar power; a battery that
     takes the sun then instead of in the morning helps. Joe picks the latest
     hour (at most the hour with the most surplus) from which the batteries
     still end the day as full as without waiting, with only 80 % of the
-    forecast. With grid_first it may cost up to 30 ct a day.
+    forecast, at no more cost than the allowance (with grid_first up to 30 ct
+    a day, and then it need not be quite as full).
+
+    The buffer (see morning_buffer) charges first: up to it the batteries
+    take the morning sun, only above it the sun goes to the grid.
     """
     if not inp.grid_friendly or inp.defer_kw <= 0:
         return None
@@ -694,31 +725,144 @@ def _grid_friendly(inp: PlanInput, target: float) -> dict[str, Any] | None:
     if not sunny:
         return None
     peak = max(sunny, key=lambda item: item[2])[0]
+    real = _buffered(inp, buffer)
     cautious = replace(
-        inp, hours=[replace(h, solar=h.solar * CAUTION) for h in inp.hours]
+        real, hours=[replace(h, solar=h.solar * CAUTION) for h in inp.hours]
     )
-    allowed = simulate(cautious, target).cost + (
-        ALLOW_GRID_FIRST if inp.grid_first else ALLOW_SAVING_FIRST
-    )
+    allowance = ALLOW_GRID_FIRST if inp.grid_first else ALLOW_SAVING_FIRST
+    # With the cautious forecast and with the forecast as it is (with a
+    # buffer more sun is not always safer: more of the morning goes to the
+    # grid): as full as without waiting (the highest level of the day), at
+    # no more than the allowance.
+    cases = []
+    for case in (cautious, real):
+        without = simulate(case, target)
+        cases.append(
+            (case, without.cost + allowance, max(without.soc[i] for i, _ in day))
+        )
     best = None
     for index, hour, _ in sunny:
         if index > peak:
             break
         if index == sunny[0][0]:
             continue
-        trial = simulate(replace(cautious, defer_until=hour.start), target)
-        if trial.cost <= allowed:
+        fits = True
+        for case, allowed, top in cases:
+            trial = simulate(replace(case, defer_until=hour.start), target)
+            full = max(trial.soc[i] for i, _ in day) >= top - FULL_SLACK
+            fits = fits and trial.cost <= allowed and (full or inp.grid_first)
+        if fits:
             best = hour.start
     if best is None:
         return None
-    held = sum(min(s, inp.defer_kw * h.fraction) for _, h, s in sunny if h.start < best)
+    # What goes to the grid instead of into the batteries (the buffer taken out).
+    plain = simulate(real, target)
+    waiting = simulate(replace(real, defer_until=best), target)
+    held = sum(
+        max(0.0, waiting.grid_out[i] - plain.grid_out[i])
+        for i, h in day
+        if h.start < best
+    )
     if held < MIN_HELD_KWH:
         return None
     return {
         "defer_until": dt_util.as_local(best).isoformat(timespec="minutes"),
         "held_kwh": round(held, 1),
         "grid_first": inp.grid_first,
+        "buffer": buffer,
     }
+
+
+# The morning buffer: the safety margin on what a morning needs, what Joe
+# counts on before he learned it (a share of the morning's use, at least),
+# the highest level he suggests, and how far below it charging starts again
+# (control/executor.py).
+BUFFER_MARGIN = 1.25
+BUFFER_START_SHARE = 0.3
+BUFFER_START_KWH = 0.5
+BUFFER_SUGGEST_MAX = 60
+BUFFER_BACK = 2.0
+# As full as without waiting, give or take this much (percent).
+FULL_SLACK = 0.5
+
+
+def morning_buffer(inp: PlanInput) -> dict[str, Any] | None:
+    """The buffer of the grid-friendly morning: up to this level the batteries
+    take the morning sun, so a cloud or the oven comes from them rather than
+    from the grid; only then Joe holds back charging.
+
+    Joe suggests what a sunny morning typically needs beyond the sun (learned
+    over the years, see learn/learning.py morning_need) with a margin, above
+    the floor; before he learned it, a share of the morning's use. The owner
+    may set his own level. With one group at a time (control/team.py) the
+    buffer belongs to the group that discharges first in the morning.
+    """
+    if not inp.grid_friendly or inp.defer_kw <= 0:
+        return None
+    members = _buffer_members(inp)
+    capacity = sum(b.capacity for b in members)
+    if capacity <= 0:
+        return None
+    floor = max([inp.reserve, *(b.floor for b in members)])
+    need, source = inp.morning_need, "learned"
+    if need is None:
+        need, source = _start_need(inp), "start"
+    suggested = math.ceil(floor + 100 * need * BUFFER_MARGIN / capacity - 1e-9)
+    suggested = max(
+        math.ceil(floor), min(suggested, BUFFER_SUGGEST_MAX, math.floor(inp.max_target))
+    )
+    level: float = suggested
+    if inp.morning_buffer is not None:
+        level, source = max(floor, min(100.0, inp.morning_buffer)), "user"
+    return {
+        "soc": round(level),
+        "suggested": suggested,
+        "need_kwh": round(need, 2),
+        "source": source,
+        "floor": round(floor, 1),
+        "batteries": [b.id for b in members],
+        "group": members[0].group or members[0].id,
+        "back": BUFFER_BACK,
+    }
+
+
+def _buffer_members(inp: PlanInput) -> list[Battery]:
+    """The batteries that keep the buffer: all of them, or with one group at a
+    time the first group in the discharge order."""
+    batteries = [b for b in inp.batteries if b.capacity > 0]
+    if not inp.one_by_one or not batteries:
+        return batteries
+    groups = sharing.groups_in_order(
+        ((b.id, b.group or b.id) for b in batteries), inp.order
+    )
+    first = set(groups[0])
+    return [b for b in batteries if b.id in first]
+
+
+def _start_need(inp: PlanInput) -> float:
+    """Before Joe learned it: a share of what the home uses from the hour the
+    sun covers it up to the hour with the most surplus."""
+    day = [h for h in inp.hours if h.start >= inp.window_end and not h.window]
+    if not day:
+        return BUFFER_START_KWH
+    peak = max(range(len(day)), key=lambda i: day[i].solar - day[i].home)
+    first = next((i for i in range(peak + 1) if day[i].solar >= day[i].home > 0), peak)
+    use = sum(h.home for h in day[first:peak])
+    return max(BUFFER_START_KWH, BUFFER_START_SHARE * use)
+
+
+def _buffered(inp: PlanInput, buffer: dict[str, Any] | None) -> PlanInput:
+    """The plan input with the buffer as the simulation sees it: all batteries
+    together, the buffer's batteries at its level, the others at their floor."""
+    if not buffer:
+        return inp
+    ids = set(buffer["batteries"])
+    stored = sum(
+        b.capacity * (buffer["soc"] if b.id in ids else max(inp.reserve, b.floor)) / 100
+        for b in inp.batteries
+    )
+    power = sum(b.charge_kw for b in inp.batteries if b.id in ids)
+    return replace(inp, defer_buffer=stored, defer_buffer_kw=min(inp.defer_kw, power))
 
 
 def charge_slots(

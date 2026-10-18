@@ -604,6 +604,10 @@ RULES = vol.Schema(
         # with the sun. The saving comes first unless grid_first is set.
         vol.Optional("grid_friendly", default=True): bool,
         vol.Optional("grid_first", default=False): bool,
+        # The buffer of the grid-friendly morning: charged from the sun first,
+        # then Joe holds back (percent; None: as Joe suggests, see
+        # plan/planner.py morning_buffer).
+        vol.Optional("morning_buffer_soc", default=None): vol.Any(None, _PERCENT),
         # Daytime surplus: on sunny days the batteries charge only as fast as
         # they must to be full before the sun goes, the rest shows at the grid
         # meter for evcc's PV mode (see control/surplus.py).
@@ -712,6 +716,9 @@ LEARNED = vol.Schema(
             None, vol.All(vol.Coerce(float), vol.Range(min=0, max=3))
         ),
         vol.Optional("buffer_days", default=0): vol.All(int, vol.Range(min=0)),
+        # What a sunny morning typically needs beyond the sun ({"kwh", "days"},
+        # see learn/learning.py morning_need): the grid-friendly buffer.
+        vol.Optional("morning_need", default=None): vol.Any(None, dict),
         vol.Optional("since", default=None): vol.Any(None, str),
         vol.Optional("updated", default=None): vol.Any(None, str),
         # The models (see learn/models.py), learned once a day.

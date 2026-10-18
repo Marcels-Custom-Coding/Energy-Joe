@@ -102,6 +102,7 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
     loadpoint: typeof entry.loadpoint === "string" ? entry.loadpoint : "evcc",
     remaining: typeof entry.remaining === "number" ? formatNumber(t.lang, entry.remaining, 1) : "–",
     headroom: typeof entry.headroom === "number" ? formatNumber(t.lang, entry.headroom, 1) : "–",
+    level: typeof entry.level === "number" ? formatNumber(t.lang, entry.level, 0) : "–",
   };
   const nameOf = (id: unknown) => config?.batteries.find((b) => b.id === id)?.name ?? String(id ?? "");
   const names = (ids: unknown) => (Array.isArray(ids) ? ids.map(nameOf).join(", ") : "");
@@ -190,6 +191,16 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
       text = t.optional(`log.${entry.kind}`, guard) ?? entry.kind;
     }
     return typeof entry.problem === "string" ? `${text} ${t("log.guard.problem", { code: entry.problem })}` : text;
+  }
+  if (entry.kind === "day_buffer") {
+    // The buffer of the grid-friendly morning: charging up to it again, or reached.
+    return t(entry.fill ? "log.day_buffer.fill" : "log.day_buffer.hold", vars);
+  }
+  if (entry.kind === "day" && typeof entry.level === "number") {
+    return t("log.day.buffer", vars);
+  }
+  if (entry.kind === "released" && entry.reason === "day_buffer") {
+    return t("log.released.day_buffer", vars);
   }
   if (entry.kind === "surplus_end") {
     return t.optional(`log.surplus_end.${String(entry.reason)}`, vars) ?? t("log.surplus_end", vars);

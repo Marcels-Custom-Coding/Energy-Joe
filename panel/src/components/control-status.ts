@@ -5,7 +5,7 @@ import type { Translate } from "../i18n";
 import { shared } from "../styles/shared";
 import type { HomeAssistant, JoeState } from "../types";
 import { daySurplus } from "./day-surplus";
-import { timeOf } from "./plan-text";
+import { dayText, timeOf } from "./plan-text";
 import { tip } from "./tip";
 
 /** What Joe does with the devices right now, in one sentence ("Ich steuere heute Nacht ab 01:00 Uhr."). */
@@ -15,9 +15,10 @@ export function controlText(t: Translate, joe: JoeState): string {
   return reason === "waiting" && plan?.window
     ? t("devices.status.waiting", { time: timeOf(plan.window.start) })
     : reason === "day"
-      ? t("devices.status.day", { time: plan?.day ? timeOf(plan.day.defer_until) : "–" })
+      ? dayText(t, plan)
       : t(`devices.status.${reason}`);
 }
+
 
 /**
  * "Gerade": what Joe does with the devices right now, and the emergency

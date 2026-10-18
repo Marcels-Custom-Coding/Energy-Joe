@@ -65,11 +65,14 @@ export function batteryNow(t: Translate, battery: BatteryConfig, control: Contro
     return t("devices.action.watch");
   }
   const now = control?.batteries[battery.id];
-  return now?.action
-    ? t(`devices.action.${now.action}`, {
-        target: formatNumber(t.lang, now.target ?? 0, 0),
-        floor: formatNumber(t.lang, now.floor ?? 0, 0),
-        until: now.until ? timeOf(now.until) : "",
+  // Held back above its buffer on a grid-friendly morning: said with the buffer.
+  const key = now?.action === "defer" && now.level != null ? "defer_buffer" : now?.action;
+  return key
+    ? t(`devices.action.${key}`, {
+        target: formatNumber(t.lang, now?.target ?? 0, 0),
+        floor: formatNumber(t.lang, now?.floor ?? 0, 0),
+        until: now?.until ? timeOf(now.until) : "",
+        level: formatNumber(t.lang, now?.level ?? 0, 0),
       })
     : t("devices.action.idle");
 }

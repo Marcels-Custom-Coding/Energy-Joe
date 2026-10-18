@@ -812,6 +812,78 @@ async def test_a_grid_friendly_morning(hass: HomeAssistant, freezer) -> None:
     assert "day" in kinds
 
 
+async def test_the_morning_buffer_first_then_the_grid_gets_the_sun(
+    hass: HomeAssistant, freezer
+) -> None:
+    """Up to the buffer the battery charges from the sun (its limit as it
+    was), at the buffer Joe holds back; below it by the hysteresis it may
+    charge again."""
+    freezer.move_to("2026-10-04T07:00:00+02:00")
+    install_devices(hass, byd_soc=20)
+    percent = {"min": 0, "max": 100, "step": 1, "unit_of_measurement": "%"}
+    hass.states.async_set("number.charge_limit", "100", percent)
+    hass.states.async_set("switch.charge_limit", "off")
+    config = configured(limited_fronius())
+    plan = sunny_morning_plan(dt_util.now())
+    plan["day"]["buffer"] = {
+        "soc": 30,
+        "suggested": 30,
+        "source": "learned",
+        "batteries": ["byd"],
+        "group": "byd",
+        "back": 2.0,
+    }
+    executor, _ = await make_executor(hass, config, plan)
+
+    def limit() -> tuple[str, str]:
+        return (
+            hass.states.get("number.charge_limit").state,
+            hass.states.get("switch.charge_limit").state,
+        )
+
+    # 20 % < 30 %: it takes the morning sun, Joe leaves its limit alone.
+    await executor.async_check()
+    assert limit() == ("100", "off")
+    assert executor.status["reason"] == "day"
+    assert executor.status["batteries"]["byd"]["action"] == "buffer"
+    assert executor.status["batteries"]["byd"]["level"] == 30
+    assert executor.data["saved"] == {}
+    # The buffer is there: now the sun goes to the grid.
+    hass.states.async_set("sensor.byd_soc", "30", {"unit_of_measurement": "%"})
+    freezer.tick(timedelta(minutes=1))
+    await executor.async_check()
+    assert limit() == ("0.0", "on")
+    assert executor.status["batteries"]["byd"]["action"] == "defer"
+    # A cloud takes a little: discharging stays free, still held back.
+    hass.states.async_set("sensor.byd_soc", "28.5", {"unit_of_measurement": "%"})
+    freezer.tick(timedelta(minutes=1))
+    await executor.async_check()
+    assert limit() == ("0.0", "on")
+    # The oven: below 28 % it may charge from the sun again.
+    hass.states.async_set("sensor.byd_soc", "27", {"unit_of_measurement": "%"})
+    freezer.tick(timedelta(minutes=1))
+    await executor.async_check()
+    assert limit() == ("100.0", "off")
+    assert executor.status["batteries"]["byd"]["action"] == "buffer"
+    assert executor.data["saved"] == {}
+    log = executor.data["log"]
+    assert any(e["kind"] == "released" and e["reason"] == "day_buffer" for e in log)
+    fills = [e["fill"] for e in log if e["kind"] == "day_buffer"]
+    assert fills == [True, False, True]
+    # Back at the buffer: held back again, the originals noted once more.
+    hass.states.async_set("sensor.byd_soc", "30", {"unit_of_measurement": "%"})
+    freezer.tick(timedelta(minutes=1))
+    await executor.async_check()
+    assert limit() == ("0.0", "on")
+    assert executor.data["saved"]["number.charge_limit"] == 100.0
+    # Midday: back as it was, the buffer forgotten.
+    freezer.move_to("2026-10-04T12:00:00+02:00")
+    await executor.async_check()
+    assert limit() == ("100.0", "off")
+    assert executor.data["saved"] == {}
+    assert executor.data["day_buffer"] is None
+
+
 async def test_the_morning_lets_go_when_the_sun_lags(
     hass: HomeAssistant, freezer
 ) -> None:

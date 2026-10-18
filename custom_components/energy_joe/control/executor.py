@@ -190,6 +190,9 @@ DEFAULT_DATA: dict[str, Any] = {
     # The night whose grid-friendly morning runs, or was let go early.
     "day": None,
     "day_released": None,
+    # The buffer of that morning: the night and per battery whether it
+    # charges from the sun up to the buffer now (True) or holds back (False).
+    "day_buffer": None,
     # Daytime surplus (see _async_surplus): the caps in force (battery -> kW),
     # when they last changed, and the day it was let go for good.
     "surplus": {
@@ -356,6 +359,9 @@ class JoeExecutor:
         self._team_base_w: dict[str, float] = {}
         # What the last check saw for the day's look back (see _team_note).
         self._team_pending: dict[str, Any] | None = None
+        # The buffer of the grid-friendly morning let a held battery charge
+        # again in this check (the release's reason).
+        self._day_buffer_freed = False
         # What the watchdog does now, for the panel.
         self.guard: dict[str, Any] = {"state": "off"}
         # The automations writing the watchdog's levers: battery, when, names.
@@ -551,6 +557,8 @@ class JoeExecutor:
                 await self._async_release(
                     "day_done"
                     if was_day
+                    else "day_buffer"
+                    if day and self._day_buffer_freed
                     else "surplus_done"
                     if was_capped and not capped
                     else reason,
@@ -559,6 +567,7 @@ class JoeExecutor:
                 )
             if not day:
                 self.data["day"] = None
+                self.data["day_buffer"] = None
             # No plan for a moment (a restart, the planner restarting) does not
             # end the night: only a plan for another night does.
             if self.data["night"] and night is not None and self.data["night"] != night:
@@ -1012,6 +1021,7 @@ class JoeExecutor:
             self.data["surplus"].get("released"),
             self.data.get("day"),
             self.data.get("day_released"),
+            deepcopy(self.data.get("day_buffer")),
             deepcopy(self.data["team"]["blocks"]),
             self.data["team"]["active"],
             dict(self.data["team"]["empty"]),
@@ -1055,7 +1065,14 @@ class JoeExecutor:
         stays behind the forecast, Joe lets go early. After the window the
         planner shows the next night's preview with last night's plan as
         "morning" until its defer_until.
+
+        The buffer (planner.morning_buffer): its batteries charge from the sun
+        first, their charge limit as it was (their own control takes only
+        surplus by day, never the grid); at the buffer's level Joe holds back,
+        below it by `back` they charge again (see _day_buffer). The other
+        batteries hold back all morning.
         """
+        self._day_buffer_freed = False
         if plan and not plan.get("fixed"):
             plan = plan.get("morning")
         info = (plan or {}).get("day")
@@ -1115,13 +1132,29 @@ class JoeExecutor:
             return {}, set()
         result: dict[str, Any] = {}
         keep: set[str] = set()
+        buffer = info.get("buffer") or None
+        filling = self._day_buffer(night, buffer, items)
         for battery, adapter, soc in items:
+            if filling.get(battery["id"]):
+                # Up to the buffer from the sun: its limit as it was (the
+                # release puts back what Joe held).
+                result[battery["id"]] = {
+                    "action": "buffer",
+                    "until": info["defer_until"],
+                    "level": buffer["soc"] if buffer else None,
+                    "floor": None,
+                    "target": None,
+                    "soc": soc,
+                    "problem": None,
+                }
+                continue
             writes = adapter.defer()
             problem = await self._async_write(adapter, writes, now, None)
             keep |= {w.entity_id for w in writes} | {battery["id"]}
             result[battery["id"]] = {
                 "action": "defer",
                 "until": info["defer_until"],
+                "level": buffer["soc"] if buffer and battery["id"] in filling else None,
                 "floor": None,
                 "target": None,
                 "soc": soc,
@@ -1129,8 +1162,73 @@ class JoeExecutor:
             }
         if self.data.get("day") != night:
             self.data["day"] = night
-            self._log("day", until=info["defer_until"])
+            self._log(
+                "day",
+                until=info["defer_until"],
+                level=buffer["soc"] if buffer else None,
+            )
         return result, keep
+
+    def _day_buffer(
+        self,
+        night: str,
+        buffer: dict[str, Any] | None,
+        items: list[tuple[dict[str, Any], RoleAdapter, float | None]],
+    ) -> dict[str, bool]:
+        """Per battery of the buffer: whether it charges up to it now (True)
+        or holds back (False). Below the level it charges; once there it
+        holds back, and charges again only below the level minus `back`
+        (no switching with every cloud). A battery whose level is unknown
+        holds back."""
+        store = self.data.get("day_buffer") or {}
+        if store.get("night") != night:
+            store = {"night": night, "fill": {}}
+        before: dict[str, bool] = store["fill"]
+        result: dict[str, bool] = {}
+        self._day_buffer_freed = False
+        if buffer:
+            level = float(buffer["soc"])
+            back = float(buffer.get("back") or 2.0)
+            members = set(buffer.get("batteries") or [])
+            for battery, _, soc in items:
+                key = battery["id"]
+                if key not in members or soc is None:
+                    continue
+                was = before.get(key)
+                # Charging (or not known yet): up to the level; held back:
+                # again only below it by `back`.
+                now_filling = soc < (level if was is not False else level - back)
+                result[key] = now_filling
+                if now_filling != was and (was is not None or now_filling):
+                    self._log(
+                        "day_buffer",
+                        battery=key,
+                        soc=round(soc, 1),
+                        level=round(level),
+                        fill=now_filling,
+                    )
+                if now_filling and was is False:
+                    # Held back until now: the release gives its limit back.
+                    self._day_buffer_freed = True
+        self.data["day_buffer"] = {"night": night, "fill": result}
+        return result
+
+    def _team_charge_order(self, rules: dict[str, Any]) -> list[str]:
+        """The charge order of the day's turns; on a grid-friendly morning the
+        buffer's group comes first (it covers the morning, so it charges up to
+        the buffer; the others hold back anyway)."""
+        order = list(rules.get("team_charge_order") or [])
+        store = self.data.get("day_buffer") or {}
+        first = list(store.get("fill") or {}) if self.data.get("day") else []
+        return [*first, *(k for k in order if k not in first)]
+
+    def _day_holds(self, key: str) -> bool:
+        """Whether the grid-friendly morning holds this battery's charge limit
+        (not while it charges up to the buffer)."""
+        if not self.data.get("day"):
+            return False
+        store = self.data.get("day_buffer") or {}
+        return not (store.get("fill") or {}).get(key)
 
     # --- daytime surplus ---------------------------------------------------------
 
@@ -2370,7 +2468,7 @@ class JoeExecutor:
                     if not member.full:
                         member.full = True
                         store["full"][member.id] = member.soc
-        charge_order = team_rules.ordered(teams, rules.get("team_charge_order") or [])
+        charge_order = team_rules.ordered(teams, self._team_charge_order(rules))
         discharge_order = team_rules.ordered(
             teams, rules.get("team_discharge_order") or []
         )
@@ -2409,12 +2507,15 @@ class JoeExecutor:
             info["groups"][team_group.id].update(
                 empty=team_group.empty, full=team_group.full
             )
-        parallel = self._team_parallel(config, plan, charge_order, now, today)
+        style = team_day.style_of(rules)
+        # "Nur nacheinander" is strict: not side by side on a weak day either.
+        parallel = style != "strict" and self._team_parallel(
+            config, plan, charge_order, now, today
+        )
         info["parallel"] = parallel
         grid = measurement_kw(
             self._hass.states.get, config["measurements"]["grid_power"]
         )
-        style = team_day.style_of(rules)
         # The later groups with room (charging along) and those not empty
         # (helping, a base load), each in its own order.
         waiting = [g for g in charge_order if g.id != chosen and not g.full]
@@ -3182,7 +3283,7 @@ class JoeExecutor:
         adapter = make_adapter(battery) if battery else None
         if isinstance(adapter, RoleAdapter):
             roles = adapter.team_release_roles()
-            if key in self.data["surplus"]["caps"] or self.data.get("day"):
+            if key in self.data["surplus"]["caps"] or self._day_holds(key):
                 # The cap or the morning holds the charge limit (with the
                 # system's shared switch all of it): theirs to give back.
                 held = set(adapter.limit_roles() or ())

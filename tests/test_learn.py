@@ -16,6 +16,7 @@ from custom_components.energy_joe.learn.evaluate import evaluate
 from custom_components.energy_joe.learn.learner import JoeLearner
 from custom_components.energy_joe.learn.learning import (
     buffer,
+    morning_need,
     results,
     solar_factor,
     solar_profile,
@@ -224,6 +225,64 @@ def test_buffer_covers_most_mornings() -> None:
     assert used == 8
     assert value == pytest.approx(0.18, abs=0.02)
     assert buffer(evaluations[:6]) == (None, 6)
+
+
+def morning_day(
+    day: date, oven: float = 0.0, car: float = 0.0, solar_total: float = 30.0
+) -> dict[str, Any]:
+    """A sunny day: 0.5 kWh an hour in the home, the oven at 10 h. The hour's
+    sum shows a surplus; the battery's meter shows what it gave meanwhile."""
+    hours = []
+    for hour in range(24):
+        record = {
+            "start": local(day, hour).isoformat(),
+            "home": 0.5 + (oven if hour == 10 else 0.0) + (car if hour == 9 else 0.0),
+            "solar": sun(hour, solar_total),
+            "cov": 1.0,
+            "bat_out": oven * 0.6 if hour == 10 else 0.0,
+            "grid_in": car if hour == 9 else 0.0,
+        }
+        if car and hour == 9:
+            record["use"] = {"wallbox": car}
+        hours.append(record)
+    return {"hours": hours}
+
+
+def test_the_morning_need_is_learned_over_the_years() -> None:
+    first = date(2024, 10, 1)
+    days = {}
+    # Two years of mornings: most need little, a few the oven.
+    for offset in range(0, 730, 20):
+        day = first + timedelta(days=offset)
+        days[day.isoformat()] = morning_day(day, oven=2.0 if offset % 100 == 0 else 0.0)
+    found = morning_need(days)
+    assert found is not None
+    assert found["days"] == len(days)
+    # The oven hour shows only in the battery's meter (the hour has surplus).
+    assert 0.0 <= found["kwh"] <= 1.3
+    # Recent mornings with the oven weigh most: the need goes up.
+    for offset in range(700, 730, 3):
+        day = first + timedelta(days=offset)
+        days[day.isoformat()] = morning_day(day, oven=2.0)
+    later = morning_need(days)
+    assert later is not None and later["kwh"] == pytest.approx(1.2, abs=0.01)
+    # A car charging from the grid in the morning is no need of the home.
+    cars = {
+        (first + timedelta(days=d)).isoformat(): morning_day(
+            first + timedelta(days=d), car=3.0
+        )
+        for d in range(6)
+    }
+    assert morning_need(cars, ["wallbox"])["kwh"] == pytest.approx(0.0, abs=0.05)
+    # Grey days and too few days teach nothing.
+    grey = {
+        (first + timedelta(days=d)).isoformat(): morning_day(
+            first + timedelta(days=d), solar_total=3.0
+        )
+        for d in range(10)
+    }
+    assert morning_need(grey) is None
+    assert morning_need(dict(list(cars.items())[:4])) is None
 
 
 def test_results_count_since_the_reset() -> None:

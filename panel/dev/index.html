@@ -875,6 +875,31 @@
           actions: car ? { [car.id]: { on: true, reason: "plan", start: dayAt(0, "01:00"), end: dayAt(0, "05:30"), problem: null } } : {},
         });
       }
+      // ?morning=1: a grid-friendly morning with its buffer (planner.morning_buffer): the first battery
+      // charges up to the buffer from the sun, the second holds back above it; the plan says so.
+      if (params.get("morning") === "1" && history.plan) {
+        const [first, second] = state.config.batteries;
+        const buffer = {
+          soc: 30, suggested: 30, need_kwh: 1.6, source: "learned", floor: 10,
+          batteries: state.config.batteries.map((b) => b.id), group: "all", back: 2,
+        };
+        state.config.rules.grid_friendly = true;
+        history.plan.rules.grid_friendly = true;
+        history.plan.morning_buffer = buffer;
+        history.plan.day = { defer_until: dayAt(0, "12:00"), held_kwh: 4.2, grid_first: false, cost: 0, buffer };
+        Object.assign(control, {
+          reason: "day",
+          batteries: {
+            ...(first ? { [first.id]: { action: "buffer", until: dayAt(0, "12:00"), level: 30, floor: null, target: null, soc: 22, problem: null } } : {}),
+            ...(second ? { [second.id]: { action: "defer", until: dayAt(0, "12:00"), level: 30, floor: null, target: null, soc: 31, problem: null } } : {}),
+          },
+        });
+        control.log.push(
+          { at: dayAt(0, "06:57"), kind: "day", until: dayAt(0, "12:00"), level: 30 },
+          ...(first ? [{ at: dayAt(0, "06:57"), kind: "day_buffer", battery: first.id, soc: 12, level: 30, fill: true }] : []),
+          ...(second ? [{ at: dayAt(0, "08:40"), kind: "day_buffer", battery: second.id, soc: 30, level: 30, fill: false }] : []),
+        );
+      }
       const watching = () => ({
         active: true,
         since: "2026-10-01T09:12:00+02:00",

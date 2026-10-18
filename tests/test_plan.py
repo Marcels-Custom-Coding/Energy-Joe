@@ -385,6 +385,132 @@ def test_grid_friendly_waits_only_when_the_sun_is_enough() -> None:
     assert make_plan(plan_input(solar=40, soc=30, defer_kw=3.0))["day"] is None
 
 
+def test_the_morning_buffer_charges_first_then_the_grid_gets_the_sun() -> None:
+    """Up to the buffer the battery takes the morning sun, then it holds back
+    (the sun goes to the grid) and is still full by the evening."""
+    plan = make_plan(
+        plan_input(
+            solar=40, soc=30, grid_friendly=True, defer_kw=3.0, morning_buffer=40
+        )
+    )
+    day = plan["day"]
+    assert day is not None
+    assert day["buffer"]["soc"] == 40
+    assert day["buffer"]["source"] == "user"
+    assert day["buffer"]["batteries"] == ["b1"]
+    hours = {h["start"][:16]: h for h in plan["hours"]}
+    morning = [
+        h for k, h in hours.items() if "2026-10-04T07:00" <= k < day["defer_until"][:16]
+    ]
+    # It rises to the buffer and stays there while the sun goes to the grid.
+    assert max(h["soc"] for h in morning) == pytest.approx(40, abs=0.5)
+    assert any(h["grid_out"] > 0 for h in morning)
+    held = [h for h in morning if h["soc"] >= 39.5]
+    assert held and all(h["grid_out"] > 0 for h in held)
+    assert hours["2026-10-04T17:00"]["soc"] >= 99
+    # Less is held back than without a buffer.
+    plain = make_plan(
+        plan_input(solar=40, soc=30, grid_friendly=True, defer_kw=3.0, morning_buffer=0)
+    )
+    assert plain["day"]["held_kwh"] > day["held_kwh"]
+
+
+def test_the_buffer_is_suggested_from_what_a_morning_needs() -> None:
+    # Joe learned 2 kWh a morning beyond the sun: with 25 % margin on 10 kWh
+    # above the 10 % reserve that makes 35 %.
+    plan = make_plan(
+        plan_input(solar=40, soc=30, grid_friendly=True, defer_kw=3.0, morning_need=2.0)
+    )
+    buffer = plan["morning_buffer"]
+    assert buffer["suggested"] == 35
+    assert buffer["soc"] == 35
+    assert buffer["source"] == "learned"
+    assert plan["day"]["buffer"] == buffer
+    # Never below the floor; before Joe learned it, a share of the morning's
+    # use; never more than he suggests at most.
+    low = make_plan(
+        plan_input(solar=40, soc=30, grid_friendly=True, defer_kw=3.0, morning_need=0)
+    )["morning_buffer"]
+    assert low["soc"] == 10
+    start = make_plan(plan_input(solar=40, soc=30, grid_friendly=True, defer_kw=3.0))[
+        "morning_buffer"
+    ]
+    assert start["source"] == "start"
+    assert start["need_kwh"] >= 0.5
+    big = make_plan(
+        plan_input(
+            solar=40, soc=30, grid_friendly=True, defer_kw=3.0, morning_need=20.0
+        )
+    )["morning_buffer"]
+    assert big["suggested"] == 60
+    # The owner's own value counts, but never below the floor.
+    own = make_plan(
+        plan_input(
+            solar=40,
+            soc=30,
+            grid_friendly=True,
+            defer_kw=3.0,
+            morning_need=2.0,
+            morning_buffer=5,
+        )
+    )["morning_buffer"]
+    assert own["soc"] == 10 and own["suggested"] == 35 and own["source"] == "user"
+    # Not grid-friendly: no buffer.
+    assert make_plan(plan_input(solar=40, soc=30))["morning_buffer"] is None
+
+
+def test_the_buffer_belongs_to_the_group_that_discharges_first() -> None:
+    batteries = [
+        Battery("byd", "BYD", 10.0, 30, 3.0, 3.0, group="fronius"),
+        Battery("venus", "Venus", 5.0, 30, 2.5, 2.5, group="omni"),
+    ]
+    values = {
+        "batteries": batteries,
+        "grid_friendly": True,
+        "defer_kw": 5.5,
+        "morning_need": 1.0,
+        "one_by_one": True,
+        "order": ["venus", "byd"],
+    }
+    buffer = make_plan(plan_input(solar=50, soc=30, **values))["morning_buffer"]
+    assert buffer["batteries"] == ["venus"]
+    assert buffer["group"] == "omni"
+    # 1 kWh with margin on the Venus' 5 kWh above 10 %: 35 %.
+    assert buffer["soc"] == 35
+    # Side by side ("Gleichzeitig"): the buffer is shared by all of them.
+    together = make_plan(
+        plan_input(solar=50, soc=30, **{**values, "one_by_one": False})
+    )
+    assert together["morning_buffer"]["batteries"] == ["byd", "venus"]
+
+
+def test_holding_back_only_when_the_battery_still_fills() -> None:
+    """With and without a buffer: whenever Joe holds back, the battery ends
+    the day as full as it would without waiting."""
+    chosen = 0
+    for solar in range(8, 44, 4):
+        without = make_plan(plan_input(solar=solar, soc=30))
+        top = max(h["soc"] for h in without["hours"] if h["start"] >= "2026-10-04T05")
+        for buffer in (None, 0, 30, 50):
+            plan = make_plan(
+                plan_input(
+                    solar=solar,
+                    soc=30,
+                    grid_friendly=True,
+                    defer_kw=3.0,
+                    morning_buffer=buffer,
+                )
+            )
+            if plan["day"] is None:
+                continue
+            chosen += 1
+            assert (
+                max(h["soc"] for h in plan["hours"] if h["start"] >= "2026-10-04T05")
+                >= top - 0.5
+            )
+    assert chosen > 0
+
+
 def test_grid_first_may_wait_longer() -> None:
     saving = make_plan(plan_input(solar=16, soc=30, grid_friendly=True, defer_kw=3.0))
     grid = make_plan(

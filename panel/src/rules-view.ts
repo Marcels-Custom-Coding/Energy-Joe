@@ -5,7 +5,7 @@ import { tip } from "./components/tip";
 import { saveConfig, sourceOf } from "./config";
 import { formatNumber } from "./entities";
 import type { Translate, TranslationKey } from "./i18n";
-import type { ControlView, DayCaution, DischargeMode, JoeConfig, JoeInfo, PriorityItem, Rules } from "./types";
+import type { ControlView, DayCaution, DischargeMode, JoeConfig, JoeInfo, MorningBuffer, Plan, PriorityItem, Rules } from "./types";
 
 // Joe's rules: one row per rule (Einstellungen › Regeln) and the same
 // formatting for mirrors elsewhere ("Sicherheitspuffer · 120 %").
@@ -24,7 +24,14 @@ export type NumberRuleKey =
   | "balance_days";
 
 /** Rules with a row of their own (switches, order, choice). */
-export type OtherRuleKey = "guard_grid" | "priority" | "discharge_in_window" | "converter_losses" | "day_surplus" | "transfer_guard";
+export type OtherRuleKey =
+  | "guard_grid"
+  | "priority"
+  | "discharge_in_window"
+  | "converter_losses"
+  | "day_surplus"
+  | "morning_buffer"
+  | "transfer_guard";
 export type RuleKey = NumberRuleKey | OtherRuleKey;
 
 export interface NumberRule {
@@ -67,6 +74,7 @@ export const RULE_GROUPS: Record<RuleGroup, readonly RuleKey[]> = {
     "discharge_in_window",
     "converter_losses",
     "day_surplus",
+    "morning_buffer",
     "transfer_guard",
   ],
   grid: ["grid_limit_w", "max_night_kwh", "guard_grid", "max_price", "min_saving"],
@@ -119,6 +127,10 @@ export function ruleValue(t: Translate, config: JoeConfig, key: RuleKey): string
       return rules.day_surplus ? `${t("rule.on")} · ${t(`rule.day_caution.${rules.day_caution}`)}` : t("rule.off");
     case "transfer_guard":
       return t(rules.transfer_guard !== false ? "rule.on" : "rule.off");
+    case "morning_buffer":
+      return rules.morning_buffer_soc == null
+        ? t("rule.morning_buffer.auto")
+        : `${formatNumber(t.lang, rules.morning_buffer_soc, 0)} %`;
     default:
       return t(rules[key] ? "rule.on" : "rule.off");
   }
@@ -135,6 +147,7 @@ export function ruleRow(
   info: JoeInfo | undefined,
   key: RuleKey,
   control?: ControlView,
+  plan?: Plan | null,
 ): TemplateResult {
   if (isNumberRule(key)) {
     const extra = key === "grid_limit_w" ? peakLine(t, host, config, control) : nothing;
@@ -153,7 +166,100 @@ export function ruleRow(
       return daySurplusRow(t, host, config);
     case "transfer_guard":
       return transferGuardRow(t, host, config);
+    case "morning_buffer":
+      return morningBufferRow(t, host, config, plan);
   }
+}
+
+/** The buffer of the grid-friendly morning as the plan has it (tonight's, else this morning's). */
+export function morningBuffer(plan: Plan | null | undefined): MorningBuffer | null {
+  return plan?.morning_buffer ?? plan?.morning?.day?.buffer ?? null;
+}
+
+/** The highest own buffer one can set (%): above it holding back hardly leaves anything for the grid. */
+const MORNING_BUFFER_MAX = 90;
+
+/**
+ * The buffer of the grid-friendly morning: automatic (Joe's suggestion from
+ * what a morning needs beyond the sun) or one's own level (planner.morning_buffer).
+ */
+function morningBufferRow(t: Translate, host: HTMLElement, config: JoeConfig, plan?: Plan | null): TemplateResult {
+  const rules = config.rules;
+  const buffer = morningBuffer(plan);
+  const own = rules.morning_buffer_soc != null;
+  const suggested = buffer?.suggested;
+  const on = rules.grid_friendly;
+  const vars = {
+    soc: formatNumber(t.lang, own ? (rules.morning_buffer_soc ?? 0) : (suggested ?? 0), 0),
+    kwh: formatNumber(t.lang, buffer?.need_kwh ?? 0, 1),
+  };
+  const hint = !on
+    ? t("rule.morning_buffer.off_hint")
+    : own
+      ? t("rule.morning_buffer.own_hint", vars)
+      : suggested == null
+        ? t("rule.morning_buffer.pending_hint")
+        : buffer?.source === "learned"
+          ? t("rule.morning_buffer.learned_hint", vars)
+          : t("rule.morning_buffer.start_hint", vars);
+  const setOwn = (input: HTMLInputElement) => {
+    const value = Number.parseFloat(input.value.trim());
+    if (!Number.isFinite(value) || value < 0 || value > MORNING_BUFFER_MAX) {
+      input.reportValidity();
+      return;
+    }
+    saveConfig(host, { rules: { morning_buffer_soc: Math.round(value) } });
+  };
+  return html`<div class="row stacked" data-tipped data-anchor="morning_buffer">
+    <div>
+      <div class="name">
+        <b id="morning-buffer">${t("rule.morning_buffer")}</b>${tip(t, "r_morning_buffer")}
+        ${sourceChip(t, sourceOf(config, "rules.morning_buffer_soc"))}
+      </div>
+      <small>${hint}</small>
+    </div>
+    <div class="buffer-control">
+      <div class="seg" role="group" aria-labelledby="morning-buffer">
+        <button
+          type="button"
+          aria-pressed=${String(!own)}
+          ?disabled=${!on}
+          @click=${() => saveConfig(host, { rules: { morning_buffer_soc: null } }, "default")}
+        >
+          ${suggested == null
+            ? t("rule.morning_buffer.auto")
+            : t("rule.morning_buffer.auto_n", { soc: formatNumber(t.lang, suggested, 0) })}
+        </button>
+        <button
+          type="button"
+          aria-pressed=${String(own)}
+          ?disabled=${!on}
+          @click=${() =>
+            own ? undefined : saveConfig(host, { rules: { morning_buffer_soc: suggested ?? Math.max(30, rules.reserve_soc) } })}
+        >
+          ${t("rule.morning_buffer.own")}
+        </button>
+      </div>
+      ${tip(t, own ? "r_morning_buffer_own" : "r_morning_buffer_auto")}
+      ${own
+        ? html`<span class="unit-input">
+            <input
+              class="input"
+              type="number"
+              inputmode="numeric"
+              min="0"
+              max=${MORNING_BUFFER_MAX}
+              step="1"
+              aria-label=${t("rule.morning_buffer.own_label")}
+              ?disabled=${!on}
+              .value=${String(rules.morning_buffer_soc ?? "")}
+              @change=${(ev: Event) => setOwn(ev.target as HTMLInputElement)}
+            />
+            <span class="unit">%</span>
+          </span>`
+        : nothing}
+    </div>
+  </div>`;
 }
 
 /** Days Joe measures before the highest import counts as the grid limit (plan/inputs.py PEAK_DAYS). */
@@ -506,6 +612,12 @@ export const ruleStyles = css`
       width: 44px;
       height: 44px;
     }
+  }
+  .buffer-control {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
   }
   .row.stacked {
     display: grid;

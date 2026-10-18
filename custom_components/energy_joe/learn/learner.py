@@ -17,7 +17,14 @@ from ..observe.store import HistoryStore
 from ..plan.cars import NEED_ENTITIES, stable_entity
 from .context import async_day_labels, async_sensor_series
 from .evaluate import evaluate
-from .learning import buffer, results, solar_factor, solar_ratios, solar_shift
+from .learning import (
+    buffer,
+    morning_need,
+    results,
+    solar_factor,
+    solar_ratios,
+    solar_shift,
+)
 from .models import (
     battery_model,
     car_days,
@@ -62,6 +69,7 @@ SCOPES: dict[str, tuple[str, ...]] = {
         "presence",
         "buffer",
         "buffer_days",
+        "morning_need",
     ),
     "battery": ("battery_models",),
     "hot_water": ("action_models",),
@@ -75,6 +83,7 @@ EMPTY: dict[str, Any] = {
     "shift_days": 0,
     "buffer": None,
     "buffer_days": 0,
+    "morning_need": None,
     "solar_classes": {},
     "sources": {},
     "consumption_model": None,
@@ -281,6 +290,11 @@ class JoeLearner:
             },
             "action_models": await self._async_hot_water(config, learned, today),
             "car_models": await self._async_cars(config, learned, today, days),
+            # What a sunny morning needs beyond the sun, over the years.
+            "morning_need": morning_need(
+                _since(learned, "consumption", seasons, ""),
+                model.flexible_consumers(config),
+            ),
             "home_check": home_check(
                 {
                     d: v

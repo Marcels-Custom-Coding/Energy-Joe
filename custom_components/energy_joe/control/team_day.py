@@ -28,8 +28,9 @@ So, in "Automatisch" (the default):
   (a lead in minutes, never forgotten in winter: a day without anything to
   learn leaves it as it is). He uses it once the owner said yes.
 
-"Nur nacheinander" does none of this (the weak-day rule of control/team.py
-stays). "Grundlast teilen": the next group gives a base load (the lower part
+"Nur nacheinander" does none of this, strictly: not even the weak-day rule of
+control/team.py (side by side when the sun would not fill them one after the
+other); only "Automatisch" and "Grundlast teilen" keep it. "Grundlast teilen": the next group gives a base load (the lower part
 of the house's need, its 10 % quantile, never the mean) at a power Joe sets,
 the active group covers the rest. Only groups whose discharge power Joe can
 set (a limit in W).

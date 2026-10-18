@@ -31,7 +31,8 @@ and the first is usable again once it has charged 5 % above it.
 When the sun will not fill the batteries one after the other before it goes
 (cautious forecast), they charge side by side: the others become free to
 charge (never forced; their own control takes what is left), discharging
-stays blocked for them, and on a cloud they are blocked again at once.
+stays blocked for them, and on a cloud they are blocked again at once (not
+with "Nur nacheinander", see control/team_day.py).
 
 Groups ("Wer regelt ihn?"): batteries regulated by one system take turns
 as one. Omnibattery regulates all its batteries (a Venus, a Victron) with one
