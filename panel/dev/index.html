@@ -53,6 +53,8 @@
       inside: Venus und Victron (?groups=1) laden sich gegenseitig, dasselbe System regelt beide – Joe meldet nur)
       ?groups=1|ask (Speicher in Gruppen: ein Victron in derselben Omnibattery wie die Venus; Fronius+BYD und
       Omnibattery mit Venus+Victron arbeiten nacheinander als zwei Gruppen; ask: beim Victron ist Joe nicht sicher und fragt)
+      ?bnotes=1 (Hinweise zum Steuern: beim ersten Speicher eine Freischaltung im Gerät und eine ausgeschaltete Entität;
+      auf der Speicher-Seite ein Kostal ohne Ladestand und ein SMA, den Joe nicht steuern kann)
       ?later=1 (die Frage zum Homeoffice wurde in der Einrichtung mit „Später“ übersprungen: Fragen, Los und Übersicht › Joe braucht dich)
       sample-*.json kommen aus scripts/make_dev_samples.py (erfundene Haushalte aus tests/snapshots.py):
       Funde, die Konfiguration nach dem Übernehmen, ihre Prüfungen, Zustände und Register sowie
@@ -71,6 +73,20 @@
     <script type="module">
       const params = new URLSearchParams(location.search);
       const sample = await (await fetch(`./sample-${params.get("sample") || "fronius"}.json`, { cache: "no-store" })).json();
+      // Hints about steering a battery (discovery/find.py, battery_notes); the samples are older.
+      if (params.get("bnotes") === "1") {
+        const first = sample.discovery.batteries[0];
+        if (first) {
+          first.notes = [
+            { code: "needs.kostal_modbus_external" },
+            { code: "enable", entities: [{ entity_id: "switch.kostal_block_charge", name: "Block Charge" }] },
+          ];
+        }
+        sample.discovery.battery_notes = [
+          { integration: "kostal_modbus_control", name: "Kostal", code: "no_level", entities: [{ entity_id: "sensor.kostal_soc", name: "Battery SoC" }] },
+          { integration: "sma", name: "SMA", code: "cannot.sma", entities: [] },
+        ];
+      }
 
       // Stand-ins for elements Home Assistant provides.
       customElements.define(

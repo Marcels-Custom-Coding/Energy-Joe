@@ -10,8 +10,14 @@ first lever the battery offers, in the order its profile prefers:
 - hold(floor): the floor as minimum level, else a hold mode, else forced
   charging with 0 W ("standby"), else the discharge limit
 - block: no discharge at all (while another battery charges from the grid):
-  its own "allow discharging" switch off where it has one (Omnibattery: its
-  control stays in automatic mode), else as its profile prefers
+  its own "allow discharging" switch off (Omnibattery: its control stays in
+  automatic mode) or "block discharging" on (Kostal over Modbus) where it
+  has one, else as its profile prefers
+
+By day the same adapter blocks charging and discharging for "Nacheinander"
+and the watchdog: switches, a mode with an option per direction, or charge
+and discharge limits at 0 (also without a switch, also below 0, in W, kW
+or A), see team_lever and guard_block_roles.
 
 Some batteries need a switch first ("prepare", e.g. Remote Control), some
 take commands only for a while ("command_timeout"), some are steered with

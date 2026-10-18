@@ -10,7 +10,11 @@ Almost every home battery can be steered with some of these levers:
 - mode: a select with a normal option and a forced-charge option (sometimes
   also hold/standby and forced discharge), with charge_power / discharge_power
   as the power for the forced modes
-- discharge_limit (+ discharge_limit_enabled): a cap on the discharge power
+- discharge_limit (+ discharge_limit_enabled): a cap on the discharge power,
+  charge_limit (+ charge_limit_enabled) one on the charge power
+- by day only: switches that allow (allow_charge, allow_discharge) or block
+  (block_charge, block_discharge) a direction, a mode's options for one
+  direction (no_charge, no_discharge) and the system's limits
 
 A profile names the entities of one integration (by their stable keys) and
 the order in which Joe tries the levers. Batteries of integrations without a

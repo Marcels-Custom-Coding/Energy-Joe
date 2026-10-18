@@ -7,6 +7,7 @@ import { daySurplus, limitInPercent, surplusAbility } from "../../components/day
 import { dayText } from "../../components/look-back";
 import { timeOf } from "../../components/plan-text";
 import "../../components/sheet";
+import { batteryNotes } from "../../components/battery-notes";
 import { tip } from "../../components/tip";
 import { saveConfig, sourceOf, withIgnored } from "../../config";
 import { define } from "../../define";
@@ -337,6 +338,7 @@ export class JoeBatteryDevice extends DeviceSection {
             >
           </div>`
         : nothing}
+      ${batteryNotes(t, found?.notes, battery.name)}
       ${this.notice ? html`<div class="note warn" role="status"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${this.notice}</span></div>` : nothing}`;
   }
 
@@ -469,7 +471,7 @@ export class JoeBatteryDevice extends DeviceSection {
     let text: string;
     if (!capable) {
       text = t(`battery.surplus.${ability}`);
-    } else if (mine && (mine.state === "no_limit" || mine.state === "unit")) {
+    } else if (mine && (mine.state === "no_limit" || mine.state === "unit" || mine.state === "flash")) {
       text = t(`battery.surplus.${mine.state}`);
     } else if (!rules.day_surplus) {
       text = t("battery.surplus.rule_off");
