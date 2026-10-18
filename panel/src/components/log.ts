@@ -114,7 +114,16 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
       discharging: names(entry.discharging),
       cutoff: typeof entry.value === "number" ? formatNumber(t.lang, entry.value, 1) : "–",
       level: typeof entry.soc === "number" ? formatNumber(t.lang, entry.soc, 1) : "–",
+      names: Array.isArray(entry.names) ? entry.names.map((n) => `„${String(n)}“`).join(", ") : "",
+      why: t.optional(`team.given_back.why.${String(entry.reason ?? entry.problem ?? "")}`) ?? "",
+      direction: t.optional(`log.team_hold.${String(entry.direction ?? "")}`) ?? "",
     };
+    if (entry.kind === "team_hold_end") {
+      return t.optional(`log.team_hold_end.${String(entry.reason)}`, team) ?? t("log.team_hold_end", team);
+    }
+    if (entry.kind === "team_given_back") {
+      return t("log.team_given_back", team);
+    }
     if (entry.kind === "team_handover") {
       return t.optional(`log.team_handover.${String(entry.reason)}`, team) ?? t("log.team_handover", team);
     }

@@ -14,6 +14,8 @@ export interface BatteryAutomation {
   /** What it sets: an entity (or a whole device), of which battery, one of Joe's levers? */
   writes: { entity_id: string | null; name: string; battery: string; battery_id: string; joe: boolean }[];
   switched_off: { at: string; reason: string } | null;
+  /** Switched on again by Joe (he could not coordinate the batteries himself): he takes it over once he can. */
+  lent?: { at: string; reason: string } | null;
 }
 
 /** The automations that write to Joe's batteries (and the ones he switched off). */
@@ -186,6 +188,14 @@ export class JoeBatteryAutomations extends LitElement {
                   ${t("automations.switched_off", {
                     day: dayText(t.lang, item.switched_off.at, "short"),
                     time: item.switched_off.at.slice(11, 16),
+                  })}
+                </small>`
+              : nothing}
+            ${item.lent && active
+              ? html`<small>
+                  ${t("automations.lent", {
+                    day: dayText(t.lang, item.lent.at, "short"),
+                    time: item.lent.at.slice(11, 16),
                   })}
                 </small>`
               : nothing}

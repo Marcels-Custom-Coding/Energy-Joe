@@ -2,7 +2,7 @@ import { LitElement, css, html, nothing, type PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
 import "../../components/day-questions";
 import "../../components/steer-tonight";
-import { batteryTeam, groupsPatch, guardAlarm, guardInside, transferGuard, unsureNames } from "../../components/battery-team";
+import { batteryTeam, givenBack, groupsPatch, guardAlarm, guardInside, transferGuard, unsureNames } from "../../components/battery-team";
 import { mergeAnswers, mergeQuestion } from "../../components/car-sources";
 import { daySurplus, surplusAbility, surplusConflicts } from "../../components/day-surplus";
 import { checkText } from "../../components/texts";
@@ -220,8 +220,8 @@ export function inboxItems(t: Translate, joe: JoeState, inputs: InboxInputs = {}
     }
   }
   // Several batteries: still running against each other after the watchdog's
-  // stages, the owner's automations doing it so far, or "Nacheinander" not
-  // chosen yet.
+  // stages, the owner's automations doing it so far, or switched on again
+  // because Joe cannot block himself.
   const team = batteryTeam(joe);
   const teamTo: Route = { tab: "devices", section: "battery", id: "together" };
   const guard = transferGuard(joe);
@@ -264,14 +264,15 @@ export function inboxItems(t: Translate, joe: JoeState, inputs: InboxInputs = {}
       to: teamTo,
     });
   }
-  if (team?.proposal) {
-    push({
-      id: "team:proposal",
-      icon: "mdi:battery-sync-outline",
-      title: t("overview.todo.team"),
-      text: t("overview.todo.team.text"),
+  // Joe switched the owner's automations on again: he cannot block (a lever,
+  // a block that did not arrive …) – they run until he can take over again.
+  const back = givenBack(t, team);
+  if (back?.problem && team?.given_back) {
+    warn({
+      id: `team:given_back:${team.given_back.at}`,
+      title: t("team.given_back.title"),
+      text: back.text,
       to: teamTo,
-      fix: { label: t("team.mode.sequence"), tip: "team_mode", patch: { rules: { battery_team: "sequence" } } },
     });
   }
   // A limit in % that could take part once Joe knows what 100 % stand for.

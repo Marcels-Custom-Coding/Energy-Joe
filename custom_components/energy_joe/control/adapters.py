@@ -558,6 +558,28 @@ class RoleAdapter(Adapter):
             and level <= 0
         )
 
+    def discharge_blocked(self, hass: HomeAssistant) -> bool:
+        """Whether discharging is blocked right now: its allow switch off, or
+        its discharge limit at 0 and in force (Fronius ignores a limit whose
+        switch is off – both must be so)."""
+        if (
+            self._has("allow_discharge")
+            and read(hass, self.controls["allow_discharge"]) is False
+        ):
+            return True
+        roles = self.discharge_roles()
+        if roles is None:
+            return False
+        switch, value = roles
+        if switch in self.controls and read(hass, self.controls[switch]) is not True:
+            return False
+        level = read(hass, self.controls[value])
+        return (
+            isinstance(level, int | float)
+            and not isinstance(level, bool)
+            and level <= 0
+        )
+
     def team_free(self, saved: dict[str, Any], roles: list[str]) -> list[Write]:
         """These levers back as they were: each switch first, then its value."""
         switches = [r for r in roles if r.endswith("_enabled")]

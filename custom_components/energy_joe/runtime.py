@@ -13,6 +13,7 @@ import voluptuous as vol
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.storage import Store
+from homeassistant.util import dt as dt_util
 from homeassistant.util.hass_dict import HassKey
 
 from . import model
@@ -406,7 +407,16 @@ class JoeRuntime:
                 state is None and registry.async_get(entity_id) is None
             ):
                 del switched_off[entity_id]
+        lent: dict[str, Any] = self.executor.data["automations_lent"]
+        for entity_id in list(lent):
+            if self._hass.states.get(entity_id) is None and (
+                registry.async_get(entity_id) is None
+            ):
+                del lent[entity_id]
         found = battery_automations.find(self._hass, self._config, switched_off)
+        for automation in found:
+            # Switched on again by Joe: he takes it over once he can.
+            automation["lent"] = lent.get(automation["entity_id"])
         listed = {a["entity_id"] for a in found}
         for entity_id, record in switched_off.items():
             if entity_id not in listed:
@@ -418,6 +428,7 @@ class JoeRuntime:
                         "on": False,
                         "writes": [],
                         "switched_off": record,
+                        "lent": None,
                     }
                 )
         return found
@@ -425,13 +436,29 @@ class JoeRuntime:
     async def async_switch_automations(
         self, on: bool, entity_ids: list[str] | None = None
     ) -> list[str]:
-        """All (or some) battery automations off, or the ones Joe switched off on again."""
+        """All (or some) battery automations off, or the ones Joe switched off on again.
+
+        Off only what Joe takes over at once: one that coordinates batteries
+        Joe cannot coordinate himself right now (not live, a lever missing …)
+        keeps running and is lent to him – he switches it off himself once he
+        can (control/executor.py _async_team_hands).
+        """
         switched_off: dict[str, Any] = self.executor.data["automations_off"]
+        lent: dict[str, Any] = self.executor.data["automations_lent"]
         found = self.automations()
         if entity_ids is None:
             entity_ids = [
                 a["entity_id"] for a in found if (a["switched_off"] if on else a["on"])
             ]
+        if not on:
+            later, reason = self.executor.team_cannot_take(found)
+            stamp = dt_util.now().isoformat(timespec="seconds")
+            for entity_id in entity_ids:
+                if entity_id in later:
+                    lent[entity_id] = {"at": stamp, "reason": reason}
+                else:
+                    lent.pop(entity_id, None)
+            entity_ids = [e for e in entity_ids if e not in later]
         german = (self._hass.config.language or "").startswith("de")
         if on:
             message = (

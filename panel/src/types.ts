@@ -299,7 +299,7 @@ export interface Rules {
   day_surplus: boolean;
   /** How much of the forecast Joe counts on: 90 / 80 / 65 %. */
   day_caution: DayCaution;
-  /** Several batteries that regulate themselves: one after the other, or left to themselves; null: not chosen. */
+  /** Several batteries that regulate themselves: one after the other, or left to themselves; null: not chosen (works as "sequence"). */
   battery_team?: BatteryTeamMode | null;
   /** Battery ids in the order they charge and discharge (the others follow). */
   team_charge_order?: string[];
@@ -316,7 +316,6 @@ export interface BatteryTeam {
   state:
     | "off"
     | "on"
-    | "unset"
     | "together"
     | "single"
     | "one_group"
@@ -326,8 +325,13 @@ export interface BatteryTeam {
     | "not_tested"
     | "unknown"
     | "automation"
-    | "no_grid";
+    | "no_grid"
+    | "not_taken"
+    | "taking_over"
+    | "error";
   mode: BatteryTeamMode | null;
+  /** Not chosen: "Nacheinander" all the same (older backends: missing). */
+  default?: boolean;
   /** Not live: Joe only shows what he would do. */
   dry: boolean;
   /** The battery that may work now (the first of the active group). */
@@ -367,8 +371,23 @@ export interface BatteryTeam {
   group_question?: boolean;
   /** state "automation": the owner's automations that do it so far. */
   automations: string[];
-  /** Two or more regulate themselves and nothing is chosen yet: Joe proposes "Nacheinander". */
-  proposal: boolean;
+  /** What Joe would say without the owner's automations ("on": he could take over now). */
+  free?: string | null;
+  /** The owner's automations Joe switched on again (still running): he takes them over once he can. */
+  lent?: string[];
+  /** state "taking_over": when Joe switches them off again (if all stays well). */
+  taking_over_at?: string | null;
+  /** The last time Joe switched the owner's automations on again, why and which. */
+  given_back?: {
+    at: string;
+    reason: string;
+    names: string[];
+    failed?: string[];
+    /** Joe's blocks went back while a battery still worked: nothing blocks until the automations' condition starts anew. */
+    unblocked?: boolean;
+  } | null;
+  /** Joe holds his blocks until the active group stops charging or discharging, then gives the automations back. */
+  hold?: { since: string; direction: "charge" | "discharge"; batteries: string[]; reason: string; names: string[] } | null;
 }
 
 /** The watchdog ("Speicher-Wächter", control/guard.py): two batteries running against each other. */

@@ -85,9 +85,54 @@ export function teamText(t: Translate, team: BatteryTeam): string {
     return t(team.dry ? "team.now.dry" : "team.now", { parts });
   }
   if (team.state === "automation") {
-    return t("team.state.automation", { names: team.automations.map((n) => `„${n}“`).join(", ") });
+    return t("team.state.automation", { names: quoted(team.automations) });
+  }
+  if (team.state === "taking_over") {
+    return t("team.state.taking_over", { names: quoted(team.lent ?? []), time: (team.taking_over_at ?? "").slice(11, 16) });
+  }
+  if (team.state === "not_taken") {
+    const ids = Object.keys(team.batteries).filter((id) => team.batteries[id].problem);
+    return t("team.state.not_taken", { names: groupName(team, ids) });
   }
   return t.optional(`team.state.${team.state}`) ?? team.state;
+}
+
+function quoted(names: string[]): string {
+  return names.map((n) => `„${n}“`).join(", ");
+}
+
+/** Reasons that are not the owner's choice: something keeps Joe from blocking ("Joe braucht dich"). */
+const GIVEN_BACK_CHOICES = ["off", "dry", "together", "paused"];
+
+/**
+ * Joe switched the owner's automations on again because he does not
+ * coordinate the batteries himself right now: the words, and whether it is
+ * a problem (not the owner's choice). Null while nothing was given back or
+ * Joe took them over again.
+ */
+export function givenBack(t: Translate, team: BatteryTeam | undefined): { text: string; problem: boolean } | null {
+  const back = team?.given_back;
+  if (!team || !back || !back.names.length || team.state === "on") {
+    return null;
+  }
+  // Nothing blocks right now (Joe could not hold his blocks): worth a warning, too.
+  const problem = !GIVEN_BACK_CHOICES.includes(back.reason) || Boolean(back.unblocked);
+  const why = t.optional(`team.given_back.why.${back.reason}`) ?? t("team.given_back.why.error");
+  const names = quoted(back.names);
+  const text = GIVEN_BACK_CHOICES.includes(back.reason) ? t("team.given_back.choice", { names, why }) : t("team.given_back", { names, why });
+  return { text: back.unblocked ? `${text} ${t("team.given_back.unblocked")}` : text, problem };
+}
+
+/** Joe holds his blocks until the working group stops, then gives the automations back. */
+export function teamHold(t: Translate, team: BatteryTeam | undefined): string | null {
+  const hold = team?.hold;
+  if (!team || !hold) {
+    return null;
+  }
+  return t(hold.direction === "discharge" ? "team.hold.discharge" : "team.hold.charge", {
+    name: groupName(team, hold.batteries),
+    names: quoted(hold.names),
+  });
 }
 
 /** "Joe tut gerade": only while Joe blocks for real. */

@@ -185,7 +185,9 @@ async def test_joe_groups_by_the_integration_and_asks_when_unsure(
     assert view["batteries"]["victron"]["group"] == f"entry:{omni.entry_id}"
     assert view["batteries"]["byd"]["group"] == f"entry:{fronius.entry_id}"
     assert len(view["groups"]) == 2
-    assert view["proposal"] is True
+    # Not chosen: "Nacheinander" all the same.
+    assert view["default"] is True
+    assert view["state"] != "together"
     assert view["group_question"] is False
     # All in one group: nothing to coordinate by day.
     holder["config"] = model.validate(
@@ -198,7 +200,7 @@ async def test_joe_groups_by_the_integration_and_asks_when_unsure(
     await executor.async_check()
     view = executor.view["team"]
     assert view["state"] == "one_group"
-    assert view["proposal"] is False
+    assert view["default"] is False
     assert executor.data["saved"] == {}
     # A battery steered through levers the owner assigned: Joe is not sure.
     generic = {**venus(), "id": "other", "name": "Other", "adapter": "generic"}

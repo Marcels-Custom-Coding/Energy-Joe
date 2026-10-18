@@ -3,12 +3,14 @@ import { property, state } from "lit/decorators.js";
 import "../../components/battery-automations";
 import {
   batteryTeam,
+  givenBack,
   groupOf,
   groupsPatch,
   guardText,
   selfRegulating,
   teamGroups,
   teamOrder,
+  teamHold,
   teamText,
   transferGuard,
   unsureNames,
@@ -351,12 +353,16 @@ export class JoeBatteryGroup extends DeviceSection {
   private renderTeam(t: Translate, config: JoeConfig): TemplateResult {
     const team = batteryTeam(this.state);
     const mode = config.rules.battery_team ?? null;
+    // Not chosen: "Nacheinander" all the same (Joe takes it on).
+    const shown: BatteryTeamMode = mode ?? "sequence";
     const choose = (next: BatteryTeamMode) => {
       if (next !== mode) {
         void saveConfig(this, { rules: { battery_team: next } });
       }
     };
     const automations = team?.state === "automation";
+    const back = givenBack(t, team);
+    const hold = teamHold(t, team);
     return html`<section class="card" data-tipped data-anchor=${TEAM_ANCHOR}>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:battery-sync-outline"></ha-icon>${t("team.title")}</div>
@@ -367,15 +373,41 @@ export class JoeBatteryGroup extends DeviceSection {
         <div class="seg" role="group" aria-labelledby="team-question">
           ${(["sequence", "together"] as const).map(
             (option) =>
-              html`<button type="button" aria-pressed=${String(mode === option)} @click=${() => choose(option)}>
+              html`<button type="button" aria-pressed=${String(shown === option)} @click=${() => choose(option)}>
                 ${t(`team.mode.${option}`)}
               </button>`,
           )}
         </div>
-        ${tip(t, "team_mode")} ${mode ? sourceChip(t, sourceOf(config, "rules.battery_team")) : nothing}
+        ${tip(t, "team_mode")}
+        ${mode ? sourceChip(t, sourceOf(config, "rules.battery_team")) : html`<span class="chip">${t("team.mode.default")}</span>`}
       </div>
       ${team && !automations ? html`<p class="team-now">${teamText(t, team)}</p>` : nothing}
       <div class="team-notes">
+        ${!mode && team && Object.keys(team.groups ?? {}).length >= 2
+          ? html`<div class="note" role="status" data-tipped>
+              <ha-icon icon="mdi:shield-check-outline"></ha-icon>
+              <span>${t("team.default")} ${tip(t, "team_default")}</span>
+            </div>`
+          : nothing}
+        ${hold
+          ? html`<div class="note" role="status" data-tipped>
+              <ha-icon icon="mdi:lock-clock"></ha-icon>
+              <span>${hold} ${tip(t, "team_hold")}</span>
+            </div>`
+          : nothing}
+        ${back
+          ? html`<div class="note ${back.problem ? "warn" : ""}" role="status" data-tipped>
+              <ha-icon icon="mdi:robot-outline"></ha-icon>
+              <span>
+                ${back.text} ${tip(t, "team_given_back")}
+                <span class="note-actions">
+                  <button type="button" class="mini-btn" @click=${() => revealAnchor(this.renderRoot, "automations")}>
+                    ${t("team.automations.go")}
+                  </button>
+                </span>
+              </span>
+            </div>`
+          : nothing}
         ${team?.group_question ? this.renderGroupQuestion(t, config) : nothing}
         ${automations
           ? html`<div class="note warn" role="status">
@@ -392,7 +424,7 @@ export class JoeBatteryGroup extends DeviceSection {
           : nothing}
         ${this.renderGuard(t, config)}
       </div>
-      ${mode === "sequence"
+      ${shown === "sequence"
         ? html`<div class="team-orders">
             ${this.orderList(t, config, "team_charge_order")} ${this.orderList(t, config, "team_discharge_order")}
           </div>`
