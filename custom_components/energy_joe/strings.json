@@ -151,6 +151,10 @@
     "battery_transfer": {
       "title": "Batteries charge each other",
       "description": "{charging} charges while {discharging} discharges, and it goes on even after I restarted the battery's own control and blocked it for a few seconds. Something else may write the same limits, or a block is not taken. Look at Devices › Batteries › Several batteries in the Energy Joe panel."
+    },
+    "battery_transfer_inside": {
+      "title": "Batteries of one system charge each other",
+      "description": "{charging} charges while {discharging} discharges, and both are regulated by the same system (Omnibattery, for instance). I do not step in there, its own control shares the power. Check that system's settings; Devices › Batteries › Several batteries in the Energy Joe panel shows when it happened."
     }
   },
   "exceptions": {

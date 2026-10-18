@@ -160,6 +160,8 @@ export interface BatteryConfig {
   limit_ref_w?: number | null;
   /** Regulates itself to 0 W at the grid meter (Fronius, Omnibattery in automatic mode); null: as Joe proposes. */
   self_regulating?: boolean | null;
+  /** Which system regulates it ("Wer regelt ihn?"): batteries with the same key take turns as one group; null: as Joe proposes. */
+  control_group?: string | null;
   /** The level it really stops discharging at (learned or set); null: not known yet. */
   cutoff_soc?: number | null;
 }
@@ -317,6 +319,7 @@ export interface BatteryTeam {
     | "unset"
     | "together"
     | "single"
+    | "one_group"
     | "night"
     | "paused"
     | "levers"
@@ -327,8 +330,11 @@ export interface BatteryTeam {
   mode: BatteryTeamMode | null;
   /** Not live: Joe only shows what he would do. */
   dry: boolean;
-  /** The battery that may work now. */
+  /** The battery that may work now (the first of the active group). */
   active: string | null;
+  /** The group that may work now and its batteries (older backends: missing). */
+  active_group?: string | null;
+  active_batteries?: string[];
   since?: string | null;
   flow: "surplus" | "deficit" | null;
   /** They charge side by side today (the sun would not fill them one after the other). */
@@ -349,8 +355,16 @@ export interface BatteryTeam {
       problem: string | null;
       empty?: boolean;
       full?: boolean;
+      /** Its group (as set, else as proposed), the proposal and whether Joe is sure of it. */
+      group?: string;
+      group_proposed?: string;
+      group_sure?: boolean;
     }
   >;
+  /** The groups of the batteries that regulate themselves (one system each). */
+  groups?: Record<string, { batteries: string[]; empty?: boolean; full?: boolean }>;
+  /** Joe is not sure which system regulates a battery: he asks. */
+  group_question?: boolean;
   /** state "automation": the owner's automations that do it so far. */
   automations: string[];
   /** Two or more regulate themselves and nothing is chosen yet: Joe proposes "Nacheinander". */
@@ -377,7 +391,10 @@ export interface TransferGuard {
     charging: string[];
     discharging: string[];
     stage: number;
-    result: "running" | "fixed" | "alarm" | "automation" | "joe";
+    /** "inside": batteries of one group (one system) charged each other – Joe does not step in. */
+    result: "running" | "fixed" | "alarm" | "automation" | "joe" | "inside";
+    /** "inside" that has stopped. */
+    over?: boolean;
     dry: boolean;
     direction: "charge" | "discharge";
     seconds: number;

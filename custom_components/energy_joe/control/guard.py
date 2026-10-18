@@ -14,13 +14,20 @@ in stages, the way the owner's own automation did:
    (force mode "None", setpoints 0, manual mode off) and gives the battery
    back to its own control.
 2. Still opposite after WAIT: block that battery's current direction for
-   BLOCK seconds (Venus: its allow switch off and on again; Fronius: the
-   charge or discharge limit at 0 with its switch on, then back as it was).
+   BLOCK seconds, with the levers of "Nacheinander" for its whole group
+   (Venus: the allow switches of every battery its Omnibattery regulates;
+   Fronius: the charge or discharge limit at 0 with its switch on), then
+   back as it was.
 3. Still opposite after another WAIT: Joe speaks up ("Joe braucht dich" and,
    if wanted, a push), once per time it happens and at most once per
    COOLDOWN.
 
-A stage the battery has no lever for is skipped. Nothing of this runs while
+A stage the battery has no lever for is skipped.
+
+Groups (control/team.py): batteries regulated by one system (Omnibattery
+for a Venus and a Victron) share the power themselves. When batteries charge
+each other only inside one group, its own system is at fault: Joe does not
+step in, he notes it and speaks up (result "inside"). Nothing of this runs while
 Joe steers the night himself, while an automation writes the same levers
 (the owner's own watchdog), with the rule switched off (rules.transfer_guard)
 or outside the live mode (there Joe only says what he would do).
@@ -53,7 +60,7 @@ COOLDOWN = timedelta(hours=1)
 EVERY = timedelta(seconds=5)
 
 # What happened last ("last" in the store): the stage reached and the result.
-RESULTS = ("running", "fixed", "alarm", "automation", "joe")
+RESULTS = ("running", "fixed", "alarm", "automation", "joe", "inside")
 
 
 def fresh() -> dict[str, Any]:
@@ -92,20 +99,22 @@ def cause(
     charging: list[str],
     discharging: list[str],
     levers: dict[str, tuple[bool, bool]],
-    active: str | None = None,
+    active: Iterable[str] | str | None = None,
 ) -> str:
     """The battery Joe steps in at: the usual cause.
 
     First one whose control Joe can restart (stage 1), then one whose
     direction he can block (stage 2); among those the one running the other
     way than the team's active battery (that one does what it should); then
-    the order of the batteries. `levers`: battery -> (restart, block).
+    the order of the batteries. `levers`: battery -> (restart, block);
+    `active`: the battery (or the batteries of the group) whose turn it is.
     """
     involved = [k for k in order if k in charging or k in discharging]
-    if active in charging:
-        against = set(discharging)
-    elif active in discharging:
-        against = set(charging)
+    mine = {active} if isinstance(active, str) else set(active or ())
+    if mine & set(charging):
+        against = set(discharging) - mine
+    elif mine & set(discharging):
+        against = set(charging) - mine
     else:
         against = set()
 

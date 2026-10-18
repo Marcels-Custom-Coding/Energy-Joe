@@ -1013,7 +1013,7 @@ class JoeExecutor:
         after a crash) puts them back.
 
         Several batteries one after the other (`team`, see _async_team): one
-        whose charging is blocked waits; its room counts for the active one,
+        whose charging is blocked waits; its room counts for the active group,
         which takes the whole cap. Batteries charging side by side are left
         free (their own control takes what the capped one leaves).
         """
@@ -1120,10 +1120,19 @@ class JoeExecutor:
                         battery["id"]
                     ]
             if waiting_room and team:
+                # The waiting room counts for one battery of the active group
+                # (one that takes part, if any).
+                active = [
+                    store_
+                    for key in team["active_batteries"]
+                    for store_ in stores
+                    if store_.id == key
+                ]
+                carrier = next((x for x in active if x.capped), None) or next(
+                    iter(active), None
+                )
                 stores = [
-                    _with_room(store_, waiting_room)
-                    if store_.id == team["active"]
-                    else store_
+                    _with_room(store_, waiting_room) if store_ is carrier else store_
                     for store_ in stores
                 ]
             if mode == "live":
@@ -1587,8 +1596,9 @@ class JoeExecutor:
 
         Batteries that regulate themselves to 0 W at the grid meter (Fronius,
         Omnibattery in automatic mode) shift energy between each other when
-        both work. With "Nacheinander" (rules.battery_team) exactly one is
-        free, the others are blocked ahead of time (see control/team.py).
+        two systems work. With "Nacheinander" (rules.battery_team) exactly
+        one group (the batteries one system regulates) is free, the others
+        are blocked ahead of time (see control/team.py).
         Only by day and only live; the simulation and "suggest" show what Joe
         would do. During the night's plan it only watches: the night's
         steering comes first (it blocks the others itself while one charges
@@ -1597,14 +1607,18 @@ class JoeExecutor:
         keep Joe's hands off until they are switched off.
 
         Returns per battery (charge blocked, discharge blocked) and, for the
-        daytime cap, the active battery with the ones waiting or charging
+        daytime cap, the active group with the batteries waiting or charging
         side by side (None while Joe does not coordinate).
         """
         rules = config["rules"]
         store: dict[str, Any] = self.data["team"]
         today = dt_util.as_local(now).date().isoformat()
-        ids = {b["id"] for b in config["batteries"]}
-        # Forget what belongs to batteries that are gone.
+        groups = self._team_groups(config)
+        # Forget what belongs to batteries (and groups) that are gone; a
+        # group's fullness is watched under "group:<its key>".
+        ids = {b["id"] for b in config["batteries"]} | {
+            f"group:{g[0]}" for g in groups.values()
+        }
         for key in ("empty", "full", "watch", "cutoffs"):
             store[key] = {k: v for k, v in (store[key] or {}).items() if k in ids}
         info: dict[str, Any] = {
@@ -1617,6 +1631,8 @@ class JoeExecutor:
             "batteries": {},
             "automations": [],
             "proposal": False,
+            "groups": {},
+            "group_question": False,
         }
         candidates: list[tuple[dict[str, Any], RoleAdapter | None]] = []
         powers: dict[str, float] = {}
@@ -1642,20 +1658,35 @@ class JoeExecutor:
                 "discharge": None,
                 "why": None,
                 "problem": None,
+                "group": groups[battery["id"]][0],
+                "group_proposed": groups[battery["id"]][1],
+                "group_sure": groups[battery["id"]][2],
             }
             if regulating:
                 candidates.append((battery, role))
-        info["proposal"] = len(candidates) >= 2 and rules.get("battery_team") is None
+        for battery, _ in candidates:
+            key = groups[battery["id"]][0]
+            group = info["groups"].setdefault(key, {"batteries": []})
+            group["batteries"].append(battery["id"])
+        # Unsure who regulates whom: Joe asks ("Welche Speicher werden vom
+        # selben System geregelt?") until the owner says it.
+        info["group_question"] = len(candidates) >= 2 and any(
+            battery.get("control_group") is None and not groups[battery["id"]][2]
+            for battery, _ in candidates
+        )
+        info["proposal"] = (
+            len(info["groups"]) >= 2 and rules.get("battery_team") is None
+        )
         deficit = self._team_deficit(config, powers)
         if mode != "off" and not night:
             self._team_learn(candidates, powers, deficit, now)
-        state = self._team_gate(config, candidates, mode, today, night, info)
+        state = self._team_gate(config, candidates, mode, today, night, info, groups)
         info["state"] = state
         want: dict[str, tuple[bool, bool]] = {}
         hint: dict[str, Any] | None = None
         if state == "on":
             want, hint = self._team_choose(
-                config, plan, candidates, deficit, powers, now, today, info
+                config, plan, candidates, deficit, powers, now, today, info, groups
             )
         else:
             store.update(active=None, since=None)
@@ -1678,6 +1709,7 @@ class JoeExecutor:
         today: str,
         night: bool,
         info: dict[str, Any],
+        groups: dict[str, tuple[str, str, bool]],
     ) -> str:
         """Why Joe does not coordinate now, or "on"."""
         choice = config["rules"].get("battery_team")
@@ -1687,25 +1719,35 @@ class JoeExecutor:
             return "off"
         if len(candidates) < 2:
             return "single"
+        if len(info["groups"]) < 2:
+            # One system regulates them all: nothing runs against it by day.
+            return "one_group"
         if night:
             return "night"
         if self.data["team"]["paused"] == today:
             return "paused"
         seen: dict[str, str] = {}
         state = "on"
+        keys = {k: v[0] for k, v in groups.items()}
         for battery, role in candidates:
             entry = info["batteries"][battery["id"]]
+            whole = role is not None and self._whole_system(config, keys, battery, role)
             problem = (
-                role.team_problem(self._hass) if role is not None else "no_charge_lever"
+                role.team_problem(self._hass, whole)
+                if role is not None
+                else "no_charge_lever"
             )
             if problem:
                 entry["problem"] = problem
                 state = "levers"
                 continue
             assert role is not None
-            for entity_id in role.team_entities():
-                if seen.setdefault(entity_id, battery["id"]) != battery["id"]:
-                    # Two batteries behind one limit cannot take turns.
+            for entity_id in role.team_entities(whole):
+                if (
+                    seen.setdefault(entity_id, keys[battery["id"]])
+                    != keys[battery["id"]]
+                ):
+                    # Two groups behind one limit cannot take turns.
                     entry["problem"] = "shared"
                     state = "levers"
             if state == "on" and not self.tested(battery):
@@ -1737,8 +1779,9 @@ class JoeExecutor:
         now: datetime,
         today: str,
         info: dict[str, Any],
+        groups: dict[str, tuple[str, str, bool]],
     ) -> tuple[dict[str, tuple[bool, bool]], dict[str, Any]]:
-        """The active battery, the blocks for the others and the hint for the cap."""
+        """The active group, the blocks for the others and the hint for the cap."""
         rules = config["rules"]
         store: dict[str, Any] = self.data["team"]
         sizes = {
@@ -1773,74 +1816,98 @@ class JoeExecutor:
                 store["full"].pop(member.id, None)
             member.empty, member.full = empty, full
             members.append(member)
+        teams = team_rules.grouped(members, {k: v[0] for k, v in groups.items()})
         flow, steady, raw = self._team_flow(deficit, now)
         info["flow"] = flow
         active = store["active"]
-        # A battery free to charge that takes nothing while the house gives
-        # to the grid is as full as it goes (its own target, a BMS limit);
-        # not while the grid-friendly morning holds its charging back.
-        current = next((m for m in members if m.id == active), None)
+        # A group free to charge that takes nothing while the house gives to
+        # the grid is as full as it goes (its own target, a BMS limit); not
+        # while the grid-friendly morning holds its charging back.
+        current = next((g for g in teams if g.id == active), None)
         if (
             current is not None
             and not current.full
             and deficit is not None
-            and current.id in powers
+            and all(k in powers for k in current.ids)
             and not self.data.get("day")
         ):
-            watch = store["watch"].setdefault(current.id, {})
-            if team_rules.watch_full(watch, powers[current.id], -deficit * 1000, now):
-                current.full = True
-                store["full"][current.id] = current.soc
-        charge_order = team_rules.ordered(members, rules.get("team_charge_order") or [])
+            watch = store["watch"].setdefault(f"group:{current.id}", {})
+            power = sum(powers[k] for k in current.ids)
+            if team_rules.watch_full(watch, power, -deficit * 1000, now):
+                for member in current.members:
+                    if not member.full:
+                        member.full = True
+                        store["full"][member.id] = member.soc
+        charge_order = team_rules.ordered(teams, rules.get("team_charge_order") or [])
         discharge_order = team_rules.ordered(
-            members, rules.get("team_discharge_order") or []
+            teams, rules.get("team_discharge_order") or []
         )
         chosen, why = team_rules.choose(
             charge_order, discharge_order, active, flow, steady
         )
+        group = next(g for g in teams if g.id == chosen)
         if chosen != active:
             if active is not None:
+                previous = next((g for g in teams if g.id == active), None)
                 self._log(
                     "team_handover",
-                    battery=chosen,
-                    previous=active,
+                    battery=group.ids[0],
+                    batteries=group.ids,
+                    previous=previous.ids[0] if previous else active,
                     reason=why,
-                    soc=next((m.soc for m in members if m.id == active), None),
+                    soc=(
+                        round(
+                            sum(m.soc for m in previous.members)
+                            / len(previous.members),
+                            1,
+                        )
+                        if previous
+                        else None
+                    ),
                 )
             store.update(active=chosen, since=now.isoformat(timespec="seconds"))
-        info["active"] = chosen
+        # The panel names the group by its batteries (the first one leads).
+        info["active"] = group.ids[0]
+        info["active_group"] = chosen
+        info["active_batteries"] = group.ids
         info["since"] = store["since"]
+        for team_group in teams:
+            info["groups"][team_group.id].update(
+                empty=team_group.empty, full=team_group.full
+            )
         parallel = self._team_parallel(config, plan, charge_order, now, today)
         info["parallel"] = parallel
         side: set[str] = set()
         if parallel and flow == "surplus" and raw == "surplus":
-            side = {m.id for m in members if m.id != chosen and not m.full}
+            side = {k for g in teams if g.id != chosen and not g.full for k in g.ids}
         want: dict[str, tuple[bool, bool]] = {}
-        for member in members:
-            entry = info["batteries"][member.id]
-            if member.id == chosen:
-                # Side by side, nobody may discharge into the others: on a
-                # cloud they are blocked again and the active one is free.
-                want[member.id] = (False, bool(side))
-                entry.update(
-                    charge="free",
-                    discharge="blocked" if side else "free",
-                    why="active",
-                )
-            elif member.id in side:
-                want[member.id] = (False, True)
-                entry.update(charge="free", discharge="blocked", why="parallel")
-            else:
-                want[member.id] = (True, True)
-                entry.update(charge="blocked", discharge="blocked")
-                if flow == "surplus":
-                    entry["why"] = "full" if member.full else "waits_full"
+        for team_group in teams:
+            for member in team_group.members:
+                entry = info["batteries"][member.id]
+                if team_group.id == chosen:
+                    # Side by side, nobody may discharge into the others: on a
+                    # cloud they are blocked again and the active group is free.
+                    want[member.id] = (False, bool(side))
+                    entry.update(
+                        charge="free",
+                        discharge="blocked" if side else "free",
+                        why="active",
+                    )
+                elif member.id in side:
+                    want[member.id] = (False, True)
+                    entry.update(charge="free", discharge="blocked", why="parallel")
                 else:
-                    entry["why"] = "empty" if member.empty else "waits_empty"
-            entry["empty"] = member.empty
-            entry["full"] = member.full
+                    want[member.id] = (True, True)
+                    entry.update(charge="blocked", discharge="blocked")
+                    if flow == "surplus":
+                        entry["why"] = "full" if team_group.full else "waits_full"
+                    else:
+                        entry["why"] = "empty" if team_group.empty else "waits_empty"
+                entry["empty"] = member.empty
+                entry["full"] = member.full
         hint = {
             "active": chosen,
+            "active_batteries": group.ids,
             "blocked": [k for k, (charge, _) in want.items() if charge],
             "parallel": sorted(side),
         }
@@ -1970,8 +2037,10 @@ class JoeExecutor:
         """Write the blocks (live only); give back what is free again.
 
         A charge limit someone else holds right now (the daytime cap, the
-        grid-friendly morning, a test limit) stays theirs. Returns the
-        entities (and batteries) to leave as they are.
+        grid-friendly morning, a test limit) stays theirs while it blocks
+        charging, too; one that lets a waiting battery charge does not count:
+        Joe blocks it all the same (it would charge from the group that
+        discharges). Returns the entities (and batteries) to leave as they are.
         """
         store: dict[str, Any] = self.data["team"]
         if not want or self.team.get("state") != "on" or self.team.get("dry"):
@@ -1981,12 +2050,18 @@ class JoeExecutor:
             return set()
         keep: set[str] = set()
         batteries = {b["id"]: b for b in config["batteries"]}
+        groups = {k: v[0] for k, v in self._team_groups(config).items()}
         for key, (charge, discharge) in want.items():
             adapter = make_adapter(batteries[key])
             assert isinstance(adapter, RoleAdapter)
-            charge_taken = any(e in taken for e in adapter.limit_entities())
+            whole = self._whole_system(config, groups, batteries[key], adapter)
+            charge_taken = any(e in taken for e in adapter.team_charge_entities(whole))
+            if charge and charge_taken and not adapter.charge_blocked(self._hass):
+                # Someone else's limit lets it charge while it waits: blocked.
+                charge_taken = False
+                self._log("team_taken", battery=key)
             writes, give_back = adapter.team_block(
-                self._hass, charge, discharge, charge_taken
+                self._hass, charge, discharge, charge_taken, whole
             )
             if give_back:
                 await self._async_team_free(adapter, give_back, now)
@@ -1997,6 +2072,9 @@ class JoeExecutor:
             entry = self.team["batteries"][key]
             entry["problem"] = problem
             blocks = {"charge": charge and not charge_taken, "discharge": discharge}
+            if charge and charge_taken:
+                # Blocked all the same, by the limit someone else holds at 0.
+                entry["charge"] = "blocked"
             if store["blocks"].get(key, {"charge": False, "discharge": False}) != (
                 blocks
             ):
@@ -2031,19 +2109,15 @@ class JoeExecutor:
         battery = next((b for b in config["batteries"] if b["id"] == key), None)
         adapter = make_adapter(battery) if battery else None
         if isinstance(adapter, RoleAdapter):
-            roles = [
-                *(adapter.limit_roles() or ()),
-                *(adapter.discharge_roles() or ()),
-            ]
+            roles = adapter.team_release_roles()
             if key in self.data["surplus"]["caps"] or self.data.get("day"):
                 # The cap or the morning holds the charge limit (with the
                 # system's shared switch all of it): theirs to give back.
-                roles = (
-                    []
-                    if adapter.team_shared()
-                    else [*(adapter.discharge_roles() or ())]
-                )
-            await self._async_team_free(adapter, list(dict.fromkeys(roles)), now)
+                held = set(adapter.limit_roles() or ())
+                if adapter.limit_shared():
+                    held |= set(adapter.discharge_roles() or ())
+                roles = [r for r in roles if r not in held]
+            await self._async_team_free(adapter, roles, now)
             self._log("team_block", battery=key, charge=False, discharge=False)
         store["blocks"].pop(key, None)
 
@@ -2096,7 +2170,8 @@ class JoeExecutor:
         "suggest" log what Joe would do. During the night's plan Joe steers
         the batteries himself (and blocks the others while one charges from
         the grid): then he only notes it. An automation that writes the same
-        levers (the owner's own watchdog) keeps his hands off.
+        levers (the owner's own watchdog) keeps his hands off. Inside one
+        group (batteries one system regulates) he only notes it and speaks up.
         """
         config, mode = self._config(), self._mode()
         store: dict[str, Any] = self.data["guard"]
@@ -2154,7 +2229,7 @@ class JoeExecutor:
                 charging,
                 discharging,
                 self._guard_levers(config),
-                self.data["team"]["active"],
+                self.team.get("active_batteries") or self.data["team"]["active"],
             )
         key = store["battery"]
         adapter = make_adapter(batteries[key])
@@ -2179,11 +2254,21 @@ class JoeExecutor:
                 self._guard_last(store, now, 0, "automation", detail, dry, direction)
                 await self._async_save()
             return
+        groups = {k: v[0] for k, v in self._team_groups(config).items()}
+        if team_rules.transfer_inside(charging, discharging, groups):
+            # Its own system shares the power wrongly: not Joe's to fight.
+            await self._async_guard_inside(
+                store, stage, charging, discharging, detail, dry, direction, now
+            )
+            return
         store["handed"] = None
         store["noted"] = None
+        group = self._guard_group(config, groups, key)
         if stage == 1 and not (role and role.guard_can_restart()):
             stage = 2
-        if stage == 2 and not (role and role.guard_block_roles(direction)):
+        if stage == 2 and not any(
+            adapter.guard_block_roles(direction, whole) for adapter, whole in group
+        ):
             stage = 3
         problem: str | None = None
         if stage == 1:
@@ -2191,8 +2276,7 @@ class JoeExecutor:
             clean, problem = await self._async_guard_restart(role, dry)
             self._log("guard_restart", clean=clean, dry=dry, problem=problem, **detail)
         elif stage == 2:
-            assert role is not None
-            problem = await self._async_guard_block(role, direction, dry)
+            problem = await self._async_guard_block(group, direction, dry)
             self._log(
                 "guard_block", direction=direction, dry=dry, problem=problem, **detail
             )
@@ -2232,12 +2316,19 @@ class JoeExecutor:
             seconds=seconds,
             dry=bool(last.get("dry")),
         )
+        inside = last.get("result") == "inside"
         if last.get("since") == since:
             last.update(
-                result="fixed", at=now.isoformat(timespec="seconds"), seconds=seconds
+                result="inside" if inside else "fixed",
+                at=now.isoformat(timespec="seconds"),
+                seconds=seconds,
             )
+            if inside:
+                last["over"] = True
         if stage >= 3 and self.notifier:
-            await self.notifier.async_clear("battery_transfer")
+            await self.notifier.async_clear(
+                "battery_transfer_inside" if inside else "battery_transfer"
+            )
         store["battery"] = None
         await self._async_save()
 
@@ -2293,14 +2384,63 @@ class JoeExecutor:
         failed = await self._async_guard_restore("done")
         return False, problem or ("restore" if failed else None)
 
+    async def _async_guard_inside(
+        self,
+        store: dict[str, Any],
+        stage: int,
+        charging: list[str],
+        discharging: list[str],
+        detail: dict[str, Any],
+        dry: bool,
+        direction: str,
+        now: datetime,
+    ) -> None:
+        """Batteries of one group charge each other: noted once per time and
+        told (at most once per COOLDOWN), no stage of Joe's."""
+        guard_rules.done(store, 3, now)
+        if store["noted"] == "inside":
+            return
+        store["noted"] = "inside"
+        self._log("guard_inside", dry=dry, **detail)
+        self._guard_last(store, now, 0, "inside", detail, dry, direction)
+        if not dry and self.notifier and guard_rules.may_tell(store, now):
+            store["told"] = now.isoformat(timespec="seconds")
+            names = {b["id"]: b["name"] for b in self._config()["batteries"]}
+            await self.notifier.async_problem(
+                "battery_transfer_inside",
+                charging=", ".join(names.get(k, k) for k in charging),
+                discharging=", ".join(names.get(k, k) for k in discharging),
+            )
+        await self._async_save()
+
+    def _guard_group(
+        self, config: dict[str, Any], groups: dict[str, str], key: str
+    ) -> list[tuple[RoleAdapter, bool]]:
+        """The batteries of a battery's group with their adapter, and whether
+        the system's limits may block them (the same levers as "Nacheinander")."""
+        result = []
+        for battery in config["batteries"]:
+            if groups.get(battery["id"]) != groups.get(key):
+                continue
+            adapter = make_adapter(battery)
+            if isinstance(adapter, RoleAdapter):
+                whole = self._whole_system(config, groups, battery, adapter)
+                result.append((adapter, whole))
+        return result
+
     async def _async_guard_block(
-        self, role: RoleAdapter, direction: str, dry: bool
+        self, group: list[tuple[RoleAdapter, bool]], direction: str, dry: bool
     ) -> str | None:
-        """Stage 2: the battery's current direction blocked for a few seconds,
-        then back as it was."""
+        """Stage 2: the current direction of the culprit's group blocked for a
+        few seconds, then back as it was."""
         if dry:
             return None
-        problem = await self._async_guard_hold(role.guard_block(direction))
+        writes: list[Write] = []
+        for adapter, whole in group:
+            for write in adapter.guard_block(direction, whole, self._hass):
+                if all(w.entity_id != write.entity_id for w in writes):
+                    writes.append(write)
+        problem = await self._async_guard_hold(writes)
         if problem is None:
             await joe_writes.settle(guard_rules.BLOCK_S)
         failed = await self._async_guard_restore("done")
@@ -2372,14 +2512,16 @@ class JoeExecutor:
     def _guard_levers(self, config: dict[str, Any]) -> dict[str, tuple[bool, bool]]:
         """Per battery: whether Joe can restart its control and block it."""
         result = {}
+        groups = {k: v[0] for k, v in self._team_groups(config).items()}
         for battery in config["batteries"]:
             adapter = make_adapter(battery)
             if isinstance(adapter, RoleAdapter):
+                whole = self._whole_system(config, groups, battery, adapter)
                 result[battery["id"]] = (
                     adapter.guard_can_restart(),
                     bool(
-                        adapter.guard_block_roles("charge")
-                        or adapter.guard_block_roles("discharge")
+                        adapter.guard_block_roles("charge", whole)
+                        or adapter.guard_block_roles("discharge", whole)
                     ),
                 )
         return result
@@ -2391,7 +2533,9 @@ class JoeExecutor:
             return set()
         found = set(adapter.guard_manual()) if adapter.guard_can_restart() else set()
         for direction in ("charge", "discharge"):
-            found |= {adapter.controls[r] for r in adapter.guard_block_roles(direction)}
+            found |= {
+                adapter.controls[r] for r in adapter.guard_block_roles(direction, True)
+            }
         return found
 
     def _guard_automations(
@@ -2476,9 +2620,9 @@ class JoeExecutor:
 
     def _proposed_regulating(self, battery: dict[str, Any]) -> bool:
         """Whether a battery regulates itself to 0 W at the grid meter, as its
-        profile says: Fronius always, Omnibattery in automatic mode."""
+        profile says: Fronius and Kostal always, Omnibattery in automatic mode."""
         adapter = battery.get("adapter")
-        if adapter == "fronius":
+        if adapter in ("fronius", "kostal_plenticore"):
             return True
         if adapter != "omnibattery":
             return False
@@ -2493,6 +2637,62 @@ class JoeExecutor:
             if value is True or value == step.get("value"):
                 return False
         return True
+
+    def _proposed_group(self, battery: dict[str, Any]) -> tuple[str, bool]:
+        """The system Joe thinks regulates a battery, and whether he is sure.
+
+        The batteries of one integration entry (all batteries of one
+        Omnibattery, a Fronius or Kostal inverter with its battery) are
+        regulated by its system; Omnibattery's batteries also by the system
+        limits they share. Batteries Joe steers through levers the owner
+        assigned (or only watches) are a system of their own until the owner
+        says otherwise.
+        """
+        adapter = battery.get("adapter") or "none"
+        profiled = profile_for(adapter) is not None and adapter not in (
+            "generic",
+            "steps",
+        )
+        if profiled:
+            item = er.async_get(self._hass).async_get(battery["soc_entity"])
+            if item is not None and item.config_entry_id:
+                return f"entry:{item.config_entry_id}", True
+            shared = (battery.get("controls") or {}).get("system_charge_limit")
+            if shared:
+                return f"system:{shared}", True
+        return f"own:{battery['id']}", profiled
+
+    def _team_groups(self, config: dict[str, Any]) -> dict[str, tuple[str, str, bool]]:
+        """Per battery: its group (as set, else as proposed), the proposal and
+        whether Joe is sure of it."""
+        result = {}
+        for battery in config["batteries"]:
+            proposed, sure = self._proposed_group(battery)
+            result[battery["id"]] = (
+                battery.get("control_group") or proposed,
+                proposed,
+                sure,
+            )
+        return result
+
+    def _whole_system(
+        self,
+        config: dict[str, Any],
+        groups: dict[str, str],
+        battery: dict[str, Any],
+        adapter: RoleAdapter,
+    ) -> bool:
+        """Whether every battery behind this battery's system limits is in its
+        group (only then may Joe block the group with them)."""
+        key = adapter.system_key()
+        if key is None:
+            return True
+        mine = groups.get(battery["id"])
+        return all(
+            groups.get(other["id"]) == mine
+            for other in config["batteries"]
+            if (other.get("controls") or {}).get("system_charge_limit") == key
+        )
 
     def _team_floor(self, battery: dict[str, Any], role: RoleAdapter | None) -> float:
         """The level Joe counts on without a learned cutoff: the battery's own

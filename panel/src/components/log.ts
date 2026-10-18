@@ -107,6 +107,8 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
   if (entry.kind.startsWith("team_")) {
     const team = {
       ...vars,
+      // A group hands over as one ("Venus + Victron").
+      battery: Array.isArray(entry.batteries) && entry.batteries.length > 1 ? entry.batteries.map(nameOf).join(" + ") : battery,
       previous: nameOf(entry.previous),
       charging: names(entry.charging),
       discharging: names(entry.discharging),
@@ -149,6 +151,8 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
       text = t(`log.guard_block.${entry.direction === "discharge" ? "discharge" : "charge"}${dry}`, guard);
     } else if (entry.kind === "guard_alarm") {
       text = t(`log.guard_alarm${dry}`, guard);
+    } else if (entry.kind === "guard_inside") {
+      text = t(`log.guard_inside${dry}`, guard);
     } else if (entry.kind === "guard_fixed") {
       const stage = Math.min(3, Math.max(1, Number(entry.stage) || 1)) as 1 | 2 | 3;
       text = t(`log.guard_fixed.${stage}`, guard);

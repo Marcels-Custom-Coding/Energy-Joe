@@ -166,6 +166,14 @@ BATTERY = vol.Schema(
         # automatic mode): with others of its kind it needs coordinating
         # (rules.battery_team). None: as Joe proposes from its profile.
         vol.Optional("self_regulating", default=None): vol.Any(None, bool),
+        # Which system regulates it ("Wer regelt ihn?"): batteries with the
+        # same key are regulated by one system (Omnibattery shares the power
+        # among all its batteries) and take turns with the others as one.
+        # None: as Joe proposes (batteries set up before are assigned so,
+        # see executor._proposed_group).
+        vol.Optional("control_group", default=None): vol.Any(
+            None, vol.All(str, vol.Length(min=1, max=120))
+        ),
         # The level at which it really stops discharging (a BYD at ~10.5 %
         # with a reserve of 5 %); None: not known yet, Joe learns it.
         vol.Optional("cutoff_soc", default=None): vol.Any(

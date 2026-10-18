@@ -26,13 +26,49 @@ export function selfRegulating(battery: BatteryConfig, team: BatteryTeam | undef
   return battery.self_regulating ?? team?.batteries[battery.id]?.proposed ?? false;
 }
 
-/** One battery's part right now ("BYD lädt", "Venus gesperrt (wartet, bis BYD voll ist)"). */
-function part(t: Translate, team: BatteryTeam, id: string): string {
-  const entry = team.batteries[id];
-  const active = team.active ? (team.batteries[team.active]?.name ?? team.active) : "";
-  const vars = { name: entry.name, active };
+/** The system that regulates a battery ("Wer regelt ihn?"): as set, else as Joe proposes. */
+export function groupOf(battery: BatteryConfig, team: BatteryTeam | undefined): string {
+  return battery.control_group ?? team?.batteries[battery.id]?.group ?? `own:${battery.id}`;
+}
+
+/** The batteries of each group, in the order of the batteries (a group per system). */
+export function teamGroups(config: JoeConfig, team: BatteryTeam | undefined, batteries = config.batteries): BatteryConfig[][] {
+  const result = new Map<string, BatteryConfig[]>();
+  for (const battery of batteries) {
+    const key = groupOf(battery, team);
+    result.set(key, [...(result.get(key) ?? []), battery]);
+  }
+  return [...result.values()];
+}
+
+/** A group by its batteries' names ("Venus + Victron"). */
+export function groupName(team: BatteryTeam, ids: string[]): string {
+  return ids.map((id) => team.batteries[id]?.name ?? id).join(" + ");
+}
+
+/** The batteries of each group Joe coordinates (older backends: one battery each). */
+function liveGroups(team: BatteryTeam): string[][] {
+  const ids = Object.keys(team.batteries).filter((id) => team.batteries[id].charge !== null);
+  const groups = new Map<string, string[]>();
+  for (const id of ids) {
+    const key = team.batteries[id].group ?? id;
+    groups.set(key, [...(groups.get(key) ?? []), id]);
+  }
+  return [...groups.values()];
+}
+
+/** The active group's batteries. */
+function activeIds(team: BatteryTeam): string[] {
+  return team.active_batteries ?? (team.active ? [team.active] : []);
+}
+
+/** One group's part right now ("BYD lädt", "Venus + Victron gesperrt (wartet, bis BYD voll ist)"). */
+function part(t: Translate, team: BatteryTeam, ids: string[]): string {
+  const entry = team.batteries[ids[0]];
+  const active = groupName(team, activeIds(team));
+  const vars = { name: groupName(team, ids), active };
   if (entry.why === "active") {
-    const power = entry.power_w ?? 0;
+    const power = ids.reduce((sum, id) => sum + (team.batteries[id]?.power_w ?? 0), 0);
     const key = power > 50 ? "charging" : power < -50 ? "discharging" : "idle";
     return t(entry.discharge === "blocked" ? "team.part.active_charge_only" : `team.part.active_${key}`, vars);
   }
@@ -42,9 +78,10 @@ function part(t: Translate, team: BatteryTeam, id: string): string {
 /** The line under "Mehrere Speicher": who works now and why the others wait, or why Joe does nothing. */
 export function teamText(t: Translate, team: BatteryTeam): string {
   if (team.state === "on") {
-    const ids = Object.keys(team.batteries).filter((id) => team.batteries[id].charge !== null);
-    const order = [team.active ?? "", ...ids.filter((id) => id !== team.active)].filter(Boolean);
-    const parts = order.map((id) => part(t, team, id)).join(" · ");
+    const groups = liveGroups(team);
+    const first = activeIds(team)[0];
+    const order = [...groups.filter((g) => g.includes(first)), ...groups.filter((g) => !g.includes(first))];
+    const parts = order.map((ids) => part(t, team, ids)).join(" · ");
     return t(team.dry ? "team.now.dry" : "team.now", { parts });
   }
   if (team.state === "automation") {
@@ -58,11 +95,12 @@ export function teamDoing(t: Translate, team: BatteryTeam | undefined): string |
   if (!team || team.state !== "on" || team.dry || !team.active) {
     return null;
   }
-  const others = Object.keys(team.batteries)
-    .filter((id) => id !== team.active && team.batteries[id].charge !== null)
-    .map((id) => team.batteries[id].name);
+  const active = activeIds(team);
+  const others = liveGroups(team)
+    .filter((ids) => !ids.some((id) => active.includes(id)))
+    .map((ids) => groupName(team, ids));
   return t(team.parallel && Object.values(team.batteries).some((b) => b.why === "parallel") ? "team.doing.parallel" : "team.doing", {
-    active: team.batteries[team.active]?.name ?? team.active,
+    active: groupName(team, active),
     others: others.join(", "),
   });
 }
@@ -112,6 +150,14 @@ export function guardText(t: Translate, guard: TransferGuard, config: JoeConfig)
     direction: t(`guard.direction.${last.direction}`),
     duration: guardDuration(t, last.seconds),
   };
+  if (last.result === "inside") {
+    const inside = t("guard.last.inside", {
+      ...vars,
+      charging: names(config, last.charging),
+      discharging: names(config, last.discharging),
+    });
+    return last.dry ? `${inside} ${t("guard.dry")}` : inside;
+  }
   const stage = Math.min(3, Math.max(1, last.stage));
   const text =
     last.result === "fixed"
@@ -131,4 +177,36 @@ export function guardAlarm(t: Translate, guard: TransferGuard | undefined, confi
     return null;
   }
   return t("guard.alarm", { charging: names(config, last.charging), discharging: names(config, last.discharging) });
+}
+
+/** Batteries of one system charging each other (live, still going): words for "Joe braucht dich". */
+export function guardInside(t: Translate, guard: TransferGuard | undefined, config: JoeConfig): string | null {
+  const last = guard?.last;
+  if (!guard || guard.state !== "on" || !last || last.result !== "inside" || last.dry || last.over) {
+    return null;
+  }
+  return t("guard.inside", { charging: names(config, last.charging), discharging: names(config, last.discharging) });
+}
+
+/**
+ * "Vorschlag passt": the patch that keeps Joe's proposal for every battery
+ * that regulates itself and has no system set yet.
+ */
+export function groupsPatch(config: JoeConfig, team: BatteryTeam): Record<string, unknown> {
+  const batteries: Record<string, { control_group: string }> = {};
+  for (const battery of config.batteries) {
+    const entry = team.batteries[battery.id];
+    if (battery.control_group == null && entry?.self_regulating && entry.group) {
+      batteries[battery.id] = { control_group: entry.group };
+    }
+  }
+  return { batteries };
+}
+
+/** The batteries Joe is not sure about, by name. */
+export function unsureNames(config: JoeConfig, team: BatteryTeam): string {
+  return config.batteries
+    .filter((b) => b.control_group == null && team.batteries[b.id]?.self_regulating && team.batteries[b.id]?.group_sure === false)
+    .map((b) => b.name)
+    .join(", ");
 }

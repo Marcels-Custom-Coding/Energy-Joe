@@ -9,7 +9,9 @@ first lever the battery offers, in the order its profile prefers:
   level, or (for inverters like Fronius) the reserve raised to the target
 - hold(floor): the floor as minimum level, else a hold mode, else forced
   charging with 0 W ("standby"), else the discharge limit
-- block: no discharge at all (while another battery charges from the grid)
+- block: no discharge at all (while another battery charges from the grid):
+  its own "allow discharging" switch off where it has one (Omnibattery: its
+  control stays in automatic mode), else as its profile prefers
 
 Some batteries need a switch first ("prepare", e.g. Remote Control), some
 take commands only for a while ("command_timeout"), some are steered with
@@ -378,7 +380,7 @@ class RoleAdapter(Adapter):
     # --- several batteries one after the other ------------------------------------
 
     def discharge_roles(self) -> tuple[str, str] | None:
-        """The lever that blocks discharging by day: (its switch role, its value role).
+        """The limit that blocks discharging by day: (its switch role, its value role).
 
         The battery's own discharge limit (Fronius), else the system's discharge
         limit, which shares its switch with the system's charge limit
@@ -390,48 +392,119 @@ class RoleAdapter(Adapter):
             return "system_charge_limit_enabled", "system_discharge_limit"
         return None
 
-    def team_shared(self) -> bool:
+    def team_lever(self, whole_system: bool = True) -> str | None:
+        """How Joe blocks this battery by day while another group works.
+
+        "allow": its own switches that allow charging and discharging
+        (Omnibattery: its PD controller stays on and goes on at once when
+        they are back); "limit": its own charge and discharge limits at 0
+        (Fronius); "system": the limits of the integration's system device,
+        only when every battery behind them is blocked with it
+        (`whole_system`). Never manual mode, never a minimum power.
+        """
+        if self._has("allow_charge", "allow_discharge"):
+            return "allow"
+        charge, discharge = self.limit_roles(), self.discharge_roles()
+        if not charge or not discharge:
+            return None
+        if "system_charge_limit" in (charge[1], discharge[1]):
+            return "system" if whole_system else None
+        return "limit"
+
+    def system_key(self) -> str | None:
+        """The system limit shared by all batteries of the integration, if any."""
+        return self.controls.get("system_charge_limit")
+
+    def team_shared(self, whole_system: bool = True) -> bool:
         """Whether charging and discharging are blocked with one switch (the system's)."""
+        if self.team_lever(whole_system) == "allow":
+            return False
         charge, discharge = self.limit_roles(), self.discharge_roles()
         return bool(charge and discharge and charge[0] == discharge[0])
 
-    def team_entities(self) -> list[str]:
-        """Every entity Joe writes to block charging or discharging by day."""
+    def team_roles(self, whole_system: bool = True) -> list[str]:
+        """The roles Joe writes to block charging or discharging by day."""
+        lever = self.team_lever(whole_system)
+        if lever == "allow":
+            return ["allow_charge", "allow_discharge"]
+        if lever is None:
+            return []
         roles = [*(self.limit_roles() or ()), *(self.discharge_roles() or ())]
-        return list(
-            dict.fromkeys(self.controls[r] for r in roles if r in self.controls)
-        )
+        return list(dict.fromkeys(r for r in roles if r in self.controls))
 
-    def team_problem(self, hass: HomeAssistant) -> str | None:
+    def team_release_roles(self) -> list[str]:
+        """Every role a block by day may have written (the lever may have
+        changed since): given back as far as Joe noted it."""
+        roles = [
+            "allow_charge",
+            "allow_discharge",
+            *(self.limit_roles() or ()),
+            *(self.discharge_roles() or ()),
+        ]
+        return list(dict.fromkeys(r for r in roles if r in self.controls))
+
+    def team_entities(self, whole_system: bool = True) -> list[str]:
+        """Every entity Joe writes to block charging or discharging by day."""
+        return [self.controls[r] for r in self.team_roles(whole_system)]
+
+    def team_charge_entities(self, whole_system: bool = True) -> list[str]:
+        """The entities that block charging (shared with the daytime cap when
+        they are limits)."""
+        if self.team_lever(whole_system) == "allow":
+            return [self.controls["allow_charge"]]
+        return self.limit_entities()
+
+    def team_problem(
+        self, hass: HomeAssistant, whole_system: bool = True
+    ) -> str | None:
         """Why Joe cannot block this battery's charging and discharging by day."""
-        if self.limit_roles() is None:
-            return "no_charge_lever"
-        if self.discharge_roles() is None:
+        if self.team_lever(whole_system) is None:
+            if self._has("system_charge_limit") and not self._has("allow_charge"):
+                # The system's limits would block batteries of other groups, too.
+                return "system_shared"
+            if self.limit_roles() is None:
+                return "no_charge_lever"
             return "no_discharge_lever"
-        for entity_id in self.team_entities():
+        for entity_id in self.team_entities(whole_system):
             if not available(hass.states.get(entity_id)):
                 return "unavailable"
         return None
 
     def team_block(
-        self, hass: HomeAssistant, charge: bool, discharge: bool, charge_taken: bool
+        self,
+        hass: HomeAssistant,
+        charge: bool,
+        discharge: bool,
+        charge_taken: bool,
+        whole_system: bool = True,
     ) -> tuple[list[Write], list[str]]:
         """Writes that block charging and/or discharging, and the roles to give back.
 
-        A block is the limit at 0, written before its switch goes on (Fronius
-        ignores the limit while its switch is off; R2/R3 of the owner's
-        automations learned it so). Giving back is the switch off first, then
-        the value (see free). With the system's shared switch the direction
-        that stays free is opened wide while the switch is on. `charge_taken`:
-        the charge limit is someone else's now (the daytime cap, the
-        grid-friendly morning, a test limit): left as it is.
+        Allow switches: off to block, given back as they were. A limit block
+        is the limit at 0, written before its switch goes on (Fronius ignores
+        the limit while its switch is off; R2/R3 of the owner's automations
+        learned it so). Giving back is the switch off first, then the value
+        (see free). With the system's shared switch the direction that stays
+        free is opened wide while the switch is on. `charge_taken`: the charge
+        limit is someone else's now (the daytime cap, the grid-friendly
+        morning, a test limit): left as it is.
         """
+        writes: list[Write] = []
+        give_back: list[str] = []
+        if self.team_lever(whole_system) == "allow":
+            for blocked, role in (
+                (charge, "allow_charge"),
+                (discharge, "allow_discharge"),
+            ):
+                if blocked:
+                    writes.append(Write(self.controls[role], False))
+                else:
+                    give_back.append(role)
+            return self._paced(writes), give_back
         charge_roles = self.limit_roles()
         discharge_roles = self.discharge_roles()
         assert charge_roles is not None and discharge_roles is not None
-        writes: list[Write] = []
-        give_back: list[str] = []
-        if self.team_shared():
+        if self.team_shared(whole_system):
             switch = charge_roles[0]
             if charge or discharge:
                 if not charge_taken:
@@ -464,6 +537,27 @@ class RoleAdapter(Adapter):
                 give_back += [r for r in (switch, value) if r in self.controls]
         return self._paced(writes), give_back
 
+    def charge_blocked(self, hass: HomeAssistant) -> bool:
+        """Whether charging is blocked right now, whoever holds the lever: its
+        allow switch off, or its charge limit at 0 and in force."""
+        if (
+            self._has("allow_charge")
+            and read(hass, self.controls["allow_charge"]) is False
+        ):
+            return True
+        roles = self.limit_roles()
+        if roles is None:
+            return False
+        switch, value = roles
+        if switch in self.controls and read(hass, self.controls[switch]) is not True:
+            return False
+        level = read(hass, self.controls[value])
+        return (
+            isinstance(level, int | float)
+            and not isinstance(level, bool)
+            and level <= 0
+        )
+
     def team_free(self, saved: dict[str, Any], roles: list[str]) -> list[Write]:
         """These levers back as they were: each switch first, then its value."""
         switches = [r for r in roles if r.endswith("_enabled")]
@@ -476,13 +570,15 @@ class RoleAdapter(Adapter):
         """Whether Joe can restart the battery's own control (stage 1)."""
         return self._has("system_manual_mode")
 
-    def guard_block_roles(self, direction: str) -> tuple[str, ...]:
+    def guard_block_roles(
+        self, direction: str, whole_system: bool = False
+    ) -> tuple[str, ...]:
         """The roles that block one direction ("charge" or "discharge") for a
         few seconds (stage 2), switch before value; empty: none.
 
         A battery's own allow switch (Venus), else its own limit at 0 with its
-        switch (Fronius). Never the system's limits: they are for all
-        batteries of the integration at once.
+        switch (Fronius), else the system's limits when every battery behind
+        them is blocked with it (`whole_system`).
         """
         allow = f"allow_{direction}"
         if self._has(allow):
@@ -490,17 +586,34 @@ class RoleAdapter(Adapter):
         switch, value = f"{direction}_limit_enabled", f"{direction}_limit"
         if self._has(value):
             return (switch, value) if self._has(switch) else (value,)
+        if whole_system and self._has(
+            f"system_{direction}_limit", "system_charge_limit_enabled"
+        ):
+            return ("system_charge_limit_enabled", f"system_{direction}_limit")
         return ()
 
-    def guard_block(self, direction: str) -> list[Write]:
+    def guard_block(
+        self,
+        direction: str,
+        whole_system: bool = False,
+        hass: HomeAssistant | None = None,
+    ) -> list[Write]:
         """Writes that block one direction: the allow switch off, or the
-        limit at 0 first and then its switch on (Fronius ignores it while off)."""
-        roles = self.guard_block_roles(direction)
+        limit at 0 first and then its switch on (Fronius ignores it while
+        off); with the system's shared switch the other direction opened wide."""
+        roles = self.guard_block_roles(direction, whole_system)
         if roles == (f"allow_{direction}",):
             return [Write(self.controls[roles[0]], False)]
-        writes = [Write(self.controls[f"{direction}_limit"], 0)]
-        if f"{direction}_limit_enabled" in roles:
-            writes.append(Write(self.controls[f"{direction}_limit_enabled"], True))
+        if not roles:
+            return []
+        switch = roles[0] if len(roles) == 2 else None
+        writes = [Write(self.controls[roles[-1]], 0)]
+        if switch == "system_charge_limit_enabled" and hass is not None:
+            other = "charge" if direction == "discharge" else "discharge"
+            if f"system_{other}_limit" in self.controls:
+                writes.append(self._open_wide(hass, f"system_{other}_limit"))
+        if switch:
+            writes.append(Write(self.controls[switch], True))
         return writes
 
     def guard_manual(self) -> list[str]:
@@ -669,6 +782,9 @@ class RoleAdapter(Adapter):
 
     def _block(self, hass: HomeAssistant, soc: float, desired: Desired) -> list[Write]:
         c = self.controls
+        if "allow_discharge" in c and available(hass.states.get(c["allow_discharge"])):
+            # Frozen without manual mode: its own control goes on at once after.
+            return [Write(c["allow_discharge"], False)]
         for method in self.profile.block:
             if method == "min_soc":
                 if "min_soc" not in c:
@@ -709,8 +825,10 @@ class RoleAdapter(Adapter):
         return result
 
     def _lift_block(self, saved: dict[str, Any]) -> list[Write]:
-        """The limit's switch off first, then the limit back."""
-        return self._restore(saved, "discharge_limit_enabled", "discharge_limit")
+        """The limit's switch off first, then the limit back; the allow switch back."""
+        return self._restore(
+            saved, "discharge_limit_enabled", "discharge_limit", "allow_discharge"
+        )
 
     def _prepare(self, method: str) -> list[Write]:
         if method not in self.profile.prepare_for and not (

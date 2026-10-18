@@ -2,7 +2,7 @@ import { LitElement, css, html, nothing, type PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
 import "../../components/day-questions";
 import "../../components/steer-tonight";
-import { batteryTeam, guardAlarm, transferGuard } from "../../components/battery-team";
+import { batteryTeam, groupsPatch, guardAlarm, guardInside, transferGuard, unsureNames } from "../../components/battery-team";
 import { mergeAnswers, mergeQuestion } from "../../components/car-sources";
 import { daySurplus, surplusAbility, surplusConflicts } from "../../components/day-surplus";
 import { checkText } from "../../components/texts";
@@ -232,6 +232,27 @@ export function inboxItems(t: Translate, joe: JoeState, inputs: InboxInputs = {}
       title: t("guard.alarm.title"),
       text: alarm,
       to: teamTo,
+    });
+  }
+  const inside = guardInside(t, guard, config);
+  if (inside && guard?.last) {
+    warn({
+      id: `guard:inside:${guard.last.since ?? guard.last.at}`,
+      title: t("guard.inside.title"),
+      text: inside,
+      to: teamTo,
+    });
+  }
+  // Not sure which system regulates a battery: "Welche Speicher werden vom
+  // selben System geregelt?" ("Vorschlag passt" keeps Joe's proposal).
+  if (team?.group_question) {
+    push({
+      id: "team:groups",
+      icon: "mdi:help-circle-outline",
+      title: t("team.groups.question"),
+      text: t("team.groups.question.text", { names: unsureNames(config, team) }),
+      to: teamTo,
+      fix: { label: t("team.groups.confirm"), tip: "team_groups_confirm", patch: groupsPatch(config, team) },
     });
   }
   if (team?.state === "automation") {

@@ -1,7 +1,18 @@
 import { css, html, nothing, type PropertyValues, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
 import "../../components/battery-automations";
-import { batteryTeam, guardText, selfRegulating, teamOrder, teamText, transferGuard } from "../../components/battery-team";
+import {
+  batteryTeam,
+  groupOf,
+  groupsPatch,
+  guardText,
+  selfRegulating,
+  teamGroups,
+  teamOrder,
+  teamText,
+  transferGuard,
+  unsureNames,
+} from "../../components/battery-team";
 import { sourceChip } from "../../components/bits";
 import "../../components/control-status";
 import { daySurplus, surplusConflictNote, surplusText } from "../../components/day-surplus";
@@ -243,6 +254,11 @@ export class JoeBatteryGroup extends DeviceSection {
         color: var(--joe-muted);
         font-size: 13px;
       }
+      select.team-group {
+        width: auto;
+        max-width: min(240px, 48vw);
+        font-size: 14px;
+      }
     `,
   ];
 
@@ -360,6 +376,7 @@ export class JoeBatteryGroup extends DeviceSection {
       </div>
       ${team && !automations ? html`<p class="team-now">${teamText(t, team)}</p>` : nothing}
       <div class="team-notes">
+        ${team?.group_question ? this.renderGroupQuestion(t, config) : nothing}
         ${automations
           ? html`<div class="note warn" role="status">
               <ha-icon icon="mdi:robot-confused-outline"></ha-icon>
@@ -413,13 +430,35 @@ export class JoeBatteryGroup extends DeviceSection {
     </div>`;
   }
 
-  /** "Laden: zuerst …" / "Entladen: zuerst …": the batteries in their order, with up and down. */
+  /**
+   * "Welche Speicher werden vom selben System geregelt?": Joe is not sure
+   * for some batteries (levers assigned by hand); "Vorschlag passt" keeps
+   * his proposal, each battery's "Wer regelt ihn?" below changes it.
+   */
+  private renderGroupQuestion(t: Translate, config: JoeConfig): TemplateResult {
+    const team = batteryTeam(this.state)!;
+    return html`<div class="note" role="status" data-tipped>
+      <ha-icon icon="mdi:help-circle-outline"></ha-icon>
+      <span>
+        <b>${t("team.groups.question")}</b> ${tip(t, "team_group")}
+        ${t("team.groups.question.text", { names: unsureNames(config, team) })}
+        <span class="note-actions">
+          <button type="button" class="mini-btn go" @click=${() => saveConfig(this, groupsPatch(config, team))}>
+            ${t("team.groups.confirm")}
+          </button>
+          ${tip(t, "team_groups_confirm")}
+        </span>
+      </span>
+    </div>`;
+  }
+
+  /** "Laden: zuerst …" / "Entladen: zuerst …": the groups (one system each) in their order, with up and down. */
   private orderList(t: Translate, config: JoeConfig, key: "team_charge_order" | "team_discharge_order"): TemplateResult {
-    const order = teamOrder(config, key);
+    const order = teamGroups(config, batteryTeam(this.state), teamOrder(config, key));
     const move = (index: number, step: number) => {
-      const next = order.map((b) => b.id);
+      const next = [...order];
       [next[index], next[index + step]] = [next[index + step], next[index]];
-      void saveConfig(this, { rules: { [key]: next } });
+      void saveConfig(this, { rules: { [key]: next.flat().map((b) => b.id) } });
     };
     const arrow = (up: boolean) =>
       html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -430,11 +469,11 @@ export class JoeBatteryGroup extends DeviceSection {
       <div class="team-label">${t(`team.${name}`)} ${tip(t, name)}</div>
       <div class="order">
         ${order.map(
-          (battery, index) => html`<div>
-            <span>${index + 1}. ${battery.name}</span>
+          (group, index) => html`<div>
+            <span>${index + 1}. ${group.map((b) => b.name).join(" + ")}</span>
             <button
               type="button"
-              aria-label=${t("rule.priority.up", { name: battery.name })}
+              aria-label=${t("rule.priority.up", { name: group.map((b) => b.name).join(" + ") })}
               ?disabled=${index === 0}
               @click=${() => move(index, -1)}
             >
@@ -442,7 +481,7 @@ export class JoeBatteryGroup extends DeviceSection {
             </button>
             <button
               type="button"
-              aria-label=${t("rule.priority.down", { name: battery.name })}
+              aria-label=${t("rule.priority.down", { name: group.map((b) => b.name).join(" + ") })}
               ?disabled=${index === order.length - 1}
               @click=${() => move(index, 1)}
             >
@@ -485,6 +524,7 @@ export class JoeBatteryGroup extends DeviceSection {
           ></button>
         </span>
       </div>
+      ${on ? this.groupLine(t, config, battery) : nothing}
       ${on
         ? html`<div class="team-line" data-tipped>
             <span class="what">
@@ -499,6 +539,54 @@ export class JoeBatteryGroup extends DeviceSection {
           </div>`
         : nothing}
     </li>`;
+  }
+
+  /**
+   * "Wer regelt ihn?": its own system, or the same system as another
+   * battery (Omnibattery for a Venus and a Victron). Batteries of one
+   * system take turns as one; Joe proposes from the integration.
+   */
+  private groupLine(t: Translate, config: JoeConfig, battery: BatteryConfig): TemplateResult {
+    const team = batteryTeam(this.state);
+    const mine = groupOf(battery, team);
+    const others = config.batteries.filter((b) => b.id !== battery.id && selfRegulating(b, team));
+    const own = `own:${battery.id}`;
+    const together = others.find((b) => groupOf(b, team) === mine);
+    const value = together ? groupOf(together, team) : own;
+    const id = `team-group-${battery.id}`;
+    const unsure = battery.control_group == null && team?.batteries[battery.id]?.group_sure === false;
+    const choose = (next: string) => {
+      if (next !== value) {
+        void saveConfig(this, { batteries: { [battery.id]: { control_group: next } } });
+      }
+    };
+    return html`<div class="team-line" data-tipped>
+      <span class="what">
+        <small id=${id}>
+          ${t("team.group")}
+          ${battery.control_group == null && team
+            ? html`<span class="chip ${unsure ? "warn" : ""}">${t(unsure ? "team.group.check" : "team.proposed")}</span>`
+            : sourceChip(t, sourceOf(config, `batteries[${battery.id}].control_group`))}
+        </small>
+      </span>
+      <span class="team-ctl">
+        ${tip(t, "team_group")}
+        <select
+          class="input team-group"
+          aria-labelledby=${id}
+          .value=${value}
+          @change=${(event: Event) => choose((event.target as HTMLSelectElement).value)}
+        >
+          <option value=${own} ?selected=${value === own}>${t("team.group.own")}</option>
+          ${others.map((other) => {
+            const key = groupOf(other, team);
+            return html`<option value=${key} ?selected=${value === key && together?.id === other.id}>
+              ${t("team.group.with", { name: other.name })}
+            </option>`;
+          })}
+        </select>
+      </span>
+    </div>`;
   }
 
   /** The rules for all batteries: read here, changed in Einstellungen › Regeln. */
