@@ -71,6 +71,8 @@ export interface Suggestion {
 export interface PickRequest {
   heading: string;
   tip: TipName;
+  /** Values for the tooltip's placeholders (a text that names "{target}" gets it back as it is). */
+  tipVars?: Record<string, string | number>;
   filter: FilterName;
   selected: string[];
   multiple?: boolean;

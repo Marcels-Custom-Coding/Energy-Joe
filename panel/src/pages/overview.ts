@@ -19,7 +19,7 @@ import type { Translate } from "../i18n";
 import type { DeviceEntry } from "../device-model";
 import { PANEL, href, onLink, type Route } from "../router";
 import { shared } from "../styles/shared";
-import type { Check, ClimateFound, DaySummary, Discovery, HistoryDays, HomeAssistant, JoeState } from "../types";
+import type { Check, ClimateFound, DaySummary, Discovery, HistoryDays, HomeAssistant, JoeInfo, JoeState } from "../types";
 import { batteryNow } from "./devices/battery-device";
 import "./overview/climate-list";
 import { climateRooms } from "./overview/climate-list";
@@ -53,6 +53,8 @@ export class JoeOverview extends LitElement {
   @property({ attribute: false }) checks: Check[] = [];
   /** Joe's devices (device-model), for jumps to their pages. */
   @property({ attribute: false }) devices: DeviceEntry[] = [];
+  /** Names of the profiles (for "weicht vom Fronius-Profil ab"). */
+  @property({ attribute: false }) info?: JoeInfo;
 
   @state() private week?: DaySummary[];
 
@@ -408,6 +410,7 @@ export class JoeOverview extends LitElement {
       discovery: this.discovery,
       checks: this.checks,
       devices: this.devices,
+      profiles: this.info?.profiles,
     });
     // Tonight's yes/no in Vorschlagen leads "Joe braucht dich" instead of sitting in the night card.
     const ask = steerAsks(joe);

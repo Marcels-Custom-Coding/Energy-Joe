@@ -116,6 +116,7 @@ export type ControlRole =
   /** The other way round: on = blocked (Kostal over Modbus), by day only. */
   | "block_charge"
   | "block_discharge";
+/** The basic levers every battery may have (the generic set of control/profiles.py); the dialog offers them to assign. */
 export const CONTROL_ROLES: ControlRole[] = [
   "min_soc",
   "grid_charge",
@@ -123,6 +124,8 @@ export const CONTROL_ROLES: ControlRole[] = [
   "mode",
   "charge_power",
   "discharge_power",
+  "charge_limit",
+  "charge_limit_enabled",
   "discharge_limit",
   "discharge_limit_enabled",
 ];
@@ -138,7 +141,131 @@ export interface ControlStep {
   service?: string;
   data?: Record<string, unknown>;
 }
-export type StepName = "charge" | "hold" | "release";
+/**
+ * What Joe does with a battery (an operation, see control/adapters.py and the
+ * preview energy_joe/battery/preview): the seven he always lists, and the
+ * watchdog's short blocks only when they use other steps than block_*.
+ */
+export type OperationKey =
+  | "charge"
+  | "hold"
+  | "block"
+  | "block_charge"
+  | "block_discharge"
+  | "cap"
+  | "release"
+  | "guard_charge"
+  | "guard_discharge";
+/** The operations in the order the preview lists them. */
+export const OPERATIONS: OperationKey[] = ["charge", "hold", "block", "block_charge", "block_discharge", "cap", "release"];
+/** The operations the owner may give own steps for (battery.steps). */
+export type StepName = "charge" | "hold" | "release" | "block" | "block_charge" | "block_discharge" | "cap";
+export const STEP_NAMES: StepName[] = ["charge", "hold", "block", "block_charge", "block_discharge", "cap", "release"];
+/** Where an operation's steps come from. */
+export type OperationSource = "profile" | "generic" | "own" | "service" | "none";
+/** The placeholders in step values ("{target}") the backend fills at run time. */
+export type StepParam = "target" | "power" | "power_neg" | "floor" | "percent" | "minutes" | "seconds" | "device";
+
+/** One write of the preview: an entity and its value, or a service call. */
+export interface PreviewStep {
+  kind: "set" | "call";
+  role?: string | null;
+  entity_id?: string;
+  name?: string | null;
+  value?: string | number | boolean | null;
+  unit?: string | null;
+  /** What the entity shows right now. */
+  current?: string | null;
+  /** The placeholder the value stands for, when the backend fills it at run time. */
+  param?: StepParam | null;
+  service?: string;
+  data?: Record<string, unknown>;
+}
+
+/** What "zurückstellen" writes afterwards; "saved" is the value kept before the operation. */
+export interface PreviewRestore {
+  entity_id: string;
+  name?: string | null;
+  value: string | number | boolean | null | "saved";
+  current?: string | null;
+}
+
+export interface PreviewParams {
+  target?: number;
+  power_w?: number;
+  floor?: number;
+  percent?: number;
+  seconds?: number;
+  minutes?: number;
+}
+
+export interface PreviewOperation {
+  op: OperationKey;
+  possible: boolean;
+  /** Why not (a code the panel explains). */
+  why: string | null;
+  source: OperationSource;
+  params: PreviewParams;
+  steps: PreviewStep[];
+  restore: PreviewRestore[];
+  /** Something to know about the order or the device (a code the panel explains). */
+  note: string | null;
+}
+
+/** One lever as the preview sees it: assigned, found by the profile, what it is and who uses it. */
+export interface PreviewRole {
+  role: ControlRole | string;
+  entity_id: string | null;
+  /** What the profile finds today. */
+  found: string | null;
+  kind: "setpoint" | "level" | "toggle" | "option" | null;
+  unit: string | null;
+  used_by: OperationKey[];
+  deviates: boolean;
+  /** Used by an operation or assigned. */
+  relevant: boolean;
+}
+
+/** The answer of energy_joe/battery/preview: nothing is written. */
+export interface BatteryPreview {
+  profile: { key: string; name: string } | null;
+  deviates: boolean;
+  operations: PreviewOperation[];
+  roles: PreviewRole[];
+  /** The preview could not be worked out (a code or message the panel shows). */
+  error?: string | null;
+}
+
+/** One step of a probe: what was written and what came back. */
+export interface ProbeStep {
+  entity_id?: string;
+  service?: string;
+  wrote: unknown;
+  read: string | null;
+  taken: boolean;
+  error: string | null;
+}
+
+/** The answer of energy_joe/battery/probe (also kept in the state as probes[battery][op]). */
+export interface ProbeResult {
+  ok: boolean;
+  op: OperationKey;
+  at: string;
+  steps: ProbeStep[];
+  restored: boolean;
+  restore_errors: string[];
+  problem: string | null;
+  power_kw: number | null;
+}
+
+/** A battery whose assigned levers differ from what its profile finds (state.battery_roles). */
+export interface BatteryRolesItem {
+  battery_id: string;
+  name: string;
+  profile: string;
+  missing: string[];
+  wrong: { role: string; is: string | null; found: string | null }[];
+}
 
 export interface BatteryConfig {
   id: string;
@@ -1304,6 +1431,10 @@ export interface JoeState {
   floors?: Record<string, BatteryFloor>;
   /** Settings Joe could not read at the start, kept apart (offered while he runs with the defaults); why taking them back failed. */
   config_backup?: { error: string | null } | null;
+  /** Each battery's last probe per operation (older backends: missing). */
+  probes?: Record<string, Partial<Record<OperationKey, ProbeResult>>>;
+  /** Batteries whose levers differ from their profile, not yet answered (older backends: missing). */
+  battery_roles?: BatteryRolesItem[];
 }
 
 export interface BatteryFloor {
