@@ -182,7 +182,7 @@ export class JoeEntityPicker extends LitElement {
     const shown = list.slice(0, this.limit);
     const offered = this.query ? [] : (request.suggestions ?? []).filter((s) => hass.states[s.entity_id]);
     return html`<div data-tipped>
-      <div class="sheet-title">${displayTitle(request.heading, "h2", tip(t, request.tip))}</div>
+      <div class="sheet-title">${displayTitle(request.heading, "h2", tip(t, request.tip, request.tipVars))}</div>
       <input
         class="input search"
         type="search"

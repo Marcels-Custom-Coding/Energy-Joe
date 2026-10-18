@@ -20,11 +20,12 @@ import { allowedCars, carRoute, pointRoute } from "../../cars";
 import { isIgnored, saveConfig } from "../../config";
 import { define } from "../../define";
 import { actionPlace, deviceRoute, findDevice, newFindings, type DeviceEntry, type Group } from "../../device-model";
+import { entityName } from "../../entities";
 import { laterList, laterOpen, questionHome } from "../../homes";
 import type { TipName, Translate } from "../../i18n";
 import { PANEL, format, href, onLink, type Route } from "../../router";
 import { shared } from "../../styles/shared";
-import type { Check, ClimateFound, Discovery, HomeAssistant, JoeState } from "../../types";
+import type { BatteryRolesItem, Check, ClimateFound, Discovery, HomeAssistant, JoeState } from "../../types";
 
 /**
  * One thing Joe needs from the user: a check, a problem, something not set up
@@ -47,8 +48,36 @@ export interface TodoItem {
   /** A quick answer right in the row (e.g. "Ist nachts aus – normal"): a config patch, its label and tooltip. */
   fix?: { label: string; tip: TipName; patch: Record<string, unknown> };
   /** Answers right in the row ("Welches Auto hängt …?": one per car): a command (or a config patch) each, one tooltip for all. */
-  choices?: { label: string; message?: { type: string; [key: string]: unknown }; patch?: Record<string, unknown> }[];
+  choices?: {
+    label: string;
+    message?: { type: string; [key: string]: unknown };
+    patch?: Record<string, unknown>;
+    /** What the row says once the answer went through ("neuer Testlauf nötig"). */
+    done?: string;
+  }[];
   choicesTip?: TipName;
+}
+
+/** "Entladegrenze fehlt, Ladeleistung ist „Battery charge power limit“ statt „…“" for a battery whose levers differ from its profile. */
+export function rolesDetails(t: Translate, item: BatteryRolesItem, hass: HomeAssistant | undefined): string {
+  const name = (entityId: string | null) => (entityId ? (hass ? entityName(hass, entityId) : entityId) : "–");
+  const role = (key: string) => t.optional(`role.${key}`) ?? key;
+  return [
+    ...item.missing.map((key) => t("roles.todo.missing", { role: role(key) })),
+    ...item.wrong.map((w) => t("roles.todo.wrong", { role: role(w.role), is: name(w.is), found: name(w.found) })),
+  ].join(", ");
+}
+
+/** The two answers to a battery whose levers differ from its profile: adopt the profile's, or leave it. */
+export function rolesChoices(t: Translate, batteryId: string): NonNullable<TodoItem["choices"]> {
+  return [
+    {
+      label: t("roles.todo.adopt"),
+      message: { type: "energy_joe/battery/roles", battery_id: batteryId, action: "adopt" },
+      done: t("roles.todo.adopted"),
+    },
+    { label: t("roles.todo.keep"), message: { type: "energy_joe/battery/roles", battery_id: batteryId, action: "dismiss" } },
+  ];
 }
 
 /** The patch that marks a solar measurement as "off without sun" (null: not one of them). */
@@ -67,6 +96,8 @@ export interface InboxInputs {
   discovery?: Discovery;
   checks?: Check[];
   devices?: DeviceEntry[];
+  /** Names of the profiles (profile key -> name). */
+  profiles?: Record<string, string>;
 }
 
 /** The key in answers.ignored that hides a row. */
@@ -208,6 +239,22 @@ export function inboxItems(t: Translate, joe: JoeState, inputs: InboxInputs = {}
     });
   }
   const problem = (code: string) => t.optional(`devices.problem.${code}`) ?? code;
+  // Levers saved for a battery that differ from what its profile finds (an older version's
+  // assignment): adopt the profile's or leave it – answered here or on the battery's page.
+  for (const item of joe.battery_roles ?? []) {
+    const profile = inputs.profiles?.[item.profile] ?? item.profile;
+    items.push({
+      id: `roles:${item.battery_id}`,
+      hide: [],
+      icon: "mdi:swap-horizontal-variant",
+      warn: true,
+      title: t("roles.todo.title", { name: item.name, profile }),
+      text: t("roles.todo.text", { details: rolesDetails(t, item, inputs.hass) }),
+      to: { tab: "devices", section: "battery", id: item.battery_id, sub: "control" },
+      choices: rolesChoices(t, item.battery_id),
+      choicesTip: "battery_roles",
+    });
+  }
   for (const battery of config.batteries.filter((b) => b.adapter !== "none")) {
     const code = control?.batteries[battery.id]?.problem ?? (control?.ready[battery.id] === "controls_missing" ? "controls_missing" : null);
     if (code) {
@@ -510,8 +557,11 @@ export class JoeOverviewInbox extends LitElement {
   @state() private fixing = new Set<string>();
   /** Rows just hidden, until the config comes back without them. */
   @state() private dismissed = new Set<string>();
+  /** What the last answer left to say ("neuer Testlauf nötig"), for a while. */
+  @state() private notice = "";
   /** The ids hidden in this view, so a quick second tap keeps the first one. */
   private hiding: string[] = [];
+  private noticeTimer?: number;
 
   static styles = [
     shared,
@@ -641,8 +691,18 @@ export class JoeOverviewInbox extends LitElement {
         margin-left: 46px;
         padding-bottom: 4px;
       }
+      .note.after {
+        margin-top: 10px;
+      }
     `,
   ];
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    if (this.noticeTimer !== undefined) {
+      clearTimeout(this.noticeTimer);
+    }
+  }
 
   protected willUpdate(changed: PropertyValues<this>): void {
     // An answered car question that is gone may come back with the next plug-in: show it again then.
@@ -661,7 +721,7 @@ export class JoeOverviewInbox extends LitElement {
     }
     const questions = joe.questions ?? [];
     const items = this.items.filter((item) => !this.dismissed.has(item.id));
-    if (!items.length && !questions.length && !this.steer) {
+    if (!items.length && !questions.length && !this.steer && !this.notice) {
       return nothing;
     }
     const shown = this.all ? items : items.slice(0, SHOWN);
@@ -673,6 +733,9 @@ export class JoeOverviewInbox extends LitElement {
         <span class="chip warn">${t("overview.inbox.count", { count: items.length + questions.length + (this.steer ? 1 : 0) })}</span>
         ${tip(t, "inbox")}
       </div>
+      ${this.notice
+        ? html`<div class="note after" role="status"><ha-icon icon="mdi:information-outline"></ha-icon><span>${this.notice}</span></div>`
+        : nothing}
       <ul>
         ${this.steer
           ? html`<li class="steer">
@@ -779,6 +842,13 @@ export class JoeOverviewInbox extends LitElement {
     this.fixing = rest;
     if (ok) {
       this.dismissed = new Set([...this.dismissed, item.id]);
+      if (choice.done) {
+        this.notice = choice.done;
+        if (this.noticeTimer !== undefined) clearTimeout(this.noticeTimer);
+        this.noticeTimer = window.setTimeout(() => {
+          this.notice = "";
+        }, 12000);
+      }
     }
   }
 
