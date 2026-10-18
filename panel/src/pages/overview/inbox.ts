@@ -2,7 +2,16 @@ import { LitElement, css, html, nothing, type PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
 import "../../components/day-questions";
 import "../../components/steer-tonight";
-import { batteryTeam, teamTransfer } from "../../components/battery-team";
+import {
+  batteryTeam,
+  givenBack,
+  groupsPatch,
+  guardAlarm,
+  guardInside,
+  teamSuggest,
+  transferGuard,
+  unsureNames,
+} from "../../components/battery-team";
 import { mergeAnswers, mergeQuestion } from "../../components/car-sources";
 import { daySurplus, surplusAbility, surplusConflicts } from "../../components/day-surplus";
 import { checkText } from "../../components/texts";
@@ -37,8 +46,8 @@ export interface TodoItem {
   to: Route;
   /** A quick answer right in the row (e.g. "Ist nachts aus – normal"): a config patch, its label and tooltip. */
   fix?: { label: string; tip: TipName; patch: Record<string, unknown> };
-  /** Answers right in the row ("Welches Auto hängt …?": one per car): a command each, one tooltip for all. */
-  choices?: { label: string; message: { type: string; [key: string]: unknown } }[];
+  /** Answers right in the row ("Welches Auto hängt …?": one per car): a command (or a config patch) each, one tooltip for all. */
+  choices?: { label: string; message?: { type: string; [key: string]: unknown }; patch?: Record<string, unknown> }[];
   choicesTip?: TipName;
 }
 
@@ -219,16 +228,59 @@ export function inboxItems(t: Translate, joe: JoeState, inputs: InboxInputs = {}
       });
     }
   }
-  // Several batteries: running against each other despite Joe's blocks, the
-  // owner's automations doing it so far, or "Nacheinander" not chosen yet.
+  // Several batteries: still running against each other after the watchdog's
+  // stages, the owner's automations doing it so far, or switched on again
+  // because Joe cannot block himself.
   const team = batteryTeam(joe);
   const teamTo: Route = { tab: "devices", section: "battery", id: "together" };
-  if (team?.transfer?.despite) {
+  const guard = transferGuard(joe);
+  const alarm = guardAlarm(t, guard, config);
+  if (alarm && guard?.last) {
     warn({
-      id: `team:transfer:${team.transfer.since}`,
-      title: t("team.title"),
-      text: teamTransfer(t, team) ?? "",
+      id: `guard:alarm:${guard.last.since ?? guard.last.at}`,
+      title: t("guard.alarm.title"),
+      text: alarm,
       to: teamTo,
+    });
+  }
+  const inside = guardInside(t, guard, config);
+  if (inside && guard?.last) {
+    warn({
+      id: `guard:inside:${guard.last.since ?? guard.last.at}`,
+      title: t("guard.inside.title"),
+      text: inside,
+      to: teamTo,
+    });
+  }
+  // Not sure which system regulates a battery: "Welche Speicher werden vom
+  // selben System geregelt?" ("Vorschlag passt" keeps Joe's proposal).
+  if (team?.group_question) {
+    push({
+      id: "team:groups",
+      icon: "mdi:help-circle-outline",
+      title: t("team.groups.question"),
+      text: t("team.groups.question.text", { names: unsureNames(config, team) }),
+      to: teamTo,
+      fix: { label: t("team.groups.confirm"), tip: "team_groups_confirm", patch: groupsPatch(config, team) },
+    });
+  }
+  // "Gestern gingen 3 kWh ins Netz, obwohl die Venus nur 70 % hatte. Soll
+  // ich sie künftig früher mitladen lassen?" Ja: Joe uses the lead he
+  // learned; Nein: he remembers it and does not ask again.
+  const suggest = teamSuggest(t, config, team);
+  if (suggest && team?.suggest) {
+    items.push({
+      id: `team:early:${team.suggest.day}`,
+      hide: [],
+      icon: "mdi:battery-clock-outline",
+      title: suggest.title,
+      text: suggest.text,
+      to: teamTo,
+      choices: [
+        { label: t("team.suggest.yes"), patch: { rules: { team_early: true } } },
+        { label: t("team.suggest.no"), patch: { rules: { team_early: false } } },
+      ],
+      choicesTip: "team_early",
     });
   }
   if (team?.state === "automation") {
@@ -240,14 +292,15 @@ export function inboxItems(t: Translate, joe: JoeState, inputs: InboxInputs = {}
       to: teamTo,
     });
   }
-  if (team?.proposal) {
-    push({
-      id: "team:proposal",
-      icon: "mdi:battery-sync-outline",
-      title: t("overview.todo.team"),
-      text: t("overview.todo.team.text"),
+  // Joe switched the owner's automations on again: he cannot block (a lever,
+  // a block that did not arrive …) – they run until he can take over again.
+  const back = givenBack(t, team);
+  if (back?.problem && team?.given_back) {
+    warn({
+      id: `team:given_back:${team.given_back.at}`,
+      title: t("team.given_back.title"),
+      text: back.text,
       to: teamTo,
-      fix: { label: t("team.mode.sequence"), tip: "team_mode", patch: { rules: { battery_team: "sequence" } } },
     });
   }
   // A limit in % that could take part once Joe knows what 100 % stand for.
@@ -648,7 +701,7 @@ export class JoeOverviewInbox extends LitElement {
                 type="button"
                 class="mini-btn"
                 ?disabled=${this.fixing.has(item.id)}
-                @click=${() => this.choose(item, choice.message)}
+                @click=${() => this.choose(item, choice)}
               >
                 ${choice.label}
               </button>`,
@@ -688,13 +741,17 @@ export class JoeOverviewInbox extends LitElement {
   }
 
   /** An answer right in the row (a command): the row goes once the backend has it. */
-  private async choose(item: TodoItem, message: { type: string; [key: string]: unknown }): Promise<void> {
+  private async choose(item: TodoItem, choice: NonNullable<TodoItem["choices"]>[number]): Promise<void> {
     this.fixing = new Set([...this.fixing, item.id]);
     let ok = true;
-    try {
-      await this.hass?.callWS(message);
-    } catch {
-      ok = false;
+    if (choice.patch) {
+      ok = await saveConfig(this, choice.patch);
+    } else if (choice.message) {
+      try {
+        await this.hass?.callWS(choice.message);
+      } catch {
+        ok = false;
+      }
     }
     const rest = new Set(this.fixing);
     rest.delete(item.id);

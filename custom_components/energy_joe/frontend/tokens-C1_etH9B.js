@@ -29,11 +29,11 @@ var e = globalThis, t = e.ShadowRoot && (e.ShadyCSS === void 0 || e.ShadyCSS.nat
 	let t = "";
 	for (let n of e.cssRules) t += n.cssText;
 	return a(t);
-})(e) : e, { is: l, defineProperty: u, getOwnPropertyDescriptor: d, getOwnPropertyNames: f, getOwnPropertySymbols: p, getPrototypeOf: m } = Object, h = globalThis, g = h.trustedTypes, ee = g ? g.emptyScript : "", te = h.reactiveElementPolyfillSupport, _ = (e, t) => e, v = {
+})(e) : e, { is: l, defineProperty: u, getOwnPropertyDescriptor: d, getOwnPropertyNames: f, getOwnPropertySymbols: p, getPrototypeOf: m } = Object, h = globalThis, g = h.trustedTypes, _ = g ? g.emptyScript : "", ee = h.reactiveElementPolyfillSupport, v = (e, t) => e, y = {
 	toAttribute(e, t) {
 		switch (t) {
 			case Boolean:
-				e = e ? ee : null;
+				e = e ? _ : null;
 				break;
 			case Object:
 			case Array: e = e == null ? e : JSON.stringify(e);
@@ -58,13 +58,13 @@ var e = globalThis, t = e.ShadowRoot && (e.ShadyCSS === void 0 || e.ShadyCSS.nat
 		}
 		return n;
 	}
-}, y = (e, t) => !l(e, t), ne = {
+}, te = (e, t) => !l(e, t), ne = {
 	attribute: !0,
 	type: String,
-	converter: v,
+	converter: y,
 	reflect: !1,
 	useDefault: !1,
-	hasChanged: y
+	hasChanged: te
 };
 Symbol.metadata ??= Symbol("metadata"), h.litPropertyMetadata ??= /* @__PURE__ */ new WeakMap();
 var b = class extends HTMLElement {
@@ -103,13 +103,13 @@ var b = class extends HTMLElement {
 		return this.elementProperties.get(e) ?? ne;
 	}
 	static _$Ei() {
-		if (this.hasOwnProperty(_("elementProperties"))) return;
+		if (this.hasOwnProperty(v("elementProperties"))) return;
 		let e = m(this);
 		e.finalize(), e.l !== void 0 && (this.l = [...e.l]), this.elementProperties = new Map(e.elementProperties);
 	}
 	static finalize() {
-		if (this.hasOwnProperty(_("finalized"))) return;
-		if (this.finalized = !0, this._$Ei(), this.hasOwnProperty(_("properties"))) {
+		if (this.hasOwnProperty(v("finalized"))) return;
+		if (this.finalized = !0, this._$Ei(), this.hasOwnProperty(v("properties"))) {
 			let e = this.properties, t = [...f(e), ...p(e)];
 			for (let n of t) this.createProperty(n, e[n]);
 		}
@@ -171,14 +171,14 @@ var b = class extends HTMLElement {
 	_$ET(e, t) {
 		let n = this.constructor.elementProperties.get(e), r = this.constructor._$Eu(e, n);
 		if (r !== void 0 && !0 === n.reflect) {
-			let i = (n.converter?.toAttribute === void 0 ? v : n.converter).toAttribute(t, n.type);
+			let i = (n.converter?.toAttribute === void 0 ? y : n.converter).toAttribute(t, n.type);
 			this._$Em = e, i == null ? this.removeAttribute(r) : this.setAttribute(r, i), this._$Em = null;
 		}
 	}
 	_$AK(e, t) {
 		let n = this.constructor, r = n._$Eh.get(e);
 		if (r !== void 0 && this._$Em !== r) {
-			let e = n.getPropertyOptions(r), i = typeof e.converter == "function" ? { fromAttribute: e.converter } : e.converter?.fromAttribute === void 0 ? v : e.converter;
+			let e = n.getPropertyOptions(r), i = typeof e.converter == "function" ? { fromAttribute: e.converter } : e.converter?.fromAttribute === void 0 ? y : e.converter;
 			this._$Em = r;
 			let a = i.fromAttribute(t, e.type);
 			this[r] = a ?? this._$Ej?.get(r) ?? a, this._$Em = null;
@@ -187,7 +187,7 @@ var b = class extends HTMLElement {
 	requestUpdate(e, t, n, r = !1, i) {
 		if (e !== void 0) {
 			let a = this.constructor;
-			if (!1 === r && (i = this[e]), n ??= a.getPropertyOptions(e), !((n.hasChanged ?? y)(i, t) || n.useDefault && n.reflect && i === this._$Ej?.get(e) && !this.hasAttribute(a._$Eu(e, n)))) return;
+			if (!1 === r && (i = this[e]), n ??= a.getPropertyOptions(e), !((n.hasChanged ?? te)(i, t) || n.useDefault && n.reflect && i === this._$Ej?.get(e) && !this.hasAttribute(a._$Eu(e, n)))) return;
 			this.C(e, t, n);
 		}
 		!1 === this.isUpdatePending && (this._$ES = this._$EP());
@@ -251,17 +251,17 @@ var b = class extends HTMLElement {
 	updated(e) {}
 	firstUpdated(e) {}
 };
-b.elementStyles = [], b.shadowRootOptions = { mode: "open" }, b[_("elementProperties")] = /* @__PURE__ */ new Map(), b[_("finalized")] = /* @__PURE__ */ new Map(), te?.({ ReactiveElement: b }), (h.reactiveElementVersions ??= []).push("2.1.2");
+b.elementStyles = [], b.shadowRootOptions = { mode: "open" }, b[v("elementProperties")] = /* @__PURE__ */ new Map(), b[v("finalized")] = /* @__PURE__ */ new Map(), ee?.({ ReactiveElement: b }), (h.reactiveElementVersions ??= []).push("2.1.2");
 //#endregion
 //#region node_modules/lit-html/lit-html.js
-var x = globalThis, re = (e) => e, S = x.trustedTypes, ie = S ? S.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, C = "$lit$", w = `lit$${Math.random().toFixed(9).slice(2)}$`, ae = "?" + w, oe = `<${ae}>`, T = document, E = () => T.createComment(""), D = (e) => e === null || typeof e != "object" && typeof e != "function", se = Array.isArray, ce = (e) => se(e) || typeof e?.[Symbol.iterator] == "function", le = "[ 	\n\f\r]", O = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, ue = /-->/g, de = />/g, k = RegExp(`>|${le}(?:([^\\s"'>=/]+)(${le}*=${le}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`, "g"), fe = /'/g, pe = /"/g, me = /^(?:script|style|textarea|title)$/i, he = (e) => (t, ...n) => ({
+var re = globalThis, ie = (e) => e, x = re.trustedTypes, ae = x ? x.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, S = "$lit$", C = `lit$${Math.random().toFixed(9).slice(2)}$`, oe = "?" + C, se = `<${oe}>`, w = document, T = () => w.createComment(""), E = (e) => e === null || typeof e != "object" && typeof e != "function", D = Array.isArray, ce = (e) => D(e) || typeof e?.[Symbol.iterator] == "function", le = "[ 	\n\f\r]", O = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, ue = /-->/g, de = />/g, k = RegExp(`>|${le}(?:([^\\s"'>=/]+)(${le}*=${le}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`, "g"), fe = /'/g, pe = /"/g, me = /^(?:script|style|textarea|title)$/i, he = (e) => (t, ...n) => ({
 	_$litType$: e,
 	strings: t,
 	values: n
-}), A = he(1), ge = he(2), j = Symbol.for("lit-noChange"), M = Symbol.for("lit-nothing"), _e = /* @__PURE__ */ new WeakMap(), N = T.createTreeWalker(T, 129);
+}), A = he(1), ge = he(2), j = Symbol.for("lit-noChange"), M = Symbol.for("lit-nothing"), _e = /* @__PURE__ */ new WeakMap(), N = w.createTreeWalker(w, 129);
 function ve(e, t) {
-	if (!se(e) || !e.hasOwnProperty("raw")) throw Error("invalid template strings array");
-	return ie === void 0 ? t : ie.createHTML(t);
+	if (!D(e) || !e.hasOwnProperty("raw")) throw Error("invalid template strings array");
+	return ae === void 0 ? t : ae.createHTML(t);
 }
 var ye = (e, t) => {
 	let n = e.length - 1, r = [], i, a = t === 2 ? "<svg>" : t === 3 ? "<math>" : "", o = O;
@@ -269,10 +269,10 @@ var ye = (e, t) => {
 		let n = e[t], s, c, l = -1, u = 0;
 		for (; u < n.length && (o.lastIndex = u, c = o.exec(n), c !== null);) u = o.lastIndex, o === O ? c[1] === "!--" ? o = ue : c[1] === void 0 ? c[2] === void 0 ? c[3] !== void 0 && (o = k) : (me.test(c[2]) && (i = RegExp("</" + c[2], "g")), o = k) : o = de : o === k ? c[0] === ">" ? (o = i ?? O, l = -1) : c[1] === void 0 ? l = -2 : (l = o.lastIndex - c[2].length, s = c[1], o = c[3] === void 0 ? k : c[3] === "\"" ? pe : fe) : o === pe || o === fe ? o = k : o === ue || o === de ? o = O : (o = k, i = void 0);
 		let d = o === k && e[t + 1].startsWith("/>") ? " " : "";
-		a += o === O ? n + oe : l >= 0 ? (r.push(s), n.slice(0, l) + C + n.slice(l) + w + d) : n + w + (l === -2 ? t : d);
+		a += o === O ? n + se : l >= 0 ? (r.push(s), n.slice(0, l) + S + n.slice(l) + C + d) : n + C + (l === -2 ? t : d);
 	}
 	return [ve(e, a + (e[n] || "<?>") + (t === 2 ? "</svg>" : t === 3 ? "</math>" : "")), r];
-}, P = class e {
+}, be = class e {
 	constructor({ strings: t, _$litType$: n }, r) {
 		let i;
 		this.parts = [];
@@ -283,57 +283,57 @@ var ye = (e, t) => {
 		}
 		for (; (i = N.nextNode()) !== null && c.length < s;) {
 			if (i.nodeType === 1) {
-				if (i.hasAttributes()) for (let e of i.getAttributeNames()) if (e.endsWith(C)) {
-					let t = u[o++], n = i.getAttribute(e).split(w), r = /([.?@])?(.*)/.exec(t);
+				if (i.hasAttributes()) for (let e of i.getAttributeNames()) if (e.endsWith(S)) {
+					let t = u[o++], n = i.getAttribute(e).split(C), r = /([.?@])?(.*)/.exec(t);
 					c.push({
 						type: 1,
 						index: a,
 						name: r[2],
 						strings: n,
-						ctor: r[1] === "." ? xe : r[1] === "?" ? Se : r[1] === "@" ? Ce : L
+						ctor: r[1] === "." ? Se : r[1] === "?" ? Ce : r[1] === "@" ? we : I
 					}), i.removeAttribute(e);
-				} else e.startsWith(w) && (c.push({
+				} else e.startsWith(C) && (c.push({
 					type: 6,
 					index: a
 				}), i.removeAttribute(e));
 				if (me.test(i.tagName)) {
-					let e = i.textContent.split(w), t = e.length - 1;
+					let e = i.textContent.split(C), t = e.length - 1;
 					if (t > 0) {
-						i.textContent = S ? S.emptyScript : "";
-						for (let n = 0; n < t; n++) i.append(e[n], E()), N.nextNode(), c.push({
+						i.textContent = x ? x.emptyScript : "";
+						for (let n = 0; n < t; n++) i.append(e[n], T()), N.nextNode(), c.push({
 							type: 2,
 							index: ++a
 						});
-						i.append(e[t], E());
+						i.append(e[t], T());
 					}
 				}
 			} else if (i.nodeType === 8) {
-				if (i.data === ae) c.push({
+				if (i.data === oe) c.push({
 					type: 2,
 					index: a
 				});
 				else {
 					let e = -1;
-					for (; (e = i.data.indexOf(w, e + 1)) !== -1;) c.push({
+					for (; (e = i.data.indexOf(C, e + 1)) !== -1;) c.push({
 						type: 7,
 						index: a
-					}), e += w.length - 1;
+					}), e += C.length - 1;
 				}
 			}
 			a++;
 		}
 	}
 	static createElement(e, t) {
-		let n = T.createElement("template");
+		let n = w.createElement("template");
 		return n.innerHTML = e, n;
 	}
 };
-function F(e, t, n = e, r) {
+function P(e, t, n = e, r) {
 	if (t === j) return t;
-	let i = r === void 0 ? n._$Cl : n._$Co?.[r], a = D(t) ? void 0 : t._$litDirective$;
-	return i?.constructor !== a && (i?._$AO?.(!1), a === void 0 ? i = void 0 : (i = new a(e), i._$AT(e, n, r)), r === void 0 ? n._$Cl = i : (n._$Co ??= [])[r] = i), i !== void 0 && (t = F(e, i._$AS(e, t.values), i, r)), t;
+	let i = r === void 0 ? n._$Cl : n._$Co?.[r], a = E(t) ? void 0 : t._$litDirective$;
+	return i?.constructor !== a && (i?._$AO?.(!1), a === void 0 ? i = void 0 : (i = new a(e), i._$AT(e, n, r)), r === void 0 ? n._$Cl = i : (n._$Co ??= [])[r] = i), i !== void 0 && (t = P(e, i._$AS(e, t.values), i, r)), t;
 }
-var be = class {
+var xe = class {
 	constructor(e, t) {
 		this._$AV = [], this._$AN = void 0, this._$AD = e, this._$AM = t;
 	}
@@ -344,23 +344,23 @@ var be = class {
 		return this._$AM._$AU;
 	}
 	u(e) {
-		let { el: { content: t }, parts: n } = this._$AD, r = (e?.creationScope ?? T).importNode(t, !0);
+		let { el: { content: t }, parts: n } = this._$AD, r = (e?.creationScope ?? w).importNode(t, !0);
 		N.currentNode = r;
 		let i = N.nextNode(), a = 0, o = 0, s = n[0];
 		for (; s !== void 0;) {
 			if (a === s.index) {
 				let t;
-				s.type === 2 ? t = new I(i, i.nextSibling, this, e) : s.type === 1 ? t = new s.ctor(i, s.name, s.strings, this, e) : s.type === 6 && (t = new we(i, this, e)), this._$AV.push(t), s = n[++o];
+				s.type === 2 ? t = new F(i, i.nextSibling, this, e) : s.type === 1 ? t = new s.ctor(i, s.name, s.strings, this, e) : s.type === 6 && (t = new Te(i, this, e)), this._$AV.push(t), s = n[++o];
 			}
 			a !== s?.index && (i = N.nextNode(), a++);
 		}
-		return N.currentNode = T, r;
+		return N.currentNode = w, r;
 	}
 	p(e) {
 		let t = 0;
 		for (let n of this._$AV) n !== void 0 && (n.strings === void 0 ? n._$AI(e[t]) : (n._$AI(e, n, t), t += n.strings.length - 2)), t++;
 	}
-}, I = class e {
+}, F = class e {
 	get _$AU() {
 		return this._$AM?._$AU ?? this._$Cv;
 	}
@@ -378,7 +378,7 @@ var be = class {
 		return this._$AB;
 	}
 	_$AI(e, t = this) {
-		e = F(this, e, t), D(e) ? e === M || e == null || e === "" ? (this._$AH !== M && this._$AR(), this._$AH = M) : e !== this._$AH && e !== j && this._(e) : e._$litType$ === void 0 ? e.nodeType === void 0 ? ce(e) ? this.k(e) : this._(e) : this.T(e) : this.$(e);
+		e = P(this, e, t), E(e) ? e === M || e == null || e === "" ? (this._$AH !== M && this._$AR(), this._$AH = M) : e !== this._$AH && e !== j && this._(e) : e._$litType$ === void 0 ? e.nodeType === void 0 ? ce(e) ? this.k(e) : this._(e) : this.T(e) : this.$(e);
 	}
 	O(e) {
 		return this._$AA.parentNode.insertBefore(e, this._$AB);
@@ -387,36 +387,36 @@ var be = class {
 		this._$AH !== e && (this._$AR(), this._$AH = this.O(e));
 	}
 	_(e) {
-		this._$AH !== M && D(this._$AH) ? this._$AA.nextSibling.data = e : this.T(T.createTextNode(e)), this._$AH = e;
+		this._$AH !== M && E(this._$AH) ? this._$AA.nextSibling.data = e : this.T(w.createTextNode(e)), this._$AH = e;
 	}
 	$(e) {
-		let { values: t, _$litType$: n } = e, r = typeof n == "number" ? this._$AC(e) : (n.el === void 0 && (n.el = P.createElement(ve(n.h, n.h[0]), this.options)), n);
+		let { values: t, _$litType$: n } = e, r = typeof n == "number" ? this._$AC(e) : (n.el === void 0 && (n.el = be.createElement(ve(n.h, n.h[0]), this.options)), n);
 		if (this._$AH?._$AD === r) this._$AH.p(t);
 		else {
-			let e = new be(r, this), n = e.u(this.options);
+			let e = new xe(r, this), n = e.u(this.options);
 			e.p(t), this.T(n), this._$AH = e;
 		}
 	}
 	_$AC(e) {
 		let t = _e.get(e.strings);
-		return t === void 0 && _e.set(e.strings, t = new P(e)), t;
+		return t === void 0 && _e.set(e.strings, t = new be(e)), t;
 	}
 	k(t) {
-		se(this._$AH) || (this._$AH = [], this._$AR());
+		D(this._$AH) || (this._$AH = [], this._$AR());
 		let n = this._$AH, r, i = 0;
-		for (let a of t) i === n.length ? n.push(r = new e(this.O(E()), this.O(E()), this, this.options)) : r = n[i], r._$AI(a), i++;
+		for (let a of t) i === n.length ? n.push(r = new e(this.O(T()), this.O(T()), this, this.options)) : r = n[i], r._$AI(a), i++;
 		i < n.length && (this._$AR(r && r._$AB.nextSibling, i), n.length = i);
 	}
 	_$AR(e = this._$AA.nextSibling, t) {
 		for (this._$AP?.(!1, !0, t); e !== this._$AB;) {
-			let t = re(e).nextSibling;
-			re(e).remove(), e = t;
+			let t = ie(e).nextSibling;
+			ie(e).remove(), e = t;
 		}
 	}
 	setConnected(e) {
 		this._$AM === void 0 && (this._$Cv = e, this._$AP?.(e));
 	}
-}, L = class {
+}, I = class {
 	get tagName() {
 		return this.element.tagName;
 	}
@@ -428,43 +428,43 @@ var be = class {
 	}
 	_$AI(e, t = this, n, r) {
 		let i = this.strings, a = !1;
-		if (i === void 0) e = F(this, e, t, 0), a = !D(e) || e !== this._$AH && e !== j, a && (this._$AH = e);
+		if (i === void 0) e = P(this, e, t, 0), a = !E(e) || e !== this._$AH && e !== j, a && (this._$AH = e);
 		else {
 			let r = e, o, s;
-			for (e = i[0], o = 0; o < i.length - 1; o++) s = F(this, r[n + o], t, o), s === j && (s = this._$AH[o]), a ||= !D(s) || s !== this._$AH[o], s === M ? e = M : e !== M && (e += (s ?? "") + i[o + 1]), this._$AH[o] = s;
+			for (e = i[0], o = 0; o < i.length - 1; o++) s = P(this, r[n + o], t, o), s === j && (s = this._$AH[o]), a ||= !E(s) || s !== this._$AH[o], s === M ? e = M : e !== M && (e += (s ?? "") + i[o + 1]), this._$AH[o] = s;
 		}
 		a && !r && this.j(e);
 	}
 	j(e) {
 		e === M ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, e ?? "");
 	}
-}, xe = class extends L {
+}, Se = class extends I {
 	constructor() {
 		super(...arguments), this.type = 3;
 	}
 	j(e) {
 		this.element[this.name] = e === M ? void 0 : e;
 	}
-}, Se = class extends L {
+}, Ce = class extends I {
 	constructor() {
 		super(...arguments), this.type = 4;
 	}
 	j(e) {
 		this.element.toggleAttribute(this.name, !!e && e !== M);
 	}
-}, Ce = class extends L {
+}, we = class extends I {
 	constructor(e, t, n, r, i) {
 		super(e, t, n, r, i), this.type = 5;
 	}
 	_$AI(e, t = this) {
-		if ((e = F(this, e, t, 0) ?? M) === j) return;
+		if ((e = P(this, e, t, 0) ?? M) === j) return;
 		let n = this._$AH, r = e === M && n !== M || e.capture !== n.capture || e.once !== n.once || e.passive !== n.passive, i = e !== M && (n === M || r);
 		r && this.element.removeEventListener(this.name, this, n), i && this.element.addEventListener(this.name, this, e), this._$AH = e;
 	}
 	handleEvent(e) {
 		typeof this._$AH == "function" ? this._$AH.call(this.options?.host ?? this.element, e) : this._$AH.handleEvent(e);
 	}
-}, we = class {
+}, Te = class {
 	constructor(e, t, n) {
 		this.element = e, this.type = 6, this._$AN = void 0, this._$AM = t, this.options = n;
 	}
@@ -472,33 +472,33 @@ var be = class {
 		return this._$AM._$AU;
 	}
 	_$AI(e) {
-		F(this, e);
+		P(this, e);
 	}
-}, Te = {
-	M: C,
-	P: w,
-	A: ae,
+}, Ee = {
+	M: S,
+	P: C,
+	A: oe,
 	C: 1,
 	L: ye,
-	R: be,
+	R: xe,
 	D: ce,
-	V: F,
-	I,
-	H: L,
-	N: Se,
-	U: Ce,
-	B: xe,
-	F: we
-}, Ee = x.litHtmlPolyfillSupport;
-Ee?.(P, I), (x.litHtmlVersions ??= []).push("3.3.3");
-var De = (e, t, n) => {
+	V: P,
+	I: F,
+	H: I,
+	N: Ce,
+	U: we,
+	B: Se,
+	F: Te
+}, De = re.litHtmlPolyfillSupport;
+De?.(be, F), (re.litHtmlVersions ??= []).push("3.3.3");
+var Oe = (e, t, n) => {
 	let r = n?.renderBefore ?? t, i = r._$litPart$;
 	if (i === void 0) {
 		let e = n?.renderBefore ?? null;
-		r._$litPart$ = i = new I(t.insertBefore(E(), e), e, void 0, n ?? {});
+		r._$litPart$ = i = new F(t.insertBefore(T(), e), e, void 0, n ?? {});
 	}
 	return i._$AI(e), i;
-}, R = globalThis, z = class extends b {
+}, ke = globalThis, L = class extends b {
 	constructor() {
 		super(...arguments), this.renderOptions = { host: this }, this._$Do = void 0;
 	}
@@ -508,7 +508,7 @@ var De = (e, t, n) => {
 	}
 	update(e) {
 		let t = this.render();
-		this.hasUpdated || (this.renderOptions.isConnected = this.isConnected), super.update(e), this._$Do = De(t, this.renderRoot, this.renderOptions);
+		this.hasUpdated || (this.renderOptions.isConnected = this.isConnected), super.update(e), this._$Do = Oe(t, this.renderRoot, this.renderOptions);
 	}
 	connectedCallback() {
 		super.connectedCallback(), this._$Do?.setConnected(!0);
@@ -520,18 +520,18 @@ var De = (e, t, n) => {
 		return j;
 	}
 };
-z._$litElement$ = !0, z.finalized = !0, R.litElementHydrateSupport?.({ LitElement: z });
-var Oe = R.litElementPolyfillSupport;
-Oe?.({ LitElement: z }), (R.litElementVersions ??= []).push("4.2.2");
+L._$litElement$ = !0, L.finalized = !0, ke.litElementHydrateSupport?.({ LitElement: L });
+var Ae = ke.litElementPolyfillSupport;
+Ae?.({ LitElement: L }), (ke.litElementVersions ??= []).push("4.2.2");
 //#endregion
 //#region node_modules/@lit/reactive-element/decorators/property.js
-var ke = {
+var je = {
 	attribute: !0,
 	type: String,
-	converter: v,
+	converter: y,
 	reflect: !1,
-	hasChanged: y
-}, Ae = (e = ke, t, n) => {
+	hasChanged: te
+}, Me = (e = je, t, n) => {
 	let { kind: r, metadata: i } = n, a = globalThis.litPropertyMetadata.get(i);
 	if (a === void 0 && globalThis.litPropertyMetadata.set(i, a = /* @__PURE__ */ new Map()), r === "setter" && ((e = Object.create(e)).wrapped = !0), a.set(n.name, e), r === "accessor") {
 		let { name: r } = n;
@@ -554,16 +554,16 @@ var ke = {
 	}
 	throw Error("Unsupported decorator location: " + r);
 };
-function B(e) {
-	return (t, n) => typeof n == "object" ? Ae(e, t, n) : ((e, t, n) => {
+function R(e) {
+	return (t, n) => typeof n == "object" ? Me(e, t, n) : ((e, t, n) => {
 		let r = t.hasOwnProperty(n);
 		return t.constructor.createProperty(n, e), r ? Object.getOwnPropertyDescriptor(t, n) : void 0;
 	})(e, t, n);
 }
 //#endregion
 //#region node_modules/@lit/reactive-element/decorators/state.js
-function V(e) {
-	return B({
+function z(e) {
+	return R({
 		...e,
 		state: !0,
 		attribute: !1
@@ -571,10 +571,10 @@ function V(e) {
 }
 //#endregion
 //#region node_modules/@lit/reactive-element/decorators/base.js
-var je = (e, t, n) => (n.configurable = !0, n.enumerable = !0, Reflect.decorate && typeof t != "object" && Object.defineProperty(e, t, n), n);
+var Ne = (e, t, n) => (n.configurable = !0, n.enumerable = !0, Reflect.decorate && typeof t != "object" && Object.defineProperty(e, t, n), n);
 //#endregion
 //#region node_modules/@lit/reactive-element/decorators/query.js
-function Me(e, t) {
+function B(e, t) {
 	return (n, r, i) => {
 		let a = (t) => t.renderRoot?.querySelector(e) ?? null;
 		if (t) {
@@ -589,19 +589,19 @@ function Me(e, t) {
 					}
 				};
 			})();
-			return je(n, r, { get() {
+			return Ne(n, r, { get() {
 				let n = e.call(this);
 				return n === void 0 && (n = a(this), (n !== null || this.hasUpdated) && t.call(this, n)), n;
 			} });
 		}
-		return je(n, r, { get() {
+		return Ne(n, r, { get() {
 			return a(this);
 		} });
 	};
 }
 //#endregion
 //#region src/i18n/de.ts
-var Ne = {
+var Pe = {
 	"tab.overview": "Übersicht",
 	"tab.plan": "Plan",
 	"tab.review": "Rückblick",
@@ -1269,6 +1269,7 @@ var Ne = {
 	"overview.night.empty.title": "Noch kein |Plan",
 	"overview.night.empty.text": "Sobald ich deine Speicher und deinen Tarif kenne, rechne ich hier jede Nacht aus, wie viel ich lade – und warum.",
 	"plan.day": "Netzdienlich: Bis {time} Uhr geht die Morgensonne ins Netz (etwa {kwh} kWh), dann lädt der Speicher in der Mittagsspitze.",
+	"plan.day.buffer": "Netzdienlich: Ich lade erst bis {level} % als Puffer für dich, dann bekommt das Netz die Morgensonne (etwa {kwh} kWh), ab {time} Uhr lade ich voll.",
 	"plan.day.cost": "Kostet etwa {cost}.",
 	"plan.title": "Hier |rechne ich",
 	"history.title": "Jeder Tag |unter der Lupe",
@@ -1642,6 +1643,32 @@ var Ne = {
 	"tip.r_day_surplus.title": "Was heißt „Tagsüber Überschuss abgeben“?",
 	"tip.r_day_surplus.text": "Normalerweise schlucken die Speicher morgens die ganze Sonne und sind mittags voll – erst dann sieht evcc Überschuss. Ist der Schalter an, bremse ich das Laden der Speicher: Sie laden nur so schnell, dass sie trotzdem voll sind, bevor die Sonne am Abend nicht mehr fürs Haus reicht. Den Rest sieht evcc am Netzzähler, und ein Ladepunkt im PV-Modus (z. B. die Fußbodenheizung) läuft damit den ganzen Tag.\nBleibt die Sonne hinter der Vorhersage zurück, lade ich sofort schneller; reicht sie gar nicht mehr, lasse ich ganz los.",
 	"tip.r_day_surplus.hint": "Nur wenn ein evcc-Ladepunkt auf PV oder Min+PV steht und Strom nehmen kann, nur bei Speichern mit einer Ladegrenze in W oder kW und bestandenem Testlauf und nur im Live-Betrieb. Abends ist alles wieder wie vorher.",
+	"rule.transfer_guard": "Speicher-Wächter",
+	"rule.transfer_guard.hint": "Laden sich zwei Speicher gegenseitig (einer lädt, der andere entlädt), greife ich ein.",
+	"tip.r_transfer_guard.title": "Was macht der Speicher-Wächter?",
+	"tip.r_transfer_guard.text": "Speicher-Wächter: Ich greife ein, wenn sich Speicher gegenseitig laden. Lädt einer mit mehr als 20 W, während ein anderer mit mehr als 20 W entlädt, und das 20 Sekunden lang, starte ich zuerst die Regelung des Speichers neu, der meistens schuld ist (beim Marstek die Regelung von Omnibattery). Hilft das nach 20 Sekunden nicht, sperre ich bei ihm kurz die Richtung, in die er gerade läuft – 5 Sekunden lang. Läuft es dann immer noch gegeneinander, melde ich mich bei dir.",
+	"tip.r_transfer_guard.hint": "Das gilt auch ohne „Nacheinander“. Ich schreibe nur im Live-Betrieb, sonst sage ich nur, was ich tun würde. Nachts, wenn ich selbst steuere, greife ich nicht ein. Macht das schon eine Automation von dir, lasse ich ihr den Vortritt.",
+	"rule.morning_buffer": "Puffer am netzdienlichen Morgen",
+	"rule.morning_buffer.auto": "Automatisch",
+	"rule.morning_buffer.auto_n": "Automatisch ({soc} %)",
+	"rule.morning_buffer.own": "Eigener Wert",
+	"rule.morning_buffer.own_label": "Eigener Puffer in Prozent",
+	"rule.morning_buffer.off_hint": "Gilt nur, wenn „Netzdienlich verhalten“ an ist (Einstellungen › Betrieb).",
+	"rule.morning_buffer.learned_hint": "Morgens lade ich erst bis {soc} % aus der Sonne – so viel braucht dein Haus an sonnigen Vormittagen meist über die Sonne hinaus (etwa {kwh} kWh), plus etwas Reserve. Dann bekommt das Netz die Morgensonne.",
+	"rule.morning_buffer.start_hint": "Morgens lade ich erst bis {soc} % aus der Sonne, dann bekommt das Netz die Morgensonne. Den Wert schätze ich, bis ich genug sonnige Vormittage bei dir gesehen habe.",
+	"rule.morning_buffer.pending_hint": "Morgens lade ich erst einen Puffer aus der Sonne, dann bekommt das Netz die Morgensonne. Wie viel, sage ich, sobald ich den nächsten Plan gerechnet habe.",
+	"rule.morning_buffer.own_hint": "Morgens lade ich erst bis {soc} % aus der Sonne, dann bekommt das Netz die Morgensonne.",
+	"tip.r_morning_buffer.title": "Wozu der Puffer?",
+	"tip.r_morning_buffer.text": "Am netzdienlichen Morgen lasse ich die Morgensonne ins Netz und lade den Speicher erst mittags voll. Damit du dabei nichts aus dem Netz kaufen musst, lade ich vorher einen kleinen Puffer: Zieht eine Wolke durch oder läuft der Backofen und das Haus braucht mehr, als die Sonne gerade liefert, kommt der Strom aus dem Speicher.\nSinkt der Speicher unter den Puffer, lade ich ihn aus der Sonne wieder auf – nie aus dem Netz. Erst dann halte ich das Laden wieder zurück.",
+	"tip.r_morning_buffer.hint": "Nie weniger als deine Reserve. Arbeiten mehrere Speicher nacheinander, hält ihn der, der morgens zuerst entlädt.",
+	"tip.r_morning_buffer_auto.title": "Wie rechne ich den Vorschlag?",
+	"tip.r_morning_buffer_auto.text": "Ich schaue mir deine sonnigen Vormittage an: Wie viel Strom brauchte das Haus zwischen dem Moment, ab dem die Sonne reicht, und der Mittagsspitze zusätzlich – weil eine Wolke kam oder ein großes Gerät lief? Was an den meisten Tagen gereicht hätte, nehme ich mal 1,25 als Sicherheit und lege es auf deine Reserve.\nDas lerne ich über Jahre und vergesse nichts – neue Tage zählen etwas mehr.",
+	"tip.r_morning_buffer_auto.hint": "Höchstens 60 %, sonst bliebe für das Netz kaum Morgensonne.",
+	"tip.r_morning_buffer_own.title": "Eigener Puffer",
+	"tip.r_morning_buffer_own.text": "Bis zu diesem Ladestand lade ich morgens aus der Sonne. Mehr Puffer ist sicherer, lässt aber weniger Morgensonne fürs Netz. Weniger Puffer gibt dem Netz mehr – dafür kann bei einer Wolke etwas aus dem Netz kommen.",
+	"tip.r_morning_buffer_own.hint": "Liegt der Wert unter deiner Reserve, nehme ich die Reserve.",
+	"signpost.rule_transfer_guard.terms": "Wächter, gegenseitig laden, gegeneinander, Transfer, PD-Regler, Omnibattery, Marstek, Venus",
+	"signpost.rule_morning_buffer.terms": "Puffer, netzdienlich, Morgensonne, Vormittag, Wolke, Backofen, Reserve am Morgen",
 	"rule.day_caution": "Wie vorsichtig?",
 	"rule.day_caution.tight": "Knapp",
 	"rule.day_caution.normal": "Normal",
@@ -1661,6 +1688,13 @@ var Ne = {
 	"rule.evening_min_soc.hint": "Leer = keine Vorgabe.",
 	"rule.grid_limit_w": "Netzlimit",
 	"rule.grid_limit_w.hint": "Höchstleistung aus dem Netz, alles zusammen.",
+	"rule.grid_limit_w.measured": "Gemessen: höchstens {kw} kW aus dem Netz (seit {date}). Solange du nichts einträgst, lade ich nachts samt Haus nie mehr.",
+	"rule.grid_limit_w.measuring": "Gemessen: höchstens {kw} kW aus dem Netz (seit {date}). Nach einer Woche Messen nutze ich das als Grenze, solange du nichts einträgst.",
+	"rule.grid_limit_w.measured_own": "Gemessen: höchstens {kw} kW aus dem Netz (seit {date}). Es gilt dein Wert.",
+	"rule.grid_limit_w.take": "{kw} kW übernehmen",
+	"tip.r_grid_peak.title": "Woher kommt der Messwert?",
+	"tip.r_grid_peak.text": "Ich merke mir den höchsten Bezug aus dem Netz, den ich je gemessen habe – das hat dein Hausanschluss sicher geschafft. Trägst du kein Netzlimit ein, bleiben Laden und Haus nachts zusammen darunter (frühestens nach einer Woche Messen). **Übernehmen** trägt den Wert als dein Netzlimit ein.",
+	"tip.r_grid_peak.hint": "Kennst du deinen Anschluss, trag ihn lieber selbst ein: 3 × 35 A sind rund 24 kW.",
 	"rule.max_night_kwh": "Höchstens pro Nacht",
 	"rule.max_night_kwh.hint": "Leer = so viel wie nötig.",
 	"rule.max_price": "Höchstpreis fürs Netzladen",
@@ -1830,7 +1864,7 @@ var Ne = {
 	"tip.r_min_saving.title": "Warum eine Mindestersparnis?",
 	"tip.r_min_saving.text": "Jedes Mal, wenn ich steuere, schreibe ich Werte in deine Geräte. Bringt eine Nacht weniger als diesen Betrag, lasse ich es und die Speicher laufen wie ohne mich. Pflegenächte sind ausgenommen.",
 	"tip.r_grid_friendly.title": "Was heißt netzdienlich?",
-	"tip.r_grid_friendly.text": "Mittags liefern alle Solaranlagen gleichzeitig am meisten – dann ist das Netz voll. Morgens und abends brauchen alle Strom – dann ist es knapp.\n**Speicher**: An sonnigen Tagen halte ich das Laden morgens zurück, der Überschuss geht ins Netz, und der Speicher lädt in der Mittagsspitze. Ich rechne vorsichtig mit 80 % der Prognose und gebe früher frei, wenn die Sonne zurückbleibt. Das geht bei Speichern, deren Ladeleistung ich begrenzen kann.\n**Morgens und abends** nimmt das Haus Strom aus dem Speicher statt aus dem Netz.\n**Auto**: Fährt es erst nachmittags, lädt es mit Sonne statt nachts.",
+	"tip.r_grid_friendly.text": "Mittags liefern alle Solaranlagen gleichzeitig am meisten – dann ist das Netz voll. Morgens und abends brauchen alle Strom – dann ist es knapp.\n**Speicher**: An sonnigen Tagen lade ich morgens erst einen kleinen Puffer aus der Sonne, dann halte ich das Laden zurück, der Überschuss geht ins Netz, und der Speicher lädt in der Mittagsspitze voll. Ich rechne vorsichtig mit 80 % der Prognose und gebe früher frei, wenn die Sonne zurückbleibt. Das geht bei Speichern, deren Ladeleistung ich begrenzen kann.\n**Morgens und abends** nimmt das Haus Strom aus dem Speicher statt aus dem Netz.\n**Auto**: Fährt es erst nachmittags, lädt es mit Sonne statt nachts.",
 	"tip.r_grid_friendly.hint": "Steuern tue ich das nur in den Modi „Vorschlagen“ und „Live“, in der Simulation zeige ich es nur.",
 	"tip.r_grid_first.title": "Ersparnis oder Netz?",
 	"tip.r_grid_first.text": "**Ersparnis**: Ich warte morgens nur so lange, dass der Speicher trotzdem so voll wird wie sonst – es kostet dich nichts.\n**Netz**: Ich warte auch länger, wenn der Speicher dann nicht ganz voll wird – das darf bis zu 30 ct am Tag kosten.",
@@ -3041,6 +3075,7 @@ var Ne = {
 	"devices.status.nothing": "Heute Nacht gibt es nichts zu tun.",
 	"devices.status.no_plan": "Noch kein Plan für heute Nacht.",
 	"devices.status.day": "Netzdienlich: Ich halte das Laden der Speicher bis {time} Uhr zurück – die Morgensonne geht ins Netz.",
+	"devices.status.day_buffer": "Netzdienlich: Ich lade erst bis {level} % als Puffer für dich, dann bekommt das Netz die Morgensonne – ab {time} Uhr lade ich voll.",
 	"devices.status.done": "Die Nacht ist vorbei, alles ist zurückgestellt.",
 	"devices.pending": "Ein paar Werte stehen noch nicht wieder auf ihrem Ausgangswert. Ich versuche es weiter.",
 	"devices.power.charge": "lädt mit {value} kW",
@@ -3056,6 +3091,8 @@ var Ne = {
 	"devices.action.hold": "Hält bei {floor} %",
 	"devices.action.block": "Entladen gesperrt, solange ein anderer lädt",
 	"devices.action.defer": "Lädt erst ab {until} Uhr – die Morgensonne geht ins Netz",
+	"devices.action.buffer": "Lädt aus der Sonne bis {level} % – dein Puffer für den Vormittag",
+	"devices.action.defer_buffer": "Puffer {level} % da – lädt erst ab {until} Uhr weiter, die Morgensonne geht ins Netz",
 	"devices.action.free": "Frei – ich greife nicht ein",
 	"devices.action.watch": "Nur beobachtet",
 	"devices.action.idle": "Frei – ich greife gerade nicht ein",
@@ -3155,6 +3192,7 @@ var Ne = {
 	"battery.surplus.unavailable": "Seine Ladegrenze ist gerade nicht erreichbar – er lädt normal.",
 	"battery.surplus.unknown": "Ladestand oder Größe kenne ich gerade nicht – er lädt normal.",
 	"team.title": "Mehrere Speicher",
+	"team.together": "{first} mit {rest}",
 	"team.question": "Wie sollen die Speicher zusammenarbeiten?",
 	"team.mode.sequence": "Nacheinander (empfohlen)",
 	"team.mode.together": "Gleichzeitig",
@@ -3171,9 +3209,9 @@ var Ne = {
 	"team.part.parallel": "{name} lädt mit (nur laden)",
 	"team.parallel": "Heute laden beide nebeneinander: Nacheinander würde die Sonne nicht reichen, bis sie untergeht.",
 	"team.state.off": "Ich bin ausgeschaltet – jeder Speicher regelt sich selbst.",
-	"team.state.unset": "Noch nicht gewählt: Jeder Speicher regelt sich selbst. Nacheinander verhindert, dass sie sich gegenseitig laden.",
 	"team.state.together": "Gleichzeitig: Jeder Speicher regelt sich selbst, ich greife nicht ein.",
 	"team.state.single": "Nur ein Speicher regelt sich selbst – da gibt es nichts abzustimmen.",
+	"team.state.one_group": "Alle Speicher regelt dasselbe System – es verteilt die Leistung selbst. Tagsüber muss ich nichts abstimmen, nur nachts steuere ich.",
 	"team.state.night": "Nachts steuert mein Nachtplan die Speicher – tagsüber geht es wieder nacheinander.",
 	"team.state.paused": "Heute pausiert („Sofort freigeben“) – morgen geht es wieder nacheinander.",
 	"team.state.levers": "Ich kann nicht jeden Speicher sperren (eine Grenze fehlt oder ist nicht erreichbar) – deshalb sperre ich gerade keinen.",
@@ -3181,18 +3219,153 @@ var Ne = {
 	"team.state.unknown": "Den Ladestand eines Speichers kenne ich gerade nicht – ich sperre keinen.",
 	"team.state.automation": "Deine Automationen {names} machen das bisher – ich lasse die Speicher in Ruhe.",
 	"team.state.no_grid": "Ohne Netzzähler sehe ich nicht, ob das Haus Strom braucht oder abgibt – ich sperre keinen.",
+	"team.state.not_taken": "Ich habe {names} gesperrt, aber die Sperre kam nicht an – deshalb sperre ich gerade keinen. In einer Stunde versuche ich es noch einmal.",
+	"team.state.taking_over": "Deine Automationen {names} laufen noch. Passt bis {time} Uhr alles, schalte ich sie aus und stimme die Speicher wieder selbst ab.",
+	"team.state.error": "Ich konnte gerade nicht sicher entscheiden – ich sperre keinen, deine Automationen laufen wieder.",
+	"team.mode.default": "Standard",
+	"team.default": "Ich sorge dafür, dass immer nur ein System arbeitet – sonst laden sich die Speicher gegenseitig. Willst du das nicht, wähle „Gleichzeitig“.",
+	"team.given_back.title": "Deine Speicher-Automationen laufen wieder",
+	"team.given_back": "Ich konnte die Speicher nicht selbst sperren ({why}) – deine Automationen {names} laufen wieder. Sobald es wieder geht, übernehme ich.",
+	"team.given_back.choice": "Deine Automationen {names} laufen wieder ({why}) – ich stimme die Speicher gerade nicht selbst ab.",
+	"team.given_back.why.off": "ich bin ausgeschaltet",
+	"team.given_back.why.dry": "ich bin nicht im Live-Betrieb",
+	"team.given_back.why.together": "du hast „Gleichzeitig“ gewählt",
+	"team.given_back.why.paused": "heute freigegeben",
+	"team.given_back.why.levers": "ein Speicher lässt sich nicht sperren",
+	"team.given_back.why.not_tested": "ein Testlauf fehlt",
+	"team.given_back.why.unknown": "ein Ladestand ist unbekannt",
+	"team.given_back.why.no_grid": "der Netzzähler fehlt",
+	"team.given_back.why.automation": "eine andere Automation steuert die Speicher",
+	"team.given_back.why.not_taken": "eine Sperre kam nicht an",
+	"team.given_back.why.error": "ein Fehler",
+	"team.given_back.unblocked": "Gerade sperrt niemand: Deine Automationen greifen erst, wenn ihre Bedingung neu eintritt – bis dahin können sich die Speicher gegenseitig laden.",
+	"team.hold.discharge": "{name} entlädt noch – ich halte meine Sperre, bis das aufhört. Erst dann schalte ich deine Automationen {names} wieder ein.",
+	"team.hold.charge": "{name} lädt noch – ich halte meine Sperre, bis das aufhört. Erst dann schalte ich deine Automationen {names} wieder ein.",
+	"tip.team_hold.title": "Warum halte ich die Sperre noch?",
+	"tip.team_hold.text": "Deine Automationen reagieren meist erst, wenn etwas neu beginnt – etwa „Venus entlädt mehr als 120 W“. Läuft das schon, wenn sie wieder an sind, sperren sie nichts. Darum halte ich meine Sperre, bis der Speicher aufhört, und gebe erst dann ab.",
+	"tip.team_hold.hint": "Höchstens 12 Stunden. Bei „Sofort freigeben“, einem Moduswechsel oder wenn ich nicht mehr schreiben kann, gebe ich sofort ab.",
+	"tip.team_default.title": "Warum mache ich das von selbst?",
+	"tip.team_default.text": "Du hast zwei Systeme, die ihre Speicher selbst auf 0 W am Netzzähler regeln. Arbeiten beide zugleich, wandert Strom von einem Speicher in den anderen – mit Verlusten. Darum lasse ich immer nur eins arbeiten und sperre das andere vorher.",
+	"tip.team_default.hint": "Abschalten: „Gleichzeitig“ wählen. Dann greife ich nicht ein.",
+	"tip.team_given_back.title": "Warum laufen meine Automationen wieder?",
+	"tip.team_given_back.text": "Ich schalte deine Speicher-Automationen nur aus, solange ich die Aufgabe wirklich selbst erledige. Kann ich nicht sperren – oder kommt eine Sperre nicht an –, schalte ich sie sofort wieder ein, damit deine Speicher nicht ungeschützt gegeneinander arbeiten.",
+	"tip.team_given_back.hint": "Geht es wieder, warte ich 15 Minuten und übernehme dann von selbst. Mit „Gleichzeitig“ bleiben sie ganz bei dir.",
 	"team.doing": "Speicher nacheinander: {active} ist dran, {others} wartet",
 	"team.doing.parallel": "Speicher laden heute nebeneinander ({active}, {others}) – nacheinander würden sie nicht voll",
-	"team.transfer.despite": "{charging} hat geladen, während {discharging} entladen hat – obwohl ich sie sperre. Etwas anderes schreibt dieselben Grenzen, oder eine Sperre greift nicht.",
-	"team.transfer.seen": "Heute hat {charging} geladen, während {discharging} entladen hat: Die Speicher haben sich gegenseitig geladen. Nacheinander verhindert das.",
 	"team.automations": "Deine Automationen {names} machen das bisher – ich kann sie ausschalten, dann übernehme ich.",
 	"team.automations.go": "Zu den Automationen",
+	"guard.title": "Speicher-Wächter",
+	"guard.watching": "Ich passe auf, dass sich die Speicher nicht gegenseitig laden. Bisher war nichts.",
+	"guard.state.off": "Ausgeschaltet – ich greife nicht ein, wenn sich die Speicher gegenseitig laden.",
+	"guard.state.mode_off": "Ich bin gerade aus – der Wächter ruht.",
+	"guard.state.single": "Ich brauche die Leistung von mindestens zwei Speichern, um aufzupassen.",
+	"guard.automation": "Deine Automation {names} macht das bisher – ich halte mich raus. Schaltest du sie aus, übernehme ich.",
+	"guard.last.running.1": "{time}: Die Speicher liefen gegeneinander – ich habe die eigene Regelung von {battery} neu gestartet.",
+	"guard.last.running.2": "{time}: Die Speicher liefen gegeneinander – ich habe bei {battery} {direction} 5 s gesperrt.",
+	"guard.last.alarm": "{time}: Die Speicher laufen weiter gegeneinander, auch nach Neustart und kurzer Sperre – schau bitte nach.",
+	"guard.last.fixed.1": "{time}: Die Speicher liefen gegeneinander – behoben, nachdem ich die eigene Regelung von {battery} neu gestartet habe (nach {duration}).",
+	"guard.last.fixed.2": "{time}: Die Speicher liefen gegeneinander – behoben nach kurzer Sperre bei {battery} (nach {duration}).",
+	"guard.last.fixed.3": "{time}: Die Speicher liefen {duration} gegeneinander – inzwischen nicht mehr.",
+	"guard.last.automation": "{time}: Die Speicher liefen gegeneinander – deine Automation hat sich darum gekümmert.",
+	"guard.last.joe": "{time}: Die Speicher liefen gegeneinander, während ich selbst gesteuert habe – da greife ich nicht ein.",
+	"guard.last.inside": "{time}: {charging} lud, während {discharging} entlud – beide regelt dasselbe System. Da greife ich nicht ein; schau bitte in dessen Einstellungen nach.",
+	"guard.inside.title": "Speicher eines Systems laden sich gegenseitig",
+	"guard.inside": "{charging} lädt, während {discharging} entlädt – beide regelt dasselbe System. Da greife ich nicht ein: Schau bitte in dessen Einstellungen nach.",
+	"guard.dry": "So würde ich es im Live-Betrieb machen – gerade schreibe ich nichts.",
+	"guard.direction.charge": "das Laden",
+	"guard.direction.discharge": "das Entladen",
+	"guard.seconds": "{n} s",
+	"guard.minutes": "{n} min",
+	"guard.alarm.title": "Speicher laden sich gegenseitig",
+	"guard.alarm": "{charging} lädt, während {discharging} entlädt – auch nachdem ich die Regelung neu gestartet und den Speicher kurz gesperrt habe. Schau bitte nach, ob etwas anderes dieselben Grenzen schreibt.",
+	"tip.guard.title": "Was ist der Speicher-Wächter?",
+	"tip.guard.text": "Laden sich zwei Speicher gegenseitig – einer lädt mit mehr als 20 W, der andere entlädt mit mehr als 20 W, 20 Sekunden lang –, greife ich in drei Schritten ein: Regelung neu starten, die Richtung 5 Sekunden sperren, dir Bescheid geben. Hier steht, wann es zuletzt war und was geholfen hat.",
+	"tip.guard.hint": "Ein- und ausschalten kannst du ihn unter Einstellungen › Regeln › Speicher. Alles, was ich dafür umschalte, stelle ich sofort zurück – auch nach einem Neustart.",
 	"team.team_charge_order": "Laden: wer zuerst?",
 	"team.team_discharge_order": "Entladen: wer zuerst?",
 	"team.self_regulating": "Regelt sich selbst auf 0 am Zähler",
 	"team.proposed": "Vorschlag",
+	"team.group": "Wer regelt ihn?",
+	"team.group.own": "Eigenes System",
+	"team.group.with": "Zusammen mit {name}",
+	"team.group.check": "Bitte prüfen",
+	"team.groups.question": "Welche Speicher werden vom selben System geregelt?",
+	"team.groups.question.text": "Bei {names} weiß ich es nicht sicher. Speicher, die dasselbe System regelt, arbeiten bei mir als eine Gruppe – abstimmen muss ich nur zwischen verschiedenen Systemen. Jetzt nehme ich an: jeder hat sein eigenes.",
+	"team.groups.confirm": "Vorschlag passt",
 	"team.cutoff.known": "Hört bei {value} % auf zu entladen – der nächste übernimmt 1,5 % vorher.",
 	"team.cutoff.unknown": "Wo er wirklich aufhört zu entladen, lerne ich noch – bis dahin arbeitet er, bis er von selbst stoppt (eingestellt: {value} %).",
+	"team.part.active_discharge_only": "{name} entlädt (Laden gesperrt, solange beide entladen)",
+	"team.part.along": "{name} lädt mit (nur laden)",
+	"team.part.helps": "{name} hilft beim Entladen (nur entladen)",
+	"team.part.base": "{name} liefert die Grundlast ({w} W)",
+	"team.day.today": "Heute",
+	"team.day.yesterday": "Gestern",
+	"team.day.on": "Am {date}",
+	"team.reason.along.forecast": "{others} lädt mit, weil jetzt mehr Sonne kommt, als {active} allein aufnehmen kann. Entladen ist für beide gesperrt – so kann keiner den anderen laden.",
+	"team.reason.along.export": "{others} lädt mit, weil gerade Sonne ins Netz ging, obwohl {others} noch Platz hat. Entladen ist für beide gesperrt – so kann keiner den anderen laden.",
+	"team.reason.help": "{others} hilft beim Entladen, weil das Haus gerade mehr braucht, als {active} liefern kann. Laden ist für beide gesperrt.",
+	"team.reason.base": "{others} liefert die Grundlast ({w} W), {active} den Rest.",
+	"team.reason.plan": "Ab {time} Uhr lädt {others} mit – laut Vorhersage kommt dann mehr Sonne, als {active} allein aufnehmen kann.",
+	"team.reason.plan.lead": "Ab {time} Uhr lädt {others} mit – laut Vorhersage kommt danach mehr Sonne, als {active} allein aufnehmen kann. Aus Erfahrung beginne ich {lead} Minuten früher.",
+	"team.reason.dry": "(So wäre es im Live-Betrieb – jetzt schaue ich nur zu.)",
+	"team.review.room": "{when}: {kwh} kWh gingen ins Netz, obwohl {name} erst {soc} % hatte.",
+	"team.review.room_full": "{when}: {kwh} kWh gingen ins Netz, während ein Speicher noch wartete – voll wurden trotzdem alle.",
+	"team.review.fine": "{when} ging keine Sonne ins Netz, solange ein Speicher noch Platz hatte.",
+	"team.learned.none": "Gelernt habe ich noch nichts – ich schaue jeden Abend auf den Tag zurück.",
+	"team.learned.no_lead": "Aus {days} Tagen gelernt: Früher mitladen ist nicht nötig.",
+	"team.learned.lead": "Aus {days} Tagen gelernt: etwa {minutes} Minuten früher mitladen.",
+	"team.suggest.title": "{when} gingen {kwh} kWh ins Netz, obwohl {name} nur {soc} % hatte.",
+	"team.suggest.text": "Soll ich {name} künftig früher mitladen lassen? Aus den letzten Tagen weiß ich: etwa {minutes} Minuten früher reicht.",
+	"team.suggest.yes": "Ja, früher mitladen",
+	"team.suggest.no": "Nein",
+	"team.style.title": "Selbst einstellen",
+	"team.style.intro": "Für Fortgeschrittene. Normalerweise musst du hier nichts ändern.",
+	"team.style.auto": "Automatisch (empfohlen)",
+	"team.style.auto.text": "Nacheinander – aber der nächste lädt mit, wenn mehr Sonne kommt, als einer aufnehmen kann, und hilft bei großer Last.",
+	"team.style.strict": "Nur nacheinander",
+	"team.style.strict.text": "Immer nur einer – auch an schwachen Tagen. Der nächste wartet, bis der erste voll ist.",
+	"team.style.base": "Grundlast teilen",
+	"team.style.base.text": "Der nächste liefert ständig einen kleinen Sockel, der erste den Rest.",
+	"team.style.base.warn": "Achtung: Bei kleinen Lasten verlierst du so mehr als nacheinander, weil Wechselrichter bei wenig Leistung schlecht arbeiten.",
+	"team.style.base.no_lever": "Beim Speicher, der als Nächstes dran ist, kann ich keine Leistung vorgeben (seine Grenze ist in Prozent oder nur ein Schalter). Dann bleibt es nacheinander.",
+	"team.early": "Aus Erfahrung früher mitladen",
+	"team.early.unanswered": "Noch nicht entschieden",
+	"tip.team_reason.title": "Warum arbeiten gerade zwei?",
+	"tip.team_reason.text": "Normalerweise arbeitet immer nur einer. Kommt mehr Sonne, als er aufnehmen kann, darf der nächste mitladen – sonst ginge die Sonne ins Netz, obwohl noch Platz ist. Braucht das Haus mehr, als er liefern kann, darf der nächste mit entladen. Dabei sperre ich immer die andere Richtung für beide, damit keiner den anderen lädt.",
+	"tip.team_reason.hint": "Bei einer Wolke sperre ich den zweiten sofort wieder.",
+	"tip.team_review.title": "Mein Tagesrückblick",
+	"tip.team_review.text": "Jeden Abend nach Sonnenuntergang schaue ich zurück: Wie viel Sonne ging ins Netz, während ein Speicher noch Platz hatte? Wie voll wurde jeder? Daraus lerne ich über viele Tage, wie früh der nächste mitladen sollte.",
+	"tip.team_review.hint": "Tage ohne überschüssige Sonne (z. B. im Winter) ändern nichts am Gelernten.",
+	"tip.team_style_auto.title": "Automatisch",
+	"tip.team_style_auto.text": "Grundsätzlich nacheinander. Zeigt die Vorhersage mehr Sonne, als der erste aufnehmen kann, oder geht gerade Sonne ins Netz, lädt der nächste mit. Braucht das Haus länger als eine Minute mehr, als der erste liefern kann, entlädt der nächste mit. Danach wartet er wieder.",
+	"tip.team_style_auto.hint": "Empfohlen – so geht am wenigsten Sonne ins Netz und keiner lädt den anderen.",
+	"tip.team_style_strict.title": "Nur nacheinander",
+	"tip.team_style_strict.text": "Immer nur ein Speicher arbeitet. Kein früheres Mitladen, keine Hilfe bei großer Last und auch an schwachen Tagen kein gemeinsames Laden.",
+	"tip.team_style_strict.hint": "Dabei kann Sonne ins Netz gehen, obwohl der zweite noch Platz hätte, und an schwachen Tagen wird der zweite vielleicht nicht voll.",
+	"tip.team_style_base.title": "Grundlast teilen",
+	"tip.team_style_base.text": "Braucht das Haus Strom, liefert der nächste Speicher einen festen Sockel: den unteren Verbrauch der letzten halben Stunde (das, was fast immer läuft – nicht den Durchschnitt). Den Rest liefert der erste. Ich führe den Sockel laufend nach.",
+	"tip.team_style_base.hint": "Geht nur, wenn ich beim nächsten Speicher die Entladeleistung in Watt vorgeben kann (z. B. Marstek über Omnibattery).",
+	"tip.team_base_warn.title": "Warum ist das weniger effizient?",
+	"tip.team_base_warn.text": "Ein Wechselrichter arbeitet bei wenig Leistung schlecht – er verliert dann einen größeren Teil. Liefern zwei Speicher je ein bisschen statt einer etwas mehr, gehen insgesamt mehr Kilowattstunden verloren.",
+	"tip.team_base_warn.hint": "Sinnvoll eher, wenn ein Speicher geschont werden soll.",
+	"tip.team_base_lever.title": "Warum geht das hier nicht?",
+	"tip.team_base_lever.text": "Für einen Sockel muss ich die Entladeleistung des Speichers in Watt vorgeben können. Hat er nur eine Grenze in Prozent oder nur einen Schalter, kann ich das nicht.",
+	"tip.team_base_lever.hint": "Ändere die Reihenfolge beim Entladen, damit ein passender Speicher als Nächstes dran ist.",
+	"tip.team_early.title": "Früher mitladen?",
+	"tip.team_early.text": "Ich lerne jeden Abend, ob Sonne ins Netz ging, während ein Speicher noch Platz hatte. Daraus weiß ich, wie viel früher der nächste mitladen sollte. Ja: Ich lasse ihn um diese Zeit früher mitladen. Nein: Ich lasse es, wie es ist, und frage nicht wieder.",
+	"tip.team_early.hint": "Mitladen heißt nur laden – entladen ist dabei für beide gesperrt.",
+	"log.team_along": "{others} lädt mit (nur laden)",
+	"log.team_along.forecast": "{others} lädt mit: Laut Vorhersage kommt mehr Sonne, als {active} allein aufnehmen kann",
+	"log.team_along.export": "{others} lädt mit: Sonne ging ins Netz, obwohl noch Platz war",
+	"log.team_along_end": "Mitladen beendet – wieder nacheinander",
+	"log.team_along_end.flow": "Mitladen beendet: Das Haus braucht wieder Strom – wieder nacheinander",
+	"log.team_along_end.less": "Mitladen beendet: weniger Sonne – wieder nacheinander",
+	"log.team_help": "{others} hilft beim Entladen: Das Haus braucht {power} kW, mehr als {active} liefern kann",
+	"log.team_help_end": "Große Last vorbei: {others} wartet wieder",
+	"log.team_base": "{others} liefert jetzt die Grundlast ({watts} W)",
+	"log.team_base_end": "Grundlast: {others} wartet wieder",
+	"log.team_review": "Tagesrückblick: {energy} kWh ins Netz, während ein Speicher noch Platz hatte – gelernt: {lead} Minuten früher mitladen",
+	"log.team_review.short": "Tagesrückblick: {energy} kWh ins Netz, obwohl {others} erst {soc} % hatte – gelernt: {lead} Minuten früher mitladen",
 	"battery.surplus.team_wait": "Wartet, bis der andere Speicher voll ist (Mehrere Speicher: nacheinander) – sein Platz zählt beim Drosseln mit.",
 	"battery.surplus.rule_off": "Die Regel „Tagsüber Überschuss abgeben“ ist aus.",
 	"battery.surplus.rule_go": "Regel einschalten",
@@ -3221,8 +3394,8 @@ var Ne = {
 	"tip.team.text": "Ein Fronius-Wechselrichter regelt seinen Speicher auf 0 W am Netzzähler, Omnibattery macht das mit einem Marstek genauso. Zwei solche Regler wissen nichts voneinander: Dann lädt oft einer, während der andere entlädt – Strom wandert von Speicher zu Speicher, mit Verlusten auf beiden Wegen.",
 	"tip.team.hint": "Nur tagsüber und nur im Live-Betrieb. Nachts steuert mein Nachtplan. Bei Moduswechsel, „Sofort freigeben“ und wenn Home Assistant herunterfährt, stelle ich alle Sperren zurück.",
 	"tip.team_mode.title": "Nacheinander oder gleichzeitig?",
-	"tip.team_mode.text": "Nacheinander: Immer nur ein Speicher darf arbeiten, die anderen sperre ich vorher – nicht erst, wenn es schon passiert. Ist der erste voll oder leer, übernimmt der nächste. Gleichzeitig: Ich greife nicht ein, jeder Speicher regelt sich selbst.",
-	"tip.team_mode.hint": "Beim Fronius sperre ich über die Lade- und Entladegrenze mit ihrem Schalter, beim Marstek über die System-Leistungsgrenzen von Omnibattery. Der Marstek bleibt dabei im Automatikmodus.",
+	"tip.team_mode.text": "Nacheinander: Immer nur ein Speicher darf arbeiten, die anderen sperre ich vorher – nicht erst, wenn es schon passiert. Ist der erste voll oder leer, übernimmt der nächste. Gleichzeitig: Ich greife nicht ein, jeder Speicher regelt sich selbst. Hast du nichts gewählt, gilt Nacheinander.",
+	"tip.team_mode.hint": "Beim Fronius sperre ich über die Lade- und Entladegrenze mit ihrem Schalter. Beim Marstek schalte ich „Laden erlauben“ und „Entladen erlauben“ jeder Batterie aus – Omnibattery bleibt im Automatikmodus und regelt sofort weiter, wenn ich sie wieder freigebe. Ohne diese Schalter nehme ich die System-Leistungsgrenzen, aber nur, wenn alle Batterien von Omnibattery warten.",
 	"tip.team_charge_order.title": "Wer lädt zuerst?",
 	"tip.team_charge_order.text": "Der Speicher oben nimmt die Sonne zuerst, bis er voll ist; dann ist der nächste dran. Reicht die Sonne laut Vorhersage nacheinander nicht, bis sie untergeht, lasse ich die anderen mitladen – nie erzwungen, ihr eigener Regler nimmt nur, was übrig ist.",
 	"tip.team_charge_order.hint": "Ein Speicher weiter oben ist wieder dran, sobald die Sonne eine Weile scheint – nicht bei jeder Wolke.",
@@ -3230,11 +3403,17 @@ var Ne = {
 	"tip.team_discharge_order.text": "Der Speicher oben versorgt das Haus zuerst, bis er dort ist, wo er wirklich aufhört zu entladen. Dann übernimmt der nächste. Der erste ist wieder dran, wenn er 5 % darüber geladen hat.",
 	"tip.team_discharge_order.hint": "Zum Beispiel den großen Speicher zuerst und den kleinen als Rückhalt für den Abend.",
 	"tip.team_self_regulating.title": "Was heißt „regelt sich selbst“?",
-	"tip.team_self_regulating.text": "Der Speicher schaut selbst auf den Netzzähler und lädt oder entlädt so, dass dort 0 W stehen. Das machen Fronius und Omnibattery im Automatikmodus. Nur solche Speicher stimme ich miteinander ab.",
+	"tip.team_self_regulating.text": "Der Speicher schaut selbst auf den Netzzähler und lädt oder entlädt so, dass dort 0 W stehen. Das machen Fronius, Kostal und Omnibattery im Automatikmodus. Nur solche Speicher stimme ich miteinander ab.",
 	"tip.team_self_regulating.hint": "Den Vorschlag mache ich aus dem Gerät. Stimmt er nicht, schalte ihn hier um.",
 	"tip.team_cutoff.title": "Wo hört er wirklich auf?",
 	"tip.team_cutoff.text": "Viele Speicher stoppen früher als eingestellt – ein BYD zum Beispiel bei etwa 10,5 %, obwohl 5 % eingestellt sind. Ich schaue zu: Hört er auf zu entladen, obwohl das Haus Strom braucht, merke ich mir den Ladestand.",
 	"tip.team_cutoff.hint": "Mit gelerntem Wert übernimmt der nächste Speicher schon 1,5 % vorher, damit das Haus nichts aus dem Netz holt.",
+	"tip.team_group.title": "Wer regelt den Speicher?",
+	"tip.team_group.text": "Manche Systeme regeln mehrere Speicher zusammen – Omnibattery zum Beispiel einen Marstek Venus und einen Victron. Die verteilen die Leistung selbst, deshalb behandle ich sie als eine Gruppe. Ein Fronius- oder Kostal-Wechselrichter regelt nur seinen eigenen Speicher.",
+	"tip.team_group.hint": "Nacheinander heißt: Immer nur eine Gruppe arbeitet, die anderen sperre ich. Den Vorschlag mache ich aus der Integration in Home Assistant.",
+	"tip.team_groups_confirm.title": "Was passiert bei „Vorschlag passt“?",
+	"tip.team_groups_confirm.text": "Ich merke mir die Zuordnung, wie sie gerade unter Mehrere Speicher steht, und frage nicht mehr.",
+	"tip.team_groups_confirm.hint": "Ändern kannst du sie jederzeit unter Geräte › Speicher › Mehrere Speicher bei „Wer regelt ihn?“.",
 	"surplus.device_conflict.title": "Dein Speicher arbeitet gegen „Tagsüber Überschuss abgeben“.",
 	"surplus.device_conflict.hint": "Schalte das in Omnibattery aus – ich ändere es nicht.",
 	"surplus.conflict.charge_delay": "Bei {battery} ist die Ladeverzögerung an: Omnibattery hält das Laden dann selbst zurück und rechnet nicht mit meiner Grenze.",
@@ -3242,11 +3421,12 @@ var Ne = {
 	"overview.todo.surplus_automation": "Macht tagsüber nicht mit: Eine Automation schreibt dieselbe Ladegrenze ({names}). Schalte sie bei den Störenfrieden aus.",
 	"overview.todo.limit_ref": "{name}: Wofür stehen 100 %?",
 	"overview.todo.limit_ref.text": "Seine Ladegrenze ist in Prozent. Trag ein, wofür 100 % stehen – oder lass es mich an einem sonnigen Tag selbst messen.",
-	"overview.todo.team": "Speicher nacheinander arbeiten lassen?",
-	"overview.todo.team.text": "Zwei Speicher regeln sich selbst auf 0 am Zähler und schieben sich so Strom hin und her. Nacheinander lässt immer nur einen arbeiten.",
 	"role.system_charge_limit": "System-Ladegrenze",
 	"role.system_charge_limit_enabled": "System-Leistungsgrenzen an",
 	"role.system_discharge_limit": "System-Entladegrenze",
+	"role.system_manual_mode": "System-Handbetrieb",
+	"role.allow_charge": "Laden erlaubt",
+	"role.allow_discharge": "Entladen erlaubt",
 	"solar.sleeps": "Ist ohne Sonne aus – das ist normal",
 	"solar.sleeps.named": "{name} ist ohne Sonne aus – das ist normal",
 	"solar.sleeps.quick": "Ist nachts aus – normal",
@@ -3264,8 +3444,12 @@ var Ne = {
 	"log.start": "Nacht beginnt",
 	"log.set": "{battery}: {entity} → {value}",
 	"log.reached": "{battery} hat {target} % erreicht",
+	"log.night_cap": "{battery}: Ladegrenze als Deckel für das Laden aus dem Netz – höchstens {power} kW",
+	"log.night_cap_ignored": "{battery}: Die Ladegrenze hält beim Laden aus dem Netz nicht ({power} statt {cap} kW) – ich plane ihn ab jetzt mit voller Leistung",
+	"log.night_cap_works": "{battery}: Die Ladegrenze hält auch beim Laden aus dem Netz ({cap} kW)",
 	"log.external": "{entity} hat jemand anderes geändert – ich lasse es so",
 	"log.released": "Alles zurückgestellt",
+	"log.released.day_buffer": "Ladegrenze zurückgestellt – der Speicher lädt aus der Sonne wieder bis zum Puffer",
 	"log.release_failed": "Zurückstellen hat noch nicht ganz geklappt",
 	"log.failed": "{battery}: {entity} ließ sich nicht schreiben",
 	"log.emergency": "Sofort freigegeben",
@@ -3294,6 +3478,9 @@ var Ne = {
 	"log.surplus_end.no_plan": "Tagsüber Überschuss beendet: keine Vorhersage – Speicher laden wieder normal",
 	"log.surplus_end.no_battery": "Tagsüber Überschuss beendet: kein Speicher kann mehr mitmachen",
 	"log.day": "Netzdienlicher Morgen: Speicher laden erst ab {until} Uhr, die Morgensonne geht ins Netz",
+	"log.day.buffer": "Netzdienlicher Morgen: Speicher laden erst bis {level} % als Puffer, dann geht die Morgensonne bis {until} Uhr ins Netz",
+	"log.day_buffer.fill": "{battery}: unter dem Puffer ({soc} %) – lädt aus der Sonne bis {level} %",
+	"log.day_buffer.hold": "{battery}: Puffer {level} % erreicht – jetzt bekommt das Netz die Morgensonne",
 	"log.day_released": "Netzdienlicher Morgen vorzeitig beendet: die Sonne hinkt hinterher ({remaining} kWh übrig, {headroom} kWh Platz) – Speicher laden jetzt",
 	"log.team_handover": "Speicherwechsel: {battery} ist jetzt dran (vorher {previous})",
 	"log.team_handover.empty": "Speicherwechsel: {previous} ist leer ({level} %) – {battery} übernimmt",
@@ -3303,6 +3490,7 @@ var Ne = {
 	"log.team_block.charge": "{battery}: Laden gesperrt",
 	"log.team_block.discharge": "{battery}: Entladen gesperrt, Laden frei",
 	"log.team_block.free": "{battery}: wieder frei – Sperren zurückgestellt",
+	"log.team_taken": "{battery}: Eine andere Ladegrenze hätte Laden erlaubt, während er wartet – ich sperre trotzdem",
 	"log.team_end": "Mehrere Speicher: alle Sperren zurückgestellt",
 	"log.team_end.night": "Mehrere Speicher: Sperren zurückgestellt – die Nacht beginnt, der Nachtplan steuert",
 	"log.team_end.dry": "Mehrere Speicher: Sperren zurückgestellt – nicht mehr im Live-Betrieb",
@@ -3310,10 +3498,43 @@ var Ne = {
 	"log.team_end.automation": "Mehrere Speicher: Sperren zurückgestellt – deine Automationen machen das",
 	"log.team_end.levers": "Mehrere Speicher: Sperren zurückgestellt – eine Grenze ist nicht erreichbar",
 	"log.team_end.error": "Mehrere Speicher: Sperren zurückgestellt – ich konnte nicht sicher entscheiden",
+	"log.team_end.not_taken": "Mehrere Speicher: Sperren zurückgestellt – eine Sperre kam nicht an",
+	"log.team_broken": "{battery}: Die Sperre kam nicht an – ich stimme die Speicher vorerst nicht ab",
+	"log.team_given_back": "Mehrere Speicher: deine Automationen {names} wieder eingeschaltet – {why}",
+	"log.team_take_over": "Mehrere Speicher: deine Automationen {names} wieder ausgeschaltet – ich stimme die Speicher wieder selbst ab",
+	"log.team_hold": "Mehrere Speicher: {battery} {direction} noch – ich halte die Sperre, bis das aufhört, dann laufen deine Automationen wieder",
+	"log.team_hold.discharge": "entlädt",
+	"log.team_hold.charge": "lädt",
+	"log.team_hold_end": "Mehrere Speicher: Sperre nicht länger gehalten",
+	"log.team_hold_end.flow_ended": "Mehrere Speicher: der Speicher hat aufgehört – Sperre zurück, deine Automationen laufen wieder",
+	"log.team_hold_end.too_long": "Mehrere Speicher: Sperre 12 Stunden gehalten – jetzt laufen deine Automationen wieder",
+	"log.team_hold_end.unknown": "Mehrere Speicher: Leistung unbekannt – Sperre zurück, deine Automationen laufen wieder",
+	"log.team_reset": "{battery}: Die Sperre war zurückgesetzt (z. B. Neustart der Modbus-Steuerung) – ich setze sie neu",
 	"log.team_parallel": "Mehrere Speicher: heute laden sie nebeneinander – nacheinander würden sie bis {until} Uhr nicht voll",
 	"log.team_cutoff": "{battery} hört bei {level} % auf zu entladen – gelernt: {cutoff} %",
 	"log.team_transfer": "{charging} lädt, während {discharging} entlädt – sie laden sich gegenseitig",
 	"log.team_transfer.blocked": "{charging} lädt, während {discharging} entlädt – trotz Sperre",
+	"log.guard_restart": "Speicher laufen gegeneinander – eigene Regelung von {battery} neu gestartet",
+	"log.guard_restart.dry": "Speicher laufen gegeneinander – ich würde die eigene Regelung von {battery} neu starten",
+	"log.guard_restart.clean": "Speicher laufen gegeneinander – bei {battery} den Handbetrieb sauber beendet und an seine eigene Regelung zurückgegeben",
+	"log.guard_restart.clean.dry": "Speicher laufen gegeneinander – ich würde bei {battery} den Handbetrieb beenden und an seine eigene Regelung zurückgeben",
+	"log.guard_block.charge": "Läuft noch gegeneinander – bei {battery} das Laden 5 s gesperrt",
+	"log.guard_block.discharge": "Läuft noch gegeneinander – bei {battery} das Entladen 5 s gesperrt",
+	"log.guard_block.charge.dry": "Läuft noch gegeneinander – ich würde bei {battery} das Laden 5 s sperren",
+	"log.guard_block.discharge.dry": "Läuft noch gegeneinander – ich würde bei {battery} das Entladen 5 s sperren",
+	"log.guard_alarm": "Läuft weiter gegeneinander – ich melde mich",
+	"log.guard_alarm.dry": "Läuft weiter gegeneinander – ich würde mich melden",
+	"log.guard_fixed.1": "Behoben nach Neustart der eigenen Regelung (nach {duration})",
+	"log.guard_fixed.2": "Behoben nach kurzer Sperre bei {battery} (nach {duration})",
+	"log.guard_fixed.3": "Läuft nicht mehr gegeneinander (nach {duration})",
+	"log.guard_automation": "Speicher laufen gegeneinander – eine Automation übernimmt das bereits: {names}",
+	"log.guard_joe": "Speicher laufen gegeneinander, während ich selbst steuere – ich greife nicht ein",
+	"log.guard_inside": "{charging} lädt, während {discharging} entlädt – dasselbe System regelt beide, ich greife nicht ein und melde mich",
+	"log.guard_inside.dry": "{charging} lädt, während {discharging} entlädt – dasselbe System regelt beide, ich würde mich melden",
+	"log.guard_restored": "Speicher-Wächter: {entities} wieder zurückgestellt",
+	"log.guard_restored.start": "Speicher-Wächter: {entities} nach dem Neustart wieder zurückgestellt",
+	"log.guard_restored.failed": "Speicher-Wächter: {entities} konnte ich noch nicht zurückstellen – ich versuche es weiter",
+	"log.guard.problem": "– hat nicht geklappt ({code})",
 	"f.battery.control.watch": "Nur beobachten",
 	"f.battery.control.profile": "Automatisch ({name})",
 	"f.battery.control.generic": "Regler zuordnen",
@@ -3353,6 +3574,8 @@ var Ne = {
 	"meaning.force_charge": "Zwangsladen",
 	"meaning.hold": "Halten",
 	"meaning.force_discharge": "Zwangsentladen",
+	"meaning.no_charge": "Nicht laden (nur tagsüber)",
+	"meaning.no_discharge": "Nicht entladen (nur tagsüber)",
 	"meaning.none": "–",
 	"pick.role.title": "{role} – welcher Regler?",
 	"pick.step.title": "Welches Gerät oder Skript?",
@@ -3378,6 +3601,47 @@ var Ne = {
 	"tip.control_roles.title": "Welche Regler brauche ich?",
 	"tip.control_roles.text": "Einen Weg zum **Laden** und einen zum **Halten**. Laden geht über eine Betriebsart mit Zwangsladen (mit Ladeleistung) oder über „Laden aus dem Netz“ mit „Laden bis“. Halten geht über den Mindest-Ladestand, eine Betriebsart oder eine Entladegrenze. Alles andere ist ein Bonus.",
 	"tip.control_roles.hint": "Was ich verändere, stelle ich am Ende jeder Nacht wieder zurück.",
+	"role.block_charge": "Laden sperren (Schalter)",
+	"role.block_discharge": "Entladen sperren (Schalter)",
+	"battery.surplus.flash": "Geht bei diesem Speicher nicht: Seine Ladegrenze ist eine Einstellung, die er dauerhaft in seinem Speicherchip ablegt. Führte ich sie den ganzen Tag der Sonne nach, würde sich der Chip abnutzen. Er lädt normal.",
+	"log.guard_flash": "Läuft noch gegeneinander – bei {battery} sperre ich so kurz danach nicht noch einmal: Jede Sperre beschreibt seinen Speicherchip. Ich sage dir Bescheid.",
+	"tip.battery_notes.title": "Warum sagt Joe mir das?",
+	"tip.battery_notes.text": "Ich erkenne viele Speicher, aber nicht jeden kann ich steuern. Hier sage ich dir, **warum** nicht – und **was du tun kannst**. Meist ist es eine Einstellung in der Integration oder im Gerät, oder eine Entität, die in Home Assistant ausgeschaltet ist.\nDanach machst du den Testlauf: Erst wenn der klappt, steuere ich den Speicher.",
+	"tip.battery_notes.hint": "Einen Speicher, den ich nicht steuere, lasse ich in Ruhe. Er läuft weiter wie bisher, ich rechne trotzdem mit ihm.",
+	"bnote.other": "Dazu habe ich einen Hinweis, den ich hier noch nicht in Worte fassen kann.",
+	"bnote.entities.none": "Schau beim Gerät unter „Entitäten“ nach den ausgeschalteten.",
+	"bnote.enable": "Diese Entitäten sind in Home Assistant ausgeschaltet – ich bräuchte sie: {entities}. Schalte sie beim Gerät unter „Entitäten“ ein.",
+	"bnote.no_level": "Ich sehe {name}, finde aber keinen Ladestand. Ohne den kann ich den Speicher weder einplanen noch steuern. Was du tun kannst: Schalte den Ladestand in Home Assistant ein – {entities}",
+	"bnote.needs.kostal_modbus_external": "Damit dein Kostal meine Befehle annimmt, muss im Wechselrichter das Batteriemanagement auf „Extern über Protokoll (Modbus TCP)“ stehen. Das geht im Menü für Installateure. Sonst übergeht er alles, ohne einen Fehler zu melden – der Testlauf zeigt es dir dann. Frag im Zweifel deinen Installateur.",
+	"bnote.needs.sigen_write": "Die Sigenergy-Integration steht anfangs auf „Nur lesen“ (read_only). Dann nimmt sie meine Befehle an, schreibt sie aber nicht in den Speicher – ohne Fehlermeldung. Schalte „Nur lesen“ in den Optionen der Integration aus. Der Testlauf zeigt dir, ob es klappt.",
+	"bnote.needs.deye_tou": "Ich steuere deinen Deye über seine sechs Zeitprogramme. Das wirkt nur, wenn „Time of Use“ im Wechselrichter eingeschaltet ist. Was ich verstelle, stelle ich am Morgen zurück.",
+	"bnote.no_charge.goodwe_core": "Ihn kann ich anhalten, aber nicht aus dem Netz laden: Die GoodWe-Integration aus Home Assistant bietet kein Eco-Laden an. Was du tun kannst: Die Integration „GoodWe Inverter (experimental)“ aus HACS kann beides.",
+	"bnote.no_charge.kostal_core": "Ihn kann ich anhalten, aber nicht aus dem Netz laden: Die Kostal-Integration aus Home Assistant hat dafür keinen Regler. Was du tun kannst: „Kostal Plenticore Battery Control“ aus HACS (über Modbus) kann beides.",
+	"bnote.cannot.levers": "Ich sehe {name}, finde aber die Regler nicht, mit denen ich ihn steuern könnte. Bis dahin beobachte ich ihn nur. Was du tun kannst: Unter „Regler zuordnen“ selbst Regler auswählen und den Testlauf machen.",
+	"bnote.cannot.kostal_core": "Ich sehe deinen Kostal-Speicher, kann ihn aber noch nicht steuern: Mit der Kostal-Integration aus Home Assistant geht das nur über „Battery min SoC“, und der ist in Home Assistant ausgeschaltet. Was du tun kannst: Schalte diese Entität beim Gerät unter „Entitäten“ ein.",
+	"bnote.cannot.kostal_modbus": "Ich sehe deinen Kostal-Speicher über „Kostal Plenticore Battery Control“, finde aber seine Regler nicht. Was du tun kannst: Prüfe, ob die Integration läuft und ihre Schalter und Zahlen eingeschaltet sind.",
+	"bnote.cannot.solaredge": "Ich sehe deinen SolarEdge-Speicher, kann ihn aber noch nicht steuern: Die Speichersteuerung ist in der Integration ausgeschaltet. Was du tun kannst: In „SolarEdge Modbus Multi“ unter „Konfigurieren“ bei den Power Control Options die erweiterte Speichersteuerung (adv_storage_control) einschalten.",
+	"bnote.cannot.sigen": "Ich sehe deinen Sigenergy-Speicher, kann ihn aber noch nicht steuern: Seine Steuer-Entitäten fehlen oder sind ausgeschaltet. Was du tun kannst: In den Optionen der Integration „Nur lesen“ (read_only) ausschalten und die Steuer-Entitäten beim Gerät einschalten.",
+	"bnote.cannot.sonnen_write": "Ich sehe deinen sonnen-Speicher, kann ihn aber noch nicht steuern: Ohne Schreibzugriff zeigt die Integration keine Regler. Was du tun kannst: In der Weboberfläche deiner sonnenBatterie den Schreibzugriff für die lokale Schnittstelle einschalten und die Integration neu laden.",
+	"bnote.cannot.victron_gx": "Ich sehe deinen Victron-Speicher, finde aber seine ESS-Einstellungen nicht. Was du tun kannst: Prüfe, ob am GX-Gerät ESS eingerichtet ist und die Integration seinen Mindest-Ladestand zeigt.",
+	"bnote.cannot.victron_mqtt": "Ich sehe deinen Victron-Speicher, kann ihn aber noch nicht steuern: Die Integration „Victron MQTT“ steht wohl auf „nur lesen“ (READ_ONLY). Was du tun kannst: In ihren Optionen den vollen Betrieb wählen – oder zur Victron-Integration aus Home Assistant wechseln.",
+	"bnote.cannot.victron_modbus": "Ich sehe deinen Victron-Speicher, kann ihn aber noch nicht steuern: Die Victron-Integration (Modbus) zeigt Regler nur mit Schreibzugriff. Was du tun kannst: In ihren erweiterten Optionen den Schreibzugriff einschalten.",
+	"bnote.cannot.huawei_permissions": "Ich sehe deinen Huawei-Speicher, kann ihn aber noch nicht steuern: Die Integration zeigt ihre Regler erst mit erweiterten Rechten. Was du tun kannst: In „Huawei Solar“ die Option „Advanced: elevate permissions“ einschalten – dafür braucht es das Installateur-Passwort.",
+	"bnote.cannot.senec": "Ich sehe deinen SENEC-Speicher, kann ihn aber noch nicht steuern: Anhalten kann ich ihn nur über seine Reserve, und die gibt es nur mit der Anmeldung bei mein-senec.de (und „Backup Power pro“). Was du tun kannst: Die SENEC-Integration zusätzlich mit deinem mein-senec-Konto einrichten und die Reserve einschalten. Ein SENEC.Home V4 lässt sich lokal gar nicht steuern.",
+	"bnote.cannot.marstek_modbus": "Ich sehe deinen Marstek über Modbus, finde aber seine Regler nicht – die meisten sind anfangs ausgeschaltet. Was du tun kannst: Schalte beim Gerät die Fernsteuerung über RS485, den Zwangsmodus und die Lade- und Entladeleistung ein. Wichtig: Nur ein Programm darf gleichzeitig per Modbus mit ihm sprechen.",
+	"bnote.cannot.solarman": "Ich sehe deinen Deye-Wechselrichter, finde aber seine Zeitprogramme nicht. Was du tun kannst: Nutze die Solarman-Integration von davidrapan mit dem passenden Gerätetyp – die ältere Solarman-Integration zeigt nur Messwerte.",
+	"bnote.cannot.sma": "Ich sehe deinen SMA-Speicher, kann ihn aber nicht steuern: Die SMA-Integrationen in Home Assistant lesen nur Werte. Er läuft weiter wie bisher – ich plane mit ihm und rechne seinen Strom mit ein.",
+	"bnote.cannot.rct": "Ich sehe deinen RCT-Speicher, kann ihn aber nicht steuern: Die RCT-Integration liest nur Werte; Schreiben ginge nur über ein Zusatz-Skript aus der Community, das ich nicht nutze. Er läuft weiter wie bisher, ich rechne mit ihm.",
+	"bnote.cannot.ecoflow": "Ich sehe deinen EcoFlow-Speicher, kann ihn aber nicht steuern: Über die Integration lässt er sich weder aus dem Netz laden noch zuverlässig anhalten. Er läuft weiter wie bisher, ich rechne mit ihm.",
+	"bnote.cannot.powerwall_local": "Ich sehe deine Powerwall über die lokale Integration – die kann nur „netzunabhängig“ schalten. Was du tun kannst: Richte zusätzlich Teslemetry, Tessie oder Tesla Fleet ein, damit kann ich ihre Reserve setzen.",
+	"bnote.cannot.varta_read": "Ich sehe deinen VARTA-Speicher, kann ihn mit dieser Integration aber nicht steuern: Sie liest nur Werte. Was du tun kannst: Die Integration „VARTA Modbus“ aus HACS kann Lade- und Entladeleistung begrenzen.",
+	"bnote.cannot.byd": "Ich sehe deine BYD Battery-Box. Sie selbst lässt sich nicht steuern – das geht immer über ihren Wechselrichter (zum Beispiel Fronius). Richte den Wechselrichter ein, dann steuere ich sie über ihn.",
+	"bnote.cannot.growatt_local": "Ich sehe deinen Growatt-Speicher, kann ihn mit dieser Integration aber nicht steuern: Sie kennt nur „Laden aus dem Netz“ an oder aus. Was du tun kannst: Die Integration „Growatt Modbus“ (0xAHA) aus HACS kann mehr.",
+	"bnote.cannot.hoymiles": "Ich sehe deinen Hoymiles-Speicher, kann ihn aber nicht steuern: Diese Integration steuert nur Hybrid-Wechselrichter über einen eigenen Dienst, den ich noch nicht nutze. Er läuft weiter wie bisher.",
+	"bnote.cannot.kostal_modbus_other": "Ich sehe deinen Kostal über diese Modbus-Integration, kann ihn damit aber nicht sicher steuern: Ihre Werte verfallen nach kurzer Zeit. Was du tun kannst: „Kostal Plenticore Battery Control“ aus HACS nutzen.",
+	"bnote.cannot.mqtt_hoymiles": "Ich sehe deinen Hoymiles-Speicher über MQTT, kann ihn aber noch nicht steuern: Über MQTT muss er alle 30 Sekunden neu angesprochen werden, und seine Entitäten sind nicht eindeutig. Was du tun kannst: Lass ihn von Omnibattery steuern – Omnibattery steuere ich.",
+	"bnote.cannot.mqtt_noah": "Ich sehe deinen Growatt NOAH über MQTT, kann ihn aber noch nicht steuern: Er lädt nicht aus dem Netz, und seine MQTT-Entitäten sind nicht eindeutig. Er läuft weiter wie bisher, ich rechne mit ihm.",
+	"bnote.cannot.mqtt_sunsynk": "Ich sehe deinen Sunsynk- oder Deye-Speicher über MQTT, kann ihn aber noch nicht steuern: Die Entitäten des Add-ons sind nicht eindeutig. Was du tun kannst: Unter „Regler zuordnen“ selbst zuordnen und den Testlauf machen.",
 	"tip.mode_options.title": "Wozu die Zuordnung?",
 	"tip.mode_options.text": "Jedes Gerät nennt seine Betriebsarten anders. Sag mir, welche Option „normal“ ist und welche „Zwangsladen“ – dann weiß ich, was ich wählen und wohin ich zurückstellen muss.",
 	"tip.control_steps.title": "Wie funktionieren Schritte?",
@@ -3457,6 +3721,7 @@ var Ne = {
 	"automations.off": "aus",
 	"automations.writes": "schreibt: {what} ({batteries})",
 	"automations.switched_off": "Von mir ausgeschaltet am {day} um {time} Uhr – damit sie meine Steuerung der Speicher nicht überschreibt.",
+	"automations.lent": "Von mir wieder eingeschaltet am {day} um {time} Uhr – ich stimme die Speicher gerade nicht selbst ab. Sobald ich es wieder kann, übernehme ich sie.",
 	"automations.all_off": "Alle ausschalten ({count})",
 	"automations.back_on": "Wieder einschalten ({count})",
 	"automations.failed": "Nicht alle ließen sich umschalten – schau in Home Assistant unter Automationen nach.",
@@ -3519,6 +3784,20 @@ var Ne = {
 	"plan.tonight.charge": "lädt ab {time} Uhr von {from} auf {target} %",
 	"plan.tonight.charge_any": "lädt von {from} auf {target} %",
 	"plan.tonight.charge.energy": "≈ {kwh} kWh aus dem Netz, mit bis zu {kw} kW",
+	"plan.tonight.charge.spans": "{kwh} kWh, {spans}",
+	"plan.tonight.span": "{start}–{end} Uhr mit {power}",
+	"plan.pace.spread": "Langsam über die Nacht verteilt: Der Strom kostet die ganze Zeit gleich viel, so schone ich Speicher und Hausanschluss und bin trotzdem rechtzeitig fertig.",
+	"plan.pace.short": "Nur wenig zu laden: lieber kurz mit etwas mehr Leistung – ganz langsam lädt ein Speicher schlecht.",
+	"plan.pace.cheapest": "In den günstigsten Viertelstunden der Nacht – erst dort, wo der Strom am wenigsten kostet.",
+	"plan.pace.full": "Mit voller Leistung – langsamer würde er in der günstigen Zeit nicht so voll wie nötig.",
+	"plan.pace.grid_limit": "Gebremst vom Hausanschluss: Laden und Haus zusammen bleiben unter {limit} kW.",
+	"plan.pace.fixed_power": "Seine Ladeleistung kann ich nicht vorgeben – er lädt so schnell, wie er kann, so spät wie möglich.",
+	"plan.pace.need_ref": "Sobald ich weiß, wofür 100 % seiner Ladegrenze stehen, lade ich ihn auch langsamer.",
+	"plan.pace.cap_ignored": "Seine Ladegrenze hält beim Laden aus dem Netz nicht – deshalb plane ich ihn mit voller Leistung.",
+	"plan.pace.first": "Er bekommt zuerst: Er entlädt morgens als Erster, so wechseln die Speicher tagsüber seltener.",
+	"tip.plan_pace.title": "Warum so langsam?",
+	"tip.plan_pace.text": "Ich lade jeden Speicher so langsam wie möglich und so schnell wie nötig: Die Energie verteile ich auf die günstigen Viertelstunden, sodass er sein Ziel eine halbe Stunde vor dem Ende erreicht. Wenig Leistung schont den Speicher und den Hausanschluss. Kostet der Strom unterschiedlich viel, lade ich zuerst in den günstigsten Viertelstunden – notfalls mit voller Leistung. Teurer wird es dadurch nie.",
+	"tip.plan_pace.hint": "Mehrere Speicher: Wer morgens zuerst entlädt, bekommt nachts zuerst – jeder hat sein eigenes Ziel.",
 	"plan.tonight.hold": "lädt nicht, hält in der günstigen Zeit aber {target} %",
 	"plan.tonight.idle": "muss heute Nacht nichts tun, jetzt {soc} %",
 	"log.boost": "{battery}: Jetzt laden bis {target} {unit}",
@@ -3574,8 +3853,9 @@ var Ne = {
 	"error.title": "Joe antwortet |nicht",
 	"error.text": "Ich erreiche die Integration nicht. Lade die Seite neu – hilft das nicht, schau unter Einstellungen → System → Protokolle nach.",
 	"error.action": "Fehler beim Speichern",
-	loading: "Joe sattelt auf …"
-}, Pe = {
+	loading: "Joe sattelt auf …",
+	"menu.sidebar": "Home-Assistant-Menü"
+}, Fe = {
 	"tab.overview": "Overview",
 	"tab.plan": "Plan",
 	"tab.review": "Review",
@@ -4243,6 +4523,7 @@ var Ne = {
 	"overview.night.empty.title": "No plan |yet",
 	"overview.night.empty.text": "Once I know your batteries and your tariff, I'll work out here every night how much to charge – and why.",
 	"plan.day": "Grid-friendly: until {time} the morning sun goes to the grid (about {kwh} kWh), then the battery charges at the midday peak.",
+	"plan.day.buffer": "Grid-friendly: I first charge up to {level} % as a buffer for you, then the grid gets the morning sun (about {kwh} kWh), from {time} I charge full.",
 	"plan.day.cost": "Costs about {cost}.",
 	"plan.title": "Where I |do the math",
 	"history.title": "Every day |up close",
@@ -4616,6 +4897,32 @@ var Ne = {
 	"tip.r_day_surplus.title": "What does “Leave daytime surplus” mean?",
 	"tip.r_day_surplus.text": "Normally the batteries swallow all the morning sun and are full by noon – only then does evcc see a surplus. With the switch on, I slow down charging: they charge just fast enough to still be full before the sun no longer covers the house in the evening. evcc sees the rest at the grid meter, and a loadpoint in PV mode (e.g. underfloor heating) can then run all day.\nIf the sun falls short of the forecast, I charge faster right away; if it no longer suffices at all, I let go completely.",
 	"tip.r_day_surplus.hint": "Only while an evcc loadpoint is set to PV or Min+PV and can take power, only for batteries with a charge limit in W or kW and a passed test run, and only in live mode. In the evening everything is back as before.",
+	"rule.transfer_guard": "Battery watchdog",
+	"rule.transfer_guard.hint": "When two batteries charge each other (one charges, the other discharges), I step in.",
+	"tip.r_transfer_guard.title": "What does the battery watchdog do?",
+	"tip.r_transfer_guard.text": "Battery watchdog: I step in when batteries charge each other. If one charges with more than 20 W while another discharges with more than 20 W, for 20 seconds, I first restart the own control of the battery that is usually the cause (for a Marstek, Omnibattery's control). If that has not helped after 20 seconds, I briefly block the direction it is running in – for 5 seconds. If they still run against each other after that, I let you know.",
+	"tip.r_transfer_guard.hint": "This works without “One after the other”, too. I only write in live mode; otherwise I only say what I would do. At night, while I steer myself, I do not step in. If one of your automations already does this, I leave it to that one.",
+	"rule.morning_buffer": "Buffer on a grid-friendly morning",
+	"rule.morning_buffer.auto": "Automatic",
+	"rule.morning_buffer.auto_n": "Automatic ({soc} %)",
+	"rule.morning_buffer.own": "My own value",
+	"rule.morning_buffer.own_label": "Own buffer in percent",
+	"rule.morning_buffer.off_hint": "Only applies while “Be grid-friendly” is on (Settings › Operation).",
+	"rule.morning_buffer.learned_hint": "In the morning I first charge up to {soc} % from the sun – that is what your home usually needs beyond the sun on sunny mornings (about {kwh} kWh), plus a little extra. Then the grid gets the morning sun.",
+	"rule.morning_buffer.start_hint": "In the morning I first charge up to {soc} % from the sun, then the grid gets the morning sun. I estimate this until I have seen enough sunny mornings at your place.",
+	"rule.morning_buffer.pending_hint": "In the morning I first charge a buffer from the sun, then the grid gets the morning sun. How much, I'll tell you once I have worked out the next plan.",
+	"rule.morning_buffer.own_hint": "In the morning I first charge up to {soc} % from the sun, then the grid gets the morning sun.",
+	"tip.r_morning_buffer.title": "What is the buffer for?",
+	"tip.r_morning_buffer.text": "On a grid-friendly morning I let the morning sun go to the grid and fill the battery only at midday. So you don't have to buy from the grid meanwhile, I first charge a small buffer: when a cloud passes or the oven runs and the home needs more than the sun gives right now, the power comes from the battery.\nIf the battery drops below the buffer, I charge it again from the sun – never from the grid. Only then do I hold back charging again.",
+	"tip.r_morning_buffer.hint": "Never less than your reserve. With several batteries working one after the other, the one that discharges first in the morning keeps it.",
+	"tip.r_morning_buffer_auto.title": "How do I work out the suggestion?",
+	"tip.r_morning_buffer_auto.text": "I look at your sunny mornings: how much extra power did the home need between the moment the sun covers it and the midday peak – because a cloud came or a big appliance ran? What would have been enough on most days, I take times 1.25 for safety and put on top of your reserve.\nI learn this over years and forget nothing – recent days count a little more.",
+	"tip.r_morning_buffer_auto.hint": "At most 60 %, otherwise hardly any morning sun would be left for the grid.",
+	"tip.r_morning_buffer_own.title": "Own buffer",
+	"tip.r_morning_buffer_own.text": "Up to this level I charge from the sun in the morning. More buffer is safer but leaves less morning sun for the grid. Less buffer gives the grid more – but on a cloud a little may come from the grid.",
+	"tip.r_morning_buffer_own.hint": "If the value is below your reserve, I use the reserve.",
+	"signpost.rule_transfer_guard.terms": "watchdog, charge each other, against each other, transfer, PD controller, Omnibattery, Marstek, Venus",
+	"signpost.rule_morning_buffer.terms": "buffer, grid-friendly, morning sun, forenoon, cloud, oven, morning reserve",
 	"rule.day_caution": "How careful?",
 	"rule.day_caution.tight": "Tight",
 	"rule.day_caution.normal": "Normal",
@@ -4635,6 +4942,13 @@ var Ne = {
 	"rule.evening_min_soc.hint": "Empty = no minimum.",
 	"rule.grid_limit_w": "Grid limit",
 	"rule.grid_limit_w.hint": "Maximum power from the grid, everything together.",
+	"rule.grid_limit_w.measured": "Measured: at most {kw} kW from the grid (since {date}). As long as you enter nothing, charging and the home together never take more at night.",
+	"rule.grid_limit_w.measuring": "Measured: at most {kw} kW from the grid (since {date}). After a week of measuring I use it as the limit, as long as you enter nothing.",
+	"rule.grid_limit_w.measured_own": "Measured: at most {kw} kW from the grid (since {date}). Your value applies.",
+	"rule.grid_limit_w.take": "Use {kw} kW",
+	"tip.r_grid_peak.title": "Where does the measured value come from?",
+	"tip.r_grid_peak.text": "I keep the highest import from the grid I have ever measured – your grid connection managed that for sure. Without a grid limit of yours, charging and the home together stay below it at night (after a week of measuring at the earliest). **Use** enters it as your grid limit.",
+	"tip.r_grid_peak.hint": "If you know your connection, better enter it yourself: 3 × 35 A is about 24 kW.",
 	"rule.max_night_kwh": "At most per night",
 	"rule.max_night_kwh.hint": "Empty = as much as needed.",
 	"rule.max_price": "Highest price for grid charging",
@@ -4804,7 +5118,7 @@ var Ne = {
 	"tip.r_min_saving.title": "Why a minimum saving?",
 	"tip.r_min_saving.text": "Every time I take control, I write values into your devices. If a night would bring less than this amount, I skip it and the batteries run as if I weren't there. Maintenance nights are exempt.",
 	"tip.r_grid_friendly.title": "What does grid-friendly mean?",
-	"tip.r_grid_friendly.text": "At midday all solar systems deliver the most at once – the grid is full. In the morning and evening everyone needs power – it is short.\n**Batteries**: On sunny days I hold back charging in the morning, the surplus goes to the grid and the battery charges at the midday peak. I take only 80 % of the forecast and let go early when the sun lags. This works with batteries whose charging power I can limit.\n**Morning and evening** the home takes power from the battery instead of the grid.\n**Car**: If it leaves only in the afternoon, it charges with the sun instead of at night.",
+	"tip.r_grid_friendly.text": "At midday all solar systems deliver the most at once – the grid is full. In the morning and evening everyone needs power – it is short.\n**Batteries**: On sunny days I first charge a small buffer from the sun in the morning, then I hold back charging, the surplus goes to the grid and the battery fills at the midday peak. I take only 80 % of the forecast and let go early when the sun lags. This works with batteries whose charging power I can limit.\n**Morning and evening** the home takes power from the battery instead of the grid.\n**Car**: If it leaves only in the afternoon, it charges with the sun instead of at night.",
 	"tip.r_grid_friendly.hint": "I only steer this in the modes “Suggest” and “Live”; in simulation I only show it.",
 	"tip.r_grid_first.title": "Saving or grid?",
 	"tip.r_grid_first.text": "**Saving**: I only wait in the morning as long as the battery still gets as full as otherwise – it costs you nothing.\n**Grid**: I also wait longer when the battery then doesn't get quite full – that may cost up to 30 ct a day.",
@@ -6015,6 +6329,7 @@ var Ne = {
 	"devices.status.nothing": "Nothing to do tonight.",
 	"devices.status.no_plan": "No plan for tonight yet.",
 	"devices.status.day": "Grid-friendly: I hold back charging the batteries until {time} – the morning sun goes to the grid.",
+	"devices.status.day_buffer": "Grid-friendly: I first charge up to {level} % as a buffer for you, then the grid gets the morning sun – from {time} I charge full.",
 	"devices.status.done": "The night is over, everything is back.",
 	"devices.pending": "A few values are not back where they were yet. I keep trying.",
 	"devices.power.charge": "charging at {value} kW",
@@ -6030,6 +6345,8 @@ var Ne = {
 	"devices.action.hold": "Holding at {floor} %",
 	"devices.action.block": "No discharge while another one charges",
 	"devices.action.defer": "Charges only from {until} – the morning sun goes to the grid",
+	"devices.action.buffer": "Charges from the sun up to {level} % – your buffer for the morning",
+	"devices.action.defer_buffer": "Buffer of {level} % reached – charges again from {until}, the morning sun goes to the grid",
 	"devices.action.free": "Free – I don't interfere",
 	"devices.action.watch": "Watched only",
 	"devices.action.idle": "Free – I don't interfere right now",
@@ -6129,6 +6446,7 @@ var Ne = {
 	"battery.surplus.unavailable": "Its charge limit cannot be reached right now – it charges normally.",
 	"battery.surplus.unknown": "I do not know its charge level or size right now – it charges normally.",
 	"team.title": "Several batteries",
+	"team.together": "{first} with {rest}",
 	"team.question": "How should the batteries work together?",
 	"team.mode.sequence": "One after the other (recommended)",
 	"team.mode.together": "At the same time",
@@ -6145,9 +6463,9 @@ var Ne = {
 	"team.part.parallel": "{name} charges too (charging only)",
 	"team.parallel": "Today both charge side by side: one after the other the sun would not last until it sets.",
 	"team.state.off": "I am switched off – each battery regulates itself.",
-	"team.state.unset": "Not chosen yet: each battery regulates itself. One after the other keeps them from charging each other.",
 	"team.state.together": "At the same time: each battery regulates itself, I do not step in.",
 	"team.state.single": "Only one battery regulates itself – nothing to coordinate.",
+	"team.state.one_group": "One system regulates all batteries – it shares the power itself. By day there is nothing for me to coordinate; I only steer at night.",
 	"team.state.night": "At night my night plan steers the batteries – by day it is one after the other again.",
 	"team.state.paused": "Paused today (“Release now”) – tomorrow it is one after the other again.",
 	"team.state.levers": "I cannot block every battery (a limit is missing or unreachable) – so I block none right now.",
@@ -6155,18 +6473,153 @@ var Ne = {
 	"team.state.unknown": "I do not know a battery's level right now – I block none.",
 	"team.state.automation": "Your automations {names} do this so far – I leave the batteries alone.",
 	"team.state.no_grid": "Without a grid meter I cannot see whether the house needs power or gives it – I block none.",
+	"team.state.not_taken": "I blocked {names}, but the block did not arrive – so I block nobody right now. I will try again in an hour.",
+	"team.state.taking_over": "Your automations {names} are still running. If all stays well until {time}, I switch them off and coordinate the batteries myself again.",
+	"team.state.error": "I could not decide safely just now – I block nobody, your automations run again.",
+	"team.mode.default": "Default",
+	"team.default": "I make sure only one system works at a time – otherwise the batteries charge each other. If you do not want that, choose “At the same time”.",
+	"team.given_back.title": "Your battery automations run again",
+	"team.given_back": "I could not block the batteries myself ({why}) – your automations {names} run again. As soon as it works again, I take over.",
+	"team.given_back.choice": "Your automations {names} run again ({why}) – I am not coordinating the batteries myself right now.",
+	"team.given_back.why.off": "I am switched off",
+	"team.given_back.why.dry": "I am not live",
+	"team.given_back.why.together": "you chose “At the same time”",
+	"team.given_back.why.paused": "released for today",
+	"team.given_back.why.levers": "a battery cannot be blocked",
+	"team.given_back.why.not_tested": "a test run is missing",
+	"team.given_back.why.unknown": "a charge level is unknown",
+	"team.given_back.why.no_grid": "the grid meter is missing",
+	"team.given_back.why.automation": "another automation steers the batteries",
+	"team.given_back.why.not_taken": "a block did not arrive",
+	"team.given_back.why.error": "an error",
+	"team.given_back.unblocked": "Nothing blocks right now: your automations only step in once their condition starts anew – until then the batteries may charge each other.",
+	"team.hold.discharge": "{name} is still discharging – I hold my block until that stops. Only then I switch your automations {names} on again.",
+	"team.hold.charge": "{name} is still charging – I hold my block until that stops. Only then I switch your automations {names} on again.",
+	"tip.team_hold.title": "Why do I still hold the block?",
+	"tip.team_hold.text": "Your automations mostly react only when something starts – say “Venus discharges more than 120 W”. If that is already going on when they are back on, they block nothing. So I hold my block until the battery stops, and only then hand over.",
+	"tip.team_hold.hint": "At most 12 hours. With “Release now”, a mode change or when I can no longer write, I hand over at once.",
+	"tip.team_default.title": "Why do I do this by myself?",
+	"tip.team_default.text": "You have two systems that regulate their batteries to 0 W at the grid meter themselves. When both work at once, power moves from one battery into the other – with losses. So I let only one work at a time and block the other ahead of time.",
+	"tip.team_default.hint": "To switch it off: choose “At the same time”. Then I do not step in.",
+	"tip.team_given_back.title": "Why do my automations run again?",
+	"tip.team_given_back.text": "I only switch your battery automations off while I really do the job myself. If I cannot block – or a block does not arrive – I switch them on again at once, so your batteries never work against each other unprotected.",
+	"tip.team_given_back.hint": "Once it works again, I wait 15 minutes and then take over by myself. With “At the same time” they stay yours.",
 	"team.doing": "Batteries one after the other: {active} is up, {others} waits",
 	"team.doing.parallel": "Batteries charge side by side today ({active}, {others}) – one after the other they would not get full",
-	"team.transfer.despite": "{charging} charged while {discharging} discharged – although I block them. Something else writes the same limits, or a block is not taken.",
-	"team.transfer.seen": "Today {charging} charged while {discharging} discharged: the batteries charged each other. One after the other prevents that.",
 	"team.automations": "Your automations {names} do this so far – I can switch them off, then I take over.",
 	"team.automations.go": "To the automations",
+	"guard.title": "Battery watchdog",
+	"guard.watching": "I watch that the batteries do not charge each other. Nothing so far.",
+	"guard.state.off": "Switched off – I do not step in when the batteries charge each other.",
+	"guard.state.mode_off": "I am off right now – the watchdog rests.",
+	"guard.state.single": "I need the power of at least two batteries to keep watch.",
+	"guard.automation": "Your automation {names} does this so far – I stay out. Switch it off and I take over.",
+	"guard.last.running.1": "{time}: The batteries ran against each other – I restarted {battery}'s own control.",
+	"guard.last.running.2": "{time}: The batteries ran against each other – I blocked {direction} of {battery} for 5 s.",
+	"guard.last.alarm": "{time}: The batteries keep running against each other, even after a restart and a short block – please have a look.",
+	"guard.last.fixed.1": "{time}: The batteries ran against each other – fixed by restarting {battery}'s own control (after {duration}).",
+	"guard.last.fixed.2": "{time}: The batteries ran against each other – fixed by a short block of {battery} (after {duration}).",
+	"guard.last.fixed.3": "{time}: The batteries ran against each other for {duration} – not any more.",
+	"guard.last.automation": "{time}: The batteries ran against each other – your automation took care of it.",
+	"guard.last.joe": "{time}: The batteries ran against each other while I was steering myself – then I do not step in.",
+	"guard.last.inside": "{time}: {charging} charged while {discharging} discharged – both are regulated by the same system. I do not step in there; please check its settings.",
+	"guard.inside.title": "Batteries of one system charge each other",
+	"guard.inside": "{charging} charges while {discharging} discharges – both are regulated by the same system. I do not step in there: please check its settings.",
+	"guard.dry": "That is what I would do in live mode – right now I write nothing.",
+	"guard.direction.charge": "charging",
+	"guard.direction.discharge": "discharging",
+	"guard.seconds": "{n} s",
+	"guard.minutes": "{n} min",
+	"guard.alarm.title": "Batteries charge each other",
+	"guard.alarm": "{charging} charges while {discharging} discharges – even after I restarted its control and blocked the battery for a moment. Please check whether something else writes the same limits.",
+	"tip.guard.title": "What is the battery watchdog?",
+	"tip.guard.text": "When two batteries charge each other – one charges with more than 20 W, the other discharges with more than 20 W, for 20 seconds – I step in in three steps: restart the battery's own control, block its direction for 5 seconds, let you know. Here you see when it last happened and what helped.",
+	"tip.guard.hint": "Switch it on and off under Settings › Rules › Batteries. Everything I switch for it I put back at once – after a restart, too.",
 	"team.team_charge_order": "Charging: who goes first?",
 	"team.team_discharge_order": "Discharging: who goes first?",
 	"team.self_regulating": "Regulates itself to 0 at the meter",
 	"team.proposed": "Suggestion",
+	"team.group": "Who regulates it?",
+	"team.group.own": "Its own system",
+	"team.group.with": "Together with {name}",
+	"team.group.check": "Please check",
+	"team.groups.question": "Which batteries are regulated by the same system?",
+	"team.groups.question.text": "For {names} I am not sure. Batteries regulated by the same system work as one group for me – I only coordinate between different systems. For now I assume each has its own.",
+	"team.groups.confirm": "Proposal is right",
 	"team.cutoff.known": "Stops discharging at {value} % – the next one takes over 1.5 % before.",
 	"team.cutoff.unknown": "I am still learning where it really stops discharging – until then it works until it stops by itself (set: {value} %).",
+	"team.part.active_discharge_only": "{name} discharges (charging blocked while both discharge)",
+	"team.part.along": "{name} charges along (charging only)",
+	"team.part.helps": "{name} helps discharging (discharging only)",
+	"team.part.base": "{name} supplies the base load ({w} W)",
+	"team.day.today": "Today",
+	"team.day.yesterday": "Yesterday",
+	"team.day.on": "On {date}",
+	"team.reason.along.forecast": "{others} charges along because more sun is coming now than {active} can take alone. Discharging is blocked for both – so neither can charge the other.",
+	"team.reason.along.export": "{others} charges along because sun just went to the grid although {others} still has room. Discharging is blocked for both – so neither can charge the other.",
+	"team.reason.help": "{others} helps discharging because the house needs more right now than {active} can deliver. Charging is blocked for both.",
+	"team.reason.base": "{others} supplies the base load ({w} W), {active} the rest.",
+	"team.reason.plan": "From {time} {others} charges along – the forecast says more sun is coming then than {active} can take alone.",
+	"team.reason.plan.lead": "From {time} {others} charges along – the forecast says more sun is coming after that than {active} can take alone. From experience I start {lead} minutes earlier.",
+	"team.reason.dry": "(That's how it would be in live mode – right now I'm only watching.)",
+	"team.review.room": "{when}: {kwh} kWh went to the grid although {name} was only at {soc} %.",
+	"team.review.room_full": "{when}: {kwh} kWh went to the grid while a battery was still waiting – all of them got full anyway.",
+	"team.review.fine": "{when} no sun went to the grid while a battery still had room.",
+	"team.learned.none": "I haven't learned anything yet – I look back on the day every evening.",
+	"team.learned.no_lead": "Learned from {days} days: charging along earlier isn't needed.",
+	"team.learned.lead": "Learned from {days} days: charge along about {minutes} minutes earlier.",
+	"team.suggest.title": "{when} {kwh} kWh went to the grid although {name} was only at {soc} %.",
+	"team.suggest.text": "Shall I let {name} charge along earlier from now on? From the last days I know: about {minutes} minutes earlier is enough.",
+	"team.suggest.yes": "Yes, charge along earlier",
+	"team.suggest.no": "No",
+	"team.style.title": "Set it yourself",
+	"team.style.intro": "For advanced users. Normally you don't need to change anything here.",
+	"team.style.auto": "Automatic (recommended)",
+	"team.style.auto.text": "One after the other – but the next one charges along when more sun comes than one can take, and helps with big loads.",
+	"team.style.strict": "One after the other only",
+	"team.style.strict.text": "Always just one – on weak days too. The next one waits until the first is full.",
+	"team.style.base": "Share the base load",
+	"team.style.base.text": "The next one always supplies a small base, the first one the rest.",
+	"team.style.base.warn": "Note: with small loads you lose more this way than one after the other, because inverters work poorly at low power.",
+	"team.style.base.no_lever": "For the battery that comes next I can't set a power (its limit is in percent or only a switch). Then it stays one after the other.",
+	"team.early": "Charge along earlier from experience",
+	"team.early.unanswered": "Not decided yet",
+	"tip.team_reason.title": "Why are two working right now?",
+	"tip.team_reason.text": "Normally only one works at a time. If more sun comes than it can take, the next one may charge along – otherwise the sun would go to the grid although there is still room. If the house needs more than it can deliver, the next one may discharge too. I always block the other direction for both, so neither charges the other.",
+	"tip.team_reason.hint": "When a cloud comes, I block the second one again at once.",
+	"tip.team_review.title": "My look back on the day",
+	"tip.team_review.text": "Every evening after sunset I look back: how much sun went to the grid while a battery still had room? How full did each one get? From that I learn over many days how early the next one should charge along.",
+	"tip.team_review.hint": "Days without spare sun (e.g. in winter) don't change what I learned.",
+	"tip.team_style_auto.title": "Automatic",
+	"tip.team_style_auto.text": "One after the other in principle. If the forecast shows more sun than the first can take, or sun is going to the grid right now, the next one charges along. If the house needs more than the first can deliver for longer than a minute, the next one discharges too. Afterwards it waits again.",
+	"tip.team_style_auto.hint": "Recommended – the least sun goes to the grid and neither charges the other.",
+	"tip.team_style_strict.title": "One after the other only",
+	"tip.team_style_strict.text": "Only one battery works at a time. No earlier charging along, no help with big loads, and no charging side by side on weak days either.",
+	"tip.team_style_strict.hint": "Sun may go to the grid although the second one would still have room, and on weak days the second may not get full.",
+	"tip.team_style_base.title": "Share the base load",
+	"tip.team_style_base.text": "When the house needs power, the next battery supplies a fixed base: the lower consumption of the last half hour (what is almost always running – not the average). The first one delivers the rest. I keep adjusting the base.",
+	"tip.team_style_base.hint": "Only works if I can set the next battery's discharge power in watts (e.g. Marstek via Omnibattery).",
+	"tip.team_base_warn.title": "Why is this less efficient?",
+	"tip.team_base_warn.text": "An inverter works poorly at low power – it loses a larger share then. If two batteries each deliver a little instead of one delivering a bit more, more kilowatt-hours are lost in total.",
+	"tip.team_base_warn.hint": "Makes more sense if one battery should be spared.",
+	"tip.team_base_lever.title": "Why doesn't it work here?",
+	"tip.team_base_lever.text": "For a base I must be able to set the battery's discharge power in watts. If it only has a limit in percent or only a switch, I can't.",
+	"tip.team_base_lever.hint": "Change the discharge order so that a suitable battery comes next.",
+	"tip.team_early.title": "Charge along earlier?",
+	"tip.team_early.text": "Every evening I learn whether sun went to the grid while a battery still had room. From that I know how much earlier the next one should charge along. Yes: I let it charge along that much earlier. No: I leave it as it is and don't ask again.",
+	"tip.team_early.hint": "Charging along means charging only – discharging is blocked for both meanwhile.",
+	"log.team_along": "{others} charges along (charging only)",
+	"log.team_along.forecast": "{others} charges along: the forecast says more sun is coming than {active} can take alone",
+	"log.team_along.export": "{others} charges along: sun went to the grid although there was room",
+	"log.team_along_end": "Charging along ended – one after the other again",
+	"log.team_along_end.flow": "Charging along ended: the house needs power again – one after the other again",
+	"log.team_along_end.less": "Charging along ended: less sun – one after the other again",
+	"log.team_help": "{others} helps discharging: the house needs {power} kW, more than {active} can deliver",
+	"log.team_help_end": "Big load over: {others} waits again",
+	"log.team_base": "{others} now supplies the base load ({watts} W)",
+	"log.team_base_end": "Base load: {others} waits again",
+	"log.team_review": "Look back: {energy} kWh to the grid while a battery still had room – learned: charge along {lead} minutes earlier",
+	"log.team_review.short": "Look back: {energy} kWh to the grid although {others} was only at {soc} % – learned: charge along {lead} minutes earlier",
 	"battery.surplus.team_wait": "Waits until the other battery is full (several batteries: one after the other) – its room counts when capping.",
 	"battery.surplus.rule_off": "The rule “Leave daytime surplus” is off.",
 	"battery.surplus.rule_go": "Switch the rule on",
@@ -6195,8 +6648,8 @@ var Ne = {
 	"tip.team.text": "A Fronius inverter regulates its battery to 0 W at the grid meter, and Omnibattery does the same with a Marstek. Two such controllers know nothing of each other: often one charges while the other discharges – power moves from battery to battery, with losses both ways.",
 	"tip.team.hint": "Only by day and only in live mode. At night my night plan steers. On a mode change, “Release now” and when Home Assistant shuts down, I put every block back.",
 	"tip.team_mode.title": "One after the other or at the same time?",
-	"tip.team_mode.text": "One after the other: only one battery may work at a time, I block the others ahead of time – not only once it happens. When the first one is full or empty, the next one takes over. At the same time: I do not step in, each battery regulates itself.",
-	"tip.team_mode.hint": "On the Fronius I block with the charge and discharge limit and their switches, on the Marstek with Omnibattery's system power limits. The Marstek stays in automatic mode.",
+	"tip.team_mode.text": "One after the other: only one battery may work at a time, I block the others ahead of time – not only once it happens. When the first one is full or empty, the next one takes over. At the same time: I do not step in, each battery regulates itself. If you choose nothing, one after the other applies.",
+	"tip.team_mode.hint": "On the Fronius I block with the charge and discharge limit and their switches. On the Marstek I switch off “allow charging” and “allow discharging” of each battery – Omnibattery stays in automatic mode and goes on at once when I free them. Without these switches I use the system power limits, but only when all of Omnibattery's batteries wait.",
 	"tip.team_charge_order.title": "Who charges first?",
 	"tip.team_charge_order.text": "The battery at the top takes the sun first until it is full; then the next one is up. If the forecast says the sun will not fill them one after the other before it sets, I let the others charge too – never forced, their own controller only takes what is left.",
 	"tip.team_charge_order.hint": "A battery higher up is up again once the sun has shone for a while – not with every cloud.",
@@ -6204,11 +6657,17 @@ var Ne = {
 	"tip.team_discharge_order.text": "The battery at the top supplies the house first, until it reaches the level where it really stops discharging. Then the next one takes over. The first one is up again once it has charged 5 % above that.",
 	"tip.team_discharge_order.hint": "For example the big battery first and the small one as a reserve for the evening.",
 	"tip.team_self_regulating.title": "What does “regulates itself” mean?",
-	"tip.team_self_regulating.text": "The battery watches the grid meter itself and charges or discharges so it shows 0 W. Fronius and Omnibattery in automatic mode do that. I coordinate only such batteries.",
+	"tip.team_self_regulating.text": "The battery watches the grid meter itself and charges or discharges so it shows 0 W. Fronius, Kostal and Omnibattery in automatic mode do that. I coordinate only such batteries.",
 	"tip.team_self_regulating.hint": "I make the suggestion from the device. If it is wrong, switch it here.",
 	"tip.team_cutoff.title": "Where does it really stop?",
 	"tip.team_cutoff.text": "Many batteries stop earlier than set – a BYD, for example, at about 10.5 % although 5 % is set. I watch: when it stops discharging although the house needs power, I note its level.",
 	"tip.team_cutoff.hint": "With a learned value the next battery takes over 1.5 % before, so the house takes nothing from the grid.",
+	"tip.team_group.title": "Who regulates the battery?",
+	"tip.team_group.text": "Some systems regulate several batteries together – Omnibattery, for instance, a Marstek Venus and a Victron. They share the power themselves, so I treat them as one group. A Fronius or Kostal inverter regulates only its own battery.",
+	"tip.team_group.hint": "One after the other means: only one group works at a time, I block the others. I make the proposal from the integration in Home Assistant.",
+	"tip.team_groups_confirm.title": "What does “Proposal is right” do?",
+	"tip.team_groups_confirm.text": "I keep the assignment as it is shown under Several batteries and stop asking.",
+	"tip.team_groups_confirm.hint": "You can change it any time under Devices › Batteries › Several batteries at “Who regulates it?”.",
 	"surplus.device_conflict.title": "Your battery works against “Leave daytime surplus”.",
 	"surplus.device_conflict.hint": "Switch it off in Omnibattery – I don't change it.",
 	"surplus.conflict.charge_delay": "Charge delay is on for {battery}: Omnibattery then holds charging back itself and does not count on my limit.",
@@ -6216,11 +6675,12 @@ var Ne = {
 	"overview.todo.surplus_automation": "Not taking part during the day: an automation writes the same charge limit ({names}). Switch it off under the troublemakers.",
 	"overview.todo.limit_ref": "{name}: what do 100 % stand for?",
 	"overview.todo.limit_ref.text": "Its charge limit is a percentage. Enter what 100 % stand for – or let me measure it myself on a sunny day.",
-	"overview.todo.team": "Let the batteries work one after the other?",
-	"overview.todo.team.text": "Two batteries regulate themselves to 0 at the meter and so push power back and forth. One after the other lets only one work at a time.",
 	"role.system_charge_limit": "System charge limit",
 	"role.system_charge_limit_enabled": "System power limits on",
 	"role.system_discharge_limit": "System discharge limit",
+	"role.system_manual_mode": "System manual mode",
+	"role.allow_charge": "Charging allowed",
+	"role.allow_discharge": "Discharging allowed",
 	"solar.sleeps": "Is off without sun – that is normal",
 	"solar.sleeps.named": "{name} is off without sun – that is normal",
 	"solar.sleeps.quick": "Off at night – normal",
@@ -6238,8 +6698,12 @@ var Ne = {
 	"log.start": "Night begins",
 	"log.set": "{battery}: {entity} → {value}",
 	"log.reached": "{battery} reached {target} %",
+	"log.night_cap": "{battery}: charge limit as a ceiling for charging from the grid – at most {power} kW",
+	"log.night_cap_ignored": "{battery}: the charge limit doesn't hold while charging from the grid ({power} instead of {cap} kW) – from now on I plan it at full power",
+	"log.night_cap_works": "{battery}: the charge limit holds while charging from the grid, too ({cap} kW)",
 	"log.external": "Someone else changed {entity} – I leave it",
 	"log.released": "Everything put back",
+	"log.released.day_buffer": "Charge limit set back – the battery charges from the sun up to the buffer again",
 	"log.release_failed": "Putting back did not fully work yet",
 	"log.failed": "{battery}: {entity} could not be written",
 	"log.emergency": "Released right away",
@@ -6268,6 +6732,9 @@ var Ne = {
 	"log.surplus_end.no_plan": "Daytime surplus ended: no forecast – batteries charge normally again",
 	"log.surplus_end.no_battery": "Daytime surplus ended: no battery can take part any more",
 	"log.day": "Grid-friendly morning: batteries charge only from {until}, the morning sun goes to the grid",
+	"log.day.buffer": "Grid-friendly morning: batteries first charge up to {level} % as a buffer, then the morning sun goes to the grid until {until}",
+	"log.day_buffer.fill": "{battery}: below the buffer ({soc} %) – charges from the sun up to {level} %",
+	"log.day_buffer.hold": "{battery}: buffer of {level} % reached – now the grid gets the morning sun",
 	"log.day_released": "Grid-friendly morning ended early: the sun lags behind ({remaining} kWh left, {headroom} kWh of room) – batteries charge now",
 	"log.team_handover": "Battery change: {battery} is up now (before: {previous})",
 	"log.team_handover.empty": "Battery change: {previous} is empty ({level} %) – {battery} takes over",
@@ -6277,6 +6744,7 @@ var Ne = {
 	"log.team_block.charge": "{battery}: charging blocked",
 	"log.team_block.discharge": "{battery}: discharging blocked, charging free",
 	"log.team_block.free": "{battery}: free again – blocks put back",
+	"log.team_taken": "{battery}: another charge limit would have let it charge while it waits – I block it all the same",
 	"log.team_end": "Several batteries: all blocks put back",
 	"log.team_end.night": "Several batteries: blocks put back – the night begins, the night plan steers",
 	"log.team_end.dry": "Several batteries: blocks put back – no longer in live mode",
@@ -6284,10 +6752,43 @@ var Ne = {
 	"log.team_end.automation": "Several batteries: blocks put back – your automations do it",
 	"log.team_end.levers": "Several batteries: blocks put back – a limit is not reachable",
 	"log.team_end.error": "Several batteries: blocks put back – I could not decide safely",
+	"log.team_end.not_taken": "Several batteries: all blocks put back – a block did not arrive",
+	"log.team_broken": "{battery}: the block did not arrive – I stop coordinating the batteries for now",
+	"log.team_given_back": "Several batteries: your automations {names} switched on again – {why}",
+	"log.team_take_over": "Several batteries: your automations {names} switched off again – I coordinate the batteries myself again",
+	"log.team_hold": "Several batteries: {battery} is still {direction} – I hold the block until that stops, then your automations run again",
+	"log.team_hold.discharge": "discharging",
+	"log.team_hold.charge": "charging",
+	"log.team_hold_end": "Several batteries: block no longer held",
+	"log.team_hold_end.flow_ended": "Several batteries: the battery stopped – block back, your automations run again",
+	"log.team_hold_end.too_long": "Several batteries: block held for 12 hours – your automations run again now",
+	"log.team_hold_end.unknown": "Several batteries: power unknown – block back, your automations run again",
+	"log.team_reset": "{battery}: the block had been undone (e.g. its Modbus control restarted) – I set it again",
 	"log.team_parallel": "Several batteries: they charge side by side today – one after the other they would not be full by {until}",
 	"log.team_cutoff": "{battery} stops discharging at {level} % – learned: {cutoff} %",
 	"log.team_transfer": "{charging} charges while {discharging} discharges – they charge each other",
 	"log.team_transfer.blocked": "{charging} charges while {discharging} discharges – despite the block",
+	"log.guard_restart": "Batteries run against each other – restarted {battery}'s own control",
+	"log.guard_restart.dry": "Batteries run against each other – I would restart {battery}'s own control",
+	"log.guard_restart.clean": "Batteries run against each other – ended manual mode of {battery} cleanly and gave it back to its own control",
+	"log.guard_restart.clean.dry": "Batteries run against each other – I would end manual mode of {battery} and give it back to its own control",
+	"log.guard_block.charge": "Still running against each other – blocked charging of {battery} for 5 s",
+	"log.guard_block.discharge": "Still running against each other – blocked discharging of {battery} for 5 s",
+	"log.guard_block.charge.dry": "Still running against each other – I would block charging of {battery} for 5 s",
+	"log.guard_block.discharge.dry": "Still running against each other – I would block discharging of {battery} for 5 s",
+	"log.guard_alarm": "Keeps running against each other – I let you know",
+	"log.guard_alarm.dry": "Keeps running against each other – I would let you know",
+	"log.guard_fixed.1": "Fixed by restarting its own control (after {duration})",
+	"log.guard_fixed.2": "Fixed by a short block of {battery} (after {duration})",
+	"log.guard_fixed.3": "No longer running against each other (after {duration})",
+	"log.guard_automation": "Batteries run against each other – an automation already takes care of it: {names}",
+	"log.guard_joe": "Batteries run against each other while I steer myself – I do not step in",
+	"log.guard_inside": "{charging} charges while {discharging} discharges – one system regulates both, I do not step in and let you know",
+	"log.guard_inside.dry": "{charging} charges while {discharging} discharges – one system regulates both, I would let you know",
+	"log.guard_restored": "Battery watchdog: {entities} put back",
+	"log.guard_restored.start": "Battery watchdog: {entities} put back after the restart",
+	"log.guard_restored.failed": "Battery watchdog: could not put back {entities} yet – I keep trying",
+	"log.guard.problem": "– did not work ({code})",
 	"f.battery.control.watch": "Watch only",
 	"f.battery.control.profile": "Automatic ({name})",
 	"f.battery.control.generic": "Assign levers",
@@ -6327,6 +6828,8 @@ var Ne = {
 	"meaning.force_charge": "Forced charging",
 	"meaning.hold": "Hold",
 	"meaning.force_discharge": "Forced discharging",
+	"meaning.no_charge": "No charging (by day only)",
+	"meaning.no_discharge": "No discharging (by day only)",
 	"meaning.none": "–",
 	"pick.role.title": "{role} – which lever?",
 	"pick.step.title": "Which device or script?",
@@ -6352,6 +6855,47 @@ var Ne = {
 	"tip.control_roles.title": "Which levers do I need?",
 	"tip.control_roles.text": "One way to **charge** and one to **hold**. Charging works with a mode that forces charging (with a charging power) or with “Charge from grid” plus “Charge up to”. Holding works with the minimum level, a mode or a discharge limit. Everything else is a bonus.",
 	"tip.control_roles.hint": "Whatever I change, I put back at the end of every night.",
+	"role.block_charge": "Block charging (switch)",
+	"role.block_discharge": "Block discharging (switch)",
+	"battery.surplus.flash": "Not possible for this battery: its charge limit is a setting it stores permanently on its memory chip. Following the sun with it all day would wear the chip out. It charges normally.",
+	"log.guard_flash": "Still running against each other – I won't block {battery} again so soon: every block writes to its memory chip. I'll let you know.",
+	"tip.battery_notes.title": "Why is Joe telling me this?",
+	"tip.battery_notes.text": "I recognise many batteries, but I can't steer every one of them. Here I tell you **why** not – and **what you can do**. Usually it's a setting in the integration or the device, or an entity that is switched off in Home Assistant.\nThen you do the test run: only once it passes do I steer the battery.",
+	"tip.battery_notes.hint": "A battery I don't steer I leave alone. It keeps running as before, and I still take it into account.",
+	"bnote.other": "I have a note about this that I can't put into words here yet.",
+	"bnote.entities.none": "look for the switched-off ones under “Entities” on the device.",
+	"bnote.enable": "These entities are switched off in Home Assistant – I would need them: {entities}. Switch them on under “Entities” on the device.",
+	"bnote.no_level": "I can see {name}, but I can't find a charge level. Without it I can neither plan nor steer the battery. What you can do: switch the level on in Home Assistant – {entities}",
+	"bnote.needs.kostal_modbus_external": "For your Kostal to accept my commands, its battery management must be set to “External via protocol (Modbus TCP)” in the inverter. That's in the installer menu. Otherwise it ignores everything without reporting an error – the test run will show you. If in doubt, ask your installer.",
+	"bnote.needs.sigen_write": "The Sigenergy integration starts out as “read only” (read_only). It then accepts my commands but doesn't write them to the battery – without an error. Switch “read only” off in the integration's options. The test run shows you whether it works.",
+	"bnote.needs.deye_tou": "I steer your Deye through its six time programs. That only works with “Time of Use” switched on in the inverter. Whatever I change, I put back in the morning.",
+	"bnote.no_charge.goodwe_core": "I can hold it, but not charge it from the grid: the GoodWe integration from Home Assistant offers no eco charging. What you can do: the “GoodWe Inverter (experimental)” integration from HACS can do both.",
+	"bnote.no_charge.kostal_core": "I can hold it, but not charge it from the grid: the Kostal integration from Home Assistant has no lever for that. What you can do: “Kostal Plenticore Battery Control” from HACS (over Modbus) can do both.",
+	"bnote.cannot.levers": "I can see {name}, but I can't find the levers I could steer it with. Until then I only watch it. What you can do: pick levers yourself under “Assign levers” and do the test run.",
+	"bnote.cannot.kostal_core": "I can see your Kostal battery, but I can't steer it yet: with the Kostal integration from Home Assistant that only works through “Battery min SoC”, and it is switched off in Home Assistant. What you can do: switch this entity on under “Entities” on the device.",
+	"bnote.cannot.kostal_modbus": "I can see your Kostal battery through “Kostal Plenticore Battery Control”, but I can't find its levers. What you can do: check that the integration is running and its switches and numbers are switched on.",
+	"bnote.cannot.solaredge": "I can see your SolarEdge battery, but I can't steer it yet: storage control is switched off in the integration. What you can do: in “SolarEdge Modbus Multi”, under “Configure”, switch on advanced storage control (adv_storage_control) in the Power Control Options.",
+	"bnote.cannot.sigen": "I can see your Sigenergy battery, but I can't steer it yet: its control entities are missing or switched off. What you can do: switch “read only” (read_only) off in the integration's options and switch the control entities on at the device.",
+	"bnote.cannot.sonnen_write": "I can see your sonnen battery, but I can't steer it yet: without write access the integration shows no levers. What you can do: switch on write access for the local interface in your sonnenBatterie's web interface and reload the integration.",
+	"bnote.cannot.victron_gx": "I can see your Victron battery, but I can't find its ESS settings. What you can do: check that ESS is set up on the GX device and the integration shows its minimum level.",
+	"bnote.cannot.victron_mqtt": "I can see your Victron battery, but I can't steer it yet: the “Victron MQTT” integration is probably set to read only (READ_ONLY). What you can do: choose full operation in its options – or switch to the Victron integration from Home Assistant.",
+	"bnote.cannot.victron_modbus": "I can see your Victron battery, but I can't steer it yet: the Victron integration (Modbus) only shows levers with write access. What you can do: switch write access on in its advanced options.",
+	"bnote.cannot.huawei_permissions": "I can see your Huawei battery, but I can't steer it yet: the integration only shows its levers with elevated permissions. What you can do: switch on “Advanced: elevate permissions” in “Huawei Solar” – it needs the installer password.",
+	"bnote.cannot.senec": "I can see your SENEC battery, but I can't steer it yet: I can only hold it through its reserve, and that only exists with a login at mein-senec.de (and “Backup Power pro”). What you can do: also set up the SENEC integration with your mein-senec account and switch the reserve on. A SENEC.Home V4 can't be steered locally at all.",
+	"bnote.cannot.marstek_modbus": "I can see your Marstek over Modbus, but I can't find its levers – most of them start out switched off. What you can do: switch on remote control over RS485, the force mode and the charge and discharge power at the device. Important: only one program may talk to it over Modbus at a time.",
+	"bnote.cannot.solarman": "I can see your Deye inverter, but I can't find its time programs. What you can do: use davidrapan's Solarman integration with the right device type – the older Solarman integration only shows readings.",
+	"bnote.cannot.sma": "I can see your SMA battery, but I can't steer it: the SMA integrations in Home Assistant only read values. It keeps running as before – I plan with it and count its power in.",
+	"bnote.cannot.rct": "I can see your RCT battery, but I can't steer it: the RCT integration only reads values; writing would need an extra community script I don't use. It keeps running as before, I count it in.",
+	"bnote.cannot.ecoflow": "I can see your EcoFlow battery, but I can't steer it: through the integration it can neither be charged from the grid nor reliably held. It keeps running as before, I count it in.",
+	"bnote.cannot.powerwall_local": "I can see your Powerwall through the local integration – that one can only switch “off grid”. What you can do: also set up Teslemetry, Tessie or Tesla Fleet, then I can set its reserve.",
+	"bnote.cannot.varta_read": "I can see your VARTA battery, but I can't steer it with this integration: it only reads values. What you can do: the “VARTA Modbus” integration from HACS can limit charging and discharging power.",
+	"bnote.cannot.byd": "I can see your BYD Battery-Box. It can't be steered itself – that always goes through its inverter (for example Fronius). Set up the inverter, then I steer it through that.",
+	"bnote.cannot.growatt_local": "I can see your Growatt battery, but I can't steer it with this integration: it only knows “charge from grid” on or off. What you can do: the “Growatt Modbus” integration (0xAHA) from HACS can do more.",
+	"bnote.cannot.hoymiles": "I can see your Hoymiles battery, but I can't steer it: this integration only steers hybrid inverters through a service of its own that I don't use yet. It keeps running as before.",
+	"bnote.cannot.kostal_modbus_other": "I can see your Kostal through this Modbus integration, but I can't steer it safely with it: its values lapse after a short time. What you can do: use “Kostal Plenticore Battery Control” from HACS.",
+	"bnote.cannot.mqtt_hoymiles": "I can see your Hoymiles battery over MQTT, but I can't steer it yet: over MQTT it must be addressed again every 30 seconds, and its entities are not unique. What you can do: let Omnibattery steer it – I steer Omnibattery.",
+	"bnote.cannot.mqtt_noah": "I can see your Growatt NOAH over MQTT, but I can't steer it yet: it doesn't charge from the grid, and its MQTT entities are not unique. It keeps running as before, I count it in.",
+	"bnote.cannot.mqtt_sunsynk": "I can see your Sunsynk or Deye battery over MQTT, but I can't steer it yet: the add-on's entities are not unique. What you can do: assign them yourself under “Assign levers” and do the test run.",
 	"tip.mode_options.title": "Why this mapping?",
 	"tip.mode_options.text": "Every device names its modes differently. Tell me which option is “normal” and which one “forced charging” – then I know what to choose and where to go back to.",
 	"tip.control_steps.title": "How do steps work?",
@@ -6431,6 +6975,7 @@ var Ne = {
 	"automations.off": "off",
 	"automations.writes": "writes: {what} ({batteries})",
 	"automations.switched_off": "Switched off by me on {day} at {time} – so that it does not overwrite my battery steering.",
+	"automations.lent": "Switched on again by me on {day} at {time} – I am not coordinating the batteries myself right now. Once I can again, I take over.",
 	"automations.all_off": "Switch all off ({count})",
 	"automations.back_on": "Switch on again ({count})",
 	"automations.failed": "Not all of them could be switched – check Home Assistant's automations.",
@@ -6493,6 +7038,20 @@ var Ne = {
 	"plan.tonight.charge": "charges from {from} to {target} %, starting at {time}",
 	"plan.tonight.charge_any": "charges from {from} to {target} %",
 	"plan.tonight.charge.energy": "≈ {kwh} kWh from the grid, at up to {kw} kW",
+	"plan.tonight.charge.spans": "{kwh} kWh, {spans}",
+	"plan.tonight.span": "{start}–{end} at {power}",
+	"plan.pace.spread": "Spread slowly over the night: power costs the same all the time, so I go easy on the battery and the grid connection and still finish in time.",
+	"plan.pace.short": "Only a little to charge: rather briefly with a bit more power – very slow charging is inefficient.",
+	"plan.pace.cheapest": "In the cheapest quarter hours of the night – first where power costs least.",
+	"plan.pace.full": "At full power – any slower and it would not get as full as needed in the cheap hours.",
+	"plan.pace.grid_limit": "Held back by the grid connection: charging and the home together stay below {limit} kW.",
+	"plan.pace.fixed_power": "I can't set its charging power – it charges as fast as it can, as late as possible.",
+	"plan.pace.need_ref": "Once I know what 100 % of its charge limit stand for, I'll charge it more slowly too.",
+	"plan.pace.cap_ignored": "Its charge limit doesn't hold while charging from the grid – so I plan it at full power.",
+	"plan.pace.first": "It gets first: it is the first to discharge in the morning, so the batteries switch less often by day.",
+	"tip.plan_pace.title": "Why so slowly?",
+	"tip.plan_pace.text": "I charge each battery as slowly as possible and as fast as needed: I spread the energy over the cheap quarter hours so it reaches its target half an hour before the end. Little power is easy on the battery and the grid connection. When prices differ, I charge in the cheapest quarter hours first – at full power if need be. It never costs more.",
+	"tip.plan_pace.hint": "Several batteries: the one that discharges first in the morning gets first at night – each has its own target.",
 	"plan.tonight.hold": "doesn't charge, but holds {target} % during the cheap hours",
 	"plan.tonight.idle": "nothing to do tonight, now at {soc} %",
 	"log.boost": "{battery}: Charge now up to {target} {unit}",
@@ -6548,23 +7107,24 @@ var Ne = {
 	"error.title": "Joe isn't |answering",
 	"error.text": "I can't reach the integration. Reload the page – if that doesn't help, check Settings → System → Logs.",
 	"error.action": "Saving failed",
-	loading: "Joe is saddling up …"
-}, Fe = /* @__PURE__ */ new Map();
-function Ie(e, t) {
+	loading: "Joe is saddling up …",
+	"menu.sidebar": "Home Assistant menu"
+}, Ie = /* @__PURE__ */ new Map();
+function Le(e, t) {
 	return e.replace(/\{(\w+)\}/g, (e, n) => String(t?.[n] ?? ""));
 }
-function Le(e) {
-	let t = e || "en", n = Fe.get(t);
-	if (n) return n;
-	let r = t.startsWith("de") ? Ne : Pe, i = ((e, t) => Ie(r[e], t));
-	return i.optional = (e, t) => e in r ? Ie(r[e], t) : void 0, Object.defineProperty(i, "lang", { value: t }), Fe.set(t, i), i;
-}
 function Re(e) {
+	let t = e || "en", n = Ie.get(t);
+	if (n) return n;
+	let r = t.startsWith("de") ? Pe : Fe, i = ((e, t) => Le(r[e], t));
+	return i.optional = (e, t) => e in r ? Le(r[e], t) : void 0, Object.defineProperty(i, "lang", { value: t }), Ie.set(t, i), i;
+}
+function ze(e) {
 	return e.split("|");
 }
 //#endregion
 //#region src/components/bits.ts
-var ze = A`<svg
+var Be = A`<svg
   class="swoosh"
   viewBox="0 0 300 16"
   preserveAspectRatio="none"
@@ -6572,11 +7132,11 @@ var ze = A`<svg
 >
   <path d="M2 13 C 70 5, 190 1, 298 3 L 298 6 C 190 5, 80 9, 4 15 Z" fill="currentColor" />
 </svg>`;
-function Be(e, t = "h2", n) {
-	let r = Re(e), i = r.length - 1, a = r.map((e, t) => t === i && r.length > 1 ? A`<span class="hl">${e}</span>` : e.endsWith("!") ? A`${e}<br />` : A`${e}`), o = n ? A`<span class="title-tip">${n}</span>` : "";
+function Ve(e, t = "h2", n) {
+	let r = ze(e), i = r.length - 1, a = r.map((e, t) => t === i && r.length > 1 ? A`<span class="hl">${e}</span>` : e.endsWith("!") ? A`${e}<br />` : A`${e}`), o = n ? A`<span class="title-tip">${n}</span>` : "";
 	return t === "h1" ? A`<h1 class="display">${a}${o}</h1>` : A`<h2 class="display">${a}${o}</h2>`;
 }
-function Ve(e, t) {
+function He(e, t) {
 	let n = t >= .85 ? 4 : t >= .65 ? 3 : t >= .45 ? 2 : 1, r = e(`conf.${n}`);
 	return A`<span class="conf" role="img" aria-label=${r} title=${r}>
     ${[
@@ -6587,27 +7147,27 @@ function Ve(e, t) {
 	].map((e) => A`<i class=${e <= n ? "on" : ""}></i>`)}
   </span>`;
 }
-var He = {
+var Ue = {
 	read: "mdi:eye-outline",
 	learned: "mdi:auto-fix",
 	user: "mdi:account-edit-outline",
 	default: "mdi:tune-variant"
 };
-function Ue(e, t) {
+function We(e, t) {
 	let n = t?.source ?? "default";
 	return A`<span class="chip ${n}"
-    ><ha-icon icon=${He[n]}></ha-icon>${e(`source.${n}`)}</span
+    ><ha-icon icon=${Ue[n]}></ha-icon>${e(`source.${n}`)}</span
   >`;
 }
-function We(e, t) {
+function Ge(e, t) {
 	let n = {};
 	for (let [e, r] of Object.entries(t)) (typeof r == "string" || typeof r == "number") && (n[e] = r);
 	return e.optional(`reason.${t.code}`, n) ?? t.code;
 }
-function Ge(e) {
+function Ke(e) {
 	history.pushState(null, "", e), window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: !1 } }));
 }
-function Ke(e, t, n) {
+function qe(e, t, n) {
 	if (!e) return A`<span title=${n ?? ""}>${t}</span>`;
 	let r = `/config/devices/device/${e}`;
 	return A`<a
@@ -6615,18 +7175,18 @@ function Ke(e, t, n) {
     href=${r}
     title=${n ?? ""}
     @click=${(e) => {
-		e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0 || (e.preventDefault(), Ge(r));
+		e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0 || (e.preventDefault(), Ke(r));
 	}}
     >${t}</a
   >`;
 }
 //#endregion
 //#region src/define.ts
-var qe = "0.9.22";
-function Je(e, t) {
+var Je = "0.9.22";
+function V(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
-		t.joeVersion = qe, customElements.define(e, t);
+		t.joeVersion = Je, customElements.define(e, t);
 		return;
 	}
 	n.joeVersion !== "0.9.22" && Xe();
@@ -7673,7 +8233,7 @@ function lt(e, t) {
 }
 //#endregion
 //#region src/components/tip.ts
-var ut = 120, dt = 220, ft = 8, pt = 10, q, J = class extends z {
+var ut = 120, dt = 220, ft = 8, pt = 10, q, J = class extends L {
 	constructor(...e) {
 		super(...e), this.label = "", this.open = !1, this.pinned = !1, this.keepOnBlur = !1, this.onOutside = (e) => {
 			e.composedPath().includes(this) || this.close();
@@ -7917,7 +8477,7 @@ var ut = 120, dt = 220, ft = 8, pt = 10, q, J = class extends z {
 		t.style.left = `${Math.round(c)}px`, t.style.top = `${Math.round(a)}px`, t.style.setProperty("--arrow", `${Math.round(l)}px`), t.dataset.place = o;
 	}
 };
-H([B({ attribute: !1 })], J.prototype, "tip", void 0), H([B()], J.prototype, "label", void 0), H([V()], J.prototype, "open", void 0), H([Me("button")], J.prototype, "button", void 0), H([Me(".bubble")], J.prototype, "bubble", void 0);
+H([R({ attribute: !1 })], J.prototype, "tip", void 0), H([R()], J.prototype, "label", void 0), H([z()], J.prototype, "open", void 0), H([B("button")], J.prototype, "button", void 0), H([B(".bubble")], J.prototype, "bubble", void 0);
 function mt(e) {
 	return e.split("\n").map((e) => A`<p>
         ${e.split(/\*\*(.+?)\*\*/).map((e, t) => t % 2 ? A`<strong>${e}</strong>` : e)}
@@ -7934,7 +8494,7 @@ function ht(e, t, n, r = []) {
 function Y(e, t, n, r) {
 	return A`<joe-tip .tip=${ht(e, t, n, r)} label=${e("tip.label")}></joe-tip>`;
 }
-Je("joe-tip", J);
+V("joe-tip", J);
 //#endregion
 //#region src/cars.ts
 function gt(e, t) {
@@ -8030,16 +8590,23 @@ function Mt(e, t) {
 		return e.optional(`plan.why.${n}`) ?? "";
 	}
 	let n = [], r = K(e.lang, t.target ?? 0, 0), i = t.sun_takes_over;
-	return t.reasons.includes("balance") && n.push(e("plan.say.balance")), t.kind === "charge" && t.tariff === "dynamic" && t.charge_slots?.length ? n.push(e("plan.say.charge_slots", {
+	if (t.reasons.includes("balance") && n.push(e("plan.say.balance")), t.kind === "charge" && t.tariff === "dynamic" && t.charge_slots?.length ? n.push(e("plan.say.charge_slots", {
 		slots: At(t),
 		target: r
 	})) : t.kind === "charge" ? n.push(e("plan.say.charge", {
 		from: Z(t.charge_from),
 		target: r
-	})) : t.kind === "hold" ? (n.push(e("plan.say.hold", { target: r })), t.empty_without && n.push(e("plan.say.empty", { time: Z(t.empty_without) }))) : t.reasons.includes("small_saving") ? n.push(e("plan.say.small_saving")) : n.push(i ? e("plan.say.none", { time: Z(i) }) : e("plan.say.none_nosun")), t.reasons.includes("max_price") && t.kind !== "charge" && n.push(e("plan.say.max_price")), t.day && (n.push(e("plan.day", {
-		time: Z(t.day.defer_until),
-		kwh: K(e.lang, t.day.held_kwh, 0)
-	})), t.day.cost && t.day.cost >= .01 && n.push(e("plan.day.cost", { cost: `${K(e.lang, t.day.cost * 100, 0)} ct` }))), t.kind !== "none" && (i && t.full_at && Ot(t.full_at) === Ot(i) ? n.push(e("plan.say.sun_full", {
+	})) : t.kind === "hold" ? (n.push(e("plan.say.hold", { target: r })), t.empty_without && n.push(e("plan.say.empty", { time: Z(t.empty_without) }))) : t.reasons.includes("small_saving") ? n.push(e("plan.say.small_saving")) : n.push(i ? e("plan.say.none", { time: Z(i) }) : e("plan.say.none_nosun")), t.reasons.includes("max_price") && t.kind !== "charge" && n.push(e("plan.say.max_price")), t.day) {
+		let r = {
+			time: Z(t.day.defer_until),
+			kwh: K(e.lang, t.day.held_kwh, 0)
+		}, i = t.day.buffer;
+		n.push(i && i.soc > i.floor ? e("plan.day.buffer", {
+			...r,
+			level: K(e.lang, i.soc, 0)
+		}) : e("plan.day", r)), t.day.cost && t.day.cost >= .01 && n.push(e("plan.day.cost", { cost: `${K(e.lang, t.day.cost * 100, 0)} ct` }));
+	}
+	return t.kind !== "none" && (i && t.full_at && Ot(t.full_at) === Ot(i) ? n.push(e("plan.say.sun_full", {
 		sun: Z(i),
 		full: Z(t.full_at)
 	})) : i ? n.push(e("plan.say.sun", { sun: Z(i) })) : n.push(e("plan.say.nosun"))), n.join(" ");
@@ -8058,20 +8625,27 @@ function Pt(e, t, n = "EUR") {
 	}).format(t), i = [];
 	return t.kind === "charge" && i.push(e("plan.cost.night", { value: r(t.cost.night_charge) })), t.cost.saving > .005 && i.push(e("plan.cost.saving", { value: r(t.cost.saving) })), i.join(" · ");
 }
+function Ft(e, t) {
+	let n = t?.morning?.day ?? t?.day, r = n ? Z(n.defer_until) : "–", i = n?.buffer;
+	return i && i.soc > i.floor ? e("devices.status.day_buffer", {
+		time: r,
+		level: String(i.soc)
+	}) : e("devices.status.day", { time: r });
+}
 //#endregion
 //#region src/router.ts
-var Ft = "/energy-joe", It = [
+var It = "/energy-joe", Lt = [
 	"overview",
 	"plan",
 	"review",
 	"devices",
 	"household",
 	"settings"
-], Lt = [
+], Rt = [
 	"overview",
 	"plan",
 	"review"
-], Rt = {
+], zt = {
 	review: [
 		"result",
 		"days",
@@ -8107,29 +8681,29 @@ var Ft = "/energy-joe", It = [
 	devices: "all",
 	household: "people",
 	settings: "operation"
-}, zt = {
+}, Bt = {
 	history: "/review/days",
 	learn: "/review/learned",
 	climate: "/devices/climate"
 };
-function Bt(e) {
-	return e in Rt;
-}
 function Vt(e) {
+	return e in zt;
+}
+function Ht(e) {
 	try {
 		return decodeURIComponent(e);
 	} catch {
 		return e;
 	}
 }
-function Ht(e) {
-	let t = e.split(/[?#]/, 1)[0].split("/").filter(Boolean).map(Vt), [n, r, i, a, ...o] = t;
+function Ut(e) {
+	let t = e.split(/[?#]/, 1)[0].split("/").filter(Boolean).map(Ht), [n, r, i, a, ...o] = t;
 	if (!n) return { route: { tab: "overview" } };
-	let s = zt[n];
+	let s = Bt[n];
 	if (s) {
 		let e = [s, ...t.slice(1).map(encodeURIComponent)].join("/");
 		return {
-			route: Ht(e).route,
+			route: Ut(e).route,
 			redirect: e
 		};
 	}
@@ -8138,11 +8712,11 @@ function Ht(e) {
 		redirect: "/plan"
 	} : { route: { tab: "plan" } };
 	let c = n;
-	if (!It.includes(c) || !Bt(c)) return {
+	if (!Lt.includes(c) || !Vt(c)) return {
 		route: { tab: "overview" },
 		redirect: "/"
 	};
-	if (r && !Rt[c].includes(r)) return {
+	if (r && !zt[c].includes(r)) return {
 		route: {
 			tab: c,
 			section: Q[c]
@@ -8155,49 +8729,49 @@ function Ht(e) {
 	};
 	return i && (l.id = i), a && (l.sub = a), o.length && (l.rest = o), { route: l };
 }
-function Ut(e) {
+function Wt(e) {
 	if (typeof e == "string") return e.startsWith("/") ? e : `/${e}`;
 	if (e.tab === "overview") return "/";
-	let t = [e.tab], n = e.section ?? (e.id && Bt(e.tab) ? Q[e.tab] : void 0);
+	let t = [e.tab], n = e.section ?? (e.id && Vt(e.tab) ? Q[e.tab] : void 0);
 	return n && (t.push(n), e.id && (t.push(e.id), e.sub && t.push(e.sub, ...e.rest ?? []))), `/${t.map(encodeURIComponent).join("/")}`;
 }
-function Wt(e, t) {
-	let n = Ut(t);
+function Gt(e, t) {
+	let n = Wt(t);
 	return n === "/" ? e : `${e}${n}`;
 }
-function Gt(e, t, n = {}) {
+function Kt(e, t, n = {}) {
 	e.dispatchEvent(new CustomEvent("joe-navigate", {
 		detail: {
-			path: Ut(t),
+			path: Wt(t),
 			...n
 		},
 		bubbles: !0,
 		composed: !0
 	}));
 }
-function Kt(e, t) {
+function qt(e, t) {
 	return (n) => {
-		n.defaultPrevented || n.metaKey || n.ctrlKey || n.shiftKey || n.altKey || n.button !== 0 || (n.preventDefault(), Gt(n.currentTarget ?? window, e, t));
+		n.defaultPrevented || n.metaKey || n.ctrlKey || n.shiftKey || n.altKey || n.button !== 0 || (n.preventDefault(), Kt(n.currentTarget ?? window, e, t));
 	};
 }
-function qt(e, t, n, r) {
-	return A`<a class=${r ?? ""} href=${Wt(e, t)} @click=${Kt(t)}>${n}</a>`;
+function Jt(e, t, n, r) {
+	return A`<a class=${r ?? ""} href=${Gt(e, t)} @click=${qt(t)}>${n}</a>`;
 }
-function Jt(e, t) {
+function Yt(e, t) {
 	if (history.state?.joeSheet) {
 		history.back();
 		return;
 	}
-	Gt(e, t, { replace: !0 });
+	Kt(e, t, { replace: !0 });
 }
-function Yt(e, t) {
+function Xt(e, t) {
 	let n = e.querySelector(`[data-anchor="${CSS.escape(t)}"]`);
 	return n ? (n.scrollIntoView({
 		block: "start",
 		behavior: "smooth"
-	}), n.classList.remove("flash"), n.offsetWidth, n.classList.add("flash"), window.setTimeout(() => n.classList.remove("flash"), 1500), Xt(n), !0) : !1;
+	}), n.classList.remove("flash"), n.offsetWidth, n.classList.add("flash"), window.setTimeout(() => n.classList.remove("flash"), 1500), Zt(n), !0) : !1;
 }
-function Xt(e) {
+function Zt(e) {
 	let t = !1, n = () => {
 		t = !0;
 	}, r = [
@@ -8218,7 +8792,7 @@ function Xt(e) {
 }
 //#endregion
 //#region src/components/car-charge.ts
-var $ = class extends z {
+var $ = class extends L {
 	constructor(...e) {
 		super(...e), this.flush = !1, this.values = {}, this.failed = !1;
 	}
@@ -8337,7 +8911,7 @@ var $ = class extends z {
 		}
 		let p = [...u.soc ? ["%"] : [], ...u.range ? ["km"] : []];
 		if (!p.length) return A`<p class="boost off">${e("devices.charge.no_level", { car: n.name })}</p>`;
-		let m = this.unit && p.includes(this.unit) ? this.unit : p[0], h = this.values[m] ?? (m === "%" ? 80 : 200), g = m === "%" ? 100 : 1500, ee = (e) => {
+		let m = this.unit && p.includes(this.unit) ? this.unit : p[0], h = this.values[m] ?? (m === "%" ? 80 : 200), g = m === "%" ? 100 : 1500, _ = (e) => {
 			let t = e?.querySelector("input"), n = Number.parseFloat((t?.value ?? "").replace(",", "."));
 			return Math.round(Math.min(g, Math.max(1, Number.isFinite(n) ? n : h)));
 		};
@@ -8346,7 +8920,7 @@ var $ = class extends z {
       data-tipped
       novalidate
       @submit=${(e) => {
-			e.preventDefault(), this.boost(ee(e.target), m);
+			e.preventDefault(), this.boost(_(e.target), m);
 		}}
     >
       <label class="toggle-label" for="boost-${r.id}">${e("devices.charge.label_at", { point: r.name })}</label>
@@ -8388,7 +8962,7 @@ var $ = class extends z {
           type="button"
           class="mini-btn"
           ?disabled=${!i || !r.enabled}
-          @click=${(e) => this.tonight(!0, ee(e.target.closest("form")), m)}
+          @click=${(e) => this.tonight(!0, _(e.target.closest("form")), m)}
         >
           <ha-icon icon="mdi:weather-night"></ha-icon>${e("devices.charge.tonight")}
         </button>
@@ -8429,13 +9003,13 @@ var $ = class extends z {
 		}
 	}
 };
-H([B({ attribute: !1 })], $.prototype, "hass", void 0), H([B({ attribute: !1 })], $.prototype, "t", void 0), H([B({ attribute: !1 })], $.prototype, "state", void 0), H([B({ attribute: !1 })], $.prototype, "car", void 0), H([B({
+H([R({ attribute: !1 })], $.prototype, "hass", void 0), H([R({ attribute: !1 })], $.prototype, "t", void 0), H([R({ attribute: !1 })], $.prototype, "state", void 0), H([R({ attribute: !1 })], $.prototype, "car", void 0), H([R({
 	type: Boolean,
 	reflect: !0
-})], $.prototype, "flush", void 0), H([V()], $.prototype, "values", void 0), H([V()], $.prototype, "unit", void 0), H([V()], $.prototype, "failed", void 0), Je("joe-car-charge", $);
+})], $.prototype, "flush", void 0), H([z()], $.prototype, "values", void 0), H([z()], $.prototype, "unit", void 0), H([z()], $.prototype, "failed", void 0), V("joe-car-charge", $);
 //#endregion
 //#region src/styles/tokens.ts
-var Zt = o`
+var Qt = o`
   :host {
     --joe-bg: #fbf6ec;
     --joe-surface: #ffffff;
@@ -8524,4 +9098,4 @@ var Zt = o`
   }
 `;
 //#endregion
-export { Ue as $, Tt as A, K as B, vt as C, X as D, Ct as E, Y as F, H as G, st as H, ct as I, Ve as J, Ze as K, rt as L, bt as M, wt as N, gt as O, St as P, We as Q, it as R, yt as S, Et as T, G as U, at as V, lt as W, Be as X, Ke as Y, Ge as Z, kt as _, It as a, z as at, Z as b, Ut as c, A as ct, Gt as d, o as dt, ze as et, Kt as f, Nt as g, Pt as h, Rt as i, B as it, _t as j, xt as k, Wt as l, Te as lt, Yt as m, Q as n, Me as nt, Lt as o, M as ot, Ht as p, Je as q, Ft as r, V as rt, Jt as s, j as st, Zt as t, Le as tt, qt as u, ge as ut, Mt as v, Dt as w, jt as x, At as y, nt as z };
+export { Ge as $, xt as A, nt as B, yt as C, Ct as D, Et as E, St as F, lt as G, at as H, Y as I, V as J, H as K, ct as L, _t as M, bt as N, X as O, wt as P, Ke as Q, rt as R, jt as S, Dt as T, st as U, K as V, G as W, qe as X, He as Y, Ve as Z, Nt as _, Lt as a, R as at, At as b, Wt as c, j as ct, Kt as d, ge as dt, We as et, qt as f, o as ft, Pt as g, Ft as h, zt as i, z as it, Tt as j, gt as k, Gt as l, A as lt, Xt as m, Q as n, Re as nt, Rt as o, L as ot, Ut as p, Ze as q, It as r, B as rt, Yt as s, M as st, Qt as t, Be as tt, Jt as u, Ee as ut, kt as v, vt as w, Z as x, Mt as y, it as z };

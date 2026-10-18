@@ -1,10 +1,12 @@
 import { css, html, nothing, type TemplateResult } from "lit";
 import { sourceChip } from "../../components/bits";
+import { mirrorRow } from "../../components/mirror";
 import { tip } from "../../components/tip";
 import { saveConfig, sourceOf } from "../../config";
 import { define } from "../../define";
 import type { Translate } from "../../i18n";
 import { shared } from "../../styles/shared";
+import { morningBuffer, ruleValue } from "../../rules-view";
 import type { JoeMode, JoeState } from "../../types";
 import { SettingsSection } from "./base";
 import { settingsStyles } from "./styles";
@@ -46,6 +48,14 @@ export class JoeSettingsOperation extends SettingsSection {
         margin: 2px 0 0;
         font-size: 13.5px;
         color: var(--joe-ink-2);
+      }
+      .buffer-mirror {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .buffer-mirror .mirror {
+        flex: 1;
       }
     `,
   ];
@@ -128,8 +138,25 @@ export class JoeSettingsOperation extends SettingsSection {
                   </button>`,
               )}
             </div>
+          </div>
+          <div class="buffer-mirror" data-tipped>
+            ${mirrorRow(t, this.prefix, {
+              label: t("rule.morning_buffer"),
+              value: this.bufferValue(t, joe),
+              source: sourceOf(config, "rules.morning_buffer_soc"),
+              to: { tab: "settings", section: "rules", id: "morning_buffer" },
+            })}
+            ${tip(t, "r_morning_buffer")}
           </div>`
         : nothing}`;
+  }
+
+  /** "Automatisch (30 %)" or one's own "40 %". */
+  private bufferValue(t: Translate, joe: JoeState): string {
+    const suggested = morningBuffer(joe.plan)?.suggested;
+    return joe.config.rules.morning_buffer_soc == null && suggested != null
+      ? t("rule.morning_buffer.auto_n", { soc: String(suggested) })
+      : ruleValue(t, joe.config, "morning_buffer");
   }
 }
 

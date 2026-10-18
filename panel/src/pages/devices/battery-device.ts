@@ -7,6 +7,7 @@ import { daySurplus, limitInPercent, surplusAbility } from "../../components/day
 import { dayText } from "../../components/look-back";
 import { timeOf } from "../../components/plan-text";
 import "../../components/sheet";
+import { batteryNotes } from "../../components/battery-notes";
 import { tip } from "../../components/tip";
 import { saveConfig, sourceOf, withIgnored } from "../../config";
 import { define } from "../../define";
@@ -65,11 +66,14 @@ export function batteryNow(t: Translate, battery: BatteryConfig, control: Contro
     return t("devices.action.watch");
   }
   const now = control?.batteries[battery.id];
-  return now?.action
-    ? t(`devices.action.${now.action}`, {
-        target: formatNumber(t.lang, now.target ?? 0, 0),
-        floor: formatNumber(t.lang, now.floor ?? 0, 0),
-        until: now.until ? timeOf(now.until) : "",
+  // Held back above its buffer on a grid-friendly morning: said with the buffer.
+  const key = now?.action === "defer" && now.level != null ? "defer_buffer" : now?.action;
+  return key
+    ? t(`devices.action.${key}`, {
+        target: formatNumber(t.lang, now?.target ?? 0, 0),
+        floor: formatNumber(t.lang, now?.floor ?? 0, 0),
+        until: now?.until ? timeOf(now.until) : "",
+        level: formatNumber(t.lang, now?.level ?? 0, 0),
       })
     : t("devices.action.idle");
 }
@@ -337,6 +341,7 @@ export class JoeBatteryDevice extends DeviceSection {
             >
           </div>`
         : nothing}
+      ${batteryNotes(t, found?.notes, battery.name)}
       ${this.notice ? html`<div class="note warn" role="status"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${this.notice}</span></div>` : nothing}`;
   }
 
@@ -469,7 +474,7 @@ export class JoeBatteryDevice extends DeviceSection {
     let text: string;
     if (!capable) {
       text = t(`battery.surplus.${ability}`);
-    } else if (mine && (mine.state === "no_limit" || mine.state === "unit")) {
+    } else if (mine && (mine.state === "no_limit" || mine.state === "unit" || mine.state === "flash")) {
       text = t(`battery.surplus.${mine.state}`);
     } else if (!rules.day_surplus) {
       text = t("battery.surplus.rule_off");

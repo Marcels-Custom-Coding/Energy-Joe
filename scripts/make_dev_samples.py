@@ -330,6 +330,7 @@ def made_up_plan(
             reserve=rules["reserve_soc"],
             max_target=rules["max_target_soc"],
             buffer=rules["buffer_factor"],
+            order=list(rules.get("team_discharge_order") or []),
             meta={
                 "consumption": {"source": "history", "days": len(days)},
                 "solar": {"sources": {start.date().isoformat(): "hours"}, "totals": {}},

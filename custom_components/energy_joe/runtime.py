@@ -13,6 +13,7 @@ import voluptuous as vol
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.storage import Store
+from homeassistant.util import dt as dt_util
 from homeassistant.util.hass_dict import HassKey
 
 from . import model
@@ -109,6 +110,7 @@ class JoeRuntime:
         self.executor.notifier = self.notifier
         self.executor.on_learned = self._learned_limit_ref
         self.executor.on_cutoff = self._learned_cutoff
+        self.executor.on_night_cap = self._learned_night_cap
         # Joe's calendar for each car whose mailbox has none.
         self.calendars = CarCalendarStore(hass)
         self.planner.calendars = self.calendars
@@ -120,6 +122,7 @@ class JoeRuntime:
         self.accounts = CarAccounts(hass, lambda: self._config, self._changed)
         self.planner.accounts = self.accounts
         self.planner.held = lambda: self.executor.data["saved"]
+        self.planner.grid_peak = lambda: self.executor.data.get("grid_peak")
         # Which car is plugged in where (asks, reminds, learns evcc's ids).
         self.cars = CarWatcher(
             hass,
@@ -246,6 +249,19 @@ class JoeRuntime:
             )
         except Exception:
             _LOGGER.exception("Keeping the learned reference failed")
+
+    def _learned_night_cap(self, battery_id: str, found: str) -> None:
+        """Whether a battery's charge limit holds while it charges from the grid."""
+        if not any(b["id"] == battery_id for b in self._config["batteries"]):
+            return
+        try:
+            self.async_update_config(
+                {"batteries": {battery_id: {"night_cap": found}}},
+                "learned",
+                "night_cap",
+            )
+        except Exception:
+            _LOGGER.exception("Keeping what Joe saw of the charge limit failed")
 
     def _learned_cutoff(self, battery_id: str, soc: float) -> None:
         """The level a battery really stops discharging at, as Joe saw it (a
@@ -406,7 +422,16 @@ class JoeRuntime:
                 state is None and registry.async_get(entity_id) is None
             ):
                 del switched_off[entity_id]
+        lent: dict[str, Any] = self.executor.data["automations_lent"]
+        for entity_id in list(lent):
+            if self._hass.states.get(entity_id) is None and (
+                registry.async_get(entity_id) is None
+            ):
+                del lent[entity_id]
         found = battery_automations.find(self._hass, self._config, switched_off)
+        for automation in found:
+            # Switched on again by Joe: he takes it over once he can.
+            automation["lent"] = lent.get(automation["entity_id"])
         listed = {a["entity_id"] for a in found}
         for entity_id, record in switched_off.items():
             if entity_id not in listed:
@@ -418,6 +443,7 @@ class JoeRuntime:
                         "on": False,
                         "writes": [],
                         "switched_off": record,
+                        "lent": None,
                     }
                 )
         return found
@@ -425,13 +451,29 @@ class JoeRuntime:
     async def async_switch_automations(
         self, on: bool, entity_ids: list[str] | None = None
     ) -> list[str]:
-        """All (or some) battery automations off, or the ones Joe switched off on again."""
+        """All (or some) battery automations off, or the ones Joe switched off on again.
+
+        Off only what Joe takes over at once: one that coordinates batteries
+        Joe cannot coordinate himself right now (not live, a lever missing …)
+        keeps running and is lent to him – he switches it off himself once he
+        can (control/executor.py _async_team_hands).
+        """
         switched_off: dict[str, Any] = self.executor.data["automations_off"]
+        lent: dict[str, Any] = self.executor.data["automations_lent"]
         found = self.automations()
         if entity_ids is None:
             entity_ids = [
                 a["entity_id"] for a in found if (a["switched_off"] if on else a["on"])
             ]
+        if not on:
+            later, reason = self.executor.team_cannot_take(found)
+            stamp = dt_util.now().isoformat(timespec="seconds")
+            for entity_id in entity_ids:
+                if entity_id in later:
+                    lent[entity_id] = {"at": stamp, "reason": reason}
+                else:
+                    lent.pop(entity_id, None)
+            entity_ids = [e for e in entity_ids if e not in later]
         german = (self._hass.config.language or "").startswith("de")
         if on:
             message = (

@@ -13,6 +13,7 @@ from homeassistant.util import dt as dt_util
 
 from .. import model
 from ..control.adapters import RoleAdapter, make_adapter
+from ..control.groups import group_of
 from ..learn.context import async_day_labels, async_weather_day
 from ..learn.models import class_factor, combined_forecast, expected
 from ..observe.readings import energy_kwh, number, sum_kwh
@@ -275,6 +276,7 @@ async def async_build_input(
     accounts: Any = None,
     held: dict[str, Any] | None = None,
     detected: dict[str, dict[str, Any]] | None = None,
+    grid_peak: dict[str, Any] | None = None,
 ) -> tuple[PlanInput | None, list[str]]:
     """Gather everything for tonight's plan; None with reasons if there is nothing to plan."""
     tariff = config["tariff"]
@@ -325,6 +327,9 @@ async def async_build_input(
                 # Watched batteries are planned as if Joe could steer them.
                 grid=adapter.can_charge if adapter else True,
                 floor=max(config["rules"]["reserve_soc"], floor or 0.0),
+                # Joe sets its power at night (else it charges at full power).
+                paced=adapter is not None and adapter.power_lever(hass) is not None,
+                group=group_of(hass, battery),
             )
         )
         if battery["adapter"] == "none":
@@ -479,6 +484,7 @@ async def async_build_input(
                 prices,
                 rules,
                 search=search,
+                peak=grid_peak,
             ),
             needed,
         )
@@ -542,6 +548,7 @@ async def async_build_input(
             prices,
             rules,
             search=search,
+            peak=grid_peak,
             efficiency=_efficiency(efficiencies),
             notes=notes,
             actions=actions,
@@ -549,6 +556,7 @@ async def async_build_input(
             reserved=reserved,
             force_target=100.0 if balance else None,
             defer_kw=defer_kw,
+            morning_need=(learned.get("morning_need") or {}).get("kwh"),
             meta={
                 "consumption": consumption,
                 "solar": sun_meta,
@@ -650,6 +658,7 @@ def _input(
 ) -> PlanInput:
     """The plan input with the user's rules."""
     force = extra.pop("force_target", None)
+    limit, source = grid_limit(rules, extra.pop("peak", None), now)
     return PlanInput(
         now=now,
         window_start=window_start,
@@ -661,9 +670,16 @@ def _input(
         # A maintenance night may go above the usual highest level.
         max_target=max(rules["max_target_soc"], force or 0.0),
         evening_min=rules["evening_min_soc"],
-        grid_limit_kw=rules["grid_limit_w"] / 1000 if rules["grid_limit_w"] else None,
+        grid_limit_kw=limit,
+        grid_limit_source=source,
+        # The first to discharge by day gets tonight's energy first.
+        order=list(rules.get("team_discharge_order") or []),
+        sequence=rules.get("battery_team") == "sequence",
         grid_friendly=rules["grid_friendly"],
         grid_first=rules["grid_first"],
+        morning_buffer=rules.get("morning_buffer_soc"),
+        # By day one group at a time unless the owner chose "Gleichzeitig".
+        one_by_one=rules.get("battery_team") != "together",
         max_night_kwh=rules["max_night_kwh"],
         discharge_mode=rules["discharge_in_window"],
         buffer=rules["buffer_factor"],
@@ -672,6 +688,30 @@ def _input(
         force_target=force,
         **extra,
     )
+
+
+# The highest import Joe measured counts as the grid limit (without the
+# user's) only once he has watched this long.
+PEAK_DAYS = 7
+
+
+def grid_limit(
+    rules: dict[str, Any], peak: dict[str, Any] | None, now: datetime
+) -> tuple[float | None, str | None]:
+    """The grid limit for the plan (kW) and where it comes from.
+
+    The user's, else the highest import Joe measured so far (the house
+    managed that, so charging plus the home stay below it), once he has
+    watched for a week. Never above what was measured without the user's say.
+    """
+    if rules.get("grid_limit_w"):
+        return rules["grid_limit_w"] / 1000, "user"
+    if not peak or not peak.get("w") or not peak.get("since"):
+        return None, None
+    since = datetime.fromisoformat(peak["since"])
+    if now - since < timedelta(days=PEAK_DAYS):
+        return None, None
+    return round(peak["w"] / 1000, 2), "learned"
 
 
 def _prices(tariff: dict[str, Any], hours: list[Hour]) -> Prices:

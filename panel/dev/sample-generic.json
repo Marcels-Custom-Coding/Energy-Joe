@@ -123,6 +123,7 @@
     "prepare": [],
     "steps": {},
     "controllable": false,
+    "can_charge": false,
     "suggested": {
      "controls": {
       "min_soc": "number.solarflow_min_level",
@@ -144,6 +145,11 @@
      },
      {
       "code": "power_guess"
+     }
+    ],
+    "notes": [
+     {
+      "code": "cannot.levers"
      }
     ]
    }
@@ -205,11 +211,13 @@
   },
   "wallboxes": [],
   "cars": [],
+  "car_sources": [],
   "weather": null,
   "holiday": null,
   "persons": [],
   "calendars": [],
   "consumers": [],
+  "battery_notes": [],
   "checks": [
    {
     "code": "grid_sign",
@@ -308,7 +316,7 @@
   "not_car_actions": []
  },
  "default_config": {
-  "version": 4,
+  "version": 7,
   "measurements": {
    "grid_power": null,
    "home_power": null,
@@ -336,11 +344,16 @@
   },
   "context": {
    "weather_entity": null,
-   "holiday_entity": null
+   "holiday_entity": null,
+   "presence_entity": null,
+   "guest_switch": null,
+   "guest_tracker": null,
+   "free_day_entities": []
   },
   "persons": [],
   "consumers": [],
   "actions": [],
+  "cars": [],
   "rules": {
    "reserve_soc": 10.0,
    "max_target_soc": 100.0,
@@ -362,13 +375,24 @@
    "guard_grid": true,
    "grid_friendly": true,
    "grid_first": false,
+   "morning_buffer_soc": null,
+   "day_surplus": false,
+   "day_caution": "normal",
+   "battery_team": null,
+   "team_charge_order": [],
+   "team_discharge_order": [],
+   "team_style": null,
+   "team_early": null,
+   "transfer_guard": true,
+   "converter_losses": false,
    "balance_days": null
   },
   "notify": {
    "service": null,
    "ask": true,
    "problems": true,
-   "morning": false
+   "morning": false,
+   "cars": true
   },
   "calendar": {
    "rules": [
@@ -466,6 +490,14 @@
    "geocoder_url": "https://photon.komoot.io/api/",
    "router_url": "https://routing.openstreetmap.de/routed-car/route/v1/driving/"
   },
+  "climate": {
+   "enabled": false,
+   "away_after_min": 15,
+   "night_by": "time",
+   "route_eta": true,
+   "night_entity": null,
+   "rooms": {}
+  },
   "answers": {
    "ignored": [],
    "confirmed": []
@@ -477,6 +509,7 @@
    "shift_days": 0,
    "buffer": null,
    "buffer_days": 0,
+   "morning_need": null,
    "since": null,
    "updated": null,
    "consumption_model": null,
@@ -494,7 +527,7 @@
   "provenance": {}
  },
  "adopted_config": {
-  "version": 4,
+  "version": 7,
   "measurements": {
    "grid_power": {
     "entity_id": "sensor.acme_grid_power",
@@ -510,7 +543,8 @@
     {
      "entity_id": "sensor.acme_pv_power",
      "invert": false,
-     "minus_entity_id": null
+     "minus_entity_id": null,
+     "sleeps": false
     }
    ]
   },
@@ -534,7 +568,14 @@
     "mode_options": {},
     "prepare": [],
     "steps": {},
-    "priority": 1
+    "priority": 1,
+    "floor_soc": null,
+    "day_surplus": true,
+    "limit_ref_w": null,
+    "self_regulating": null,
+    "control_group": null,
+    "night_cap": null,
+    "cutoff_soc": null
    }
   ],
   "tariff": {
@@ -564,11 +605,16 @@
   },
   "context": {
    "weather_entity": null,
-   "holiday_entity": null
+   "holiday_entity": null,
+   "presence_entity": null,
+   "guest_switch": null,
+   "guest_tracker": null,
+   "free_day_entities": []
   },
   "persons": [],
   "consumers": [],
   "actions": [],
+  "cars": [],
   "rules": {
    "reserve_soc": 10.0,
    "max_target_soc": 100.0,
@@ -590,13 +636,24 @@
    "guard_grid": true,
    "grid_friendly": true,
    "grid_first": false,
+   "morning_buffer_soc": null,
+   "day_surplus": false,
+   "day_caution": "normal",
+   "battery_team": null,
+   "team_charge_order": [],
+   "team_discharge_order": [],
+   "team_style": null,
+   "team_early": null,
+   "transfer_guard": true,
+   "converter_losses": false,
    "balance_days": null
   },
   "notify": {
    "service": null,
    "ask": true,
    "problems": true,
-   "morning": false
+   "morning": false,
+   "cars": true
   },
   "calendar": {
    "rules": [
@@ -694,6 +751,14 @@
    "geocoder_url": "https://photon.komoot.io/api/",
    "router_url": "https://routing.openstreetmap.de/routed-car/route/v1/driving/"
   },
+  "climate": {
+   "enabled": false,
+   "away_after_min": 15,
+   "night_by": "time",
+   "route_eta": true,
+   "night_entity": null,
+   "rooms": {}
+  },
   "answers": {
    "ignored": [],
    "confirmed": []
@@ -705,6 +770,7 @@
    "shift_days": 0,
    "buffer": null,
    "buffer_days": 0,
+   "morning_need": null,
    "since": null,
    "updated": null,
    "consumption_model": null,
@@ -722,115 +788,115 @@
   "provenance": {
    "measurements.grid_power": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "measurements.home_power": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "measurements.solar_power": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "tariff.kind": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "tariff.price_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "tariff.window": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "tariff.night_price": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "tariff.day_price": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "forecast.provider": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "forecast.config_entries": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "forecast.today": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "forecast.tomorrow": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "forecast.remaining_today": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "forecast.alternatives": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[flow800].name": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[flow800].adapter": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[flow800].soc_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[flow800].power": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[flow800].capacity_kwh": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[flow800].capacity_entity": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[flow800].max_charge_w": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[flow800].max_discharge_w": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[flow800].device_id": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[flow800].controls": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[flow800].mode_options": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[flow800].prepare": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[flow800].steps": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    },
    "batteries[flow800].priority": {
     "source": "read",
-    "updated": "2026-10-04T18:04:53+00:00"
+    "updated": "2026-10-18T08:17:23+00:00"
    }
   }
  },
@@ -1319,6 +1385,7 @@
      "live": 15
     },
     "workday": false,
+    "answer": null,
     "fc_ahead": 21.0,
     "fc_latest": null,
     "solar_vs_fc": 0.674,
@@ -1352,6 +1419,7 @@
      "live": 24
     },
     "workday": true,
+    "answer": null,
     "fc_ahead": 14.2,
     "fc_latest": null,
     "solar_vs_fc": 1.203,
@@ -1385,6 +1453,7 @@
      "live": 24
     },
     "workday": true,
+    "answer": null,
     "fc_ahead": 5.0,
     "fc_latest": null,
     "solar_vs_fc": 1.22,
@@ -1418,6 +1487,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "fc_ahead": 6.2,
     "fc_latest": null,
     "solar_vs_fc": 0.984,
@@ -1451,6 +1521,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "fc_ahead": 26.6,
     "fc_latest": null,
     "solar_vs_fc": 0.917,
@@ -1484,6 +1555,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "fc_ahead": 17.1,
     "fc_latest": null,
     "solar_vs_fc": 0.999,
@@ -1517,6 +1589,7 @@
      "stats": 24
     },
     "workday": false,
+    "answer": null,
     "fc_ahead": 9.8,
     "fc_latest": null,
     "solar_vs_fc": 1.12,
@@ -1550,6 +1623,7 @@
      "stats": 24
     },
     "workday": false,
+    "answer": null,
     "fc_ahead": 26.0,
     "fc_latest": null,
     "solar_vs_fc": 0.845,
@@ -1583,6 +1657,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "fc_ahead": 25.3,
     "fc_latest": null,
     "solar_vs_fc": 0.868,
@@ -1616,6 +1691,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "fc_ahead": 7.6,
     "fc_latest": null,
     "solar_vs_fc": 0.803,
@@ -1649,6 +1725,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "fc_ahead": 22.6,
     "fc_latest": null,
     "solar_vs_fc": 1.079,
@@ -1682,6 +1759,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "fc_ahead": 25.4,
     "fc_latest": null,
     "solar_vs_fc": 0.96,
@@ -1715,6 +1793,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "fc_ahead": 21.2,
     "fc_latest": null,
     "solar_vs_fc": 1.151,
@@ -1748,6 +1827,7 @@
      "stats": 24
     },
     "workday": false,
+    "answer": null,
     "fc_ahead": 5.0,
     "fc_latest": null,
     "solar_vs_fc": 1.22,
@@ -1781,6 +1861,7 @@
      "stats": 24
     },
     "workday": false,
+    "answer": null,
     "fc_ahead": 21.0,
     "fc_latest": null,
     "solar_vs_fc": 0.813,
@@ -1814,6 +1895,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "fc_ahead": 6.0,
     "fc_latest": null,
     "solar_vs_fc": 1.016,
@@ -1847,6 +1929,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "fc_ahead": 23.3,
     "fc_latest": null,
     "solar_vs_fc": 0.942,
@@ -1880,6 +1963,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "fc_ahead": 27.6,
     "fc_latest": null,
     "solar_vs_fc": 0.884,
@@ -1913,6 +1997,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "fc_ahead": 12.6,
     "fc_latest": null,
     "solar_vs_fc": 0.871,
@@ -1946,6 +2031,7 @@
      "stats": 24
     },
     "workday": true,
+    "answer": null,
     "fc_ahead": 5.4,
     "fc_latest": null,
     "solar_vs_fc": 1.129,
@@ -1979,6 +2065,7 @@
      "stats": 24
     },
     "workday": false,
+    "answer": null,
     "fc_ahead": 18.9,
     "fc_latest": null,
     "solar_vs_fc": 0.904,
@@ -2695,6 +2782,7 @@
      null
     ],
     "workday": false,
+    "answer": null,
     "summary": {
      "date": "2026-09-13",
      "hours": 24,
@@ -2710,6 +2798,7 @@
       "stats": 24
      },
      "workday": false,
+     "answer": null,
      "fc_ahead": 18.9,
      "fc_latest": null,
      "solar_vs_fc": 0.904,
@@ -3433,6 +3522,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-14",
      "hours": 24,
@@ -3448,6 +3538,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "fc_ahead": 5.4,
      "fc_latest": null,
      "solar_vs_fc": 1.129,
@@ -4171,6 +4262,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-15",
      "hours": 24,
@@ -4186,6 +4278,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "fc_ahead": 12.6,
      "fc_latest": null,
      "solar_vs_fc": 0.871,
@@ -4909,6 +5002,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-16",
      "hours": 24,
@@ -4924,6 +5018,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "fc_ahead": 27.6,
      "fc_latest": null,
      "solar_vs_fc": 0.884,
@@ -5647,6 +5742,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-17",
      "hours": 24,
@@ -5662,6 +5758,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "fc_ahead": 23.3,
      "fc_latest": null,
      "solar_vs_fc": 0.942,
@@ -6385,6 +6482,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-18",
      "hours": 24,
@@ -6400,6 +6498,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "fc_ahead": 6.0,
      "fc_latest": null,
      "solar_vs_fc": 1.016,
@@ -7123,6 +7222,7 @@
      null
     ],
     "workday": false,
+    "answer": null,
     "summary": {
      "date": "2026-09-19",
      "hours": 24,
@@ -7138,6 +7238,7 @@
       "stats": 24
      },
      "workday": false,
+     "answer": null,
      "fc_ahead": 21.0,
      "fc_latest": null,
      "solar_vs_fc": 0.813,
@@ -7861,6 +7962,7 @@
      null
     ],
     "workday": false,
+    "answer": null,
     "summary": {
      "date": "2026-09-20",
      "hours": 24,
@@ -7876,6 +7978,7 @@
       "stats": 24
      },
      "workday": false,
+     "answer": null,
      "fc_ahead": 5.0,
      "fc_latest": null,
      "solar_vs_fc": 1.22,
@@ -8599,6 +8702,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-21",
      "hours": 24,
@@ -8614,6 +8718,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "fc_ahead": 21.2,
      "fc_latest": null,
      "solar_vs_fc": 1.151,
@@ -9337,6 +9442,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-22",
      "hours": 24,
@@ -9352,6 +9458,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "fc_ahead": 25.4,
      "fc_latest": null,
      "solar_vs_fc": 0.96,
@@ -10075,6 +10182,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-23",
      "hours": 24,
@@ -10090,6 +10198,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "fc_ahead": 22.6,
      "fc_latest": null,
      "solar_vs_fc": 1.079,
@@ -10813,6 +10922,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-24",
      "hours": 24,
@@ -10828,6 +10938,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "fc_ahead": 7.6,
      "fc_latest": null,
      "solar_vs_fc": 0.803,
@@ -11551,6 +11662,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-25",
      "hours": 24,
@@ -11566,6 +11678,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "fc_ahead": 25.3,
      "fc_latest": null,
      "solar_vs_fc": 0.868,
@@ -12289,6 +12402,7 @@
      null
     ],
     "workday": false,
+    "answer": null,
     "summary": {
      "date": "2026-09-26",
      "hours": 24,
@@ -12304,6 +12418,7 @@
       "stats": 24
      },
      "workday": false,
+     "answer": null,
      "fc_ahead": 26.0,
      "fc_latest": null,
      "solar_vs_fc": 0.845,
@@ -13027,6 +13142,7 @@
      null
     ],
     "workday": false,
+    "answer": null,
     "summary": {
      "date": "2026-09-27",
      "hours": 24,
@@ -13042,6 +13158,7 @@
       "stats": 24
      },
      "workday": false,
+     "answer": null,
      "fc_ahead": 9.8,
      "fc_latest": null,
      "solar_vs_fc": 1.12,
@@ -13765,6 +13882,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-28",
      "hours": 24,
@@ -13780,6 +13898,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "fc_ahead": 17.1,
      "fc_latest": null,
      "solar_vs_fc": 0.999,
@@ -14503,6 +14622,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-29",
      "hours": 24,
@@ -14518,6 +14638,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "fc_ahead": 26.6,
      "fc_latest": null,
      "solar_vs_fc": 0.917,
@@ -15241,6 +15362,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-09-30",
      "hours": 24,
@@ -15256,6 +15378,7 @@
       "stats": 24
      },
      "workday": true,
+     "answer": null,
      "fc_ahead": 6.2,
      "fc_latest": null,
      "solar_vs_fc": 0.984,
@@ -15979,6 +16102,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-10-01",
      "hours": 24,
@@ -15994,6 +16118,7 @@
       "live": 24
      },
      "workday": true,
+     "answer": null,
      "fc_ahead": 5.0,
      "fc_latest": null,
      "solar_vs_fc": 1.22,
@@ -16717,6 +16842,7 @@
      null
     ],
     "workday": true,
+    "answer": null,
     "summary": {
      "date": "2026-10-02",
      "hours": 24,
@@ -16732,6 +16858,7 @@
       "live": 24
      },
      "workday": true,
+     "answer": null,
      "fc_ahead": 14.2,
      "fc_latest": null,
      "solar_vs_fc": 1.203,
@@ -17257,6 +17384,7 @@
      null
     ],
     "workday": false,
+    "answer": null,
     "summary": {
      "date": "2026-10-03",
      "hours": 15,
@@ -17272,6 +17400,7 @@
       "live": 15
      },
      "workday": false,
+     "answer": null,
      "fc_ahead": 21.0,
      "fc_latest": null,
      "solar_vs_fc": 0.674,
@@ -17317,13 +17446,15 @@
    "soc_now": 100.0,
    "soc_start": 10.0,
    "grid_charge_kwh": 4.74,
-   "charge_from": "2026-10-04T03:00+02:00",
+   "charge_from": "2026-10-04T02:00+02:00",
    "charge_slots": [
     {
-     "start": "2026-10-04T03:00+02:00",
+     "start": "2026-10-04T02:00+02:00",
      "end": "2026-10-04T05:00+02:00"
     }
    ],
+   "unplaced_kwh": 0.0,
+   "order": [],
    "tariff": "dynamic",
    "charge_kw": 2.5,
    "discharge_kw": 2.5,
@@ -17336,9 +17467,32 @@
      "soc_start": 10.0,
      "target": 100,
      "charge_kwh": 4.5,
+     "grid_kwh": 4.74,
      "power_kw": 2.5,
+     "max_kw": 2.5,
+     "slots": [
+      {
+       "start": "2026-10-04T02:00+02:00",
+       "end": "2026-10-04T03:00+02:00",
+       "power_kw": 1.12
+      },
+      {
+       "start": "2026-10-04T03:00+02:00",
+       "end": "2026-10-04T04:00+02:00",
+       "power_kw": 2.5
+      },
+      {
+       "start": "2026-10-04T04:00+02:00",
+       "end": "2026-10-04T05:00+02:00",
+       "power_kw": 1.29
+      }
+     ],
+     "how": "full",
      "controllable": false,
-     "grid": true
+     "grid": true,
+     "paced": true,
+     "group": "flow800",
+     "rank": 0
     }
    ],
    "sun_takes_over": "2026-10-04T12:48+02:00",
@@ -17365,15 +17519,18 @@
     "discharge_mode": "until_target",
     "evening_min": null,
     "grid_limit_kw": null,
+    "grid_limit_source": null,
     "max_night_kwh": null,
     "efficiency": 0.9,
     "max_price": null,
     "min_saving": 0.05,
     "force_target": null,
     "grid_friendly": false,
-    "grid_first": false
+    "grid_first": false,
+    "morning_buffer": null
    },
    "day": null,
+   "morning_buffer": null,
    "reasons": [
     "bridge"
    ],
@@ -17408,6 +17565,7 @@
     }
    },
    "actions": [],
+   "cars": {},
    "hours": [
     {
      "start": "2026-10-03T14:00:00+02:00",
@@ -17559,10 +17717,10 @@
      "home": 0.385,
      "window": true,
      "price": 0.182,
-     "soc": 10.0,
+     "soc": 31.3,
      "soc_without": 10.0,
-     "charge": 0.0,
-     "grid_in": 0.385,
+     "charge": 1.122,
+     "grid_in": 1.507,
      "grid_out": 0.0
     },
     {
@@ -17571,7 +17729,7 @@
      "home": 0.407,
      "window": true,
      "price": 0.18,
-     "soc": 57.4,
+     "soc": 78.7,
      "soc_without": 10.0,
      "charge": 2.5,
      "grid_in": 2.907,
@@ -17585,8 +17743,8 @@
      "price": 0.182,
      "soc": 100.0,
      "soc_without": 10.0,
-     "charge": 2.243,
-     "grid_in": 2.629,
+     "charge": 1.122,
+     "grid_in": 1.507,
      "grid_out": 0.0
     },
     {
@@ -17786,9 +17944,9 @@
    "since": null,
    "updated": "2026-10-03T14:10:00+02:00",
    "consumption_model": {
-    "base": 18.743,
-    "workday": -1.642,
-    "heat": 0.138,
+    "base": 18.7,
+    "workday": -1.615,
+    "heat": 0.144,
     "cool": 0.0,
     "presence": null,
     "presence_mean": null,
@@ -18265,12 +18423,14 @@
  },
  "profiles": {
   "fronius": "Fronius",
-  "omnibattery": "Marstek",
+  "omnibattery": "Omnibattery",
   "enphase_envoy": "Enphase",
   "goodwe": "GoodWe",
   "kostal_plenticore": "Kostal",
+  "kostal_modbus_control": "Kostal",
   "teslemetry": "Tesla Powerwall",
   "tessie": "Tesla Powerwall",
+  "tesla_fleet": "Tesla Powerwall",
   "growatt_server": "Growatt",
   "growatt_modbus": "Growatt",
   "foxess_modbus": "Fox ESS",
@@ -18279,8 +18439,10 @@
   "sigen": "Sigenergy",
   "sungrow": "Sungrow",
   "sonnenbatterie": "sonnen",
+  "sonnenbatterie_v2": "sonnen",
   "zendure_ha": "Zendure",
   "victron_gx": "Victron",
+  "victron_mqtt": "Victron",
   "victron": "Victron",
   "homewizard": "HomeWizard",
   "zinvolt": "Zinvolt",
@@ -18288,6 +18450,11 @@
   "huawei_solar": "Huawei",
   "e3dc_rscp": "E3/DC",
   "indevolt": "Indevolt",
-  "tesla_fleet": "Tesla Powerwall"
+  "varta_modbus": "VARTA",
+  "senec": "SENEC",
+  "marstek_modbus": "Marstek",
+  "marstek": "Marstek",
+  "anker_solix": "Anker SOLIX",
+  "solarman": "Deye"
  }
 }

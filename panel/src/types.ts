@@ -48,6 +48,8 @@ export interface HomeAssistant {
     ): Promise<() => Promise<void>>;
   };
   language: string;
+  /** "docked", "auto" or "always_hidden" – the user's sidebar setting. */
+  dockedSidebar?: string;
   themes?: { darkMode?: boolean };
   states: Record<string, HassEntity>;
   entities?: Record<string, HassEntityEntry>;
@@ -105,7 +107,15 @@ export type ControlRole =
   | "system_charge_limit"
   | "system_charge_limit_enabled"
   /** On the system device too: blocks discharging by day (several batteries one after the other). */
-  | "system_discharge_limit";
+  | "system_discharge_limit"
+  /** The watchdog (control/guard.py): the system's manual mode, a pulse restarts Omnibattery's own control. */
+  | "system_manual_mode"
+  /** The watchdog: a battery's switches that allow charging and discharging at all (Venus). */
+  | "allow_charge"
+  | "allow_discharge"
+  /** The other way round: on = blocked (Kostal over Modbus), by day only. */
+  | "block_charge"
+  | "block_discharge";
 export const CONTROL_ROLES: ControlRole[] = [
   "min_soc",
   "grid_charge",
@@ -116,7 +126,9 @@ export const CONTROL_ROLES: ControlRole[] = [
   "discharge_limit",
   "discharge_limit_enabled",
 ];
-export type ModeMeaning = "normal" | "force_charge" | "hold" | "force_discharge";
+/** Meanings of mode options; "no_charge"/"no_discharge" only by day (found by discovery). */
+export type ModeMeaning = "normal" | "force_charge" | "hold" | "force_discharge" | "no_charge" | "no_discharge";
+/** The meanings the owner assigns (the night's). */
 export const MODE_MEANINGS: ModeMeaning[] = ["normal", "force_charge", "hold", "force_discharge"];
 
 export interface ControlStep {
@@ -153,8 +165,12 @@ export interface BatteryConfig {
   limit_ref_w?: number | null;
   /** Regulates itself to 0 W at the grid meter (Fronius, Omnibattery in automatic mode); null: as Joe proposes. */
   self_regulating?: boolean | null;
+  /** Which system regulates it ("Wer regelt ihn?"): batteries with the same key take turns as one group; null: as Joe proposes. */
+  control_group?: string | null;
   /** The level it really stops discharging at (learned or set); null: not known yet. */
   cutoff_soc?: number | null;
+  /** Whether its charge limit holds while it charges from the grid (Fronius, learned); null: not seen yet. */
+  night_cap?: "works" | "ignored" | null;
 }
 
 export type TariffKind = "fixed_window" | "dynamic" | "flat" | "unknown";
@@ -282,6 +298,8 @@ export interface Rules {
   /** Batteries take the midday sun, the car charges with the sun; saving first unless grid_first. */
   grid_friendly: boolean;
   grid_first: boolean;
+  /** The buffer of the grid-friendly morning (%); null: as Joe suggests (planner.morning_buffer). */
+  morning_buffer_soc: number | null;
   /** Expert: count the inverter's losses when charging from the grid (measured at the grid meter). */
   converter_losses: boolean;
   /** Charge full once every so many days (maintenance); null: off. */
@@ -290,11 +308,17 @@ export interface Rules {
   day_surplus: boolean;
   /** How much of the forecast Joe counts on: 90 / 80 / 65 %. */
   day_caution: DayCaution;
-  /** Several batteries that regulate themselves: one after the other, or left to themselves; null: not chosen. */
+  /** Several batteries that regulate themselves: one after the other, or left to themselves; null: not chosen (works as "sequence"). */
   battery_team?: BatteryTeamMode | null;
   /** Battery ids in the order they charge and discharge (the others follow). */
   team_charge_order?: string[];
   team_discharge_order?: string[];
+  /** "Selbst einstellen": null automatic (charging along, helping), "strict" one after the other only, "base" a base load. */
+  team_style?: BatteryTeamStyle | null;
+  /** "Früher mitladen?": true Joe uses the lead he learned, false not (and does not ask again), null not answered. */
+  team_early?: boolean | null;
+  /** The watchdog: step in when batteries charge each other (older backends: missing, on). */
+  transfer_guard?: boolean;
 }
 
 export type BatteryTeamMode = "sequence" | "together";
@@ -305,21 +329,29 @@ export interface BatteryTeam {
   state:
     | "off"
     | "on"
-    | "unset"
     | "together"
     | "single"
+    | "one_group"
     | "night"
     | "paused"
     | "levers"
     | "not_tested"
     | "unknown"
     | "automation"
-    | "no_grid";
+    | "no_grid"
+    | "not_taken"
+    | "taking_over"
+    | "error";
   mode: BatteryTeamMode | null;
+  /** Not chosen: "Nacheinander" all the same (older backends: missing). */
+  default?: boolean;
   /** Not live: Joe only shows what he would do. */
   dry: boolean;
-  /** The battery that may work now. */
+  /** The battery that may work now (the first of the active group). */
   active: string | null;
+  /** The group that may work now and its batteries (older backends: missing). */
+  active_group?: string | null;
+  active_batteries?: string[];
   since?: string | null;
   flow: "surplus" | "deficit" | null;
   /** They charge side by side today (the sun would not fill them one after the other). */
@@ -336,25 +368,108 @@ export interface BatteryTeam {
       floor: number;
       charge: "free" | "blocked" | null;
       discharge: "free" | "blocked" | null;
-      why: "active" | "parallel" | "waits_full" | "waits_empty" | "full" | "empty" | null;
+      why: "active" | "parallel" | "along" | "helps" | "base" | "waits_full" | "waits_empty" | "full" | "empty" | null;
       problem: string | null;
       empty?: boolean;
       full?: boolean;
+      /** Its group (as set, else as proposed), the proposal and whether Joe is sure of it. */
+      group?: string;
+      group_proposed?: string;
+      group_sure?: boolean;
     }
   >;
+  /** The groups of the batteries that regulate themselves (one system each). */
+  groups?: Record<string, { batteries: string[]; empty?: boolean; full?: boolean }>;
+  /** Joe is not sure which system regulates a battery: he asks. */
+  group_question?: boolean;
   /** state "automation": the owner's automations that do it so far. */
   automations: string[];
-  /** Two batteries ran against each other today (despite: while Joe blocked for real). */
-  transfer: {
-    since: string;
+  /** What Joe would say without the owner's automations ("on": he could take over now). */
+  free?: string | null;
+  /** The owner's automations Joe switched on again (still running): he takes them over once he can. */
+  lent?: string[];
+  /** state "taking_over": when Joe switches them off again (if all stays well). */
+  taking_over_at?: string | null;
+  /** The last time Joe switched the owner's automations on again, why and which. */
+  given_back?: {
     at: string;
-    active: boolean;
+    reason: string;
+    names: string[];
+    failed?: string[];
+    /** Joe's blocks went back while a battery still worked: nothing blocks until the automations' condition starts anew. */
+    unblocked?: boolean;
+  } | null;
+  /** Joe holds his blocks until the active group stops charging or discharging, then gives the automations back. */
+  hold?: { since: string; direction: "charge" | "discharge"; batteries: string[]; reason: string; names: string[] } | null;
+  /** "Selbst einstellen" (control/team_day.py; older backends: missing). */
+  style?: BatteryTeamStyle;
+  /** Why the later groups charge along now: the forecast, or the meter shows sun going to the grid. */
+  along?: "forecast" | "export" | null;
+  /** From when (and until when) the forecast lets the later groups charge along today, and the lead in it. */
+  along_plan?: { from: string; until: string; lead_min: number; batteries: string[] } | null;
+  /** The next groups help discharging (a big load). */
+  help?: boolean;
+  /** The base load the next group gives now (W). */
+  base?: { w: number; batteries: string[] } | null;
+  /** "Grundlast teilen" chosen, but no waiting group's power can be set. */
+  base_problem?: "no_power_lever" | null;
+  /** The lead Joe learned from the days (minutes) and from how many days. */
+  learned?: { minutes: number; days: number; updated?: string } | null;
+  /** The owner's answer to "früher mitladen?" (null: not answered). */
+  early?: boolean | null;
+  /** The last day Joe looked back on. */
+  review?: TeamReview | null;
+  /** What Joe asks: "Soll ich … künftig früher mitladen lassen?" */
+  suggest?: { day: string; kwh: number; batteries: string[]; soc: number | null; lead_min: number } | null;
+}
+
+/** "Selbst einstellen": automatic (null), one after the other only, or the next one gives a base load. */
+export type BatteryTeamStyle = "auto" | "strict" | "base";
+
+/** One day looked back on (control/team_day.py review). */
+export interface TeamReview {
+  day: string;
+  export_kwh: number;
+  /** Sent to the grid while a group waited with room. */
+  room_kwh: number;
+  tight_at: string | null;
+  along_at: string | null;
+  planned_at: string | null;
+  groups: { batteries: string[]; soc: number | null }[];
+  /** The group that stayed lowest (below 95 %), if any. */
+  short: { batteries: string[]; soc: number | null } | null;
+  need_min: number | null;
+  lead_min?: number | null;
+}
+
+/** The watchdog ("Speicher-Wächter", control/guard.py): two batteries running against each other. */
+export interface TransferGuard {
+  /** on: watching; off: the rule is off; mode_off: Joe is off; single: fewer than two batteries with a power meter. */
+  state: "on" | "off" | "mode_off" | "single";
+  /** Not live: Joe only says what he would do. */
+  dry: boolean;
+  /** Running against each other right now (more than 20 W each). */
+  running: boolean;
+  /** The stage reached this time (0: none yet). */
+  stage: number;
+  /** Automations switched on that write the same levers: they do it so far. */
+  automations: string[];
+  /** The last time it happened. */
+  last: {
+    since: string | null;
+    at: string;
+    battery: string;
     charging: string[];
     discharging: string[];
-    despite: boolean;
+    stage: number;
+    /** "inside": batteries of one group (one system) charged each other – Joe does not step in. */
+    result: "running" | "fixed" | "alarm" | "automation" | "joe" | "inside";
+    /** "inside" that has stopped. */
+    over?: boolean;
+    dry: boolean;
+    direction: "charge" | "discharge";
+    seconds: number;
   } | null;
-  /** Two or more regulate themselves and nothing is chosen yet: Joe proposes "Nacheinander". */
-  proposal: boolean;
 }
 
 export type DayCaution = "tight" | "normal" | "careful";
@@ -370,6 +485,8 @@ export type SurplusBatteryState =
   | "no_limit"
   /** A charge limit in A (or without a unit): no power Joe can trust. */
   | "unit"
+  /** Its charge limit is a setting in the device's flash (Victron): no cap that follows the sun. */
+  | "flash"
   /** A charge limit in %: Joe needs to know what 100 % stand for (limit_ref_w). */
   | "need_ref"
   /** Joe is finding out right now what 100 % stand for (a test limit for a few minutes). */
@@ -1006,15 +1123,48 @@ export interface PlanHour {
   grid_out: number;
 }
 
+/** Why a battery charges as it does tonight (see plan/night.py). */
+export type PlanPace = "none" | "spread" | "short" | "cheapest" | "full" | "grid_limit" | "fixed_power";
+
 export interface PlanBattery {
   id: string;
   name: string;
   soc: number;
   soc_start: number;
+  /** Its own target (each battery gets its share of tonight's energy). */
   target: number;
+  /** Into the battery (kWh); grid_kwh with the losses. */
   charge_kwh: number;
+  grid_kwh?: number;
+  /** The highest power Joe sets tonight (kW). */
   power_kw: number;
+  max_kw?: number;
+  /** When it charges and with what power (older plans: missing). */
+  slots?: { start: string; end: string; power_kw: number }[];
+  how?: PlanPace;
+  /** Whether Joe can set its power (else it charges at full power). */
+  paced?: boolean;
+  /** Its place in the order of charging (0: gets first). */
+  rank?: number;
   controllable: boolean;
+  /** Whether Joe can charge it from the grid at all. */
+  grid?: boolean;
+}
+
+/** Up to this level the batteries take the morning sun, then Joe holds back (planner.morning_buffer). */
+export interface MorningBuffer {
+  /** The level in force (%). */
+  soc: number;
+  /** What Joe suggests (%). */
+  suggested: number;
+  /** What a sunny morning needs beyond the sun (kWh). */
+  need_kwh: number;
+  /** "learned" from the mornings, "start" before Joe learned it, "user" the owner's value. */
+  source: "learned" | "start" | "user";
+  floor: number;
+  batteries: string[];
+  group: string;
+  back: number;
 }
 
 /** Tonight's plan (see custom_components/energy_joe/plan). */
@@ -1042,7 +1192,17 @@ export interface Plan {
   batteries?: PlanBattery[];
   sun_takes_over?: string | null;
   /** Grid-friendly morning: batteries hold back charging until then (see planner._grid_friendly). */
-  day?: { defer_until: string; held_kwh: number; grid_first: boolean; cost?: number } | null;
+  day?: {
+    defer_until: string;
+    held_kwh: number;
+    grid_first: boolean;
+    cost?: number;
+    buffer?: MorningBuffer | null;
+  } | null;
+  /** The buffer of the grid-friendly morning, also on days without one (the settings show the suggestion). */
+  morning_buffer?: MorningBuffer | null;
+  /** After the window: last night's plan for its grid-friendly morning (plan/scheduler.py _morning_part). */
+  morning?: { fixed: boolean; window: { start: string; end: string }; day: Plan["day"] } | null;
   full_at?: string | null;
   empty_without?: string | null;
   solar_kwh?: number;
@@ -1058,6 +1218,9 @@ export interface Plan {
     max_price?: number | null;
     min_saving?: number;
     force_target?: number | null;
+    grid_limit_kw?: number | null;
+    /** Where the grid limit comes from: the user's or the highest import Joe measured. */
+    grid_limit_source?: "user" | "learned" | null;
   };
   meta?: {
     consumption: { source: "history" | "default"; days: number };
@@ -1160,13 +1323,19 @@ export type ControlReason =
   | "done";
 
 export interface ControlBattery {
-  action: "charge" | "hold" | "block" | "free" | "watch" | "defer" | null;
+  action: "charge" | "hold" | "block" | "free" | "watch" | "defer" | "buffer" | null;
   /** A grid-friendly morning: charging held back until then. */
   until?: string;
+  /** Its buffer on that morning (%): "buffer" charges up to it, "defer" holds back above it. */
+  level?: number | null;
   floor: number | null;
   target: number;
   soc: number | null;
   problem: string | null;
+  /** The power Joe sets while it charges (W; null: as fast as it can). */
+  power_w?: number | null;
+  /** Fronius: its charge limit as the ceiling of the night's power, and whether it holds. */
+  cap?: { w: number | null; seen_w: number | null; state: "works" | "ignored" | null };
 }
 
 export interface TestStep {
@@ -1233,6 +1402,10 @@ export interface ControlView {
   surplus?: DaySurplus;
   /** Several batteries one after the other (older backends: missing). */
   team?: BatteryTeam;
+  /** The watchdog: batteries running against each other (older backends: missing). */
+  guard?: TransferGuard;
+  /** The highest import from the grid Joe measured (W), when, and since when he watches. */
+  grid_peak?: { w: number; at: string; since: string } | null;
   /** Per battery: ready to steer, or why not. */
   ready: Record<string, "ready" | "not_tested" | "outdated" | "not_controllable" | "controls_missing">;
 }
@@ -1473,6 +1646,10 @@ export interface BatteryFinding {
   prepare?: ControlStep[];
   steps?: Partial<Record<StepName, ControlStep[]>>;
   adapter: Adapter;
+  /** Whether Joe can charge it from the grid (not only keep it from discharging). */
+  can_charge?: boolean;
+  /** What the owner should know: why Joe cannot steer it, what to switch on first. */
+  notes?: BatteryNote[];
   /** Levers Joe guesses for batteries without a profile (to confirm in the panel). */
   suggested?: {
     controls: Partial<Record<ControlRole, string>>;
@@ -1541,6 +1718,18 @@ export interface Check {
   [key: string]: unknown;
 }
 
+/** A hint about steering a battery: a code the panel explains, maybe entities to switch on. */
+export interface BatteryNote {
+  code: string;
+  entities?: { entity_id: string; name: string }[];
+}
+
+/** A battery integration Joe sees without a battery in it (its level switched off). */
+export interface BatteryIntegrationNote extends BatteryNote {
+  integration: string;
+  name: string;
+}
+
 export interface Discovery {
   energy_dashboard: { configured: boolean; grid?: number; solar?: number; battery?: number; devices?: number };
   measurements: {
@@ -1549,6 +1738,7 @@ export interface Discovery {
     solar_power: SolarFinding | null;
   };
   batteries: BatteryFinding[];
+  battery_notes?: BatteryIntegrationNote[];
   tariff: TariffFinding;
   forecast: ForecastFinding | null;
   wallboxes: WallboxFinding[];

@@ -5,7 +5,7 @@ import { tip } from "./components/tip";
 import { saveConfig, sourceOf } from "./config";
 import { formatNumber } from "./entities";
 import type { Translate, TranslationKey } from "./i18n";
-import type { DayCaution, DischargeMode, JoeConfig, JoeInfo, PriorityItem, Rules } from "./types";
+import type { ControlView, DayCaution, DischargeMode, JoeConfig, JoeInfo, MorningBuffer, Plan, PriorityItem, Rules } from "./types";
 
 // Joe's rules: one row per rule (Einstellungen › Regeln) and the same
 // formatting for mirrors elsewhere ("Sicherheitspuffer · 120 %").
@@ -24,7 +24,14 @@ export type NumberRuleKey =
   | "balance_days";
 
 /** Rules with a row of their own (switches, order, choice). */
-export type OtherRuleKey = "guard_grid" | "priority" | "discharge_in_window" | "converter_losses" | "day_surplus";
+export type OtherRuleKey =
+  | "guard_grid"
+  | "priority"
+  | "discharge_in_window"
+  | "converter_losses"
+  | "day_surplus"
+  | "morning_buffer"
+  | "transfer_guard";
 export type RuleKey = NumberRuleKey | OtherRuleKey;
 
 export interface NumberRule {
@@ -59,7 +66,17 @@ export const NUMBER_RULES: Record<NumberRuleKey, NumberRule> = {
 export type RuleGroup = "battery" | "grid" | "plan";
 
 export const RULE_GROUPS: Record<RuleGroup, readonly RuleKey[]> = {
-  battery: ["reserve_soc", "max_target_soc", "evening_min_soc", "balance_days", "discharge_in_window", "converter_losses", "day_surplus"],
+  battery: [
+    "reserve_soc",
+    "max_target_soc",
+    "evening_min_soc",
+    "balance_days",
+    "discharge_in_window",
+    "converter_losses",
+    "day_surplus",
+    "morning_buffer",
+    "transfer_guard",
+  ],
   grid: ["grid_limit_w", "max_night_kwh", "guard_grid", "max_price", "min_saving"],
   plan: ["priority", "buffer_factor", "plan_offset_min", "reset_lead_min"],
 };
@@ -108,6 +125,12 @@ export function ruleValue(t: Translate, config: JoeConfig, key: RuleKey): string
       return t(`rule.discharge.${rules.discharge_in_window}`);
     case "day_surplus":
       return rules.day_surplus ? `${t("rule.on")} · ${t(`rule.day_caution.${rules.day_caution}`)}` : t("rule.off");
+    case "transfer_guard":
+      return t(rules.transfer_guard !== false ? "rule.on" : "rule.off");
+    case "morning_buffer":
+      return rules.morning_buffer_soc == null
+        ? t("rule.morning_buffer.auto")
+        : `${formatNumber(t.lang, rules.morning_buffer_soc, 0)} %`;
     default:
       return t(rules[key] ? "rule.on" : "rule.off");
   }
@@ -117,9 +140,18 @@ export function ruleValue(t: Translate, config: JoeConfig, key: RuleKey): string
  * One rule as a settings row: label, hint, (i), source chip and its control.
  * Saves right away; the row carries data-anchor=<key> for /settings/rules/<key>.
  */
-export function ruleRow(t: Translate, host: HTMLElement, config: JoeConfig, info: JoeInfo | undefined, key: RuleKey): TemplateResult {
+export function ruleRow(
+  t: Translate,
+  host: HTMLElement,
+  config: JoeConfig,
+  info: JoeInfo | undefined,
+  key: RuleKey,
+  control?: ControlView,
+  plan?: Plan | null,
+): TemplateResult {
   if (isNumberRule(key)) {
-    return numberRow(t, host, config, info, NUMBER_RULES[key]);
+    const extra = key === "grid_limit_w" ? peakLine(t, host, config, control) : nothing;
+    return numberRow(t, host, config, info, NUMBER_RULES[key], extra);
   }
   switch (key) {
     case "guard_grid":
@@ -132,10 +164,144 @@ export function ruleRow(t: Translate, host: HTMLElement, config: JoeConfig, info
       return dischargeRow(t, host, config);
     case "day_surplus":
       return daySurplusRow(t, host, config);
+    case "transfer_guard":
+      return transferGuardRow(t, host, config);
+    case "morning_buffer":
+      return morningBufferRow(t, host, config, plan);
   }
 }
 
-function numberRow(t: Translate, host: HTMLElement, config: JoeConfig, info: JoeInfo | undefined, rule: NumberRule): TemplateResult {
+/** The buffer of the grid-friendly morning as the plan has it (tonight's, else this morning's). */
+export function morningBuffer(plan: Plan | null | undefined): MorningBuffer | null {
+  return plan?.morning_buffer ?? plan?.morning?.day?.buffer ?? null;
+}
+
+/** The highest own buffer one can set (%): above it holding back hardly leaves anything for the grid. */
+const MORNING_BUFFER_MAX = 90;
+
+/**
+ * The buffer of the grid-friendly morning: automatic (Joe's suggestion from
+ * what a morning needs beyond the sun) or one's own level (planner.morning_buffer).
+ */
+function morningBufferRow(t: Translate, host: HTMLElement, config: JoeConfig, plan?: Plan | null): TemplateResult {
+  const rules = config.rules;
+  const buffer = morningBuffer(plan);
+  const own = rules.morning_buffer_soc != null;
+  const suggested = buffer?.suggested;
+  const on = rules.grid_friendly;
+  const vars = {
+    soc: formatNumber(t.lang, own ? (rules.morning_buffer_soc ?? 0) : (suggested ?? 0), 0),
+    kwh: formatNumber(t.lang, buffer?.need_kwh ?? 0, 1),
+  };
+  const hint = !on
+    ? t("rule.morning_buffer.off_hint")
+    : own
+      ? t("rule.morning_buffer.own_hint", vars)
+      : suggested == null
+        ? t("rule.morning_buffer.pending_hint")
+        : buffer?.source === "learned"
+          ? t("rule.morning_buffer.learned_hint", vars)
+          : t("rule.morning_buffer.start_hint", vars);
+  const setOwn = (input: HTMLInputElement) => {
+    const value = Number.parseFloat(input.value.trim());
+    if (!Number.isFinite(value) || value < 0 || value > MORNING_BUFFER_MAX) {
+      input.reportValidity();
+      return;
+    }
+    saveConfig(host, { rules: { morning_buffer_soc: Math.round(value) } });
+  };
+  return html`<div class="row stacked" data-tipped data-anchor="morning_buffer">
+    <div>
+      <div class="name">
+        <b id="morning-buffer">${t("rule.morning_buffer")}</b>${tip(t, "r_morning_buffer")}
+        ${sourceChip(t, sourceOf(config, "rules.morning_buffer_soc"))}
+      </div>
+      <small>${hint}</small>
+    </div>
+    <div class="buffer-control">
+      <div class="seg" role="group" aria-labelledby="morning-buffer">
+        <button
+          type="button"
+          aria-pressed=${String(!own)}
+          ?disabled=${!on}
+          @click=${() => saveConfig(host, { rules: { morning_buffer_soc: null } }, "default")}
+        >
+          ${suggested == null
+            ? t("rule.morning_buffer.auto")
+            : t("rule.morning_buffer.auto_n", { soc: formatNumber(t.lang, suggested, 0) })}
+        </button>
+        <button
+          type="button"
+          aria-pressed=${String(own)}
+          ?disabled=${!on}
+          @click=${() =>
+            own ? undefined : saveConfig(host, { rules: { morning_buffer_soc: suggested ?? Math.max(30, rules.reserve_soc) } })}
+        >
+          ${t("rule.morning_buffer.own")}
+        </button>
+      </div>
+      ${tip(t, own ? "r_morning_buffer_own" : "r_morning_buffer_auto")}
+      ${own
+        ? html`<span class="unit-input">
+            <input
+              class="input"
+              type="number"
+              inputmode="numeric"
+              min="0"
+              max=${MORNING_BUFFER_MAX}
+              step="1"
+              aria-label=${t("rule.morning_buffer.own_label")}
+              ?disabled=${!on}
+              .value=${String(rules.morning_buffer_soc ?? "")}
+              @change=${(ev: Event) => setOwn(ev.target as HTMLInputElement)}
+            />
+            <span class="unit">%</span>
+          </span>`
+        : nothing}
+    </div>
+  </div>`;
+}
+
+/** Days Joe measures before the highest import counts as the grid limit (plan/inputs.py PEAK_DAYS). */
+const PEAK_DAYS = 7;
+
+/**
+ * Below the grid limit: the highest import Joe measured, what he does with it
+ * without the user's limit, and "Übernehmen" to take it as the limit.
+ */
+function peakLine(t: Translate, host: HTMLElement, config: JoeConfig, control?: ControlView): TemplateResult | typeof nothing {
+  const peak = control?.grid_peak;
+  if (!peak?.w) {
+    return nothing;
+  }
+  const kw = Math.ceil(peak.w / 100) / 10;
+  const since = new Date(peak.since);
+  const date = new Intl.DateTimeFormat(t.lang, { day: "numeric", month: "long" }).format(since);
+  const ready = Date.now() - since.getTime() >= PEAK_DAYS * 24 * 3600 * 1000;
+  const own = config.rules.grid_limit_w != null;
+  const key = own ? "rule.grid_limit_w.measured_own" : ready ? "rule.grid_limit_w.measured" : "rule.grid_limit_w.measuring";
+  return html`<div class="peak">
+    <small>${t(key, { kw: formatNumber(t.lang, kw, 1), date })}</small>${tip(t, "r_grid_peak")}
+    ${own
+      ? nothing
+      : html`<button
+          type="button"
+          class="mini-btn quiet"
+          @click=${() => saveConfig(host, { rules: { grid_limit_w: Math.round(kw * 1000) } })}
+        >
+          ${t("rule.grid_limit_w.take", { kw: formatNumber(t.lang, kw, 1) })}
+        </button>`}
+  </div>`;
+}
+
+function numberRow(
+  t: Translate,
+  host: HTMLElement,
+  config: JoeConfig,
+  info: JoeInfo | undefined,
+  rule: NumberRule,
+  extra: TemplateResult | typeof nothing = nothing,
+): TemplateResult {
   const fallback = info?.defaults?.rules[rule.key];
   const provenance = sourceOf(config, `rules.${rule.key}`);
   const changed = provenance?.source === "user";
@@ -143,6 +309,7 @@ function numberRow(t: Translate, host: HTMLElement, config: JoeConfig, info: Joe
     <div>
       <div class="name"><b>${t(`rule.${rule.key}`)}</b>${tip(t, `r_${rule.key}`)}</div>
       <small>${t(`rule.${rule.key}.hint`)}</small>
+      ${extra}
     </div>
     <div class="control">
       ${sourceChip(t, provenance)}
@@ -233,6 +400,28 @@ function converterRow(t: Translate, host: HTMLElement, config: JoeConfig): Templ
         aria-checked=${String(rules.converter_losses)}
         aria-labelledby="converter-losses"
         @click=${() => saveConfig(host, { rules: { converter_losses: !rules.converter_losses } })}
+      ></button>
+    </div>
+  </div>`;
+}
+
+/** The watchdog: Joe steps in when batteries charge each other (control/guard.py). */
+function transferGuardRow(t: Translate, host: HTMLElement, config: JoeConfig): TemplateResult {
+  const on = config.rules.transfer_guard !== false;
+  return html`<div class="row" data-tipped data-anchor="transfer_guard">
+    <div>
+      <div class="name"><b id="transfer-guard">${t("rule.transfer_guard")}</b>${tip(t, "r_transfer_guard")}</div>
+      <small>${t("rule.transfer_guard.hint")}</small>
+    </div>
+    <div class="control">
+      ${sourceChip(t, sourceOf(config, "rules.transfer_guard"))}
+      <button
+        type="button"
+        class="switch"
+        role="switch"
+        aria-checked=${String(on)}
+        aria-labelledby="transfer-guard"
+        @click=${() => saveConfig(host, { rules: { transfer_guard: !on } })}
       ></button>
     </div>
   </div>`;
@@ -370,6 +559,13 @@ export const ruleStyles = css`
   .unit-input {
     width: 150px;
   }
+  .peak {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+    margin-top: 6px;
+  }
   .order {
     display: flex;
     flex-direction: column;
@@ -416,6 +612,12 @@ export const ruleStyles = css`
       width: 44px;
       height: 44px;
     }
+  }
+  .buffer-control {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
   }
   .row.stacked {
     display: grid;

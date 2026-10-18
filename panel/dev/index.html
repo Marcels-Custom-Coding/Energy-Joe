@@ -44,9 +44,17 @@
       Omnibattery mit, ihre Ladeverzögerung ist an – ?omni=ok ohne diese Warnung; ?intruder=1: eine Automation
       schreibt die System-Ladegrenze, die Venus macht deshalb nicht mit)
       ?pv=night (Nacht: der Wechselrichter ist aus, sein Wert „nicht verfügbar“ – bis er als „ohne Sonne aus“ markiert ist)
-      ?team=sequence|together|unset|automation|transfer|parallel (Mehrere Speicher: mit ?done=1 nacheinander,
-      der BYD arbeitet, die Venus wartet, gelernter Entladeschluss 10,5 %; unset: noch nicht gewählt, Joe schlägt es vor;
-      automation: die Interlock-Automationen machen es noch; transfer: trotz Sperre gegeneinander; parallel: nebeneinander laden)
+      ?team=sequence|together|unset|automation|parallel|along|along_export|help|base|ask|not_taken|taking_over|levers|given_back|hold (Mehrere Speicher: mit ?done=1 nacheinander,
+      der BYD arbeitet, die Venus wartet, gelernter Entladeschluss 10,5 %; unset: noch nicht gewählt, wirkt als nacheinander;
+      automation: die Interlock-Automationen machen es noch; parallel: nebeneinander laden; not_taken/levers: Joe kann
+      nicht sperren, die Automationen laufen wieder; taking_over: Joe übernimmt sie bald wieder; given_back: nicht live, gerade sperrt niemand; hold: Joe hält die Sperre, bis der BYD aufhört)
+      ?guard=fixed|alarm|automation|off|dry|inside (Speicher-Wächter: mit ?done=1 heute einmal nach Neustart des PD-Reglers behoben;
+      alarm: läuft trotz aller Stufen weiter; automation: die Wächter-Automation macht es noch; off: Regel aus; dry: nur angezeigt;
+      inside: Venus und Victron (?groups=1) laden sich gegenseitig, dasselbe System regelt beide – Joe meldet nur)
+      ?groups=1|ask (Speicher in Gruppen: ein Victron in derselben Omnibattery wie die Venus; Fronius+BYD und
+      Omnibattery mit Venus+Victron arbeiten nacheinander als zwei Gruppen; ask: beim Victron ist Joe nicht sicher und fragt)
+      ?bnotes=1 (Hinweise zum Steuern: beim ersten Speicher eine Freischaltung im Gerät und eine ausgeschaltete Entität;
+      auf der Speicher-Seite ein Kostal ohne Ladestand und ein SMA, den Joe nicht steuern kann)
       ?later=1 (die Frage zum Homeoffice wurde in der Einrichtung mit „Später“ übersprungen: Fragen, Los und Übersicht › Joe braucht dich)
       sample-*.json kommen aus scripts/make_dev_samples.py (erfundene Haushalte aus tests/snapshots.py):
       Funde, die Konfiguration nach dem Übernehmen, ihre Prüfungen, Zustände und Register sowie
@@ -65,6 +73,20 @@
     <script type="module">
       const params = new URLSearchParams(location.search);
       const sample = await (await fetch(`./sample-${params.get("sample") || "fronius"}.json`, { cache: "no-store" })).json();
+      // Hints about steering a battery (discovery/find.py, battery_notes); the samples are older.
+      if (params.get("bnotes") === "1") {
+        const first = sample.discovery.batteries[0];
+        if (first) {
+          first.notes = [
+            { code: "needs.kostal_modbus_external" },
+            { code: "enable", entities: [{ entity_id: "switch.kostal_block_charge", name: "Block Charge" }] },
+          ];
+        }
+        sample.discovery.battery_notes = [
+          { integration: "kostal_modbus_control", name: "Kostal", code: "no_level", entities: [{ entity_id: "sensor.kostal_soc", name: "Battery SoC" }] },
+          { integration: "sma", name: "SMA", code: "cannot.sma", entities: [] },
+        ];
+      }
 
       // Stand-ins for elements Home Assistant provides.
       customElements.define(
@@ -331,6 +353,8 @@
         "number.omnibattery_system_max_charge_power": { state: "0", attributes: { friendly_name: "Omnibattery System System-Maximal-Ladeleistung", unit_of_measurement: "W", min: 0, max: 2500, step: 50 } },
         "switch.omnibattery_charge_delay": { state: params.get("omni") === "ok" ? "off" : "on", attributes: { friendly_name: "Omnibattery System Ladeverzögerung" } },
         "switch.omnibattery_predictive_charging": { state: "off", attributes: { friendly_name: "Omnibattery System Prädiktives Laden" } },
+        // The Venus' own switch the watchdog put back after a restart (the log of ?done=1).
+        "switch.marstek_venus_e_3_0_battery_allow_charge": { state: "on", attributes: { friendly_name: "Marstek Venus E Laden erlauben" } },
       };
       for (const [entity_id, value] of Object.entries(omniStates)) sample.hass.states[entity_id] = { entity_id, ...value };
       sample.hass.states["number.omnibattery_system_max_discharge_power"] = {
@@ -352,11 +376,32 @@
         battery.self_regulating ??= null;
         battery.cutoff_soc ??= null;
       }
-      // ?team=sequence|together|unset|automation|transfer|parallel (Mehrere Speicher, control/executor.py
+      // ?groups=1|ask: a Victron in the same Omnibattery as the Venus (two groups: Fronius+BYD and
+      // Omnibattery with Venus+Victron); ask: Joe is not sure for the Victron and asks.
+      const groupsParam = params.get("groups");
+      if (groupsParam) {
+        const omni = state.config.batteries.find((b) => b.adapter === "omnibattery");
+        if (omni && !state.config.batteries.some((b) => b.id === "victron")) {
+          sample.hass.states["sensor.victron_soc"] = {
+            entity_id: "sensor.victron_soc",
+            state: "58",
+            attributes: { friendly_name: "Victron Ladestand", unit_of_measurement: "%", device_class: "battery" },
+          };
+          state.config.batteries.push({
+            ...structuredClone(omni),
+            id: "victron",
+            name: "Victron",
+            soc_entity: "sensor.victron_soc",
+            power: null,
+            device_id: null,
+            control_group: null,
+          });
+        }
+      }
+      // ?team=sequence|together|unset|automation|parallel|not_taken|taking_over|levers|given_back (Mehrere Speicher, control/executor.py
       // _async_team): with ?done=1 "Nacheinander" is on, the BYD works, the Venus waits; Joe learned that the
       // BYD stops discharging at 10.5 %. unset: not chosen yet (Joe braucht dich proposes it); automation:
-      // the owner's interlock automations still do it; transfer: they ran against each other despite the
-      // blocks; parallel: a weak day, both charge side by side.
+      // the owner's interlock automations still do it; parallel: a weak day, both charge side by side.
       const teamParam = params.get("team") || (done ? "sequence" : "unset");
       state.config.rules.battery_team = ["unset", "together"].includes(teamParam) ? (teamParam === "together" ? "together" : null) : "sequence";
       state.config.rules.team_charge_order ??= [];
@@ -537,6 +582,9 @@
           ready,
           surplus: surplusView(),
           team: teamView(),
+          guard: guardView(),
+          // The highest import Joe measured (executor._track_grid_peak), watched for ten days.
+          grid_peak: done ? { w: 6340, at: new Date(Date.now() - 3 * 86400e3).toISOString(), since: new Date(Date.now() - 10 * 86400e3).toISOString() } : null,
           ...control,
           log: control.log.slice(-30),
         };
@@ -610,31 +658,56 @@
         const proposed = (b) => b.adapter === "fronius" || b.adapter === "omnibattery";
         const regulating = (b) => b.self_regulating ?? proposed(b);
         const members = batteries.filter(regulating);
+        // Groups (executor._proposed_group): one per integration entry; ?groups=ask: unsure for the Victron.
+        const unsure = (b) => groupsParam === "ask" && b.id === "victron";
+        const proposedGroup = (b) =>
+          unsure(b) ? `own:${b.id}` : b.adapter === "omnibattery" ? "entry:omni" : b.adapter === "fronius" ? "entry:fronius" : `own:${b.id}`;
+        const groupOf = (b) => b.control_group ?? proposedGroup(b);
+        const groups = {};
+        for (const b of members) {
+          (groups[groupOf(b)] ??= { batteries: [], empty: false, full: false }).batteries.push(b.id);
+        }
         const parallel = teamParam === "parallel";
+        // ?team=along|along_export|help|base|ask (control/team_day.py): the second one charges along (by the
+        // forecast or the meter), helps discharging, gives the base load; "ask": Joe asks to charge along earlier.
+        const along = { along: "forecast", along_export: "export" }[teamParam] ?? null;
+        const helping = teamParam === "help";
+        const basing = teamParam === "base";
+        if (basing) rules.team_style ??= "base";
         const order = (key) => {
           const named = rules[key] ?? [];
           const rank = (b) => (named.indexOf(b.id) < 0 ? named.length + batteries.indexOf(b) : named.indexOf(b.id));
           return [...members].sort((a, b) => rank(a) - rank(b));
         };
-        const active = order("team_charge_order")[0]?.id ?? null;
+        const first = order("team_charge_order")[0] ?? null;
+        const second = members.find((b) => first && groupOf(b) !== groupOf(first)) ?? null;
+        const active = first?.id ?? null;
+        const activeIds = first ? members.filter((b) => groupOf(b) === groupOf(first)).map((b) => b.id) : [];
+        // Not chosen ("unset"): "Nacheinander" all the same.
         const stateName =
-          rules.battery_team == null
-            ? "unset"
-            : rules.battery_team === "together"
-              ? "together"
-              : members.length < 2
-                ? "single"
+          rules.battery_team === "together"
+            ? "together"
+            : members.length < 2
+              ? "single"
+              : Object.keys(groups).length < 2
+                ? "one_group"
                 : teamParam === "automation"
                   ? "automation"
-                  : "on";
+                  : ["not_taken", "taking_over", "levers"].includes(teamParam)
+                    ? teamParam
+                    : "on";
+        const backReason = { not_taken: "not_taken", taking_over: "levers", levers: "levers", given_back: "dry" }[teamParam];
+        const lentNames = ["Interlock R2", "Interlock R3", "Akku-Boost R5"];
         const on = stateName === "on";
         return {
           state: stateName,
           mode: rules.battery_team ?? null,
           dry: state.mode !== "live",
           active: on ? active : null,
+          active_group: on && first ? groupOf(first) : null,
+          active_batteries: on ? activeIds : [],
           since: on ? dayAt(0, "09:40") : null,
-          flow: on ? "surplus" : null,
+          flow: on ? (helping || basing ? "deficit" : "surplus") : null,
           parallel,
           batteries: Object.fromEntries(
             batteries.map((b, i) => [
@@ -644,29 +717,123 @@
                 self_regulating: regulating(b),
                 proposed: proposed(b),
                 soc: 46 - 6 * i,
-                power_w: i === 0 ? 1800 : parallel ? 700 : 0,
+                power_w: helping || basing ? (i === 0 ? -2600 : -900) : i === 0 ? 1800 : parallel || along ? 700 : 0,
                 cutoff: b.cutoff_soc ?? null,
                 floor: i === 0 ? 5 : 12,
-                charge: on && regulating(b) ? (b.id === active || parallel ? "free" : "blocked") : null,
-                discharge: on && regulating(b) ? (b.id === active && !parallel ? "free" : "blocked") : null,
-                why: on && regulating(b) ? (b.id === active ? "active" : parallel ? "parallel" : "waits_full") : null,
-                problem: null,
+                charge:
+                  on && regulating(b)
+                    ? helping || basing
+                      ? "blocked"
+                      : activeIds.includes(b.id) || parallel || along
+                        ? "free"
+                        : "blocked"
+                    : null,
+                discharge:
+                  on && regulating(b)
+                    ? helping || basing
+                      ? "free"
+                      : activeIds.includes(b.id) && !parallel && !along
+                        ? "free"
+                        : "blocked"
+                    : null,
+                why:
+                  on && regulating(b)
+                    ? activeIds.includes(b.id)
+                      ? "active"
+                      : parallel
+                        ? "parallel"
+                        : along
+                          ? "along"
+                          : helping
+                            ? "helps"
+                            : basing
+                              ? "base"
+                              : "waits_full"
+                    : null,
+                problem: stateName === "not_taken" && i === 1 ? "not_taken" : stateName === "levers" && i === 1 ? "unavailable" : null,
+                group: groupOf(b),
+                group_proposed: proposedGroup(b),
+                group_sure: !unsure(b),
               },
             ]),
           ),
           automations: stateName === "automation" ? ["Akku-Hierarchie: Venus hinter BYD", "Interlock R2", "Interlock R3", "Akku-Boost R5"] : [],
-          transfer:
-            teamParam === "transfer" || stateName === "unset"
+          default: rules.battery_team == null,
+          free: stateName === "taking_over" ? "on" : stateName,
+          lent: backReason ? lentNames : [],
+          taking_over_at: stateName === "taking_over" ? dayAt(0, "10:15") : null,
+          given_back: backReason
+            ? { at: dayAt(0, "10:00"), reason: backReason, names: lentNames, failed: [], unblocked: backReason === "dry" }
+            : null,
+          // ?team=hold: "Gleichzeitig" chosen while the BYD discharges – Joe holds the block until it stops.
+          hold:
+            teamParam === "hold" && first
+              ? { since: dayAt(0, "10:00"), direction: "discharge", batteries: [first.id], reason: "together", names: lentNames }
+              : null,
+          groups,
+          group_question: members.length >= 2 && members.some((b) => b.control_group == null && unsure(b)),
+          style: rules.team_style ?? "auto",
+          along: on ? along : null,
+          along_plan:
+            on && !parallel && second
+              ? { from: dayAt(0, "11:00"), until: dayAt(0, "23:00"), lead_min: rules.team_early ? 40 : 0, batteries: [second.id] }
+              : null,
+          help: on && helping,
+          base: on && basing && second ? { w: 350, batteries: [second.id] } : null,
+          base_problem: null,
+          learned: done ? { minutes: 40, days: 9, updated: dayAt(1, "21:30").slice(0, 10) } : null,
+          early: rules.team_early ?? null,
+          review:
+            done && second
               ? {
-                  since: dayAt(0, "08:10"),
-                  at: dayAt(0, "08:12"),
-                  active: false,
-                  charging: [batteries[1]?.name ?? "Venus"],
-                  discharging: [batteries[0]?.name ?? "BYD"],
-                  despite: teamParam === "transfer",
+                  day: dayAt(1, "12:00").slice(0, 10),
+                  export_kwh: 4.2,
+                  room_kwh: 3.1,
+                  tight_at: dayAt(1, "10:40"),
+                  along_at: dayAt(1, "11:30"),
+                  planned_at: null,
+                  groups: [],
+                  short: { batteries: [second.id], soc: 70 },
+                  need_min: 50,
+                  lead_min: 40,
                 }
               : null,
-          proposal: stateName === "unset" && members.length >= 2,
+          suggest:
+            teamParam === "ask" && second && rules.team_early == null
+              ? { day: dayAt(1, "12:00").slice(0, 10), kwh: 3.1, batteries: [second.id], soc: 70, lead_min: 40 }
+              : null,
+        };
+      };
+      // The watchdog (executor._async_guard, control/guard.py): two batteries running against each other.
+      const guardParam = params.get("guard") || (done ? "fixed" : "");
+      const guardView = () => {
+        const [first, second] = state.config.batteries;
+        const off = guardParam === "off" || state.config.rules.transfer_guard === false;
+        const result = { alarm: "alarm", automation: "automation", dry: "fixed", inside: "inside" }[guardParam] ?? "fixed";
+        const victron = state.config.batteries.find((b) => b.id === "victron");
+        const venus = state.config.batteries.find((b) => b.adapter === "omnibattery");
+        const inside = guardParam === "inside" && victron && venus;
+        return {
+          state: off ? "off" : state.mode === "off" ? "mode_off" : "on",
+          dry: state.mode !== "live" || guardParam === "dry",
+          running: guardParam === "alarm",
+          stage: guardParam === "alarm" ? 3 : 0,
+          automations: guardParam === "automation" ? ["Wächter: Batterie-zu-Batterie-Transfer (mit Eingriff)"] : [],
+          last:
+            guardParam && first && second
+              ? {
+                  since: dayAt(0, "14:02"),
+                  at: dayAt(0, guardParam === "alarm" ? "14:03" : "14:02"),
+                  battery: inside ? venus.id : second.id,
+                  charging: [inside ? venus.id : second.id],
+                  discharging: [inside ? victron.id : first.id],
+                  stage: guardParam === "alarm" ? 3 : guardParam === "automation" ? 0 : 1,
+                  result,
+                  dry: guardParam === "dry",
+                  direction: "charge",
+                  seconds: guardParam === "alarm" ? 67 : 22,
+                }
+              : null,
         };
       };
       const log = (kind, detail = {}) => {
@@ -700,6 +867,14 @@
             { at: dayAt(1, "22:00"), kind: "team_end", reason: "night" },
             { at: dayAt(0, "09:40"), kind: "team_handover", battery: first.id, previous: second.id, reason: "order", soc: 31 },
             { at: dayAt(0, "09:40"), kind: "team_block", battery: second.id, charge: true, discharge: true },
+            { at: dayAt(0, "14:02"), kind: "guard_restart", battery: second.id, charging: [second.id], discharging: [first.id], clean: false, dry: false, problem: null },
+            { at: dayAt(0, "14:02"), kind: "guard_fixed", battery: second.id, stage: 1, seconds: 22, dry: false },
+            { at: dayAt(0, "15:10"), kind: "guard_restart", battery: second.id, charging: [first.id], discharging: [second.id], clean: true, dry: false, problem: null },
+            { at: dayAt(0, "15:10"), kind: "guard_block", battery: second.id, charging: [first.id], discharging: [second.id], direction: "discharge", dry: false, problem: null },
+            { at: dayAt(0, "15:11"), kind: "guard_alarm", battery: second.id, charging: [first.id], discharging: [second.id], dry: false },
+            { at: dayAt(0, "15:14"), kind: "guard_fixed", battery: second.id, stage: 3, seconds: 230, dry: false },
+            { at: dayAt(0, "16:00"), kind: "guard_automation", battery: second.id, names: ["Wächter: Batterie-zu-Batterie-Transfer (mit Eingriff)"] },
+            { at: dayAt(0, "16:30"), kind: "guard_restored", reason: "start", entities: ["switch.marstek_venus_e_3_0_battery_allow_charge"], failed: [] },
           );
         }
       }
@@ -717,6 +892,31 @@
           },
           actions: car ? { [car.id]: { on: true, reason: "plan", start: dayAt(0, "01:00"), end: dayAt(0, "05:30"), problem: null } } : {},
         });
+      }
+      // ?morning=1: a grid-friendly morning with its buffer (planner.morning_buffer): the first battery
+      // charges up to the buffer from the sun, the second holds back above it; the plan says so.
+      if (params.get("morning") === "1" && history.plan) {
+        const [first, second] = state.config.batteries;
+        const buffer = {
+          soc: 30, suggested: 30, need_kwh: 1.6, source: "learned", floor: 10,
+          batteries: state.config.batteries.map((b) => b.id), group: "all", back: 2,
+        };
+        state.config.rules.grid_friendly = true;
+        history.plan.rules.grid_friendly = true;
+        history.plan.morning_buffer = buffer;
+        history.plan.day = { defer_until: dayAt(0, "12:00"), held_kwh: 4.2, grid_first: false, cost: 0, buffer };
+        Object.assign(control, {
+          reason: "day",
+          batteries: {
+            ...(first ? { [first.id]: { action: "buffer", until: dayAt(0, "12:00"), level: 30, floor: null, target: null, soc: 22, problem: null } } : {}),
+            ...(second ? { [second.id]: { action: "defer", until: dayAt(0, "12:00"), level: 30, floor: null, target: null, soc: 31, problem: null } } : {}),
+          },
+        });
+        control.log.push(
+          { at: dayAt(0, "06:57"), kind: "day", until: dayAt(0, "12:00"), level: 30 },
+          ...(first ? [{ at: dayAt(0, "06:57"), kind: "day_buffer", battery: first.id, soc: 12, level: 30, fill: true }] : []),
+          ...(second ? [{ at: dayAt(0, "08:40"), kind: "day_buffer", battery: second.id, soc: 30, level: 30, fill: false }] : []),
+        );
       }
       const watching = () => ({
         active: true,
@@ -1478,6 +1678,10 @@
                   ? [{ entity_id: "automation.akku_hierarchie", name: "Akku-Hierarchie", on: true, writes: [{ entity_id: "number.omnibattery_system_max_charge_power", name: "System-Maximal-Ladeleistung", battery: state.config.batteries[1]?.name ?? "Venus", battery_id: state.config.batteries[1]?.id ?? "venus", joe: true }], switched_off: null }]
                   : []),
               ].filter((item) => item.writes.every((w) => state.config.batteries.some((b) => b.id === w.battery_id))));
+              // ?team=not_taken|taking_over|levers|given_back: Joe switched them on again (lent).
+              if (["not_taken", "taking_over", "levers", "given_back"].includes(teamParam)) {
+                for (const item of list) item.lent ??= { at: dayAt(0, "10:00"), reason: teamParam };
+              }
               if (msg.type.endsWith("/switch")) {
                 for (const item of list) {
                   if (msg.entity_ids && !msg.entity_ids.includes(item.entity_id)) continue;

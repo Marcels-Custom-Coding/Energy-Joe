@@ -166,6 +166,20 @@ BATTERY = vol.Schema(
         # automatic mode): with others of its kind it needs coordinating
         # (rules.battery_team). None: as Joe proposes from its profile.
         vol.Optional("self_regulating", default=None): vol.Any(None, bool),
+        # Which system regulates it ("Wer regelt ihn?"): batteries with the
+        # same key are regulated by one system (Omnibattery shares the power
+        # among all its batteries) and take turns with the others as one.
+        # None: as Joe proposes (batteries set up before are assigned so,
+        # see executor._proposed_group).
+        vol.Optional("control_group", default=None): vol.Any(
+            None, vol.All(str, vol.Length(min=1, max=120))
+        ),
+        # Whether its charge limit holds as a ceiling while it charges from the
+        # grid (Fronius: the night's power): None not seen yet, "works", or
+        # "ignored" (Joe then plans its night at full power). Learned.
+        vol.Optional("night_cap", default=None): vol.Any(
+            None, vol.In(("works", "ignored"))
+        ),
         # The level at which it really stops discharging (a BYD at ~10.5 %
         # with a reserve of 5 %); None: not known yet, Joe learns it.
         vol.Optional("cutoff_soc", default=None): vol.Any(
@@ -552,6 +566,7 @@ ACTION = vol.Schema(
 DAY_CAUTIONS = ("tight", "normal", "careful")
 # How several batteries that regulate themselves work together.
 TEAM_MODES = ("sequence", "together")
+TEAM_STYLES = ("auto", "strict", "base")
 
 RULES = vol.Schema(
     {
@@ -589,6 +604,10 @@ RULES = vol.Schema(
         # with the sun. The saving comes first unless grid_first is set.
         vol.Optional("grid_friendly", default=True): bool,
         vol.Optional("grid_first", default=False): bool,
+        # The buffer of the grid-friendly morning: charged from the sun first,
+        # then Joe holds back (percent; None: as Joe suggests, see
+        # plan/planner.py morning_buffer).
+        vol.Optional("morning_buffer_soc", default=None): vol.Any(None, _PERCENT),
         # Daytime surplus: on sunny days the batteries charge only as fast as
         # they must to be full before the sun goes, the rest shows at the grid
         # meter for evcc's PV mode (see control/surplus.py).
@@ -602,6 +621,18 @@ RULES = vol.Schema(
         # order of the batteries).
         vol.Optional("team_charge_order", default=list): [str],
         vol.Optional("team_discharge_order", default=list): [str],
+        # "Selbst einstellen" (see control/team_day.py): None automatic
+        # (charging along, helping on big loads), "strict" one after the
+        # other only, "base" the next group gives a base load.
+        vol.Optional("team_style", default=None): vol.Any(None, vol.In(TEAM_STYLES)),
+        # The answer to "Soll ich … künftig früher mitladen lassen?": True
+        # Joe uses the lead he learned, False not (and does not ask again),
+        # None not answered (no lead).
+        vol.Optional("team_early", default=None): vol.Any(None, bool),
+        # The watchdog: two batteries running against each other (one charges,
+        # the other discharges): Joe restarts the culprit's own control, blocks
+        # it for a few seconds and speaks up (see control/guard.py).
+        vol.Optional("transfer_guard", default=True): bool,
         # Expert: count the inverter's losses when charging from the grid,
         # measured at the grid meter (a battery's own meter may sit behind it).
         vol.Optional("converter_losses", default=False): bool,
@@ -685,6 +716,9 @@ LEARNED = vol.Schema(
             None, vol.All(vol.Coerce(float), vol.Range(min=0, max=3))
         ),
         vol.Optional("buffer_days", default=0): vol.All(int, vol.Range(min=0)),
+        # What a sunny morning typically needs beyond the sun ({"kwh", "days"},
+        # see learn/learning.py morning_need): the grid-friendly buffer.
+        vol.Optional("morning_need", default=None): vol.Any(None, dict),
         vol.Optional("since", default=None): vol.Any(None, str),
         vol.Optional("updated", default=None): vol.Any(None, str),
         # The models (see learn/models.py), learned once a day.

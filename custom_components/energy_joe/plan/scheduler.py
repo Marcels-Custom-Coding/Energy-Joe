@@ -58,6 +58,8 @@ class JoePlanner:
         self.accounts: Any = None
         # What the executor changed on the devices, with the values from before.
         self.held: Callable[[], dict[str, Any]] = dict
+        # The highest import from the grid the executor measured (or None).
+        self.grid_peak: Callable[[], dict[str, Any] | None] = lambda: None
         # Which car is plugged in at each charge point (set by the runtime).
         self.detected: Callable[[], dict[str, dict[str, Any]]] = self._detect
         self.plan: dict[str, Any] | None = None
@@ -271,6 +273,7 @@ class JoePlanner:
             self.accounts,
             self.held(),
             self.detected(),
+            self.grid_peak(),
         )
         if inp is None:
             return {

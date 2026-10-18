@@ -6,6 +6,7 @@ import { entityName, formatNumber } from "../entities";
 import type { Translate } from "../i18n";
 import { shared } from "../styles/shared";
 import type { ClimateLogEntry, ControlLogEntry, HomeAssistant, JoeConfig } from "../types";
+import { together } from "./battery-team";
 import { dayText } from "./look-back";
 
 // What Joe switched: the steering log (control/executor.py) and the climate
@@ -95,24 +96,49 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
     value: entry.value == null ? "–" : String(entry.value),
     target: String(entry.target ?? ""),
     power: typeof entry.power === "number" ? formatNumber(t.lang, entry.power, 1) : "–",
+    cap: typeof entry.cap === "number" ? formatNumber(t.lang, entry.cap, 1) : "–",
     soc: typeof entry.soc === "number" ? formatNumber(t.lang, entry.soc, 0) : "–",
     unit: typeof entry.unit === "string" ? entry.unit : "%",
     until: typeof entry.until === "string" ? entry.until.slice(11, 16) : "–",
     loadpoint: typeof entry.loadpoint === "string" ? entry.loadpoint : "evcc",
     remaining: typeof entry.remaining === "number" ? formatNumber(t.lang, entry.remaining, 1) : "–",
     headroom: typeof entry.headroom === "number" ? formatNumber(t.lang, entry.headroom, 1) : "–",
+    level: typeof entry.level === "number" ? formatNumber(t.lang, entry.level, 0) : "–",
   };
   const nameOf = (id: unknown) => config?.batteries.find((b) => b.id === id)?.name ?? String(id ?? "");
   const names = (ids: unknown) => (Array.isArray(ids) ? ids.map(nameOf).join(", ") : "");
   if (entry.kind.startsWith("team_")) {
     const team = {
       ...vars,
+      // A group hands over as one ("Venus mit Victron").
+      battery: Array.isArray(entry.batteries) && entry.batteries.length > 1 ? together(t, entry.batteries.map(nameOf)) : battery,
       previous: nameOf(entry.previous),
       charging: names(entry.charging),
       discharging: names(entry.discharging),
       cutoff: typeof entry.value === "number" ? formatNumber(t.lang, entry.value, 1) : "–",
       level: typeof entry.soc === "number" ? formatNumber(t.lang, entry.soc, 1) : "–",
+      names: Array.isArray(entry.names) ? entry.names.map((n) => `„${String(n)}“`).join(", ") : "",
+      why: t.optional(`team.given_back.why.${String(entry.reason ?? entry.problem ?? "")}`) ?? "",
+      direction: t.optional(`log.team_hold.${String(entry.direction ?? "")}`) ?? "",
+      // Charging along, helping, a base load (control/team_day.py): the active one and the others.
+      active: nameOf(entry.battery),
+      others: Array.isArray(entry.batteries) ? together(t, entry.batteries.map(nameOf)) : "",
+      energy: typeof entry.energy === "number" ? formatNumber(t.lang, entry.energy, 1) : "–",
+      lead: typeof entry.value === "number" ? formatNumber(t.lang, entry.value, 0) : "–",
+      watts: typeof entry.power === "number" ? formatNumber(t.lang, entry.power, 0) : "–",
     };
+    if (entry.kind === "team_along" || entry.kind === "team_along_end") {
+      return t.optional(`log.${entry.kind}.${String(entry.reason)}`, team) ?? t(`log.${entry.kind}`, team);
+    }
+    if (entry.kind === "team_review") {
+      return t(typeof entry.batteries === "object" && entry.batteries ? "log.team_review.short" : "log.team_review", team);
+    }
+    if (entry.kind === "team_hold_end") {
+      return t.optional(`log.team_hold_end.${String(entry.reason)}`, team) ?? t("log.team_hold_end", team);
+    }
+    if (entry.kind === "team_given_back") {
+      return t("log.team_given_back", team);
+    }
     if (entry.kind === "team_handover") {
       return t.optional(`log.team_handover.${String(entry.reason)}`, team) ?? t("log.team_handover", team);
     }
@@ -127,6 +153,55 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
       return t(entry.blocked ? "log.team_transfer.blocked" : "log.team_transfer", team);
     }
     return t.optional(`log.${entry.kind}`, team) ?? entry.kind;
+  }
+  if (entry.kind.startsWith("guard_")) {
+    // The watchdog (control/guard.py): every stage, plain words.
+    const seconds = typeof entry.seconds === "number" ? entry.seconds : 0;
+    const guard = {
+      ...vars,
+      charging: names(entry.charging),
+      discharging: names(entry.discharging),
+      names: Array.isArray(entry.names) ? entry.names.map((n) => `„${String(n)}“`).join(", ") : "",
+      entities: Array.isArray(entry.entities)
+        ? entry.entities.map((e) => (hass ? entityName(hass, String(e)) : String(e))).join(", ")
+        : "",
+      duration: seconds < 120 ? t("guard.seconds", { n: seconds }) : t("guard.minutes", { n: Math.round(seconds / 60) }),
+    };
+    const dry = entry.dry ? ".dry" : "";
+    let text: string;
+    if (entry.kind === "guard_restart") {
+      text = t(entry.clean ? `log.guard_restart.clean${dry}` : `log.guard_restart${dry}`, guard);
+    } else if (entry.kind === "guard_block") {
+      text = t(`log.guard_block.${entry.direction === "discharge" ? "discharge" : "charge"}${dry}`, guard);
+    } else if (entry.kind === "guard_alarm") {
+      text = t(`log.guard_alarm${dry}`, guard);
+    } else if (entry.kind === "guard_inside") {
+      text = t(`log.guard_inside${dry}`, guard);
+    } else if (entry.kind === "guard_fixed") {
+      const stage = Math.min(3, Math.max(1, Number(entry.stage) || 1)) as 1 | 2 | 3;
+      text = t(`log.guard_fixed.${stage}`, guard);
+    } else if (entry.kind === "guard_restored") {
+      const failed = Array.isArray(entry.failed) && entry.failed.length > 0;
+      text = failed
+        ? t("log.guard_restored.failed", {
+            ...guard,
+            entities: (entry.failed as unknown[]).map((e) => (hass ? entityName(hass, String(e)) : String(e))).join(", "),
+          })
+        : t(entry.reason === "start" ? "log.guard_restored.start" : "log.guard_restored", guard);
+    } else {
+      text = t.optional(`log.${entry.kind}`, guard) ?? entry.kind;
+    }
+    return typeof entry.problem === "string" ? `${text} ${t("log.guard.problem", { code: entry.problem })}` : text;
+  }
+  if (entry.kind === "day_buffer") {
+    // The buffer of the grid-friendly morning: charging up to it again, or reached.
+    return t(entry.fill ? "log.day_buffer.fill" : "log.day_buffer.hold", vars);
+  }
+  if (entry.kind === "day" && typeof entry.level === "number") {
+    return t("log.day.buffer", vars);
+  }
+  if (entry.kind === "released" && entry.reason === "day_buffer") {
+    return t("log.released.day_buffer", vars);
   }
   if (entry.kind === "surplus_end") {
     return t.optional(`log.surplus_end.${String(entry.reason)}`, vars) ?? t("log.surplus_end", vars);

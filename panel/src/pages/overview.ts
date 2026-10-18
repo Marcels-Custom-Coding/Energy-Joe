@@ -545,7 +545,7 @@ export class JoeOverview extends LitElement {
     if (control?.steering) {
       for (const battery of config.batteries) {
         const action = control.batteries[battery.id]?.action;
-        if (battery.adapter !== "none" && action && ["charge", "hold", "block", "defer"].includes(action)) {
+        if (battery.adapter !== "none" && action && ["charge", "hold", "block", "defer", "buffer"].includes(action)) {
           lines.push(t("overview.doing.battery", { name: battery.name, what: batteryNow(t, battery, control) }));
         }
       }

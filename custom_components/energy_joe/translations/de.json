@@ -150,7 +150,11 @@
     },
     "battery_transfer": {
       "title": "Speicher laden sich gegenseitig",
-      "description": "{charging} lädt, während {discharging} entlädt – seit mehr als zwei Minuten, obwohl ich immer nur einen arbeiten lasse. Etwas anderes schreibt dieselben Grenzen, oder eine Sperre greift nicht. Schau im Energy-Joe-Panel unter Geräte › Speicher › Mehrere Speicher nach."
+      "description": "{charging} lädt, während {discharging} entlädt – auch nachdem ich die Regelung des Speichers neu gestartet und ihn kurz gesperrt habe. Vielleicht schreibt etwas anderes dieselben Grenzen, oder eine Sperre greift nicht. Schau im Energy-Joe-Panel unter Geräte › Speicher › Mehrere Speicher nach."
+    },
+    "battery_transfer_inside": {
+      "title": "Speicher eines Systems laden sich gegenseitig",
+      "description": "{charging} lädt, während {discharging} entlädt – und beide regelt dasselbe System (zum Beispiel Omnibattery). Da greife ich nicht ein, das System verteilt die Leistung selbst. Schau in dessen Einstellungen nach; im Energy-Joe-Panel unter Geräte › Speicher › Mehrere Speicher steht, wann es war."
     }
   },
   "exceptions": {

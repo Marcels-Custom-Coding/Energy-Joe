@@ -2,7 +2,7 @@ import { LitElement, css, html, nothing, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
 import { openInHa } from "./components/bits";
 import "./components/car-charge";
-import { planCostLine, planLines, planSentence, timeOf } from "./components/plan-text";
+import { dayText, planCostLine, planLines, planSentence, timeOf } from "./components/plan-text";
 import { define } from "./define";
 import { formatState } from "./entities";
 import { translator, type Translate } from "./i18n";
@@ -211,7 +211,7 @@ class EnergyJoeNightCard extends JoeCard {
       reason === "waiting" && plan?.window
         ? t("devices.status.waiting", { time: timeOf(plan.window.start) })
         : reason === "day"
-          ? t("devices.status.day", { time: plan?.day ? timeOf(plan.day.defer_until) : "–" })
+          ? dayText(t, plan)
           : reason
             ? t.optional(`devices.status.${reason}`) ?? ""
             : "";

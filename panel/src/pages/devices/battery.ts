@@ -1,12 +1,29 @@
 import { css, html, nothing, type PropertyValues, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
 import "../../components/battery-automations";
-import { batteryTeam, selfRegulating, teamOrder, teamText, teamTransfer } from "../../components/battery-team";
+import {
+  batteryTeam,
+  givenBack,
+  groupOf,
+  groupsPatch,
+  guardText,
+  selfRegulating,
+  teamGroups,
+  teamOrder,
+  teamHold,
+  teamLearnedText,
+  teamReason,
+  teamReviewText,
+  teamText,
+  transferGuard,
+  unsureNames,
+} from "../../components/battery-team";
 import { sourceChip } from "../../components/bits";
 import "../../components/control-status";
 import { daySurplus, surplusConflictNote, surplusText } from "../../components/day-surplus";
 import { deviceState } from "../../components/device-card";
 import { mirrorRow } from "../../components/mirror";
+import { batteryNotes } from "../../components/battery-notes";
 import { tip } from "../../components/tip";
 import { saveConfig, sourceOf } from "../../config";
 import { define } from "../../define";
@@ -16,7 +33,7 @@ import { formatNumber } from "../../entities";
 import { href, navigate, onLink, revealAnchor, type Route } from "../../router";
 import { ruleStyles, ruleValue, type RuleKey } from "../../rules-view";
 import { shared } from "../../styles/shared";
-import type { BatteryConfig, BatteryFinding, BatteryTeamMode, JoeConfig } from "../../types";
+import type { BatteryConfig, BatteryFinding, BatteryTeamMode, BatteryTeamStyle, JoeConfig } from "../../types";
 import "./battery-device";
 import { batteryNow, controlRoute, hasSuggestion } from "./battery-device";
 import { ignoreFinding, useBattery } from "./device-actions";
@@ -35,6 +52,7 @@ const BATTERY_RULES: readonly RuleKey[] = [
   "discharge_in_window",
   "converter_losses",
   "day_surplus",
+  "transfer_guard",
 ];
 
 /**
@@ -242,6 +260,82 @@ export class JoeBatteryGroup extends DeviceSection {
         color: var(--joe-muted);
         font-size: 13px;
       }
+      select.team-group {
+        width: auto;
+        max-width: min(240px, 48vw);
+        font-size: 14px;
+      }
+      .note.amber {
+        background: color-mix(in srgb, var(--joe-amber, #fea707) 16%, var(--joe-surface));
+      }
+      .note.amber > ha-icon {
+        color: var(--joe-amber, #fea707);
+      }
+      details.team-style {
+        margin-top: 16px;
+        border-radius: 12px;
+        background: var(--joe-surface-2);
+      }
+      details.team-style summary {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .team-style-body {
+        display: grid;
+        gap: 10px;
+        padding: 0 12px 12px;
+      }
+      .team-style-body > p {
+        margin: 0;
+        color: var(--joe-ink-2);
+        font-size: 14px;
+      }
+      .team-options {
+        display: grid;
+        gap: 8px;
+      }
+      .team-option {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .team-option .way {
+        flex: 1 1 0;
+        min-width: 0;
+        display: grid;
+        gap: 2px;
+        min-height: 44px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 2px solid var(--joe-line);
+        background: var(--joe-surface);
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+        transition:
+          border-color 120ms,
+          transform 120ms;
+      }
+      .team-option .way:hover {
+        border-color: color-mix(in srgb, var(--joe-amber, #fea707) 55%, var(--joe-line));
+      }
+      .team-option .way:active {
+        transform: scale(0.98);
+      }
+      .team-option .way[aria-checked="true"] {
+        border-color: var(--joe-amber, #fea707);
+        background: color-mix(in srgb, var(--joe-amber, #fea707) 12%, var(--joe-surface));
+      }
+      .team-option .way small {
+        color: var(--joe-muted);
+        font-size: 13px;
+        line-height: 1.4;
+      }
     `,
   ];
 
@@ -334,13 +428,18 @@ export class JoeBatteryGroup extends DeviceSection {
   private renderTeam(t: Translate, config: JoeConfig): TemplateResult {
     const team = batteryTeam(this.state);
     const mode = config.rules.battery_team ?? null;
+    // Not chosen: "Nacheinander" all the same (Joe takes it on).
+    const shown: BatteryTeamMode = mode ?? "sequence";
     const choose = (next: BatteryTeamMode) => {
       if (next !== mode) {
         void saveConfig(this, { rules: { battery_team: next } });
       }
     };
-    const transfer = teamTransfer(t, team);
     const automations = team?.state === "automation";
+    const back = givenBack(t, team);
+    const hold = teamHold(t, team);
+    const reason = shown === "sequence" ? teamReason(t, team) : null;
+    const review = shown === "sequence" ? teamReviewText(t, team) : null;
     return html`<section class="card" data-tipped data-anchor=${TEAM_ANCHOR}>
       <div class="head">
         <div class="eyebrow"><ha-icon icon="mdi:battery-sync-outline"></ha-icon>${t("team.title")}</div>
@@ -351,15 +450,54 @@ export class JoeBatteryGroup extends DeviceSection {
         <div class="seg" role="group" aria-labelledby="team-question">
           ${(["sequence", "together"] as const).map(
             (option) =>
-              html`<button type="button" aria-pressed=${String(mode === option)} @click=${() => choose(option)}>
+              html`<button type="button" aria-pressed=${String(shown === option)} @click=${() => choose(option)}>
                 ${t(`team.mode.${option}`)}
               </button>`,
           )}
         </div>
-        ${tip(t, "team_mode")} ${mode ? sourceChip(t, sourceOf(config, "rules.battery_team")) : nothing}
+        ${tip(t, "team_mode")}
+        ${mode ? sourceChip(t, sourceOf(config, "rules.battery_team")) : html`<span class="chip">${t("team.mode.default")}</span>`}
       </div>
       ${team && !automations ? html`<p class="team-now">${teamText(t, team)}</p>` : nothing}
       <div class="team-notes">
+        ${reason
+          ? html`<div class="note" role="status" data-tipped>
+              <ha-icon icon="mdi:weather-sunny"></ha-icon>
+              <span>${reason} ${tip(t, "team_reason")}</span>
+            </div>`
+          : nothing}
+        ${review
+          ? html`<div class="note" role="status" data-tipped>
+              <ha-icon icon="mdi:history"></ha-icon>
+              <span>${review} ${tip(t, "team_review")}</span>
+            </div>`
+          : nothing}
+        ${!mode && team && Object.keys(team.groups ?? {}).length >= 2
+          ? html`<div class="note" role="status" data-tipped>
+              <ha-icon icon="mdi:shield-check-outline"></ha-icon>
+              <span>${t("team.default")} ${tip(t, "team_default")}</span>
+            </div>`
+          : nothing}
+        ${hold
+          ? html`<div class="note" role="status" data-tipped>
+              <ha-icon icon="mdi:lock-clock"></ha-icon>
+              <span>${hold} ${tip(t, "team_hold")}</span>
+            </div>`
+          : nothing}
+        ${back
+          ? html`<div class="note ${back.problem ? "warn" : ""}" role="status" data-tipped>
+              <ha-icon icon="mdi:robot-outline"></ha-icon>
+              <span>
+                ${back.text} ${tip(t, "team_given_back")}
+                <span class="note-actions">
+                  <button type="button" class="mini-btn" @click=${() => revealAnchor(this.renderRoot, "automations")}>
+                    ${t("team.automations.go")}
+                  </button>
+                </span>
+              </span>
+            </div>`
+          : nothing}
+        ${team?.group_question ? this.renderGroupQuestion(t, config) : nothing}
         ${automations
           ? html`<div class="note warn" role="status">
               <ha-icon icon="mdi:robot-confused-outline"></ha-icon>
@@ -373,16 +511,13 @@ export class JoeBatteryGroup extends DeviceSection {
               </span>
             </div>`
           : nothing}
-        ${transfer
-          ? html`<div class="note ${team?.transfer?.despite ? "warn" : ""}" role="status">
-              <ha-icon icon="mdi:swap-horizontal"></ha-icon><span>${transfer}</span>
-            </div>`
-          : nothing}
+        ${this.renderGuard(t, config)}
       </div>
-      ${mode === "sequence"
+      ${shown === "sequence"
         ? html`<div class="team-orders">
-            ${this.orderList(t, config, "team_charge_order")} ${this.orderList(t, config, "team_discharge_order")}
-          </div>`
+              ${this.orderList(t, config, "team_charge_order")} ${this.orderList(t, config, "team_discharge_order")}
+            </div>
+            ${this.renderStyle(t, config)}`
         : nothing}
       <ul class="team-list">
         ${config.batteries.map((battery) => this.teamBattery(t, config, battery))}
@@ -390,13 +525,132 @@ export class JoeBatteryGroup extends DeviceSection {
     </section>`;
   }
 
-  /** "Laden: zuerst …" / "Entladen: zuerst …": the batteries in their order, with up and down. */
+  /**
+   * "Selbst einstellen" (for those who want to, folded): automatic (charging
+   * along by the forecast, helping on a big load), one after the other only,
+   * or the next one gives a base load – with the efficiency warning. And
+   * whether Joe uses the lead he learned (the answer to his question).
+   */
+  private renderStyle(t: Translate, config: JoeConfig): TemplateResult {
+    const team = batteryTeam(this.state);
+    const style: BatteryTeamStyle = config.rules.team_style ?? "auto";
+    const pick = (next: BatteryTeamStyle) => {
+      if (next !== style) {
+        void saveConfig(this, { rules: { team_style: next === "auto" ? null : next } });
+      }
+    };
+    const early = config.rules.team_early ?? null;
+    return html`<details class="team-style" ?open=${style !== "auto"} data-notip>
+      <summary>${t("team.style.title")}</summary>
+      <div class="team-style-body">
+        <p>${t("team.style.intro")}</p>
+        <div class="team-options" role="radiogroup" aria-label=${t("team.style.title")}>
+          ${(["auto", "strict", "base"] as const).map(
+            (option) => html`<div class="team-option" data-tipped>
+              <button type="button" class="way" role="radio" aria-checked=${String(style === option)} @click=${() => pick(option)}>
+                <b>${t(`team.style.${option}`)}</b>
+                <small>${t(`team.style.${option}.text`)}</small>
+              </button>
+              ${tip(t, `team_style_${option}`)}
+            </div>`,
+          )}
+        </div>
+        ${style === "base"
+          ? html`<div class="note amber" role="status" data-tipped>
+              <ha-icon icon="mdi:alert-outline"></ha-icon>
+              <span>${t("team.style.base.warn")} ${tip(t, "team_base_warn")}</span>
+            </div>`
+          : nothing}
+        ${style === "base" && team?.base_problem
+          ? html`<div class="note warn" role="status" data-tipped>
+              <ha-icon icon="mdi:information-outline"></ha-icon>
+              <span>${t("team.style.base.no_lever")} ${tip(t, "team_base_lever")}</span>
+            </div>`
+          : nothing}
+        ${style !== "strict"
+          ? html`<div class="team-line" data-tipped>
+              <span class="what">
+                <b id="team-early">${t("team.early")}</b>
+                <small>
+                  ${teamLearnedText(t, team)}
+                  ${early != null
+                    ? sourceChip(t, sourceOf(config, "rules.team_early"))
+                    : html`<span class="chip">${t("team.early.unanswered")}</span>`}
+                </small>
+              </span>
+              <span class="team-ctl">
+                ${tip(t, "team_early")}
+                <button
+                  type="button"
+                  class="switch"
+                  role="switch"
+                  aria-checked=${String(early === true)}
+                  aria-labelledby="team-early"
+                  @click=${() => saveConfig(this, { rules: { team_early: early !== true } })}
+                ></button>
+              </span>
+            </div>`
+          : nothing}
+      </div>
+    </details>`;
+  }
+
+  /**
+   * "Speicher-Wächter": the last time two batteries ran against each other
+   * and what Joe did (control/guard.py); an automation doing it so far
+   * points to the automations below.
+   */
+  private renderGuard(t: Translate, config: JoeConfig): TemplateResult | typeof nothing {
+    const guard = transferGuard(this.state);
+    if (!guard) {
+      return nothing;
+    }
+    const alarm = guard.state === "on" && guard.last?.result === "alarm" && !guard.last.dry;
+    const handed = guard.state === "on" && guard.automations.length > 0;
+    return html`<div class="note guard ${alarm || handed ? "warn" : ""}" role="status" data-tipped data-anchor="guard">
+      <ha-icon icon="mdi:shield-sync-outline"></ha-icon>
+      <span>
+        <b>${t("guard.title")}</b> ${tip(t, "guard")} · ${guardText(t, guard, config)}
+        ${handed
+          ? html`<span class="note-actions">
+              <button type="button" class="mini-btn go" @click=${() => revealAnchor(this.renderRoot, "automations")}>
+                ${t("team.automations.go")}
+              </button>
+            </span>`
+          : nothing}
+      </span>
+    </div>`;
+  }
+
+  /**
+   * "Welche Speicher werden vom selben System geregelt?": Joe is not sure
+   * for some batteries (levers assigned by hand); "Vorschlag passt" keeps
+   * his proposal, each battery's "Wer regelt ihn?" below changes it.
+   */
+  private renderGroupQuestion(t: Translate, config: JoeConfig): TemplateResult {
+    const team = batteryTeam(this.state)!;
+    return html`<div class="note" role="status" data-tipped>
+      <ha-icon icon="mdi:help-circle-outline"></ha-icon>
+      <span>
+        <b>${t("team.groups.question")}</b> ${tip(t, "team_group")}
+        ${t("team.groups.question.text", { names: unsureNames(config, team) })}
+        <span class="note-actions">
+          <button type="button" class="mini-btn go" @click=${() => saveConfig(this, groupsPatch(config, team))}>
+            ${t("team.groups.confirm")}
+          </button>
+          ${tip(t, "team_groups_confirm")}
+        </span>
+      </span>
+    </div>`;
+  }
+
+  /** "Laden: zuerst …" / "Entladen: zuerst …": the groups (one system each) in their order, with up and down. */
   private orderList(t: Translate, config: JoeConfig, key: "team_charge_order" | "team_discharge_order"): TemplateResult {
-    const order = teamOrder(config, key);
+    const order = teamGroups(config, batteryTeam(this.state), teamOrder(config, key));
     const move = (index: number, step: number) => {
-      const next = order.map((b) => b.id);
+      const next = [...order];
       [next[index], next[index + step]] = [next[index + step], next[index]];
-      void saveConfig(this, { rules: { [key]: next } });
+      void saveConfig(this, { rules: { [key]: next.flat().map((b) => b.id) } });
     };
     const arrow = (up: boolean) =>
       html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -407,11 +661,11 @@ export class JoeBatteryGroup extends DeviceSection {
       <div class="team-label">${t(`team.${name}`)} ${tip(t, name)}</div>
       <div class="order">
         ${order.map(
-          (battery, index) => html`<div>
-            <span>${index + 1}. ${battery.name}</span>
+          (group, index) => html`<div>
+            <span>${index + 1}. ${group.map((b) => b.name).join(" + ")}</span>
             <button
               type="button"
-              aria-label=${t("rule.priority.up", { name: battery.name })}
+              aria-label=${t("rule.priority.up", { name: group.map((b) => b.name).join(" + ") })}
               ?disabled=${index === 0}
               @click=${() => move(index, -1)}
             >
@@ -419,7 +673,7 @@ export class JoeBatteryGroup extends DeviceSection {
             </button>
             <button
               type="button"
-              aria-label=${t("rule.priority.down", { name: battery.name })}
+              aria-label=${t("rule.priority.down", { name: group.map((b) => b.name).join(" + ") })}
               ?disabled=${index === order.length - 1}
               @click=${() => move(index, 1)}
             >
@@ -462,6 +716,7 @@ export class JoeBatteryGroup extends DeviceSection {
           ></button>
         </span>
       </div>
+      ${on ? this.groupLine(t, config, battery) : nothing}
       ${on
         ? html`<div class="team-line" data-tipped>
             <span class="what">
@@ -476,6 +731,54 @@ export class JoeBatteryGroup extends DeviceSection {
           </div>`
         : nothing}
     </li>`;
+  }
+
+  /**
+   * "Wer regelt ihn?": its own system, or the same system as another
+   * battery (Omnibattery for a Venus and a Victron). Batteries of one
+   * system take turns as one; Joe proposes from the integration.
+   */
+  private groupLine(t: Translate, config: JoeConfig, battery: BatteryConfig): TemplateResult {
+    const team = batteryTeam(this.state);
+    const mine = groupOf(battery, team);
+    const others = config.batteries.filter((b) => b.id !== battery.id && selfRegulating(b, team));
+    const own = `own:${battery.id}`;
+    const together = others.find((b) => groupOf(b, team) === mine);
+    const value = together ? groupOf(together, team) : own;
+    const id = `team-group-${battery.id}`;
+    const unsure = battery.control_group == null && team?.batteries[battery.id]?.group_sure === false;
+    const choose = (next: string) => {
+      if (next !== value) {
+        void saveConfig(this, { batteries: { [battery.id]: { control_group: next } } });
+      }
+    };
+    return html`<div class="team-line" data-tipped>
+      <span class="what">
+        <small id=${id}>
+          ${t("team.group")}
+          ${battery.control_group == null && team
+            ? html`<span class="chip ${unsure ? "warn" : ""}">${t(unsure ? "team.group.check" : "team.proposed")}</span>`
+            : sourceChip(t, sourceOf(config, `batteries[${battery.id}].control_group`))}
+        </small>
+      </span>
+      <span class="team-ctl">
+        ${tip(t, "team_group")}
+        <select
+          class="input team-group"
+          aria-labelledby=${id}
+          .value=${value}
+          @change=${(event: Event) => choose((event.target as HTMLSelectElement).value)}
+        >
+          <option value=${own} ?selected=${value === own}>${t("team.group.own")}</option>
+          ${others.map((other) => {
+            const key = groupOf(other, team);
+            return html`<option value=${key} ?selected=${value === key && together?.id === other.id}>
+              ${t("team.group.with", { name: other.name })}
+            </option>`;
+          })}
+        </select>
+      </span>
+    </div>`;
   }
 
   /** The rules for all batteries: read here, changed in Einstellungen › Regeln. */
@@ -513,7 +816,9 @@ export class JoeBatteryGroup extends DeviceSection {
     const config = this.state!.config;
     const found = newFindings(config, this.discovery).filter((f) => f.kind === "battery" && f.battery);
     const ignored = ignoredBatteries(config, this.discovery);
-    if (!found.length && !ignored.length) {
+    // Battery integrations without a battery Joe found (its level switched off).
+    const notes = this.discovery?.battery_notes ?? [];
+    if (!found.length && !ignored.length && !notes.length) {
       return nothing;
     }
     const row = (battery: BatteryFinding, left: boolean, key: string) =>
@@ -538,9 +843,12 @@ export class JoeBatteryGroup extends DeviceSection {
         <div class="eyebrow"><ha-icon icon="mdi:home-battery-outline"></ha-icon>${t("battery.page.found")}</div>
         ${tip(t, "battery_found")}
       </div>
-      <ul class="found">
-        ${found.map((f) => row(f.battery!, false, f.key))} ${ignored.map((b) => row(b, true, `battery:${b.id}`))}
-      </ul>
+      ${found.length || ignored.length
+        ? html`<ul class="found">
+            ${found.map((f) => row(f.battery!, false, f.key))} ${ignored.map((b) => row(b, true, `battery:${b.id}`))}
+          </ul>`
+        : nothing}
+      ${batteryNotes(t, notes)}
     </section>`;
   }
 

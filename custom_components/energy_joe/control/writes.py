@@ -40,6 +40,18 @@ class Write:
     value: Any = None
     # Seconds the device needs after this command before the next one.
     pause: float = field(default=0.0, compare=False)
+    # An option written instead when the select does not offer the value
+    # (a state it shows but does not take, e.g. sonnen's "optimizing").
+    fallback: Any = field(default=None, compare=False)
+    # Entities that only become available once this command was read back
+    # (SolarEdge's commands after "Remote Control"): Joe waits for them, at
+    # most ready_s seconds; Home Assistant skips calls to unavailable
+    # entities without an error.
+    ready_for: tuple[str, ...] = field(default=(), compare=False)
+    ready_s: float = field(default=0.0, compare=False)
+    # The value ends up in the device's flash or the integration's stored
+    # settings: written again less often when it does not show.
+    flash: bool = field(default=False, compare=False)
 
     @property
     def domain(self) -> str:
@@ -108,6 +120,10 @@ def fit(hass: HomeAssistant, write: Write) -> Write:
         return replace(write, value=round(value, 4))
     if write.domain in TOGGLES and write.value is not None:
         return replace(write, value=_as_bool(write.value))
+    if write.domain in OPTIONS and write.fallback is not None and state is not None:
+        options = state.attributes.get("options") or []
+        if options and write.value not in options and write.fallback in options:
+            return replace(write, value=write.fallback)
     return write
 
 
@@ -176,11 +192,36 @@ async def async_apply(hass: HomeAssistant, write: Write) -> None:
         raise WriteError(write.entity_id, "failed") from err
     if write.pause:
         await settle(write.pause)
+    if write.ready_for:
+        await async_ready(hass, write.ready_for, write.ready_s)
 
 
 async def settle(seconds: float) -> None:
     """Give a device time between commands (tests replace this)."""
     await asyncio.sleep(seconds)
+
+
+# How often Joe looks whether entities became available (s).
+READY_EVERY = 0.5
+
+
+async def async_ready(
+    hass: HomeAssistant, entity_ids: tuple[str, ...], timeout: float
+) -> bool:
+    """Wait until these entities are available, at most `timeout` seconds.
+
+    False if some still are not: the next write to them fails as
+    "unavailable" (reported), instead of a call Home Assistant would skip.
+    """
+    waited = 0.0
+    while True:
+        if all(available(hass.states.get(e)) for e in entity_ids):
+            return True
+        if waited >= timeout:
+            _LOGGER.debug("Still unavailable after %s s: %s", timeout, entity_ids)
+            return False
+        await settle(READY_EVERY)
+        waited += READY_EVERY
 
 
 async def _async_call(hass: HomeAssistant, write: Write) -> None:

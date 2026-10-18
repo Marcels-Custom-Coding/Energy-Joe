@@ -12,14 +12,19 @@ from typing import Any
 
 from ..control.adapters import RoleAdapter
 from ..control.profiles import (
+    BATTERY_PLATFORMS,
     GENERIC,
+    MQTT_NOTES,
     NOT_ROLE_WORDS,
+    NOT_STEERABLE,
     OPTION_WORDS,
     PROFILES,
     ROLE_DOMAINS,
     ROLE_WORDS as CONTROL_WORDS,
     Call,
     Profile,
+    Set,
+    day_only,
 )
 from ..observe.readings import to_km, to_kwh
 from . import knowledge as kb
@@ -196,6 +201,8 @@ def find_batteries(snap: Snapshot, energy: EnergyHints) -> list[dict[str, Any]]:
             seen_devices.add(entity.device_id)
 
     _link_energy_batteries(snap, energy, batteries)
+    for battery in batteries:
+        battery["notes"] = battery_notes(snap, battery)
     return batteries
 
 
@@ -225,7 +232,18 @@ def _scope(snap: Snapshot, soc: EntityInfo) -> list[EntityInfo]:
     profile = PROFILES.get(soc.platform or "")
     if profile and profile.scope == "entry":
         return snap.of_config_entry(soc.config_entry_id)
+    if profile and profile.scope == "integration":
+        # SENEC keeps its levers in two entries of one integration.
+        return snap.of_platform(soc.platform or "")
     return snap.of_device(soc.device_id)
+
+
+def _disabled_scope(snap: Snapshot, soc: EntityInfo) -> list[EntityInfo]:
+    """The switched-off entities where the profile looks for its levers."""
+    profile = PROFILES.get(soc.platform or "")
+    if profile and profile.scope == "integration":
+        return snap.disabled_of(platform=soc.platform)
+    return snap.disabled_of(entry_id=soc.config_entry_id)
 
 
 def _known_battery(snap: Snapshot, soc: EntityInfo) -> dict[str, Any]:
@@ -284,6 +302,7 @@ def _known_battery(snap: Snapshot, soc: EntityInfo) -> dict[str, Any]:
         "prepare": prepare if controllable else [],
         "steps": steps if controllable else {},
         "controllable": controllable,
+        "can_charge": steering["can_charge"],
         "suggested": None if controllable else suggest_controls(snap, soc),
         "confidence": _round(0.95 if controllable else 0.85),
         "reasons": reasons,
@@ -301,11 +320,13 @@ def _profile_steering(
     prepare: list[dict[str, Any]] = []
     steps: dict[str, list[dict[str, Any]]] = {}
     controllable = False
+    can_charge = False
     if profile:
         for role, keys in profile.roles.items():
             if found := _find_key(scope, ROLE_DOMAINS[role], keys):
                 controls[role] = found.entity_id
         controls.update(entry_controls(snap, profile, soc.config_entry_id))
+        controls.update(guard_controls(snap, profile, scope))
         for name, keys in profile.limits.items():
             found = _find_key(scope, (), keys)
             limits[name] = _control_value(snap, found.entity_id if found else None)
@@ -323,24 +344,35 @@ def _profile_steering(
         complete = True
         for name, items in profile.steps.items():
             resolved = []
+            whole = True
             for item in items:
                 if isinstance(item, Call):
                     resolved.append({"service": item.service, "data": dict(item.data)})
                 elif found := _find_key(scope, (), (item.key,)):
-                    resolved.append({"entity_id": found.entity_id, "value": item.value})
+                    resolved.append(_step_of(found, item.value))
                 else:
-                    complete = False
-            steps[name] = resolved
+                    whole = False
+            if whole:
+                steps[name] = resolved
+            elif name == "charge":
+                # Without a step of charging Joe cannot charge, but still hold.
+                steps[name] = []
+            else:
+                complete = False
+                steps[name] = resolved
         if profile.steps:
             controllable = complete and bool(steps.get("hold"))
+            can_charge = controllable and bool(steps.get("charge"))
         else:
             adapter = RoleAdapter(
                 {"name": "", "controls": controls, "mode_options": mode_options},
                 profile,
             )
             controllable = bool(adapter.hold_methods())
+            can_charge = controllable and adapter.can_charge
     return {
         "controllable": controllable,
+        "can_charge": can_charge,
         "controls": controls,
         "mode_options": mode_options,
         "prepare": prepare,
@@ -348,6 +380,128 @@ def _profile_steering(
         "limits": limits,
         "count": len(controls) + len(steps),
     }
+
+
+def _step_of(found: EntityInfo, value: Any) -> dict[str, Any]:
+    """A step for an entity; a button is pressed with its service (an entity
+    value would count as done before it was pressed)."""
+    if value is None and found.domain in ("button", "input_button"):
+        return {
+            "service": f"{found.domain}.press",
+            "data": {"entity_id": found.entity_id},
+        }
+    return {"entity_id": found.entity_id, "value": value}
+
+
+def _profile_keys(profile: Profile) -> list[tuple[tuple[str, ...], tuple[str, ...]]]:
+    """Every lever a profile looks for: (entity domains, keys)."""
+    found: list[tuple[tuple[str, ...], tuple[str, ...]]] = []
+    for roles in (
+        profile.roles,
+        profile.entry_roles,
+        profile.guard_roles,
+        profile.day_roles,
+    ):
+        for role, keys in roles.items():
+            found.append((ROLE_DOMAINS[role], keys))
+    for item in profile.prepare:
+        found.append(((), (item.key,)))
+    for items in profile.steps.values():
+        for item in items:
+            if isinstance(item, Set):
+                found.append(((), (item.key,)))
+    return found
+
+
+def battery_notes(snap: Snapshot, battery: dict[str, Any]) -> list[dict[str, Any]]:
+    """What the owner should know about steering a battery, as codes the
+    panel explains: why Joe cannot steer it (and what to do), what must be
+    switched on first, and levers that are switched off in Home Assistant."""
+    platform = battery.get("integration") or ""
+    profile = PROFILES.get(platform)
+    notes: list[dict[str, Any]] = []
+    if not battery.get("controllable"):
+        code = (profile.note if profile else None) or NOT_STEERABLE.get(platform)
+        if not code and platform == "mqtt":
+            device = snap.devices.get(battery.get("device_id") or "")
+            text = " ".join(
+                filter(None, [device.manufacturer, device.model, device.name])
+                if device
+                else []
+            ).lower()
+            code = next((c for word, c in MQTT_NOTES.items() if word in text), None)
+        if code:
+            notes.append({"code": f"cannot.{code}"})
+        elif profile:
+            notes.append({"code": "cannot.levers"})
+    elif profile and profile.charge_note and not battery.get("can_charge", True):
+        notes.append({"code": f"no_charge.{profile.charge_note}"})
+    if profile:
+        notes.extend({"code": f"needs.{need}"} for need in profile.needs)
+        soc = snap.get(battery.get("soc_entity"))
+        if soc is not None:
+            off = _switched_off(snap, profile, soc, battery.get("controls") or {})
+            if off:
+                notes.append({"code": "enable", "entities": off})
+    return notes
+
+
+def _switched_off(
+    snap: Snapshot, profile: Profile, soc: EntityInfo, controls: dict[str, str]
+) -> list[dict[str, str]]:
+    """Levers of the profile that are switched off in Home Assistant (Joe
+    names them so the owner can switch them on), first key of each lever."""
+    disabled = _disabled_scope(snap, soc)
+    if profile.scope == "device" and soc.device_id:
+        disabled = [e for e in disabled if e.device_id in (soc.device_id, None)]
+    scope = _scope(snap, soc)
+    taken = set(controls.values())
+    found: dict[str, dict[str, str]] = {}
+    for domains, keys in _profile_keys(profile):
+        if _find_key(scope, domains, keys):
+            continue
+        entity = _find_key(disabled, domains, keys)
+        if entity is not None and entity.entity_id not in taken:
+            found[entity.entity_id] = {
+                "entity_id": entity.entity_id,
+                "name": entity.name,
+            }
+    return list(found.values())
+
+
+def find_battery_notes(
+    snap: Snapshot, batteries: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Battery integrations Joe sees without finding a battery in them (its
+    level may be switched off): what he cannot do, and why."""
+    seen = {b.get("integration") for b in batteries}
+    notes = []
+    for platform in sorted(snap.platforms()):
+        if platform in seen or platform not in BATTERY_PLATFORMS:
+            continue
+        off = [
+            {"entity_id": e.entity_id, "name": e.name}
+            for e in snap.disabled_of(platform=platform)
+            if e.domain == "sensor" and _is_level(e)
+        ]
+        profile = PROFILES.get(platform)
+        notes.append(
+            {
+                "integration": platform,
+                "name": profile.name if profile else platform,
+                "code": f"cannot.{NOT_STEERABLE[platform]}"
+                if platform in NOT_STEERABLE
+                else "no_level",
+                "entities": off,
+            }
+        )
+    return notes
+
+
+def _is_level(entity: EntityInfo) -> bool:
+    """A switched-off sensor that looks like a battery's level (by its key)."""
+    key = (entity.translation_key or entity.unique_id or "").lower()
+    return any(word in key for word in ("soc", "state_of_charge", "level"))
 
 
 def _generic_battery(
@@ -381,6 +535,7 @@ def _generic_battery(
         "prepare": [],
         "steps": {},
         "controllable": False,
+        "can_charge": False,
         "suggested": suggest_controls(snap, soc),
         "confidence": _round(confidence),
         "reasons": reasons,
@@ -394,6 +549,7 @@ def _generic_battery(
             prepare=steering["prepare"],
             steps=steering["steps"],
             controllable=True,
+            can_charge=steering["can_charge"],
             suggested=None,
             max_charge_w=steering["limits"].get("max_charge_w"),
             max_discharge_w=steering["limits"].get("max_discharge_w"),
@@ -543,11 +699,39 @@ def entry_controls(
     return found
 
 
+def guard_controls(
+    snap: Snapshot, profile: Profile | None, scope: list[EntityInfo]
+) -> dict[str, str]:
+    """The day's levers of the battery itself: the watchdog's (a Venus' allow
+    switches) and the others only the day uses (Huawei's power limits)."""
+    if not profile:
+        return {}
+    found = {}
+    for role, keys in (*profile.guard_roles.items(), *profile.day_roles.items()):
+        if entity := _find_key(scope, ROLE_DOMAINS[role], keys):
+            found[role] = entity.entity_id
+    return found
+
+
 def profile_controls(snap: Snapshot, battery: dict[str, Any]) -> dict[str, str]:
-    """The system levers a battery's profile knows, as found in Home Assistant."""
+    """The system and watchdog levers a battery's profile knows, as found in
+    Home Assistant."""
     profile = PROFILES.get(battery.get("adapter") or "")
     soc = snap.get(battery.get("soc_entity"))
-    return entry_controls(snap, profile, soc.config_entry_id if soc else None)
+    found = entry_controls(snap, profile, soc.config_entry_id if soc else None)
+    if profile and (profile.guard_roles or profile.day_roles):
+        if profile.scope == "entry":
+            scope = snap.of_config_entry(soc.config_entry_id) if soc else []
+        elif profile.scope == "integration" and soc:
+            scope = snap.of_platform(soc.platform or "")
+        else:
+            scope = snap.of_device(
+                battery.get("device_id") or (soc.device_id if soc else None)
+            )
+        found.update(guard_controls(snap, profile, scope))
+    # Only levers of the day: the night's stay as they were tested.
+    day = day_only(profile)
+    return {role: entity_id for role, entity_id in found.items() if role in day}
 
 
 def profile_prepare(snap: Snapshot, battery: dict[str, Any]) -> list[dict[str, Any]]:
@@ -603,8 +787,11 @@ def _find_key(
 
 
 def _control_value(snap: Snapshot, entity_id: str | None) -> float | None:
+    """A power limit in W (Sigenergy tells its rated powers in kW)."""
     entity = snap.get(entity_id)
-    return entity.number if entity and entity.number else None
+    if not entity or not entity.number:
+        return None
+    return entity.number * 1000 if entity.unit == "kW" else entity.number
 
 
 def _to_kwh(value: float, unit: str | None) -> float:

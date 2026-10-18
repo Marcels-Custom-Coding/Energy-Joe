@@ -73,9 +73,14 @@ export function planSentence(t: Translate, plan: Plan): string {
     parts.push(t("plan.say.max_price"));
   }
   if (plan.day) {
-    // Grid-friendly: the morning sun goes to the grid, the battery takes the midday sun.
+    // Grid-friendly: the morning sun goes to the grid, the battery takes the midday sun
+    // (first up to the buffer, if there is one above the floor).
+    const vars = { time: timeOf(plan.day.defer_until), kwh: formatNumber(t.lang, plan.day.held_kwh, 0) };
+    const buffer = plan.day.buffer;
     parts.push(
-      t("plan.day", { time: timeOf(plan.day.defer_until), kwh: formatNumber(t.lang, plan.day.held_kwh, 0) }),
+      buffer && buffer.soc > buffer.floor
+        ? t("plan.day.buffer", { ...vars, level: formatNumber(t.lang, buffer.soc, 0) })
+        : t("plan.day", vars),
     );
     if (plan.day.cost && plan.day.cost >= 0.01) {
       parts.push(t("plan.day.cost", { cost: `${formatNumber(t.lang, plan.day.cost * 100, 0)} ct` }));
@@ -129,4 +134,14 @@ export function planCostLine(t: Translate, plan: Plan, currency = "EUR"): string
     parts.push(t("plan.cost.saving", { value: money(plan.cost.saving) }));
   }
   return parts.join(" · ");
+}
+
+/** The grid-friendly morning in one sentence: this morning's plan (after the window), with its buffer. */
+export function dayText(t: Translate, plan: Plan | null | undefined): string {
+  const day = plan?.morning?.day ?? plan?.day;
+  const time = day ? timeOf(day.defer_until) : "–";
+  const buffer = day?.buffer;
+  return buffer && buffer.soc > buffer.floor
+    ? t("devices.status.day_buffer", { time, level: String(buffer.soc) })
+    : t("devices.status.day", { time });
 }

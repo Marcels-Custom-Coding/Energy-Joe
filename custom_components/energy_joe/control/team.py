@@ -31,7 +31,17 @@ and the first is usable again once it has charged 5 % above it.
 When the sun will not fill the batteries one after the other before it goes
 (cautious forecast), they charge side by side: the others become free to
 charge (never forced; their own control takes what is left), discharging
-stays blocked for them, and on a cloud they are blocked again at once.
+stays blocked for them, and on a cloud they are blocked again at once (not
+with "Nur nacheinander", see control/team_day.py).
+
+Groups ("Wer regelt ihn?"): batteries regulated by one system take turns
+as one. Omnibattery regulates all its batteries (a Venus, a Victron) with one
+PD controller and shares the power among them itself; a Fronius inverter
+regulates its own battery. Joe coordinates only between such groups: exactly
+one group works, the others are blocked. A group is full when all of its
+batteries are full and empty when all of them are empty; the orders count
+per group (the place of its first battery). With all batteries in one group
+there is nothing to coordinate by day.
 
 The decisions here have no Home Assistant imports; the executor reads the
 meters, applies the blocks and gives them back (control/executor.py).
@@ -74,9 +84,6 @@ KEEP = 5
 # A battery that charges no more while the house gives to the grid is full,
 # too (its own charge target, a BMS limit).
 EXPORT_W = 300.0
-# Two batteries running against each other: above this, for this long.
-TRANSFER_W = 150.0
-TRANSFER_SPAN = timedelta(minutes=2)
 
 
 @dataclass(slots=True)
@@ -109,11 +116,72 @@ class Member:
         return self.floor + 0.5
 
 
-def ordered(members: Iterable[Member], order: list[str]) -> list[Member]:
-    """The members in the chosen order; those not named follow as they come."""
+@dataclass(slots=True)
+class Group:
+    """Batteries regulated by one system, as the coordination sees them."""
+
+    id: str
+    members: list[Member]
+
+    @property
+    def ids(self) -> list[str]:
+        return [m.id for m in self.members]
+
+    @property
+    def empty(self) -> bool:
+        """Empty once every battery of it is empty."""
+        return all(m.empty for m in self.members)
+
+    @property
+    def full(self) -> bool:
+        """Full once every battery of it is full."""
+        return all(m.full for m in self.members)
+
+    @property
+    def room(self) -> float:
+        return sum(m.room for m in self.members)
+
+    @property
+    def max_kw(self) -> float:
+        return sum(m.max_kw for m in self.members)
+
+
+def ordered[T: (Member, Group)](members: Iterable[T], order: list[str]) -> list[T]:
+    """The members in the chosen order; those not named follow as they come.
+
+    A group takes the place of its first battery in the order.
+    """
     found = list(members)
     rank = {key: index for index, key in enumerate(order)}
-    return sorted(found, key=lambda m: rank.get(m.id, len(rank) + found.index(m)))
+
+    def place(item: T) -> int:
+        keys = item.ids if isinstance(item, Group) else [item.id]
+        known = [rank[k] for k in keys if k in rank]
+        return min(known) if known else len(rank) + found.index(item)
+
+    return sorted(found, key=place)
+
+
+def grouped(members: Iterable[Member], groups: dict[str, str]) -> list[Group]:
+    """The members by their group (battery -> group key), in order of their
+    first battery; a battery without a group is a group of its own."""
+    result: dict[str, Group] = {}
+    for member in members:
+        key = groups.get(member.id) or member.id
+        result.setdefault(key, Group(key, [])).members.append(member)
+    return list(result.values())
+
+
+def transfer_inside(
+    charging: Iterable[str], discharging: Iterable[str], groups: dict[str, str]
+) -> bool:
+    """Whether batteries charge each other only inside one group (its own
+    system's fault, no matter of Joe's): no charging one and discharging one
+    of different groups."""
+    sides = [
+        (groups.get(a) or a, groups.get(b) or b) for a in charging for b in discharging
+    ]
+    return bool(sides) and all(a == b for a, b in sides)
 
 
 def mark(
@@ -139,8 +207,8 @@ def mark(
 
 
 def choose(
-    charge_order: list[Member],
-    discharge_order: list[Member],
+    charge_order: list[Member] | list[Group],
+    discharge_order: list[Member] | list[Group],
     active: str | None,
     flow: str | None,
     steady: bool,
@@ -175,7 +243,7 @@ def choose(
 
 
 def sequential_fills(
-    found: list[Slot], members: list[Member], end: datetime | None
+    found: list[Slot], members: list[Member] | list[Group], end: datetime | None
 ) -> bool:
     """Whether the cautious surplus until the end fills the batteries one
     after the other, each at most at its own power."""
@@ -259,10 +327,3 @@ def watch_full(
         return now - datetime.fromisoformat(since) >= SPAN
     watch.pop("full_since", None)
     return False
-
-
-def opposite(powers: dict[str, float]) -> tuple[list[str], list[str]]:
-    """Batteries that charge and ones that discharge (W, above TRANSFER_W)."""
-    charging = [k for k, p in powers.items() if p >= TRANSFER_W]
-    discharging = [k for k, p in powers.items() if p <= -TRANSFER_W]
-    return (charging, discharging) if charging and discharging else ([], [])
