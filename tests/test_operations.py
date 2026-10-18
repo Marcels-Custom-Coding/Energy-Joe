@@ -114,10 +114,13 @@ def test_fronius_shows_every_write_in_its_order(hass: HomeAssistant) -> None:
     hold = found["hold"]
     assert hold["params"]["floor"] == 34
     assert sets(hold) == [("number.reserve", 34.0)]
+    assert hold["steps"][0]["param"] == "floor"
+    assert [s["param"] for s in block["steps"]] == [None] * 4
     assert back(hold) == [("number.reserve", "saved")]
     charge = found["charge"]
     assert charge["params"]["target"] == 55 and charge["params"]["power_w"] == 5000
     assert sets(charge) == [("switch.grid_charging", True), ("number.reserve", 55.0)]
+    assert [s["param"] for s in charge["steps"]] == [None, "target"]
     assert back(charge) == [
         ("number.reserve", "saved"),
         ("switch.grid_charging", "saved"),
@@ -146,9 +149,18 @@ def test_fronius_shows_every_write_in_its_order(hass: HomeAssistant) -> None:
         ("switch.grid_charging", True),
         ("number.reserve", 55.0),
     ]
+    # The ceiling in % is no plain power: no parameter for it.
+    assert [s["param"] for s in found["charge"]["steps"]] == [
+        None,
+        None,
+        None,
+        "target",
+    ]
     cap = found["cap"]
     assert cap["possible"] and cap["params"]["percent"] == 50
     assert sets(cap) == [("switch.charge_limit", True), ("number.charge_limit", 50.0)]
+    assert [s["param"] for s in cap["steps"]] == [None, "percent"]
+    assert cap["note"] == "switch_before_value"
     assert back(cap) == [
         ("switch.charge_limit", "saved"),
         ("number.charge_limit", "saved"),
@@ -209,6 +221,8 @@ def test_a_venus_blocks_with_its_switches_and_prepares_manual_mode(
         "number.charge_cutoff",
         "switch.venus_manual_mode",
     ]
+    assert charge["note"] == "prepare"
+    assert [s["param"] for s in charge["steps"]] == [None, "target", "power", None]
     # A Venus without its allow switches: the system's limits, one switch for both.
     plain = by_op(operations.preview(hass, team_venus()))
     assert sets(plain["block"]) == [
@@ -249,6 +263,7 @@ def test_huawei_steps_come_from_the_profile(hass: HomeAssistant) -> None:
             "entity_id": "switch.luna_grid",
             "name": "luna grid",
             "value": True,
+            "param": None,
             "unit": None,
             "current": "off",
         },
@@ -277,6 +292,17 @@ def test_huawei_steps_come_from_the_profile(hass: HomeAssistant) -> None:
             "data": {"device_id": "luna"},
         }
     ]
+    # Steps the user changed are their own, the untouched ones the profile's.
+    changed = {
+        **battery,
+        "steps": {
+            **battery["steps"],
+            "hold": [{"entity_id": "number.luna_discharging", "value": 100}],
+        },
+    }
+    found = by_op(operations.preview(hass, changed))
+    assert found["hold"]["source"] == "own" and found["charge"]["source"] == "service"
+    assert sets(found["hold"]) == [("number.luna_discharging", 100.0)]
 
 
 def test_a_battery_joe_only_watches_has_no_operations(hass: HomeAssistant) -> None:
@@ -298,9 +324,9 @@ def test_what_is_not_possible_says_why(hass: HomeAssistant) -> None:
     )
     assert found["charge"]["why"] == "soc_unknown"
     # No charge limit: nothing blocks charging by day, nothing caps.
-    assert found["block"]["why"] == "no_charge_lever"
+    assert found["block"]["why"] == "no_lever"
     assert found["block"]["source"] == "none"
-    assert found["cap"]["why"] == "no_limit"
+    assert found["cap"]["why"] == "no_lever" and found["cap"]["source"] == "none"
     # The watchdog still blocks discharging with the discharge limit.
     guard = found["guard_discharge"]
     assert guard["possible"] and guard["source"] == "profile"
@@ -442,6 +468,7 @@ def test_own_steps_for_the_cap_and_the_night(hass: HomeAssistant) -> None:
     found = by_op(operations.preview(hass, battery))
     assert found["cap"]["source"] == "own"
     assert sets(found["cap"]) == [("number.byd_cap", 50.0)]
+    assert found["cap"]["steps"][0]["param"] == "percent"
     assert found["hold"]["source"] == "own"
     assert sets(found["hold"]) == [("select.byd_mode", "hold")]
     # Own steps of the night count for the test run's signature.
@@ -542,8 +569,14 @@ def test_the_find_names_what_is_missing_and_what_to_take_over(
         roles["charge_limit"]["deviates"] and roles["charge_limit"]["entity_id"] is None
     )
     assert roles["charge_limit"]["found"] == "number.inverter_charge_limit"
-    assert not roles["charge_power"]["deviates"] and roles["charge_power"]["relevant"]
+    # The power assigned to the limit's entity: it moves to the limit's role.
+    assert roles["charge_power"]["deviates"] and roles["charge_power"]["relevant"]
+    assert roles["charge_power"]["found"] is None
     assert not roles["min_soc"]["deviates"]
+    # One the profile does not know on an entity of its own: no deviation.
+    own = {**battery, "controls": {**FOUND, "mode": "select.mine"}}
+    roles = {r["role"]: r for r in operations.preview(hass, own, FOUND)["roles"]}
+    assert not roles["mode"]["deviates"] and roles["mode"]["relevant"]
 
 
 def install_fronius_registry(hass: HomeAssistant) -> dict[str, str]:
@@ -727,7 +760,7 @@ async def test_a_probe_writes_reads_back_and_restores(
     ]
     assert executor.data["saved"] == {}
     assert executor.data["probes"]["byd"]["block"] == result
-    assert executor.view["probes"]["byd"]["block"]["ok"]
+    assert "probes" not in executor.view and executor.view["probe_running"] is None
     assert executor.data["log"][-1]["kind"] == "probe"
     assert executor.data["log"][-1]["op"] == "block" and executor.data["log"][-1]["ok"]
     # Holding and charging as in the test run.
@@ -821,7 +854,7 @@ async def test_preview_and_probe_over_the_websocket(
     found = by_op(msg["result"])
     assert msg["result"]["profile"]["key"] == "fronius"
     assert list(found)[:7] == ORDER
-    assert found["block"]["why"] == "no_charge_lever"
+    assert found["block"]["why"] == "no_lever"
     # The dialog's unsaved state: the limits assigned make the block possible.
     draft = {
         "controls": {
@@ -845,8 +878,8 @@ async def test_preview_and_probe_over_the_websocket(
         }
     )
     msg = await client.receive_json()
-    assert msg["success"] and msg["result"]["error"] == "invalid_draft"
-    assert "nonsense" in msg["result"]["detail"]
+    assert msg["success"] and msg["result"]["code"] == "invalid_draft"
+    assert "nonsense" in msg["result"]["error"]
     await client.send_json_auto_id(
         {"type": f"{DOMAIN}/battery/preview", "battery_id": "nope"}
     )
@@ -860,7 +893,7 @@ async def test_preview_and_probe_over_the_websocket(
     assert msg["success"], msg
     assert msg["result"]["ok"] and msg["result"]["op"] == "hold"
     assert msg["result"]["steps"][0]["entity_id"] == "number.reserve"
-    assert runtime.state["control"]["probes"]["byd"]["hold"]["ok"]
+    assert runtime.state["probes"]["byd"]["hold"]["ok"]
     assert runtime.state["control"]["probe_running"] is None
     await client.send_json_auto_id(
         {"type": f"{DOMAIN}/battery/probe", "battery_id": "byd", "op": "nonsense"}

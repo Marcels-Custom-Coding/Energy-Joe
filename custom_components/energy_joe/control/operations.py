@@ -16,12 +16,16 @@ code the executor runs (control/adapters.py), without writing anything:
 - guard_charge, guard_discharge: only where the watchdog's block for a few
   seconds writes something else than block_charge / block_discharge
 
-Each operation says whether it is possible now and why not (the adapters'
-own codes), where its steps come from ("profile", "generic", "own",
-"service", "none"), the writes in their order with the entities' values
-now, and what "back" writes afterwards ("saved": the original noted before).
-The executor's probe (JoeExecutor.async_probe) writes the same steps once,
-reads them back and puts everything back.
+Each operation says whether it is possible now and why not (codes the
+panel explains: no_lever, no_charge, no_steps, unavailable, soc_unknown,
+not_controllable, shared_switch; the adapters' finer codes pass through),
+where its steps come from ("profile", "generic", "own", "service", "none"),
+the writes in their order with the entities' values now and, where a value
+stands for one of the moment's parameters, that parameter ("param", so the
+panel can turn the steps into own ones with placeholders), and what "back"
+writes afterwards ("saved": the original noted before). The executor's probe
+(JoeExecutor.async_probe) writes the same steps once, reads them back and
+puts everything back.
 
 The roles of a battery come with what its profile finds in Home Assistant
 today ("found"), so the panel can show where the saved levers differ.
@@ -36,9 +40,23 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 
 from ..observe.readings import number
-from .adapters import DEFAULT_CHARGE_W, Adapter, Desired, RoleAdapter, make_adapter
+from .adapters import (
+    DEFAULT_CHARGE_W,
+    Adapter,
+    Desired,
+    RoleAdapter,
+    StepsAdapter,
+    make_adapter,
+)
 from .guard import BLOCK_S
-from .profiles import BLOCK_OPERATIONS, GENERIC, OPERATIONS, PROFILES, ROLES
+from .profiles import (
+    BLOCK_OPERATIONS,
+    GENERIC,
+    OPERATIONS,
+    PROFILES,
+    ROLES,
+    Call,
+)
 from .writes import Write, fit
 
 GUARD_OPERATIONS = ("guard_charge", "guard_discharge")
@@ -75,20 +93,54 @@ ROLE_KINDS: dict[str, str] = {
     "block_charge": "toggle",
     "block_discharge": "toggle",
 }
+# The adapters' codes in the words the panel knows.
+WHY_ALIASES = {
+    "system_shared": "shared_switch",
+    "controls_missing": "unavailable",
+    "no_charge_lever": "no_lever",
+    "no_discharge_lever": "no_lever",
+    "no_limit": "no_lever",
+}
 # Why an operation is not possible, when nothing at all defines it (the
 # source is "none" then); every other code is a matter of the moment
-# (unavailable, soc_unknown, controls_missing, need_ref, unit, flash,
-# cannot_hold, cannot_block).
+# (unavailable, soc_unknown, need_ref, unit, flash, cannot_hold,
+# cannot_block).
 NOTHING_DEFINES = (
     "not_controllable",
     "no_charge",
     "no_lever",
-    "no_charge_lever",
-    "no_discharge_lever",
-    "no_limit",
-    "system_shared",
+    "no_steps",
+    "shared_switch",
     "exclusive",
 )
+# The placeholders of steps and the parameter each stands for.
+PLACEHOLDERS = {
+    "{target}": "target",
+    "{power}": "power",
+    "{power_neg}": "power_neg",
+    "{floor}": "floor",
+    "{percent}": "percent",
+    "{minutes}": "minutes",
+    "{seconds}": "seconds",
+    "{device}": "device",
+}
+# Which parameter a profile's lever may stand for, per operation and role
+# (it does when the value written equals what the placeholder would give).
+ROLE_PARAMS: dict[str, dict[str, tuple[str, ...]]] = {
+    "charge": {
+        "min_soc": ("target",),
+        "charge_target": ("target",),
+        "charge_power": ("power", "power_neg"),
+        "charge_limit": ("power",),
+        "command_timeout": ("seconds", "minutes"),
+    },
+    "hold": {"min_soc": ("floor",), "charge_target": ("floor",)},
+    "block": {"min_soc": ("floor",), "charge_target": ("floor",)},
+    "cap": {
+        "charge_limit": ("percent", "power"),
+        "system_charge_limit": ("percent", "power"),
+    },
+}
 
 
 @dataclass(slots=True)
@@ -127,6 +179,8 @@ class Operation:
     # What "back" writes afterwards, in its order; the value is the noted
     # original (or "saved" where it is not noted yet).
     restore: list[Write] = field(default_factory=list)
+    # Per entity written: the parameter its value stands for.
+    params_of: dict[str, str] = field(default_factory=dict)
     note: str | None = None
 
 
@@ -195,6 +249,8 @@ def operation(
     soc = params.soc
     writes: list[Write] = []
     if op in ("charge", "hold"):
+        if isinstance(adapter, StepsAdapter) and not adapter.steps.get(op):
+            return _impossible(result, "no_steps")
         missing = adapter.missing(hass)
         if op == "charge" and not adapter.can_charge:
             return _impossible(result, "no_charge")
@@ -220,7 +276,7 @@ def operation(
         ):
             # The ceiling of the power goes first (see executor._async_night_cap).
             writes = adapter.night_cap(hass, round(params.power_w), {}) + writes
-    elif op in ("block", "block_charge", "block_discharge"):
+    elif op in BLOCK_OPERATIONS:
         charge, discharge = op != "block_discharge", op != "block_charge"
         own = adapter._own_block(hass, charge, discharge)
         if own is None:
@@ -259,6 +315,7 @@ def operation(
         raise ValueError(f"unknown operation: {op}")
     result.writes = [fit(hass, w) for w in writes]
     result.restore = restore_writes(adapter, op, result.writes, saved, written)
+    result.params_of = _param_map(adapter, op, result.writes, params)
     result.note = _note(adapter, result.writes)
     return result
 
@@ -284,11 +341,11 @@ def restore_writes(
     originals = {e: saved.get(e, "saved") for e in dict.fromkeys(entities)}
     if not originals:
         return []
-    own = adapter.own_steps(op) is not None and source_of(adapter, op) == "own"
+    own = source_of(adapter, op) == "own"
     if op in GUARD_OPERATIONS or (own and op != "release"):
         # Held newest first (executor._async_guard_restore, own_free).
         back = [Write(e, originals[e]) for e in reversed(list(originals))]
-    elif op in ("block", "block_charge", "block_discharge"):
+    elif op in BLOCK_OPERATIONS:
         roles = [r for e in originals for r in _roles_of(adapter, e)]
         back = adapter.team_free(originals, list(dict.fromkeys(roles)))
     elif op == "cap":
@@ -301,21 +358,15 @@ def restore_writes(
 def source_of(adapter: RoleAdapter, op: str) -> str:
     """Where an operation's steps come from: the profile's levers, levers
     the user assigned ("generic"), the user's own steps, or a profile's
-    service steps (Huawei)."""
+    service steps (Huawei) as discovery stored them – own once the user
+    changed them."""
     profile = adapter.profile
-    if op in GUARD_OPERATIONS:
-        # The watchdog blocks with the own one-way steps where there are some.
-        own = adapter.own_steps(f"block_{op.removeprefix('guard_')}") is not None
-    elif op in BLOCK_OPERATIONS:
-        charge, discharge = op != "block_discharge", op != "block_charge"
-        own = adapter._own_block_op(charge, discharge) is not None
-    else:
-        own = adapter.own_steps(op) is not None
+    keys = _own_keys(adapter, op)
     if profile.steps:
-        if op in profile.steps and own:
-            return "service"
-        return "own" if own else "profile"
-    if own:
+        if not keys:
+            return "profile"
+        return "service" if all(_profile_steps(adapter, key) for key in keys) else "own"
+    if keys:
         return "own"
     return "generic" if profile is GENERIC else "profile"
 
@@ -357,14 +408,23 @@ def operation_view(
         "why": item.why,
         "source": item.source,
         "params": params.as_dict(),
-        "steps": [step_view(hass, adapter, w) for w in item.writes],
+        "steps": [
+            step_view(hass, adapter, w, item.params_of.get(w.entity_id))
+            for w in item.writes
+        ],
         "restore": [restore_view(hass, adapter, w) for w in item.restore],
         "note": item.note,
     }
 
 
-def step_view(hass: HomeAssistant, adapter: Adapter | None, write: Write) -> dict:
-    """A write as the panel shows it, with the entity's value now."""
+def step_view(
+    hass: HomeAssistant,
+    adapter: Adapter | None,
+    write: Write,
+    param: str | None = None,
+) -> dict[str, Any]:
+    """A write as the panel shows it, with the entity's value now and the
+    parameter the value stands for (see _param_map)."""
     if write.is_call:
         return {
             "kind": "call",
@@ -378,6 +438,7 @@ def step_view(hass: HomeAssistant, adapter: Adapter | None, write: Write) -> dic
         "entity_id": write.entity_id,
         "name": state.name if state else write.entity_id,
         "value": write.value,
+        "param": param,
         "unit": state.attributes.get("unit_of_measurement") if state else None,
         "current": state.state if state else None,
     }
@@ -403,7 +464,9 @@ def roles_view(
 ) -> list[dict[str, Any]]:
     """Every role the profile knows, every one assigned and the generic
     levers: the entity assigned, the one the profile finds today, what kind
-    of value it takes, which operations write it, and whether it differs."""
+    of value it takes, which operations write it, and whether it differs
+    (assigned to another entity than found, found but not assigned, or a
+    role the profile does not know on an entity it finds under another)."""
     profile = PROFILES.get(battery.get("adapter") or "")
     known: set[str] = set()
     if profile:
@@ -424,6 +487,7 @@ def roles_view(
                 ops = used.setdefault(role, [])
                 if item.op not in ops:
                     ops.append(item.op)
+    taken = set(found.values())
     result = []
     for role in ROLES:
         if role not in known and role not in controls and role not in BASE_ROLES:
@@ -431,6 +495,11 @@ def roles_view(
         entity_id = controls.get(role)
         here = found.get(role)
         state = hass.states.get(entity_id or here or "")
+        deviates = (
+            entity_id != here
+            if here is not None
+            else entity_id is not None and entity_id in taken
+        )
         result.append(
             {
                 "role": role,
@@ -439,7 +508,7 @@ def roles_view(
                 "kind": ROLE_KINDS.get(role, "setpoint"),
                 "unit": state.attributes.get("unit_of_measurement") if state else None,
                 "used_by": used.get(role, []),
-                "deviates": here is not None and entity_id != here,
+                "deviates": deviates,
                 "relevant": bool(used.get(role)) or entity_id is not None,
             }
         )
@@ -448,27 +517,129 @@ def roles_view(
 
 def _impossible(result: Operation, why: str) -> Operation:
     result.possible = False
-    result.why = why
-    if why in NOTHING_DEFINES:
+    result.why = WHY_ALIASES.get(why, why)
+    if result.why in NOTHING_DEFINES:
         result.source = "none"
     return result
 
 
+def _own_keys(adapter: RoleAdapter, op: str) -> list[str]:
+    """The keys of battery.steps an operation runs on (empty: the profile's levers)."""
+    if op in GUARD_OPERATIONS:
+        key = f"block_{op.removeprefix('guard_')}"
+        return [key] if adapter.own_steps(key) else []
+    if op in BLOCK_OPERATIONS:
+        charge, discharge = op != "block_discharge", op != "block_charge"
+        key = adapter._own_block_op(charge, discharge)
+        if key is None:
+            return []
+        return ["block_charge", "block_discharge"] if key == "both" else [key]
+    return [op] if adapter.own_steps(op) else []
+
+
+def _profile_steps(adapter: RoleAdapter, key: str) -> bool:
+    """Whether the stored steps are the profile's (as discovery resolved
+    them), not the user's: the same calls with the same data, the same
+    values in the same order."""
+    items = adapter.profile.steps.get(key)
+    stored = adapter.steps.get(key)
+    if items is None or stored is None or len(items) != len(stored):
+        return False
+    for item, step in zip(items, stored, strict=True):
+        if isinstance(item, Call):
+            if step.get("service") != item.service or (step.get("data") or {}) != dict(
+                item.data
+            ):
+                return False
+        elif step.get("service"):
+            # A button pressed with its service (see discovery._step_of).
+            if item.value is not None or not str(step["service"]).endswith(".press"):
+                return False
+        elif step.get("value") != item.value:
+            return False
+    return True
+
+
+def _param_map(
+    adapter: RoleAdapter, op: str, writes: list[Write], params: Params
+) -> dict[str, str]:
+    """Per entity written: the parameter its value stands for. Own steps say
+    it with their placeholder; a profile's lever stands for one when its
+    value is what the placeholder would give (a power in W, never a
+    converted one)."""
+    result: dict[str, str] = {}
+    for key in _own_keys(adapter, op):
+        for step in adapter.steps.get(key) or []:
+            value = step.get("value")
+            if (
+                step.get("entity_id")
+                and isinstance(value, str)
+                and value in PLACEHOLDERS
+            ):
+                result[step["entity_id"]] = PLACEHOLDERS[value]
+    table = ROLE_PARAMS.get("block" if op in BLOCK_OPERATIONS else op)
+    if not table:
+        return result
+    rendered = _rendered(adapter, op, params)
+    for write in writes:
+        if write.is_call or write.entity_id in result:
+            continue
+        for role in _roles_of(adapter, write.entity_id):
+            for param in table.get(role, ()):
+                if _same(write.value, rendered.get(param)):
+                    result[write.entity_id] = param
+                    break
+            if write.entity_id in result:
+                break
+    return result
+
+
+def _rendered(adapter: RoleAdapter, op: str, params: Params) -> dict[str, Any]:
+    """What each placeholder would give for an operation now."""
+    soc = params.soc or 0.0
+    if op == "charge":
+        values = adapter._values(
+            Desired(charge_to=params.target, power_w=params.power_w), soc
+        )
+    elif op == "hold":
+        values = adapter._values(Desired(floor=params.floor), soc)
+    elif op == "cap":
+        values = adapter._values(Desired(power_w=params.cap_w), soc, params.percent)
+        values["{power}"] = round(params.cap_w)
+        values["{power_neg}"] = -round(params.cap_w)
+    else:
+        values = adapter._values(Desired(), soc)
+    return {PLACEHOLDERS[key]: value for key, value in values.items()}
+
+
+def _same(value: Any, other: Any) -> bool:
+    if other is None or isinstance(value, bool) or isinstance(other, bool):
+        return False
+    if isinstance(value, int | float) and isinstance(other, int | float):
+        return math.isclose(float(value), float(other), abs_tol=1e-6)
+    return value == other
+
+
 def _note(adapter: RoleAdapter, writes: list[Write]) -> str | None:
-    """What is special about the order: values that end up in flash, or a
-    limit written before the switch that makes it count (Fronius)."""
+    """What is special about the order: a prepare step first (manual mode),
+    values that end up in flash to be spared, a limit written before the
+    switch that makes it count (Fronius), or a switch before its value."""
     entities = [w.entity_id for w in writes if not w.is_call]
-    if set(entities) & adapter._flash_entities():
+    if set(entities) & set(adapter.prepare_entities()):
+        return "prepare"
+    if adapter.profile.flash_gap_s and set(entities) & adapter._flash_entities():
         return "flash"
     for index, entity_id in enumerate(entities):
+        later = entities[index + 1 :]
         for role in _roles_of(adapter, entity_id):
-            switch = adapter.controls.get(f"{role}_enabled")
-            if (
-                role.endswith("_limit")
-                and switch is not None
-                and switch in entities[index + 1 :]
-            ):
-                return "value_before_switch"
+            if role.endswith("_limit"):
+                switch = adapter.controls.get(f"{role}_enabled")
+                if switch is not None and switch in later:
+                    return "value_before_switch"
+            elif role.endswith("_limit_enabled"):
+                value = adapter.controls.get(role.removesuffix("_enabled"))
+                if value is not None and value in later:
+                    return "switch_before_value"
     return None
 
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
+import logging
 from typing import Any
 
 import voluptuous as vol
@@ -60,6 +61,8 @@ from .runtime import (
     ONBOARDING_STEPS,
     JoeRuntime,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 
 @callback
@@ -776,8 +779,10 @@ async def ws_battery_preview(
 ) -> None:
     """What Joe would write for each operation on a battery (nothing is
     written): with `draft` for the dialog's unsaved state, else for the
-    stored one. A draft that does not pass the model's check comes back as
-    {"error": "invalid_draft", "detail": ...}. See control/operations.py."""
+    stored one. A draft that does not pass the model's check, or a preview
+    that cannot be worked out, comes back as {"error": <message>, "code":
+    "invalid_draft" | "preview_failed", "detail": ...} (the panel shows
+    `error`). See control/operations.py."""
     if (runtime := _runtime(hass, connection, msg)) is None:
         return
     battery = _battery_of(runtime, msg["battery_id"])
@@ -789,7 +794,8 @@ async def ws_battery_preview(
             battery = model.BATTERY({**battery, **_DRAFT(draft)})
         except vol.Invalid as err:
             connection.send_result(
-                msg["id"], {"error": "invalid_draft", "detail": str(err)}
+                msg["id"],
+                {"error": str(err), "code": "invalid_draft", "detail": str(err)},
             )
             return
     snap = await async_collect(hass)
@@ -810,17 +816,19 @@ async def ws_battery_preview(
         None,
     )
     power_kw = (planned or {}).get("power_kw")
-    connection.send_result(
-        msg["id"],
-        operations.preview(
+    try:
+        result = operations.preview(
             hass,
             battery,
             found,
             target=(planned or {}).get("target"),
             power_w=power_kw * 1000 if power_kw else None,
             whole_system=whole,
-        ),
-    )
+        )
+    except Exception as err:  # noqa: BLE001 - the dialog shows why, Joe keeps running
+        _LOGGER.exception("The preview of %s failed", battery["id"])
+        result = {"error": str(err), "code": "preview_failed", "detail": str(err)}
+    connection.send_result(msg["id"], result)
 
 
 @websocket_api.websocket_command(

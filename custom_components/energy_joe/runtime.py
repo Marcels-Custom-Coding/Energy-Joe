@@ -741,6 +741,8 @@ class JoeRuntime:
                 # Levers the user set that differ from the profile's find
                 # (see async_battery_roles).
                 "battery_roles": self._battery_roles,
+                # Each battery's last probe per operation (executor.async_probe).
+                "probes": self.executor.data["probes"],
                 # Energy Joe's own apps for signing in (else one's own is needed).
                 "apps": {
                     "microsoft": oauth.client_for(None) is not None,

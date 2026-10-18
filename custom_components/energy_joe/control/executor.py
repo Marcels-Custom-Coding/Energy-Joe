@@ -5129,20 +5129,13 @@ class JoeExecutor:
             return result
         if op == "release" and not found.writes:
             result["problem"] = "not_possible"
-            result["why"] = "no_lever"
+            result["why"] = "no_steps"
             return result
         seconds = {"hold": TEST_HOLD, "charge": TEST_CHARGE}.get(op, PROBE_BLOCK)
         step = await self._async_try_writes(battery, op, found.writes, seconds)
         errors = {e["entity_id"]: e["code"] for e in step["errors"]}
         result["steps"] = [
-            {
-                "entity_id": w.entity_id,
-                "wrote": w.value,
-                "read": _shown(hass, w.entity_id),
-                "taken": w.entity_id not in step["wrong"] and w.entity_id not in errors,
-                "error": errors.get(w.entity_id),
-            }
-            for w in found.writes
+            _probe_step(hass, w, errors, step["wrong"]) for w in found.writes
         ]
         result["power_kw"] = step["power"]
         restore = operations.restore_writes(
@@ -5252,7 +5245,6 @@ class JoeExecutor:
             "testing": self.testing,
             "tests": self.data["tests"],
             "probe_running": self.probe_running,
-            "probes": self.data["probes"],
             "log": self.data["log"][-30:],
             "skip": self.data["skip"],
             "answer": self.data["answer"],
@@ -5318,6 +5310,33 @@ def _shown(hass: HomeAssistant, entity_id: str) -> str | None:
     """An entity's state as the panel shows it (None: no such entity)."""
     state = hass.states.get(entity_id)
     return state.state if state else None
+
+
+def _probe_step(
+    hass: HomeAssistant, write: Write, errors: dict[str, str], wrong: list[str]
+) -> dict[str, Any]:
+    """One write of a probe: what was written, what came back, whether the
+    device took it, and the error (a code the panel explains: the write's,
+    or "not_taken" when the value did not show)."""
+    if write.is_call:
+        error = errors.get(write.entity_id)
+        return {
+            "service": write.entity_id.removeprefix("service:"),
+            "wrote": None,
+            "read": None,
+            "taken": error is None,
+            "error": error,
+        }
+    error = errors.get(write.entity_id) or (
+        "not_taken" if write.entity_id in wrong else None
+    )
+    return {
+        "entity_id": write.entity_id,
+        "wrote": write.value,
+        "read": _shown(hass, write.entity_id),
+        "taken": error is None,
+        "error": error,
+    }
 
 
 def _test_power(battery: dict[str, Any]) -> float:
