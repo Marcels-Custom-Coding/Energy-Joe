@@ -27,6 +27,7 @@
   "floor_soc": null,
   "day_surplus": true,
   "limit_ref_w": null,
+  "modbus": null,
   "self_regulating": null,
   "control_group": null,
   "night_cap": null,
@@ -1065,6 +1066,7 @@
     "floor_soc": null,
     "day_surplus": true,
     "limit_ref_w": null,
+    "modbus": null,
     "self_regulating": null,
     "control_group": null,
     "night_cap": null,
@@ -1078,7 +1080,8 @@
     "deviates": true,
     "params": {
      "target": 75,
-     "power_w": 1000,
+     "power_w": 500,
+     "power_by": "device",
      "floor": 55,
      "percent": 50,
      "seconds": 5.0
@@ -1091,7 +1094,8 @@
       "source": "profile",
       "params": {
        "target": 75,
-       "power_w": 1000,
+       "power_w": 500,
+       "power_by": "device",
        "floor": 55,
        "percent": 50,
        "seconds": 5.0
@@ -1139,7 +1143,8 @@
       "source": "profile",
       "params": {
        "target": 75,
-       "power_w": 1000,
+       "power_w": 500,
+       "power_by": "device",
        "floor": 55,
        "percent": 50,
        "seconds": 5.0
@@ -1176,7 +1181,8 @@
       "source": "none",
       "params": {
        "target": 75,
-       "power_w": 1000,
+       "power_w": 500,
+       "power_by": "device",
        "floor": 55,
        "percent": 50,
        "seconds": 5.0
@@ -1193,7 +1199,8 @@
       "source": "none",
       "params": {
        "target": 75,
-       "power_w": 1000,
+       "power_w": 500,
+       "power_by": "device",
        "floor": 55,
        "percent": 50,
        "seconds": 5.0
@@ -1210,7 +1217,8 @@
       "source": "none",
       "params": {
        "target": 75,
-       "power_w": 1000,
+       "power_w": 500,
+       "power_by": "device",
        "floor": 55,
        "percent": 50,
        "seconds": 5.0
@@ -1227,7 +1235,8 @@
       "source": "none",
       "params": {
        "target": 75,
-       "power_w": 1000,
+       "power_w": 500,
+       "power_by": "device",
        "floor": 55,
        "percent": 50,
        "seconds": 5.0
@@ -1244,7 +1253,8 @@
       "source": "profile",
       "params": {
        "target": 75,
-       "power_w": 1000,
+       "power_w": 500,
+       "power_by": "device",
        "floor": 55,
        "percent": 50,
        "seconds": 5.0
@@ -1375,7 +1385,7 @@
     "charge": {
      "ok": true,
      "op": "charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "switch.inverter_grid_charging",
@@ -1400,7 +1410,7 @@
     "hold": {
      "ok": true,
      "op": "hold",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "number.inverter_minimum_reserve",
@@ -1418,7 +1428,7 @@
     "block": {
      "ok": false,
      "op": "block",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [],
      "restored": true,
      "restore_errors": [],
@@ -1429,7 +1439,7 @@
     "block_charge": {
      "ok": false,
      "op": "block_charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [],
      "restored": true,
      "restore_errors": [],
@@ -1440,7 +1450,7 @@
     "block_discharge": {
      "ok": false,
      "op": "block_discharge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [],
      "restored": true,
      "restore_errors": [],
@@ -1451,7 +1461,7 @@
     "cap": {
      "ok": false,
      "op": "cap",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [],
      "restored": true,
      "restore_errors": [],
@@ -1462,7 +1472,7 @@
     "release": {
      "ok": false,
      "op": "release",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [],
      "restored": true,
      "restore_errors": [],
@@ -1475,7 +1485,7 @@
     "charge": {
      "ok": false,
      "op": "charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "switch.inverter_grid_charging",
@@ -1500,7 +1510,7 @@
     "hold": {
      "ok": false,
      "op": "hold",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "number.inverter_minimum_reserve",
@@ -1518,7 +1528,7 @@
     "release": {
      "ok": false,
      "op": "release",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [],
      "restored": true,
      "restore_errors": [],
@@ -1574,6 +1584,7 @@
     "floor_soc": null,
     "day_surplus": true,
     "limit_ref_w": null,
+    "modbus": null,
     "self_regulating": null,
     "control_group": null,
     "night_cap": null,
@@ -1587,7 +1598,8 @@
     "deviates": false,
     "params": {
      "target": 75,
-     "power_w": 1000,
+     "power_w": 500,
+     "power_by": "device",
      "floor": 55,
      "percent": 50,
      "seconds": 5.0
@@ -1600,7 +1612,8 @@
       "source": "profile",
       "params": {
        "target": 75,
-       "power_w": 1000,
+       "power_w": 500,
+       "power_by": "device",
        "floor": 55,
        "percent": 50,
        "seconds": 5.0
@@ -1648,7 +1661,8 @@
       "source": "profile",
       "params": {
        "target": 75,
-       "power_w": 1000,
+       "power_w": 500,
+       "power_by": "device",
        "floor": 55,
        "percent": 50,
        "seconds": 5.0
@@ -1739,7 +1753,8 @@
       "source": "profile",
       "params": {
        "target": 75,
-       "power_w": 1000,
+       "power_w": 500,
+       "power_by": "device",
        "floor": 55,
        "percent": 50,
        "seconds": 5.0
@@ -1830,7 +1845,8 @@
       "source": "profile",
       "params": {
        "target": 75,
-       "power_w": 1000,
+       "power_w": 500,
+       "power_by": "device",
        "floor": 55,
        "percent": 50,
        "seconds": 5.0
@@ -1885,7 +1901,8 @@
       "source": "profile",
       "params": {
        "target": 75,
-       "power_w": 1000,
+       "power_w": 500,
+       "power_by": "device",
        "floor": 55,
        "percent": 50,
        "seconds": 5.0
@@ -1940,7 +1957,8 @@
       "source": "profile",
       "params": {
        "target": 75,
-       "power_w": 1000,
+       "power_w": 500,
+       "power_by": "device",
        "floor": 55,
        "percent": 50,
        "seconds": 5.0
@@ -1957,7 +1975,8 @@
       "source": "profile",
       "params": {
        "target": 75,
-       "power_w": 1000,
+       "power_w": 500,
+       "power_by": "device",
        "floor": 55,
        "percent": 50,
        "seconds": 5.0
@@ -2127,7 +2146,7 @@
     "charge": {
      "ok": true,
      "op": "charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "switch.inverter_grid_charging",
@@ -2152,7 +2171,7 @@
     "hold": {
      "ok": true,
      "op": "hold",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "number.inverter_charge_limit",
@@ -2191,7 +2210,7 @@
     "block": {
      "ok": true,
      "op": "block",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "number.inverter_charge_limit",
@@ -2230,7 +2249,7 @@
     "block_charge": {
      "ok": true,
      "op": "block_charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "number.inverter_charge_limit",
@@ -2255,7 +2274,7 @@
     "block_discharge": {
      "ok": true,
      "op": "block_discharge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "number.inverter_discharge_limit",
@@ -2280,7 +2299,7 @@
     "cap": {
      "ok": false,
      "op": "cap",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [],
      "restored": true,
      "restore_errors": [],
@@ -2291,7 +2310,7 @@
     "release": {
      "ok": false,
      "op": "release",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [],
      "restored": true,
      "restore_errors": [],
@@ -2304,7 +2323,7 @@
     "charge": {
      "ok": false,
      "op": "charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "switch.inverter_grid_charging",
@@ -2329,7 +2348,7 @@
     "hold": {
      "ok": false,
      "op": "hold",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "number.inverter_charge_limit",
@@ -2368,7 +2387,7 @@
     "block": {
      "ok": false,
      "op": "block",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "number.inverter_charge_limit",
@@ -2407,7 +2426,7 @@
     "block_charge": {
      "ok": false,
      "op": "block_charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "number.inverter_charge_limit",
@@ -2432,7 +2451,7 @@
     "block_discharge": {
      "ok": false,
      "op": "block_discharge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "number.inverter_discharge_limit",
@@ -2457,7 +2476,7 @@
     "release": {
      "ok": false,
      "op": "release",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [],
      "restored": true,
      "restore_errors": [],
@@ -2551,6 +2570,7 @@
     "floor_soc": null,
     "day_surplus": true,
     "limit_ref_w": null,
+    "modbus": null,
     "self_regulating": null,
     "control_group": null,
     "night_cap": null,
@@ -2564,7 +2584,8 @@
     "deviates": false,
     "params": {
      "target": 75,
-     "power_w": 1000,
+     "power_w": 500,
+     "power_by": "device",
      "floor": 55,
      "percent": 50,
      "seconds": 5.0
@@ -2577,7 +2598,8 @@
       "source": "profile",
       "params": {
        "target": 75,
-       "power_w": 1000,
+       "power_w": 500,
+       "power_by": "device",
        "floor": 55,
        "percent": 50,
        "seconds": 5.0
@@ -2625,7 +2647,8 @@
       "source": "profile",
       "params": {
        "target": 75,
-       "power_w": 1000,
+       "power_w": 500,
+       "power_by": "device",
        "floor": 55,
        "percent": 50,
        "seconds": 5.0
@@ -2716,7 +2739,8 @@
       "source": "own",
       "params": {
        "target": 75,
-       "power_w": 1000,
+       "power_w": 500,
+       "power_by": "device",
        "floor": 55,
        "percent": 50,
        "seconds": 5.0
@@ -2807,7 +2831,8 @@
       "source": "own",
       "params": {
        "target": 75,
-       "power_w": 1000,
+       "power_w": 500,
+       "power_by": "device",
        "floor": 55,
        "percent": 50,
        "seconds": 5.0
@@ -2898,7 +2923,8 @@
       "source": "own",
       "params": {
        "target": 75,
-       "power_w": 1000,
+       "power_w": 500,
+       "power_by": "device",
        "floor": 55,
        "percent": 50,
        "seconds": 5.0
@@ -2989,7 +3015,8 @@
       "source": "profile",
       "params": {
        "target": 75,
-       "power_w": 1000,
+       "power_w": 500,
+       "power_by": "device",
        "floor": 55,
        "percent": 50,
        "seconds": 5.0
@@ -3006,7 +3033,8 @@
       "source": "profile",
       "params": {
        "target": 75,
-       "power_w": 1000,
+       "power_w": 500,
+       "power_by": "device",
        "floor": 55,
        "percent": 50,
        "seconds": 5.0
@@ -3059,7 +3087,8 @@
       "source": "profile",
       "params": {
        "target": 75,
-       "power_w": 1000,
+       "power_w": 500,
+       "power_by": "device",
        "floor": 55,
        "percent": 50,
        "seconds": 5.0
@@ -3114,7 +3143,8 @@
       "source": "profile",
       "params": {
        "target": 75,
-       "power_w": 1000,
+       "power_w": 500,
+       "power_by": "device",
        "floor": 55,
        "percent": 50,
        "seconds": 5.0
@@ -3294,7 +3324,7 @@
     "charge": {
      "ok": true,
      "op": "charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "switch.inverter_grid_charging",
@@ -3319,7 +3349,7 @@
     "hold": {
      "ok": true,
      "op": "hold",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "number.inverter_charge_limit",
@@ -3358,7 +3388,7 @@
     "block": {
      "ok": true,
      "op": "block",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "number.inverter_charge_limit",
@@ -3397,7 +3427,7 @@
     "block_charge": {
      "ok": true,
      "op": "block_charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "number.inverter_charge_limit",
@@ -3436,7 +3466,7 @@
     "block_discharge": {
      "ok": true,
      "op": "block_discharge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "number.inverter_charge_limit",
@@ -3475,7 +3505,7 @@
     "cap": {
      "ok": false,
      "op": "cap",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [],
      "restored": true,
      "restore_errors": [],
@@ -3486,7 +3516,7 @@
     "release": {
      "ok": false,
      "op": "release",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [],
      "restored": true,
      "restore_errors": [],
@@ -3497,7 +3527,7 @@
     "guard_charge": {
      "ok": true,
      "op": "guard_charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "number.inverter_charge_limit",
@@ -3522,7 +3552,7 @@
     "guard_discharge": {
      "ok": true,
      "op": "guard_discharge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "number.inverter_discharge_limit",
@@ -3549,7 +3579,7 @@
     "charge": {
      "ok": false,
      "op": "charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "switch.inverter_grid_charging",
@@ -3574,7 +3604,7 @@
     "hold": {
      "ok": false,
      "op": "hold",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "number.inverter_charge_limit",
@@ -3613,7 +3643,7 @@
     "block": {
      "ok": false,
      "op": "block",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "number.inverter_charge_limit",
@@ -3652,7 +3682,7 @@
     "block_charge": {
      "ok": false,
      "op": "block_charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "number.inverter_charge_limit",
@@ -3691,7 +3721,7 @@
     "block_discharge": {
      "ok": false,
      "op": "block_discharge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "number.inverter_charge_limit",
@@ -3730,7 +3760,7 @@
     "release": {
      "ok": false,
      "op": "release",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [],
      "restored": true,
      "restore_errors": [],
@@ -3741,7 +3771,7 @@
     "guard_charge": {
      "ok": false,
      "op": "guard_charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "number.inverter_charge_limit",
@@ -3766,7 +3796,7 @@
     "guard_discharge": {
      "ok": false,
      "op": "guard_discharge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "number.inverter_discharge_limit",
@@ -3795,7 +3825,7 @@
   "steering": {
    "ok": false,
    "op": "block",
-   "at": "2026-10-19T00:47:50-07:00",
+   "at": "2026-10-19T01:41:05-07:00",
    "steps": [],
    "restored": true,
    "restore_errors": [],
@@ -3805,7 +3835,7 @@
   "busy": {
    "ok": false,
    "op": "block",
-   "at": "2026-10-19T00:47:50-07:00",
+   "at": "2026-10-19T01:41:05-07:00",
    "steps": [],
    "restored": true,
    "restore_errors": [],

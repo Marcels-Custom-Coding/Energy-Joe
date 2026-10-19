@@ -60,6 +60,7 @@
   "floor_soc": null,
   "day_surplus": true,
   "limit_ref_w": null,
+  "modbus": null,
   "self_regulating": null,
   "control_group": null,
   "night_cap": null,
@@ -383,6 +384,7 @@
     "floor_soc": null,
     "day_surplus": true,
     "limit_ref_w": null,
+    "modbus": null,
     "self_regulating": null,
     "control_group": null,
     "night_cap": null,
@@ -397,6 +399,7 @@
     "params": {
      "target": 60,
      "power_w": 5000,
+     "power_by": "max",
      "floor": 40,
      "percent": 50,
      "seconds": 5.0
@@ -410,6 +413,7 @@
       "params": {
        "target": 60,
        "power_w": 5000,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -456,6 +460,7 @@
       "params": {
        "target": 60,
        "power_w": 5000,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -500,6 +505,7 @@
       "params": {
        "target": 60,
        "power_w": 5000,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -555,6 +561,7 @@
       "params": {
        "target": 60,
        "power_w": 5000,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -592,6 +599,7 @@
       "params": {
        "target": 60,
        "power_w": 5000,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -629,6 +637,7 @@
       "params": {
        "target": 60,
        "power_w": 5000,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -666,6 +675,7 @@
       "params": {
        "target": 60,
        "power_w": 5000,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -821,7 +831,7 @@
     "charge": {
      "ok": true,
      "op": "charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "switch.luna_grid",
@@ -846,7 +856,7 @@
     "hold": {
      "ok": true,
      "op": "hold",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "service": "huawei_solar.stop_forcible_charge",
@@ -871,7 +881,7 @@
     "block": {
      "ok": true,
      "op": "block",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "number.luna_charging",
@@ -896,7 +906,7 @@
     "block_charge": {
      "ok": true,
      "op": "block_charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "number.luna_charging",
@@ -914,7 +924,7 @@
     "block_discharge": {
      "ok": true,
      "op": "block_discharge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "number.luna_discharging",
@@ -932,7 +942,7 @@
     "cap": {
      "ok": true,
      "op": "cap",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "number.luna_charging",
@@ -950,7 +960,7 @@
     "release": {
      "ok": true,
      "op": "release",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "service": "huawei_solar.stop_forcible_charge",
@@ -970,7 +980,7 @@
     "charge": {
      "ok": false,
      "op": "charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "switch.luna_grid",
@@ -995,7 +1005,7 @@
     "hold": {
      "ok": false,
      "op": "hold",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "service": "huawei_solar.stop_forcible_charge",
@@ -1020,7 +1030,7 @@
     "block": {
      "ok": false,
      "op": "block",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "number.luna_charging",
@@ -1045,7 +1055,7 @@
     "block_charge": {
      "ok": false,
      "op": "block_charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "number.luna_charging",
@@ -1063,7 +1073,7 @@
     "block_discharge": {
      "ok": false,
      "op": "block_discharge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "number.luna_discharging",
@@ -1081,7 +1091,7 @@
     "cap": {
      "ok": false,
      "op": "cap",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "number.luna_charging",
@@ -1099,7 +1109,7 @@
     "release": {
      "ok": false,
      "op": "release",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "service": "huawei_solar.stop_forcible_charge",
@@ -1244,6 +1254,7 @@
     "floor_soc": null,
     "day_surplus": true,
     "limit_ref_w": null,
+    "modbus": null,
     "self_regulating": null,
     "control_group": null,
     "night_cap": null,
@@ -1258,6 +1269,7 @@
     "params": {
      "target": 60,
      "power_w": 5000,
+     "power_by": "max",
      "floor": 40,
      "percent": 50,
      "seconds": 5.0
@@ -1271,6 +1283,7 @@
       "params": {
        "target": 60,
        "power_w": 5000,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -1317,6 +1330,7 @@
       "params": {
        "target": 60,
        "power_w": 5000,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -1361,6 +1375,7 @@
       "params": {
        "target": 60,
        "power_w": 5000,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -1416,6 +1431,7 @@
       "params": {
        "target": 60,
        "power_w": 5000,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -1471,6 +1487,7 @@
       "params": {
        "target": 60,
        "power_w": 5000,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -1526,6 +1543,7 @@
       "params": {
        "target": 60,
        "power_w": 5000,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -1563,6 +1581,7 @@
       "params": {
        "target": 60,
        "power_w": 5000,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -1610,6 +1629,7 @@
       "params": {
        "target": 60,
        "power_w": 5000,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -1647,6 +1667,7 @@
       "params": {
        "target": 60,
        "power_w": 5000,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -1796,7 +1817,7 @@
     "charge": {
      "ok": true,
      "op": "charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "switch.luna_grid",
@@ -1821,7 +1842,7 @@
     "hold": {
      "ok": true,
      "op": "hold",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "service": "huawei_solar.stop_forcible_charge",
@@ -1846,7 +1867,7 @@
     "block": {
      "ok": true,
      "op": "block",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "number.luna_charging",
@@ -1871,7 +1892,7 @@
     "block_charge": {
      "ok": true,
      "op": "block_charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "number.luna_charging",
@@ -1896,7 +1917,7 @@
     "block_discharge": {
      "ok": true,
      "op": "block_discharge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "number.luna_charging",
@@ -1921,7 +1942,7 @@
     "cap": {
      "ok": true,
      "op": "cap",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "number.luna_charging",
@@ -1939,7 +1960,7 @@
     "release": {
      "ok": true,
      "op": "release",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "service": "huawei_solar.stop_forcible_charge",
@@ -1957,7 +1978,7 @@
     "guard_charge": {
      "ok": true,
      "op": "guard_charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "number.luna_charging",
@@ -1975,7 +1996,7 @@
     "guard_discharge": {
      "ok": true,
      "op": "guard_discharge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "number.luna_discharging",
@@ -1995,7 +2016,7 @@
     "charge": {
      "ok": false,
      "op": "charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "switch.luna_grid",
@@ -2020,7 +2041,7 @@
     "hold": {
      "ok": false,
      "op": "hold",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "service": "huawei_solar.stop_forcible_charge",
@@ -2045,7 +2066,7 @@
     "block": {
      "ok": false,
      "op": "block",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "number.luna_charging",
@@ -2070,7 +2091,7 @@
     "block_charge": {
      "ok": false,
      "op": "block_charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "number.luna_charging",
@@ -2095,7 +2116,7 @@
     "block_discharge": {
      "ok": false,
      "op": "block_discharge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "number.luna_charging",
@@ -2120,7 +2141,7 @@
     "cap": {
      "ok": false,
      "op": "cap",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "number.luna_charging",
@@ -2138,7 +2159,7 @@
     "release": {
      "ok": false,
      "op": "release",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "service": "huawei_solar.stop_forcible_charge",
@@ -2156,7 +2177,7 @@
     "guard_charge": {
      "ok": false,
      "op": "guard_charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "number.luna_charging",
@@ -2174,7 +2195,7 @@
     "guard_discharge": {
      "ok": false,
      "op": "guard_discharge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "number.luna_discharging",
@@ -2196,7 +2217,7 @@
   "steering": {
    "ok": false,
    "op": "block",
-   "at": "2026-10-19T00:47:50-07:00",
+   "at": "2026-10-19T01:41:06-07:00",
    "steps": [],
    "restored": true,
    "restore_errors": [],
@@ -2206,7 +2227,7 @@
   "busy": {
    "ok": false,
    "op": "block",
-   "at": "2026-10-19T00:47:50-07:00",
+   "at": "2026-10-19T01:41:06-07:00",
    "steps": [],
    "restored": true,
    "restore_errors": [],

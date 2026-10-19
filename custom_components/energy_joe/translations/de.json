@@ -28,6 +28,15 @@
       },
       "action_tonight": {
         "name": "Heute Nacht: {action}"
+      },
+      "storage_charge_limiting": {
+        "name": "Laderate aktiv"
+      },
+      "storage_discharge_limiting": {
+        "name": "Entladerate aktiv"
+      },
+      "storage_grid_charging": {
+        "name": "Laden aus dem Netz"
       }
     },
     "button": {
@@ -63,11 +72,41 @@
       },
       "last_night": {
         "name": "Hätte gespart (letzte Nacht)"
+      },
+      "storage_max_power": {
+        "name": "Bezugsleistung"
+      },
+      "storage_level": {
+        "name": "Ladestand"
+      },
+      "storage_status": {
+        "name": "Speicherzustand",
+        "state": {
+          "off": "Aus",
+          "empty": "Leer",
+          "discharging": "Entlädt",
+          "charging": "Lädt",
+          "full": "Voll",
+          "holding": "Hält",
+          "testing": "Test",
+          "unknown": "Unbekannt"
+        }
       }
     },
     "calendar": {
       "car_calendar": {
         "name": "Kalender {car}"
+      }
+    },
+    "number": {
+      "storage_charge_rate": {
+        "name": "Laderate"
+      },
+      "storage_discharge_rate": {
+        "name": "Entladerate"
+      },
+      "storage_reserve": {
+        "name": "Mindestreserve"
       }
     }
   },

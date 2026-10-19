@@ -147,6 +147,17 @@ STEP = vol.Any(_STEP_ENTITY, _STEP_SERVICE)
 # hold, release) and the day's (block, block_charge, block_discharge, cap).
 STEPS = vol.Schema({vol.Optional(name): [STEP] for name in OPERATIONS})
 
+# An inverter Joe steers over Modbus TCP himself (adapter "fronius_modbus",
+# see modbus.py): its address, port and unit id.
+MODBUS = vol.Schema(
+    {
+        vol.Required("host"): vol.All(str, vol.Length(min=1, max=253)),
+        vol.Optional("port", default=502): vol.All(int, vol.Range(min=1, max=65535)),
+        vol.Optional("unit", default=1): vol.All(int, vol.Range(min=0, max=255)),
+    },
+    extra=vol.ALLOW_EXTRA,
+)
+
 BATTERY = vol.Schema(
     {
         vol.Required("id"): str,
@@ -178,6 +189,7 @@ BATTERY = vol.Schema(
         vol.Optional("limit_ref_w", default=None): vol.Any(
             None, vol.All(vol.Coerce(float), vol.Range(min=100, max=100000))
         ),
+        vol.Optional("modbus", default=None): vol.Any(None, MODBUS),
         # Regulates itself to 0 W at the grid meter (Fronius, Omnibattery in
         # automatic mode): with others of its kind it needs coordinating
         # (rules.battery_team). None: as Joe proposes from its profile.

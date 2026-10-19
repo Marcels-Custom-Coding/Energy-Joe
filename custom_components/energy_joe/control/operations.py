@@ -155,11 +155,15 @@ class Params:
     percent: float = CAP_PERCENT
     seconds: float = BLOCK_S
     whole_system: bool = True
+    # Where the power comes from: the plan, the battery's highest power, or
+    # the device itself (it charges with that whatever Joe writes).
+    power_by: str = "plan"
 
     def as_dict(self) -> dict[str, Any]:
         return {
             "target": self.target,
             "power_w": round(self.power_w),
+            "power_by": self.power_by,
             "floor": self.floor,
             "percent": self.percent,
             "seconds": self.seconds,
@@ -195,16 +199,24 @@ def params_for(
     whole_system: bool = True,
 ) -> Params:
     """The values of the moment: the plan's target and power where given,
-    else a step above the level now and the battery's highest power."""
+    else a step above the level now and the battery's highest power; where
+    the device sets the power itself (Fronius raising its reserve: ~500 W)
+    that power, `power_by` "device"."""
     soc = number(hass.states.get(battery["soc_entity"]))
     level = 0.0 if soc is None else soc
     power = float(power_w or battery.get("max_charge_w") or DEFAULT_CHARGE_W)
+    power_by = "plan" if power_w else "max"
+    adapter = make_adapter(battery)
+    fixed = adapter.fixed_charge_w() if isinstance(adapter, RoleAdapter) else None
+    if fixed:
+        power, power_by = min(power, fixed), "device"
     return Params(
         soc=soc,
         target=int(min(100, math.ceil(level) + TARGET_STEP))
         if target is None
         else int(target),
         power_w=power,
+        power_by=power_by,
         floor=max(0, math.floor(level)),
         cap_w=float(battery.get("max_charge_w") or power) * CAP_PERCENT / 100,
         whole_system=whole_system,

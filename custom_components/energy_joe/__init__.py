@@ -38,6 +38,7 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 PLATFORMS = [
     Platform.BUTTON,
     Platform.CALENDAR,
+    Platform.NUMBER,
     Platform.SELECT,
     Platform.SENSOR,
     Platform.SWITCH,
@@ -59,7 +60,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Load Joe's state, serve the panel and add it to the sidebar."""
-    runtime = JoeRuntime(hass)
+    runtime = JoeRuntime(hass, entry.entry_id)
     await runtime.async_load()
     hass.data[DATA_RUNTIME] = runtime
 

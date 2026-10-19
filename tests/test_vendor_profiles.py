@@ -1442,7 +1442,9 @@ def test_every_profile_names_known_roles_and_valid_options() -> None:
             assert set(roles) <= set(ROLE_DOMAINS), profile.key
         assert set(profile.options) <= set(MODE_OPTIONS), profile.key
         assert profile.regulating in ("yes", "auto", "no"), profile.key
-        assert profile.scope in ("device", "entry", "integration"), profile.key
+        assert profile.scope in ("device", "entry", "integration", "modbus"), (
+            profile.key
+        )
 
 
 def test_an_inverter_without_a_battery_gets_no_note() -> None:

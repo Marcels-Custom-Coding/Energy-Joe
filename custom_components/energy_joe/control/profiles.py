@@ -236,6 +236,9 @@ class Profile:
     charge_negative: bool = False
     # The smallest power other than 0 its limits take (W; VARTA: 0 or 500+).
     limit_min_w: float = 0.0
+    # The power the device charges with on its own when Joe can only raise
+    # its reserve (Fronius: ~500 W); 0: Joe sets the power.
+    reserve_charge_w: float = 0.0
     # Mode options Joe gives back as another one (a state the select shows but
     # does not take, or the fallback of a forced mode: Fox ESS ends in
     # "Back-up" when Home Assistant restarts during a forced charge).
@@ -325,6 +328,33 @@ PROFILES: dict[str, Profile] = {
             block=("limit", "min_soc"),
             proven=True,
             regulating="yes",
+            # Raising the reserve makes the GEN24 charge from the grid at a
+            # fixed ~500 W ("Erzwungene Nachladung"), whatever its size and
+            # its limits say (photovoltaikforum, many reports 2021-2026): Joe
+            # plans with that. More power only over Modbus (fronius_modbus).
+            reserve_charge_w=500.0,
+        ),
+        # A Fronius GEN24 over Modbus TCP, through Joe's own entities for its
+        # storage control (control/fronius_modbus.py, modbus.py): the same
+        # levers as the core integration's, but the discharge rate goes below
+        # 0, which charges from the grid with a power of one's own.
+        Profile(
+            key="fronius_modbus",
+            name="Fronius Modbus",
+            roles={
+                "min_soc": ("storage_reserve",),
+                "grid_charge": ("storage_grid_charging",),
+                "charge_limit": ("storage_charge_rate",),
+                "charge_limit_enabled": ("storage_charge_limiting",),
+                "discharge_limit": ("storage_discharge_rate",),
+                "discharge_limit_enabled": ("storage_discharge_limiting",),
+            },
+            charge=("modbus",),
+            hold=("min_soc",),
+            block=("limit", "min_soc"),
+            scope="modbus",
+            regulating="yes",
+            note="fronius_modbus",
         ),
         Profile(
             key="omnibattery",

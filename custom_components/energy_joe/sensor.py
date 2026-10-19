@@ -47,6 +47,9 @@ async def async_setup_entry(
             JoeLastNightSensor(runtime, entry, "last_night"),
         ]
     )
+    entry.async_on_unload(
+        runtime.modbus.async_register_platform("sensor", async_add_entities)
+    )
 
 
 class JoeStatusSensor(JoeEntity, SensorEntity):

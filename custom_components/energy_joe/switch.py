@@ -33,6 +33,9 @@ async def async_setup_entry(
 
     add_actions()
     entry.async_on_unload(runtime.async_subscribe(add_actions))
+    entry.async_on_unload(
+        runtime.modbus.async_register_platform("switch", async_add_entities)
+    )
 
 
 def _night(runtime: JoeRuntime) -> str | None:

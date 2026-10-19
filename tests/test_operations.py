@@ -120,7 +120,8 @@ def test_fronius_shows_every_write_in_its_order(hass: HomeAssistant) -> None:
     assert [s["param"] for s in block["steps"]] == [None] * 4
     assert all(not s["keep"] for s in block["steps"])
     charge = found["charge"]
-    assert charge["params"]["target"] == 55 and charge["params"]["power_w"] == 5000
+    assert charge["params"]["target"] == 55 and charge["params"]["power_w"] == 500
+    assert charge["params"]["power_by"] == "device"
     assert sets(charge) == [("switch.grid_charging", True), ("number.reserve", 55.0)]
     assert [s["param"] for s in charge["steps"]] == [None, "target"]
     # Grid charging is on already: nothing written there, nothing to put back.
@@ -143,8 +144,9 @@ def test_fronius_shows_every_write_in_its_order(hass: HomeAssistant) -> None:
     # With the reference: the ceiling first, then charging; the cap at half the power.
     known = {**team_byd(), "limit_ref_w": 5000}
     found = by_op(operations.preview(hass, known, power_w=2000))
+    # The device charges with ~500 W: the ceiling at that (10 % of 5000 W).
     assert sets(found["charge"]) == [
-        ("number.charge_limit", 40.0),
+        ("number.charge_limit", 10.0),
         ("switch.charge_limit", True),
         ("switch.grid_charging", True),
         ("number.reserve", 55.0),
@@ -927,10 +929,16 @@ async def test_preview_and_probe_over_the_websocket(
 def test_the_values_of_the_moment(hass: HomeAssistant) -> None:
     install_team(hass, byd_soc=92.4)
     params = operations.params_for(hass, team_byd())
-    assert params.target == 100 and params.floor == 92 and params.power_w == 5000
+    # A Fronius charges with ~500 W of its own when its reserve is raised.
+    assert params.target == 100 and params.floor == 92 and params.power_w == 500
+    assert params.power_by == "device"
     assert params.cap_w == 2500 and params.percent == 50 and params.seconds == 5
     planned = operations.params_for(hass, team_byd(), target=60, power_w=1500)
-    assert planned.target == 60 and planned.power_w == 1500
+    assert planned.target == 60 and planned.power_w == 500
+    free = operations.params_for(
+        hass, {**team_byd(), "adapter": "generic"}, power_w=1500
+    )
+    assert free.power_w == 1500 and free.power_by == "plan"
 
 
 async def test_the_probe_and_the_test_run_wait_for_each_other(

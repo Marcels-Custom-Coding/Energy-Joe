@@ -273,8 +273,14 @@ def charge_power_kw(
 ) -> tuple[float, float | None]:
     """The power a battery is planned to charge with at night (kW), and that
     power again when it is what Joe measured: a battery that took far less
-    than planned is planned with what it took, until it charges faster."""
+    than planned is planned with what it took, until it charges faster. A
+    device that sets the power itself (Fronius raising its reserve: ~500 W)
+    is planned with that from the start."""
     full = (battery["max_charge_w"] or default_kw * 1000) / 1000
+    adapter = make_adapter(battery)
+    fixed = adapter.fixed_charge_w() if isinstance(adapter, RoleAdapter) else None
+    if fixed:
+        full = min(full, fixed / 1000)
     measured = (slow or {}).get(battery["id"])
     if not measured or measured / 1000 >= full:
         return full, None

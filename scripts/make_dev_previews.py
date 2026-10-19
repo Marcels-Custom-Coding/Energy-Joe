@@ -45,6 +45,7 @@ from pytest_homeassistant_custom_component.common import async_test_home_assista
 from custom_components.energy_joe import model
 from custom_components.energy_joe.control import executor as executor_module, operations
 from custom_components.energy_joe.control.adapters import RoleAdapter, make_adapter
+from custom_components.energy_joe.control.fronius_modbus import inverter_slug
 from custom_components.energy_joe.discovery import (
     adopted_controls,
     discover,
@@ -202,7 +203,118 @@ def huawei_case() -> tuple[Snapshot, dict[str, Any], dict[str, Any]]:
     return snap, {**luna, **names}, {**found, **names}
 
 
-CASES = {"fronius": fronius_case, "venus": venus_case, "huawei": huawei_case}
+def modbus_snapshot() -> Snapshot:
+    """The household's BYD with Joe's own entities for its GEN24 over Modbus
+    TCP (modbus.py): the rates, the reserve, the control bits as switches,
+    grid charging, and the sensors – as the panel sees them in Home
+    Assistant (unique ids as modbus.py builds them)."""
+    snap = with_ranges(fronius_household())
+    joe = {"platform": "energy_joe", "entry": "joe", "device_id": "gen24_modbus"}
+    slug = inverter_slug("192.0.2.11", 502, 1)
+
+    def own(entity_id: str, name: str, state: Any, key: str, **kw: Any):
+        return entity(
+            entity_id, name, state, unique_id=f"joe_modbus_{slug}_{key}", **joe, **kw
+        )
+
+    percent = {"min": 0, "max": 100, "step": 0.1}
+    for item in (
+        own(
+            "number.gen24_modbus_charge_rate",
+            "Laderate",
+            100,
+            "storage_charge_rate",
+            unit="%",
+            attributes=percent,
+        ),
+        own(
+            "number.gen24_modbus_discharge_rate",
+            "Entladerate",
+            100,
+            "storage_discharge_rate",
+            unit="%",
+            attributes={**percent, "min": -100},
+        ),
+        own(
+            "number.gen24_modbus_minimum_reserve",
+            "Mindestreserve",
+            5,
+            "storage_reserve",
+            unit="%",
+            attributes={"min": 0, "max": 100, "step": 1},
+        ),
+        own(
+            "switch.gen24_modbus_charge_rate_active",
+            "Laderate aktiv",
+            "off",
+            "storage_charge_limiting",
+        ),
+        own(
+            "switch.gen24_modbus_discharge_rate_active",
+            "Entladerate aktiv",
+            "off",
+            "storage_discharge_limiting",
+        ),
+        own(
+            "switch.gen24_modbus_grid_charging",
+            "Laden aus dem Netz",
+            "off",
+            "storage_grid_charging",
+        ),
+        own(
+            "sensor.gen24_modbus_reference_power",
+            "Bezugsleistung",
+            10240,
+            "storage_max_power",
+            unit="W",
+            device_class="power",
+        ),
+        own(
+            "sensor.gen24_modbus_level",
+            "Ladestand",
+            55.0,
+            "storage_level",
+            unit="%",
+            device_class="battery",
+        ),
+        own(
+            "sensor.gen24_modbus_storage_state",
+            "Speicherzustand",
+            "holding",
+            "storage_status",
+        ),
+    ):
+        snap.entities[item.entity_id] = item
+    snap.devices["gen24_modbus"] = DeviceInfo(
+        "gen24_modbus",
+        "Fronius GEN24 Modbus 192.0.2.11",
+        "Fronius",
+        "GEN24 (Modbus TCP)",
+    )
+    return snap
+
+
+def modbus_case() -> tuple[Snapshot, dict[str, Any], dict[str, Any]]:
+    """Marcel's BYD steered over Modbus TCP: the levers are Joe's own
+    entities, the reference power read from the inverter."""
+    snap = modbus_snapshot()
+    battery = {
+        **battery_of(adopt(snap), "storage"),
+        "adapter": "fronius_modbus",
+        "modbus": {"host": "192.0.2.11", "port": 502, "unit": 1},
+        "limit_ref_w": 10240.0,
+        "max_charge_w": 10240.0,
+    }
+    battery["controls"] = profile_find(snap, battery)["controls"]
+    return snap, battery, finding(snap, "storage")
+
+
+CASES = {
+    "fronius": fronius_case,
+    "venus": venus_case,
+    "huawei": huawei_case,
+    "modbus": modbus_case,
+}
 
 
 # --- Home Assistant with made-up devices ------------------------------------------------

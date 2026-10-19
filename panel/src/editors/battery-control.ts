@@ -37,9 +37,56 @@ export interface ControlValue {
   steps: BatteryConfig["steps"];
   /** The profile's prepare steps (set by withPrepare); sent along with the draft of the preview. */
   prepare?: ControlStep[];
+  /** The inverter Joe speaks Modbus TCP with himself ("Fronius über Modbus"); null: none. */
+  modbus?: ModbusSettings | null;
 }
 
-type Choice = "watch" | "profile" | "generic" | "steps";
+/** How to reach an inverter over Modbus TCP (battery.modbus). */
+export type ModbusSettings = NonNullable<BatteryConfig["modbus"]>;
+
+type Choice = "watch" | "profile" | "modbus" | "generic" | "steps";
+
+/** The profile of a Fronius inverter Joe steers over Modbus TCP himself, and the integration's own profile it stands beside. */
+const MODBUS_ADAPTER = "fronius_modbus";
+const MODBUS_CORE = "fronius";
+const MODBUS_DEFAULTS = { port: 502, unit: 1 };
+
+/** "host:port/unit" – the same inverter whatever the owner typed around it. */
+function modbusKey(settings: ModbusSettings | null | undefined): string {
+  return settings ? `${settings.host.trim()}:${settings.port}/${settings.unit}` : "";
+}
+
+/**
+ * The answer of energy_joe/modbus/check: the storage model the inverter
+ * answers with and its values, or why not (`problem`). `hosts` are the
+ * addresses of the Fronius integration either way. Nothing is written.
+ */
+interface ModbusCheck {
+  ok: boolean;
+  problem?: string;
+  detail?: string;
+  kind?: "int_sf" | "float";
+  base?: number;
+  model?: string;
+  version?: string;
+  serial?: string;
+  inverter_w?: number | null;
+  max_power_w?: number | null;
+  control?: number;
+  charge_limited?: boolean;
+  discharge_limited?: boolean;
+  reserve_pct?: number | null;
+  level_pct?: number | null;
+  status?: string;
+  discharge_rate_pct?: number | null;
+  charge_rate_pct?: number | null;
+  revert_s?: number | null;
+  grid_charging?: boolean;
+  host?: string;
+  port?: number;
+  unit?: number;
+  hosts: string[];
+}
 
 const ROLE_FILTER: Record<ControlRole, FilterName> = {
   min_soc: "level",
@@ -78,6 +125,7 @@ export function controlValue(battery: BatteryConfig): ControlValue {
     controls: structuredClone(battery.controls),
     mode_options: structuredClone(battery.mode_options),
     steps: structuredClone(battery.steps),
+    modbus: battery.modbus ? { ...battery.modbus } : null,
   };
 }
 
@@ -184,9 +232,14 @@ export class JoeBatteryControl extends LitElement {
   @state() private probing: OperationKey | null = null;
   @state() private probeResults: Partial<Record<OperationKey, ProbeResult>> = {};
   @state() private probeErrors: Partial<Record<OperationKey, string>> = {};
+  /** "Verbindung prüfen": the inverter's last answer, whether one is on its way, and the address it answered for. */
+  @state() private modbusCheck?: ModbusCheck;
+  @state() private modbusChecking = false;
+  @state() private modbusChecked: string | null = null;
 
   private previewTimer?: number;
   private previewSeq = 0;
+  private modbusSeq = 0;
   /** The draft the preview was asked for last (the parent builds a new object each render). */
   private previewFor = "";
   /** The own steps of an operation as they were when editing began (undefined: there were none) – what "Verwerfen" brings back. */
@@ -500,6 +553,58 @@ export class JoeBatteryControl extends LitElement {
       .probe li.bad ha-icon {
         color: var(--joe-crit);
       }
+      .probe li.info ha-icon {
+        color: var(--joe-info);
+      }
+      /* "Fronius über Modbus": the address of the inverter and what it answers. */
+      .modbus {
+        display: grid;
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .modbus-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 8px;
+      }
+      .modbus-text {
+        margin: 0;
+        font-size: 14px;
+        color: var(--joe-ink-2);
+      }
+      .modbus-fields {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(90px, 1fr) minmax(90px, 1fr);
+        gap: 8px;
+      }
+      .modbus-field {
+        display: grid;
+        gap: 6px;
+        min-width: 0;
+      }
+      .modbus-field .field-label {
+        font-size: 13.5px;
+      }
+      .modbus-field .input {
+        min-width: 0;
+      }
+      .modbus-hosts {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        font-size: 13.5px;
+        color: var(--joe-ink-2);
+      }
+      @media (max-width: 520px) {
+        .modbus-fields {
+          grid-template-columns: 1fr 1fr;
+        }
+        .modbus-field.host {
+          grid-column: 1 / -1;
+        }
+      }
       .probe li small {
         display: block;
         color: var(--joe-ink-2);
@@ -719,11 +824,32 @@ export class JoeBatteryControl extends LitElement {
 
   private get profileKey(): string | null {
     const battery = this.battery;
+    const found = this.found;
+    const foundKey = found && found.controllable && found.adapter !== "none" ? found.adapter : null;
+    if (battery?.adapter === MODBUS_ADAPTER) {
+      // Steered over Modbus: "Automatisch" stands for the integration's own profile.
+      return foundKey ?? MODBUS_CORE;
+    }
     if (battery && !["none", "generic", "steps"].includes(battery.adapter)) {
       return battery.adapter;
     }
-    const found = this.found;
-    return found && found.controllable && found.adapter !== "none" ? found.adapter : null;
+    return foundKey;
+  }
+
+  /** The battery comes from the Fronius integration: Joe may speak Modbus TCP with its inverter himself. */
+  private get modbusOffered(): boolean {
+    const adapter = this.battery?.adapter;
+    return adapter === MODBUS_ADAPTER || adapter === MODBUS_CORE || this.found?.integration === MODBUS_CORE || this.found?.adapter === MODBUS_CORE;
+  }
+
+  /** The battery is saved as steered over Modbus: Joe's entities exist, or he is making them. */
+  private get modbusSaved(): boolean {
+    return this.battery?.adapter === MODBUS_ADAPTER;
+  }
+
+  /** Saved over Modbus, but Joe has not filled in his entities yet (he does after the inverter's first answer). */
+  private get modbusPending(): boolean {
+    return this.modbusSaved && this.value?.adapter === MODBUS_ADAPTER && !Object.keys(this.battery?.controls ?? {}).length;
   }
 
   private get choice(): Choice {
@@ -731,13 +857,26 @@ export class JoeBatteryControl extends LitElement {
     if (adapter === "none") return "watch";
     if (adapter === "generic") return "generic";
     if (adapter === "steps") return "steps";
+    if (adapter === MODBUS_ADAPTER) return "modbus";
     return "profile";
   }
 
   /** The name of the profile in force (from the preview, else the draft's adapter). */
   private get profileName(): string {
-    const key = this.preview?.profile?.key ?? (this.choice === "profile" ? this.value?.adapter : undefined) ?? "";
+    const key = this.preview?.profile?.key ?? (this.choice === "profile" || this.choice === "modbus" ? this.value?.adapter : undefined) ?? "";
     return this.preview?.profile?.name ?? this.profiles?.[key] ?? key;
+  }
+
+  /** The profile whose words the levers get (the preview's, else the draft's adapter); "" without one. */
+  private get roleProfile(): string {
+    const adapter = this.value?.adapter ?? "";
+    return this.preview?.profile?.key ?? (["none", "generic", "steps"].includes(adapter) ? "" : adapter);
+  }
+
+  /** A lever in the owner's words: the profile's own name where it has one ("Laderate" for the charge limit over Modbus), else the general one. */
+  private roleName(t: Translate, role: string): string {
+    const profile = this.roleProfile;
+    return (profile ? t.optional(`role.${profile}.${role}`) : undefined) ?? t.optional(`role.${role}`) ?? role;
   }
 
   // --- The preview: asked for when the dialog opens and after every change of the draft ---
@@ -764,8 +903,8 @@ export class JoeBatteryControl extends LitElement {
     if (!value || !battery || !hass) {
       return;
     }
-    if (value.adapter === "none") {
-      // Nothing is written while Joe only watches: no preview.
+    if (value.adapter === "none" || (value.adapter === MODBUS_ADAPTER && !this.modbusSaved)) {
+      // Nothing is written while Joe only watches, and over Modbus his entities exist only once saved: no preview.
       this.previewFor = "";
       this.previewSeq++;
       this.preview = undefined;
@@ -833,9 +972,18 @@ export class JoeBatteryControl extends LitElement {
     if (!t || !value) {
       return nothing;
     }
-    const choices: Choice[] = ["watch", ...(this.profileKey ? (["profile"] as Choice[]) : []), "generic", "steps"];
+    const choices: Choice[] = [
+      "watch",
+      ...(this.profileKey ? (["profile"] as Choice[]) : []),
+      ...(this.modbusOffered ? (["modbus"] as Choice[]) : []),
+      "generic",
+      "steps",
+    ];
     const suggested = this.found?.suggested;
     const choice = this.choice;
+    // Over Modbus the operations and levers exist only once the choice is saved (Joe makes the entities then).
+    const showOperations = choice !== "watch" && (choice !== "modbus" || this.modbusSaved);
+    const showRoles = choice === "profile" || choice === "generic" || (choice === "modbus" && this.modbusSaved);
     return html`<div class="choose">
         <div class="seg" role="group" aria-label=${t("f.battery.control")}>
           ${choices.map(
@@ -848,6 +996,7 @@ export class JoeBatteryControl extends LitElement {
           )}
         </div>
       </div>
+      ${choice === "modbus" ? this.renderModbus(t, value) : nothing}
       ${choice === "watch" ? batteryNotes(t, this.found?.notes) : nothing}
       ${choice === "watch" && suggested?.complete
         ? html`<div class="note" data-tipped>
@@ -863,10 +1012,205 @@ export class JoeBatteryControl extends LitElement {
         : nothing}
       ${choice === "watch" ? html`<p class="field-hint hint">${t("preview.watch")}</p>` : nothing}
       ${choice === "profile" ? batteryNotes(t, this.found?.notes) : nothing}
-      ${choice !== "watch" ? this.renderOperations(t, value) : nothing}
-      ${choice === "profile" || choice === "generic" ? this.renderRoles(t, value) : nothing}
-      ${choice !== "watch" ? this.renderSummary(t) : nothing}
-      ${choice !== "watch" ? html`<p class="field-hint">${t("f.battery.control.retest")}</p>` : nothing}`;
+      ${showOperations ? this.renderOperations(t, value) : nothing}
+      ${showRoles ? this.renderRoles(t, value) : nothing}
+      ${showOperations ? this.renderSummary(t) : nothing}
+      ${showOperations ? html`<p class="field-hint">${t("f.battery.control.retest")}</p>` : nothing}`;
+  }
+
+  // --- "Fronius über Modbus": Joe speaks Modbus TCP with the inverter himself ---
+
+  /**
+   * Why (charging with the planned power instead of the inverter's ~500 W),
+   * what Joe does, what to switch on in the inverter once, the address with
+   * "Verbindung prüfen" and what the inverter answered. Saved, the head shows
+   * the profile and the way back to the integration's own steering.
+   */
+  private renderModbus(t: Translate, value: ControlValue): TemplateResult {
+    const settings: ModbusSettings = { host: "", ...MODBUS_DEFAULTS, ...(value.modbus ?? {}) };
+    const saved = this.modbusSaved;
+    const key = modbusKey(settings);
+    // The inverter answered for this address – in this dialog, or before it was saved.
+    const checked = key === this.modbusChecked || (saved && key === modbusKey(this.battery?.modbus));
+    const hosts = (this.modbusCheck?.hosts ?? []).filter((host) => host !== settings.host);
+    const name = this.profileName || this.profiles?.[MODBUS_ADAPTER] || MODBUS_ADAPTER;
+    const number = (field: "port" | "unit", low: number, high: number) => (ev: Event) => {
+      const input = ev.target as HTMLInputElement;
+      const parsed = Number.parseInt(input.value, 10);
+      if (!Number.isFinite(parsed) || parsed < low || parsed > high) {
+        // Not a usable number: the field shows the value in force again.
+        input.value = String(settings[field]);
+        return;
+      }
+      this.setModbus(field === "port" ? { port: parsed } : { unit: parsed });
+    };
+    const enter = (ev: KeyboardEvent) => {
+      if (ev.key === "Enter") {
+        ev.preventDefault();
+        (ev.target as HTMLInputElement).blur();
+      }
+    };
+    return html`<div class="modbus" data-tipped>
+      <div class="modbus-head">
+        <span class="chip read"><ha-icon icon="mdi:lan-connect"></ha-icon>${name}</span>
+        ${saved
+          ? html`<button type="button" class="mini-btn quiet" @click=${() => this.choose("profile")}>
+                <ha-icon icon="mdi:undo-variant"></ha-icon>${t("modbus.back")}
+              </button>
+              ${tip(t, "modbus_back")}`
+          : nothing}
+      </div>
+      <p class="modbus-text">${t("modbus.why")}</p>
+      <p class="modbus-text">${t("modbus.what")}</p>
+      <div class="note">
+        <ha-icon icon="mdi:wrench-outline"></ha-icon>
+        <span>${t("modbus.setup")} ${t("modbus.exclusive")}</span>
+      </div>
+      <div class="modbus-fields">
+        <div class="modbus-field host">
+          <label class="field-label" for="modbus-host">${t("modbus.host")} ${tip(t, "modbus_host")}</label>
+          <input
+            id="modbus-host"
+            class="input"
+            type="text"
+            inputmode="url"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder=${t("modbus.host.placeholder")}
+            .value=${settings.host}
+            @change=${(ev: Event) => this.setModbus({ host: (ev.target as HTMLInputElement).value.trim() })}
+            @keydown=${enter}
+          />
+        </div>
+        <div class="modbus-field">
+          <label class="field-label" for="modbus-port">${t("modbus.port")} ${tip(t, "modbus_port")}</label>
+          <input id="modbus-port" class="input" type="number" inputmode="numeric" min="1" max="65535" step="1" .value=${String(settings.port)} @change=${number("port", 1, 65535)} @keydown=${enter} />
+        </div>
+        <div class="modbus-field">
+          <label class="field-label" for="modbus-unit">${t("modbus.unit")} ${tip(t, "modbus_unit")}</label>
+          <input id="modbus-unit" class="input" type="number" inputmode="numeric" min="0" max="255" step="1" .value=${String(settings.unit)} @change=${number("unit", 0, 255)} @keydown=${enter} />
+        </div>
+      </div>
+      ${hosts.length
+        ? html`<div class="modbus-hosts">
+            <span>${t("modbus.hosts")}</span>
+            ${hosts.map((host) => html`<button type="button" class="mini-btn" @click=${() => this.setModbus({ host })}>${host}</button>`)}
+          </div>`
+        : nothing}
+      <div class="op-actions">
+        <button type="button" class="mini-btn go" ?disabled=${this.modbusChecking} @click=${() => void this.checkModbus(settings)}>
+          <ha-icon icon="mdi:lan-check"></ha-icon>${t("modbus.check")}
+        </button>
+        ${tip(t, "modbus_check")}
+        ${this.modbusChecking ? html`<span class="last" role="status">${t("modbus.checking")}</span>` : nothing}
+      </div>
+      ${this.modbusCheck && !this.modbusChecking ? this.renderModbusResult(t, this.modbusCheck) : nothing}
+      ${!checked && !this.modbusChecking
+        ? html`<div class="note warn" role="status"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${t("modbus.unchecked")}</span></div>`
+        : nothing}
+      ${saved ? nothing : html`<p class="field-hint hint">${t("modbus.after_save")}</p>`}
+    </div>`;
+  }
+
+  /** What the inverter answered: the model found and what it holds right now, or the problem in the owner's words. */
+  private renderModbusResult(t: Translate, check: ModbusCheck): TemplateResult {
+    if (!check.ok) {
+      const problem = check.problem ?? "unknown";
+      const vars = { host: check.host ?? "", port: check.port ?? MODBUS_DEFAULTS.port, problem, detail: check.detail ?? "" };
+      const text =
+        problem === "connect" || problem === "timeout"
+          ? t("modbus.problem.connect", vars)
+          : problem.startsWith("illegal_")
+            ? t("modbus.problem.illegal", vars)
+            : (t.optional(`modbus.problem.${problem}`, vars) ?? t("modbus.problem.other", vars));
+      return html`<div class="probe bad" role="status"><p class="problem">${text}</p></div>`;
+    }
+    const n = (value: number | null | undefined, digits = 0) => (value == null ? "–" : formatNumber(t.lang, value, digits));
+    const onOff = (on: boolean | undefined) => t(on ? "op.step.on" : "op.step.off");
+    const found = [
+      check.model || t("modbus.found.inverter"),
+      check.version ? t("modbus.found.version", { version: check.version }) : "",
+      check.serial ? t("modbus.found.serial", { serial: check.serial }) : "",
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    const kind = (check.kind && t.optional(`modbus.kind.${check.kind}`)) || check.kind || "";
+    const status = (check.status && t.optional(`modbus.status.${check.status}`)) || check.status || t("modbus.status.unknown");
+    return html`<div class="probe ok" role="status">
+      <ul>
+        <li class="ok">
+          <ha-icon icon="mdi:check-circle"></ha-icon>
+          <span><b>${t("modbus.found", { what: found })}</b><small>${t("modbus.found.layout", { kind, base: n(check.base) })}</small></span>
+        </li>
+        <li class="info">
+          <ha-icon icon="mdi:flash-outline"></ha-icon>
+          <span
+            >${check.max_power_w != null ? t("modbus.found.max_power", { power: n(check.max_power_w) }) : t("modbus.found.max_power.none")}
+            ${check.inverter_w != null ? html`<small>${t("modbus.found.inverter_w", { power: n(check.inverter_w) })}</small>` : nothing}</span
+          >
+        </li>
+        <li class="info">
+          <ha-icon icon="mdi:battery-heart-variant"></ha-icon>
+          <span
+            >${t("modbus.found.state", {
+              level: n(check.level_pct),
+              status,
+              reserve: n(check.reserve_pct),
+              charge: n(check.charge_rate_pct, 1),
+              discharge: n(check.discharge_rate_pct, 1),
+              grid: onOff(check.grid_charging),
+            })}
+            <small>${t("modbus.found.bits", { charge: onOff(check.charge_limited), discharge: onOff(check.discharge_limited) })}</small></span
+          >
+        </li>
+      </ul>
+    </div>`;
+  }
+
+  /** "Verbindung prüfen": asks the inverter; without settings the backend tries the addresses of the Fronius integration. */
+  private async checkModbus(settings?: ModbusSettings): Promise<void> {
+    const hass = this.hass;
+    if (!hass) {
+      return;
+    }
+    const seq = ++this.modbusSeq;
+    this.modbusChecking = true;
+    try {
+      const msg: { type: string; [key: string]: unknown } = { type: "energy_joe/modbus/check" };
+      if (settings?.host.trim()) msg.host = settings.host.trim();
+      if (settings) {
+        msg.port = settings.port;
+        msg.unit = settings.unit;
+      }
+      const result = await hass.callWS<ModbusCheck>(msg);
+      if (seq !== this.modbusSeq) return;
+      this.modbusCheck = { ...result, hosts: result.hosts ?? [] };
+      if (result.ok) {
+        this.modbusChecked = modbusKey({
+          host: result.host ?? settings?.host ?? "",
+          port: result.port ?? settings?.port ?? MODBUS_DEFAULTS.port,
+          unit: result.unit ?? settings?.unit ?? MODBUS_DEFAULTS.unit,
+        });
+      }
+      // Opened without an address: the one that answered, else the first the integration knows, goes into the field.
+      const host = (result.ok && result.host) || result.hosts?.[0] || result.host;
+      if (host && !this.value?.modbus?.host.trim()) {
+        this.setModbus({ host });
+      }
+    } catch (err) {
+      if (seq !== this.modbusSeq) return;
+      this.modbusCheck = { ok: false, problem: "error", detail: messageOf(err), hosts: [] };
+    } finally {
+      if (seq === this.modbusSeq) {
+        this.modbusChecking = false;
+      }
+    }
+  }
+
+  private setModbus(change: Partial<ModbusSettings>): void {
+    const value = this.value!;
+    const modbus: ModbusSettings = { host: "", ...MODBUS_DEFAULTS, ...(value.modbus ?? {}), ...change };
+    this.emit({ ...value, modbus });
   }
 
   /** The operations the dialog lists: the preview's, else what the draft's own steps say. */
@@ -896,6 +1240,9 @@ export class JoeBatteryControl extends LitElement {
     return html`<div class="sub" data-tipped>${t("preview.title")} ${tip(t, "operations")}</div>
       ${this.choice === "steps" ? html`<p class="field-hint hint">${t("preview.steps_tab")}</p>` : nothing}
       ${this.dirty ? html`<p class="field-hint hint" role="status">${t("preview.dirty")}</p>` : nothing}
+      ${this.modbusPending
+        ? html`<div class="note" role="status"><ha-icon icon="mdi:progress-clock"></ha-icon><span>${t("modbus.pending")}</span></div>`
+        : nothing}
       ${error ? html`<div class="note warn" role="status"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${error}</span></div>` : nothing}
       ${loading ? html`<p class="field-hint hint" role="status">${t("preview.loading")}</p>` : nothing}
       <div class="ops">
@@ -980,7 +1327,13 @@ export class JoeBatteryControl extends LitElement {
     const n = (value: number | undefined) => formatNumber(t.lang, value ?? 0, 0);
     switch (info.op) {
       case "charge":
-        return p.target != null || p.power_w != null ? t("op.example.charge", { target: n(p.target), power: n(p.power_w) }) : "";
+        if (p.target == null && p.power_w == null) return "";
+        // The device sets the power itself (Fronius raising its reserve: ~500 W): say so instead of "mit 500 W".
+        return t(p.power_by === "device" ? "op.example.charge.device" : "op.example.charge", {
+          target: n(p.target),
+          power: n(p.power_w),
+          name: this.profileName || t("modbus.found.inverter"),
+        });
       case "hold":
         return p.floor != null ? t("op.example.hold", { floor: n(p.floor) }) : "";
       case "cap": {
@@ -1037,7 +1390,7 @@ export class JoeBatteryControl extends LitElement {
               (item, index) => html`<li>
                 <span class="n">${index + 1}.</span>
                 <span class="what"
-                  >${item.role ? html`<span class="role">${t.optional(`role.${item.role}`) ?? item.role} · </span>` : nothing}<b
+                  >${this.rolePrefix(t, item.role, item.name || entityName(hass, item.entity_id))}<b
                     >${item.name || entityName(hass, item.entity_id)}</b
                   ><span class="arrow">→</span
                   ><b>${item.value === "saved" ? t("op.step.saved") : this.valueText(t, item.value, this.unitOf(item.entity_id), params)}</b>
@@ -1065,17 +1418,24 @@ export class JoeBatteryControl extends LitElement {
       );
       return html`<b>${t("op.step.service", { service: step.service ?? "" })}</b>${parts.length ? html` <span class="now">(${parts.join(" · ")})</span>` : nothing}`;
     }
-    const role = step.role && step.role !== "prepare" ? (t.optional(`role.${step.role}`) ?? step.role) : "";
     const name = step.name || (step.entity_id ? entityName(hass, step.entity_id) : "");
+    const role = step.role && step.role !== "prepare" ? this.rolePrefix(t, step.role, name) : nothing;
     const unit = step.unit ?? this.unitOf(step.entity_id);
     if (step.keep) {
       // The entity shows the value already: nothing is written ("bleibt bei 100 %").
-      return html`${role ? html`<span class="role">${role} · </span>` : nothing}<b>${name}</b><span class="arrow">·</span
+      return html`${role}<b>${name}</b><span class="arrow">·</span
         ><span class="keep">${t("op.step.keep", { value: this.valueText(t, step.value, unit, params) })}</span>`;
     }
-    return html`${role ? html`<span class="role">${role} · </span>` : nothing}<b>${name}</b><span class="arrow">→</span
+    return html`${role}<b>${name}</b><span class="arrow">→</span
       ><b>${this.valueText(t, step.value, unit, params)}</b>
       ${step.current != null ? html` <span class="now">(${t("op.step.now", { value: this.currentText(t, step.current, unit) })})</span>` : nothing}`;
+  }
+
+  /** "Ladegrenze · " before an entity's name – left out where the entity is named like the lever (Joe's own Modbus entities). */
+  private rolePrefix(t: Translate, role: string | null | undefined, name: string): TemplateResult | typeof nothing {
+    if (!role) return nothing;
+    const text = this.roleName(t, role);
+    return text === name ? nothing : html`<span class="role">${text} · </span>`;
   }
 
   /** A value as the owner reads it: Ein/Aus, "80 %", a placeholder filled from the example's parameters. */
@@ -1255,7 +1615,7 @@ export class JoeBatteryControl extends LitElement {
       <span class="n">${index + 1}.</span>
       <span class="what">
         <span class="who">
-          ${role ? html`<span class="role">${t.optional(`role.${role}`) ?? role} · </span>` : nothing}
+          ${this.rolePrefix(t, role, label)}
           <button
             type="button"
             class="name-btn"
@@ -1617,7 +1977,7 @@ export class JoeBatteryControl extends LitElement {
       return `${t("op.probe.problem.not_possible")} ${this.whyText(t, result.why)}`;
     }
     if (code === "controls_missing" && result.missing?.length) {
-      return t("op.probe.problem.controls_missing.list", { missing: result.missing.map((role) => t.optional(`role.${role}`) ?? role).join(", ") });
+      return t("op.probe.problem.controls_missing.list", { missing: result.missing.map((role) => this.roleName(t, role)).join(", ") });
     }
     return t.optional(`op.probe.problem.${code}`) ?? t("op.probe.problem.other", { code });
   }
@@ -1715,7 +2075,7 @@ export class JoeBatteryControl extends LitElement {
           const used = row.used_by?.length ? row.used_by.map((op) => t.optional(`op.short.${op}`) ?? op).join(", ") : "";
           return html`<div class="row ${row.deviates ? "dev" : ""}">
             <span class="label">
-              ${t.optional(`role.${role}`) ?? role}${kind ? html` <span class="kind">(${kind})</span>` : nothing}
+              ${this.roleName(t, role)}${kind ? html` <span class="kind">(${kind})</span>` : nothing}
               ${used ? html`<small>${t("roles.used_by", { ops: used })}</small>` : nothing}
             </span>
             <span class="entity">
@@ -1848,28 +2208,41 @@ export class JoeBatteryControl extends LitElement {
 
   private choose(choice: Choice): void {
     const value = this.value!;
+    // Joe's own Modbus entities are no levers of the integration: another way starts without them.
+    const own = value.adapter === MODBUS_ADAPTER ? {} : value.controls;
     if (choice === "watch") {
-      this.emit({ ...value, adapter: "none" });
+      this.emit({ ...value, adapter: "none", modbus: null });
     } else if (choice === "profile") {
       const key = this.profileKey!;
       const fromBattery = this.battery?.adapter === key ? this.battery : undefined;
       this.emit({
         ...value,
         adapter: key,
-        controls: { ...(fromBattery?.controls ?? this.found?.controls ?? value.controls) },
+        controls: { ...(fromBattery?.controls ?? this.found?.controls ?? own) },
         mode_options: { ...(fromBattery?.mode_options ?? {}) },
+        modbus: null,
       });
+    } else if (choice === "modbus") {
+      // Saved this way already: its entities and address; else the address typed before, else none yet –
+      // then the backend looks for the inverter at the addresses of the Fronius integration.
+      const fromBattery = this.battery?.adapter === MODBUS_ADAPTER ? this.battery : undefined;
+      const modbus: ModbusSettings = { host: "", ...MODBUS_DEFAULTS, ...(fromBattery?.modbus ?? value.modbus ?? {}) };
+      this.emit({ ...value, adapter: MODBUS_ADAPTER, controls: { ...(fromBattery?.controls ?? {}) }, mode_options: {}, modbus });
+      if (!modbus.host.trim() && !this.modbusChecking) {
+        void this.checkModbus();
+      }
     } else if (choice === "generic") {
-      const empty = !Object.keys(value.controls).length;
+      const empty = !Object.keys(own).length;
       const suggested = this.found?.suggested;
       this.emit({
         ...value,
         adapter: "generic",
-        controls: empty && suggested ? { ...suggested.controls } : value.controls,
+        controls: empty && suggested ? { ...suggested.controls } : own,
         mode_options: empty && suggested ? { ...suggested.mode_options } : value.mode_options,
+        modbus: null,
       });
     } else {
-      this.emit({ ...value, adapter: "steps" });
+      this.emit({ ...value, adapter: "steps", controls: own, modbus: null });
     }
   }
 
@@ -1890,7 +2263,7 @@ export class JoeBatteryControl extends LitElement {
     const current = this.value!.controls[role];
     const filter = ROLE_FILTER[role] ?? "writable";
     const picked = await pickEntity(this, {
-      heading: t("pick.role.title", { role: t.optional(`role.${role}`) ?? role }),
+      heading: t("pick.role.title", { role: this.roleName(t, role) }),
       tip: "control_roles",
       filter,
       selected: current ? [current] : [],

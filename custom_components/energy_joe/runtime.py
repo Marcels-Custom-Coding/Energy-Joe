@@ -37,6 +37,7 @@ from .discovery import (
 from .learn.learner import JoeLearner
 from .mail import oauth
 from .mail.inbox import CarInboxes
+from .modbus import ModbusInverters, Settings as ModbusSettings
 from .observe.observer import BACKFILL_DAYS, JoeObserver
 from .observe.store import HistoryStore
 from .plan import cars as model_cars
@@ -117,9 +118,11 @@ class _BackupStore(Store[dict[str, Any]]):
 class JoeRuntime:
     """Holds Joe's state and configuration and notifies subscribers about changes."""
 
-    def __init__(self, hass: HomeAssistant) -> None:
+    def __init__(self, hass: HomeAssistant, entry_id: str = "") -> None:
         """Initialize with defaults; call async_load before use."""
         self._state_store: Store[dict[str, Any]] = Store(hass, STATE_VERSION, STATE_KEY)
+        # Inverters Joe steers over Modbus himself (their entities are his).
+        self.modbus = ModbusInverters(hass, entry_id, self._on_modbus_reading)
         self._config_store = _ConfigStore(hass, model.CONFIG_VERSION, CONFIG_KEY)
         self._backup_store = _BackupStore(
             hass, model.CONFIG_VERSION, f"{CONFIG_KEY}.unreadable", **_READABLE
@@ -209,6 +212,7 @@ class JoeRuntime:
         if stored := await self._state_store.async_load():
             self._state = _with_defaults(stored, DEFAULT_STATE)
         await self._async_load_config()
+        self.modbus.async_apply(self._config["batteries"])
         await self.history.async_load()
         await self.executor.async_load()
         await self.calendars.async_load()
@@ -294,6 +298,7 @@ class JoeRuntime:
         self.climate.async_stop()
         self.cars.stop()
         await self.executor.async_stop()
+        await self.modbus.async_unload()
         try:
             await self.executor.async_hand_back_automations()
         except Exception:
@@ -393,6 +398,46 @@ class JoeRuntime:
             )
         except Exception:
             _LOGGER.exception("Keeping the learned cutoff failed")
+
+    @callback
+    def _on_modbus_reading(
+        self, settings: ModbusSettings, reading: Any, first: bool
+    ) -> None:
+        """An inverter answered over Modbus: its reference power is what the
+        rates' percentages stand for (limit_ref_w) and, until the owner says
+        otherwise, the highest charging power of the batteries on it; the
+        first answer also brings Joe's own entities to the batteries' levers
+        (profile updates)."""
+        patch: dict[str, Any] = {}
+        for battery in self._config["batteries"]:
+            if not battery.get("modbus"):
+                continue
+            if ModbusSettings.of(battery["modbus"]).key != settings.key:
+                continue
+            path = f"batteries[{battery['id']}]"
+            change: dict[str, Any] = {}
+            reference = float(reading.max_power_w or 0)
+            if reference > 0:
+                known = battery.get("limit_ref_w")
+                # A reference the owner typed stays (an entry of its own, not
+                # the battery's); none at all, or a changed one, is read.
+                typed = (self._config.get("provenance") or {}).get(
+                    f"{path}.limit_ref_w", {}
+                ).get("source") == "user"
+                if known is None or (
+                    not typed and abs(reference - known) > 0.01 * reference
+                ):
+                    change["limit_ref_w"] = reference
+                if battery.get("max_charge_w") is None:
+                    change["max_charge_w"] = reference
+            if change:
+                patch[battery["id"]] = change
+        if patch:
+            self.async_update_config({"batteries": patch}, "read", "profile")
+        if first and self._started:
+            self._hass.async_create_task(
+                self._async_profile_updates(), eager_start=False
+            )
 
     async def _async_profile_updates(self) -> None:
         """Batteries set up before a profile learned more (e.g. a manual
@@ -803,6 +848,8 @@ class JoeRuntime:
         config = model.apply_update(self._config, patch, source, detail)
         self._config = model.prefer_learned(config)
         self.accounts.async_apply()
+        if "batteries" in patch:
+            self.modbus.async_apply(self._config["batteries"])
         self._changed(config=True)
         self._update_observer()
         self._check_control()
@@ -821,6 +868,7 @@ class JoeRuntime:
         """Take a whole configuration (an imported backup; raises vol.Invalid)."""
         self._config = model.prefer_learned(model.migrate(data))
         self.accounts.async_apply()
+        self.modbus.async_apply(self._config["batteries"])
         self._changed(config=True)
         self._update_observer()
         self._check_control()
