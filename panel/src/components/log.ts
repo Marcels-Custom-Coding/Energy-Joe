@@ -104,6 +104,8 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
     remaining: typeof entry.remaining === "number" ? formatNumber(t.lang, entry.remaining, 1) : "–",
     headroom: typeof entry.headroom === "number" ? formatNumber(t.lang, entry.headroom, 1) : "–",
     level: typeof entry.level === "number" ? formatNumber(t.lang, entry.level, 0) : "–",
+    planned: typeof entry.planned === "number" ? formatNumber(t.lang, entry.planned, 1) : "–",
+    charged: typeof entry.charged === "number" ? formatNumber(t.lang, entry.charged, 1) : "–",
   };
   const nameOf = (id: unknown) => config?.batteries.find((b) => b.id === id)?.name ?? String(id ?? "");
   const names = (ids: unknown) => (Array.isArray(ids) ? ids.map(nameOf).join(", ") : "");
@@ -222,6 +224,10 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
   }
   if (entry.kind === "test") {
     return t(entry.ok ? "log.test.ok" : "log.test.failed", vars);
+  }
+  if (entry.kind === "probe") {
+    const op = String(entry.op ?? "");
+    return t(entry.ok ? "log.probe.ok" : "log.probe.failed", { ...vars, op: t.optional(`op.short.${op}`) ?? op });
   }
   return t.optional(`log.${entry.kind}`, vars) ?? entry.kind;
 }

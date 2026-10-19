@@ -7,7 +7,7 @@ import { daySurplus, limitInPercent, surplusAbility } from "../../components/day
 import { dayText } from "../../components/look-back";
 import { timeOf } from "../../components/plan-text";
 import "../../components/sheet";
-import { batteryNotes } from "../../components/battery-notes";
+import { batteryNotes, slowNote } from "../../components/battery-notes";
 import { tip } from "../../components/tip";
 import { saveConfig, sourceOf, withIgnored } from "../../config";
 import { define } from "../../define";
@@ -19,7 +19,8 @@ import type { Translate } from "../../i18n";
 import { batteryLearned, learnedRows, learnedStyles } from "../../learned-view";
 import { closeSheet, href, navigate, onLink, revealAnchor, type Route } from "../../router";
 import { shared } from "../../styles/shared";
-import type { BatteryConfig, BatteryFinding, ControlView, JoeInfo, TestResult, TestStep } from "../../types";
+import type { BatteryConfig, BatteryFinding, ControlView, JoeInfo, OperationKey, ProbeResult, TestResult, TestStep } from "../../types";
+import { rolesChoices, rolesDetails } from "../overview/inbox";
 import "./battery-fields";
 import { deviceFrame, frameFromEntry, frameStyles } from "./device-frame";
 import { DeviceSection } from "./section-base";
@@ -104,6 +105,9 @@ export class JoeBatteryDevice extends DeviceSection {
   @state() private removing = false;
   @state() private saving = false;
   @state() private notice = "";
+  /** "Übernehmen"/"So lassen" of the levers is on its way, and what it left to say. */
+  @state() private answering = false;
+  @state() private rolesNotice = "";
   @state() private automations: BatteryAutomation[] | null = null;
   private automationsFor = "";
   /** The anchor already revealed for /devices/battery/<id>/intruders. */
@@ -164,6 +168,20 @@ export class JoeBatteryDevice extends DeviceSection {
       }
       .steps small {
         color: var(--joe-ink-2);
+      }
+      .probes {
+        margin: 10px 0 0;
+        font-size: 13.5px;
+        color: var(--joe-ink-2);
+      }
+      .probes .ok {
+        color: var(--joe-good);
+      }
+      .probes .bad {
+        color: var(--joe-crit);
+      }
+      .roles-note {
+        margin-bottom: 12px;
       }
       .control-row {
         display: flex;
@@ -342,6 +360,7 @@ export class JoeBatteryDevice extends DeviceSection {
           </div>`
         : nothing}
       ${batteryNotes(t, found?.notes, battery.name)}
+      ${slowNote(t, battery, this.state?.control)}
       ${this.notice ? html`<div class="note warn" role="status"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${this.notice}</span></div>` : nothing}`;
   }
 
@@ -351,8 +370,14 @@ export class JoeBatteryDevice extends DeviceSection {
     const ready = control?.ready[battery.id] ?? "not_controllable";
     const testing = control?.testing?.battery === battery.id ? control.testing : null;
     const test = control?.tests[battery.id];
-    const busy = Boolean(control?.testing);
+    // A probe of one operation (the dialog) and a test run never run at once.
+    const probe = control?.probe_running;
+    const busy = Boolean(control?.testing) || Boolean(probe);
     const steering = Boolean(control?.steering);
+    const probing =
+      probe?.battery === battery.id
+        ? html`<span class="chip">${t("battery.probe.running", { op: t.optional(`op.short.${probe.op}`) ?? probe.op })}</span>`
+        : nothing;
     const chip = testing
       ? html`<span class="chip">${t("devices.test.running")}</span>`
       : ready === "outdated"
@@ -364,12 +389,29 @@ export class JoeBatteryDevice extends DeviceSection {
           : html`<span class="chip">${t("devices.test.none")}</span>`;
     const steps = testing?.steps ?? test?.steps ?? [];
     return html`<div class="test">
-        ${chip}
+        ${chip} ${probing}
         <button type="button" class="btn btn-secondary" ?disabled=${busy || steering} @click=${() => (this.confirm = true)}>
           <ha-icon icon="mdi:play-circle-outline"></ha-icon>${t(test ? "devices.test.again" : "devices.test.start")}
         </button>
       </div>
-      ${testing || test ? this.renderSteps(t, steps, testing?.step ?? null, test) : nothing}`;
+      ${testing || test ? this.renderSteps(t, steps, testing?.step ?? null, test) : nothing}
+      ${this.renderProbes(t, battery)}`;
+  }
+
+  /** "Proben: Laden ✓ 18.10. · Warten ✗ 17.10." – the last probe of each operation (the dialog has the details). */
+  private renderProbes(t: Translate, battery: BatteryConfig): TemplateResult | typeof nothing {
+    const probes = this.state?.probes?.[battery.id];
+    const entries = Object.entries(probes ?? {}).filter((entry): entry is [string, ProbeResult] => Boolean(entry[1]));
+    if (!entries.length) {
+      return nothing;
+    }
+    const items = entries.map(([op, probe]) => {
+      const name = t.optional(`op.short.${op as OperationKey}`) ?? op;
+      return html`<span class=${probe.ok ? "ok" : "bad"}
+        >${t(probe.ok ? "battery.probes.ok" : "battery.probes.failed", { op: name, day: dayText(t.lang, probe.at, "short") })}</span
+      >`;
+    });
+    return html`<p class="probes">${t("battery.probes", { list: "" })}${items.map((item, i) => html`${i ? " · " : ""}${item}`)}</p>`;
   }
 
   private renderSteps(t: Translate, done: TestStep[], running: string | null, test: TestResult | undefined): TemplateResult {
@@ -446,7 +488,8 @@ export class JoeBatteryDevice extends DeviceSection {
 
   private renderSteer(t: Translate, battery: BatteryConfig): TemplateResult {
     const to = controlRoute(battery.id);
-    return html`<div class="control-row" data-tipped>
+    return html`${this.renderRolesNote(t, battery)}
+      <div class="control-row" data-tipped>
         <span class="control-text">
           <small>${t("battery.page.how")}</small>
           <b>${controlKind(t, battery, this.info)}</b>
@@ -457,6 +500,52 @@ export class JoeBatteryDevice extends DeviceSection {
         ${tip(t, "devices_setup")}
       </div>
       ${battery.adapter !== "none" ? this.renderDaySurplus(t, battery) : nothing} ${this.fields(battery, "steer")}`;
+  }
+
+  /**
+   * The saved levers differ from what the profile finds (state.battery_roles):
+   * adopt the profile's or leave it, right here; "Regler einrichten" shows the
+   * details.
+   */
+  private renderRolesNote(t: Translate, battery: BatteryConfig): TemplateResult | typeof nothing {
+    const item = this.state?.battery_roles?.find((entry) => entry.battery_id === battery.id);
+    if (!item) {
+      return this.rolesNotice
+        ? html`<div class="note roles-note" role="status"><ha-icon icon="mdi:information-outline"></ha-icon><span>${this.rolesNotice}</span></div>`
+        : nothing;
+    }
+    const profile = this.info?.profiles?.[item.profile] ?? item.profile;
+    return html`<div class="note warn roles-note" role="status" data-tipped>
+      <ha-icon icon="mdi:swap-horizontal-variant"></ha-icon>
+      <span
+        >${t("roles.todo.title", { name: item.name, profile })}: ${t("roles.todo.text", { details: rolesDetails(t, item, this.hass) })}
+        <div class="note-actions">
+          ${rolesChoices(t, battery.id).map(
+            (choice) => html`<button
+              type="button"
+              class="mini-btn ${choice.done ? "go" : ""}"
+              ?disabled=${this.answering}
+              @click=${() => this.answerRoles(choice.message!, choice.done ?? "")}
+            >
+              ${choice.label}
+            </button>`,
+          )}
+          ${tip(t, "battery_roles")}
+        </div></span
+      >
+    </div>`;
+  }
+
+  private async answerRoles(message: { type: string; [key: string]: unknown }, done: string): Promise<void> {
+    this.answering = true;
+    this.notice = "";
+    try {
+      await this.hass?.callWS(message);
+      this.rolesNotice = done;
+    } catch {
+      this.notice = this.t!("error.action");
+    }
+    this.answering = false;
   }
 
   /** "Macht tagsüber mit": this battery's part in the daytime surplus for evcc, and what it does now. */
@@ -710,6 +799,10 @@ export class JoeBatteryDevice extends DeviceSection {
           .found=${found}
           .profiles=${this.info?.profiles}
           .value=${draft as ControlValue}
+          .dirty=${dirty}
+          .probes=${this.state?.probes?.[battery.id]}
+          .probeRunning=${this.state?.control?.probe_running ?? null}
+          .busy=${Boolean(this.state?.control?.testing)}
           @joe-control-change=${(ev: CustomEvent<ControlValue>) => {
             drafts.set(battery.id, { base: controlOf(battery), draft: withPrepare(battery, ev.detail, found) });
             this.requestUpdate();

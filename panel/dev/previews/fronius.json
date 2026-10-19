@@ -1,0 +1,3612 @@
+{
+ "battery": {
+  "id": "storage",
+  "name": "BYD Battery-Box Premium HV",
+  "adapter": "fronius",
+  "soc_entity": "sensor.storage_soc",
+  "power": {
+   "entity_id": "sensor.solarnet_power_battery",
+   "invert": true,
+   "minus_entity_id": null
+  },
+  "capacity_kwh": 10.24,
+  "capacity_entity": "sensor.storage_capacity",
+  "max_charge_w": null,
+  "max_discharge_w": null,
+  "device_id": "storage",
+  "controls": {
+   "min_soc": "number.inverter_minimum_reserve",
+   "grid_charge": "switch.inverter_grid_charging",
+   "charge_power": "number.inverter_charge_limit",
+   "discharge_power": "number.inverter_discharge_limit"
+  },
+  "mode_options": {},
+  "prepare": [],
+  "steps": {},
+  "priority": 1,
+  "floor_soc": null,
+  "day_surplus": true,
+  "limit_ref_w": null,
+  "self_regulating": null,
+  "control_group": null,
+  "night_cap": null,
+  "cutoff_soc": null
+ },
+ "finding": {
+  "id": "storage",
+  "name": "BYD Battery-Box Premium HV",
+  "device_id": "storage",
+  "integration": "fronius",
+  "soc": {
+   "entity_id": "sensor.storage_soc",
+   "name": "Storage State of charge",
+   "area": null,
+   "device": "BYD Battery-Box Premium HV",
+   "value": 55.0,
+   "unit": "%",
+   "integration": "fronius"
+  },
+  "soc_entity": "sensor.storage_soc",
+  "power": {
+   "entity_id": "sensor.solarnet_power_battery",
+   "invert": true,
+   "minus_entity_id": null
+  },
+  "capacity_kwh": 10.24,
+  "capacity_entity": "sensor.storage_capacity",
+  "max_charge_w": null,
+  "max_discharge_w": null,
+  "adapter": "fronius",
+  "controls": {
+   "min_soc": "number.inverter_minimum_reserve",
+   "grid_charge": "switch.inverter_grid_charging",
+   "charge_limit": "number.inverter_charge_limit",
+   "charge_limit_enabled": "switch.inverter_charge_limit_enabled",
+   "discharge_limit": "number.inverter_discharge_limit",
+   "discharge_limit_enabled": "switch.inverter_discharge_limit_enabled"
+  },
+  "mode_options": {},
+  "prepare": [],
+  "steps": {},
+  "controllable": true,
+  "can_charge": true,
+  "suggested": null,
+  "unsure": [],
+  "confidence": 1.0,
+  "reasons": [
+   {
+    "code": "integration_key",
+    "integration": "fronius"
+   },
+   {
+    "code": "capacity_read"
+   },
+   {
+    "code": "controls_found",
+    "count": 6
+   },
+   {
+    "code": "energy_dashboard",
+    "part": "battery"
+   }
+  ],
+  "notes": []
+ },
+ "hass": {
+  "states": {
+   "sensor.solarnet_power_grid": {
+    "entity_id": "sensor.solarnet_power_grid",
+    "state": "-60",
+    "attributes": {
+     "friendly_name": "SolarNet Grid",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.solarnet_power_load_consumed": {
+    "entity_id": "sensor.solarnet_power_load_consumed",
+    "state": "1500",
+    "attributes": {
+     "friendly_name": "SolarNet Consumption",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.solarnet_power_load": {
+    "entity_id": "sensor.solarnet_power_load",
+    "state": "-1500",
+    "attributes": {
+     "friendly_name": "SolarNet Load",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.solarnet_power_photovoltaics": {
+    "entity_id": "sensor.solarnet_power_photovoltaics",
+    "state": "3000",
+    "attributes": {
+     "friendly_name": "SolarNet PV",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.solarnet_power_battery": {
+    "entity_id": "sensor.solarnet_power_battery",
+    "state": "-1450",
+    "attributes": {
+     "friendly_name": "SolarNet Battery",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.storage_soc": {
+    "entity_id": "sensor.storage_soc",
+    "state": "55",
+    "attributes": {
+     "friendly_name": "Storage State of charge",
+     "unit_of_measurement": "%",
+     "device_class": "battery"
+    }
+   },
+   "sensor.storage_capacity": {
+    "entity_id": "sensor.storage_capacity",
+    "state": "10240",
+    "attributes": {
+     "friendly_name": "Storage Maximum capacity",
+     "unit_of_measurement": "Wh"
+    }
+   },
+   "number.inverter_minimum_reserve": {
+    "entity_id": "number.inverter_minimum_reserve",
+    "state": "5",
+    "attributes": {
+     "friendly_name": "Minimum reserve",
+     "unit_of_measurement": "%",
+     "min": 0,
+     "max": 100,
+     "step": 1
+    }
+   },
+   "switch.inverter_grid_charging": {
+    "entity_id": "switch.inverter_grid_charging",
+    "state": "on",
+    "attributes": {
+     "friendly_name": "Grid charging"
+    }
+   },
+   "number.inverter_charge_limit": {
+    "entity_id": "number.inverter_charge_limit",
+    "state": "100",
+    "attributes": {
+     "friendly_name": "Charge limit",
+     "unit_of_measurement": "%",
+     "min": 0,
+     "max": 100,
+     "step": 1
+    }
+   },
+   "switch.inverter_charge_limit_enabled": {
+    "entity_id": "switch.inverter_charge_limit_enabled",
+    "state": "off",
+    "attributes": {
+     "friendly_name": "Charge limit active"
+    }
+   },
+   "sensor.venus_soc": {
+    "entity_id": "sensor.venus_soc",
+    "state": "40",
+    "attributes": {
+     "friendly_name": "Venus Battery SoC",
+     "unit_of_measurement": "%",
+     "device_class": "battery"
+    }
+   },
+   "sensor.venus_ac_power": {
+    "entity_id": "sensor.venus_ac_power",
+    "state": "0",
+    "attributes": {
+     "friendly_name": "Venus AC power",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.venus_total_energy": {
+    "entity_id": "sensor.venus_total_energy",
+    "state": "5.12",
+    "attributes": {
+     "friendly_name": "Venus Total energy",
+     "unit_of_measurement": "kWh",
+     "device_class": "energy"
+    }
+   },
+   "select.venus_force_mode": {
+    "entity_id": "select.venus_force_mode",
+    "state": "None",
+    "attributes": {
+     "friendly_name": "Venus Force mode",
+     "options": [
+      "None",
+      "Charge",
+      "Discharge"
+     ]
+    }
+   },
+   "number.venus_charge_power": {
+    "entity_id": "number.venus_charge_power",
+    "state": "0",
+    "attributes": {
+     "friendly_name": "Venus Charge power",
+     "unit_of_measurement": "W",
+     "min": 0,
+     "max": 2500,
+     "step": 50
+    }
+   },
+   "number.venus_discharge_cutoff": {
+    "entity_id": "number.venus_discharge_cutoff",
+    "state": "12",
+    "attributes": {
+     "friendly_name": "Venus Discharge cutoff",
+     "unit_of_measurement": "%",
+     "min": 12,
+     "max": 50,
+     "step": 1
+    }
+   },
+   "number.venus_max_charge": {
+    "entity_id": "number.venus_max_charge",
+    "state": "2500",
+    "attributes": {
+     "friendly_name": "Venus Max charge power",
+     "unit_of_measurement": "W"
+    }
+   },
+   "sensor.house_meter_power": {
+    "entity_id": "sensor.house_meter_power",
+    "state": "-60",
+    "attributes": {
+     "friendly_name": "Meter power",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.house_power": {
+    "entity_id": "sensor.house_power",
+    "state": "1400",
+    "attributes": {
+     "friendly_name": "House power",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.fs_east_today": {
+    "entity_id": "sensor.fs_east_today",
+    "state": "12.5",
+    "attributes": {
+     "friendly_name": "East today",
+     "unit_of_measurement": "kWh",
+     "device_class": "energy"
+    }
+   },
+   "sensor.fs_east_tomorrow": {
+    "entity_id": "sensor.fs_east_tomorrow",
+    "state": "11.0",
+    "attributes": {
+     "friendly_name": "East tomorrow",
+     "unit_of_measurement": "kWh",
+     "device_class": "energy"
+    }
+   },
+   "sensor.fs_east_remaining": {
+    "entity_id": "sensor.fs_east_remaining",
+    "state": "9.3",
+    "attributes": {
+     "friendly_name": "East remaining",
+     "unit_of_measurement": "kWh",
+     "device_class": "energy"
+    }
+   },
+   "sensor.fs_east_power_now": {
+    "entity_id": "sensor.fs_east_power_now",
+    "state": "1150",
+    "attributes": {
+     "friendly_name": "East estimated power now",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.fs_west_today": {
+    "entity_id": "sensor.fs_west_today",
+    "state": "16.5",
+    "attributes": {
+     "friendly_name": "West today",
+     "unit_of_measurement": "kWh",
+     "device_class": "energy"
+    }
+   },
+   "sensor.fs_west_tomorrow": {
+    "entity_id": "sensor.fs_west_tomorrow",
+    "state": "16.3",
+    "attributes": {
+     "friendly_name": "West tomorrow",
+     "unit_of_measurement": "kWh",
+     "device_class": "energy"
+    }
+   },
+   "sensor.octopus_price": {
+    "entity_id": "sensor.octopus_price",
+    "state": "0.285719",
+    "attributes": {
+     "friendly_name": "Electricity price",
+     "unit_of_measurement": "€/kWh",
+     "device_class": "monetary",
+     "timeslots": [
+      {
+       "name": "GO",
+       "rate": "18.564",
+       "activation_rules": [
+        {
+         "from_time": "00:00:00",
+         "to_time": "05:00:00"
+        }
+       ]
+      },
+      {
+       "name": "STANDARD",
+       "rate": "28.5719",
+       "activation_rules": [
+        {
+         "from_time": "05:00:00",
+         "to_time": "00:00:00"
+        }
+       ]
+      }
+     ],
+     "rates": [],
+     "unit_rate_forecast": []
+    }
+   },
+   "select.evcc_carport_mode": {
+    "entity_id": "select.evcc_carport_mode",
+    "state": "pv",
+    "attributes": {
+     "friendly_name": "Carport mode",
+     "options": [
+      "off",
+      "pv",
+      "minpv",
+      "now"
+     ]
+    }
+   },
+   "binary_sensor.evcc_carport_connected": {
+    "entity_id": "binary_sensor.evcc_carport_connected",
+    "state": "on",
+    "attributes": {
+     "friendly_name": "Carport connected"
+    }
+   },
+   "sensor.evcc_carport_charge_power": {
+    "entity_id": "sensor.evcc_carport_charge_power",
+    "state": "0",
+    "attributes": {
+     "friendly_name": "Carport charge power",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "select.evcc_floor_mode": {
+    "entity_id": "select.evcc_floor_mode",
+    "state": "pv",
+    "attributes": {
+     "friendly_name": "Floor heating mode",
+     "options": [
+      "off",
+      "pv",
+      "minpv",
+      "now"
+     ]
+    }
+   },
+   "sensor.evcc_floor_vehicle_soc": {
+    "entity_id": "sensor.evcc_floor_vehicle_soc",
+    "state": "26.9",
+    "attributes": {
+     "friendly_name": "Floor heating vehicle soc",
+     "unit_of_measurement": "°C",
+     "device_class": "temperature"
+    }
+   },
+   "sensor.ww_speicher_temperatur": {
+    "entity_id": "sensor.ww_speicher_temperatur",
+    "state": "52.5",
+    "attributes": {
+     "friendly_name": "Warmwasserspeicher Temperatur",
+     "unit_of_measurement": "°C",
+     "device_class": "temperature"
+    }
+   },
+   "sensor.ww_zirkulation_temperatur": {
+    "entity_id": "sensor.ww_zirkulation_temperatur",
+    "state": "47.0",
+    "attributes": {
+     "friendly_name": "Warmwasser Zirkulation Temperatur",
+     "unit_of_measurement": "°C",
+     "device_class": "temperature"
+    }
+   },
+   "switch.ww_boost": {
+    "entity_id": "switch.ww_boost",
+    "state": "off",
+    "attributes": {
+     "friendly_name": "Warmwasser Boost"
+    }
+   },
+   "weather.home": {
+    "entity_id": "weather.home",
+    "state": "sunny",
+    "attributes": {
+     "friendly_name": "Home",
+     "supported_features": 3
+    }
+   },
+   "person.alex": {
+    "entity_id": "person.alex",
+    "state": "home",
+    "attributes": {
+     "friendly_name": "Alex"
+    }
+   },
+   "person.sam": {
+    "entity_id": "person.sam",
+    "state": "not_home",
+    "attributes": {
+     "friendly_name": "Sam"
+    }
+   },
+   "calendar.alex_work": {
+    "entity_id": "calendar.alex_work",
+    "state": "off",
+    "attributes": {
+     "friendly_name": "Alex Arbeit"
+    }
+   },
+   "calendar.family": {
+    "entity_id": "calendar.family",
+    "state": "off",
+    "attributes": {
+     "friendly_name": "Familie"
+    }
+   },
+   "binary_sensor.workday": {
+    "entity_id": "binary_sensor.workday",
+    "state": "on",
+    "attributes": {
+     "friendly_name": "Workday"
+    }
+   },
+   "sensor.battery_total_soc": {
+    "entity_id": "sensor.battery_total_soc",
+    "state": "48",
+    "attributes": {
+     "friendly_name": "Total SoC",
+     "unit_of_measurement": "%",
+     "device_class": "battery"
+    }
+   },
+   "sensor.window_battery": {
+    "entity_id": "sensor.window_battery",
+    "state": "90",
+    "attributes": {
+     "friendly_name": "Fenster Bad Batterie",
+     "unit_of_measurement": "%",
+     "device_class": "battery"
+    }
+   },
+   "sensor.ev_battery": {
+    "entity_id": "sensor.ev_battery",
+    "state": "23",
+    "attributes": {
+     "friendly_name": "EV Battery Level",
+     "unit_of_measurement": "%",
+     "device_class": "battery"
+    }
+   },
+   "sensor.ev_range": {
+    "entity_id": "sensor.ev_range",
+    "state": "214",
+    "attributes": {
+     "friendly_name": "EV Range",
+     "unit_of_measurement": "km",
+     "device_class": "distance"
+    }
+   },
+   "sensor.ev_battery_capacity": {
+    "entity_id": "sensor.ev_battery_capacity",
+    "state": "280800",
+    "attributes": {
+     "friendly_name": "EV Battery Capacity",
+     "unit_of_measurement": "kJ"
+    }
+   },
+   "sensor.ev_odometer": {
+    "entity_id": "sensor.ev_odometer",
+    "state": "23456",
+    "attributes": {
+     "friendly_name": "EV Odometer",
+     "unit_of_measurement": "km",
+     "device_class": "distance"
+    }
+   },
+   "binary_sensor.ev_plugged_in": {
+    "entity_id": "binary_sensor.ev_plugged_in",
+    "state": "on",
+    "attributes": {
+     "friendly_name": "EV Plugged In"
+    }
+   },
+   "sensor.ev_charging_power": {
+    "entity_id": "sensor.ev_charging_power",
+    "state": "0",
+    "attributes": {
+     "friendly_name": "EV Charging Power",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.network_power": {
+    "entity_id": "sensor.network_power",
+    "state": "45",
+    "attributes": {
+     "friendly_name": "Netzwerk Leistung",
+     "unit_of_measurement": "W",
+     "device_class": "power"
+    }
+   },
+   "sensor.phone_battery": {
+    "entity_id": "sensor.phone_battery",
+    "state": "80",
+    "attributes": {
+     "friendly_name": "Phone battery",
+     "unit_of_measurement": "%",
+     "device_class": "battery"
+    }
+   },
+   "number.inverter_discharge_limit": {
+    "entity_id": "number.inverter_discharge_limit",
+    "state": "100",
+    "attributes": {
+     "friendly_name": "Discharge limit",
+     "unit_of_measurement": "%",
+     "min": 0,
+     "max": 100,
+     "step": 1
+    }
+   },
+   "switch.inverter_discharge_limit_enabled": {
+    "entity_id": "switch.inverter_discharge_limit_enabled",
+    "state": "off",
+    "attributes": {
+     "friendly_name": "Discharge limit active"
+    }
+   }
+  },
+  "entities": {
+   "sensor.solarnet_power_grid": {
+    "entity_id": "sensor.solarnet_power_grid",
+    "device_id": "flow",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "sensor.solarnet_power_load_consumed": {
+    "entity_id": "sensor.solarnet_power_load_consumed",
+    "device_id": "flow",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "sensor.solarnet_power_load": {
+    "entity_id": "sensor.solarnet_power_load",
+    "device_id": "flow",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "sensor.solarnet_power_photovoltaics": {
+    "entity_id": "sensor.solarnet_power_photovoltaics",
+    "device_id": "flow",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "sensor.solarnet_power_battery": {
+    "entity_id": "sensor.solarnet_power_battery",
+    "device_id": "flow",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "sensor.storage_soc": {
+    "entity_id": "sensor.storage_soc",
+    "device_id": "storage",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "sensor.storage_capacity": {
+    "entity_id": "sensor.storage_capacity",
+    "device_id": "storage",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "number.inverter_minimum_reserve": {
+    "entity_id": "number.inverter_minimum_reserve",
+    "device_id": "inverter",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "switch.inverter_grid_charging": {
+    "entity_id": "switch.inverter_grid_charging",
+    "device_id": "inverter",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "number.inverter_charge_limit": {
+    "entity_id": "number.inverter_charge_limit",
+    "device_id": "inverter",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "switch.inverter_charge_limit_enabled": {
+    "entity_id": "switch.inverter_charge_limit_enabled",
+    "device_id": "inverter",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "sensor.venus_soc": {
+    "entity_id": "sensor.venus_soc",
+    "device_id": "venus",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "sensor.venus_ac_power": {
+    "entity_id": "sensor.venus_ac_power",
+    "device_id": "venus",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "sensor.venus_total_energy": {
+    "entity_id": "sensor.venus_total_energy",
+    "device_id": "venus",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "select.venus_force_mode": {
+    "entity_id": "select.venus_force_mode",
+    "device_id": "venus",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "number.venus_charge_power": {
+    "entity_id": "number.venus_charge_power",
+    "device_id": "venus",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "number.venus_discharge_cutoff": {
+    "entity_id": "number.venus_discharge_cutoff",
+    "device_id": "venus",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "number.venus_max_charge": {
+    "entity_id": "number.venus_max_charge",
+    "device_id": "venus",
+    "area_id": null,
+    "platform": "omnibattery"
+   },
+   "sensor.house_meter_power": {
+    "entity_id": "sensor.house_meter_power",
+    "device_id": "meter",
+    "area_id": null,
+    "platform": "tasmota"
+   },
+   "sensor.house_power": {
+    "entity_id": "sensor.house_power",
+    "device_id": "em",
+    "area_id": null,
+    "platform": "shelly"
+   },
+   "sensor.fs_east_today": {
+    "entity_id": "sensor.fs_east_today",
+    "device_id": null,
+    "area_id": null,
+    "platform": "forecast_solar"
+   },
+   "sensor.fs_east_tomorrow": {
+    "entity_id": "sensor.fs_east_tomorrow",
+    "device_id": null,
+    "area_id": null,
+    "platform": "forecast_solar"
+   },
+   "sensor.fs_east_remaining": {
+    "entity_id": "sensor.fs_east_remaining",
+    "device_id": null,
+    "area_id": null,
+    "platform": "forecast_solar"
+   },
+   "sensor.fs_east_power_now": {
+    "entity_id": "sensor.fs_east_power_now",
+    "device_id": null,
+    "area_id": null,
+    "platform": "forecast_solar"
+   },
+   "sensor.fs_west_today": {
+    "entity_id": "sensor.fs_west_today",
+    "device_id": null,
+    "area_id": null,
+    "platform": "forecast_solar"
+   },
+   "sensor.fs_west_tomorrow": {
+    "entity_id": "sensor.fs_west_tomorrow",
+    "device_id": null,
+    "area_id": null,
+    "platform": "forecast_solar"
+   },
+   "sensor.octopus_price": {
+    "entity_id": "sensor.octopus_price",
+    "device_id": null,
+    "area_id": null,
+    "platform": "octopus_germany"
+   },
+   "select.evcc_carport_mode": {
+    "entity_id": "select.evcc_carport_mode",
+    "device_id": "carport",
+    "area_id": null,
+    "platform": "evcc_intg"
+   },
+   "binary_sensor.evcc_carport_connected": {
+    "entity_id": "binary_sensor.evcc_carport_connected",
+    "device_id": "carport",
+    "area_id": null,
+    "platform": "evcc_intg"
+   },
+   "sensor.evcc_carport_charge_power": {
+    "entity_id": "sensor.evcc_carport_charge_power",
+    "device_id": "carport",
+    "area_id": null,
+    "platform": "evcc_intg"
+   },
+   "select.evcc_floor_mode": {
+    "entity_id": "select.evcc_floor_mode",
+    "device_id": "floor",
+    "area_id": null,
+    "platform": "evcc_intg"
+   },
+   "sensor.evcc_floor_vehicle_soc": {
+    "entity_id": "sensor.evcc_floor_vehicle_soc",
+    "device_id": "floor",
+    "area_id": null,
+    "platform": "evcc_intg"
+   },
+   "sensor.ww_speicher_temperatur": {
+    "entity_id": "sensor.ww_speicher_temperatur",
+    "device_id": null,
+    "area_id": null,
+    "platform": "shelly"
+   },
+   "sensor.ww_zirkulation_temperatur": {
+    "entity_id": "sensor.ww_zirkulation_temperatur",
+    "device_id": null,
+    "area_id": null,
+    "platform": "shelly"
+   },
+   "switch.ww_boost": {
+    "entity_id": "switch.ww_boost",
+    "device_id": null,
+    "area_id": null,
+    "platform": "shelly"
+   },
+   "weather.home": {
+    "entity_id": "weather.home",
+    "device_id": null,
+    "area_id": null,
+    "platform": "met"
+   },
+   "person.alex": {
+    "entity_id": "person.alex",
+    "device_id": null,
+    "area_id": null,
+    "platform": null
+   },
+   "person.sam": {
+    "entity_id": "person.sam",
+    "device_id": null,
+    "area_id": null,
+    "platform": null
+   },
+   "calendar.alex_work": {
+    "entity_id": "calendar.alex_work",
+    "device_id": null,
+    "area_id": null,
+    "platform": "local_calendar"
+   },
+   "calendar.family": {
+    "entity_id": "calendar.family",
+    "device_id": null,
+    "area_id": null,
+    "platform": "local_calendar"
+   },
+   "binary_sensor.workday": {
+    "entity_id": "binary_sensor.workday",
+    "device_id": null,
+    "area_id": null,
+    "platform": "workday"
+   },
+   "sensor.battery_total_soc": {
+    "entity_id": "sensor.battery_total_soc",
+    "device_id": null,
+    "area_id": null,
+    "platform": "template"
+   },
+   "sensor.window_battery": {
+    "entity_id": "sensor.window_battery",
+    "device_id": "window",
+    "area_id": null,
+    "platform": "acme_sensors"
+   },
+   "sensor.ev_battery": {
+    "entity_id": "sensor.ev_battery",
+    "device_id": "car",
+    "area_id": null,
+    "platform": "kia_uvo"
+   },
+   "sensor.ev_range": {
+    "entity_id": "sensor.ev_range",
+    "device_id": "car",
+    "area_id": null,
+    "platform": "kia_uvo"
+   },
+   "sensor.ev_battery_capacity": {
+    "entity_id": "sensor.ev_battery_capacity",
+    "device_id": "car",
+    "area_id": null,
+    "platform": "kia_uvo"
+   },
+   "sensor.ev_odometer": {
+    "entity_id": "sensor.ev_odometer",
+    "device_id": "car",
+    "area_id": null,
+    "platform": "kia_uvo"
+   },
+   "binary_sensor.ev_plugged_in": {
+    "entity_id": "binary_sensor.ev_plugged_in",
+    "device_id": "car",
+    "area_id": null,
+    "platform": "kia_uvo"
+   },
+   "sensor.ev_charging_power": {
+    "entity_id": "sensor.ev_charging_power",
+    "device_id": "car",
+    "area_id": null,
+    "platform": "kia_uvo"
+   },
+   "sensor.network_power": {
+    "entity_id": "sensor.network_power",
+    "device_id": "plug",
+    "area_id": null,
+    "platform": "tasmota"
+   },
+   "sensor.phone_battery": {
+    "entity_id": "sensor.phone_battery",
+    "device_id": "phone",
+    "area_id": null,
+    "platform": "mobile_app"
+   },
+   "number.inverter_discharge_limit": {
+    "entity_id": "number.inverter_discharge_limit",
+    "device_id": "inverter",
+    "area_id": null,
+    "platform": "fronius"
+   },
+   "switch.inverter_discharge_limit_enabled": {
+    "entity_id": "switch.inverter_discharge_limit_enabled",
+    "device_id": "inverter",
+    "area_id": null,
+    "platform": "fronius"
+   }
+  },
+  "devices": {
+   "storage": {
+    "id": "storage",
+    "name": "BYD Battery-Box Premium HV",
+    "manufacturer": "BYD",
+    "model": "Battery-Box Premium HV",
+    "area_id": null
+   },
+   "inverter": {
+    "id": "inverter",
+    "name": "Symo GEN24 10.0",
+    "manufacturer": "Fronius",
+    "model": "Symo GEN24 10.0 Plus",
+    "area_id": null
+   },
+   "flow": {
+    "id": "flow",
+    "name": "SolarNet",
+    "manufacturer": "Fronius",
+    "model": "SolarNet",
+    "area_id": null
+   },
+   "venus": {
+    "id": "venus",
+    "name": "Marstek Venus E",
+    "manufacturer": "Marstek",
+    "model": "Venus E",
+    "area_id": null
+   },
+   "carport": {
+    "id": "carport",
+    "name": "Carport",
+    "manufacturer": "evcc",
+    "model": "loadpoint",
+    "area_id": null
+   },
+   "floor": {
+    "id": "floor",
+    "name": "Floor heating",
+    "manufacturer": "evcc",
+    "model": "loadpoint",
+    "area_id": null
+   },
+   "phone": {
+    "id": "phone",
+    "name": "Alex Phone",
+    "manufacturer": "Apple",
+    "model": "iPhone",
+    "area_id": null
+   },
+   "window": {
+    "id": "window",
+    "name": "Fenster Bad",
+    "manufacturer": "Acme",
+    "model": "Window sensor",
+    "area_id": null
+   },
+   "car": {
+    "id": "car",
+    "name": "Electric car",
+    "manufacturer": "Hyundai",
+    "model": "Battery electric vehicle",
+    "area_id": null
+   },
+   "plug": {
+    "id": "plug",
+    "name": "Netzwerk",
+    "manufacturer": "Tasmota",
+    "model": "Plug",
+    "area_id": null
+   }
+  },
+  "areas": {}
+ },
+ "found": {
+  "controls": {
+   "min_soc": "number.inverter_minimum_reserve",
+   "grid_charge": "switch.inverter_grid_charging",
+   "charge_limit": "number.inverter_charge_limit",
+   "charge_limit_enabled": "switch.inverter_charge_limit_enabled",
+   "discharge_limit": "number.inverter_discharge_limit",
+   "discharge_limit_enabled": "switch.inverter_discharge_limit_enabled"
+  },
+  "mode_options": {}
+ },
+ "adopted": {
+  "controls": {
+   "min_soc": "number.inverter_minimum_reserve",
+   "grid_charge": "switch.inverter_grid_charging",
+   "charge_limit": "number.inverter_charge_limit",
+   "charge_limit_enabled": "switch.inverter_charge_limit_enabled",
+   "discharge_limit": "number.inverter_discharge_limit",
+   "discharge_limit_enabled": "switch.inverter_discharge_limit_enabled"
+  },
+  "mode_options": {}
+ },
+ "battery_roles": [
+  {
+   "battery_id": "storage",
+   "name": "BYD Battery-Box Premium HV",
+   "profile": "fronius",
+   "missing": [
+    "discharge_limit",
+    "discharge_limit_enabled",
+    "charge_limit",
+    "charge_limit_enabled"
+   ],
+   "wrong": [],
+   "hash": "91c8a03ab7d3"
+  }
+ ],
+ "variants": [
+  {
+   "name": "saved",
+   "draft": {
+    "adapter": "fronius",
+    "controls": {
+     "min_soc": "number.inverter_minimum_reserve",
+     "grid_charge": "switch.inverter_grid_charging",
+     "charge_power": "number.inverter_charge_limit",
+     "discharge_power": "number.inverter_discharge_limit"
+    },
+    "mode_options": {},
+    "steps": {},
+    "prepare": []
+   },
+   "battery": {
+    "id": "storage",
+    "name": "BYD Battery-Box Premium HV",
+    "adapter": "fronius",
+    "soc_entity": "sensor.storage_soc",
+    "power": {
+     "entity_id": "sensor.solarnet_power_battery",
+     "invert": true,
+     "minus_entity_id": null
+    },
+    "capacity_kwh": 10.24,
+    "capacity_entity": "sensor.storage_capacity",
+    "max_charge_w": null,
+    "max_discharge_w": null,
+    "device_id": "storage",
+    "controls": {
+     "min_soc": "number.inverter_minimum_reserve",
+     "grid_charge": "switch.inverter_grid_charging",
+     "charge_power": "number.inverter_charge_limit",
+     "discharge_power": "number.inverter_discharge_limit"
+    },
+    "mode_options": {},
+    "prepare": [],
+    "steps": {},
+    "priority": 1,
+    "floor_soc": null,
+    "day_surplus": true,
+    "limit_ref_w": null,
+    "self_regulating": null,
+    "control_group": null,
+    "night_cap": null,
+    "cutoff_soc": null
+   },
+   "preview": {
+    "profile": {
+     "key": "fronius",
+     "name": "Fronius"
+    },
+    "deviates": true,
+    "params": {
+     "target": 75,
+     "power_w": 1000,
+     "floor": 55,
+     "percent": 50,
+     "seconds": 5.0
+    },
+    "operations": [
+     {
+      "op": "charge",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 75,
+       "power_w": 1000,
+       "floor": 55,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "grid_charge",
+        "entity_id": "switch.inverter_grid_charging",
+        "name": "Grid charging",
+        "value": true,
+        "param": null,
+        "unit": null,
+        "current": "on"
+       },
+       {
+        "kind": "set",
+        "role": "min_soc",
+        "entity_id": "number.inverter_minimum_reserve",
+        "name": "Minimum reserve",
+        "value": 75.0,
+        "param": "target",
+        "unit": "%",
+        "current": "5"
+       }
+      ],
+      "restore": [
+       {
+        "role": "min_soc",
+        "entity_id": "number.inverter_minimum_reserve",
+        "name": "Minimum reserve",
+        "value": "saved",
+        "current": "5"
+       },
+       {
+        "role": "grid_charge",
+        "entity_id": "switch.inverter_grid_charging",
+        "name": "Grid charging",
+        "value": "saved",
+        "current": "on"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "hold",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 75,
+       "power_w": 1000,
+       "floor": 55,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "min_soc",
+        "entity_id": "number.inverter_minimum_reserve",
+        "name": "Minimum reserve",
+        "value": 55.0,
+        "param": "floor",
+        "unit": "%",
+        "current": "5"
+       }
+      ],
+      "restore": [
+       {
+        "role": "min_soc",
+        "entity_id": "number.inverter_minimum_reserve",
+        "name": "Minimum reserve",
+        "value": "saved",
+        "current": "5"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "block",
+      "possible": false,
+      "why": "no_lever",
+      "source": "none",
+      "params": {
+       "target": 75,
+       "power_w": 1000,
+       "floor": 55,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [],
+      "restore": [],
+      "note": null
+     },
+     {
+      "op": "block_charge",
+      "possible": false,
+      "why": "no_lever",
+      "source": "none",
+      "params": {
+       "target": 75,
+       "power_w": 1000,
+       "floor": 55,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [],
+      "restore": [],
+      "note": null
+     },
+     {
+      "op": "block_discharge",
+      "possible": false,
+      "why": "no_lever",
+      "source": "none",
+      "params": {
+       "target": 75,
+       "power_w": 1000,
+       "floor": 55,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [],
+      "restore": [],
+      "note": null
+     },
+     {
+      "op": "cap",
+      "possible": false,
+      "why": "no_lever",
+      "source": "none",
+      "params": {
+       "target": 75,
+       "power_w": 1000,
+       "floor": 55,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [],
+      "restore": [],
+      "note": null
+     },
+     {
+      "op": "release",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 75,
+       "power_w": 1000,
+       "floor": 55,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [],
+      "restore": [
+       {
+        "role": "min_soc",
+        "entity_id": "number.inverter_minimum_reserve",
+        "name": "Minimum reserve",
+        "value": "saved",
+        "current": "5"
+       },
+       {
+        "role": "grid_charge",
+        "entity_id": "switch.inverter_grid_charging",
+        "name": "Grid charging",
+        "value": "saved",
+        "current": "on"
+       }
+      ],
+      "note": null
+     }
+    ],
+    "roles": [
+     {
+      "role": "min_soc",
+      "entity_id": "number.inverter_minimum_reserve",
+      "found": "number.inverter_minimum_reserve",
+      "kind": "level",
+      "unit": "%",
+      "used_by": [
+       "charge",
+       "hold"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "charge_target",
+      "entity_id": null,
+      "found": null,
+      "kind": "level",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "grid_charge",
+      "entity_id": "switch.inverter_grid_charging",
+      "found": "switch.inverter_grid_charging",
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [
+       "charge"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "mode",
+      "entity_id": null,
+      "found": null,
+      "kind": "option",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "charge_power",
+      "entity_id": "number.inverter_charge_limit",
+      "found": null,
+      "kind": "setpoint",
+      "unit": "%",
+      "used_by": [],
+      "deviates": true,
+      "relevant": true
+     },
+     {
+      "role": "discharge_power",
+      "entity_id": "number.inverter_discharge_limit",
+      "found": null,
+      "kind": "setpoint",
+      "unit": "%",
+      "used_by": [],
+      "deviates": true,
+      "relevant": true
+     },
+     {
+      "role": "discharge_limit",
+      "entity_id": null,
+      "found": "number.inverter_discharge_limit",
+      "kind": "setpoint",
+      "unit": "%",
+      "used_by": [],
+      "deviates": true,
+      "relevant": false
+     },
+     {
+      "role": "discharge_limit_enabled",
+      "entity_id": null,
+      "found": "switch.inverter_discharge_limit_enabled",
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [],
+      "deviates": true,
+      "relevant": false
+     },
+     {
+      "role": "charge_limit",
+      "entity_id": null,
+      "found": "number.inverter_charge_limit",
+      "kind": "setpoint",
+      "unit": "%",
+      "used_by": [],
+      "deviates": true,
+      "relevant": false
+     },
+     {
+      "role": "charge_limit_enabled",
+      "entity_id": null,
+      "found": "switch.inverter_charge_limit_enabled",
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [],
+      "deviates": true,
+      "relevant": false
+     }
+    ]
+   },
+   "probes": {
+    "charge": {
+     "ok": true,
+     "op": "charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.inverter_grid_charging",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.inverter_minimum_reserve",
+       "wrote": 75.0,
+       "read": "75.0",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "hold": {
+     "ok": true,
+     "op": "hold",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.inverter_minimum_reserve",
+       "wrote": 55.0,
+       "read": "55.0",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "block": {
+     "ok": false,
+     "op": "block",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [],
+     "restored": true,
+     "restore_errors": [],
+     "problem": "not_possible",
+     "power_kw": null,
+     "why": "no_lever"
+    },
+    "block_charge": {
+     "ok": false,
+     "op": "block_charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [],
+     "restored": true,
+     "restore_errors": [],
+     "problem": "not_possible",
+     "power_kw": null,
+     "why": "no_lever"
+    },
+    "block_discharge": {
+     "ok": false,
+     "op": "block_discharge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [],
+     "restored": true,
+     "restore_errors": [],
+     "problem": "not_possible",
+     "power_kw": null,
+     "why": "no_lever"
+    },
+    "cap": {
+     "ok": false,
+     "op": "cap",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [],
+     "restored": true,
+     "restore_errors": [],
+     "problem": "not_possible",
+     "power_kw": null,
+     "why": "no_lever"
+    },
+    "release": {
+     "ok": false,
+     "op": "release",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [],
+     "restored": true,
+     "restore_errors": [],
+     "problem": "not_possible",
+     "power_kw": null,
+     "why": "no_steps"
+    }
+   },
+   "probe_fail": {
+    "charge": {
+     "ok": false,
+     "op": "charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.inverter_grid_charging",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.inverter_minimum_reserve",
+       "wrote": 75.0,
+       "read": "5.0",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "hold": {
+     "ok": false,
+     "op": "hold",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.inverter_minimum_reserve",
+       "wrote": 55.0,
+       "read": "5.0",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "release": {
+     "ok": false,
+     "op": "release",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [],
+     "restored": true,
+     "restore_errors": [],
+     "problem": "not_possible",
+     "power_kw": null,
+     "why": "no_steps"
+    }
+   }
+  },
+  {
+   "name": "profile",
+   "draft": {
+    "adapter": "fronius",
+    "controls": {
+     "min_soc": "number.inverter_minimum_reserve",
+     "grid_charge": "switch.inverter_grid_charging",
+     "charge_limit": "number.inverter_charge_limit",
+     "charge_limit_enabled": "switch.inverter_charge_limit_enabled",
+     "discharge_limit": "number.inverter_discharge_limit",
+     "discharge_limit_enabled": "switch.inverter_discharge_limit_enabled"
+    },
+    "mode_options": {},
+    "steps": {},
+    "prepare": []
+   },
+   "battery": {
+    "id": "storage",
+    "name": "BYD Battery-Box Premium HV",
+    "adapter": "fronius",
+    "soc_entity": "sensor.storage_soc",
+    "power": {
+     "entity_id": "sensor.solarnet_power_battery",
+     "invert": true,
+     "minus_entity_id": null
+    },
+    "capacity_kwh": 10.24,
+    "capacity_entity": "sensor.storage_capacity",
+    "max_charge_w": null,
+    "max_discharge_w": null,
+    "device_id": "storage",
+    "controls": {
+     "min_soc": "number.inverter_minimum_reserve",
+     "grid_charge": "switch.inverter_grid_charging",
+     "charge_limit": "number.inverter_charge_limit",
+     "charge_limit_enabled": "switch.inverter_charge_limit_enabled",
+     "discharge_limit": "number.inverter_discharge_limit",
+     "discharge_limit_enabled": "switch.inverter_discharge_limit_enabled"
+    },
+    "mode_options": {},
+    "prepare": [],
+    "steps": {},
+    "priority": 1,
+    "floor_soc": null,
+    "day_surplus": true,
+    "limit_ref_w": null,
+    "self_regulating": null,
+    "control_group": null,
+    "night_cap": null,
+    "cutoff_soc": null
+   },
+   "preview": {
+    "profile": {
+     "key": "fronius",
+     "name": "Fronius"
+    },
+    "deviates": false,
+    "params": {
+     "target": 75,
+     "power_w": 1000,
+     "floor": 55,
+     "percent": 50,
+     "seconds": 5.0
+    },
+    "operations": [
+     {
+      "op": "charge",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 75,
+       "power_w": 1000,
+       "floor": 55,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "grid_charge",
+        "entity_id": "switch.inverter_grid_charging",
+        "name": "Grid charging",
+        "value": true,
+        "param": null,
+        "unit": null,
+        "current": "on"
+       },
+       {
+        "kind": "set",
+        "role": "min_soc",
+        "entity_id": "number.inverter_minimum_reserve",
+        "name": "Minimum reserve",
+        "value": 75.0,
+        "param": "target",
+        "unit": "%",
+        "current": "5.0"
+       }
+      ],
+      "restore": [
+       {
+        "role": "min_soc",
+        "entity_id": "number.inverter_minimum_reserve",
+        "name": "Minimum reserve",
+        "value": "saved",
+        "current": "5.0"
+       },
+       {
+        "role": "grid_charge",
+        "entity_id": "switch.inverter_grid_charging",
+        "name": "Grid charging",
+        "value": "saved",
+        "current": "on"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "hold",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 75,
+       "power_w": 1000,
+       "floor": 55,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "min_soc",
+        "entity_id": "number.inverter_minimum_reserve",
+        "name": "Minimum reserve",
+        "value": 55.0,
+        "param": "floor",
+        "unit": "%",
+        "current": "5.0"
+       }
+      ],
+      "restore": [
+       {
+        "role": "min_soc",
+        "entity_id": "number.inverter_minimum_reserve",
+        "name": "Minimum reserve",
+        "value": "saved",
+        "current": "5.0"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "block",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 75,
+       "power_w": 1000,
+       "floor": 55,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "charge_limit",
+        "entity_id": "number.inverter_charge_limit",
+        "name": "Charge limit",
+        "value": 0.0,
+        "param": null,
+        "unit": "%",
+        "current": "100"
+       },
+       {
+        "kind": "set",
+        "role": "charge_limit_enabled",
+        "entity_id": "switch.inverter_charge_limit_enabled",
+        "name": "Charge limit active",
+        "value": true,
+        "param": null,
+        "unit": null,
+        "current": "off"
+       },
+       {
+        "kind": "set",
+        "role": "discharge_limit",
+        "entity_id": "number.inverter_discharge_limit",
+        "name": "Discharge limit",
+        "value": 0.0,
+        "param": null,
+        "unit": "%",
+        "current": "100"
+       },
+       {
+        "kind": "set",
+        "role": "discharge_limit_enabled",
+        "entity_id": "switch.inverter_discharge_limit_enabled",
+        "name": "Discharge limit active",
+        "value": true,
+        "param": null,
+        "unit": null,
+        "current": "off"
+       }
+      ],
+      "restore": [
+       {
+        "role": "charge_limit_enabled",
+        "entity_id": "switch.inverter_charge_limit_enabled",
+        "name": "Charge limit active",
+        "value": "saved",
+        "current": "off"
+       },
+       {
+        "role": "discharge_limit_enabled",
+        "entity_id": "switch.inverter_discharge_limit_enabled",
+        "name": "Discharge limit active",
+        "value": "saved",
+        "current": "off"
+       },
+       {
+        "role": "charge_limit",
+        "entity_id": "number.inverter_charge_limit",
+        "name": "Charge limit",
+        "value": "saved",
+        "current": "100"
+       },
+       {
+        "role": "discharge_limit",
+        "entity_id": "number.inverter_discharge_limit",
+        "name": "Discharge limit",
+        "value": "saved",
+        "current": "100"
+       }
+      ],
+      "note": "value_before_switch"
+     },
+     {
+      "op": "block_charge",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 75,
+       "power_w": 1000,
+       "floor": 55,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "charge_limit",
+        "entity_id": "number.inverter_charge_limit",
+        "name": "Charge limit",
+        "value": 0.0,
+        "param": null,
+        "unit": "%",
+        "current": "100"
+       },
+       {
+        "kind": "set",
+        "role": "charge_limit_enabled",
+        "entity_id": "switch.inverter_charge_limit_enabled",
+        "name": "Charge limit active",
+        "value": true,
+        "param": null,
+        "unit": null,
+        "current": "off"
+       }
+      ],
+      "restore": [
+       {
+        "role": "charge_limit_enabled",
+        "entity_id": "switch.inverter_charge_limit_enabled",
+        "name": "Charge limit active",
+        "value": "saved",
+        "current": "off"
+       },
+       {
+        "role": "charge_limit",
+        "entity_id": "number.inverter_charge_limit",
+        "name": "Charge limit",
+        "value": "saved",
+        "current": "100"
+       }
+      ],
+      "note": "value_before_switch"
+     },
+     {
+      "op": "block_discharge",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 75,
+       "power_w": 1000,
+       "floor": 55,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "discharge_limit",
+        "entity_id": "number.inverter_discharge_limit",
+        "name": "Discharge limit",
+        "value": 0.0,
+        "param": null,
+        "unit": "%",
+        "current": "100"
+       },
+       {
+        "kind": "set",
+        "role": "discharge_limit_enabled",
+        "entity_id": "switch.inverter_discharge_limit_enabled",
+        "name": "Discharge limit active",
+        "value": true,
+        "param": null,
+        "unit": null,
+        "current": "off"
+       }
+      ],
+      "restore": [
+       {
+        "role": "discharge_limit_enabled",
+        "entity_id": "switch.inverter_discharge_limit_enabled",
+        "name": "Discharge limit active",
+        "value": "saved",
+        "current": "off"
+       },
+       {
+        "role": "discharge_limit",
+        "entity_id": "number.inverter_discharge_limit",
+        "name": "Discharge limit",
+        "value": "saved",
+        "current": "100"
+       }
+      ],
+      "note": "value_before_switch"
+     },
+     {
+      "op": "cap",
+      "possible": false,
+      "why": "need_ref",
+      "source": "profile",
+      "params": {
+       "target": 75,
+       "power_w": 1000,
+       "floor": 55,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [],
+      "restore": [],
+      "note": null
+     },
+     {
+      "op": "release",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 75,
+       "power_w": 1000,
+       "floor": 55,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [],
+      "restore": [
+       {
+        "role": "discharge_limit_enabled",
+        "entity_id": "switch.inverter_discharge_limit_enabled",
+        "name": "Discharge limit active",
+        "value": "saved",
+        "current": "off"
+       },
+       {
+        "role": "discharge_limit",
+        "entity_id": "number.inverter_discharge_limit",
+        "name": "Discharge limit",
+        "value": "saved",
+        "current": "100"
+       },
+       {
+        "role": "charge_limit_enabled",
+        "entity_id": "switch.inverter_charge_limit_enabled",
+        "name": "Charge limit active",
+        "value": "saved",
+        "current": "off"
+       },
+       {
+        "role": "charge_limit",
+        "entity_id": "number.inverter_charge_limit",
+        "name": "Charge limit",
+        "value": "saved",
+        "current": "100"
+       },
+       {
+        "role": "min_soc",
+        "entity_id": "number.inverter_minimum_reserve",
+        "name": "Minimum reserve",
+        "value": "saved",
+        "current": "5.0"
+       },
+       {
+        "role": "grid_charge",
+        "entity_id": "switch.inverter_grid_charging",
+        "name": "Grid charging",
+        "value": "saved",
+        "current": "on"
+       }
+      ],
+      "note": null
+     }
+    ],
+    "roles": [
+     {
+      "role": "min_soc",
+      "entity_id": "number.inverter_minimum_reserve",
+      "found": "number.inverter_minimum_reserve",
+      "kind": "level",
+      "unit": "%",
+      "used_by": [
+       "charge",
+       "hold"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "charge_target",
+      "entity_id": null,
+      "found": null,
+      "kind": "level",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "grid_charge",
+      "entity_id": "switch.inverter_grid_charging",
+      "found": "switch.inverter_grid_charging",
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [
+       "charge"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "mode",
+      "entity_id": null,
+      "found": null,
+      "kind": "option",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "charge_power",
+      "entity_id": null,
+      "found": null,
+      "kind": "setpoint",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "discharge_power",
+      "entity_id": null,
+      "found": null,
+      "kind": "setpoint",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "discharge_limit",
+      "entity_id": "number.inverter_discharge_limit",
+      "found": "number.inverter_discharge_limit",
+      "kind": "setpoint",
+      "unit": "%",
+      "used_by": [
+       "block",
+       "block_discharge"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "discharge_limit_enabled",
+      "entity_id": "switch.inverter_discharge_limit_enabled",
+      "found": "switch.inverter_discharge_limit_enabled",
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [
+       "block",
+       "block_discharge"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "charge_limit",
+      "entity_id": "number.inverter_charge_limit",
+      "found": "number.inverter_charge_limit",
+      "kind": "setpoint",
+      "unit": "%",
+      "used_by": [
+       "block",
+       "block_charge"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "charge_limit_enabled",
+      "entity_id": "switch.inverter_charge_limit_enabled",
+      "found": "switch.inverter_charge_limit_enabled",
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [
+       "block",
+       "block_charge"
+      ],
+      "deviates": false,
+      "relevant": true
+     }
+    ]
+   },
+   "probes": {
+    "charge": {
+     "ok": true,
+     "op": "charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.inverter_grid_charging",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.inverter_minimum_reserve",
+       "wrote": 75.0,
+       "read": "75.0",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "hold": {
+     "ok": true,
+     "op": "hold",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.inverter_minimum_reserve",
+       "wrote": 55.0,
+       "read": "55.0",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "block": {
+     "ok": true,
+     "op": "block",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.inverter_charge_limit",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.inverter_charge_limit_enabled",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.inverter_discharge_limit",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.inverter_discharge_limit_enabled",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "block_charge": {
+     "ok": true,
+     "op": "block_charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.inverter_charge_limit",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.inverter_charge_limit_enabled",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "block_discharge": {
+     "ok": true,
+     "op": "block_discharge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.inverter_discharge_limit",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.inverter_discharge_limit_enabled",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "cap": {
+     "ok": false,
+     "op": "cap",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [],
+     "restored": true,
+     "restore_errors": [],
+     "problem": "not_possible",
+     "power_kw": null,
+     "why": "need_ref"
+    },
+    "release": {
+     "ok": false,
+     "op": "release",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [],
+     "restored": true,
+     "restore_errors": [],
+     "problem": "not_possible",
+     "power_kw": null,
+     "why": "no_steps"
+    }
+   },
+   "probe_fail": {
+    "charge": {
+     "ok": false,
+     "op": "charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.inverter_grid_charging",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.inverter_minimum_reserve",
+       "wrote": 75.0,
+       "read": "5.0",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "hold": {
+     "ok": false,
+     "op": "hold",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.inverter_minimum_reserve",
+       "wrote": 55.0,
+       "read": "5.0",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "block": {
+     "ok": false,
+     "op": "block",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.inverter_charge_limit",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.inverter_charge_limit_enabled",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.inverter_discharge_limit",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.inverter_discharge_limit_enabled",
+       "wrote": true,
+       "read": "off",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "block_charge": {
+     "ok": false,
+     "op": "block_charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.inverter_charge_limit",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.inverter_charge_limit_enabled",
+       "wrote": true,
+       "read": "off",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "block_discharge": {
+     "ok": false,
+     "op": "block_discharge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.inverter_discharge_limit",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.inverter_discharge_limit_enabled",
+       "wrote": true,
+       "read": "off",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "release": {
+     "ok": false,
+     "op": "release",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [],
+     "restored": true,
+     "restore_errors": [],
+     "problem": "not_possible",
+     "power_kw": null,
+     "why": "no_steps"
+    }
+   }
+  },
+  {
+   "name": "own",
+   "draft": {
+    "adapter": "fronius",
+    "controls": {
+     "min_soc": "number.inverter_minimum_reserve",
+     "grid_charge": "switch.inverter_grid_charging",
+     "charge_limit": "number.inverter_charge_limit",
+     "charge_limit_enabled": "switch.inverter_charge_limit_enabled",
+     "discharge_limit": "number.inverter_discharge_limit",
+     "discharge_limit_enabled": "switch.inverter_discharge_limit_enabled"
+    },
+    "mode_options": {},
+    "steps": {
+     "block": [
+      {
+       "entity_id": "number.inverter_charge_limit",
+       "value": 0.0
+      },
+      {
+       "entity_id": "switch.inverter_charge_limit_enabled",
+       "value": "on"
+      },
+      {
+       "entity_id": "number.inverter_discharge_limit",
+       "value": 0.0
+      },
+      {
+       "entity_id": "switch.inverter_discharge_limit_enabled",
+       "value": "on"
+      }
+     ]
+    },
+    "prepare": []
+   },
+   "battery": {
+    "id": "storage",
+    "name": "BYD Battery-Box Premium HV",
+    "adapter": "fronius",
+    "soc_entity": "sensor.storage_soc",
+    "power": {
+     "entity_id": "sensor.solarnet_power_battery",
+     "invert": true,
+     "minus_entity_id": null
+    },
+    "capacity_kwh": 10.24,
+    "capacity_entity": "sensor.storage_capacity",
+    "max_charge_w": null,
+    "max_discharge_w": null,
+    "device_id": "storage",
+    "controls": {
+     "min_soc": "number.inverter_minimum_reserve",
+     "grid_charge": "switch.inverter_grid_charging",
+     "charge_limit": "number.inverter_charge_limit",
+     "charge_limit_enabled": "switch.inverter_charge_limit_enabled",
+     "discharge_limit": "number.inverter_discharge_limit",
+     "discharge_limit_enabled": "switch.inverter_discharge_limit_enabled"
+    },
+    "mode_options": {},
+    "prepare": [],
+    "steps": {
+     "block": [
+      {
+       "entity_id": "number.inverter_charge_limit",
+       "value": 0.0
+      },
+      {
+       "entity_id": "switch.inverter_charge_limit_enabled",
+       "value": "on"
+      },
+      {
+       "entity_id": "number.inverter_discharge_limit",
+       "value": 0.0
+      },
+      {
+       "entity_id": "switch.inverter_discharge_limit_enabled",
+       "value": "on"
+      }
+     ]
+    },
+    "priority": 1,
+    "floor_soc": null,
+    "day_surplus": true,
+    "limit_ref_w": null,
+    "self_regulating": null,
+    "control_group": null,
+    "night_cap": null,
+    "cutoff_soc": null
+   },
+   "preview": {
+    "profile": {
+     "key": "fronius",
+     "name": "Fronius"
+    },
+    "deviates": false,
+    "params": {
+     "target": 75,
+     "power_w": 1000,
+     "floor": 55,
+     "percent": 50,
+     "seconds": 5.0
+    },
+    "operations": [
+     {
+      "op": "charge",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 75,
+       "power_w": 1000,
+       "floor": 55,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "grid_charge",
+        "entity_id": "switch.inverter_grid_charging",
+        "name": "Grid charging",
+        "value": true,
+        "param": null,
+        "unit": null,
+        "current": "on"
+       },
+       {
+        "kind": "set",
+        "role": "min_soc",
+        "entity_id": "number.inverter_minimum_reserve",
+        "name": "Minimum reserve",
+        "value": 75.0,
+        "param": "target",
+        "unit": "%",
+        "current": "5.0"
+       }
+      ],
+      "restore": [
+       {
+        "role": "min_soc",
+        "entity_id": "number.inverter_minimum_reserve",
+        "name": "Minimum reserve",
+        "value": "saved",
+        "current": "5.0"
+       },
+       {
+        "role": "grid_charge",
+        "entity_id": "switch.inverter_grid_charging",
+        "name": "Grid charging",
+        "value": "saved",
+        "current": "on"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "hold",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 75,
+       "power_w": 1000,
+       "floor": 55,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "min_soc",
+        "entity_id": "number.inverter_minimum_reserve",
+        "name": "Minimum reserve",
+        "value": 55.0,
+        "param": "floor",
+        "unit": "%",
+        "current": "5.0"
+       }
+      ],
+      "restore": [
+       {
+        "role": "min_soc",
+        "entity_id": "number.inverter_minimum_reserve",
+        "name": "Minimum reserve",
+        "value": "saved",
+        "current": "5.0"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "block",
+      "possible": true,
+      "why": null,
+      "source": "own",
+      "params": {
+       "target": 75,
+       "power_w": 1000,
+       "floor": 55,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "charge_limit",
+        "entity_id": "number.inverter_charge_limit",
+        "name": "Charge limit",
+        "value": 0.0,
+        "param": null,
+        "unit": "%",
+        "current": "100.0"
+       },
+       {
+        "kind": "set",
+        "role": "charge_limit_enabled",
+        "entity_id": "switch.inverter_charge_limit_enabled",
+        "name": "Charge limit active",
+        "value": true,
+        "param": null,
+        "unit": null,
+        "current": "off"
+       },
+       {
+        "kind": "set",
+        "role": "discharge_limit",
+        "entity_id": "number.inverter_discharge_limit",
+        "name": "Discharge limit",
+        "value": 0.0,
+        "param": null,
+        "unit": "%",
+        "current": "100.0"
+       },
+       {
+        "kind": "set",
+        "role": "discharge_limit_enabled",
+        "entity_id": "switch.inverter_discharge_limit_enabled",
+        "name": "Discharge limit active",
+        "value": true,
+        "param": null,
+        "unit": null,
+        "current": "off"
+       }
+      ],
+      "restore": [
+       {
+        "role": "discharge_limit_enabled",
+        "entity_id": "switch.inverter_discharge_limit_enabled",
+        "name": "Discharge limit active",
+        "value": "saved",
+        "current": "off"
+       },
+       {
+        "role": "discharge_limit",
+        "entity_id": "number.inverter_discharge_limit",
+        "name": "Discharge limit",
+        "value": "saved",
+        "current": "100.0"
+       },
+       {
+        "role": "charge_limit_enabled",
+        "entity_id": "switch.inverter_charge_limit_enabled",
+        "name": "Charge limit active",
+        "value": "saved",
+        "current": "off"
+       },
+       {
+        "role": "charge_limit",
+        "entity_id": "number.inverter_charge_limit",
+        "name": "Charge limit",
+        "value": "saved",
+        "current": "100.0"
+       }
+      ],
+      "note": "value_before_switch"
+     },
+     {
+      "op": "block_charge",
+      "possible": true,
+      "why": null,
+      "source": "own",
+      "params": {
+       "target": 75,
+       "power_w": 1000,
+       "floor": 55,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "charge_limit",
+        "entity_id": "number.inverter_charge_limit",
+        "name": "Charge limit",
+        "value": 0.0,
+        "param": null,
+        "unit": "%",
+        "current": "100.0"
+       },
+       {
+        "kind": "set",
+        "role": "charge_limit_enabled",
+        "entity_id": "switch.inverter_charge_limit_enabled",
+        "name": "Charge limit active",
+        "value": true,
+        "param": null,
+        "unit": null,
+        "current": "off"
+       },
+       {
+        "kind": "set",
+        "role": "discharge_limit",
+        "entity_id": "number.inverter_discharge_limit",
+        "name": "Discharge limit",
+        "value": 0.0,
+        "param": null,
+        "unit": "%",
+        "current": "100.0"
+       },
+       {
+        "kind": "set",
+        "role": "discharge_limit_enabled",
+        "entity_id": "switch.inverter_discharge_limit_enabled",
+        "name": "Discharge limit active",
+        "value": true,
+        "param": null,
+        "unit": null,
+        "current": "off"
+       }
+      ],
+      "restore": [
+       {
+        "role": "discharge_limit_enabled",
+        "entity_id": "switch.inverter_discharge_limit_enabled",
+        "name": "Discharge limit active",
+        "value": "saved",
+        "current": "off"
+       },
+       {
+        "role": "discharge_limit",
+        "entity_id": "number.inverter_discharge_limit",
+        "name": "Discharge limit",
+        "value": "saved",
+        "current": "100.0"
+       },
+       {
+        "role": "charge_limit_enabled",
+        "entity_id": "switch.inverter_charge_limit_enabled",
+        "name": "Charge limit active",
+        "value": "saved",
+        "current": "off"
+       },
+       {
+        "role": "charge_limit",
+        "entity_id": "number.inverter_charge_limit",
+        "name": "Charge limit",
+        "value": "saved",
+        "current": "100.0"
+       }
+      ],
+      "note": "value_before_switch"
+     },
+     {
+      "op": "block_discharge",
+      "possible": true,
+      "why": null,
+      "source": "own",
+      "params": {
+       "target": 75,
+       "power_w": 1000,
+       "floor": 55,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "charge_limit",
+        "entity_id": "number.inverter_charge_limit",
+        "name": "Charge limit",
+        "value": 0.0,
+        "param": null,
+        "unit": "%",
+        "current": "100.0"
+       },
+       {
+        "kind": "set",
+        "role": "charge_limit_enabled",
+        "entity_id": "switch.inverter_charge_limit_enabled",
+        "name": "Charge limit active",
+        "value": true,
+        "param": null,
+        "unit": null,
+        "current": "off"
+       },
+       {
+        "kind": "set",
+        "role": "discharge_limit",
+        "entity_id": "number.inverter_discharge_limit",
+        "name": "Discharge limit",
+        "value": 0.0,
+        "param": null,
+        "unit": "%",
+        "current": "100.0"
+       },
+       {
+        "kind": "set",
+        "role": "discharge_limit_enabled",
+        "entity_id": "switch.inverter_discharge_limit_enabled",
+        "name": "Discharge limit active",
+        "value": true,
+        "param": null,
+        "unit": null,
+        "current": "off"
+       }
+      ],
+      "restore": [
+       {
+        "role": "discharge_limit_enabled",
+        "entity_id": "switch.inverter_discharge_limit_enabled",
+        "name": "Discharge limit active",
+        "value": "saved",
+        "current": "off"
+       },
+       {
+        "role": "discharge_limit",
+        "entity_id": "number.inverter_discharge_limit",
+        "name": "Discharge limit",
+        "value": "saved",
+        "current": "100.0"
+       },
+       {
+        "role": "charge_limit_enabled",
+        "entity_id": "switch.inverter_charge_limit_enabled",
+        "name": "Charge limit active",
+        "value": "saved",
+        "current": "off"
+       },
+       {
+        "role": "charge_limit",
+        "entity_id": "number.inverter_charge_limit",
+        "name": "Charge limit",
+        "value": "saved",
+        "current": "100.0"
+       }
+      ],
+      "note": "value_before_switch"
+     },
+     {
+      "op": "cap",
+      "possible": false,
+      "why": "need_ref",
+      "source": "profile",
+      "params": {
+       "target": 75,
+       "power_w": 1000,
+       "floor": 55,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [],
+      "restore": [],
+      "note": null
+     },
+     {
+      "op": "release",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 75,
+       "power_w": 1000,
+       "floor": 55,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [],
+      "restore": [
+       {
+        "role": "discharge_limit_enabled",
+        "entity_id": "switch.inverter_discharge_limit_enabled",
+        "name": "Discharge limit active",
+        "value": "saved",
+        "current": "off"
+       },
+       {
+        "role": "discharge_limit",
+        "entity_id": "number.inverter_discharge_limit",
+        "name": "Discharge limit",
+        "value": "saved",
+        "current": "100.0"
+       },
+       {
+        "role": "charge_limit_enabled",
+        "entity_id": "switch.inverter_charge_limit_enabled",
+        "name": "Charge limit active",
+        "value": "saved",
+        "current": "off"
+       },
+       {
+        "role": "charge_limit",
+        "entity_id": "number.inverter_charge_limit",
+        "name": "Charge limit",
+        "value": "saved",
+        "current": "100.0"
+       },
+       {
+        "role": "min_soc",
+        "entity_id": "number.inverter_minimum_reserve",
+        "name": "Minimum reserve",
+        "value": "saved",
+        "current": "5.0"
+       },
+       {
+        "role": "grid_charge",
+        "entity_id": "switch.inverter_grid_charging",
+        "name": "Grid charging",
+        "value": "saved",
+        "current": "on"
+       }
+      ],
+      "note": null
+     },
+     {
+      "op": "guard_charge",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 75,
+       "power_w": 1000,
+       "floor": 55,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "charge_limit",
+        "entity_id": "number.inverter_charge_limit",
+        "name": "Charge limit",
+        "value": 0.0,
+        "param": null,
+        "unit": "%",
+        "current": "100.0"
+       },
+       {
+        "kind": "set",
+        "role": "charge_limit_enabled",
+        "entity_id": "switch.inverter_charge_limit_enabled",
+        "name": "Charge limit active",
+        "value": true,
+        "param": null,
+        "unit": null,
+        "current": "off"
+       }
+      ],
+      "restore": [
+       {
+        "role": "charge_limit_enabled",
+        "entity_id": "switch.inverter_charge_limit_enabled",
+        "name": "Charge limit active",
+        "value": "saved",
+        "current": "off"
+       },
+       {
+        "role": "charge_limit",
+        "entity_id": "number.inverter_charge_limit",
+        "name": "Charge limit",
+        "value": "saved",
+        "current": "100.0"
+       }
+      ],
+      "note": "value_before_switch"
+     },
+     {
+      "op": "guard_discharge",
+      "possible": true,
+      "why": null,
+      "source": "profile",
+      "params": {
+       "target": 75,
+       "power_w": 1000,
+       "floor": 55,
+       "percent": 50,
+       "seconds": 5.0
+      },
+      "steps": [
+       {
+        "kind": "set",
+        "role": "discharge_limit",
+        "entity_id": "number.inverter_discharge_limit",
+        "name": "Discharge limit",
+        "value": 0.0,
+        "param": null,
+        "unit": "%",
+        "current": "100.0"
+       },
+       {
+        "kind": "set",
+        "role": "discharge_limit_enabled",
+        "entity_id": "switch.inverter_discharge_limit_enabled",
+        "name": "Discharge limit active",
+        "value": true,
+        "param": null,
+        "unit": null,
+        "current": "off"
+       }
+      ],
+      "restore": [
+       {
+        "role": "discharge_limit_enabled",
+        "entity_id": "switch.inverter_discharge_limit_enabled",
+        "name": "Discharge limit active",
+        "value": "saved",
+        "current": "off"
+       },
+       {
+        "role": "discharge_limit",
+        "entity_id": "number.inverter_discharge_limit",
+        "name": "Discharge limit",
+        "value": "saved",
+        "current": "100.0"
+       }
+      ],
+      "note": "value_before_switch"
+     }
+    ],
+    "roles": [
+     {
+      "role": "min_soc",
+      "entity_id": "number.inverter_minimum_reserve",
+      "found": "number.inverter_minimum_reserve",
+      "kind": "level",
+      "unit": "%",
+      "used_by": [
+       "charge",
+       "hold"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "charge_target",
+      "entity_id": null,
+      "found": null,
+      "kind": "level",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "grid_charge",
+      "entity_id": "switch.inverter_grid_charging",
+      "found": "switch.inverter_grid_charging",
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [
+       "charge"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "mode",
+      "entity_id": null,
+      "found": null,
+      "kind": "option",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "charge_power",
+      "entity_id": null,
+      "found": null,
+      "kind": "setpoint",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "discharge_power",
+      "entity_id": null,
+      "found": null,
+      "kind": "setpoint",
+      "unit": null,
+      "used_by": [],
+      "deviates": false,
+      "relevant": false
+     },
+     {
+      "role": "discharge_limit",
+      "entity_id": "number.inverter_discharge_limit",
+      "found": "number.inverter_discharge_limit",
+      "kind": "setpoint",
+      "unit": "%",
+      "used_by": [
+       "block",
+       "block_charge",
+       "block_discharge",
+       "guard_discharge"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "discharge_limit_enabled",
+      "entity_id": "switch.inverter_discharge_limit_enabled",
+      "found": "switch.inverter_discharge_limit_enabled",
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [
+       "block",
+       "block_charge",
+       "block_discharge",
+       "guard_discharge"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "charge_limit",
+      "entity_id": "number.inverter_charge_limit",
+      "found": "number.inverter_charge_limit",
+      "kind": "setpoint",
+      "unit": "%",
+      "used_by": [
+       "block",
+       "block_charge",
+       "block_discharge",
+       "guard_charge"
+      ],
+      "deviates": false,
+      "relevant": true
+     },
+     {
+      "role": "charge_limit_enabled",
+      "entity_id": "switch.inverter_charge_limit_enabled",
+      "found": "switch.inverter_charge_limit_enabled",
+      "kind": "toggle",
+      "unit": null,
+      "used_by": [
+       "block",
+       "block_charge",
+       "block_discharge",
+       "guard_charge"
+      ],
+      "deviates": false,
+      "relevant": true
+     }
+    ]
+   },
+   "probes": {
+    "charge": {
+     "ok": true,
+     "op": "charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.inverter_grid_charging",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.inverter_minimum_reserve",
+       "wrote": 75.0,
+       "read": "75.0",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "hold": {
+     "ok": true,
+     "op": "hold",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.inverter_minimum_reserve",
+       "wrote": 55.0,
+       "read": "55.0",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "block": {
+     "ok": true,
+     "op": "block",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.inverter_charge_limit",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.inverter_charge_limit_enabled",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.inverter_discharge_limit",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.inverter_discharge_limit_enabled",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "block_charge": {
+     "ok": true,
+     "op": "block_charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.inverter_charge_limit",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.inverter_charge_limit_enabled",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.inverter_discharge_limit",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.inverter_discharge_limit_enabled",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "block_discharge": {
+     "ok": true,
+     "op": "block_discharge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.inverter_charge_limit",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.inverter_charge_limit_enabled",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.inverter_discharge_limit",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.inverter_discharge_limit_enabled",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "cap": {
+     "ok": false,
+     "op": "cap",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [],
+     "restored": true,
+     "restore_errors": [],
+     "problem": "not_possible",
+     "power_kw": null,
+     "why": "need_ref"
+    },
+    "release": {
+     "ok": false,
+     "op": "release",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [],
+     "restored": true,
+     "restore_errors": [],
+     "problem": "not_possible",
+     "power_kw": null,
+     "why": "no_steps"
+    },
+    "guard_charge": {
+     "ok": true,
+     "op": "guard_charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.inverter_charge_limit",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.inverter_charge_limit_enabled",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "guard_discharge": {
+     "ok": true,
+     "op": "guard_discharge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.inverter_discharge_limit",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.inverter_discharge_limit_enabled",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    }
+   },
+   "probe_fail": {
+    "charge": {
+     "ok": false,
+     "op": "charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "switch.inverter_grid_charging",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.inverter_minimum_reserve",
+       "wrote": 75.0,
+       "read": "5.0",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "hold": {
+     "ok": false,
+     "op": "hold",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.inverter_minimum_reserve",
+       "wrote": 55.0,
+       "read": "5.0",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "block": {
+     "ok": false,
+     "op": "block",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.inverter_charge_limit",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.inverter_charge_limit_enabled",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.inverter_discharge_limit",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.inverter_discharge_limit_enabled",
+       "wrote": true,
+       "read": "off",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "block_charge": {
+     "ok": false,
+     "op": "block_charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.inverter_charge_limit",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.inverter_charge_limit_enabled",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.inverter_discharge_limit",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.inverter_discharge_limit_enabled",
+       "wrote": true,
+       "read": "off",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "block_discharge": {
+     "ok": false,
+     "op": "block_discharge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.inverter_charge_limit",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.inverter_charge_limit_enabled",
+       "wrote": true,
+       "read": "on",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "number.inverter_discharge_limit",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.inverter_discharge_limit_enabled",
+       "wrote": true,
+       "read": "off",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "release": {
+     "ok": false,
+     "op": "release",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [],
+     "restored": true,
+     "restore_errors": [],
+     "problem": "not_possible",
+     "power_kw": null,
+     "why": "no_steps"
+    },
+    "guard_charge": {
+     "ok": false,
+     "op": "guard_charge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.inverter_charge_limit",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.inverter_charge_limit_enabled",
+       "wrote": true,
+       "read": "off",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    },
+    "guard_discharge": {
+     "ok": false,
+     "op": "guard_discharge",
+     "at": "2026-10-18T09:30:35-07:00",
+     "steps": [
+      {
+       "entity_id": "number.inverter_discharge_limit",
+       "wrote": 0.0,
+       "read": "0.0",
+       "taken": true,
+       "error": null
+      },
+      {
+       "entity_id": "switch.inverter_discharge_limit_enabled",
+       "wrote": true,
+       "read": "off",
+       "taken": false,
+       "error": "not_taken"
+      }
+     ],
+     "restored": true,
+     "restore_errors": [],
+     "problem": null,
+     "power_kw": 1.45
+    }
+   }
+  }
+ ],
+ "refused": {
+  "steering": {
+   "ok": false,
+   "op": "block",
+   "at": "2026-10-18T09:30:35-07:00",
+   "steps": [],
+   "restored": true,
+   "restore_errors": [],
+   "problem": "steering",
+   "power_kw": null
+  },
+  "busy": {
+   "ok": false,
+   "op": "block",
+   "at": "2026-10-18T09:30:35-07:00",
+   "steps": [],
+   "restored": true,
+   "restore_errors": [],
+   "problem": "busy",
+   "power_kw": null
+  }
+ }
+}

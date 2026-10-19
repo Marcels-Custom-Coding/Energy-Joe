@@ -75,6 +75,23 @@ GUARD_ROLES = (
 )
 # Every lever outside the night's steering.
 DAY_ROLES = (*SYSTEM_ROLES, *GUARD_ROLES)
+# Everything Joe does to a battery (the panel's "Vorgänge", see
+# control/operations.py): charging from the grid, holding the level, blocking
+# both directions or one by day ("Nacheinander", the watchdog), the daytime
+# cap, and putting everything back. The owner may give own steps for each
+# (battery.steps); those of the day are, like the day's levers, no part of
+# the night's test run or its signature.
+OPERATIONS = (
+    "charge",
+    "hold",
+    "block",
+    "block_charge",
+    "block_discharge",
+    "cap",
+    "release",
+)
+DAY_OPERATIONS = ("block", "block_charge", "block_discharge", "cap")
+BLOCK_OPERATIONS = ("block", "block_charge", "block_discharge")
 # Meanings of mode options: the night's, and two for the day only (a mode
 # that keeps the battery from charging, one that keeps it from discharging,
 # e.g. HomeWizard's "zero_discharge_only" and "zero_charge_only").

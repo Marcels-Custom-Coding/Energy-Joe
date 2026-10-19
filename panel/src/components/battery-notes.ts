@@ -1,7 +1,26 @@
 import { html, nothing, type TemplateResult } from "lit";
+import { formatNumber } from "../entities";
 import type { Translate } from "../i18n";
-import type { BatteryNote } from "../types";
+import type { BatteryConfig, BatteryNote, ControlView } from "../types";
 import { tip } from "./tip";
+
+/**
+ * A battery Joe measured charging much slower from the grid than planned
+ * (control.night_slow): what he saw, what it probably means and what to do,
+ * with a hint for the inverter where he knows it (Fronius).
+ */
+export function slowNote(t: Translate, battery: BatteryConfig, control: ControlView | undefined): TemplateResult | typeof nothing {
+  const slow = control?.night_slow?.[battery.id];
+  if (!slow) {
+    return nothing;
+  }
+  const vars = {
+    measured: formatNumber(t.lang, slow.measured_w / 1000, 1),
+    planned: formatNumber(t.lang, slow.planned_w / 1000, 1),
+  };
+  const text = t.optional(`devices.slow.${battery.adapter}`, vars) ?? t("devices.slow", vars);
+  return html`<div class="note warn" role="status"><ha-icon icon="mdi:speedometer-slow"></ha-icon><span>${text}</span></div>`;
+}
 
 /** A note with the name of what it is about (a battery integration without a battery). */
 type Note = BatteryNote & { name?: string };

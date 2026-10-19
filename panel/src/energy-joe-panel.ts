@@ -472,6 +472,7 @@ export class EnergyJoePanel extends LitElement {
           .discovery=${this.discovery}
           .checks=${this.checks}
           .devices=${this.devices(t)}
+          .info=${this.info}
         ></joe-overview>`;
       case "plan":
         return html`<joe-plan-page

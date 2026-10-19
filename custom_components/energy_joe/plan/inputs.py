@@ -268,6 +268,19 @@ async def async_consumer_profiles(
     }
 
 
+def charge_power_kw(
+    battery: dict[str, Any], default_kw: float, slow: dict[str, float] | None
+) -> tuple[float, float | None]:
+    """The power a battery is planned to charge with at night (kW), and that
+    power again when it is what Joe measured: a battery that took far less
+    than planned is planned with what it took, until it charges faster."""
+    full = (battery["max_charge_w"] or default_kw * 1000) / 1000
+    measured = (slow or {}).get(battery["id"])
+    if not measured or measured / 1000 >= full:
+        return full, None
+    return round(measured / 1000, 2), round(measured / 1000, 2)
+
+
 async def async_build_input(
     hass: HomeAssistant,
     config: dict[str, Any],
@@ -280,8 +293,13 @@ async def async_build_input(
     held: dict[str, Any] | None = None,
     detected: dict[str, dict[str, Any]] | None = None,
     grid_peak: dict[str, Any] | None = None,
+    slow: dict[str, float] | None = None,
 ) -> tuple[PlanInput | None, list[str]]:
-    """Gather everything for tonight's plan; None with reasons if there is nothing to plan."""
+    """Gather everything for tonight's plan; None with reasons if there is nothing to plan.
+
+    `slow`: per battery the power (W) it was measured to charge with at night
+    when it took far less than planned (see executor._async_watch_slow).
+    """
     tariff = config["tariff"]
     dynamic = tariff["kind"] == "dynamic"
     if not dynamic and (tariff["kind"] != "fixed_window" or not tariff["window"]):
@@ -317,15 +335,17 @@ async def async_build_input(
         if floor is None:
             notes.append("floor_unknown")
         adapter = make_adapter(battery)
+        charge_kw, slow_kw = charge_power_kw(battery, default_power, slow)
         batteries.append(
             Battery(
                 id=battery["id"],
                 name=battery["name"],
                 capacity=capacity,
                 soc=max(0.0, min(100.0, soc)),
-                charge_kw=(battery["max_charge_w"] or default_power * 1000) / 1000,
+                charge_kw=charge_kw,
                 discharge_kw=(battery["max_discharge_w"] or default_power * 1000)
                 / 1000,
+                slow_kw=slow_kw,
                 controllable=battery["adapter"] != "none",
                 # Watched batteries are planned as if Joe could steer them.
                 grid=adapter.can_charge if adapter else True,

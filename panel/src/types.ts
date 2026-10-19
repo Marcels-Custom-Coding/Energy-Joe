@@ -116,6 +116,7 @@ export type ControlRole =
   /** The other way round: on = blocked (Kostal over Modbus), by day only. */
   | "block_charge"
   | "block_discharge";
+/** The basic levers every battery may have (the generic set of control/profiles.py); the dialog offers them to assign. */
 export const CONTROL_ROLES: ControlRole[] = [
   "min_soc",
   "grid_charge",
@@ -123,6 +124,8 @@ export const CONTROL_ROLES: ControlRole[] = [
   "mode",
   "charge_power",
   "discharge_power",
+  "charge_limit",
+  "charge_limit_enabled",
   "discharge_limit",
   "discharge_limit_enabled",
 ];
@@ -138,7 +141,141 @@ export interface ControlStep {
   service?: string;
   data?: Record<string, unknown>;
 }
-export type StepName = "charge" | "hold" | "release";
+/**
+ * What Joe does with a battery (an operation, see control/adapters.py and the
+ * preview energy_joe/battery/preview): the seven he always lists, and the
+ * watchdog's short blocks only when they use other steps than block_*.
+ */
+export type OperationKey =
+  | "charge"
+  | "hold"
+  | "block"
+  | "block_charge"
+  | "block_discharge"
+  | "cap"
+  | "release"
+  | "guard_charge"
+  | "guard_discharge";
+/** The operations in the order the preview lists them. */
+export const OPERATIONS: OperationKey[] = ["charge", "hold", "block", "block_charge", "block_discharge", "cap", "release"];
+/** The operations the owner may give own steps for (battery.steps). */
+export type StepName = "charge" | "hold" | "release" | "block" | "block_charge" | "block_discharge" | "cap";
+export const STEP_NAMES: StepName[] = ["charge", "hold", "block", "block_charge", "block_discharge", "cap", "release"];
+/** Where an operation's steps come from. */
+export type OperationSource = "profile" | "generic" | "own" | "service" | "none";
+/** The placeholders in step values ("{target}") the backend fills at run time. */
+export type StepParam = "target" | "power" | "power_neg" | "floor" | "percent" | "minutes" | "seconds" | "device";
+
+/** One write of the preview: an entity and its value, or a service call. */
+export interface PreviewStep {
+  kind: "set" | "call";
+  role?: string | null;
+  entity_id?: string;
+  name?: string | null;
+  value?: string | number | boolean | null;
+  unit?: string | null;
+  /** What the entity shows right now. */
+  current?: string | null;
+  /** The placeholder the value stands for, when the backend fills it at run time. */
+  param?: StepParam | null;
+  service?: string;
+  data?: Record<string, unknown>;
+}
+
+/** What "zurückstellen" writes afterwards; "saved" is the value kept before the operation. */
+export interface PreviewRestore {
+  role?: string | null;
+  entity_id: string;
+  name?: string | null;
+  value: string | number | boolean | null | "saved";
+  current?: string | null;
+}
+
+export interface PreviewParams {
+  target?: number;
+  power_w?: number;
+  floor?: number;
+  percent?: number;
+  seconds?: number;
+  minutes?: number;
+}
+
+export interface PreviewOperation {
+  op: OperationKey;
+  possible: boolean;
+  /** Why not (a code the panel explains). */
+  why: string | null;
+  source: OperationSource;
+  params: PreviewParams;
+  steps: PreviewStep[];
+  restore: PreviewRestore[];
+  /** Something to know about the order or the device (a code the panel explains). */
+  note: string | null;
+}
+
+/** One lever as the preview sees it: assigned, found by the profile, what it is and who uses it. */
+export interface PreviewRole {
+  role: ControlRole | string;
+  entity_id: string | null;
+  /** What the profile finds today. */
+  found: string | null;
+  kind: "setpoint" | "level" | "toggle" | "option" | null;
+  unit: string | null;
+  used_by: OperationKey[];
+  deviates: boolean;
+  /** Used by an operation or assigned. */
+  relevant: boolean;
+}
+
+/** The answer of energy_joe/battery/preview: nothing is written. */
+export interface BatteryPreview {
+  profile: { key: string; name: string } | null;
+  deviates: boolean;
+  operations: PreviewOperation[];
+  roles: PreviewRole[];
+  /** The preview could not be worked out: the message, its code ("invalid_draft", "preview_failed") and the detail. */
+  error?: string | null;
+  code?: string | null;
+  detail?: string | null;
+}
+
+/** One step of a probe: what was written and what came back. */
+export interface ProbeStep {
+  entity_id?: string;
+  service?: string;
+  wrote: unknown;
+  read: string | null;
+  taken: boolean;
+  error: string | null;
+}
+
+/** The answer of energy_joe/battery/probe (also kept in the state as probes[battery][op]). */
+export interface ProbeResult {
+  ok: boolean;
+  op: OperationKey;
+  at: string;
+  steps: ProbeStep[];
+  restored: boolean;
+  restore_errors: string[];
+  /** Refused or not possible: why ("steering", "busy", "not_possible", "controls_missing", "soc_unknown"). */
+  problem: string | null;
+  /** With "not_possible": the operation's reason (a why code). */
+  why?: string | null;
+  /** With "controls_missing": the roles that are missing. */
+  missing?: string[];
+  power_kw: number | null;
+}
+
+/** A battery whose assigned levers differ from what its profile finds (state.battery_roles). */
+export interface BatteryRolesItem {
+  battery_id: string;
+  name: string;
+  profile: string;
+  missing: string[];
+  wrong: { role: string; is: string | null; found: string | null }[];
+  /** The find's hash: "So lassen" holds until the find changes. */
+  hash?: string;
+}
 
 export interface BatteryConfig {
   id: string;
@@ -1147,6 +1284,8 @@ export interface PlanBattery {
   how?: PlanPace;
   /** Whether Joe can set its power (else it charges at full power). */
   paced?: boolean;
+  /** It charges much slower than it could (measured): planned with this power (kW). */
+  slow_kw?: number | null;
   /** Its place in the order of charging (0: gets first). */
   rank?: number;
   controllable: boolean;
@@ -1304,6 +1443,10 @@ export interface JoeState {
   floors?: Record<string, BatteryFloor>;
   /** Settings Joe could not read at the start, kept apart (offered while he runs with the defaults); why taking them back failed. */
   config_backup?: { error: string | null } | null;
+  /** Each battery's last probe per operation (older backends: missing). */
+  probes?: Record<string, Partial<Record<OperationKey, ProbeResult>>>;
+  /** Batteries whose levers differ from their profile, not yet answered (older backends: missing). */
+  battery_roles?: BatteryRolesItem[];
 }
 
 export interface BatteryFloor {
@@ -1341,6 +1484,36 @@ export interface ControlBattery {
   power_w?: number | null;
   /** Fronius: its charge limit as the ceiling of the night's power, and whether it holds. */
   cap?: { w: number | null; seen_w: number | null; state: "works" | "ignored" | null };
+  /** It charges much slower from the grid than planned (executor._async_watch_slow). */
+  slow?: NightSlow | null;
+}
+
+/** A battery that took far less than the power planned for it: the planned and the measured power (W), and when. */
+export interface NightSlow {
+  planned_w: number;
+  measured_w: number;
+  at: string;
+  /** The last findings by night (the plan goes by the most of them). */
+  nights?: { night: string; planned_w: number; measured_w: number }[];
+}
+
+/** The last night looked back on: what was planned against what each battery took (executor._review_night). */
+export interface NightReview {
+  night: string;
+  at: string;
+  batteries: Record<
+    string,
+    {
+      planned_kwh: number | null;
+      /** Summed up from its power while Joe charged it; null without a power sensor. */
+      charged_kwh: number | null;
+      planned_w: number | null;
+      soc_start: number | null;
+      soc_end: number | null;
+      /** Found charging much slower than planned that night. */
+      slow: boolean;
+    }
+  >;
 }
 
 export interface TestStep {
@@ -1393,6 +1566,8 @@ export interface ControlView {
   >;
   pending: boolean;
   testing: { battery: string; step: string; steps: TestStep[]; started: string } | null;
+  /** A probe of one operation going on, from any session (older backends: missing). */
+  probe_running?: { battery: string; op: OperationKey; started: string } | null;
   tests: Record<string, TestResult>;
   log: ControlLogEntry[];
   skip: string | null;
@@ -1411,6 +1586,10 @@ export interface ControlView {
   guard?: TransferGuard;
   /** The highest import from the grid Joe measured (W), when, and since when he watches. */
   grid_peak?: { w: number; at: string; since: string } | null;
+  /** Batteries that charge much slower from the grid than planned (older backends: missing). */
+  night_slow?: Record<string, NightSlow>;
+  /** The last night looked back on: planned against charged, per battery (older backends: missing). */
+  night_review?: NightReview | null;
   /** Per battery: ready to steer, or why not. */
   ready: Record<string, "ready" | "not_tested" | "outdated" | "not_controllable" | "controls_missing">;
 }
