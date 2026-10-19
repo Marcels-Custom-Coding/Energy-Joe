@@ -572,6 +572,59 @@ def fronius_household() -> Snapshot:
     return snapshot(entities, devices, energy)
 
 
+ACME = {"platform": "acme_storage", "entry": "acme", "device_id": "acme_bat"}
+
+
+def acme_sensor(
+    entity_id: str,
+    name: str,
+    state: Any,
+    *,
+    unit: str | None = "kWh",
+    device_class: str | None = None,
+    attributes: dict[str, Any] | None = None,
+) -> EntityInfo:
+    """A sensor on the device of the made-up Acme battery (see acme_storage_household)."""
+    return entity(
+        entity_id,
+        name,
+        state,
+        unit=unit,
+        device_class=device_class,
+        unique_id=f"acme-1-{entity_id.split('.', 1)[1]}",
+        attributes=attributes,
+        **ACME,
+    )
+
+
+def acme_storage_household(*sensors: EntityInfo) -> Snapshot:
+    """An integration Joe knows nothing about: a battery with its level and
+    power on one device, and whatever else that device reports (`sensors`)."""
+    entities = [
+        entity(
+            "sensor.acme_soc",
+            "Speicher Ladestand",
+            48,
+            unit="%",
+            device_class="battery",
+            unique_id="acme-1-soc",
+            **ACME,
+        ),
+        entity(
+            "sensor.acme_power",
+            "Speicher Leistung",
+            -800,
+            unit="W",
+            device_class="power",
+            unique_id="acme-1-power",
+            **ACME,
+        ),
+        *sensors,
+    ]
+    devices = [DeviceInfo("acme_bat", "Stromspeicher Keller", "Acme", "PowerCube 10")]
+    return snapshot(entities, devices)
+
+
 def generic_household(
     *, grid_watts: float = 300, pv_watts: float = 2100, home_watts: float = 2400
 ) -> Snapshot:

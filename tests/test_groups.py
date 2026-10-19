@@ -368,15 +368,19 @@ async def test_the_night_freezes_omnibattery_with_allow_discharging(
     executor, holder = await make_executor(hass, config, plan)
     await executor.async_check()
     assert executor.status["reason"] == "steering"
-    # The BYD charges from the grid; the Venus is frozen in automatic mode.
+    # The BYD charges from the grid; the Venus waits in automatic mode (as by
+    # day: neither charging nor discharging).
     assert hass.states.get("switch.venus_allow_discharge").state == "off"
-    assert hass.states.get("switch.venus_allow_charge").state == "on"
+    assert hass.states.get("switch.venus_allow_charge").state == "off"
     assert not any(e in MANUAL for e, _ in calls)
     assert hass.states.get("number.reserve").state == "60.0"
-    # Without the switch: standby as before (manual mode, charging at 0 W).
+    # Without the switches: standby as before (manual mode, charging at 0 W).
     adapter = make_adapter(venus())
     writes = adapter.writes(hass, Desired(floor=40, block=True), 60, {})
-    assert [w.entity_id for w in writes] == ["switch.venus_allow_discharge"]
+    assert [w.entity_id for w in writes] == [
+        "switch.venus_allow_charge",
+        "switch.venus_allow_discharge",
+    ]
     hass.states.async_set("switch.venus_allow_discharge", "unavailable")
     writes = adapter.writes(hass, Desired(floor=40, block=True), 60, {})
     assert "switch.venus_manual_mode" in [w.entity_id for w in writes]

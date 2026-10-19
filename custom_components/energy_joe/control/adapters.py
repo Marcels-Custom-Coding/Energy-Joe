@@ -83,6 +83,12 @@ class Desired:
     power_w: float | None = None
     # Length of the window, for batteries that take commands only for a while.
     span_s: float | None = None
+    # Whether every battery behind the system's limits is idle, so a block
+    # may use them (see executor._whole_system).
+    whole_system: bool = True
+    # The night's ceiling holds the charge limit (executor._async_night_cap):
+    # lifting a block leaves it alone.
+    capped: bool = False
 
 
 class Adapter:
@@ -626,13 +632,15 @@ class RoleAdapter(Adapter):
             writes.append(Write(self.controls["charge_limit_enabled"], True))
         return self._paced(writes)
 
+    def night_cap_roles(self) -> list[str]:
+        """The roles of the ceiling (its switch, its value)."""
+        return [
+            r for r in ("charge_limit_enabled", "charge_limit") if r in self.controls
+        ]
+
     def night_cap_entities(self) -> list[str]:
         """The entities of the ceiling (its switch, its value)."""
-        return [
-            self.controls[r]
-            for r in ("charge_limit_enabled", "charge_limit")
-            if r in self.controls
-        ]
+        return [self.controls[r] for r in self.night_cap_roles()]
 
     def can_defer(self) -> bool:
         """Whether charging (from the sun too) can be held back while discharging stays free."""
@@ -1390,7 +1398,9 @@ class RoleAdapter(Adapter):
         saved: dict[str, Any],
     ) -> list[Write]:
         if desired.charge_to is not None and self.can_charge:
-            result = self._lift_block(saved) + self._charge(hass, desired, soc)
+            result = self._lift_block(saved, desired.capped) + self._charge(
+                hass, desired, soc
+            )
         else:
             # Out of charging: the forced mode first, then its power, target and switches.
             result = self._restore(
@@ -1526,10 +1536,19 @@ class RoleAdapter(Adapter):
         desired: Desired,
         saved: dict[str, Any],
     ) -> list[Write] | None:
-        """Writes that keep the battery from discharging; None: no method of
-        its profile can right now. The owner's own steps first (the one-way
-        ones, else the ones for both directions)."""
+        """Writes that keep the battery still at night: charging and
+        discharging blocked as by day ("Warten", see team_block), so that no
+        battery charges another one through the house in either direction.
+        Where the day's lever is not there (or not available right now) the
+        battery is at least kept from discharging: the owner's own one-way
+        steps, its discharge switch, else as its profile prefers. None: no
+        method can right now."""
         c = self.controls
+        whole = desired.whole_system
+        if self.waits_as_by_day(hass, whole):
+            writes, _ = self.team_block(hass, True, True, False, whole, saved)
+            if writes:
+                return writes
         for op in ("block_discharge", "block"):
             if self.own_steps(op):
                 values = self._values(desired, soc)
@@ -1554,6 +1573,21 @@ class RoleAdapter(Adapter):
             if self._can_hold(method):
                 return self._prepare(method) + self._still(hass, method, desired)
         return None
+
+    def waits_as_by_day(self, hass: HomeAssistant, whole_system: bool = True) -> bool:
+        """Whether the battery waits at night as by day: the day's lever that
+        blocks both directions is there and available (then the night's
+        "hold" is the day's "block", one operation for the owner)."""
+        return (
+            self.team_lever(whole_system) is not None
+            and self.team_problem(hass, whole_system) is None
+        )
+
+    def own_hold_first(self) -> bool:
+        """Whether the owner's own steps for the night's hold go before the
+        day's block: they exist, and no own steps block both directions (the
+        owner said how a battery at its level is held)."""
+        return bool(self.own_steps("hold")) and self._own_block_op(True, True) is None
 
     def _floor_step(self, hass: HomeAssistant, level: float) -> float | None:
         """A level as the floor entity takes it, on its step and never above
@@ -1626,16 +1660,21 @@ class RoleAdapter(Adapter):
             result.append(Write(c["discharge_limit_enabled"], True))
         return result
 
-    def _lift_block(self, saved: dict[str, Any]) -> list[Write]:
-        """The limit's switch off first, then the limit back; the allow (or
-        block) switch back."""
-        return self._restore(
-            saved,
+    def _lift_block(self, saved: dict[str, Any], capped: bool = False) -> list[Write]:
+        """Every lever a block may have written back as it was: each limit's
+        switch off first, then its value; the allow (or block) switches, the
+        mode, the floor and charge target of a level block. With `capped` the
+        charge limit stays: the night's ceiling holds it (night_cap)."""
+        roles = [
+            *self.team_release_roles(),
             "discharge_limit_enabled",
             "discharge_limit",
             "allow_discharge",
             "block_discharge",
-        )
+        ]
+        if capped:
+            roles = [r for r in roles if r not in self.night_cap_roles()]
+        return self.team_free(saved, list(dict.fromkeys(roles)))
 
     def _prepare(self, method: str) -> list[Write]:
         if method not in self.profile.prepare_for and not (
@@ -1780,6 +1819,10 @@ class StepsAdapter(RoleAdapter):
                     if not hass.services.has_service(domain, name):
                         result.append(step["service"])
         return result
+
+    def waits_as_by_day(self, hass: HomeAssistant, whole_system: bool = True) -> bool:
+        # Its steps say how it holds at night; the day's levers stay the day's.
+        return False
 
     def writes(
         self,

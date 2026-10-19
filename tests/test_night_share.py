@@ -405,14 +405,20 @@ async def test_the_fronius_ceiling_goes_on_and_off_in_order(
     assert executor.data["saved"]["number.charge_limit"] == 100.0
     assert executor.data["saved"]["switch.charge_limit"] is False
 
-    # Reached: the switch off first, then the value back; nothing left to restore.
+    # Reached: the ceiling back (the switch off first, then the value), then
+    # the limit serves the wait at the target (at 0, its switch on).
     calls.clear()
     hass.states.async_set("sensor.byd_soc", "60", {"unit_of_measurement": "%"})
     await executor.async_check()
     limit = [c for c in calls if c[0] in ("number.charge_limit", "switch.charge_limit")]
-    assert limit == [("switch.charge_limit", "off"), ("number.charge_limit", "100.0")]
-    assert "number.charge_limit" not in executor.data["saved"]
-    assert "switch.charge_limit" not in executor.data["saved"]
+    assert limit == [
+        ("switch.charge_limit", "off"),
+        ("number.charge_limit", "100.0"),
+        ("number.charge_limit", "0.0"),
+        ("switch.charge_limit", "on"),
+    ]
+    assert executor.data["saved"]["number.charge_limit"] == 100.0
+    assert executor.data["saved"]["switch.charge_limit"] is False
 
 
 async def test_a_ceiling_that_does_not_hold_is_noted(

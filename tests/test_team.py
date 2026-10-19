@@ -752,8 +752,11 @@ async def test_the_night_plan_goes_first(hass: HomeAssistant, freezer) -> None:
     assert venus_levers(hass) == ("2500.0", "2500.0", "off")
     ends = [e for e in executor.data["log"] if e["kind"] == "team_end"]
     assert ends[-1]["reason"] == "night"
-    # The night holds the BYD with its reserve (its own lever), nothing else.
-    assert hass.states.get("number.reserve").state == "40.0"
+    # The night lets the BYD wait with its own limits (as by day), nothing else.
+    assert hass.states.get("number.charge_limit").state == "0.0"
+    assert hass.states.get("switch.charge_limit").state == "on"
+    assert hass.states.get("number.discharge_limit").state == "0.0"
+    assert float(hass.states.get("number.reserve").state) == 5
     assert "number.omni_max_charge" not in executor.data["saved"]
 
 

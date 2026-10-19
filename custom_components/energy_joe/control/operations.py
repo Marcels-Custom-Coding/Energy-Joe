@@ -57,7 +57,7 @@ from .profiles import (
     ROLES,
     Call,
 )
-from .writes import Write, fit
+from .writes import Write, fit, matches
 
 GUARD_OPERATIONS = ("guard_charge", "guard_discharge")
 # The example of the daytime cap: this share of the highest charging power.
@@ -182,6 +182,9 @@ class Operation:
     # Per entity written: the parameter its value stands for.
     params_of: dict[str, str] = field(default_factory=dict)
     note: str | None = None
+    # The operation this one is for the owner ("hold" is "block" where the
+    # battery waits at night as by day): the panel shows one row.
+    same_as: str | None = None
 
 
 def params_for(
@@ -209,21 +212,32 @@ def params_for(
 
 
 def operations(
-    hass: HomeAssistant, adapter: Adapter | None, params: Params
+    hass: HomeAssistant,
+    adapter: Adapter | None,
+    params: Params,
+    saved: dict[str, Any] | None = None,
 ) -> list[Operation]:
     """Every operation in the panel's order (charge, hold, block,
     block_charge, block_discharge, cap, release), then the watchdog's blocks
-    where they differ from the day's."""
+    where they differ from the day's. `saved`: the originals Joe noted (a
+    value he wrote himself is not the owner's)."""
     if not isinstance(adapter, RoleAdapter):
         return [Operation(op, False, "not_controllable", "none") for op in OPERATIONS]
     found = [
-        operation(hass, adapter, op, params) for op in OPERATIONS if op != "release"
+        operation(hass, adapter, op, params, saved)
+        for op in OPERATIONS
+        if op != "release"
     ]
-    written = [w.entity_id for item in found for w in item.writes if not w.is_call]
-    found.append(operation(hass, adapter, "release", params, written=written))
+    written = [
+        w.entity_id
+        for item in found
+        for w in _changing(hass, item.writes, saved or {})
+        if not w.is_call
+    ]
+    found.append(operation(hass, adapter, "release", params, saved, written))
     by_op = {item.op: item for item in found}
     for direction in ("charge", "discharge"):
-        guard = operation(hass, adapter, f"guard_{direction}", params)
+        guard = operation(hass, adapter, f"guard_{direction}", params, saved)
         block = by_op[f"block_{direction}"]
         if guard.possible and (
             not block.possible or _signature(guard.writes) != _signature(block.writes)
@@ -240,9 +254,10 @@ def operation(
     saved: dict[str, Any] | None = None,
     written: list[str] | None = None,
 ) -> Operation:
-    """One operation as it would run now. `saved`: the originals noted (the
-    probe's "back" writes them); `written`: for "release", the entities the
-    other operations write."""
+    """One operation as it would run now. `saved`: the originals Joe noted
+    (what the operation writes and puts back is worked out as in the night:
+    a value Joe wrote himself is not the owner's); `written`: for "release",
+    the entities the other operations write."""
     source = source_of(adapter, op)
     result = Operation(op, True, None, source)
     saved = saved or {}
@@ -260,22 +275,34 @@ def operation(
             )
         if soc is None:
             return _impossible(result, "soc_unknown")
+        # At night a battery at its level waits as by day (adapters._block),
+        # unless the owner's own steps say how it holds.
         desired = (
             Desired(charge_to=params.target, power_w=params.power_w)
             if op == "charge"
-            else Desired(floor=params.floor)
+            else Desired(
+                floor=params.floor,
+                block=not adapter.own_hold_first(),
+                whole_system=params.whole_system,
+            )
         )
-        problem = adapter.steer_problem(hass, desired, soc, {})
+        problem = adapter.steer_problem(hass, desired, soc, saved)
         if problem:
             return _impossible(result, problem)
-        writes = adapter.writes(hass, desired, soc, {})
+        writes = adapter.writes(hass, desired, soc, saved)
         if (
             op == "charge"
             and adapter.power_lever(hass) == "cap"
             and adapter.night_cap_problem(hass) is None
         ):
             # The ceiling of the power goes first (see executor._async_night_cap).
-            writes = adapter.night_cap(hass, round(params.power_w), {}) + writes
+            writes = adapter.night_cap(hass, round(params.power_w), saved) + writes
+        if (
+            op == "hold"
+            and source != "own"
+            and adapter.waits_as_by_day(hass, params.whole_system)
+        ):
+            result.same_as = "block"
     elif op in BLOCK_OPERATIONS:
         charge, discharge = op != "block_discharge", op != "block_charge"
         own = adapter._own_block(hass, charge, discharge)
@@ -286,7 +313,7 @@ def operation(
             if soc is None and adapter.team_lever(params.whole_system) == "level":
                 return _impossible(result, "soc_unknown")
         writes, _ = adapter.team_block(
-            hass, charge, discharge, False, params.whole_system, {}
+            hass, charge, discharge, False, params.whole_system, saved
         )
         if not writes:
             return _impossible(result, "no_lever")
@@ -304,7 +331,7 @@ def operation(
         problem = adapter.limit_problem(hass)
         if problem:
             return _impossible(result, problem)
-        writes = adapter.limit(hass, params.cap_w / 1000, {}, False)
+        writes = adapter.limit(hass, params.cap_w / 1000, saved, False)
     elif op == "release":
         writes = (
             adapter._render("release", adapter._values(Desired(), 0.0))
@@ -314,7 +341,11 @@ def operation(
     else:
         raise ValueError(f"unknown operation: {op}")
     result.writes = [fit(hass, w) for w in writes]
-    result.restore = restore_writes(adapter, op, result.writes, saved, written)
+    # A value that stands so already is not written, so nothing of it goes
+    # back – unless Joe noted its original (he set it himself before).
+    result.restore = restore_writes(
+        adapter, op, _changing(hass, result.writes, saved), saved, written
+    )
     result.params_of = _param_map(adapter, op, result.writes, params)
     result.note = _note(adapter, result.writes)
     return result
@@ -379,15 +410,17 @@ def preview(
     target: float | None = None,
     power_w: float | None = None,
     whole_system: bool = True,
+    saved: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """The preview the panel shows (see the module doc): the profile, the
     operations with their steps and what goes back, the roles with what the
-    profile finds today (`found`) and whether the saved levers differ."""
+    profile finds today (`found`) and whether the saved levers differ.
+    `saved`: the originals Joe noted (executor.data["saved"])."""
     adapter = make_adapter(battery)
     profile = PROFILES.get(battery.get("adapter") or "")
     params = params_for(hass, battery, target, power_w, whole_system)
     found = found or {}
-    items = operations(hass, adapter, params)
+    items = operations(hass, adapter, params, saved)
     roles = roles_view(hass, adapter, battery, found, items)
     return {
         "profile": {"key": profile.key, "name": profile.name} if profile else None,
@@ -414,6 +447,7 @@ def operation_view(
         ],
         "restore": [restore_view(hass, adapter, w) for w in item.restore],
         "note": item.note,
+        "same_as": item.same_as,
     }
 
 
@@ -441,6 +475,8 @@ def step_view(
         "param": param,
         "unit": state.attributes.get("unit_of_measurement") if state else None,
         "current": state.state if state else None,
+        # The value stands so already: nothing changes ("bleibt bei").
+        "keep": bool(state) and matches(hass, write),
     }
 
 
@@ -480,6 +516,9 @@ def roles_view(
     controls: dict[str, str] = battery.get("controls") or {}
     used: dict[str, list[str]] = {}
     for item in items:
+        if item.same_as:
+            # One row for the owner: the operation it stands for counts.
+            continue
         for write in item.writes:
             if write.is_call:
                 continue
@@ -662,3 +701,13 @@ def _available(hass: HomeAssistant, entity_id: str) -> bool:
 
 def _signature(writes: list[Write]) -> list[tuple[str, Any]]:
     return [(w.entity_id, w.value) for w in writes]
+
+
+def _changing(
+    hass: HomeAssistant, writes: list[Write], saved: dict[str, Any]
+) -> list[Write]:
+    """The writes that change something: calls, values that do not stand so
+    yet, and values Joe noted an original for (he set them himself)."""
+    return [
+        w for w in writes if w.is_call or w.entity_id in saved or not matches(hass, w)
+    ]

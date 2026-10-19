@@ -17,6 +17,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable
 from copy import deepcopy
+from dataclasses import replace
 from datetime import datetime, timedelta
 import logging
 import math
@@ -838,11 +839,15 @@ class JoeExecutor:
                 "problem": None,
                 "power_w": want.power_w if want else None,
             }
-            # The ceiling of the power before charging starts, back after it ends.
+            # The ceiling of the power before charging starts; back before the
+            # battery waits again (its block takes the charge limit next).
             capped = want is not None and want.charge_to is not None
             cap = None
-            if adapter is not None and soc is not None and capped:
+            if adapter is not None and soc is not None:
                 cap = await self._async_night_cap(battery, adapter, want, now)
+                if want is not None and capped:
+                    held = (self.data["night_caps"].get(battery["id"]) or {}).get("w")
+                    want = replace(want, capped=bool(held))
             if adapter is None:
                 entry["action"] = "watch"
                 entry["problem"] = self._watch_reason(battery)
@@ -854,8 +859,6 @@ class JoeExecutor:
                 if battery["id"] in stuck and problem in (None, "cannot_hold"):
                     # Why no other battery charges from the grid now.
                     entry["problem"] = "cannot_block"
-            if adapter is not None and soc is not None and not capped:
-                cap = await self._async_night_cap(battery, adapter, want, now)
             if cap:
                 entry["cap"] = cap
             batteries[battery["id"]] = entry
@@ -1091,12 +1094,37 @@ class JoeExecutor:
                 continue
             if key not in floors:
                 floors[key] = target if soc > target else max(0, math.floor(soc))
-            result[key] = Desired(floor=floors[key], span_s=span)
+            # At its floor the battery waits as by day (charging and
+            # discharging blocked, "Warten"); above it, it may discharge down
+            # to the floor first ("Bis zum Ziel"), held by its own floor. The
+            # owner's own steps for holding go first where they gave them.
+            still = floors[key] >= math.floor(soc) and not (
+                isinstance(adapter, RoleAdapter) and adapter.own_hold_first()
+            )
+            result[key] = Desired(floor=floors[key], block=still, span_s=span)
         # No battery may charge another one through the house.
         if any(d.charge_to is not None for d in result.values()):
             for key, want in list(result.items()):
                 if want.charge_to is None:
-                    result[key] = Desired(floor=want.floor, block=True, span_s=span)
+                    result[key] = replace(want, block=True)
+        # The system's limits block a battery only while every battery
+        # behind them is idle, too (never the one charging next to it, never
+        # one Joe only watches).
+        adapters = {b["id"]: a for b, _, a in items}
+        systems: dict[str, list[str]] = {}
+        for battery in self._config()["batteries"]:
+            system = (battery.get("controls") or {}).get("system_charge_limit")
+            if system:
+                systems.setdefault(system, []).append(battery["id"])
+        for key, want in list(result.items()):
+            adapter = adapters.get(key)
+            system = adapter.system_key() if isinstance(adapter, RoleAdapter) else None
+            if want.block and system:
+                whole = all(
+                    other in result and result[other].charge_to is None
+                    for other in systems.get(system, [])
+                )
+                result[key] = replace(want, whole_system=whole)
         return result
 
     def _guard_block(
@@ -1105,13 +1133,12 @@ class JoeExecutor:
         desired: dict[str, Desired],
         socs: dict[str, float | None],
     ) -> tuple[dict[str, Desired], set[str]]:
-        """No battery charges from the grid while another cannot be kept from
-        discharging (its level below the lowest floor it takes): it would
-        discharge into the others, as without a lever. Those that should
-        charge hold instead, the others hold as they would. Returns the
-        batteries that cannot be blocked."""
-        if not any(d.charge_to is not None for d in desired.values()):
-            return desired, set()
+        """A battery that cannot be blocked (its level below the lowest floor
+        it takes, its levers away) is held at its floor instead, as far as
+        that goes. While another charges from the grid that is not enough:
+        it would discharge into the others, as without a lever, so no
+        battery charges then (those that should hold instead). Returns the
+        batteries that keep the others from charging."""
         adapters = {battery["id"]: adapter for battery, _, adapter in items}
         stuck: set[str] = set()
         for key, want in desired.items():
@@ -1128,19 +1155,20 @@ class JoeExecutor:
                 stuck.add(key)
         if not stuck:
             return desired, stuck
+        charging = any(d.charge_to is not None for d in desired.values())
         result: dict[str, Desired] = {}
         for key, want in desired.items():
             soc = socs.get(key)
-            if want.charge_to is not None:
+            if want.charge_to is not None and charging:
                 result[key] = Desired(
                     floor=max(0, math.floor(soc)) if soc is not None else None,
                     span_s=want.span_s,
                 )
-            elif want.block:
-                result[key] = Desired(floor=want.floor, span_s=want.span_s)
+            elif key in stuck or (want.block and charging):
+                result[key] = replace(want, block=False)
             else:
                 result[key] = want
-        return result, stuck
+        return result, stuck if charging else set()
 
     async def _async_steer(
         self, adapter: Adapter, want: Desired, soc: float, now: datetime
@@ -1280,12 +1308,9 @@ class JoeExecutor:
         if isinstance(adapter, RoleAdapter) and isinstance(original, int | float):
             original = adapter._level("min_soc", original)
         if isinstance(original, int | float) and want.floor < original:
-            return Desired(
+            return replace(
+                want,
                 floor=math.ceil(original),
-                block=want.block,
-                charge_to=want.charge_to,
-                power_w=want.power_w,
-                span_s=want.span_s,
             )
         return want
 
@@ -5412,7 +5437,7 @@ class JoeExecutor:
             battery,
             whole_system=self._whole_system(config, groups, battery, adapter),
         )
-        found = operations.operation(hass, adapter, op, params)
+        found = operations.operation(hass, adapter, op, params, self.data["saved"])
         if not found.possible:
             result["problem"] = (
                 "soc_unknown" if found.why == "soc_unknown" else "not_possible"

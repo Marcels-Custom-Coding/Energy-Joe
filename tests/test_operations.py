@@ -111,20 +111,21 @@ def test_fronius_shows_every_write_in_its_order(hass: HomeAssistant) -> None:
     ]
     # The watchdog blocks the same way: no operations of its own.
     assert "guard_charge" not in found and "guard_discharge" not in found
+    # At night the battery waits as by day: "hold" is "block" for the owner.
     hold = found["hold"]
     assert hold["params"]["floor"] == 34
-    assert sets(hold) == [("number.reserve", 34.0)]
-    assert hold["steps"][0]["param"] == "floor"
+    assert hold["same_as"] == "block" and block["same_as"] is None
+    assert sets(hold) == sets(block)
+    assert {e for e, _ in back(hold)} == {e for e, _ in back(block)}
     assert [s["param"] for s in block["steps"]] == [None] * 4
-    assert back(hold) == [("number.reserve", "saved")]
+    assert all(not s["keep"] for s in block["steps"])
     charge = found["charge"]
     assert charge["params"]["target"] == 55 and charge["params"]["power_w"] == 5000
     assert sets(charge) == [("switch.grid_charging", True), ("number.reserve", 55.0)]
     assert [s["param"] for s in charge["steps"]] == [None, "target"]
-    assert back(charge) == [
-        ("number.reserve", "saved"),
-        ("switch.grid_charging", "saved"),
-    ]
+    # Grid charging is on already: nothing written there, nothing to put back.
+    assert charge["steps"][0]["keep"] and not charge["steps"][1]["keep"]
+    assert back(charge) == [("number.reserve", "saved")]
     # The cap needs to know what 100 % stand for.
     cap = found["cap"]
     assert (
@@ -138,7 +139,6 @@ def test_fronius_shows_every_write_in_its_order(hass: HomeAssistant) -> None:
         "switch.charge_limit",
         "number.charge_limit",
         "number.reserve",
-        "switch.grid_charging",
     ]
     # With the reference: the ceiling first, then charging; the cap at half the power.
     known = {**team_byd(), "limit_ref_w": 5000}
@@ -176,9 +176,9 @@ def test_the_roles_say_what_they_take_and_who_uses_them(hass: HomeAssistant) -> 
     assert limit["entity_id"] == "number.charge_limit" and limit["found"] is None
     assert limit["used_by"] == ["charge", "block", "block_charge", "cap"]
     assert limit["relevant"] and not limit["deviates"]
+    # The night's hold is the block (one row): the reserve serves charging only.
     assert roles["min_soc"]["kind"] == "level" and roles["min_soc"]["used_by"] == [
         "charge",
-        "hold",
     ]
     assert roles["charge_limit_enabled"]["kind"] == "toggle"
     # The generic levers are listed even where the profile has none.
@@ -266,6 +266,7 @@ def test_huawei_steps_come_from_the_profile(hass: HomeAssistant) -> None:
             "param": None,
             "unit": None,
             "current": "off",
+            "keep": False,
         },
         {
             "kind": "call",
@@ -385,9 +386,10 @@ def test_own_steps_replace_the_profile_in_the_preview(hass: HomeAssistant) -> No
     ]
     assert found["release"]["source"] == "own"
     assert sets(found["release"]) == [("select.byd_mode", "auto")]
-    # The night stays the profile's.
+    # The night waits with the own block steps, too: one row for the owner.
     assert found["hold"]["source"] == "profile"
-    assert sets(found["hold"]) == [("number.reserve", 50.0)]
+    assert found["hold"]["same_as"] == "block"
+    assert sets(found["hold"]) == [("select.byd_mode", "hold")]
     # Own steps for the day change no signature of the night's test run
     # (the own release steps belong to the night and do).
     day_only = {k: v for k, v in own_byd()["steps"].items() if k != "release"}
@@ -763,13 +765,30 @@ async def test_a_probe_writes_reads_back_and_restores(
     assert "probes" not in executor.view and executor.view["probe_running"] is None
     assert executor.data["log"][-1]["kind"] == "probe"
     assert executor.data["log"][-1]["op"] == "block" and executor.data["log"][-1]["ok"]
-    # Holding and charging as in the test run.
+    # Holding is waiting (the block's writes), charging as in the test run.
     calls.clear()
     result = await executor.async_probe("byd", "hold")
-    assert result["ok"] and calls == [
-        ("number.reserve", "34.0"),
-        ("number.reserve", "5.0"),
+    assert result["ok"] and calls[:4] == [
+        ("number.charge_limit", "0.0"),
+        ("switch.charge_limit", "on"),
+        ("number.discharge_limit", "0.0"),
+        ("switch.discharge_limit", "on"),
     ]
+    back_calls = calls[4:]
+    assert sorted(back_calls) == sorted(
+        [
+            ("switch.charge_limit", "off"),
+            ("switch.discharge_limit", "off"),
+            ("number.charge_limit", "100.0"),
+            ("number.discharge_limit", "100.0"),
+        ]
+    )
+    for switch, value in (
+        ("switch.charge_limit", "number.charge_limit"),
+        ("switch.discharge_limit", "number.discharge_limit"),
+    ):
+        assert back_calls.index((switch, "off")) < back_calls.index((value, "100.0"))
+    assert executor.data["saved"] == {}
     result = await executor.async_probe("byd", "charge")
     assert result["ok"] and [s["entity_id"] for s in result["steps"]] == [
         "switch.grid_charging",
@@ -837,10 +856,11 @@ async def test_preview_and_probe_over_the_websocket(
     ready_hass: HomeAssistant, hass_ws_client: WebSocketGenerator, quick
 ) -> None:
     hass = ready_hass
-    install_team(hass, byd_soc=34)
     entry = MockConfigEntry(domain=DOMAIN, data={})
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
+    # After the setup: the integration's switch platform would replace the fakes.
+    install_team(hass, byd_soc=34)
     runtime = hass.data[DOMAIN]
     runtime.async_update_config({"batteries": [fronius_battery()]}, "user")
     await hass.async_block_till_done()
@@ -891,8 +911,10 @@ async def test_preview_and_probe_over_the_websocket(
     )
     msg = await client.receive_json()
     assert msg["success"], msg
-    assert msg["result"]["ok"] and msg["result"]["op"] == "hold"
-    assert msg["result"]["steps"][0]["entity_id"] == "number.reserve"
+    assert msg["result"]["ok"], msg["result"]
+    assert msg["result"]["op"] == "hold"
+    # Only the discharge limit assigned: the night keeps it from discharging with it.
+    assert msg["result"]["steps"][0]["entity_id"] == "number.discharge_limit"
     assert runtime.state["probes"]["byd"]["hold"]["ok"]
     assert runtime.state["control"]["probe_running"] is None
     await client.send_json_auto_id(
@@ -917,10 +939,11 @@ async def test_the_probe_and_the_test_run_wait_for_each_other(
     """Over the websocket: refused while Joe steers ("steering") or a test
     run goes on ("busy"), and no test run while a probe goes on."""
     hass = ready_hass
-    install_team(hass, byd_soc=34)
     entry = MockConfigEntry(domain=DOMAIN, data={})
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
+    # After the setup: the integration's switch platform would replace the fakes.
+    install_team(hass, byd_soc=34)
     runtime = hass.data[DOMAIN]
     runtime.async_update_config({"batteries": [fronius_battery()]}, "user")
     await hass.async_block_till_done()
@@ -954,7 +977,8 @@ async def test_the_probe_and_the_test_run_wait_for_each_other(
     assert not msg["success"] and msg["error"]["code"] == "busy"
     executor.probe_running = None
     result = await probe()
-    assert result["ok"] and result["problem"] is None
+    assert result["ok"], result
+    assert result["problem"] is None
     # Not possible: the reason comes along.
     result = await probe("cap")
     assert result["problem"] == "not_possible" and result["why"] == "no_lever"

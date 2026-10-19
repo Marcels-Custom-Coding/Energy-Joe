@@ -824,6 +824,7 @@ async def ws_battery_preview(
             target=(planned or {}).get("target"),
             power_w=power_kw * 1000 if power_kw else None,
             whole_system=whole,
+            saved=runtime.executor.data["saved"],
         )
     except Exception as err:  # noqa: BLE001 - the dialog shows why, Joe keeps running
         _LOGGER.exception("The preview of %s failed", battery["id"])

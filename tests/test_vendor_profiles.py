@@ -564,9 +564,10 @@ def test_sigenergy_limits_in_kw(hass: HomeAssistant) -> None:
     assert adapter.limit_problem(hass) is None
     assert adapter.limit(hass, 1.5) == [Write("number.sg_charge", 1.5)]
     assert adapter.team_lever() == "limit"
-    # By night it does not discharge with its limit at 0 (no remote EMS).
+    # By night it waits with both limits at 0 (no remote EMS).
     assert adapter.writes(hass, Desired(floor=55, block=True), 55, {}) == [
-        Write("number.sg_discharge", 0)
+        Write("number.sg_charge", 0),
+        Write("number.sg_discharge", 0),
     ]
     # The plant's levers by day are no part of the night's test run.
     assert "charge_limit" in adapter.day_roles()
