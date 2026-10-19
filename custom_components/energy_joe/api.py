@@ -98,6 +98,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_battery_preview)
     websocket_api.async_register_command(hass, ws_battery_probe)
     websocket_api.async_register_command(hass, ws_battery_roles)
+    websocket_api.async_register_command(hass, ws_modbus_check)
     websocket_api.async_register_command(hass, ws_control_release)
     websocket_api.async_register_command(hass, ws_control_skip)
     websocket_api.async_register_command(hass, ws_control_answer)
@@ -886,6 +887,44 @@ async def ws_battery_roles(
     except ValueError as err:
         connection.send_error(msg["id"], str(err), str(err))
         return
+    connection.send_result(msg["id"], result)
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/modbus/check",
+        vol.Optional("host"): str,
+        vol.Optional("port", default=502): vol.All(int, vol.Range(min=1, max=65535)),
+        vol.Optional("unit", default=1): vol.All(int, vol.Range(min=0, max=255)),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_modbus_check(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """What an inverter answers over Modbus TCP (the dialog's "Verbindung
+    prüfen"): the model found and its values, or why not (`problem` =
+    connect|timeout|not_found|illegal_address|...). Without `host` the
+    hosts of the Fronius integration are tried, the first that answers
+    counts; `hosts` lists them either way. Nothing is written."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    hosts = [
+        str(entry.data["host"])
+        for entry in hass.config_entries.async_entries("fronius")
+        if entry.data.get("host")
+    ]
+    candidates = [msg["host"]] if msg.get("host") else hosts
+    result: dict[str, Any] = {"ok": False, "problem": "no_host", "hosts": hosts}
+    for host in candidates:
+        found = await runtime.modbus.async_check(host, msg["port"], msg["unit"])
+        result = {**found, "host": host, "port": msg["port"], "unit": msg["unit"]}
+        if found["ok"]:
+            break
+    result["hosts"] = hosts
     connection.send_result(msg["id"], result)
 
 

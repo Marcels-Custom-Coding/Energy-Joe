@@ -299,7 +299,8 @@ async def test_the_most_of_the_last_findings_counts(hass: HomeAssistant) -> None
 
 
 def test_the_plan_goes_by_what_was_measured() -> None:
-    battery = fronius_battery()
+    # Levers the owner assigned: the battery's highest power, else Joe's default.
+    battery = {**fronius_battery(), "adapter": "generic"}
     assert charge_power_kw(battery, 2.0, None) == (5.0, None)
     assert charge_power_kw(battery, 2.0, {"byd": 500}) == (0.5, 0.5)
     # Measured at least what it could: nothing to hold back.
@@ -310,6 +311,11 @@ def test_the_plan_goes_by_what_was_measured() -> None:
         0.5,
         0.5,
     )
+    # A Fronius raising its reserve charges with ~500 W whatever its size:
+    # planned so from the start, less only when measured so.
+    assert charge_power_kw(fronius_battery(), 2.0, None) == (0.5, None)
+    assert charge_power_kw(fronius_battery(), 2.0, {"byd": 300}) == (0.3, 0.3)
+    assert charge_power_kw(fronius_battery(), 2.0, {"byd": 800}) == (0.5, None)
 
     slow = Battery("b1", "Battery", 10.0, 20, 0.5, 3.0, paced=False, slow_kw=0.5)
     plan = make_plan(plan_input(solar=3, soc=20, batteries=[slow]))

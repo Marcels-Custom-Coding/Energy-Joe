@@ -41,6 +41,7 @@
   "floor_soc": null,
   "day_surplus": true,
   "limit_ref_w": null,
+  "modbus": null,
   "self_regulating": null,
   "control_group": null,
   "night_cap": null,
@@ -1191,6 +1192,7 @@
     "floor_soc": null,
     "day_surplus": true,
     "limit_ref_w": null,
+    "modbus": null,
     "self_regulating": null,
     "control_group": null,
     "night_cap": null,
@@ -1205,6 +1207,7 @@
     "params": {
      "target": 60,
      "power_w": 2500,
+     "power_by": "max",
      "floor": 40,
      "percent": 50,
      "seconds": 5.0
@@ -1218,6 +1221,7 @@
       "params": {
        "target": 60,
        "power_w": 2500,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -1291,6 +1295,7 @@
       "params": {
        "target": 60,
        "power_w": 2500,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -1346,6 +1351,7 @@
       "params": {
        "target": 60,
        "power_w": 2500,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -1401,6 +1407,7 @@
       "params": {
        "target": 60,
        "power_w": 2500,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -1438,6 +1445,7 @@
       "params": {
        "target": 60,
        "power_w": 2500,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -1475,6 +1483,7 @@
       "params": {
        "target": 60,
        "power_w": 2500,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -1541,6 +1550,7 @@
       "params": {
        "target": 60,
        "power_w": 2500,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -1784,7 +1794,7 @@
     "charge": {
      "ok": true,
      "op": "charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "switch.venus_battery_manual_mode",
@@ -1816,7 +1826,7 @@
     "hold": {
      "ok": true,
      "op": "hold",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
@@ -1841,7 +1851,7 @@
     "block": {
      "ok": true,
      "op": "block",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
@@ -1866,7 +1876,7 @@
     "block_charge": {
      "ok": true,
      "op": "block_charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
@@ -1884,7 +1894,7 @@
     "block_discharge": {
      "ok": true,
      "op": "block_discharge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
@@ -1902,7 +1912,7 @@
     "cap": {
      "ok": true,
      "op": "cap",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "number.omnibattery_system_max_charge_power",
@@ -1934,7 +1944,7 @@
     "release": {
      "ok": false,
      "op": "release",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [],
      "restored": true,
      "restore_errors": [],
@@ -1947,7 +1957,7 @@
     "charge": {
      "ok": false,
      "op": "charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "switch.venus_battery_manual_mode",
@@ -1979,7 +1989,7 @@
     "hold": {
      "ok": false,
      "op": "hold",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
@@ -2004,7 +2014,7 @@
     "block": {
      "ok": false,
      "op": "block",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
@@ -2029,7 +2039,7 @@
     "block_charge": {
      "ok": false,
      "op": "block_charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
@@ -2047,7 +2057,7 @@
     "block_discharge": {
      "ok": false,
      "op": "block_discharge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
@@ -2065,7 +2075,7 @@
     "cap": {
      "ok": false,
      "op": "cap",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "number.omnibattery_system_max_charge_power",
@@ -2097,7 +2107,7 @@
     "release": {
      "ok": false,
      "op": "release",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [],
      "restored": true,
      "restore_errors": [],
@@ -2199,6 +2209,7 @@
     "floor_soc": null,
     "day_surplus": true,
     "limit_ref_w": null,
+    "modbus": null,
     "self_regulating": null,
     "control_group": null,
     "night_cap": null,
@@ -2213,6 +2224,7 @@
     "params": {
      "target": 60,
      "power_w": 2500,
+     "power_by": "max",
      "floor": 40,
      "percent": 50,
      "seconds": 5.0
@@ -2226,6 +2238,7 @@
       "params": {
        "target": 60,
        "power_w": 2500,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -2299,6 +2312,7 @@
       "params": {
        "target": 60,
        "power_w": 2500,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -2354,6 +2368,7 @@
       "params": {
        "target": 60,
        "power_w": 2500,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -2409,6 +2424,7 @@
       "params": {
        "target": 60,
        "power_w": 2500,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -2464,6 +2480,7 @@
       "params": {
        "target": 60,
        "power_w": 2500,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -2519,6 +2536,7 @@
       "params": {
        "target": 60,
        "power_w": 2500,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -2585,6 +2603,7 @@
       "params": {
        "target": 60,
        "power_w": 2500,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -2652,6 +2671,7 @@
       "params": {
        "target": 60,
        "power_w": 2500,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -2689,6 +2709,7 @@
       "params": {
        "target": 60,
        "power_w": 2500,
+       "power_by": "max",
        "floor": 40,
        "percent": 50,
        "seconds": 5.0
@@ -2906,7 +2927,7 @@
     "charge": {
      "ok": true,
      "op": "charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "switch.venus_battery_manual_mode",
@@ -2938,7 +2959,7 @@
     "hold": {
      "ok": true,
      "op": "hold",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
@@ -2963,7 +2984,7 @@
     "block": {
      "ok": true,
      "op": "block",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
@@ -2988,7 +3009,7 @@
     "block_charge": {
      "ok": true,
      "op": "block_charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
@@ -3013,7 +3034,7 @@
     "block_discharge": {
      "ok": true,
      "op": "block_discharge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
@@ -3038,7 +3059,7 @@
     "cap": {
      "ok": true,
      "op": "cap",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "number.omnibattery_system_max_charge_power",
@@ -3070,7 +3091,7 @@
     "release": {
      "ok": false,
      "op": "release",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [],
      "restored": true,
      "restore_errors": [],
@@ -3081,7 +3102,7 @@
     "guard_charge": {
      "ok": true,
      "op": "guard_charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
@@ -3099,7 +3120,7 @@
     "guard_discharge": {
      "ok": true,
      "op": "guard_discharge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
@@ -3119,7 +3140,7 @@
     "charge": {
      "ok": false,
      "op": "charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "switch.venus_battery_manual_mode",
@@ -3151,7 +3172,7 @@
     "hold": {
      "ok": false,
      "op": "hold",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:05-07:00",
      "steps": [
       {
        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
@@ -3176,7 +3197,7 @@
     "block": {
      "ok": false,
      "op": "block",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
@@ -3201,7 +3222,7 @@
     "block_charge": {
      "ok": false,
      "op": "block_charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
@@ -3226,7 +3247,7 @@
     "block_discharge": {
      "ok": false,
      "op": "block_discharge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
@@ -3251,7 +3272,7 @@
     "cap": {
      "ok": false,
      "op": "cap",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "number.omnibattery_system_max_charge_power",
@@ -3283,7 +3304,7 @@
     "release": {
      "ok": false,
      "op": "release",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [],
      "restored": true,
      "restore_errors": [],
@@ -3294,7 +3315,7 @@
     "guard_charge": {
      "ok": false,
      "op": "guard_charge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_charge",
@@ -3312,7 +3333,7 @@
     "guard_discharge": {
      "ok": false,
      "op": "guard_discharge",
-     "at": "2026-10-19T00:47:50-07:00",
+     "at": "2026-10-19T01:41:06-07:00",
      "steps": [
       {
        "entity_id": "switch.marstek_venus_e_3_0_battery_allow_discharge",
@@ -3334,7 +3355,7 @@
   "steering": {
    "ok": false,
    "op": "block",
-   "at": "2026-10-19T00:47:50-07:00",
+   "at": "2026-10-19T01:41:06-07:00",
    "steps": [],
    "restored": true,
    "restore_errors": [],
@@ -3344,7 +3365,7 @@
   "busy": {
    "ok": false,
    "op": "block",
-   "at": "2026-10-19T00:47:50-07:00",
+   "at": "2026-10-19T01:41:06-07:00",
    "steps": [],
    "restored": true,
    "restore_errors": [],

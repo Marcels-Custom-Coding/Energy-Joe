@@ -28,6 +28,15 @@
       },
       "action_tonight": {
         "name": "Tonight: {action}"
+      },
+      "storage_charge_limiting": {
+        "name": "Charge rate active"
+      },
+      "storage_discharge_limiting": {
+        "name": "Discharge rate active"
+      },
+      "storage_grid_charging": {
+        "name": "Grid charging"
       }
     },
     "button": {
@@ -63,11 +72,41 @@
       },
       "last_night": {
         "name": "Would have saved (last night)"
+      },
+      "storage_max_power": {
+        "name": "Reference power"
+      },
+      "storage_level": {
+        "name": "Level"
+      },
+      "storage_status": {
+        "name": "Storage state",
+        "state": {
+          "off": "Off",
+          "empty": "Empty",
+          "discharging": "Discharging",
+          "charging": "Charging",
+          "full": "Full",
+          "holding": "Holding",
+          "testing": "Testing",
+          "unknown": "Unknown"
+        }
       }
     },
     "calendar": {
       "car_calendar": {
         "name": "Calendar {car}"
+      }
+    },
+    "number": {
+      "storage_charge_rate": {
+        "name": "Charge rate"
+      },
+      "storage_discharge_rate": {
+        "name": "Discharge rate"
+      },
+      "storage_reserve": {
+        "name": "Minimum reserve"
       }
     }
   },

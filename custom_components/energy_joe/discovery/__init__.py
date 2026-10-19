@@ -100,15 +100,23 @@ def profile_updates(
             found = profile_prepare(snap, battery)
             if found and found != (battery.get("prepare") or []):
                 patch.setdefault(battery["id"], {})["prepare"] = found
-        if model.source_of(config, f"{path}.controls") == "user":
+        own_levers = battery.get("adapter") == "fronius_modbus"
+        if not own_levers and model.source_of(config, f"{path}.controls") == "user":
             deviation = role_deviation(snap, battery)
             if deviation and (dismissed or {}).get(battery["id"]) != deviation["hash"]:
                 roles.append(deviation)
             continue
         controls = battery.get("controls") or {}
+        found = (
+            # Joe's own entities for an inverter over Modbus: every lever is
+            # his, whoever set the battery up.
+            profile_find(snap, battery)["controls"]
+            if own_levers
+            else profile_controls(snap, battery)
+        )
         levers = {
             role: entity_id
-            for role, entity_id in profile_controls(snap, battery).items()
+            for role, entity_id in found.items()
             if controls.get(role) != entity_id
         }
         if levers:

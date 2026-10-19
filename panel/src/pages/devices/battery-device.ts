@@ -31,7 +31,7 @@ const STEPS = ["hold", "charge", "release"] as const;
 const MODEL_DAYS = 14;
 
 type ControlDraft = ControlValue & { prepare: BatteryConfig["prepare"] };
-const CONTROL_FIELDS = ["adapter", "controls", "mode_options", "steps", "prepare"] as const;
+const CONTROL_FIELDS = ["adapter", "controls", "mode_options", "steps", "prepare", "modbus"] as const;
 
 /**
  * "Regler einrichten" keeps its draft per battery while the panel is open

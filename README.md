@@ -55,7 +55,8 @@ Joe braucht kein Vorwissen. Er findet selbst, was er braucht, fragt in Alltagssp
 
 | Hersteller | Integration | Was Joe kann | Voraussetzungen |
 |---|---|---|---|
-| Fronius (mit BYD u. a.) | `fronius` (HA) | Laden, Halten, Sperren, Drosseln | – |
+| Fronius (mit BYD u. a.) | `fronius` (HA) | Laden (nur mit etwa 500 W, das bestimmt der Wechselrichter), Halten, Sperren, Drosseln | – |
+| Fronius GEN24 über Modbus (mit BYD u. a.) | Joe selbst, Modbus TCP | Laden mit Leistung, Halten, Sperren, Drosseln | Im GEN24: Modbus TCP ein und „Steuerung erlauben“, im Batteriemanagement „Batterieladung aus dem Netz erlauben“ |
 | Marstek Venus | `omnibattery` | Laden, Halten, Sperren, Drosseln, Wächter | – |
 | Marstek | `marstek_modbus` | Laden, Halten | Steuer-Entitäten einschalten; nur ein Programm darf per Modbus mit ihm sprechen |
 | Marstek | `marstek` (Open API) | Laden, Halten | – |

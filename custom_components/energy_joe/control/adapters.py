@@ -415,6 +415,10 @@ class RoleAdapter(Adapter):
                 and self._has("grid_charge", "min_soc")
                 or method == "switch"
                 and self._has("grid_charge")
+                or method == "modbus"
+                and self._has(
+                    "discharge_limit", "discharge_limit_enabled", "charge_limit"
+                )
             ):
                 result.append(method)
         return result
@@ -577,6 +581,9 @@ class RoleAdapter(Adapter):
             return "power" if "{power}" in text or "{power_neg}" in text else None
         if methods[0] in ("mode", "target"):
             return "power" if self._has("charge_power") else None
+        if methods[0] == "modbus":
+            # The rate is the power (a share of the reference it reads itself).
+            return "power"
         if methods[0] == "switch":
             return None
         return "cap" if self.night_cap_problem(hass) is None else None
@@ -1287,7 +1294,9 @@ class RoleAdapter(Adapter):
             if isinstance(attrs.get(k), int | float) and not isinstance(attrs[k], bool)
         ]
         if ends and max(ends, key=abs):
-            return Write(entity_id, max(ends, key=abs))
+            # Both ends as far from 0 (a rate from -100 to 100 %): the positive
+            # one, a negative rate would charge from the grid.
+            return Write(entity_id, max(ends, key=lambda end: (abs(end), end)))
         key = "max_discharge_w" if "discharge" in role else "max_charge_w"
         watts = float(self.battery.get(key) or 10000)
         unit = attrs.get("unit_of_measurement")
@@ -1499,7 +1508,45 @@ class RoleAdapter(Adapter):
                     Write(c["grid_charge"], self._on("grid_charge")),
                     Write(c["min_soc"], self._level("min_soc", target)),
                 ]
+            if method == "modbus":
+                # Fronius over Modbus: the discharge rate below 0 charges from
+                # the grid with that share of WChaMax once its bit is set
+                # (the only way to charge with a power of one's own); charging
+                # allowed in full, grid charging on, the reserve at the target
+                # (the inverter's own floor once Joe lets go).
+                return [
+                    *result,
+                    *(
+                        [Write(c["grid_charge"], self._on("grid_charge"))]
+                        if "grid_charge" in c
+                        else []
+                    ),
+                    Write(c["charge_limit"], 100),
+                    Write(c["discharge_limit"], -self._share(desired.power_w)),
+                    Write(c["discharge_limit_enabled"], True),
+                    *(
+                        [Write(c["min_soc"], self._level("min_soc", target))]
+                        if "min_soc" in c
+                        else []
+                    ),
+                ]
         return []
+
+    def fixed_charge_w(self) -> float | None:
+        """The power the device charges with on its own when Joe can only
+        raise its reserve (Fronius: ~500 W), None where Joe sets the power."""
+        methods = self.charge_methods()
+        if methods and methods[0] == "min_soc" and self.profile.reserve_charge_w:
+            return self.profile.reserve_charge_w
+        return None
+
+    def _share(self, power_w: float | None) -> float:
+        """A charging power as a share of the reference (WChaMax, "limit_ref_w")
+        in percent, 0.5 to 100; without a reference the full rate."""
+        reference = float(self.battery.get("limit_ref_w") or 0)
+        if reference <= 0 or not power_w:
+            return 100.0
+        return min(100.0, max(0.5, round(100 * float(power_w) / reference, 1)))
 
     def _hold(
         self,

@@ -14,7 +14,7 @@ import { controlValue, withPrepare, type ControlValue } from "./battery-control"
 
 type ControlDraft = ControlValue & { prepare: BatteryConfig["prepare"] };
 
-const CONTROL_FIELDS = ["adapter", "controls", "mode_options", "steps", "prepare"] as const;
+const CONTROL_FIELDS = ["adapter", "controls", "mode_options", "steps", "prepare", "modbus"] as const;
 
 /**
  * One battery in a sheet of the first setup ("Umschauen › Ändern"): the same

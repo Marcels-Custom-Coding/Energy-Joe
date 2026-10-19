@@ -56,12 +56,19 @@
       ?bnotes=1 (Hinweise zum Steuern: beim ersten Speicher eine Freischaltung im Gerät und eine ausgeschaltete Entität;
       auf der Speicher-Seite ein Kostal ohne Ladestand und ein SMA, den Joe nicht steuern kann)
       ?later=1 (die Frage zum Homeoffice wurde in der Einrichtung mit „Später“ übersprungen: Fragen, Los und Übersicht › Joe braucht dich)
-      ?preview=fronius|venus|huawei (Vorgänge im Dialog „Regler für …“, ?page=devices/battery/storage/control bzw. venus, huawei;
+      ?preview=fronius|venus|huawei|modbus (Vorgänge im Dialog „Regler für …“, ?page=devices/battery/storage/control bzw. venus, huawei;
       die Antworten kommen aus panel/dev/previews/<fall>.json – echtes Backend-Format aus scripts/make_dev_previews.py:
       fronius: Marcels BYD mit alter, falscher Zuordnung – Grenzen unter Lade-/Entladeleistung, Ladegrenze (aktiv) und
       Entladegrenze fehlen, Warnung und „Joe braucht dich“ mit Übernehmen/So lassen; venus: Omnibattery mit Handbetrieb vorn,
-      System-Grenzen tagsüber und Wächter-Schaltern; huawei: Dienst-Schritte des Profils; ?steer=1 lehnt die Probe ab)
+      System-Grenzen tagsüber und Wächter-Schaltern; huawei: Dienst-Schritte des Profils; modbus: Marcels BYD als „Fronius
+      über Modbus“ (adapter fronius_modbus, Wechselrichter 192.0.2.11, Joes eigene Entitäten number./switch./sensor.gen24_modbus_*,
+      Bezugsleistung 10.240 W – Laden: Netzladen Ein, Laderate 100 %, Entladerate −100 %, Entladerate aktiv Ein, Mindestreserve
+      auf das Ziel; Speicher-ID storage); ?steer=1 lehnt die Probe ab)
       ?probe=fail (die Probe: der letzte Schritt wird nicht übernommen bzw. der Dienst schlägt fehl)
+      ?modbus=ok|connect|not_found|refused|nohost („Verbindung prüfen“ unter „Fronius über Modbus“, energy_joe/modbus/check:
+      ok (Standard) findet einen Symo GEN24 10.0 unter 10.8.0.11 – der Adresse aus der Fronius-Integration; connect: keine
+      Verbindung; not_found: kein Speicher-Modell; refused: der Wechselrichter lehnt ab (illegal_address); nohost: die
+      Fronius-Integration kennt keine Adresse. Jeder Aufruf und jeder gespeicherte Patch stehen in der Konsole: [dev] …)
       sample-*.json kommen aus scripts/make_dev_samples.py (erfundene Haushalte aus tests/snapshots.py):
       Funde, die Konfiguration nach dem Übernehmen, ihre Prüfungen, Zustände und Register sowie
       zwei Wochen erfundener Verlauf mit festen Plänen, nachgespielten Nächten und dem, was Joe
@@ -139,6 +146,7 @@
           device_id: null,
           controls: {},
           priority: 1,
+          modbus: null,
         },
         persons: { person_entity: null, calendars: [] },
         consumers: { energy_entity: null, power_entity: null, included_in: null, source: "manual" },
@@ -198,6 +206,9 @@
         }
         return c;
       };
+
+      // The profiles Joe steers batteries with (control/profiles.py); the samples predate "Fronius Modbus".
+      const PROFILES = { ...sample.profiles, fronius_modbus: "Fronius Modbus" };
 
       const done = params.get("done") === "1";
       const step = params.get("step") || "welcome";
@@ -1386,7 +1397,8 @@
             // operation from the draft's own steps, nothing else – the backend would know more.
             console.info(`[dev] preview: no variant for adapter "${draft.adapter}" – own steps only`);
             const p = first.preview.params;
-            return { profile: null, deviates: false, params: p, operations: OPS.slice(0, 7).map((op) => ownOp(op, draft.steps?.[op] ?? [], p, draft.controls)), roles: [] };
+            const profile = PROFILES[draft.adapter] ? { key: draft.adapter, name: PROFILES[draft.adapter] } : null;
+            return { profile, deviates: false, params: p, operations: OPS.slice(0, 7).map((op) => ownOp(op, draft.steps?.[op] ?? [], p, draft.controls)), roles: [] };
           }
           const result = structuredClone(variant.preview);
           const changed = (op) => canonSteps({ [op]: draft.steps?.[op] }) !== canonSteps({ [op]: variant.draft.steps?.[op] });
@@ -1477,7 +1489,7 @@
                   devices: 29,
                 },
                 defaults: { rules: sample.default_config.rules },
-                profiles: sample.profiles,
+                profiles: PROFILES,
                 routing: { waze: true, google: [{ entry_id: "google1", title: "Google Maps" }] },
               };
             case "energy_joe/places/set": {
@@ -1565,6 +1577,7 @@
             case "energy_joe/check":
               return { checks: checksNow() };
             case "energy_joe/config/update": {
+              console.info("[dev] config/update", JSON.stringify(msg.patch));
               state.config = applyUpdate(state.config, msg.patch, msg.source || "user");
               // A starting value gives way to what Joe learned (model.prefer_learned).
               const learned = state.config.learned?.buffer;
@@ -1963,6 +1976,44 @@
             }
             case "energy_joe/battery/preview":
               return previewMock.preview(msg);
+            case "energy_joe/modbus/check": {
+              // "Verbindung prüfen" (api.py ws_modbus_check): what the inverter answers, as ?modbus= says; without a
+              // host the addresses of the Fronius integration are tried (here one). Nothing is written.
+              const which = params.get("modbus") || "ok";
+              const hosts = which === "nohost" ? [] : ["10.8.0.11"];
+              const host = msg.host || hosts[0];
+              const port = msg.port ?? 502;
+              const unit = msg.unit ?? 1;
+              console.info("[dev] modbus/check", JSON.stringify(msg), "→", which);
+              await new Promise((resolve) => setTimeout(resolve, 600));
+              if (!host) return { ok: false, problem: "no_host", hosts };
+              const answers = {
+                ok: {
+                  ok: true,
+                  kind: "int_sf",
+                  base: 40343,
+                  model: "Symo GEN24 10.0",
+                  version: "1.41.11-1",
+                  serial: "P030T020Z2107145082",
+                  inverter_w: 10000,
+                  max_power_w: 10240,
+                  control: 0,
+                  charge_limited: false,
+                  discharge_limited: false,
+                  reserve_pct: 5,
+                  level_pct: 11.2,
+                  status: "holding",
+                  discharge_rate_pct: 100,
+                  charge_rate_pct: 100,
+                  revert_s: 0,
+                  grid_charging: false,
+                },
+                connect: { ok: false, problem: "connect", detail: "[Errno 61] Connection refused" },
+                not_found: { ok: false, problem: "not_found" },
+                refused: { ok: false, problem: "illegal_address", detail: "exception code 2" },
+              };
+              return { ...(answers[which] ?? answers.ok), host, port, unit, hosts };
+            }
             case "energy_joe/battery/probe":
               return previewMock.probe(msg);
             case "energy_joe/battery/roles":

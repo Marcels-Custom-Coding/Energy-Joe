@@ -10,7 +10,9 @@ from collections.abc import Iterable
 import re
 from typing import Any
 
+from ..const import DOMAIN
 from ..control.adapters import RoleAdapter
+from ..control.fronius_modbus import inverter_slug
 from ..control.profiles import (
     BATTERY_PLATFORMS,
     GENERIC,
@@ -895,6 +897,13 @@ def _battery_scope(
         return snap.of_config_entry(soc.config_entry_id) if soc else []
     if profile.scope == "integration" and soc:
         return snap.of_platform(soc.platform or "")
+    if profile.scope == "modbus":
+        # Joe's own entities for the inverter the battery hangs on.
+        settings = battery.get("modbus") or {}
+        if not settings.get("host"):
+            return []
+        mark = f"_{inverter_slug(settings['host'], settings.get('port', 502), settings.get('unit', 1))}_"
+        return [e for e in snap.of_platform(DOMAIN) if mark in (e.unique_id or "")]
     return snap.of_device(battery.get("device_id") or (soc.device_id if soc else None))
 
 

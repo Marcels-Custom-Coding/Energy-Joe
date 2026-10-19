@@ -196,6 +196,8 @@ export interface PreviewRestore {
 export interface PreviewParams {
   target?: number;
   power_w?: number;
+  /** Where the charging power comes from: the plan, the battery's highest power, or the device itself (power_w is what Joe reckons with). */
+  power_by?: "plan" | "max" | "device";
   floor?: number;
   percent?: number;
   seconds?: number;
@@ -304,6 +306,8 @@ export interface BatteryConfig {
   day_surplus?: boolean;
   /** What 100 % of a charge limit in % stand for (W; Fronius); null: not known yet, Joe may learn it. */
   limit_ref_w?: number | null;
+  /** The inverter Joe steers over Modbus TCP himself (adapter "fronius_modbus"): how to reach it; null: none. */
+  modbus?: { host: string; port: number; unit: number } | null;
   /** Regulates itself to 0 W at the grid meter (Fronius, Omnibattery in automatic mode); null: as Joe proposes. */
   self_regulating?: boolean | null;
   /** Which system regulates it ("Wer regelt ihn?"): batteries with the same key take turns as one group; null: as Joe proposes. */
