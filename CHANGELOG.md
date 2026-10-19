@@ -3,6 +3,13 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.27
+
+- **Warten statt Halten, Tag und Nacht.** Ein Speicher, der nachts gerade nichts tun soll, wartet jetzt so wie tagsüber: Laden und Entladen gesperrt mit dem Hebel des Tages – beim Fronius beide Grenzen auf 0 mit ihren Schaltern, bei Omnibattery beide Erlauben-Schalter. Vorher sperrte ich nachts nur das Entladen oder hielt über den Mindest-Ladestand; so konnte ein Speicher aufnehmen, was ein anderer ins Haus drückt, und die Reserve wurde mit dem Stand verrechnet. Der Mindest-Ladestand hält nur noch, wo kein Sperr-Hebel da ist, bei „Bis zum Ziel“ (entladen bis zum Ziel, dann warten) und wenn du eigene Halten-Schritte festgelegt hast. Im Dialog fällt „Nachts den Stand halten“ weg, wo es dasselbe ist wie „Warten“; „Warten“ trägt dann „Tag und Nacht“. Status nachts: „Wartet: weder laden noch entladen“.
+- **Vorschau ehrlich.** Sie rechnet mit meinen gemerkten Originalen: Ein Wert, den eine Probe oder die Nacht gerade geschrieben hat, gilt nicht als deiner. Schritte, die nichts ändern, heißen „bleibt bei …“ und stehen nicht unter „Danach zurück“. Nach jeder Probe hole ich die Vorschau neu.
+- **„Selbst festlegen“ ist ein Bearbeiten-Menü** auf derselben Liste: Entität tauschen, Wert je Art (Ein/Aus, Auswahl, Zahl mit Einheit und Platzhalter-Chips), Reihenfolge, Löschen, Hinzufügen, „Verwerfen“ und „Fertig“. Dienst-Schritte bleiben lesbar.
+- **Größe vom Gerät.** Ich übernehme die Speichergröße vom Gerät – auch für Speicher, die vor dem Fronius-Schlüssel eingerichtet wurden („Maximum capacity“), und allgemein über Größen-Sensoren (Enphase, Powerwall, E3/DC, SolarEdge, Sungrow, Sigenergy, sonnen), nie Zähler oder Füllstand. Deine eingetragene Zahl bleibt; „weiß ich nicht“ ist damit beantwortet. Sinkt die gemeldete Größe später, ziehe ich nach.
+
 ## 0.9.26
 
 - **Speicher-Dialog neu: Ich zeige, was ich tue.** Unter Geräte › Speicher › „Regler für …“ steht jetzt für jeden Vorgang – nachts laden, nachts halten, warten (beides gesperrt), nur Laden sperren, nur Entladen sperren, Überschuss fürs Auto lassen, zurückstellen – Schritt für Schritt, welche Entität ich in welcher Reihenfolge auf welchen Wert setze, mit dem Wert von jetzt daneben, und was ich danach zurückstelle. Beim Fronius siehst du so zum Beispiel: Ladegrenze 0 % → Schalter „Ladegrenze aktiv“ Ein → Entladegrenze 0 % → Schalter Ein; zurück erst die Schalter, dann die Werte.
