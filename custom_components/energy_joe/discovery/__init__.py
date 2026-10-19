@@ -14,6 +14,8 @@ from ..plan import cars as cars_module
 from .checks import run_checks, run_config_checks
 from .energy import parse_energy_prefs
 from .find import (
+    capacity_of,
+    capacity_reading,
     car_sources,
     find_batteries,
     find_battery_notes,
@@ -41,8 +43,10 @@ __all__ = [
     "async_collect",
     "async_discover",
     "async_profile_updates",
+    "capacity_update",
     "discover",
     "profile_find",
+    "profile_updates",
     "role_deviation",
     "role_hash",
 ]
@@ -69,20 +73,29 @@ async def async_profile_updates(
     patch ("batteries") and the batteries whose levers, as the user set
     them, differ from what the profile finds ("battery_roles").
 
-    Patched are the prepare steps (e.g. a battery's manual mode) and the
+    Patched are the prepare steps (e.g. a battery's manual mode), the
     levers only the day uses (Omnibattery's power limits on its system
-    device for the daytime cap, Huawei's or Victron's power limits); the
-    night's levers stay as they were tested. What the user set is never
-    patched: Joe reports where it differs from the profile's find (missing
-    and wrong roles, see role_deviation) and the panel asks whether to take
-    the find over, unless the user dismissed this very find (`dismissed`:
-    battery id -> the find's hash).
+    device for the daytime cap, Huawei's or Victron's power limits) and the
+    size as the device tells it (see capacity_update); the night's levers
+    stay as they were tested. What the user set is never patched: Joe
+    reports where it differs from the profile's find (missing and wrong
+    roles, see role_deviation) and the panel asks whether to take the find
+    over, unless the user dismissed this very find (`dismissed`: battery id
+    -> the find's hash).
     """
-    snap = await async_collect(hass)
+    return profile_updates(await async_collect(hass), config, dismissed)
+
+
+def profile_updates(
+    snap: Snapshot, config: dict[str, Any], dismissed: dict[str, str] | None = None
+) -> dict[str, Any] | None:
+    """See async_profile_updates."""
     patch: dict[str, Any] = {}
     roles: list[dict[str, Any]] = []
     for battery in config["batteries"]:
         path = f"batteries[{battery['id']}]"
+        if size := capacity_update(snap, config, battery):
+            patch.setdefault(battery["id"], {}).update(size)
         if model.source_of(config, f"{path}.prepare") != "user":
             found = profile_prepare(snap, battery)
             if found and found != (battery.get("prepare") or []):
@@ -107,6 +120,40 @@ async def async_profile_updates(
     if roles:
         result["battery_roles"] = roles
     return result or None
+
+
+def capacity_update(
+    snap: Snapshot, config: dict[str, Any], battery: dict[str, Any]
+) -> dict[str, Any]:
+    """A battery's size as its device tells it (a patch of capacity_kwh and
+    capacity_entity): for a battery set up without one, by the key Joe knows
+    or a size sensor on its device (see find.capacity_of) – also after "I
+    don't know, learn it": the device knows better –, and for one whose size
+    sensor says something else today (a maximum capacity sinks with age;
+    more than 1 % counts). A size the user typed stays, so does a sensor
+    the user chose."""
+    path = f"batteries[{battery['id']}]"
+    known = battery.get("capacity_kwh")
+    entity_id = battery.get("capacity_entity")
+    if known is not None and model.source_of(config, f"{path}.capacity_kwh") == "user":
+        return {}
+    if entity_id and model.source_of(config, f"{path}.capacity_entity") == "user":
+        return {}
+    change: dict[str, Any] = {}
+    if entity_id:
+        found = capacity_reading(snap.get(entity_id))
+    else:
+        soc = snap.get(battery.get("soc_entity"))
+        if soc is None:
+            return {}
+        found, entity_id = capacity_of(snap, soc)
+        if entity_id:
+            change["capacity_entity"] = entity_id
+    if found is None:
+        return {}
+    if known is None or abs(found - known) > 0.01 * known:
+        change["capacity_kwh"] = found
+    return change
 
 
 def role_hash(found: dict[str, str]) -> str:

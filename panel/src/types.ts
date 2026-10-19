@@ -178,6 +178,8 @@ export interface PreviewStep {
   current?: string | null;
   /** The placeholder the value stands for, when the backend fills it at run time. */
   param?: StepParam | null;
+  /** The entity shows this value already: nothing is written ("bleibt bei 100 %"). */
+  keep?: boolean;
   service?: string;
   data?: Record<string, unknown>;
 }
@@ -211,6 +213,8 @@ export interface PreviewOperation {
   restore: PreviewRestore[];
   /** Something to know about the order or the device (a code the panel explains). */
   note: string | null;
+  /** This operation writes the same steps as another one (hold like block): the dialog shows them as one. */
+  same_as?: "block" | null;
 }
 
 /** One lever as the preview sees it: assigned, found by the profile, what it is and who uses it. */

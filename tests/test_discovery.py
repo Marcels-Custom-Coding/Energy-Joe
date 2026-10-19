@@ -5,10 +5,22 @@ from __future__ import annotations
 import pytest
 
 from custom_components.energy_joe import model
-from custom_components.energy_joe.discovery import car_updates, discover
+from custom_components.energy_joe.discovery import (
+    car_updates,
+    discover,
+    profile_updates,
+)
+from custom_components.energy_joe.discovery.checks import run_config_checks
 from custom_components.energy_joe.discovery.snapshot import Snapshot
 
-from .snapshots import entity, fronius_household, generic_household, snapshot
+from .snapshots import (
+    acme_sensor,
+    acme_storage_household,
+    entity,
+    fronius_household,
+    generic_household,
+    snapshot,
+)
 
 
 def test_fronius_household_batteries() -> None:
@@ -452,3 +464,213 @@ def test_one_car_and_two_charge_points() -> None:
     assert patch is not None and len(patch["cars"]) == 1
     config = model.apply_update(config, patch, "read")
     assert all(a["point"]["cars"] is None for a in config["actions"])
+
+
+# --- A battery's size from its device -----------------------------------------
+
+
+def _adopted(snap: Snapshot) -> dict:
+    """Joe's configuration after taking over what he found in a snapshot."""
+    return model.adopt_proposal(model.default_config(), discover(snap)["proposal"])
+
+
+def _without_size(config: dict, battery_id: str = "storage") -> dict:
+    """A battery set up before Joe read sizes: no capacity, no sensor for it."""
+    return model.apply_update(
+        config,
+        {"batteries": {battery_id: {"capacity_kwh": None, "capacity_entity": None}}},
+        "read",
+    )
+
+
+def _asks_for_size(snap: Snapshot, config: dict) -> bool:
+    return any(c["code"] == "capacity_unknown" for c in run_config_checks(snap, config))
+
+
+def test_a_battery_set_up_without_a_size_gets_it_from_its_device() -> None:
+    """A Fronius battery adopted before Joe knew its capacity key: the profile
+    update reads the size the way a new find does, the question goes away."""
+    snap = fronius_household()
+    config = _without_size(_adopted(snap))
+    assert _asks_for_size(snap, config)
+    patch = profile_updates(snap, config)
+    assert patch == {
+        "batteries": {
+            "storage": {
+                "capacity_kwh": 10.24,
+                "capacity_entity": "sensor.storage_capacity",
+            }
+        }
+    }
+    config = model.apply_update(config, patch, "read", "profile")
+    assert not _asks_for_size(snap, config)
+    # Looking again changes nothing.
+    assert profile_updates(snap, config) is None
+
+
+def test_a_size_the_user_typed_is_never_overwritten() -> None:
+    snap = fronius_household()
+    config = _without_size(_adopted(snap))
+    mine = model.apply_update(
+        config, {"batteries": {"storage": {"capacity_kwh": 9.5}}}, "user"
+    )
+    assert profile_updates(snap, mine) is None
+    # Nor is a sensor the user chose: Joe reads it when he plans.
+    chosen = model.apply_update(
+        config,
+        {"batteries": {"storage": {"capacity_entity": "sensor.storage_capacity"}}},
+        "user",
+    )
+    assert profile_updates(snap, chosen) is None
+
+
+def test_i_dont_know_does_not_keep_the_device_from_telling() -> None:
+    """ "Weiß ich nicht – lern es" stores an empty size as the user's answer:
+    the device knows better, and with the size known the question is settled."""
+    snap = fronius_household()
+    config = model.apply_update(
+        _without_size(_adopted(snap)),
+        {
+            "batteries": {"storage": {"capacity_kwh": None}},
+            "answers": {"capacity:storage": "unknown"},
+        },
+        "user",
+    )
+    assert model.source_of(config, "batteries[storage].capacity_kwh") == "user"
+    patch = profile_updates(snap, config)
+    assert patch["batteries"]["storage"]["capacity_kwh"] == 10.24
+    config = model.apply_update(config, patch, "read", "profile")
+    assert config["batteries"][0]["capacity_kwh"] == 10.24
+    assert not _asks_for_size(snap, config)
+
+
+def test_a_size_read_before_follows_its_sensor() -> None:
+    """A maximum capacity sinks with age: more than 1 % off, Joe takes the new value."""
+    snap = fronius_household()
+    config = _adopted(snap)
+    assert config["batteries"][0]["capacity_entity"] == "sensor.storage_capacity"
+    sensor = snap.entities["sensor.storage_capacity"]
+    sensor.state = "10200"  # 0.4 % less: noise
+    assert profile_updates(snap, config) is None
+    sensor.state = "9800"
+    assert profile_updates(snap, config) == {
+        "batteries": {"storage": {"capacity_kwh": 9.8}}
+    }
+    # Not while the sensor is away or tells nonsense.
+    for state in ("unavailable", "0", "12"):
+        sensor.state = state
+        assert profile_updates(snap, config) is None
+    # A size the user typed is not followed either.
+    sensor.state = "9800"
+    mine = model.apply_update(
+        config, {"batteries": {"storage": {"capacity_kwh": 10.24}}}, "user"
+    )
+    assert profile_updates(snap, mine) is None
+
+
+def _size_found(*sensors) -> tuple[float | None, str | None]:
+    (battery,) = discover(acme_storage_household(*sensors))["batteries"]
+    return battery["capacity_kwh"], battery["capacity_entity"]
+
+
+def test_the_size_of_an_unknown_battery_by_its_sensors() -> None:
+    """An integration Joe has no knowledge of: a sensor named a capacity in
+    kWh is the size, one with device class energy_storage as well; counters
+    and what is in the battery right now never."""
+    capacity = acme_sensor("sensor.acme_capacity", "Speicher Capacity", 10.5)
+    rated = acme_sensor(
+        "sensor.acme_rated",
+        "Speicher Rated energy",
+        11000,
+        unit="Wh",
+        device_class="energy_storage",
+    )
+    charged = acme_sensor(
+        "sensor.acme_charged_today",
+        "Speicher Energy charged today",
+        7.3,
+        device_class="energy",
+        attributes={"state_class": "total_increasing"},
+    )
+    counter = acme_sensor(
+        "sensor.acme_energy_total",
+        "Speicher Energy total",
+        1234.5,
+        attributes={"state_class": "total"},
+    )
+    available = acme_sensor(
+        "sensor.acme_available",
+        "Speicher Available energy",
+        5.1,
+        device_class="energy_storage",
+    )
+    remaining = acme_sensor(
+        "sensor.acme_remaining",
+        "Speicher Remaining capacity",
+        4900,
+        unit="Wh",
+        device_class="energy_storage",
+    )
+    assert _size_found(charged, counter, available, remaining) == (None, None)
+    assert _size_found(capacity, charged, counter, available, remaining) == (
+        10.5,
+        "sensor.acme_capacity",
+    )
+    assert _size_found(rated, charged, available) == (11.0, "sensor.acme_rated")
+    # A plain capacity before the nameplate, today's maximum before both.
+    assert _size_found(rated, capacity) == (10.5, "sensor.acme_capacity")
+    maximum = acme_sensor("sensor.acme_z_maximum", "Speicher Maximum capacity", 10.0)
+    assert _size_found(capacity, maximum, rated) == (10.0, "sensor.acme_z_maximum")
+    # Of equals the first by entity id.
+    other = acme_sensor("sensor.acme_b_capacity", "Speicher Capacity B", 10.6)
+    assert _size_found(capacity, other) == (10.6, "sensor.acme_b_capacity")
+    # Not in Ah or %, not a module's, not implausible.
+    amp_hours = acme_sensor("sensor.acme_ah", "Speicher Capacity", 200, unit="Ah")
+    percent = acme_sensor("sensor.acme_pct", "Speicher Capacity", 48, unit="%")
+    module = acme_sensor("sensor.acme_module", "Speicher Capacity per module", 2.5)
+    tiny = acme_sensor("sensor.acme_tiny", "Speicher Capacity", 0.1)
+    assert _size_found(amp_hours, percent, module, tiny) == (None, None)
+
+
+def test_fronius_like_keys_of_an_unknown_integration() -> None:
+    """The maximum (sinks with age) before the designed size, told by the keys
+    at the end of the unique ids alone (the names say nothing); sonnen's "Full
+    charge capacity" is a size, the rest of the charge family is not."""
+    designed = acme_sensor(
+        "sensor.acme_capacity_designed", "Speicher A", 10240, unit="Wh"
+    )
+    maximum = acme_sensor("sensor.acme_capacity_maximum", "Speicher B", 9900, unit="Wh")
+    assert _size_found(designed, maximum) == (9.9, "sensor.acme_capacity_maximum")
+    assert _size_found(designed) == (10.24, "sensor.acme_capacity_designed")
+    full = acme_sensor(
+        "sensor.acme_full_charge_capacity", "Speicher C", 9500, unit="Wh"
+    )
+    charge = acme_sensor("sensor.acme_charge_energy", "Speicher D", 9.6)
+    assert _size_found(charge, full) == (9.5, "sensor.acme_full_charge_capacity")
+
+
+def test_no_question_about_a_size_the_device_tells() -> None:
+    """The check "capacity_unknown" stays away as soon as a device tells the size,
+    also for a battery set up before without a profile."""
+    capacity = acme_sensor("sensor.acme_capacity", "Speicher Capacity", 10.5)
+    result = discover(acme_storage_household(capacity))
+    assert not any(c["code"] == "capacity_unknown" for c in result["checks"])
+    (battery,) = result["batteries"]
+    assert {"code": "capacity_read"} in battery["reasons"]
+    without = discover(acme_storage_household())
+    assert any(c["code"] == "capacity_unknown" for c in without["checks"])
+
+    snap = acme_storage_household(capacity)
+    config = _without_size(_adopted(snap), "acme_bat")
+    assert _asks_for_size(snap, config)
+    patch = profile_updates(snap, config)
+    assert patch == {
+        "batteries": {
+            "acme_bat": {
+                "capacity_kwh": 10.5,
+                "capacity_entity": "sensor.acme_capacity",
+            }
+        }
+    }
+    config = model.apply_update(config, patch, "read", "profile")
+    assert not _asks_for_size(snap, config)

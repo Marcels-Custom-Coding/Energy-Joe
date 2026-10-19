@@ -411,7 +411,17 @@ class JoeRuntime:
         patch = (found or {}).get("batteries")
         if patch:
             _LOGGER.info("Battery profiles updated: %s", list(patch))
-            self.async_update_config({"batteries": patch}, "read", "profile")
+            update: dict[str, Any] = {"batteries": patch}
+            # The device tells the size: "I don't know, learn it" is answered.
+            answered = {
+                f"capacity:{key}": None
+                for key, change in patch.items()
+                if "capacity_kwh" in change
+                and f"capacity:{key}" in (self._config.get("answers") or {})
+            }
+            if answered:
+                update["answers"] = answered
+            self.async_update_config(update, "read", "profile")
 
     async def async_battery_roles(self, battery_id: str, action: str) -> dict[str, Any]:
         """Levers that differ from the profile's find: "adopt" takes the find

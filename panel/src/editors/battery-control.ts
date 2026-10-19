@@ -107,6 +107,17 @@ function isPlaceholder(value: unknown): value is string {
   return typeof value === "string" && /^\{\w+\}$/.test(value);
 }
 
+/** What a step's entity takes (how the editor shows its value). */
+type StepKind = "toggle" | "option" | "number" | "trigger" | "text" | "service";
+
+/** A typed value: a number where it reads as one, a placeholder or text as typed, nothing when empty. */
+function parseValue(raw: string): ControlStep["value"] {
+  const trimmed = raw.trim();
+  if (trimmed === "") return null;
+  const number = Number(trimmed.replace(",", "."));
+  return trimmed.startsWith("{") || Number.isNaN(number) ? trimmed : number;
+}
+
 /**
  * The value an own step gets when the preview's steps are taken over: the
  * placeholder where the backend fills one in at run time ("{target}"), else
@@ -178,6 +189,8 @@ export class JoeBatteryControl extends LitElement {
   private previewSeq = 0;
   /** The draft the preview was asked for last (the parent builds a new object each render). */
   private previewFor = "";
+  /** The own steps of an operation as they were when editing began (undefined: there were none) – what "Verwerfen" brings back. */
+  private editStart = new Map<OperationKey, ControlStep[] | undefined>();
 
   static styles = [
     shared,
@@ -280,10 +293,6 @@ export class JoeBatteryControl extends LitElement {
         margin-top: 4px;
         font-weight: 600;
       }
-      .step-value {
-        width: 100%;
-        min-width: 0;
-      }
       .note.reset .note-actions {
         align-items: center;
       }
@@ -345,6 +354,11 @@ export class JoeBatteryControl extends LitElement {
       .op-title .chip {
         margin-left: 6px;
         vertical-align: middle;
+      }
+      .op-title .chip.both {
+        background: transparent;
+        box-shadow: inset 0 0 0 1.5px var(--joe-line-2);
+        color: var(--joe-ink-2);
       }
       .op-title small {
         color: var(--joe-ink-2);
@@ -409,6 +423,9 @@ export class JoeBatteryControl extends LitElement {
       .op-steps .arrow {
         margin: 0 4px;
         color: var(--joe-muted);
+      }
+      .op-steps .what .keep {
+        color: var(--joe-ink-2);
       }
       .op-restore {
         display: grid;
@@ -492,28 +509,189 @@ export class JoeBatteryControl extends LitElement {
         margin: 0;
         color: var(--joe-crit);
       }
+      /* The same list in edit mode: every row a card with name, value and tools. */
       .editor {
-        margin-top: 0;
-      }
-      .editor .row {
-        grid-template-columns: minmax(0, 1.2fr) minmax(110px, 1fr) auto;
-        background: var(--joe-surface);
+        display: grid;
+        gap: 10px;
       }
       .editor .add {
         display: flex;
         align-items: center;
         gap: 6px;
       }
+      .op-steps.edit {
+        gap: 8px;
+      }
+      .op-steps li.edit {
+        grid-template-columns: 24px minmax(0, 1fr) auto;
+        gap: 6px 8px;
+        padding: 6px 6px 8px 8px;
+        border-radius: 10px;
+        background: var(--joe-surface);
+      }
+      .op-steps li.edit .n {
+        padding-top: 9px;
+      }
+      .op-steps li.edit .what {
+        display: grid;
+        gap: 6px;
+        justify-items: start;
+      }
+      .edit .who {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0 4px;
+        min-width: 0;
+        max-width: 100%;
+      }
+      .edit .who .role {
+        padding: 7px 0;
+      }
+      .name-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        min-height: 34px;
+        max-width: 100%;
+        padding: 4px 8px 4px 6px;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--joe-ink);
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+        transition: background 0.12s;
+      }
+      .name-btn b {
+        font-weight: 600;
+        overflow-wrap: anywhere;
+        text-decoration: underline dotted var(--joe-line-2);
+        text-decoration-thickness: 1.5px;
+        text-underline-offset: 3px;
+      }
+      .name-btn ha-icon {
+        --mdc-icon-size: 16px;
+        flex: none;
+        color: var(--joe-muted);
+      }
+      .name-btn:hover {
+        background: var(--joe-surface-2);
+      }
+      .name-btn:hover ha-icon {
+        color: var(--joe-ink-2);
+      }
+      .name-btn:active {
+        transform: scale(0.98);
+      }
+      .edit .tools {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+      }
+      .edit .icon-btn:hover:not([disabled]) {
+        background: var(--joe-surface-2);
+      }
+      .edit .icon-btn[disabled] {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+      .edit .icon-btn[disabled]:active {
+        transform: none;
+      }
+      .seg.onoff {
+        flex-wrap: nowrap;
+        border-radius: 999px;
+      }
+      .seg.onoff button {
+        min-height: 32px;
+        padding: 4px 14px;
+        font-size: 13.5px;
+      }
+      .value-number {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        max-width: 100%;
+      }
+      .value-number .unit-input {
+        width: 150px;
+      }
+      .value-number .unit-input .input {
+        padding-right: 42px;
+      }
+      .value-number .input,
+      .value-select,
+      .value-text {
+        min-height: 38px;
+        padding: 6px 10px;
+      }
+      .value-select,
+      .value-text {
+        width: auto;
+        max-width: 100%;
+      }
+      .ph {
+        display: inline-flex;
+        align-items: center;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        font: inherit;
+        cursor: pointer;
+      }
+      .ph .chip {
+        transition: background 0.12s, color 0.12s;
+      }
+      .ph:hover .chip {
+        background: var(--joe-line);
+        color: var(--joe-ink);
+      }
+      .ph:active .chip {
+        transform: scale(0.97);
+      }
+      .ph[aria-pressed="true"] .chip {
+        background: var(--joe-ink);
+        color: var(--joe-bg);
+      }
+      .op-restore .own-restore {
+        font-weight: 500;
+      }
       @media (pointer: coarse) {
         .icon-btn {
           width: 44px;
           height: 44px;
         }
+        .name-btn,
+        .seg.onoff button,
+        .value-number .input,
+        .value-select,
+        .value-text,
+        .ph {
+          min-height: 44px;
+        }
+        .ph {
+          min-width: 44px;
+          justify-content: center;
+        }
+        .op-steps li.edit .n {
+          padding-top: 14px;
+        }
+        .edit .who .role {
+          padding: 12px 0;
+        }
       }
       @media (max-width: 520px) {
-        .row,
-        .editor .row {
+        .row {
           grid-template-columns: 1fr auto;
+        }
+        .op-steps li.edit {
+          grid-template-columns: 24px minmax(0, 1fr);
+        }
+        .edit .tools {
+          grid-column: 2;
         }
         .row label,
         .row .label {
@@ -565,9 +743,20 @@ export class JoeBatteryControl extends LitElement {
   // --- The preview: asked for when the dialog opens and after every change of the draft ---
 
   protected updated(changed: PropertyValues<this>): void {
+    // A probe ended somewhere (control.probe_running went away): the entities may show other values now.
+    if (changed.has("probeRunning") && changed.get("probeRunning") && !this.probeRunning) {
+      this.refreshPreview();
+      return;
+    }
     if (changed.has("value") || changed.has("battery") || changed.has("hass")) {
       this.schedulePreview();
     }
+  }
+
+  /** Asks for the preview again, also for an unchanged draft (after a probe wrote and put back). */
+  private refreshPreview(): void {
+    this.previewFor = "";
+    this.schedulePreview();
   }
 
   private schedulePreview(): void {
@@ -709,7 +898,21 @@ export class JoeBatteryControl extends LitElement {
       ${this.dirty ? html`<p class="field-hint hint" role="status">${t("preview.dirty")}</p>` : nothing}
       ${error ? html`<div class="note warn" role="status"><ha-icon icon="mdi:alert-outline"></ha-icon><span>${error}</span></div>` : nothing}
       ${loading ? html`<p class="field-hint hint" role="status">${t("preview.loading")}</p>` : nothing}
-      <div class="ops">${this.operations(value).map((info) => this.renderOperation(t, value, info))}</div>`;
+      <div class="ops">
+        ${this.operations(value)
+          .filter((info) => !this.folded(info))
+          .map((info) => this.renderOperation(t, value, info))}
+      </div>`;
+  }
+
+  /** "Nachts den Stand halten" writes what "Warten" writes: the dialog shows one row for both. */
+  private folded(info: PreviewOperation): boolean {
+    return info.op === "hold" && info.same_as === "block";
+  }
+
+  /** Whether "Warten" stands for the night's holding too (the hold row is folded into it). */
+  private get holdFolded(): boolean {
+    return (this.preview?.operations ?? []).some((info) => this.folded(info));
   }
 
   private renderOperation(t: Translate, value: ControlValue, info: PreviewOperation): TemplateResult {
@@ -722,12 +925,13 @@ export class JoeBatteryControl extends LitElement {
     // An operation this panel does not know yet gets the general explanation.
     const tipName: TipName = t.optional(`tip.op_${op}.title`) ? (`op_${op}` as TipName) : "operations";
     const sourceChip = this.sourceChip(t, info);
+    const bothChip = op === "block" && this.holdFolded ? html`<span class="chip both">${t("op.block.both")}</span>` : nothing;
     return html`<div class="op ${info.possible ? "" : "off"}" data-tipped>
       <div class="op-row">
         <button type="button" class="op-head" aria-expanded=${String(open)} @click=${() => this.toggle(op)}>
           <ha-icon icon=${open ? "mdi:chevron-down" : "mdi:chevron-right"}></ha-icon>
           <span class="op-title">
-            <span><b>${t.optional(`op.${op}`) ?? op}</b>${sourceChip}</span>
+            <span><b>${t.optional(`op.${op}`) ?? op}</b>${sourceChip}${bothChip}</span>
             ${this.example(t, info) ? html`<small>${this.example(t, info)}</small>` : nothing}
           </span>
           <span class="op-status ${info.possible ? "ok" : "bad"}">
@@ -746,7 +950,7 @@ export class JoeBatteryControl extends LitElement {
       ${open
         ? html`<div class="op-body">
             ${!info.possible && info.why ? html`<p class="op-why">${this.whyText(t, info.why)}</p>` : nothing}
-            ${editing ? this.renderEditor(t, value, op as StepName) : this.renderSteps(t, info)}
+            ${editing ? this.renderEditor(t, value, op as StepName, info) : this.renderSteps(t, info)}
             ${info.note ? this.renderNote(t, info.note) : nothing}
             ${this.renderActions(t, info, own, editing)}
             ${this.renderProbe(t, op)}
@@ -864,6 +1068,11 @@ export class JoeBatteryControl extends LitElement {
     const role = step.role && step.role !== "prepare" ? (t.optional(`role.${step.role}`) ?? step.role) : "";
     const name = step.name || (step.entity_id ? entityName(hass, step.entity_id) : "");
     const unit = step.unit ?? this.unitOf(step.entity_id);
+    if (step.keep) {
+      // The entity shows the value already: nothing is written ("bleibt bei 100 %").
+      return html`${role ? html`<span class="role">${role} · </span>` : nothing}<b>${name}</b><span class="arrow">·</span
+        ><span class="keep">${t("op.step.keep", { value: this.valueText(t, step.value, unit, params) })}</span>`;
+    }
     return html`${role ? html`<span class="role">${role} · </span>` : nothing}<b>${name}</b><span class="arrow">→</span
       ><b>${this.valueText(t, step.value, unit, params)}</b>
       ${step.current != null ? html` <span class="now">(${t("op.step.now", { value: this.currentText(t, step.current, unit) })})</span>` : nothing}`;
@@ -951,8 +1160,10 @@ export class JoeBatteryControl extends LitElement {
       ${blocked && !running && info.possible && !nothingToProbe ? html`<span class="last" role="status">${t("op.probe.busy")}</span>` : nothing}
       ${editable
         ? editing
-          ? html`<button type="button" class="mini-btn go" @click=${() => this.stopEditing(op)}>${t("op.own.done")}</button>
-              ${tip(t, "own_steps", PLACEHOLDERS)}`
+          ? html`<button type="button" class="mini-btn go" @click=${() => this.finishEditing(op)}>${t("op.own.done")}</button>
+              ${tip(t, "own_done")}
+              <button type="button" class="mini-btn quiet" @click=${() => this.discardEditing(op)}>${t("op.own.discard")}</button>
+              ${tip(t, "own_discard")}`
           : html`<button type="button" class="mini-btn" @click=${() => this.startEditing(op, info, hasOwn)}>
                 <ha-icon icon="mdi:pencil-outline"></ha-icon>${t(hasOwn ? "op.own.edit" : "op.own")}
               </button>
@@ -964,58 +1175,196 @@ export class JoeBatteryControl extends LitElement {
     </div>`;
   }
 
-  // --- Own steps per operation (the editor, prefilled from the preview) ---
+  // --- Own steps per operation: the same list, every row editable ---
 
-  private renderEditor(t: Translate, value: ControlValue, name: StepName): TemplateResult {
-    const hass = this.hass!;
+  /**
+   * The list in edit mode: number, role and name as before, but the name
+   * swaps the entity, the value is a control the entity understands, and
+   * every row has its order and a remove. The value's placeholders are the
+   * ones of this operation (valueHints).
+   */
+  private renderEditor(t: Translate, value: ControlValue, name: StepName, info: PreviewOperation): TemplateResult {
     const steps = value.steps[name] ?? [];
-    return html`<div class="rows editor" data-tipped>
-      ${steps.length ? nothing : html`<p class="field-hint hint">${t("op.own.empty")}</p>`}
-      ${steps.map(
-        (step, index) => html`<div class="row">
-          <span class="entity"
-            ><b>${step.service ?? entityName(hass, step.entity_id ?? "")}</b><small>${step.service ? this.dataText(step) : (step.entity_id ?? "")}</small></span
-          >
-          ${step.service
-            ? html`<span></span>`
-            : html`<input
-                  class="input step-value"
-                  type="text"
-                  aria-label=${t("f.battery.steps.value")}
-                  placeholder=${t("f.battery.steps.value")}
-                  list="values-${name}-${index}"
-                  .value=${step.value == null ? "" : String(step.value)}
-                  @change=${(ev: Event) => this.setStep(name, index, (ev.target as HTMLInputElement).value)}
-                />
-                <datalist id="values-${name}-${index}">
-                  ${this.valueHints(step.entity_id ?? "", name).map((hint) => html`<option value=${hint}></option>`)}
-                </datalist>`}
-          <button
-            type="button"
-            class="icon-btn"
-            aria-label=${t("f.remove")}
-            title=${t("f.remove")}
-            @click=${() => this.removeStep(name, index)}
-          >
-            <ha-icon icon="mdi:close"></ha-icon>
-          </button>
-        </div>`,
-      )}
+    const params = info.params ?? {};
+    return html`<div class="editor" data-op=${name} data-tipped>
+      ${steps.length
+        ? html`<ol class="op-steps edit">
+            ${steps.map((step, index) => this.renderEditRow(t, value, name, step, index, steps.length, params))}
+          </ol>`
+        : html`<p class="field-hint hint">${t("op.own.empty")}</p>`}
       <div class="add">
         <button type="button" class="mini-btn" @click=${() => this.addStep(name)}>
           <ha-icon icon="mdi:plus"></ha-icon>${t("f.battery.steps.add")}
         </button>
         ${tip(t, "control_steps", PLACEHOLDERS)}
       </div>
-      <p class="field-hint hint">${t("f.battery.steps.hint", PLACEHOLDERS)}</p>
+      <div class="op-restore"><small class="own-restore">${t("op.own.restore")}</small></div>
     </div>`;
   }
 
-  private dataText(step: ControlStep): string {
-    return Object.entries(step.data ?? {})
-      .filter(([key]) => key !== "device_id")
-      .map(([key, value]) => `${key}: ${String(value)}`)
-      .join(" · ");
+  private renderEditRow(
+    t: Translate,
+    value: ControlValue,
+    name: StepName,
+    step: ControlStep,
+    index: number,
+    count: number,
+    params: PreviewParams,
+  ): TemplateResult {
+    const hass = this.hass!;
+    const entityId = step.entity_id ?? "";
+    const kind: StepKind = step.service ? "service" : this.stepKind(entityId);
+    const tipName: TipName = `step_${kind === "trigger" ? "text" : kind}`;
+    const tools = html`<span class="tools">
+      <button
+        type="button"
+        class="icon-btn"
+        aria-label=${t("op.own.up")}
+        title=${t("op.own.up")}
+        ?disabled=${index === 0}
+        @click=${() => this.moveStep(name, index, -1)}
+      >
+        <ha-icon icon="mdi:arrow-up"></ha-icon>
+      </button>
+      <button
+        type="button"
+        class="icon-btn"
+        aria-label=${t("op.own.down")}
+        title=${t("op.own.down")}
+        ?disabled=${index === count - 1}
+        @click=${() => this.moveStep(name, index, 1)}
+      >
+        <ha-icon icon="mdi:arrow-down"></ha-icon>
+      </button>
+      <button type="button" class="icon-btn" aria-label=${t("f.remove")} title=${t("f.remove")} @click=${() => this.removeStep(name, index)}>
+        <ha-icon icon="mdi:close"></ha-icon>
+      </button>
+      ${tip(t, tipName, PLACEHOLDERS)}
+    </span>`;
+    if (step.service) {
+      // A service call of the profile: readable with its data, movable and removable, not editable.
+      return html`<li class="edit" data-tipped>
+        <span class="n">${index + 1}.</span>
+        <span class="what"><span class="who">${this.stepText(t, { kind: "call", service: step.service, data: step.data ?? {} }, params)}</span></span>
+        ${tools}
+      </li>`;
+    }
+    const role = this.roleOf(value, entityId);
+    const label = entityName(hass, entityId);
+    return html`<li class="edit" data-tipped>
+      <span class="n">${index + 1}.</span>
+      <span class="what">
+        <span class="who">
+          ${role ? html`<span class="role">${t.optional(`role.${role}`) ?? role} · </span>` : nothing}
+          <button
+            type="button"
+            class="name-btn"
+            title=${t("op.own.swap")}
+            aria-label=${`${t("op.own.swap")}: ${label}`}
+            @click=${() => this.swapStep(name, index)}
+          >
+            <b>${label}</b><ha-icon icon="mdi:swap-horizontal"></ha-icon>
+          </button>
+        </span>
+        ${this.renderStepValue(t, name, step, index, kind)}
+      </span>
+      ${tools}
+    </li>`;
+  }
+
+  /** The value as the entity takes it: on/off, one of its options, a number with its unit and the placeholders, or text. */
+  private renderStepValue(t: Translate, name: StepName, step: ControlStep, index: number, kind: StepKind): TemplateResult {
+    const entityId = step.entity_id ?? "";
+    const current = step.value;
+    const text = current == null ? "" : String(current);
+    const label = t("f.battery.steps.value");
+    const commit = (ev: Event) => this.setStepValue(name, index, (ev.target as HTMLInputElement).value);
+    // Enter takes the value like leaving the field does.
+    const enter = (ev: KeyboardEvent) => {
+      if (ev.key === "Enter") {
+        ev.preventDefault();
+        (ev.target as HTMLInputElement).blur();
+      }
+    };
+    switch (kind) {
+      case "toggle": {
+        const on = current === true || current === "on" || current === "true";
+        const off = current === false || current === "off" || current === "false";
+        return html`<span class="seg onoff" role="group" aria-label=${label}>
+          <button type="button" aria-pressed=${String(on)} @click=${() => this.setStepValue(name, index, "on")}>${t("op.step.on")}</button>
+          <button type="button" aria-pressed=${String(off)} @click=${() => this.setStepValue(name, index, "off")}>${t("op.step.off")}</button>
+        </span>`;
+      }
+      case "option": {
+        const options = this.valueHints(entityId, name);
+        // A value the entity does not offer (from an older configuration) stays visible until it is changed.
+        const all = text && !options.includes(text) ? [text, ...options] : options;
+        return html`<select class="input value-select" aria-label=${label} @change=${commit}>
+          ${all.map((option) => html`<option value=${option} ?selected=${option === text}>${option}</option>`)}
+        </select>`;
+      }
+      case "number": {
+        const attrs = this.hass?.states[entityId]?.attributes ?? {};
+        const unit = this.unitOf(entityId);
+        const range =
+          typeof attrs.min === "number" && typeof attrs.max === "number"
+            ? `${formatNumber(t.lang, attrs.min, 2)} – ${formatNumber(t.lang, attrs.max, 2)}`
+            : "";
+        const hints = this.valueHints(entityId, name);
+        return html`<span class="value-number">
+          <span class="unit-input">
+            <input
+              class="input"
+              type="text"
+              inputmode="decimal"
+              aria-label=${label}
+              placeholder=${range}
+              .value=${text}
+              @change=${commit}
+              @keydown=${enter}
+            />
+            ${unit ? html`<span class="unit">${unit}</span>` : nothing}
+          </span>
+          ${hints.map(
+            (hint) => html`<button
+              type="button"
+              class="ph"
+              aria-pressed=${String(text === hint)}
+              aria-label=${t("op.own.insert", { value: hint })}
+              title=${t("op.own.insert", { value: hint })}
+              @click=${(ev: Event) => {
+                // The field shows the placeholder at once, also over something typed but not taken yet.
+                const input = (ev.currentTarget as HTMLElement).closest(".value-number")?.querySelector("input");
+                if (input) input.value = hint;
+                this.setStepValue(name, index, hint);
+              }}
+            >
+              <span class="chip">${hint}</span>
+            </button>`,
+          )}
+        </span>`;
+      }
+      case "trigger":
+        // A script or a button is only triggered: no value to give.
+        return html`<span class="now">${t("op.own.trigger")}</span>`;
+      default:
+        return html`<input class="input value-text" type="text" aria-label=${label} placeholder=${label} .value=${text} @change=${commit} @keydown=${enter} />`;
+    }
+  }
+
+  /** What an entity takes: a switch, an option, a number, a trigger (script, button) or text. */
+  private stepKind(entityId: string): Exclude<StepKind, "service"> {
+    const domain = entityId.split(".", 1)[0];
+    if (["switch", "input_boolean"].includes(domain)) return "toggle";
+    if (["select", "input_select"].includes(domain)) return "option";
+    if (["number", "input_number"].includes(domain)) return "number";
+    if (["script", "button", "input_button"].includes(domain)) return "trigger";
+    return "text";
+  }
+
+  /** The lever an entity is assigned to (how the preview labels a step), if any. */
+  private roleOf(value: ControlValue, entityId: string): string | null {
+    return Object.entries(value.controls).find(([, id]) => id === entityId)?.[0] ?? null;
   }
 
   private valueHints(entityId: string, name: StepName): string[] {
@@ -1043,11 +1392,43 @@ export class JoeBatteryControl extends LitElement {
     return [];
   }
 
-  /** "Selbst festlegen": the preview's steps become the owner's, then the editor opens. */
+  /**
+   * A step's value for another entity: it stays when the entity takes it
+   * (on/off for a switch, an option it offers, a number or one of this
+   * operation's placeholders), else the first hint for the entity.
+   */
+  private fitValue(value: ControlStep["value"], entityId: string, name: StepName): ControlStep["value"] {
+    const hints = this.valueHints(entityId, name);
+    const first = hints.length ? parseValue(hints[0]) : null;
+    switch (this.stepKind(entityId)) {
+      case "toggle":
+        if (value === true || value === "on" || value === "true") return "on";
+        if (value === false || value === "off" || value === "false") return "off";
+        return first;
+      case "option":
+        return typeof value === "string" && hints.includes(value) ? value : first;
+      case "number":
+        if (typeof value === "number") return value;
+        if (typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value.replace(",", ".")))) return Number(value.replace(",", "."));
+        if (isPlaceholder(value) && hints.includes(value)) return value;
+        return first;
+      case "trigger":
+        // A script or a button is only triggered: no value to keep.
+        return null;
+      default:
+        return value ?? null;
+    }
+  }
+
+  /** "Selbst festlegen": the preview's steps become the owner's, then the list turns editable. */
   private startEditing(op: OperationKey, info: PreviewOperation, hasOwn: boolean): void {
     const name = op as StepName;
-    if (!hasOwn) {
-      const value = this.value!;
+    const value = this.value!;
+    // What "Verwerfen" brings back.
+    const before = value.steps[name];
+    this.editStart.set(op, before?.length ? structuredClone(before) : undefined);
+    // A profile's service steps are saved with the battery already (with their placeholders): they stay as they are.
+    if (!hasOwn && !before?.length) {
       const steps: ControlStep[] = info.steps.map((step) =>
         step.kind === "call" || step.service
           ? { service: step.service, data: step.data ?? {} }
@@ -1063,6 +1444,57 @@ export class JoeBatteryControl extends LitElement {
     const editing = new Set(this.editing);
     editing.delete(op);
     this.editing = editing;
+    this.editStart.delete(op);
+  }
+
+  /** "Fertig": the list stays as it is; an empty one means no own steps (as "Zurück zum Profil"). */
+  private finishEditing(op: OperationKey): void {
+    const name = op as StepName;
+    const value = this.value!;
+    const steps = this.stepsWithTyped(name);
+    if (!steps.length) {
+      this.resetOwn(name);
+      return;
+    }
+    this.stopEditing(op);
+    if (JSON.stringify(steps) !== JSON.stringify(value.steps[name] ?? [])) {
+      this.emit({ ...value, steps: { ...value.steps, [name]: steps } });
+    }
+  }
+
+  /**
+   * The steps of an operation with what is typed into its fields but not
+   * taken yet: a browser that leaves the focus in a field when a button is
+   * clicked (Safari) fires no change event before the click.
+   */
+  private stepsWithTyped(name: StepName): ControlStep[] {
+    const steps = [...(this.value?.steps[name] ?? [])];
+    const rows = this.renderRoot.querySelectorAll<HTMLLIElement>(`.editor[data-op="${name}"] li.edit`);
+    rows.forEach((row, index) => {
+      const input = row.querySelector<HTMLInputElement>("input.input");
+      const step = steps[index];
+      if (!input || !step || step.service) return;
+      const typed = parseValue(input.value);
+      if ((step.value ?? null) !== typed) {
+        steps[index] = { ...step, value: typed };
+      }
+    });
+    return steps;
+  }
+
+  /** "Verwerfen": the steps as they were when editing began; none before, none now. */
+  private discardEditing(op: OperationKey): void {
+    const value = this.value!;
+    const name = op as StepName;
+    const before = this.editStart.get(op);
+    const steps = { ...value.steps };
+    if (before?.length) {
+      steps[name] = structuredClone(before);
+    } else {
+      delete steps[name];
+    }
+    this.stopEditing(op);
+    this.emit({ ...value, steps });
   }
 
   /** "Zurück zum Profil": the own steps go; a profile steered by services gets its own back. */
@@ -1118,6 +1550,8 @@ export class JoeBatteryControl extends LitElement {
       this.probeErrors = { ...this.probeErrors, [op]: messageOf(err) };
     } finally {
       this.probing = null;
+      // The probe wrote and put back: the "jetzt" values of the preview are stale either way.
+      this.refreshPreview();
     }
   }
 
@@ -1378,10 +1812,12 @@ export class JoeBatteryControl extends LitElement {
     const parts: string[] = [];
     // What does not work, grouped by its reason ("Warten, Drossel: nicht möglich (Mir fehlt ein Regler dafür)").
     const failed = new Map<string, string[]>();
+    const folded = this.holdFolded;
     for (const key of OPERATIONS) {
       const info = byOp.get(key);
-      const short = t.optional(`op.short.${key}`) ?? key;
-      if (!info) continue;
+      if (!info || (folded && key === "hold")) continue;
+      // "Warten" stands for the night's holding too: the summary says so instead of a line for "Halten".
+      const short = `${t.optional(`op.short.${key}`) ?? key}${folded && key === "block" ? ` (${t("op.block.both")})` : ""}`;
       if (!info.possible) {
         const why = info.why ? this.whyText(t, info.why).replace(/\.$/, "") : "";
         failed.set(why, [...(failed.get(why) ?? []), short]);
@@ -1514,27 +1950,60 @@ export class JoeBatteryControl extends LitElement {
       tipVars: PLACEHOLDERS,
       filter: "writable",
       selected: [],
+      suggestions: this.nearby("writable").map((entity_id) => ({ entity_id })),
     });
     const entityId = picked?.selected[0];
     if (!entityId) return;
-    const hints = this.valueHints(entityId, name);
-    const step: ControlStep = { entity_id: entityId, value: hints[0] ?? null };
+    const step: ControlStep = { entity_id: entityId, value: this.fitValue(null, entityId, name) };
     const value = this.value!;
-    this.emit({ ...value, steps: { ...value.steps, [name]: [...(value.steps[name] ?? []), step] } });
+    this.emit({ ...value, steps: { ...value.steps, [name]: [...this.stepsWithTyped(name), step] } });
   }
 
-  private setStep(name: StepName, index: number, raw: string): void {
+  /** The name of a step: another entity, the value kept where the new one takes it. */
+  private async swapStep(name: StepName, index: number): Promise<void> {
+    const t = this.t!;
+    const current = this.value?.steps[name]?.[index];
+    if (!current || current.service) return;
+    const picked = await pickEntity(this, {
+      heading: t("pick.step.title"),
+      tip: "control_steps",
+      tipVars: PLACEHOLDERS,
+      filter: "writable",
+      selected: current.entity_id ? [current.entity_id] : [],
+      suggestions: this.nearby("writable").map((entity_id) => ({ entity_id })),
+    });
+    const entityId = picked?.selected[0];
+    if (!entityId || entityId === current.entity_id) return;
     const value = this.value!;
-    const steps = [...(value.steps[name] ?? [])];
-    const number = Number(raw.replace(",", "."));
-    const parsed = raw.trim() === "" ? null : raw.startsWith("{") || Number.isNaN(number) ? raw.trim() : number;
+    const steps = this.stepsWithTyped(name);
+    steps[index] = { entity_id: entityId, value: this.fitValue(current.value, entityId, name) };
+    this.emit({ ...value, steps: { ...value.steps, [name]: steps } });
+  }
+
+  /** A value typed or chosen for a step ("0", "{target}", "on", an option). */
+  private setStepValue(name: StepName, index: number, raw: string): void {
+    const value = this.value!;
+    const steps = this.stepsWithTyped(name);
+    const parsed = parseValue(raw);
+    if (!steps[index]) return;
     steps[index] = { ...steps[index], value: parsed };
+    if (JSON.stringify(steps) === JSON.stringify(value.steps[name] ?? [])) return;
+    this.emit({ ...value, steps: { ...value.steps, [name]: steps } });
+  }
+
+  /** One row up (-1) or down (+1): the order is what the device gets. */
+  private moveStep(name: StepName, index: number, delta: -1 | 1): void {
+    const value = this.value!;
+    const steps = this.stepsWithTyped(name);
+    const to = index + delta;
+    if (to < 0 || to >= steps.length) return;
+    [steps[index], steps[to]] = [steps[to], steps[index]];
     this.emit({ ...value, steps: { ...value.steps, [name]: steps } });
   }
 
   private removeStep(name: StepName, index: number): void {
     const value = this.value!;
-    const steps = (value.steps[name] ?? []).filter((_, i) => i !== index);
+    const steps = this.stepsWithTyped(name).filter((_, i) => i !== index);
     this.emit({ ...value, steps: { ...value.steps, [name]: steps } });
   }
 

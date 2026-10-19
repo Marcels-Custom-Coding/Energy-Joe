@@ -37,6 +37,99 @@ POWER_UNITS = ("W", "kW", "MW")
 UNSURE = 0.6
 ENERGY_UNITS = ("Wh", "kWh", "MWh")
 
+# A home battery's size Joe believes (kWh).
+CAPACITY_KWH = (0.3, 500.0)
+# Words (whole; a trailing "*" also matches longer words) in a sensor's key or
+# name that tell a battery's size: Fronius "capacity_maximum", Huawei
+# "Rated Capacity", sonnen "Installed capacity", E3/DC "Installed battery
+# capacity", Powerwall and Enphase "Battery capacity", Sigenergy "rated
+# energy capacity". "fullcharge" stands for sonnen's "Full charge capacity"
+# (see _size_text); the rest of the charge family is no size.
+CAPACITY_WORDS = (
+    "capacity",
+    "kapazit*",
+    "speicherkapazit*",
+    "batteriekapazit*",
+    "akkukapazit*",
+    "nennkapazit*",
+    "gesamtkapazit*",
+    "größe",
+    "speichergröße",
+    "akkugröße",
+    "batteriegröße",
+    "installed",
+    "installiert*",
+    "usable",
+    "nutzbar*",
+    "rated",
+    "nominal",
+    "nenn*",
+    "designed",
+    "size",
+    "fullcharge",
+)
+# Today's usable size before the nameplate (Fronius: "capacity_maximum"
+# sinks with age, "capacity_designed" does not).
+CAPACITY_FIRST = ("maximum", "max", "maximal*", "usable", "nutzbar*", "fullcharge")
+CAPACITY_LAST = ("designed", "design", "nominal", "rated", "nenn*")
+# Counters, forecasts, what is in the battery right now (SolarEdge and Enphase
+# "Available energy", Powerwall "Battery remaining", sonnen "remaining
+# capacity", Huawei "chargeable energy") and parts of it (sonnen "capacity
+# per module") are no sizes.
+NOT_CAPACITY_WORDS = (
+    "charge",
+    "charged",
+    "charging",
+    "chargeable",
+    "charger*",
+    "discharge",
+    "discharged",
+    "discharging",
+    "dischargeable",
+    "geladen*",
+    "entladen*",
+    "ladung*",
+    "entladung*",
+    "today",
+    "yesterday",
+    "daily",
+    "lifetime",
+    "heute",
+    "gestern",
+    "täglich*",
+    "import*",
+    "export*",
+    "consum*",
+    "verbrauch*",
+    "grid",
+    "netz*",
+    "bezug*",
+    "einspeis*",
+    "forecast*",
+    "prognose*",
+    "production",
+    "erzeugung*",
+    "yield",
+    "ertrag*",
+    "remaining",
+    "verbleibend*",
+    "rest*",
+    "available",
+    "verfügbar*",
+    "reserve*",
+    "backup",
+    "stored",
+    "gespeichert*",
+    "left",
+    "estimated",
+    "geschätzt*",
+    "limit*",
+    "module",
+    "modul*",
+    "cell*",
+    "zell*",
+)
+
 # Whole words; a trailing "*" also matches longer words.
 ROLE_WORDS: dict[str, tuple[str, ...]] = {
     "grid_power": (
@@ -255,18 +348,9 @@ def _known_battery(snap: Snapshot, soc: EntityInfo) -> dict[str, Any]:
         {"code": "integration_key", "integration": platform}
     ]
 
-    capacity_kwh = None
-    capacity_entity = None
-    for entity in snap.of_device(soc.device_id) or scope:
-        if (
-            (role := _key_role(entity))
-            and role.role == "battery_capacity"
-            and entity.number
-        ):
-            capacity_entity = entity.entity_id
-            capacity_kwh = _to_kwh(entity.number, entity.unit)
-            reasons.append({"code": "capacity_read"})
-            break
+    capacity_kwh, capacity_entity = capacity_of(snap, soc)
+    if capacity_entity:
+        reasons.append({"code": "capacity_read"})
 
     power = None
     for entity in scope:
@@ -531,6 +615,9 @@ def _generic_battery(
             power = Power(entity.entity_id)
             reasons = [*reasons, {"code": "power_guess"}]
             break
+    capacity_kwh, capacity_entity = capacity_of(snap, soc)
+    if capacity_entity:
+        reasons = [*reasons, {"code": "capacity_read"}]
     battery = {
         "id": soc.device_id or soc.entity_id,
         "name": snap.device_name(soc.device_id) or soc.name,
@@ -539,8 +626,8 @@ def _generic_battery(
         "soc": ref(soc, snap),
         "soc_entity": soc.entity_id,
         "power": power.as_measurement() if power else None,
-        "capacity_kwh": None,
-        "capacity_entity": None,
+        "capacity_kwh": capacity_kwh,
+        "capacity_entity": capacity_entity,
         "max_charge_w": None,
         "max_discharge_w": None,
         "adapter": "none",
@@ -577,6 +664,70 @@ def _generic_battery(
             {"code": "controls_found", "count": steering["count"]},
         ]
     return battery
+
+
+def capacity_of(snap: Snapshot, soc: EntityInfo) -> tuple[float | None, str | None]:
+    """A battery's size as its integration tells it: (kWh, entity id).
+
+    By the key Joe knows (knowledge.py), else a sensor on the level's device
+    that is a storage size: Wh, kWh or MWh, a plausible number, and either
+    device class "energy_storage" or a size word in its key or name; never a
+    counter (device class "energy", a total) and never what is in the
+    battery right now (see NOT_CAPACITY_WORDS). Of several, today's usable
+    size before the nameplate (CAPACITY_FIRST, CAPACITY_LAST), then the
+    first by entity id.
+    """
+    own = snap.of_device(soc.device_id)
+    for entity in own or _scope(snap, soc):
+        if (role := _key_role(entity)) and role.role == "battery_capacity":
+            kwh = capacity_reading(entity)
+            if kwh is not None:
+                return kwh, entity.entity_id
+    ranked = [(rank, e) for e in own if (rank := _capacity_rank(e)) is not None]
+    if not ranked:
+        return None, None
+    _, entity = min(ranked, key=lambda item: (item[0], item[1].entity_id))
+    return capacity_reading(entity), entity.entity_id
+
+
+def capacity_reading(entity: EntityInfo | None) -> float | None:
+    """What a size sensor says now, in kWh; None without a plausible number."""
+    if entity is None or not entity.number:
+        return None
+    kwh = _to_kwh(entity.number, entity.unit)
+    return kwh if CAPACITY_KWH[0] <= kwh <= CAPACITY_KWH[1] else None
+
+
+def _size_text(entity: EntityInfo) -> str:
+    """Key, translation key and name of an entity, as the size words read
+    them ("full charge" as one word: a size, unlike the rest of its family)."""
+    text = _words(
+        " ".join(filter(None, (entity.unique_id, entity.translation_key, entity.name)))
+    )
+    return text.replace(" full charge ", " fullcharge ")
+
+
+def _capacity_rank(entity: EntityInfo) -> int | None:
+    """How a sensor ranks as a battery's size (0 first); None if it is none."""
+    if entity.domain != "sensor" or entity.unit not in ENERGY_UNITS:
+        return None
+    if entity.device_class == "energy" or entity.attributes.get("state_class") in (
+        "total",
+        "total_increasing",
+    ):
+        return None
+    if capacity_reading(entity) is None:
+        return None
+    text = _size_text(entity)
+    if _has_word(text, NOT_CAPACITY_WORDS):
+        return None
+    if entity.device_class != "energy_storage" and not _has_word(text, CAPACITY_WORDS):
+        return None
+    if _has_word(text, CAPACITY_FIRST):
+        return 0
+    if _has_word(text, CAPACITY_LAST):
+        return 2
+    return 1
 
 
 def _link_energy_batteries(

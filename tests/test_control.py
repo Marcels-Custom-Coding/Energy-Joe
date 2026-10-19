@@ -319,15 +319,22 @@ async def test_a_night_from_hold_to_charge_to_release(
     executor, holder = await make_executor(hass, config, plan)
 
     await executor.async_check()
-    # Below the target: the BYD holds where it is; the Venus may discharge to 60 %.
-    assert hass.states.get("number.reserve").state == "30.0"
+    # Below the target: the BYD waits (kept from discharging with its limit,
+    # its reserve untouched); the Venus may discharge to 60 %.
+    assert hass.states.get("number.discharge_limit").state == "0.0"
+    assert hass.states.get("switch.discharge_limit").state == "on"
+    assert hass.states.get("number.reserve").state == "5"
     assert hass.states.get("number.discharge_cutoff").state == "50.0"
-    assert executor.status["batteries"]["byd"]["action"] == "hold"
-    assert executor.data["saved"]["number.reserve"] == 5.0
+    assert executor.status["batteries"]["byd"]["action"] == "block"
+    assert executor.data["saved"]["number.discharge_limit"] == 100.0
+    assert executor.data["saved"]["switch.discharge_limit"] is False
 
     freezer.move_to("2026-10-04T03:10:00+02:00")
     await executor.async_check()
-    # Charging time: the BYD charges to 60 %, the Venus must not feed it.
+    # Charging time: the block lifted (the switch first), the BYD charges to
+    # 60 %, the Venus must not feed it.
+    assert hass.states.get("switch.discharge_limit").state == "off"
+    assert hass.states.get("number.discharge_limit").state == "100.0"
     assert hass.states.get("number.reserve").state == "60.0"
     assert hass.states.get("switch.grid_charging").state == "on"
     assert hass.states.get("select.force_mode").state == "Charge"
@@ -339,9 +346,14 @@ async def test_a_night_from_hold_to_charge_to_release(
     assert "byd" in executor.data["reached"]
     assert hass.states.get("select.force_mode").state == "None"
 
+    # Reached: the BYD waits at its target with its limit again.
+    assert hass.states.get("number.discharge_limit").state == "0.0"
+
     freezer.move_to("2026-10-04T04:58:00+02:00")
     await executor.async_check()
     assert hass.states.get("number.reserve").state == "5.0"
+    assert hass.states.get("number.discharge_limit").state == "100.0"
+    assert hass.states.get("switch.discharge_limit").state == "off"
     assert hass.states.get("select.force_mode").state == "None"
     assert hass.states.get("number.discharge_cutoff").state == "12.0"
     assert executor.data["saved"] == {}
@@ -377,18 +389,21 @@ async def test_someone_elses_change_stays(hass: HomeAssistant, freezer) -> None:
     config = configured(fronius_battery())
     executor, _ = await make_executor(hass, config, night_plan(dt_util.now()))
     await executor.async_check()
-    assert hass.states.get("number.reserve").state == "30.0"
+    assert hass.states.get("number.discharge_limit").state == "0.0"
     await executor.async_check()
     hass.states.async_set(
-        "number.reserve", "20", hass.states.get("number.reserve").attributes
+        "number.discharge_limit",
+        "50",
+        hass.states.get("number.discharge_limit").attributes,
     )
     await executor.async_check()
-    assert hass.states.get("number.reserve").state == "20"
-    assert "number.reserve" in executor.data["external"]
+    assert hass.states.get("number.discharge_limit").state == "50"
+    assert "number.discharge_limit" in executor.data["external"]
     freezer.move_to("2026-10-04T04:58:00+02:00")
     await executor.async_check()
     # Joe does not put back what someone else set.
-    assert hass.states.get("number.reserve").state == "20"
+    assert hass.states.get("number.discharge_limit").state == "50"
+    assert hass.states.get("switch.discharge_limit").state == "off"
     assert executor.data["saved"] == {}
 
 
@@ -423,10 +438,10 @@ async def test_suggest_mode_needs_a_yes(hass: HomeAssistant, freezer) -> None:
     executor, _ = await make_executor(hass, config, plan, mode="advisory")
     await executor.async_check()
     assert executor.status["reason"] == "unanswered"
-    assert hass.states.get("number.reserve").state == "5"
+    assert hass.states.get("number.discharge_limit").state == "100"
     await executor.async_answer(plan["window"]["start"], True)
     assert executor.status["reason"] == "steering"
-    assert hass.states.get("number.reserve").state == "30.0"
+    assert hass.states.get("number.discharge_limit").state == "0.0"
 
 
 async def test_emergency_release_ends_the_night(hass: HomeAssistant, freezer) -> None:
@@ -435,12 +450,13 @@ async def test_emergency_release_ends_the_night(hass: HomeAssistant, freezer) ->
     config = configured(fronius_battery())
     executor, _ = await make_executor(hass, config, night_plan(dt_util.now()))
     await executor.async_check()
-    assert hass.states.get("number.reserve").state == "30.0"
+    assert hass.states.get("number.discharge_limit").state == "0.0"
     await executor.async_release_now()
-    assert hass.states.get("number.reserve").state == "5.0"
+    assert hass.states.get("number.discharge_limit").state == "100.0"
+    assert hass.states.get("switch.discharge_limit").state == "off"
     await executor.async_check()
     assert executor.status["reason"] == "skipped"
-    assert hass.states.get("number.reserve").state == "5.0"
+    assert hass.states.get("number.discharge_limit").state == "100.0"
 
 
 async def test_test_run_holds_charges_and_releases(hass: HomeAssistant) -> None:
