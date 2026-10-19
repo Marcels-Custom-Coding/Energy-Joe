@@ -317,6 +317,9 @@ def test_protection_covers_parents_and_children() -> None:
 
 def test_a_heater_proposed_as_wallbox_is_taken_back() -> None:
     """An evcc heater once proposed as a car charge point goes on the next scan."""
+    # One instant for every call: the origin stamps count whole seconds, and the
+    # last check compares two results made a moment apart.
+    now = datetime(2026, 10, 3, 12, 0, tzinfo=UTC)
     heater = {
         "id": "ev_floor",
         "name": "Floor heating",
@@ -325,17 +328,26 @@ def test_a_heater_proposed_as_wallbox_is_taken_back() -> None:
         "on_value": "now",
     }
     car = {**heater, "id": "ev_carport", "entity_id": "select.evcc_carport_mode"}
-    config = model.adopt_proposal(model.default_config(), {"actions": [car, heater]})
-    again = model.adopt_proposal(config, {"actions": [car]}, withdrawn=["ev_floor"])
+    config = model.adopt_proposal(
+        model.default_config(), {"actions": [car, heater]}, now=now
+    )
+    again = model.adopt_proposal(
+        config, {"actions": [car]}, now=now, withdrawn=["ev_floor"]
+    )
     assert [a["id"] for a in again["actions"]] == ["ev_carport"]
     # Changed by the user: it stays.
     edited = model.apply_update(
-        config, {"actions": {"ev_floor": {"priority": 2}}}, "user"
+        config, {"actions": {"ev_floor": {"priority": 2}}}, "user", now=now
     )
-    kept = model.adopt_proposal(edited, {"actions": [car]}, withdrawn=["ev_floor"])
+    kept = model.adopt_proposal(
+        edited, {"actions": [car]}, now=now, withdrawn=["ev_floor"]
+    )
     assert [a["id"] for a in kept["actions"]] == ["ev_carport", "ev_floor"]
     # Unknown ids change nothing.
-    assert model.adopt_proposal(again, {"actions": [car]}, withdrawn=["ev_x"]) == again
+    unchanged = model.adopt_proposal(
+        again, {"actions": [car]}, now=now, withdrawn=["ev_x"]
+    )
+    assert unchanged == again
 
 
 def test_the_car_and_surplus_devices_are_not_for_the_battery() -> None:
