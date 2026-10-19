@@ -9,7 +9,7 @@ import type { JoeConfig } from "../../types";
 import { SettingsSection } from "./base";
 import { settingsStyles } from "./styles";
 
-type NotifyKey = "ask" | "problems" | "morning" | "cars";
+type NotifyKey = "ask" | "problems" | "stuck" | "morning" | "cars";
 
 /** Einstellungen › Benachrichtigungen: where Joe writes, what about, and when he asks in the evening. */
 export class JoeSettingsNotify extends SettingsSection {
@@ -82,7 +82,8 @@ export class JoeSettingsNotify extends SettingsSection {
             ${gone ? html`<option value=${chosen} selected>${t("settings.notify.gone", { name: chosen ?? "" })}</option>` : nothing}
           </select>
         </div>
-        ${this.toggle(t, config, "ask")} ${this.toggle(t, config, "problems")} ${this.toggle(t, config, "morning")}
+        ${this.toggle(t, config, "ask")} ${this.toggle(t, config, "problems")} ${this.toggle(t, config, "stuck")}
+        ${this.toggle(t, config, "morning")}
         ${config.cars?.length ? this.toggle(t, config, "cars") : nothing}
         ${this.askTime(t, config)}
       </section>

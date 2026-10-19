@@ -151,6 +151,10 @@ NIGHT_CAP_WORKS_FOR = timedelta(minutes=15)
 SLOW_START = timedelta(minutes=3)
 SLOW_SHARE = 0.4
 SLOW_FOR = timedelta(minutes=15)
+# A battery held back by a setting that is not Joe's (its reserve at the
+# level, a block someone else set) while the house draws from or gives to
+# the grid: told after this long (see _async_watch_stuck).
+STUCK_FOR = timedelta(minutes=15)
 SLOW_NEAR = 5
 SLOW_NIGHTS = 3
 SLOW_AGAIN = 1.5
@@ -238,6 +242,12 @@ DEFAULT_DATA: dict[str, Any] = {
     # The last night looked back on: what was planned against what each
     # battery took (see _review_night).
     "night_review": None,
+    # Batteries held back by a setting that is not Joe's (a reserve at the
+    # level, a block someone else set) while it matters: battery -> reason,
+    # since, the entity and its value, the level (see _async_watch_stuck);
+    # and the watch before it counts.
+    "stuck": {},
+    "stuck_watch": {},
     # "Just charge to …" by hand: action id -> target, unit, sensor, since, until.
     "boost": {},
     # The night whose grid-friendly morning runs, or was let go early.
@@ -295,6 +305,10 @@ DEFAULT_DATA: dict[str, Any] = {
         "gap": None,
         # Per battery: when a block that had arrived was found undone.
         "resets": {},
+        # Batteries marked empty because they gave nothing while it was their
+        # turn and the house drew from the grid: when, and the level then
+        # (see team.watch_empty; their turn comes again after STUCK_RETRY).
+        "stuck": {},
         # By day with sense (see control/team_day.py): charging along and
         # helping to discharge (their hysteresis), why the later groups
         # charge along now, the base load written, the most each battery
@@ -755,6 +769,7 @@ class JoeExecutor:
                 self._surplus_forget("error")
             keep |= capped
             self._team_note(now)
+            await self._async_watch_stuck(config, now)
             try:
                 keep |= await self._async_team_apply(config, want, keep, now)
             except Exception:
@@ -863,6 +878,7 @@ class JoeExecutor:
                 entry["cap"] = cap
             batteries[battery["id"]] = entry
         await self._async_watch_slow(items, desired, socs, batteries, now)
+        await self._async_watch_stuck(config, now)
         actions = await self._async_actions(config, plan, night, now, set(boosts))
         self._set_status("steering", night, batteries, {**actions, **boosts})
         self._watch([b["soc_entity"] for b, _, a in items if a is not None])
@@ -2175,8 +2191,8 @@ class JoeExecutor:
         ids = {b["id"] for b in config["batteries"]} | {
             f"group:{g[0]}" for g in groups.values()
         }
-        for key in ("empty", "full", "watch", "cutoffs"):
-            store[key] = {k: v for k, v in (store[key] or {}).items() if k in ids}
+        for key in ("empty", "full", "watch", "cutoffs", "stuck"):
+            store[key] = {k: v for k, v in (store.get(key) or {}).items() if k in ids}
         # A block that did not arrive counts for the day it happened.
         store["broken"] = {
             k: v
@@ -2784,6 +2800,18 @@ class JoeExecutor:
         # What each battery can give (kW): as set, else the most Joe saw.
         give: dict[str, float] = {}
         peaks: dict[str, dict[str, float]] = store.get("peaks") or {}
+        # A battery that gave nothing in its turn gets another after a while,
+        # or as soon as it discharged after all.
+        stuck: dict[str, Any] = store.setdefault("stuck", {})
+        for battery, _ in candidates:
+            held = stuck.get(battery["id"])
+            level = info["batteries"][battery["id"]]["soc"]
+            if held and (
+                now - _at(held["at"]) >= team_rules.STUCK_RETRY
+                or (level is not None and level <= held["soc"] - 1)
+            ):
+                stuck.pop(battery["id"])
+                store["empty"].pop(battery["id"], None)
         for battery, role in candidates:
             entry = info["batteries"][battery["id"]]
             size = sizes.get(battery["id"]) or battery.get("capacity_kwh") or 5.0
@@ -2843,6 +2871,34 @@ class JoeExecutor:
                     if not member.full:
                         member.full = True
                         store["full"][member.id] = member.soc
+        # One free to discharge that gives nothing while the house draws from
+        # the grid is as empty as it goes, or held back by a setting of its
+        # own (see _async_watch_stuck): the next one takes over.
+        if (
+            current is not None
+            and not current.empty
+            and deficit is not None
+            and all(k in powers for k in current.ids)
+        ):
+            watch = store["watch"].setdefault(f"group:{current.id}", {})
+            power = sum(powers[k] for k in current.ids)
+            if team_rules.watch_empty(watch, power, deficit * 1000, now):
+                for member in current.members:
+                    if not member.empty:
+                        member.empty = True
+                        store["empty"][member.id] = member.soc
+                        stuck[member.id] = {
+                            "at": now.isoformat(timespec="seconds"),
+                            "soc": member.soc,
+                        }
+                self._log(
+                    "team_stuck",
+                    battery=current.ids[0],
+                    batteries=current.ids,
+                    soc=round(
+                        sum(m.soc for m in current.members) / len(current.members), 1
+                    ),
+                )
         charge_order = team_rules.ordered(teams, self._team_charge_order(rules))
         discharge_order = team_rules.ordered(
             teams, rules.get("team_discharge_order") or []
@@ -2854,6 +2910,13 @@ class JoeExecutor:
         if chosen != active:
             if active is not None:
                 previous = next((g for g in teams if g.id == active), None)
+                if (
+                    why == "empty"
+                    and previous
+                    and any(k in stuck for k in previous.ids)
+                ):
+                    # Not empty: it gave nothing (see watch_empty).
+                    why = "stuck"
                 self._log(
                     "team_handover",
                     battery=group.ids[0],
@@ -4917,6 +4980,117 @@ class JoeExecutor:
                 battery, want.power_w, mark["sum"] / mark["n"], now, entry
             )
 
+    # --- a battery held back by a setting that is not Joe's ----------------------------
+
+    async def _async_watch_stuck(self, config: dict[str, Any], now: datetime) -> None:
+        """A battery that cannot work because of a setting Joe did not write
+        (its reserve at or above its level, a block someone else set): once
+        that held the house to the grid for STUCK_FOR, the owner is told (a
+        notification, a push if wanted) and the panel shows it, until it is
+        over. Joe puts nothing back that he did not write (the owner's word
+        counts), he only says so.
+        """
+        watch: dict[str, Any] = self.data["stuck_watch"]
+        known: dict[str, Any] = self.data["stuck"]
+        written = set(self.data["written"])
+        grid = measurement_kw(
+            self._hass.states.get, config["measurements"]["grid_power"]
+        )
+        ids = {b["id"] for b in config["batteries"]}
+        for key in [k for k in (*watch, *known) if k not in ids]:
+            watch.pop(key, None)
+            known.pop(key, None)
+        for battery in config["batteries"]:
+            key = battery["id"]
+            adapter = make_adapter(battery)
+            soc = number(self._hass.states.get(battery["soc_entity"]))
+            found = (
+                adapter.held_back(self._hass, soc, written)
+                if isinstance(adapter, RoleAdapter) and soc is not None
+                else None
+            )
+            if found is not None and found["reason"] == "reserve":
+                # A reserve at the owner's own floor is no setting gone wrong.
+                floor = battery.get("floor_soc") or battery.get("cutoff_soc")
+                if floor is not None and found["level"] <= floor + 2:
+                    found = None
+            # Only while it matters: the house draws from the grid though the
+            # battery has something to give, or gives to the grid though it
+            # has room.
+            matters = (
+                found is not None
+                and grid is not None
+                and soc is not None
+                and (
+                    (
+                        found["direction"] == "discharge"
+                        and grid * 1000 >= team_rules.IMPORT_W
+                        and soc > self._stuck_floor(battery) + 2
+                    )
+                    or (
+                        found["direction"] == "charge"
+                        and -grid * 1000 >= team_rules.EXPORT_W
+                        and soc < team_rules.FULL_BACK
+                    )
+                )
+            )
+            if not matters:
+                watch.pop(key, None)
+                if key in known:
+                    self._log("stuck_over", battery=key, reason=known[key]["reason"])
+                    await self.notifier.async_clear(f"stuck_{key}")
+                    known.pop(key)
+                    self._changed()
+                continue
+            assert found is not None and soc is not None
+            mark = watch.get(key)
+            if mark is None or mark["reason"] != found["reason"]:
+                watch[key] = {
+                    "since": now.isoformat(timespec="seconds"),
+                    "reason": found["reason"],
+                }
+                continue
+            if now - _at(mark["since"]) < STUCK_FOR:
+                continue
+            if key in known and known[key]["reason"] == found["reason"]:
+                continue
+            state = self._hass.states.get(found["entity_id"])
+            name = state.name if state else found["entity_id"]
+            known[key] = {
+                "reason": found["reason"],
+                "since": mark["since"],
+                "entity_id": found["entity_id"],
+                "name": name,
+                "value": found["value"],
+                "soc": round(soc, 1),
+            }
+            self._log(
+                "stuck",
+                battery=key,
+                reason=found["reason"],
+                entity=found["entity_id"],
+                value=found["value"],
+                soc=round(soc, 1),
+            )
+            await self.notifier.async_problem(
+                f"stuck_{found['reason']}",
+                tag=f"stuck_{key}",
+                battery=battery["name"],
+                entity=name,
+                value=found["value"],
+                soc=round(soc, 1),
+            )
+            self._changed()
+
+    def _stuck_floor(self, battery: dict[str, Any]) -> float:
+        """The level below which a battery has nothing to give: the cutoff
+        Joe learned, the floor the owner set, else a typical one."""
+        return float(
+            battery.get("cutoff_soc")
+            or battery.get("floor_soc")
+            or team_rules.DEFAULT_CUTOFF
+        )
+
     def _slow_tonight(self, key: str) -> bool:
         """Whether the battery was found slow tonight already (told once a night)."""
         found = self.data["night_slow"].get(key) or {}
@@ -5576,6 +5750,9 @@ class JoeExecutor:
             # night's look back (see _async_watch_slow, _review_night).
             "night_slow": self.data["night_slow"],
             "night_review": self.data.get("night_review"),
+            # Batteries held back by a setting that is not Joe's (see
+            # _async_watch_stuck).
+            "stuck": self.data.get("stuck") or {},
         }
 
     async def async_forget(self) -> None:

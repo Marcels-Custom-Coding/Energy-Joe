@@ -6,6 +6,7 @@ import { entityName, formatNumber } from "../entities";
 import type { Translate } from "../i18n";
 import { shared } from "../styles/shared";
 import type { ClimateLogEntry, ControlLogEntry, HomeAssistant, JoeConfig } from "../types";
+import { readableValue } from "./battery-stuck";
 import { together } from "./battery-team";
 import { dayText } from "./look-back";
 
@@ -218,6 +219,16 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
   }
   if (entry.kind === "boost_end") {
     return t.optional(`log.boost_end.${String(entry.reason)}`, vars) ?? t("log.boost_end.stopped", vars);
+  }
+  if (entry.kind === "stuck") {
+    // A battery held back by a setting that is not Joe's: the lever's value as the
+    // owner reads it (the reserve's text carries its own "%").
+    const reason = String(entry.reason ?? "");
+    const value =
+      reason === "reserve" && typeof entry.value === "number"
+        ? formatNumber(t.lang, entry.value, 1)
+        : readableValue(t, hass, entry.value, String(entry.entity ?? ""));
+    return t.optional(`log.stuck.${reason}`, { ...vars, value }) ?? t("log.stuck", vars);
   }
   if (entry.kind === "answer") {
     return t(entry.yes ? "log.answer.yes" : "log.answer.no");

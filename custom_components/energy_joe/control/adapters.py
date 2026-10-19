@@ -1155,6 +1155,63 @@ class RoleAdapter(Adapter):
         """Whether charging is blocked right now, whoever holds the lever."""
         return self._blocked(hass, "charge")
 
+    def _direction_entities(self, direction: str) -> list[str]:
+        """The entities whose values block one direction (see _blocked)."""
+        c = self.controls
+        found = list(self.own_entities(f"block_{direction}", "block"))
+        toggle = self._toggle(direction)
+        if toggle:
+            found.append(c[toggle[0]])
+        if self._mode_blocks(direction) and "mode" in c:
+            found.append(c["mode"])
+        if self._level_lever():
+            found += [c[r] for r in ("min_soc", "charge_target") if r in c]
+        roles = self.limit_roles() if direction == "charge" else self.discharge_roles()
+        if roles:
+            found += [c[r] for r in roles if r in c]
+        return list(dict.fromkeys(found))
+
+    def held_back(
+        self, hass: HomeAssistant, soc: float, written: set[str]
+    ) -> dict[str, Any] | None:
+        """A setting that is not Joe's (none of its entities written by him)
+        and keeps the battery from working: its floor at or above its level
+        ("reserve"), discharging blocked ("discharge") or charging blocked
+        ("charge"). With the entity and the value the owner sees; None where
+        nothing holds it back."""
+        c = self.controls
+        if "min_soc" in c and c["min_soc"] not in written:
+            value = read(hass, c["min_soc"])
+            if _number(value):
+                level = self._level("min_soc", value)
+                if level > 0 and level >= soc - 0.5:
+                    return {
+                        "reason": "reserve",
+                        "direction": "discharge",
+                        "entity_id": c["min_soc"],
+                        "value": value,
+                        "level": level,
+                    }
+        for direction in ("discharge", "charge"):
+            entities = self._direction_entities(direction)
+            if not entities or set(entities) & written:
+                continue
+            if not self._blocked(hass, direction):
+                continue
+            # The lever the owner sees: a switch or mode, else the limit at 0.
+            shown = next(
+                (e for e in entities if not e.startswith(("number.", "input_number."))),
+                entities[0],
+            )
+            return {
+                "reason": direction,
+                "direction": direction,
+                "entity_id": shown,
+                "value": read(hass, shown),
+                "level": None,
+            }
+        return None
+
     def discharge_blocked(self, hass: HomeAssistant) -> bool:
         """Whether discharging is blocked right now, whoever holds the lever."""
         return self._blocked(hass, "discharge")
@@ -1512,8 +1569,10 @@ class RoleAdapter(Adapter):
                 # Fronius over Modbus: the discharge rate below 0 charges from
                 # the grid with that share of WChaMax once its bit is set
                 # (the only way to charge with a power of one's own); charging
-                # allowed in full, grid charging on, the reserve at the target
-                # (the inverter's own floor once Joe lets go).
+                # allowed in full, grid charging on. The reserve stays the
+                # owner's: Joe stops at the target himself (the inverter
+                # charges on until its battery says full, whatever the
+                # reserve says).
                 return [
                     *result,
                     *(
@@ -1524,11 +1583,6 @@ class RoleAdapter(Adapter):
                     Write(c["charge_limit"], 100),
                     Write(c["discharge_limit"], -self._share(desired.power_w)),
                     Write(c["discharge_limit_enabled"], True),
-                    *(
-                        [Write(c["min_soc"], self._level("min_soc", target))]
-                        if "min_soc" in c
-                        else []
-                    ),
                 ]
         return []
 

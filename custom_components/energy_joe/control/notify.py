@@ -45,6 +45,9 @@ TEXTS: dict[str, dict[str, str]] = {
         "problem.charge_slow_fronius": "{battery} lädt nachts nur mit {measured} kW statt {planned} kW. Vermutlich lässt dein Wechselrichter übers Hochsetzen der Reserve nur wenig Netzladen zu. Was du tun kannst: Prüf im Fronius-Wechselrichter unter Energiemanagement › Batteriemanagement, ob „Batterieladung aus dem Netz“ zugelassen ist – und ob dort nur eine kleine Leistung eingetragen ist. Bis es schneller geht, plane ich ihn mit {measured} kW.",
         "problem.battery_transfer": "{charging} lädt, während {discharging} entlädt – auch nachdem ich die Regelung neu gestartet und den Speicher kurz gesperrt habe. Schau bitte im Panel unter Geräte › Speicher › Mehrere Speicher nach.",
         "problem.battery_transfer_inside": "{charging} lädt, während {discharging} entlädt – beide regelt dasselbe System. Da greife ich nicht ein: Schau bitte in dessen Einstellungen nach (im Panel unter Geräte › Speicher › Mehrere Speicher steht, wann es war).",
+        "problem.stuck_reserve": "{battery} kann nicht entladen: Die Reserve „{entity}“ steht auf {value} %, der Stand bei {soc} %. Das habe ich nicht gesetzt, also stelle ich es nicht zurück. Setz die Reserve wieder auf deinen Wert – oder trag {value} % als Entladegrenze des Speichers bei mir ein, wenn das so gewollt ist, dann bin ich still.",
+        "problem.stuck_discharge": "{battery} kann nicht entladen: Am Gerät ist das Entladen gesperrt („{entity}“ steht auf {value}), und das war nicht ich. Schau nach, wer das gesetzt hat – eine Automation, ein Skript, der Wechselrichter selbst – und gib es frei, wenn es nicht so gewollt ist.",
+        "problem.stuck_charge": "{battery} kann nicht laden: Am Gerät ist das Laden gesperrt („{entity}“ steht auf {value}), und das war nicht ich. Schau nach, wer das gesetzt hat – eine Automation, ein Skript, der Wechselrichter selbst – und gib es frei, wenn es nicht so gewollt ist.",
         "morning.title": "Energy Joe: die Nacht",
         "morning.text": "Ich habe heute Nacht gesteuert: {batteries}. Alles ist wieder zurückgestellt.",
         "car.title": "Energy Joe fragt",
@@ -71,6 +74,9 @@ TEXTS: dict[str, dict[str, str]] = {
         "problem.charge_slow_fronius": "{battery} charges at only {measured} kW at night instead of {planned} kW. Your inverter probably allows little charging from the grid when I raise its reserve. What you can do: in the Fronius inverter under Energy management › Battery management, check whether “Battery charging from the grid” is permitted – and whether only a small power is set there. Until it gets faster, I plan it at {measured} kW.",
         "problem.battery_transfer": "{charging} charges while {discharging} discharges, even after I restarted the battery's own control and blocked it for a few seconds. Please have a look in the panel under Devices › Batteries › Several batteries.",
         "problem.battery_transfer_inside": "{charging} charges while {discharging} discharges – both are regulated by the same system. I do not step in there: please check that system's settings (the panel shows when it happened under Devices › Batteries › Several batteries).",
+        "problem.stuck_reserve": "{battery} cannot discharge: its reserve “{entity}” is at {value} %, its level at {soc} %. I did not set that, so I do not put it back. Set the reserve back to your value – or enter {value} % as the battery's discharge floor in my settings if that is what you want, then I keep quiet.",
+        "problem.stuck_discharge": "{battery} cannot discharge: discharging is blocked at the device (“{entity}” is {value}), and that was not me. Check who set it – an automation, a script, the inverter itself – and free it if it is not meant so.",
+        "problem.stuck_charge": "{battery} cannot charge: charging is blocked at the device (“{entity}” is {value}), and that was not me. Check who set it – an automation, a script, the inverter itself – and free it if it is not meant so.",
         "morning.title": "Energy Joe: the night",
         "morning.text": "I steered tonight: {batteries}. Everything is back as it was.",
         "car.title": "Energy Joe asks",
@@ -146,27 +152,38 @@ class JoeNotifier:
     def clear_ask(self) -> None:
         persistent_notification.async_dismiss(self._hass, f"{DOMAIN}_ask")
 
-    async def async_problem(self, kind: str, **values: Any) -> None:
-        """Tell about a problem: notification, repair issue and, if wanted, the phone."""
+    async def async_problem(
+        self, kind: str, tag: str | None = None, **values: Any
+    ) -> None:
+        """Tell about a problem: notification, repair issue and, if wanted,
+        the phone. `tag` tells problems of one kind apart (one per battery);
+        a battery held back by its own settings ("stuck_*") goes to the phone
+        only with its own switch."""
         if "entities" in values:
             values["entities"] = ", ".join(values["entities"])
+        tag = tag or kind
         message = self._text(f"problem.{kind}", **values)
         persistent_notification.async_create(
-            self._hass, message, self._text("problem.title"), f"{DOMAIN}_{kind}"
+            self._hass, message, self._text("problem.title"), f"{DOMAIN}_{tag}"
         )
         ir.async_create_issue(
             self._hass,
             DOMAIN,
-            kind,
+            tag,
             is_fixable=False,
             severity=ir.IssueSeverity.WARNING,
             translation_key=kind,
             translation_placeholders={k: str(v) for k, v in values.items()},
         )
         notify = self._config()["notify"]
-        if notify["service"] and notify["problems"]:
+        wanted = (
+            notify.get("stuck", True)
+            if kind.startswith("stuck_")
+            else notify["problems"]
+        )
+        if notify["service"] and wanted:
             await self._push(
-                self._text("problem.title"), message, {"tag": f"{DOMAIN}_{kind}"}
+                self._text("problem.title"), message, {"tag": f"{DOMAIN}_{tag}"}
             )
 
     async def async_not_restored(self, values: dict[str, Any], removed: bool) -> None:

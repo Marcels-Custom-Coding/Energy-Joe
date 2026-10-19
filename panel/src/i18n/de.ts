@@ -838,6 +838,8 @@ export const de = {
   "common.save": "Speichern",
   "common.cancel": "Abbrechen",
   "common.close": "Schließen",
+  "common.on": "Ein",
+  "common.off": "Aus",
 
   "source.read": "gelesen",
   "source.learned": "gelernt",
@@ -2415,6 +2417,9 @@ export const de = {
   "settings.notify.ask.hint": "Im Modus Vorschlagen, mit „Ja“ und „Heute nicht“ direkt in der Nachricht.",
   "settings.notify.problems": "Probleme melden",
   "settings.notify.problems.hint": "Wenn ich etwas nicht zurückstellen kann oder ein Speicher nicht reagiert.",
+  "settings.notify.stuck": "Speicher kann nicht arbeiten",
+  "settings.notify.stuck.hint":
+    "Wenn ein Speicher wegen einer Einstellung, die nicht von mir ist, nicht laden oder entladen kann – zum Beispiel die Reserve auf 100 % oder eine fremde Sperre.",
   "settings.notify.morning": "Morgens berichten",
   "settings.notify.morning.hint": "Was ich in der Nacht gesteuert habe.",
   "settings.ask_time": "Frage um",
@@ -3198,6 +3203,13 @@ export const de = {
   "log.team_handover.empty": "Speicherwechsel: {previous} ist leer ({level} %) – {battery} übernimmt",
   "log.team_handover.full": "Speicherwechsel: {previous} ist voll – {battery} lädt weiter",
   "log.team_handover.order": "Speicherwechsel: {battery} ist wieder dran (Reihenfolge), {previous} wartet",
+  "log.team_handover.stuck": "Speicherwechsel: {previous} liefert nichts ({level} %) – {battery} übernimmt",
+  "log.team_stuck": "{battery} ist dran, liefert aber seit 15 Minuten nichts, während das Haus aus dem Netz zieht – der nächste Speicher übernimmt",
+  "log.stuck": "{battery} kann nicht arbeiten, und das war nicht ich (Stand {soc} %)",
+  "log.stuck.reserve": "{battery} kann nicht entladen: die Reserve steht auf {value} %, der Stand bei {soc} % – das war nicht ich",
+  "log.stuck.discharge": "{battery} kann nicht entladen: am Gerät ist das Entladen gesperrt ({value}) – das war nicht ich",
+  "log.stuck.charge": "{battery} kann nicht laden: am Gerät ist das Laden gesperrt ({value}) – das war nicht ich",
+  "log.stuck_over": "{battery} kann wieder arbeiten",
   "log.team_block.both": "{battery}: Laden und Entladen gesperrt",
   "log.team_block.charge": "{battery}: Laden gesperrt",
   "log.team_block.discharge": "{battery}: Entladen gesperrt, Laden frei",
@@ -3460,6 +3472,24 @@ export const de = {
   "roles.todo.adopt": "Übernehmen",
   "roles.todo.keep": "So lassen",
   "roles.todo.adopted": "Übernommen. Vor der nächsten Nacht brauche ich einen neuen Testlauf.",
+  "stuck.title.discharge": "{name} kann nicht entladen",
+  "stuck.title.charge": "{name} kann nicht laden",
+  "stuck.reserve":
+    "Die Reserve „{name}“ steht auf {value}, der Stand bei {soc} %. Das habe ich nicht gesetzt, also stelle ich es nicht zurück. Setz die Reserve wieder auf deinen Wert – oder trag {value} als Entladegrenze des Speichers bei mir ein, wenn das so gewollt ist, dann bin ich still.",
+  "stuck.discharge":
+    "Am Gerät ist das Entladen gesperrt („{name}“ steht auf {value}), und das war nicht ich. Schau nach, wer das gesetzt hat – eine Automation, ein Skript, der Wechselrichter – und gib es frei, wenn es nicht so gewollt ist.",
+  "stuck.charge":
+    "Am Gerät ist das Laden gesperrt („{name}“ steht auf {value}), und das war nicht ich. Schau nach, wer das gesetzt hat – eine Automation, ein Skript, der Wechselrichter – und gib es frei, wenn es nicht so gewollt ist.",
+  "stuck.short.reserve":
+    "Die Reserve „{name}“ steht auf {value}, der Stand bei {soc} %. Das war nicht ich – setz sie zurück, oder trag {value} unten als Entladegrenze ein, dann bin ich still.",
+  "stuck.short.discharge": "Am Gerät ist das Entladen gesperrt („{name}“ steht auf {value}), und das war nicht ich. Gib es frei, wenn es nicht so gewollt ist.",
+  "stuck.short.charge": "Am Gerät ist das Laden gesperrt („{name}“ steht auf {value}), und das war nicht ich. Gib es frei, wenn es nicht so gewollt ist.",
+  "stuck.since": "seit {time} Uhr",
+  "stuck.since.day": "seit {day}, {time} Uhr",
+  "tip.stuck.title": "Warum stelle ich das nicht zurück?",
+  "tip.stuck.text":
+    "Ich stelle nur zurück, was ich selbst geschrieben habe. Diesen Wert hat jemand anderes gesetzt – du, eine Automation, ein Skript oder der Wechselrichter selbst – und dein Wort zählt mehr als meins. Deshalb sage ich nur Bescheid.\nDer runde Knopf mit dem Pfeil zeigt die Entität in Home Assistant; dort änderst du den Wert, wenn er nicht so gewollt ist. Sobald der Speicher wieder arbeiten kann, ist die Meldung von selbst weg.",
+  "tip.stuck.hint": "Ich warte eine Viertelstunde, bevor ich etwas sage – und nur, solange das Haus deshalb aus dem Netz zieht oder Sonne ins Netz gibt.",
   "battery.probes": "Proben: {list}",
   "battery.probes.ok": "{op} ✓ {day}",
   "battery.probes.failed": "{op} ✗ {day}",
@@ -3625,6 +3655,10 @@ export const de = {
   "tip.notify_problems.text": "Wenn ich Werte nicht zurückstellen kann oder ein Speicher nicht tut, was ich ihm sage.",
   "tip.notify_morning.title": "Was berichte ich?",
   "tip.notify_morning.text": "Nach einer gesteuerten Nacht: wie weit ich die Speicher geladen habe und dass alles wieder zurückgestellt ist.",
+  "tip.notify_stuck.title": "Wann melde ich das?",
+  "tip.notify_stuck.text":
+    "Wenn ein Speicher seit einer Viertelstunde nicht laden oder entladen kann, weil eine Einstellung am Gerät es verhindert, die nicht von mir ist – und das Haus deshalb gerade aus dem Netz zieht oder Sonne ins Netz gibt. Zum Beispiel die Reserve auf 100 % oder eine Sperre, die eine Automation gesetzt hat.\nZurückstellen tue ich so etwas nicht: Ich stelle nur zurück, was ich selbst geschrieben habe. Ich sage nur Bescheid – in Home Assistant immer, aufs Handy nur mit diesem Schalter.",
+  "tip.notify_stuck.hint": "Ist der Wert so gewollt, trag ihn beim Speicher als Entladegrenze ein – dann bin ich still.",
   "tip.ask_time.title": "Wann frage ich?",
   "tip.ask_time.text": "Zu dieser Uhrzeit frage ich im Modus Vorschlagen, ob ich die kommende Nacht steuern darf. Antworten kannst du bis in die Nacht hinein.",
 
