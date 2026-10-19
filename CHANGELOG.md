@@ -3,6 +3,14 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.26
+
+- **Speicher-Dialog neu: Ich zeige, was ich tue.** Unter Geräte › Speicher › „Regler für …“ steht jetzt für jeden Vorgang – nachts laden, nachts halten, warten (beides gesperrt), nur Laden sperren, nur Entladen sperren, Überschuss fürs Auto lassen, zurückstellen – Schritt für Schritt, welche Entität ich in welcher Reihenfolge auf welchen Wert setze, mit dem Wert von jetzt daneben, und was ich danach zurückstelle. Beim Fronius siehst du so zum Beispiel: Ladegrenze 0 % → Schalter „Ladegrenze aktiv“ Ein → Entladegrenze 0 % → Schalter Ein; zurück erst die Schalter, dann die Werte.
+- **Probe je Vorgang:** Mit „Probe“ schreibe ich einen Vorgang einmal wirklich, lese nach, ob dein Gerät jeden Wert übernommen hat, und stelle sofort alles zurück. So kannst du jede Anlage selbst prüfen – auch eine, die ich noch nie gesehen habe. Das Ergebnis steht am Speicher („zuletzt geprobt“) und im Protokoll.
+- **Jeden Vorgang selbst festlegen:** „Selbst festlegen“ füllt meine Schritte vor; du änderst Entitäten, Werte oder Reihenfolge – auch fürs Sperren und Drosseln am Tag. Ich nutze dann deine Schritte statt meiner Profil-Logik, und du kommst jederzeit zum Profil zurück.
+- **Zuordnung der Regler vollständig und ehrlich:** Alle Rollen, die ein Profil nutzt, stehen jetzt im Dialog (auch Ladegrenze, Ladegrenze aktiv, Laden/Entladen erlaubt), mit ihrer Bedeutung („Sollwert in W“ gegen „Deckel in %“). Weicht deine gespeicherte Zuordnung von dem ab, was mein Herstellerprofil heute findet, zeige ich es an („Profil: …“), unter „Joe braucht dich“ und auf der Speicherseite – „Übernehmen“ oder „So lassen“. Beim Fronius lagen so bei manchen die Grenzen unter „Ladeleistung/Entladeleistung“, und die Entladegrenze fehlte: Dann konnte ich den Speicher gar nicht sperren, ohne dass man es sah.
+- **Zu langsames Netzladen fällt auf:** Lädt ein Speicher nachts 15 Minuten lang mit weniger als 40 % der geplanten Leistung (zum Beispiel, weil der Wechselrichter übers Hochsetzen der Reserve nur wenig zulässt), sage ich dir Bescheid, was du prüfen kannst, und plane ihn bis auf Weiteres mit der gemessenen Leistung. Nach jeder Nacht steht im Protokoll, wie viel jeder Speicher wirklich geladen hat („BYD: 2,1 von 4,5 kWh“).
+
 ## 0.9.25
 
 - **Anhalten ohne Folgen:** Wenn du mich deaktivierst, neu lädst oder aktualisierst, stelle ich alle Werte zurück (mit mehreren Versuchen) und schalte deine Speicher-Automationen wieder ein. Beim Entfernen stelle ich erst zurück und lösche dann. Klappt etwas nicht, bekommst du eine Nachricht mit den Werten.
