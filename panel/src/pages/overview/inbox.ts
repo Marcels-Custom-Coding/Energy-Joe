@@ -12,8 +12,10 @@ import {
   transferGuard,
   unsureNames,
 } from "../../components/battery-team";
+import { stuckSince, stuckText, stuckTitle } from "../../components/battery-stuck";
 import { mergeAnswers, mergeQuestion } from "../../components/car-sources";
 import { daySurplus, surplusAbility, surplusConflicts } from "../../components/day-surplus";
+import { haOpen, type HaTarget } from "../../components/ha-open";
 import { checkText } from "../../components/texts";
 import { tip } from "../../components/tip";
 import { allowedCars, carRoute, pointRoute } from "../../cars";
@@ -44,7 +46,11 @@ export interface TodoItem {
   warn?: boolean;
   title: string;
   text?: string;
+  /** A line under the text ("seit 20:05 Uhr"). */
+  when?: string;
   to: Route;
+  /** Something to look at in Home Assistant (the lever that holds a battery back): the round arrow button and its tooltip. */
+  ha?: { target: HaTarget; tip: TipName };
   /** A quick answer right in the row (e.g. "Ist nachts aus – normal"): a config patch, its label and tooltip. */
   fix?: { label: string; tip: TipName; patch: Record<string, unknown> };
   /** Answers right in the row ("Welches Auto hängt …?": one per car): a command (or a config patch) each, one tooltip for all. */
@@ -253,6 +259,24 @@ export function inboxItems(t: Translate, joe: JoeState, inputs: InboxInputs = {}
       to: { tab: "devices", section: "battery", id: item.battery_id, sub: "control" },
       choices: rolesChoices(t, item.battery_id),
       choicesTip: "battery_roles",
+    });
+  }
+  // A battery held back by a setting that is not Joe's (the reserve at its
+  // level, a block someone else set): he says so and shows the lever, but
+  // puts nothing back he did not write – the row goes once the battery works.
+  for (const [id, entry] of Object.entries(control?.stuck ?? {})) {
+    const battery = config.batteries.find((b) => b.id === id);
+    if (!battery) continue;
+    items.push({
+      id: `stuck:${id}:${entry.reason}`,
+      hide: [],
+      icon: "mdi:battery-lock",
+      warn: true,
+      title: stuckTitle(t, battery.name, entry),
+      text: stuckText(t, inputs.hass, entry),
+      when: stuckSince(t, entry.since),
+      to: deviceRoute({ group: "battery", id }),
+      ha: { target: { entityId: entry.entity_id, name: entry.name }, tip: "stuck" },
     });
   }
   for (const battery of config.batteries.filter((b) => b.adapter !== "none")) {
@@ -677,6 +701,9 @@ export class JoeOverviewInbox extends LitElement {
         color: var(--joe-ink-2);
         line-height: 1.4;
       }
+      .todo-text small.when {
+        color: var(--joe-muted);
+      }
       .go {
         color: var(--joe-muted);
       }
@@ -775,9 +802,13 @@ export class JoeOverviewInbox extends LitElement {
         <span class="todo-text">
           <b>${item.title}</b>
           ${item.text ? html`<small>${item.text}</small>` : nothing}
+          ${item.when ? html`<small class="when">${item.when}</small>` : nothing}
         </span>
         <ha-icon class="go" icon="mdi:chevron-right"></ha-icon>
       </a>
+      ${item.ha
+        ? html`<span class="todo-actions" data-tipped>${haOpen(t, item.ha.target)}${tip(t, item.ha.tip)}</span>`
+        : nothing}
       ${item.choices?.length
         ? html`<span class="todo-actions choices" data-tipped role="group" aria-label=${item.title}>
             ${item.choices.map(

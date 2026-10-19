@@ -1252,27 +1252,9 @@
         "unit": null,
         "current": "off",
         "keep": false
-       },
-       {
-        "kind": "set",
-        "role": "min_soc",
-        "entity_id": "number.gen24_modbus_minimum_reserve",
-        "name": "Mindestreserve",
-        "value": 75.0,
-        "param": "target",
-        "unit": "%",
-        "current": "5",
-        "keep": false
        }
       ],
       "restore": [
-       {
-        "role": "min_soc",
-        "entity_id": "number.gen24_modbus_minimum_reserve",
-        "name": "Mindestreserve",
-        "value": "saved",
-        "current": "5"
-       },
        {
         "role": "discharge_limit_enabled",
         "entity_id": "switch.gen24_modbus_discharge_rate_active",
@@ -1680,13 +1662,6 @@
         "current": "100"
        },
        {
-        "role": "min_soc",
-        "entity_id": "number.gen24_modbus_minimum_reserve",
-        "name": "Mindestreserve",
-        "value": "saved",
-        "current": "5"
-       },
-       {
         "role": "discharge_limit_enabled",
         "entity_id": "switch.gen24_modbus_discharge_rate_active",
         "name": "Entladerate aktiv",
@@ -1719,9 +1694,7 @@
       "found": "number.gen24_modbus_minimum_reserve",
       "kind": "level",
       "unit": "%",
-      "used_by": [
-       "charge"
-      ],
+      "used_by": [],
       "deviates": false,
       "relevant": true
      },
@@ -1840,7 +1813,7 @@
     "charge": {
      "ok": true,
      "op": "charge",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "switch.gen24_modbus_grid_charging",
@@ -1869,13 +1842,6 @@
        "read": "on",
        "taken": true,
        "error": null
-      },
-      {
-       "entity_id": "number.gen24_modbus_minimum_reserve",
-       "wrote": 75.0,
-       "read": "75.0",
-       "taken": true,
-       "error": null
       }
      ],
      "restored": true,
@@ -1886,7 +1852,7 @@
     "hold": {
      "ok": true,
      "op": "hold",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "number.gen24_modbus_charge_rate",
@@ -1925,7 +1891,7 @@
     "block": {
      "ok": true,
      "op": "block",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "number.gen24_modbus_charge_rate",
@@ -1964,7 +1930,7 @@
     "block_charge": {
      "ok": true,
      "op": "block_charge",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "number.gen24_modbus_charge_rate",
@@ -1989,7 +1955,7 @@
     "block_discharge": {
      "ok": true,
      "op": "block_discharge",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "number.gen24_modbus_discharge_rate",
@@ -2014,7 +1980,7 @@
     "cap": {
      "ok": true,
      "op": "cap",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "switch.gen24_modbus_charge_rate_active",
@@ -2039,7 +2005,7 @@
     "release": {
      "ok": false,
      "op": "release",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [],
      "restored": true,
      "restore_errors": [],
@@ -2052,7 +2018,7 @@
     "charge": {
      "ok": false,
      "op": "charge",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "switch.gen24_modbus_grid_charging",
@@ -2078,14 +2044,7 @@
       {
        "entity_id": "switch.gen24_modbus_discharge_rate_active",
        "wrote": true,
-       "read": "on",
-       "taken": true,
-       "error": null
-      },
-      {
-       "entity_id": "number.gen24_modbus_minimum_reserve",
-       "wrote": 75.0,
-       "read": "5.0",
+       "read": "off",
        "taken": false,
        "error": "not_taken"
       }
@@ -2098,7 +2057,7 @@
     "hold": {
      "ok": false,
      "op": "hold",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "number.gen24_modbus_charge_rate",
@@ -2137,7 +2096,7 @@
     "block": {
      "ok": false,
      "op": "block",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "number.gen24_modbus_charge_rate",
@@ -2176,7 +2135,7 @@
     "block_charge": {
      "ok": false,
      "op": "block_charge",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "number.gen24_modbus_charge_rate",
@@ -2201,7 +2160,7 @@
     "block_discharge": {
      "ok": false,
      "op": "block_discharge",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "number.gen24_modbus_discharge_rate",
@@ -2226,7 +2185,7 @@
     "cap": {
      "ok": false,
      "op": "cap",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "switch.gen24_modbus_charge_rate_active",
@@ -2251,7 +2210,7 @@
     "release": {
      "ok": false,
      "op": "release",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [],
      "restored": true,
      "restore_errors": [],
@@ -2427,27 +2386,9 @@
         "unit": null,
         "current": "off",
         "keep": false
-       },
-       {
-        "kind": "set",
-        "role": "min_soc",
-        "entity_id": "number.gen24_modbus_minimum_reserve",
-        "name": "Mindestreserve",
-        "value": 75.0,
-        "param": "target",
-        "unit": "%",
-        "current": "5.0",
-        "keep": false
        }
       ],
       "restore": [
-       {
-        "role": "min_soc",
-        "entity_id": "number.gen24_modbus_minimum_reserve",
-        "name": "Mindestreserve",
-        "value": "saved",
-        "current": "5.0"
-       },
        {
         "role": "discharge_limit_enabled",
         "entity_id": "switch.gen24_modbus_discharge_rate_active",
@@ -2927,13 +2868,6 @@
         "current": "100.0"
        },
        {
-        "role": "min_soc",
-        "entity_id": "number.gen24_modbus_minimum_reserve",
-        "name": "Mindestreserve",
-        "value": "saved",
-        "current": "5.0"
-       },
-       {
         "role": "discharge_limit_enabled",
         "entity_id": "switch.gen24_modbus_discharge_rate_active",
         "name": "Entladerate aktiv",
@@ -3078,9 +3012,7 @@
       "found": "number.gen24_modbus_minimum_reserve",
       "kind": "level",
       "unit": "%",
-      "used_by": [
-       "charge"
-      ],
+      "used_by": [],
       "deviates": false,
       "relevant": true
      },
@@ -3207,7 +3139,7 @@
     "charge": {
      "ok": true,
      "op": "charge",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "switch.gen24_modbus_grid_charging",
@@ -3236,13 +3168,6 @@
        "read": "on",
        "taken": true,
        "error": null
-      },
-      {
-       "entity_id": "number.gen24_modbus_minimum_reserve",
-       "wrote": 75.0,
-       "read": "75.0",
-       "taken": true,
-       "error": null
       }
      ],
      "restored": true,
@@ -3253,7 +3178,7 @@
     "hold": {
      "ok": true,
      "op": "hold",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "number.gen24_modbus_charge_rate",
@@ -3292,7 +3217,7 @@
     "block": {
      "ok": true,
      "op": "block",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "number.gen24_modbus_charge_rate",
@@ -3331,7 +3256,7 @@
     "block_charge": {
      "ok": true,
      "op": "block_charge",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "number.gen24_modbus_charge_rate",
@@ -3370,7 +3295,7 @@
     "block_discharge": {
      "ok": true,
      "op": "block_discharge",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "number.gen24_modbus_charge_rate",
@@ -3409,7 +3334,7 @@
     "cap": {
      "ok": true,
      "op": "cap",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "switch.gen24_modbus_charge_rate_active",
@@ -3434,7 +3359,7 @@
     "release": {
      "ok": false,
      "op": "release",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [],
      "restored": true,
      "restore_errors": [],
@@ -3445,7 +3370,7 @@
     "guard_charge": {
      "ok": true,
      "op": "guard_charge",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "number.gen24_modbus_charge_rate",
@@ -3470,7 +3395,7 @@
     "guard_discharge": {
      "ok": true,
      "op": "guard_discharge",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "number.gen24_modbus_discharge_rate",
@@ -3497,7 +3422,7 @@
     "charge": {
      "ok": false,
      "op": "charge",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "switch.gen24_modbus_grid_charging",
@@ -3523,14 +3448,7 @@
       {
        "entity_id": "switch.gen24_modbus_discharge_rate_active",
        "wrote": true,
-       "read": "on",
-       "taken": true,
-       "error": null
-      },
-      {
-       "entity_id": "number.gen24_modbus_minimum_reserve",
-       "wrote": 75.0,
-       "read": "5.0",
+       "read": "off",
        "taken": false,
        "error": "not_taken"
       }
@@ -3543,7 +3461,7 @@
     "hold": {
      "ok": false,
      "op": "hold",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "number.gen24_modbus_charge_rate",
@@ -3582,7 +3500,7 @@
     "block": {
      "ok": false,
      "op": "block",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "number.gen24_modbus_charge_rate",
@@ -3621,7 +3539,7 @@
     "block_charge": {
      "ok": false,
      "op": "block_charge",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "number.gen24_modbus_charge_rate",
@@ -3660,7 +3578,7 @@
     "block_discharge": {
      "ok": false,
      "op": "block_discharge",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "number.gen24_modbus_charge_rate",
@@ -3699,7 +3617,7 @@
     "cap": {
      "ok": false,
      "op": "cap",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "switch.gen24_modbus_charge_rate_active",
@@ -3724,7 +3642,7 @@
     "release": {
      "ok": false,
      "op": "release",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [],
      "restored": true,
      "restore_errors": [],
@@ -3735,7 +3653,7 @@
     "guard_charge": {
      "ok": false,
      "op": "guard_charge",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "number.gen24_modbus_charge_rate",
@@ -3760,7 +3678,7 @@
     "guard_discharge": {
      "ok": false,
      "op": "guard_discharge",
-     "at": "2026-10-19T01:41:06-07:00",
+     "at": "2026-10-19T10:51:50-07:00",
      "steps": [
       {
        "entity_id": "number.gen24_modbus_discharge_rate",
@@ -3789,7 +3707,7 @@
   "steering": {
    "ok": false,
    "op": "block",
-   "at": "2026-10-19T01:41:06-07:00",
+   "at": "2026-10-19T10:51:50-07:00",
    "steps": [],
    "restored": true,
    "restore_errors": [],
@@ -3799,7 +3717,7 @@
   "busy": {
    "ok": false,
    "op": "block",
-   "at": "2026-10-19T01:41:06-07:00",
+   "at": "2026-10-19T10:51:50-07:00",
    "steps": [],
    "restored": true,
    "restore_errors": [],

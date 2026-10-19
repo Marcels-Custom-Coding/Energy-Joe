@@ -46,7 +46,7 @@ Joe braucht kein Vorwissen. Er findet selbst, was er braucht, fragt in Alltagssp
 - Vor dem ersten Steuern macht er einen Testlauf.
 - In den Modi „Vorschlagen“ (fragt jeden Abend) und „Live“ hält und lädt er die Speicher und stellt am Ende alles zurück – auch nach einem Neustart oder per Notfall-Knopf.
 - Automationen, die auf dieselben Regler schreiben, listet er auf und kann sie mit einem Klick aus- und wieder einschalten.
-- Sicherheitsgrenzen: Höchstpreis fürs Netzladen, Mindestersparnis, Schutz der Hauptsicherung, Meldung, wenn ein Speicher trotz Laden nicht voller wird. Auf Wunsch gelegentlich eine Pflegeladung bis 100 %.
+- Sicherheitsgrenzen: Höchstpreis fürs Netzladen, Mindestersparnis, Schutz der Hauptsicherung, Meldung, wenn ein Speicher trotz Laden nicht voller wird oder wegen einer Einstellung, die nicht von Joe ist, nicht arbeiten kann (Reserve auf dem Stand, fremde Sperre) – Joe stellt nur zurück, was er selbst geschrieben hat. Auf Wunsch gelegentlich eine Pflegeladung bis 100 %.
 - Sieht Joe einen Speicher, den er nicht steuern kann, sagt er dir im Panel, warum – und was du tun kannst (eine Freischaltung im Gerät, eine Option der Integration, eine ausgeschaltete Entität).
 
 ### Unterstützte Speicher

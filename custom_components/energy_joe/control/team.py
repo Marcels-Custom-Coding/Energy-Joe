@@ -84,6 +84,14 @@ KEEP = 5
 # A battery that charges no more while the house gives to the grid is full,
 # too (its own charge target, a BMS limit).
 EXPORT_W = 300.0
+# A battery whose turn it is that gives nothing while the house draws at
+# least IMPORT_W from the grid for STUCK_SPAN is as empty as it goes – or
+# held back by a setting of its own (a reserve at its level, a block Joe did
+# not set): the next one takes over. It gets its turn again after
+# STUCK_RETRY, or as soon as it discharged after all.
+IMPORT_W = 300.0
+STUCK_SPAN = timedelta(minutes=15)
+STUCK_RETRY = timedelta(minutes=60)
 
 
 @dataclass(slots=True)
@@ -312,6 +320,22 @@ def learned(observations: list[float]) -> float | None:
     """The cutoff from the last observations (their median)."""
     found = observations[-KEEP:]
     return round(median(found), 1) if found else None
+
+
+def watch_empty(
+    watch: dict[str, Any], power_w: float, need_w: float, now: datetime
+) -> bool:
+    """Whether a battery free to discharge gives nothing while the house
+    draws from the grid, for a while (see STUCK_SPAN): as empty as it goes,
+    or held back by a setting of its own."""
+    if power_w >= -IDLE_W and need_w >= IMPORT_W:
+        since = watch.get("empty_since")
+        if since is None:
+            watch["empty_since"] = now.isoformat(timespec="seconds")
+            return False
+        return now - datetime.fromisoformat(since) >= STUCK_SPAN
+    watch.pop("empty_since", None)
+    return False
 
 
 def watch_full(

@@ -721,6 +721,8 @@ export interface NotifyConfig {
   morning: boolean;
   /** Which car is plugged in, and a car needed tomorrow but not plugged in. */
   cars?: boolean;
+  /** A battery that cannot work because of a setting that is not Joe's (the reserve at its level, a block someone else set). */
+  stuck?: boolean;
 }
 
 export interface Answers {
@@ -1505,6 +1507,23 @@ export interface NightSlow {
   nights?: { night: string; planned_w: number; measured_w: number }[];
 }
 
+/**
+ * A battery held back by a setting that is not Joe's (executor._async_watch_stuck):
+ * its reserve at or above its level, discharging or charging blocked at the
+ * device – none of it written by Joe, so he puts nothing back and only says so.
+ * Listed while it matters (the house draws from the grid, or gives to it).
+ */
+export interface BatteryStuck {
+  reason: "reserve" | "discharge" | "charge";
+  since: string;
+  /** The lever the owner sees: its entity, its name in Home Assistant and its value (a number, on/off or an option). */
+  entity_id: string;
+  name: string;
+  value: number | boolean | string | null;
+  /** The battery's level when it was found (%). */
+  soc: number;
+}
+
 /** The last night looked back on: what was planned against what each battery took (executor._review_night). */
 export interface NightReview {
   night: string;
@@ -1598,6 +1617,8 @@ export interface ControlView {
   night_slow?: Record<string, NightSlow>;
   /** The last night looked back on: planned against charged, per battery (older backends: missing). */
   night_review?: NightReview | null;
+  /** Batteries held back by a setting that is not Joe's, by id – only while it lasts (older backends: missing). */
+  stuck?: Record<string, BatteryStuck>;
   /** Per battery: ready to steer, or why not. */
   ready: Record<string, "ready" | "not_tested" | "outdated" | "not_controllable" | "controls_missing">;
 }

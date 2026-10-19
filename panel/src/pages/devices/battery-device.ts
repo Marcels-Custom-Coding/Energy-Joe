@@ -8,6 +8,7 @@ import { dayText } from "../../components/look-back";
 import { timeOf } from "../../components/plan-text";
 import "../../components/sheet";
 import { batteryNotes, slowNote } from "../../components/battery-notes";
+import { stuckNote } from "../../components/battery-stuck";
 import { tip } from "../../components/tip";
 import { saveConfig, sourceOf, withIgnored } from "../../config";
 import { define } from "../../define";
@@ -129,6 +130,23 @@ export class JoeBatteryDevice extends DeviceSection {
       }
       .note {
         margin-top: 0;
+      }
+      .note.stuck {
+        margin-bottom: 12px;
+      }
+      .note.stuck > span {
+        min-width: 0;
+      }
+      .note.stuck b {
+        font-weight: 700;
+      }
+      .stuck-since {
+        display: block;
+        margin-top: 4px;
+        color: var(--joe-ink-2);
+      }
+      .stuck-actions {
+        align-items: center;
       }
       .test {
         display: flex;
@@ -388,7 +406,8 @@ export class JoeBatteryDevice extends DeviceSection {
             >`
           : html`<span class="chip">${t("devices.test.none")}</span>`;
     const steps = testing?.steps ?? test?.steps ?? [];
-    return html`<div class="test">
+    return html`${stuckNote(t, this.hass, battery, control)}
+      <div class="test">
         ${chip} ${probing}
         <button type="button" class="btn btn-secondary" ?disabled=${busy || steering} @click=${() => (this.confirm = true)}>
           <ha-icon icon="mdi:play-circle-outline"></ha-icon>${t(test ? "devices.test.again" : "devices.test.start")}

@@ -44,6 +44,10 @@
       Omnibattery mit, ihre Ladeverzögerung ist an – ?omni=ok ohne diese Warnung; ?intruder=1: eine Automation
       schreibt die System-Ladegrenze, die Venus macht deshalb nicht mit)
       ?pv=night (Nacht: der Wechselrichter ist aus, sein Wert „nicht verfügbar“ – bis er als „ohne Sonne aus“ markiert ist)
+      ?stuck=reserve|discharge|charge (Speicher kann nicht arbeiten, control.stuck: der BYD seit 20 Minuten – reserve: die
+      Mindestreserve steht von Hand auf 100 % bei Stand 98 %; discharge/charge: das Entladen bzw. Laden ist am Wechselrichter
+      gesperrt. Joe stellt nichts zurück: Karte unter „Joe braucht dich“, Hinweis unter „Jetzt“ auf der Speicher-Seite,
+      Protokoll „stuck“; der Pfeil-Knopf öffnet die Entität – in der Konsole „Home Assistant would show …“)
       ?team=sequence|together|unset|automation|parallel|along|along_export|help|base|ask|not_taken|taking_over|levers|given_back|hold (Mehrere Speicher: mit ?done=1 nacheinander,
       der BYD arbeitet, die Venus wartet, gelernter Entladeschluss 10,5 %; unset: noch nicht gewählt, wirkt als nacheinander;
       automation: die Interlock-Automationen machen es noch; parallel: nebeneinander laden; not_taken/levers: Joe kann
@@ -256,7 +260,8 @@
       const POINT = { vehicle_entity: null, connected_entity: null, soc_entity: null, range_entity: null, odometer_entity: null, cars: null, unknown: "ask", assume_car: null };
       const migrateCars = (config) => {
         config.cars = config.cars ?? [];
-        config.notify = { cars: true, ...config.notify };
+        // model.py fills in notify.cars (version 7) and notify.stuck (a battery held back by a setting that is not Joe's).
+        config.notify = { cars: true, stuck: true, ...config.notify };
         for (const action of config.actions ?? []) {
           const need = action.need;
           delete action.need;
@@ -606,6 +611,7 @@
           surplus: surplusView(),
           team: teamView(),
           guard: guardView(),
+          stuck: stuckView(),
           // The highest import Joe measured (executor._track_grid_peak), watched for ten days.
           grid_peak: done ? { w: 6340, at: new Date(Date.now() - 3 * 86400e3).toISOString(), since: new Date(Date.now() - 10 * 86400e3).toISOString() } : null,
           ...control,
@@ -859,10 +865,44 @@
               : null,
         };
       };
+      // A battery held back by a setting that is not Joe's (executor._async_watch_stuck, control.stuck):
+      // ?stuck=reserve – the BYD's minimum reserve set to 100 % by hand while it stands at 98 %;
+      // ?stuck=discharge|charge – discharging or charging blocked at the inverter. Found 20 minutes ago,
+      // told after 15 (the log entry); Joe puts nothing back he did not write.
+      const stuckParam = params.get("stuck");
+      const minutesAgo = (minutes) => new Date(Date.now() - minutes * 60e3 + 2 * 3600e3).toISOString().slice(0, 19) + "+02:00";
+      const STUCK = {
+        reserve: { entity_id: "number.inverter_minimum_reserve", name: "Battery minimum reserve", value: 100, state: "100" },
+        discharge: { entity_id: "switch.inverter_discharge_limit_enabled", name: "Battery discharge power limiting", value: true, state: "on" },
+        charge: { entity_id: "switch.inverter_charge_limit_enabled", name: "Battery charge power limiting", value: true, state: "on" },
+      };
+      const stuckBattery = () => state.config.batteries.find((b) => b.adapter === "fronius") ?? state.config.batteries[0];
+      const stuckView = () => {
+        const found = STUCK[stuckParam];
+        const battery = stuckBattery();
+        if (!found || !battery) return {};
+        const { state: _state, ...lever } = found;
+        return { [battery.id]: { reason: stuckParam, since: minutesAgo(20), ...lever, soc: 98 } };
+      };
+      if (STUCK[stuckParam]) {
+        // The lever as Home Assistant shows it now (the stuck entry carries its name and value).
+        const found = STUCK[stuckParam];
+        const was = sample.hass.states[found.entity_id];
+        sample.hass.states[found.entity_id] = {
+          entity_id: found.entity_id,
+          state: found.state,
+          attributes: { ...(was?.attributes ?? {}), friendly_name: found.name, ...(stuckParam === "reserve" ? { unit_of_measurement: "%" } : {}) },
+        };
+        sample.hass.entities[found.entity_id] ??= { entity_id: found.entity_id, device_id: "inverter", area_id: null, platform: "fronius" };
+      }
       const log = (kind, detail = {}) => {
         control.log.push({ at: stamp(), kind, ...detail });
         control.log = control.log.slice(-100);
       };
+      if (STUCK[stuckParam] && stuckBattery()) {
+        const found = STUCK[stuckParam];
+        control.log.push({ at: minutesAgo(5), kind: "stuck", battery: stuckBattery().id, reason: stuckParam, entity: found.entity_id, value: found.value, soc: 98 });
+      }
       // A day in Berlin (days back from today) at a time, as Home Assistant would send it.
       const dayAt = (back, time) => `${new Date(Date.now() + 2 * 3600e3 - back * 86400e3).toISOString().slice(0, 10)}T${time}:00+02:00`;
       // ?done=1: last night is in the log (control/executor.py keeps 100 entries).

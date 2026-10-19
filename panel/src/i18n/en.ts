@@ -829,6 +829,8 @@ export const en: Record<Key, string> = {
   "common.save": "Save",
   "common.cancel": "Cancel",
   "common.close": "Close",
+  "common.on": "On",
+  "common.off": "Off",
 
   "source.read": "read",
   "source.learned": "learned",
@@ -2388,6 +2390,9 @@ export const en: Record<Key, string> = {
   "settings.notify.ask.hint": "In the suggest mode, with “Yes” and “Not tonight” right in the message.",
   "settings.notify.problems": "Report problems",
   "settings.notify.problems.hint": "When I cannot put values back or a battery does not respond.",
+  "settings.notify.stuck": "Battery cannot work",
+  "settings.notify.stuck.hint":
+    "When a battery cannot charge or discharge because of a setting that is not mine – for example the reserve at 100 % or a block set by someone else.",
   "settings.notify.morning": "Report in the morning",
   "settings.notify.morning.hint": "What I steered during the night.",
   "settings.ask_time": "Ask at",
@@ -3171,6 +3176,13 @@ export const en: Record<Key, string> = {
   "log.team_handover.empty": "Battery change: {previous} is empty ({level} %) – {battery} takes over",
   "log.team_handover.full": "Battery change: {previous} is full – {battery} keeps charging",
   "log.team_handover.order": "Battery change: {battery} is up again (order), {previous} waits",
+  "log.team_handover.stuck": "Battery change: {previous} gives nothing ({level} %) – {battery} takes over",
+  "log.team_stuck": "{battery} has its turn but has given nothing for 15 minutes while the house draws from the grid – the next battery takes over",
+  "log.stuck": "{battery} cannot work, and that was not me (level {soc} %)",
+  "log.stuck.reserve": "{battery} cannot discharge: its reserve is at {value} %, its level at {soc} % – that was not me",
+  "log.stuck.discharge": "{battery} cannot discharge: discharging is blocked at the device ({value}) – that was not me",
+  "log.stuck.charge": "{battery} cannot charge: charging is blocked at the device ({value}) – that was not me",
+  "log.stuck_over": "{battery} can work again",
   "log.team_block.both": "{battery}: charging and discharging blocked",
   "log.team_block.charge": "{battery}: charging blocked",
   "log.team_block.discharge": "{battery}: discharging blocked, charging free",
@@ -3433,6 +3445,24 @@ export const en: Record<Key, string> = {
   "roles.todo.adopt": "Adopt",
   "roles.todo.keep": "Leave it",
   "roles.todo.adopted": "Adopted. I need a new test run before the next night.",
+  "stuck.title.discharge": "{name} cannot discharge",
+  "stuck.title.charge": "{name} cannot charge",
+  "stuck.reserve":
+    "The reserve “{name}” is at {value}, the level at {soc} %. I did not set that, so I do not put it back. Set the reserve back to your value – or enter {value} as the battery's discharge floor in my settings if that is what you want, then I keep quiet.",
+  "stuck.discharge":
+    "Discharging is blocked at the device (“{name}” is {value}), and that was not me. Check who set it – an automation, a script, the inverter – and free it if it is not meant so.",
+  "stuck.charge":
+    "Charging is blocked at the device (“{name}” is {value}), and that was not me. Check who set it – an automation, a script, the inverter – and free it if it is not meant so.",
+  "stuck.short.reserve":
+    "The reserve “{name}” is at {value}, the level at {soc} %. That was not me – set it back, or enter {value} as the discharge floor below, then I keep quiet.",
+  "stuck.short.discharge": "Discharging is blocked at the device (“{name}” is {value}), and that was not me. Free it if it is not meant so.",
+  "stuck.short.charge": "Charging is blocked at the device (“{name}” is {value}), and that was not me. Free it if it is not meant so.",
+  "stuck.since": "since {time}",
+  "stuck.since.day": "since {day}, {time}",
+  "tip.stuck.title": "Why don't I put it back?",
+  "tip.stuck.text":
+    "I only put back what I wrote myself. Someone else set this value – you, an automation, a script or the inverter itself – and your word counts more than mine. So I only let you know.\nThe round button with the arrow shows the entity in Home Assistant; there you change the value if it is not meant so. As soon as the battery can work again, the message goes away by itself.",
+  "tip.stuck.hint": "I wait a quarter of an hour before I say anything – and only while the house draws from the grid or gives sun to it because of it.",
   "battery.probes": "Probes: {list}",
   "battery.probes.ok": "{op} ✓ {day}",
   "battery.probes.failed": "{op} ✗ {day}",
@@ -3598,6 +3628,10 @@ export const en: Record<Key, string> = {
   "tip.notify_problems.text": "When I cannot put values back or a battery does not do what I tell it.",
   "tip.notify_morning.title": "What do I report?",
   "tip.notify_morning.text": "After a night I steered: how far I charged the batteries and that everything is back as it was.",
+  "tip.notify_stuck.title": "When do I report this?",
+  "tip.notify_stuck.text":
+    "When a battery has not been able to charge or discharge for a quarter of an hour because a setting at the device prevents it that is not mine – and the house therefore draws from the grid or gives sun to it right now. For example the reserve at 100 % or a block an automation has set.\nI do not put such a thing back: I only put back what I wrote myself. I just let you know – in Home Assistant always, on your phone only with this switch.",
+  "tip.notify_stuck.hint": "If the value is meant so, enter it at the battery as its discharge floor – then I keep quiet.",
   "tip.ask_time.title": "When do I ask?",
   "tip.ask_time.text": "At this time I ask in the suggest mode whether I may steer the coming night. You can answer well into the night.",
 

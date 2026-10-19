@@ -739,6 +739,9 @@ NOTIFY = vol.Schema(
         vol.Optional("morning", default=False): bool,
         # Which car is plugged in, and a car that is not plugged in but needed.
         vol.Optional("cars", default=True): bool,
+        # A battery held back by a setting that is not Joe's (its reserve at
+        # the level, a block someone else set) while it matters.
+        vol.Optional("stuck", default=True): bool,
     },
     extra=vol.ALLOW_EXTRA,
 )

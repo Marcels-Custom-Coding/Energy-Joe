@@ -253,13 +253,13 @@ async def test_the_preview_shows_the_rates_and_a_probe_writes_them(
     charge = found["charge"]
     assert charge["possible"] and charge["source"] == "profile"
     # Charging: grid charging on, charging allowed in full, the discharge
-    # rate below 0 (4000 W of 10240 W), its bit on, the reserve at the target.
+    # rate below 0 (4000 W of 10240 W), its bit on; the reserve stays the
+    # owner's (Joe stops at the target himself).
     assert sets(charge) == [
         (entity(hass, entry, port, "storage_grid_charging"), True),
         (entity(hass, entry, port, "storage_charge_rate"), 100.0),
         (rate, -39.1),
         (entity(hass, entry, port, "storage_discharge_limiting"), True),
-        (entity(hass, entry, port, "storage_reserve"), 32.0),
     ]
     assert charge["steps"][1]["keep"]
     # Waiting: both rates at 0 with their bits (as by day); one row for the owner.
@@ -280,7 +280,7 @@ async def test_the_preview_shows_the_rates_and_a_probe_writes_them(
     with patch.object(executor_module, "TEST_CHARGE", 0):
         result = await runtime.executor.async_probe(battery["id"], "charge")
     assert result["ok"], result
-    assert [s["taken"] for s in result["steps"]] == [True] * 5
+    assert [s["taken"] for s in result["steps"]] == [True] * 4
     assert to_int16(inverter.value(40343 + OUTWRTE)) == 10000
     assert inverter.value(40343 + STORCTL_MOD) == 0
     assert inverter.value(40343 + MINRSVPCT) == 500
