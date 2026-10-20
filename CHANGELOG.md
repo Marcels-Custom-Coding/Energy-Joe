@@ -3,6 +3,13 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.30
+
+- **Deine Automationen fasse ich nicht mehr an.** Bisher schaltete ich Automationen, die auf deine Speicher schreiben, auf Wunsch aus – und von selbst wieder ein, sobald ich nicht koordinierte, etwa bei einer fehlenden Grenze, nach einem Neustart oder beim Wechsel auf Modbus. So kam die 2000-W-Falle zweimal zurück. Damit ist Schluss: Ich schalte keine Automation mehr aus oder ein, auch nicht beim Deinstallieren. Der Knopf im Panel ist weg, dafür führt ein Link zu den Automationen in Home Assistant. Läuft eine, die auf einen Speicher schreibt, während ich steuere, sage ich es: unter „Joe braucht dich“, auf der Speicherseite, im Protokoll und einmal aufs Handy – „spuckt mir in die Suppe, besser ausschalten“. Ich arbeite trotzdem weiter, auch beim Drosseln am Tag und beim Wächter; du entscheidest.
+- **Sichtbar im Logbuch.** Jeden Regler, den ich setze, trage ich in Home Assistants Logbuch der Entität ein, mit Wert und Grund – etwa „Energy Joe: Marstek Venus Allow Discharge → aus: Nacheinander: BYD ist dran“. So für Nachtplan, Warten, Nacheinander, Drossel, Wächter, Testlauf, Probe und Zurückstellen.
+- **Diagnose-Datei mit Protokoll.** Die Diagnose (Einstellungen › Integrationen › Energy Joe › Diagnose herunterladen) enthält jetzt mein Protokoll, den Zustand von „Nacheinander“ und des Wächters, festgehaltene Speicher und die Automationen, die mir im Weg sind.
+- Nicht geprüft an echter Anlage: alles davon.
+
 ## 0.9.29
 
 - **Speicher kann nicht arbeiten: Ich sage es dir.** Kann ein Speicher wegen einer Einstellung, die nicht von mir ist, nicht laden oder entladen – die Reserve auf oder über dem Stand, eine Sperre am Gerät, die jemand anderes gesetzt hat –, und zieht das Haus deshalb 15 Minuten lang aus dem Netz (oder gibt hinein, obwohl der Speicher Platz hat), melde ich es: in Home Assistant immer, aufs Handy mit dem neuen Schalter „Speicher kann nicht arbeiten“ unter Einstellungen › Benachrichtigungen, dazu unter „Joe braucht dich“ und auf der Speicherseite mit Entität, Wert und seit wann. Zurück stelle ich davon nichts: Du hast es gesetzt, ich sage nur Bescheid. Liegt die Reserve auf deiner eigenen Reserve des Speichers, ist alles in Ordnung und ich schweige.

@@ -92,10 +92,19 @@ async def async_get_config_entry_diagnostics(
         "config": async_redact_data(config, TO_REDACT),
         "history": {**runtime.history.overview(), "months": runtime.history.months},
         "observe": observe,
-        # What Joe changed and still has to put back (entity ids and values).
+        # What Joe changed and still has to put back (entity ids and values),
+        # his log, what several batteries do together (as stored and as the
+        # panel sees it), the watchdog and the owner's automations in his way:
+        # enough to tell afterwards why he did what he did.
         "control": {
             "saved": runtime.executor.data["saved"],
             "active": runtime.executor.data["active"],
             "failures": runtime.executor.data["failures"],
+            "log": runtime.executor.data["log"][-200:],
+            "team": runtime.executor.data["team"],
+            "team_view": runtime.executor.team,
+            "guard": runtime.executor.guard,
+            "stuck": runtime.executor.data.get("stuck") or {},
+            "automations": runtime.executor.automations,
         },
     }

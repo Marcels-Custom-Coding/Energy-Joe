@@ -4,10 +4,10 @@ import "../../components/day-questions";
 import "../../components/steer-tonight";
 import {
   batteryTeam,
-  givenBack,
   groupsPatch,
   guardAlarm,
   guardInside,
+  quoted,
   teamSuggest,
   transferGuard,
   unsureNames,
@@ -310,19 +310,18 @@ export function inboxItems(t: Translate, joe: JoeState, inputs: InboxInputs = {}
       to: { tab: "devices", section: "battery" },
     });
   }
-  for (const [id, entry] of Object.entries(surplus?.batteries ?? {})) {
-    if (entry.state === "automation") {
-      warn({
-        id: `surplus:automation:${id}`,
-        title: entry.name,
-        text: t("overview.todo.surplus_automation", { names: (entry.automations ?? []).map((n) => `„${n}“`).join(", ") }),
-        to: { tab: "devices", section: "battery", id, sub: "intruders" },
-      });
-    }
+  // The owner's automations that write to the batteries while Joe steers:
+  // they can overwrite what he sets. They are the owner's, Joe only says so.
+  const automations = control?.automations ?? [];
+  if (automations.length && (joe.mode === "advisory" || joe.mode === "live")) {
+    warn({
+      id: `automations:${automations.join("|")}`,
+      title: t("overview.todo.automations.title"),
+      text: t("overview.todo.automations", { names: quoted(automations) }),
+      to: { tab: "devices", section: "battery", id: "automations" },
+    });
   }
-  // Several batteries: still running against each other after the watchdog's
-  // stages, the owner's automations doing it so far, or switched on again
-  // because Joe cannot block himself.
+  // Several batteries: still running against each other after the watchdog's stages.
   const team = batteryTeam(joe);
   const teamTo: Route = { tab: "devices", section: "battery", id: "together" };
   const guard = transferGuard(joe);
@@ -373,26 +372,6 @@ export function inboxItems(t: Translate, joe: JoeState, inputs: InboxInputs = {}
         { label: t("team.suggest.no"), patch: { rules: { team_early: false } } },
       ],
       choicesTip: "team_early",
-    });
-  }
-  if (team?.state === "automation") {
-    push({
-      id: "team:automations",
-      icon: "mdi:robot-confused-outline",
-      title: t("team.title"),
-      text: t("team.automations", { names: team.automations.map((n) => `„${n}“`).join(", ") }),
-      to: teamTo,
-    });
-  }
-  // Joe switched the owner's automations on again: he cannot block (a lever,
-  // a block that did not arrive …) – they run until he can take over again.
-  const back = givenBack(t, team);
-  if (back?.problem && team?.given_back) {
-    warn({
-      id: `team:given_back:${team.given_back.at}`,
-      title: t("team.given_back.title"),
-      text: back.text,
-      to: teamTo,
     });
   }
   // A limit in % that could take part once Joe knows what 100 % stand for.

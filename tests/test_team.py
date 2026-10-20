@@ -661,11 +661,14 @@ async def test_blocks_survive_a_crash_and_go_back_after_it(
     assert again.data["saved"] == {}
 
 
-async def test_automations_that_do_it_so_far_keep_joes_hands_off(
+async def test_automations_in_the_way_are_named_but_joe_works_on(
     hass: HomeAssistant, freezer
 ) -> None:
+    """The owner's interlock writes the BYD's limit: Joe says so (the log,
+    the panel) and coordinates all the same; the automation is the owner's,
+    Joe switches it neither off nor on. One that only tells is no trouble."""
     freezer.move_to("2026-10-10T19:00:00+02:00")
-    calls = install_team(hass, byd_soc=40, venus_soc=60)
+    install_team(hass, byd_soc=40, venus_soc=60)
     flows(hass, grid=0, byd=-800)
     assert await async_setup_component(
         hass,
@@ -710,17 +713,26 @@ async def test_automations_that_do_it_so_far_keep_joes_hands_off(
     await hass.async_block_till_done()
     executor, _ = await make_executor(hass, team_config(), day_plan(dt_util.now()))
     await executor.async_check()
-    view = executor.view["team"]
-    assert view["state"] == "automation"
-    # The watcher only tells: no conflict.
-    assert view["automations"] == ["Interlock R2"]
-    assert calls == []
-    assert executor.data["saved"] == {}
-    # Switched off: Joe takes over.
+    await hass.async_block_till_done()
+    assert executor.view["team"]["state"] == "on"
+    assert venus_levers(hass) == ("0.0", "0.0", "on")
+    # The watcher only tells: not named.
+    assert executor.view["automations"] == ["Interlock R2"]
+    assert hass.states.get("automation.interlock_r2").state == "on"
+    told = [e for e in executor.data["log"] if e["kind"] == "automations"]
+    assert [e["names"] for e in told] == [["Interlock R2"]]
+    assert executor.data["automations_told"] == ["automation.interlock_r2"]
+    # Said once: the next check adds nothing.
+    await executor.async_check()
+    assert len([e for e in executor.data["log"] if e["kind"] == "automations"]) == 1
+    # The owner switches it off: Joe notes that, too.
     await hass.services.async_call(
         "automation", "turn_off", {"entity_id": "automation.interlock_r2"}, True
     )
     await executor.async_check()
+    assert executor.view["automations"] == []
+    assert executor.data["log"][-1]["kind"] == "automations_off"
+    assert executor.data["automations_told"] == []
     assert executor.view["team"]["state"] == "on"
     assert venus_levers(hass) == ("0.0", "0.0", "on")
 
@@ -833,7 +845,7 @@ async def test_the_daytime_cap_goes_to_the_one_whose_turn_it_is(
     assert venus_levers(hass) == ("0.0", "0.0", "on")
 
 
-# --- the owner's automations: off only while Joe does it himself ---------------------
+# --- the owner's automations: theirs, Joe never switches them ------------------------
 
 
 async def interlock(hass: HomeAssistant) -> str:
@@ -865,12 +877,10 @@ async def interlock(hass: HomeAssistant) -> str:
     return "automation.interlock_r2"
 
 
-async def joe_switches_off(hass: HomeAssistant, executor: Any, entity_id: str) -> None:
-    """What the panel's "switch them off" does."""
-    from custom_components.energy_joe.control import automations as found
-
-    await found.async_switch(
-        hass, [entity_id], False, executor.data["automations_off"], "off"
+async def owner_switches_off(hass: HomeAssistant, entity_id: str) -> None:
+    """The owner switches an automation off in Home Assistant."""
+    await hass.services.async_call(
+        "automation", "turn_off", {"entity_id": entity_id}, blocking=True
     )
     await hass.async_block_till_done()
 
@@ -879,9 +889,12 @@ def is_on(hass: HomeAssistant, entity_id: str) -> bool:
     return hass.states.get(entity_id).state == "on"
 
 
-async def test_automations_come_back_while_joe_cannot_block(
+async def test_a_lever_gone_leaves_the_owners_automation_alone(
     hass: HomeAssistant, freezer
 ) -> None:
+    """Joe cannot block: his blocks go back, nothing else. The owner's
+    automation stays off as the owner left it, and once the lever is back
+    Joe coordinates again at once."""
     freezer.move_to("2026-10-10T19:00:00+02:00")
     install_team(hass, byd_soc=40, venus_soc=60)
     flows(hass, grid=0, byd=-800)
@@ -889,13 +902,13 @@ async def test_automations_come_back_while_joe_cannot_block(
     executor, holder = await make_executor(
         hass, team_config(battery_team=None), day_plan(dt_util.now())
     )
-    await joe_switches_off(hass, executor, r2)
+    await owner_switches_off(hass, r2)
     await executor.async_check()
     assert executor.view["team"]["state"] == "on"
     assert not is_on(hass, r2)
     assert venus_levers(hass) == ("0.0", "0.0", "on")
-    # A lever gone: Joe cannot block, his blocks go back and so does R2 – once
-    # the grace for a moment's dropout is over.
+    # A lever gone: Joe cannot block, his blocks go back – once the grace for
+    # a moment's dropout is over.
     hass.states.async_set("number.omni_max_discharge", "unavailable")
     await executor.async_check()
     await hass.async_block_till_done()
@@ -906,80 +919,37 @@ async def test_automations_come_back_while_joe_cannot_block(
     await hass.async_block_till_done()
     view = executor.view["team"]
     assert view["state"] == "levers"
-    assert is_on(hass, r2)
-    assert view["lent"] == ["Interlock R2"]
-    assert view["given_back"]["reason"] == "levers"
-    assert view["given_back"]["names"] == ["Interlock R2"]
-    assert r2 in executor.data["automations_lent"]
-    assert r2 not in executor.data["automations_off"]
-    assert any(e["kind"] == "team_given_back" for e in executor.data["log"])
-    # The lever is back: R2 keeps running a while before Joe takes it over again
-    # (no back and forth); Joe blocks nobody meanwhile.
+    assert not is_on(hass, r2)
+    assert "given_back" not in view and "lent" not in view
+    assert venus_levers(hass)[0] == "2500.0" and venus_levers(hass)[2] == "off"
+    # The lever is back: Joe coordinates again at once (a value he wrote
+    # minutes ago and that did not show is written again after RETRY).
     hass.states.async_set(
         "number.omni_max_discharge",
         "2500.0",
         {"min": 0, "max": 2500, "step": 50, "unit_of_measurement": "W"},
     )
     await executor.async_check()
-    view = executor.view["team"]
-    assert view["state"] == "taking_over"
-    assert view["taking_over_at"] == "2026-10-10T19:16:30+02:00"
-    assert is_on(hass, r2)
-    assert venus_levers(hass)[2] == "off"
-    freezer.tick(timedelta(minutes=10))
-    await executor.async_check()
-    assert executor.view["team"]["state"] == "taking_over"
-    freezer.tick(timedelta(minutes=5))
+    await hass.async_block_till_done()
+    assert executor.view["team"]["state"] == "on"
+    freezer.tick(executor_module.RETRY)
     await executor.async_check()
     await hass.async_block_till_done()
-    view = executor.view["team"]
-    assert view["state"] == "on"
-    assert not is_on(hass, r2)
-    assert view["given_back"] is None
-    assert executor.data["automations_lent"] == {}
-    assert r2 in executor.data["automations_off"]
     assert venus_levers(hass) == ("0.0", "0.0", "on")
-    # Not live any more: back at once.
+    assert not is_on(hass, r2)
+    # Not live any more: back at once, the automation still untouched.
     holder["mode"] = "advisory"
     await executor.async_check()
     await hass.async_block_till_done()
-    assert is_on(hass, r2)
-    assert executor.view["team"]["given_back"]["reason"] == "dry"
+    assert executor.view["team"]["dry"] is True
     assert venus_levers(hass)[2] == "off"
-    # "Gleichzeitig": back and the owner's again (Joe takes nothing over).
+    assert not is_on(hass, r2)
+    # "Gleichzeitig": the batteries are the owner's, so is the automation.
     holder["mode"] = "live"
     holder["config"] = team_config(battery_team="together")
     await executor.async_check()
-    assert executor.data["automations_lent"] == {}
-    freezer.tick(timedelta(minutes=30))
-    holder["config"] = team_config()
-    await executor.async_check()
-    await hass.async_block_till_done()
-    assert is_on(hass, r2)
-    assert executor.view["team"]["state"] == "automation"
-
-
-async def test_switching_off_waits_until_joe_can_take_over(
-    hass: HomeAssistant, freezer
-) -> None:
-    freezer.move_to("2026-10-10T19:00:00+02:00")
-    install_team(hass, byd_soc=40, venus_soc=60)
-    flows(hass, grid=0, byd=-800)
-    r2 = await interlock(hass)
-    executor, holder = await make_executor(
-        hass, team_config(), day_plan(dt_util.now()), mode="simulation"
-    )
-    await executor.async_check()
-    from custom_components.energy_joe.control import automations as found
-
-    listed = found.find(hass, team_config(), {})
-    # In the simulation Joe would not block: R2 must keep running.
-    assert executor.view["team"]["free"] == "on"
-    assert executor.team_cannot_take(listed) == ({r2}, "dry")
-    holder["mode"] = "live"
-    await executor.async_check()
-    assert executor.view["team"]["state"] == "automation"
-    assert executor.team_cannot_take(listed) == (set(), None)
+    assert executor.view["team"]["state"] == "together"
+    assert not is_on(hass, r2)
 
 
 async def test_a_block_that_does_not_arrive_gives_everything_back(
@@ -999,7 +969,7 @@ async def test_a_block_that_does_not_arrive_gives_everything_back(
 
     hass.services.async_register("switch", "turn_on", stubborn)
     executor, _ = await make_executor(hass, team_config(), day_plan(dt_util.now()))
-    await joe_switches_off(hass, executor, r2)
+    await owner_switches_off(hass, r2)
     await executor.async_check()
     assert executor.view["team"]["state"] == "on"
     assert not is_on(hass, r2)
@@ -1010,8 +980,7 @@ async def test_a_block_that_does_not_arrive_gives_everything_back(
     view = executor.view["team"]
     assert view["state"] == "not_taken"
     assert view["batteries"]["venus"]["problem"] == "not_taken"
-    assert is_on(hass, r2)
-    assert view["given_back"]["reason"] == "not_taken"
+    assert not is_on(hass, r2)
     assert venus_levers(hass) == ("2500.0", "2500.0", "off")
     assert executor.data["team"]["blocks"] == {}
     assert any(e["kind"] == "team_broken" for e in executor.data["log"])
@@ -1019,118 +988,38 @@ async def test_a_block_that_does_not_arrive_gives_everything_back(
     freezer.tick(timedelta(minutes=30))
     await executor.async_check()
     assert executor.view["team"]["state"] == "not_taken"
-    assert is_on(hass, r2)
-    # Then tries again (after taking R2 over again), fails again: the rest of the day.
+    # Then tries again, fails again: the rest of the day.
     freezer.tick(timedelta(minutes=31))
     await executor.async_check()
-    assert executor.view["team"]["state"] == "taking_over"
-    freezer.tick(timedelta(minutes=15))
-    await executor.async_check()
-    await hass.async_block_till_done()
-    assert not is_on(hass, r2)
+    assert executor.view["team"]["state"] == "on"
     freezer.tick(timedelta(minutes=2))
     await executor.async_check()
     await hass.async_block_till_done()
     assert executor.view["team"]["state"] == "not_taken"
-    assert is_on(hass, r2)
+    assert not is_on(hass, r2)
     freezer.tick(timedelta(hours=2))
     await executor.async_check()
     assert executor.view["team"]["state"] == "not_taken"
     assert [b["count"] for b in executor.data["team"]["broken"].values()] == [2]
 
 
-async def test_at_night_what_joe_switched_off_stays_off(
-    hass: HomeAssistant, freezer
-) -> None:
-    freezer.move_to("2026-10-10T01:00:00+02:00")
-    install_team(hass, byd_soc=40, venus_soc=60)
-    flows(hass, grid=0, byd=-800)
-    r2 = await interlock(hass)
-    executor, holder = await make_executor(hass, team_config(), day_plan(dt_util.now()))
-    await joe_switches_off(hass, executor, r2)
-    start = dt_util.start_of_local_day(dt_util.now())
-    holder["plan"] = {
-        "kind": "hold",
-        "fixed": True,
-        "target": 40,
-        "window": {
-            "start": start.isoformat(),
-            "end": (start + timedelta(hours=5)).isoformat(),
-        },
-        "rules": {"discharge_mode": "until_target"},
-        "batteries": [{"id": "byd", "target": 40, "power_kw": 0}],
-        "hours": [],
-    }
-    for _ in range(3):
-        await executor.async_check()
-        freezer.tick(timedelta(minutes=10))
-    await hass.async_block_till_done()
-    assert executor.status["reason"] == "steering"
-    assert executor.view["team"]["state"] == "night"
-    assert not is_on(hass, r2)
-    assert executor.data["automations_lent"] == {}
-    assert executor.view["team"]["given_back"] is None
-
-
-async def test_joe_holds_the_block_until_the_flow_ends(
-    hass: HomeAssistant, freezer
-) -> None:
-    """The owner's automations react to an edge: given back while the BYD
-    already discharges, they would not block the Venus. Joe holds his block
-    until the BYD stops, only then they run again."""
+async def test_not_live_gives_back_at_once(hass: HomeAssistant, freezer) -> None:
     freezer.move_to("2026-10-10T19:00:00+02:00")
     install_team(hass, byd_soc=40, venus_soc=60)
     flows(hass, grid=0, byd=-800)
     r2 = await interlock(hass)
     executor, holder = await make_executor(hass, team_config(), day_plan(dt_util.now()))
-    await joe_switches_off(hass, executor, r2)
+    await owner_switches_off(hass, r2)
     await executor.async_check()
     assert venus_levers(hass) == ("0.0", "0.0", "on")
-    # "Gleichzeitig" while the BYD discharges: the Venus stays blocked, R2 off.
-    holder["config"] = team_config(battery_team="together")
-    for _ in range(3):
-        freezer.tick(timedelta(minutes=5))
-        await executor.async_check()
-        await hass.async_block_till_done()
-        view = executor.view["team"]
-        assert view["state"] == "together"
-        assert view["hold"]["direction"] == "discharge"
-        assert view["hold"]["batteries"] == ["byd"]
-        assert venus_levers(hass) == ("0.0", "0.0", "on")
-        assert not is_on(hass, r2)
-    # The BYD stops: the block goes back and R2 runs again.
-    flows(hass, grid=0, byd=0)
-    await executor.async_check()
-    await hass.async_block_till_done()
-    view = executor.view["team"]
-    assert view["hold"] is None
-    assert venus_levers(hass) == ("2500.0", "2500.0", "off")
-    assert is_on(hass, r2)
-    assert view["given_back"]["reason"] == "together"
-    assert view["given_back"]["unblocked"] is False
-    kinds = [e["kind"] for e in executor.data["log"]]
-    assert "team_hold" in kinds and "team_hold_end" in kinds
-
-
-async def test_not_live_gives_back_at_once_and_says_nothing_blocks(
-    hass: HomeAssistant, freezer
-) -> None:
-    freezer.move_to("2026-10-10T19:00:00+02:00")
-    install_team(hass, byd_soc=40, venus_soc=60)
-    flows(hass, grid=0, byd=-800)
-    r2 = await interlock(hass)
-    executor, holder = await make_executor(hass, team_config(), day_plan(dt_util.now()))
-    await joe_switches_off(hass, executor, r2)
-    await executor.async_check()
     holder["mode"] = "simulation"
     await executor.async_check()
     await hass.async_block_till_done()
     view = executor.view["team"]
-    assert view["hold"] is None
+    assert view["dry"] is True
+    assert "hold" not in view
     assert venus_levers(hass) == ("2500.0", "2500.0", "off")
-    assert is_on(hass, r2)
-    assert view["given_back"]["reason"] == "dry"
-    assert view["given_back"]["unblocked"] is True
+    assert not is_on(hass, r2)
 
 
 def test_a_fronius_blocked_completely(hass: HomeAssistant) -> None:
@@ -1259,7 +1148,7 @@ async def test_a_short_dropout_keeps_the_blocks(
     flows(hass, grid=0, byd=-800)
     r2 = await interlock(hass)
     executor, _ = await make_executor(hass, team_config(), day_plan(dt_util.now()))
-    await joe_switches_off(hass, executor, r2)
+    await owner_switches_off(hass, r2)
     await executor.async_check()
     assert venus_levers(hass) == ("0.0", "0.0", "on")
     before = hass.states.get(entity_id)
@@ -1285,8 +1174,6 @@ async def test_a_short_dropout_keeps_the_blocks(
     assert view["state"] == "on"
     assert venus_levers(hass) == ("0.0", "0.0", "on")
     assert not is_on(hass, r2)
-    assert view["given_back"] is None
-    assert executor.data["automations_lent"] == {}
     assert executor.data["team"]["gap"] is None
     kinds = [e["kind"] for e in executor.data["log"]]
     assert "team_gap" in kinds and "team_gap_end" in kinds
@@ -1301,7 +1188,7 @@ async def test_a_lever_gone_for_real_goes_back_at_once(
     flows(hass, grid=0, byd=-800)
     r2 = await interlock(hass)
     executor, _ = await make_executor(hass, team_config(), day_plan(dt_util.now()))
-    await joe_switches_off(hass, executor, r2)
+    await owner_switches_off(hass, r2)
     await executor.async_check()
     assert venus_levers(hass) == ("0.0", "0.0", "on")
     # The entity is gone (removed, not just unavailable): no grace.
@@ -1310,7 +1197,7 @@ async def test_a_lever_gone_for_real_goes_back_at_once(
     await hass.async_block_till_done()
     view = executor.view["team"]
     assert view["state"] == "levers"
-    assert is_on(hass, r2)
+    assert not is_on(hass, r2)
     assert executor.data["team"]["blocks"] == {}
     assert state_of(hass, "switch.omni_power_limits") == ("off",)
 
@@ -1323,7 +1210,7 @@ async def test_a_long_dropout_gives_back_after_the_grace(
     flows(hass, grid=0, byd=0)
     r2 = await interlock(hass)
     executor, _ = await make_executor(hass, team_config(), day_plan(dt_util.now()))
-    await joe_switches_off(hass, executor, r2)
+    await owner_switches_off(hass, r2)
     await executor.async_check()
     assert venus_levers(hass) == ("0.0", "0.0", "on")
     hass.states.async_set("sensor.venus_soc", "unavailable")
@@ -1340,59 +1227,21 @@ async def test_a_long_dropout_gives_back_after_the_grace(
     view = executor.view["team"]
     assert view["state"] == "unknown"
     assert venus_levers(hass) == ("2500.0", "2500.0", "off")
-    assert is_on(hass, r2)
-    assert view["given_back"]["reason"] == "unknown"
-
-
-async def test_a_hold_ends_when_joe_coordinates_again(
-    hass: HomeAssistant, freezer
-) -> None:
-    """hold → on → hold: the second hold starts anew (its own time and flow)."""
-    freezer.move_to("2026-10-10T19:00:00+02:00")
-    install_team(hass, byd_soc=40, venus_soc=60)
-    flows(hass, grid=0, byd=-800)
-    r2 = await interlock(hass)
-    executor, holder = await make_executor(hass, team_config(), day_plan(dt_util.now()))
-    await joe_switches_off(hass, executor, r2)
-    await executor.async_check()
-    holder["config"] = team_config(battery_team="together")
-    await executor.async_check()
-    assert executor.view["team"]["hold"]["since"] == "2026-10-10T19:00:00+02:00"
-    # "Nacheinander" again: Joe coordinates, the hold is over.
-    freezer.tick(timedelta(minutes=10))
-    holder["config"] = team_config()
-    await executor.async_check()
-    assert executor.view["team"]["state"] == "on"
-    assert executor.data["team"]["hold"] is None
-    assert executor.data["log"][-1]["kind"] != "team_hold"
-    assert any(
-        e["kind"] == "team_hold_end" and e["reason"] == "coordinates"
-        for e in executor.data["log"]
-    )
-    # "Gleichzeitig" again while the BYD still discharges: a new hold.
-    freezer.tick(timedelta(minutes=10))
-    holder["config"] = team_config(battery_team="together")
-    await executor.async_check()
-    await hass.async_block_till_done()
-    view = executor.view["team"]
-    assert view["hold"]["since"] == "2026-10-10T19:20:00+02:00"
-    assert view["hold"]["direction"] == "discharge"
-    assert venus_levers(hass) == ("0.0", "0.0", "on")
     assert not is_on(hass, r2)
 
 
-async def test_stopping_tries_again_and_hands_the_automations_back(
+async def test_stopping_tries_again(
     hass: HomeAssistant, freezer, command_pauses: list[float]
 ) -> None:
     """Unloaded (disabled, reloaded, updated): the blocks go back with a few
-    tries, the owner's automations run again; after the start Joe takes them
-    over once he could coordinate for a while."""
+    tries; the owner's automation stays as the owner left it, and after the
+    start Joe coordinates again at once."""
     freezer.move_to("2026-10-10T19:00:00+02:00")
     calls = install_team(hass, byd_soc=40, venus_soc=60)
     flows(hass, grid=0, byd=-800)
     r2 = await interlock(hass)
     executor, _ = await make_executor(hass, team_config(), day_plan(dt_util.now()))
-    await joe_switches_off(hass, executor, r2)
+    await owner_switches_off(hass, r2)
     await executor.async_check()
     assert venus_levers(hass) == ("0.0", "0.0", "on")
     # The limits' switch fails twice, then takes it.
@@ -1411,22 +1260,13 @@ async def test_stopping_tries_again_and_hands_the_automations_back(
     assert command_pauses.count(executor_module.STOP_PAUSE_S) == 2
     assert venus_levers(hass) == ("2500.0", "2500.0", "off")
     assert executor.data["saved"] == {}
-    assert await executor.async_hand_back_automations() == []
-    await hass.async_block_till_done()
-    assert is_on(hass, r2)
-    assert executor.data["automations_lent"][r2]["reason"] == "stopped"
-    assert r2 not in executor.data["automations_off"]
-    # Set up again: R2 runs until Joe could coordinate for a while.
+    assert not is_on(hass, r2)
+    # Set up again: Joe coordinates at once.
     again, _ = await make_executor(hass, team_config(), day_plan(dt_util.now()))
-    await again.async_check()
-    assert again.view["team"]["state"] == "taking_over"
-    assert is_on(hass, r2)
-    freezer.tick(timedelta(minutes=15))
     await again.async_check()
     await hass.async_block_till_done()
     assert again.view["team"]["state"] == "on"
     assert not is_on(hass, r2)
-    assert again.data["automations_lent"] == {}
     assert venus_levers(hass) == ("0.0", "0.0", "on")
 
 

@@ -8,7 +8,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.energy_joe import model
 from custom_components.energy_joe.control import automations
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.setup import async_setup_component
 
@@ -22,9 +22,11 @@ def _automation(alias: str, actions: list[Any], entity: str = "sensor.x") -> dic
     }
 
 
-async def test_battery_automations_are_found_and_switched(
+async def test_battery_automations_are_found_but_never_switched(
     hass: HomeAssistant,
 ) -> None:
+    """Joe lists what writes to a battery (switched on first) and leaves
+    switching to the owner: no service of his touches an automation."""
     entry = MockConfigEntry(domain="omnibattery")
     entry.add_to_hass(hass)
     device = dr.async_get(hass).async_get_or_create(
@@ -44,12 +46,6 @@ async def test_battery_automations_are_found_and_switched(
     for entity_id in (soc.entity_id, power.entity_id, system.entity_id):
         hass.states.async_set(entity_id, "0")
     hass.states.async_set("light.porch", "off")
-    logged: list[dict[str, Any]] = []
-
-    async def log(call: ServiceCall) -> None:
-        logged.append(dict(call.data))
-
-    hass.services.async_register("logbook", "log", log)
     assert await async_setup_component(
         hass,
         "automation",
@@ -121,29 +117,29 @@ async def test_battery_automations_are_found_and_switched(
         },
         "user",
     )
-    switched_off: dict[str, Any] = {}
-    found = automations.find(hass, config, switched_off)
+    found = automations.find(hass, config)
     assert [a["name"] for a in found] == ["Boost", "Hierarchy"]
     assert found[0]["writes"][0]["entity_id"] == power.entity_id
     assert found[0]["writes"][0]["battery"] == "Venus"
     assert all(a["on"] for a in found)
-
-    ids = [a["entity_id"] for a in found]
-    failed = await automations.async_switch(
-        hass, ids, False, switched_off, "wurde ausgeschaltet"
+    assert "switched_off" not in found[0]
+    assert automations.switched_on(found) == [
+        {"entity_id": "automation.boost", "name": "Boost"},
+        {"entity_id": "automation.hierarchy", "name": "Hierarchy"},
+    ]
+    # The owner switches one off: listed last, no longer "on".
+    await hass.services.async_call(
+        "automation", "turn_off", {"entity_id": "automation.boost"}, blocking=True
     )
-    assert failed == []
-    assert all(hass.states.get(i).state == "off" for i in ids)
-    assert set(switched_off) == set(ids)
-    assert switched_off[ids[0]]["reason"] == "battery"
-    # The reason is in each automation's logbook, too.
-    assert [entry["entity_id"] for entry in logged] == ids
-    found = automations.find(hass, config, switched_off)
-    assert all(not a["on"] and a["switched_off"] for a in found)
-
-    await automations.async_switch(hass, ids, True, switched_off, "wieder an")
-    assert all(hass.states.get(i).state == "on" for i in ids)
-    assert switched_off == {}
+    found = automations.find(hass, config)
+    assert [(a["name"], a["on"]) for a in found] == [
+        ("Hierarchy", True),
+        ("Boost", False),
+    ]
+    assert automations.switched_on(found) == [
+        {"entity_id": "automation.hierarchy", "name": "Hierarchy"}
+    ]
+    assert not hasattr(automations, "async_switch")
 
 
 def test_only_action_targets_count() -> None:
@@ -259,20 +255,22 @@ async def test_only_the_battery_itself_counts_and_scripts_are_followed(
         },
         "user",
     )
-    found = automations.find(hass, config, {})
+    found = automations.find(hass, config)
     assert [a["name"] for a in found] == ["Device", "Via script"]
     via_script = found[1]["writes"][0]
     assert via_script["entity_id"] == mode.entity_id and via_script["joe"] is True
 
 
-async def test_joe_keeps_and_restores_what_it_switched_off(
+async def test_joe_says_which_automations_get_in_his_way_and_leaves_them(
     ready_hass: HomeAssistant,
 ) -> None:
-    """Forgotten only when switched on by hand; switched on again when Joe is removed."""
+    """An automation that writes to a battery stays the owner's: Joe lists
+    it, says it once (log, notification) while he steers, and switches it
+    neither off nor on – not when it is listed, not when he is unloaded or
+    removed."""
     from custom_components.energy_joe.const import DOMAIN
 
     hass = ready_hass
-    hass.services.async_register("logbook", "log", lambda call: None)
     assert await async_setup_component(
         hass,
         "automation",
@@ -290,68 +288,16 @@ async def test_joe_keeps_and_restores_what_it_switched_off(
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
     runtime = hass.data[DOMAIN]
-    # Switched off by Joe for a battery that is gone now.
-    await runtime.async_switch_automations(False, ["automation.old"])
-    listed = runtime.automations()
-    assert [(a["entity_id"], a["on"], bool(a["switched_off"])) for a in listed] == [
-        ("automation.old", False, True)
-    ]
-    assert hass.states.get("automation.old").state == "off"
-    # Removing Joe switches it on again.
+    # Writes to no battery Joe knows: not listed, and left alone.
+    assert runtime.automations() == []
+    assert hass.states.get("automation.old").state == "on"
+    assert runtime.executor.view["automations"] == []
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert hass.states.get("automation.old").state == "on"
     assert await hass.config_entries.async_remove(entry.entry_id)
     await hass.async_block_till_done()
     assert hass.states.get("automation.old").state == "on"
-
-
-async def test_unloading_switches_them_on_and_joe_takes_them_over_again(
-    ready_hass: HomeAssistant,
-) -> None:
-    """Disabled, reloaded or updated: without Joe nobody would coordinate, so
-    his automations run again (with a note in their logbook). Set up again,
-    he switches them off once he steers live."""
-    from custom_components.energy_joe.const import DOMAIN
-
-    hass = ready_hass
-    notes: list[str] = []
-    hass.services.async_register(
-        "logbook", "log", lambda call: notes.append(call.data["message"])
-    )
-    assert await async_setup_component(
-        hass,
-        "automation",
-        {
-            "automation": [
-                _automation(
-                    "Old",
-                    [{"action": "light.turn_on", "target": {"entity_id": "light.x"}}],
-                )
-            ]
-        },
-    )
-    entry = MockConfigEntry(domain=DOMAIN, data={})
-    entry.add_to_hass(hass)
-    assert await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-    await hass.data[DOMAIN].async_switch_automations(False, ["automation.old"])
-    assert hass.states.get("automation.old").state == "off"
-    assert await hass.config_entries.async_unload(entry.entry_id)
-    await hass.async_block_till_done()
-    assert hass.states.get("automation.old").state == "on"
-    assert "angehalten" in notes[-1] or "stopped" in notes[-1]
-    # Set up again: it runs on while Joe only simulates ...
-    assert await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-    runtime = hass.data[DOMAIN]
-    assert hass.states.get("automation.old").state == "on"
-    listed = {a["entity_id"]: a for a in runtime.automations()}
-    assert listed["automation.old"]["lent"]["reason"] == "stopped"
-    # ... and is Joe's again once he steers live.
-    runtime.async_set_mode("live")
-    await hass.async_block_till_done()
-    assert hass.states.get("automation.old").state == "off"
-    assert runtime.executor.data["automations_lent"] == {}
-    assert "automation.old" in runtime.executor.data["automations_off"]
-    assert await hass.config_entries.async_unload(entry.entry_id)
 
 
 async def test_phones_are_shown_by_their_current_name(

@@ -586,8 +586,6 @@ export class JoeBatteryDevice extends DeviceSection {
       text = t(`battery.surplus.${mine.state}`);
     } else if (!rules.day_surplus) {
       text = t("battery.surplus.rule_off");
-    } else if (mine?.state === "automation") {
-      text = t("battery.surplus.automation", { names: (mine.automations ?? []).map((n) => `„${n}“`).join(", ") });
     } else if (mine?.state === "learning") {
       text = t("battery.surplus.learning");
     } else if (mine?.state === "need_ref" || ability === "need_ref") {
@@ -729,7 +727,6 @@ export class JoeBatteryDevice extends DeviceSection {
       .ready=${joe.control?.ready ?? {}}
       batteryId=${battery.id}
       .items=${this.automations}
-      @joe-automations=${(ev: CustomEvent<BatteryAutomation[]>) => (this.automations = ev.detail)}
     ></joe-battery-automations>`;
   }
 

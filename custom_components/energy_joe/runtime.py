@@ -12,9 +12,8 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
-from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.storage import Store
-from homeassistant.util import dt as dt_util, json as json_util
+from homeassistant.util import json as json_util
 from homeassistant.util.hass_dict import HassKey
 
 from . import model
@@ -286,10 +285,7 @@ class JoeRuntime:
     async def async_unload(self) -> None:
         """Stop watching and write pending changes immediately.
 
-        Joe gives everything back (with a few tries) and switches the owner's
-        automations he switched off on again: without him nobody would
-        coordinate the batteries. After the start he takes them over again
-        once he can steer himself.
+        Joe gives everything back (with a few tries).
         """
         self._started = False
         self.notifier.stop()
@@ -299,10 +295,6 @@ class JoeRuntime:
         self.cars.stop()
         await self.executor.async_stop()
         await self.modbus.async_unload()
-        try:
-            await self.executor.async_hand_back_automations()
-        except Exception:
-            _LOGGER.exception("Switching the battery automations on again failed")
         async with self._observe_lock:
             await self.learner.async_stop()
             await self.planner.async_stop()
@@ -317,9 +309,7 @@ class JoeRuntime:
         """Delete all stored data (integration removed).
 
         Every value Joe noted goes back first (with a few tries; what stays is
-        told to the owner, the originals would be gone with the data), then
-        the automations Joe switched off are switched on again: without Joe
-        nobody would know why they are off.
+        told to the owner, the originals would be gone with the data).
         """
         await self._async_load_config()
         await self.executor.async_load()
@@ -327,10 +317,6 @@ class JoeRuntime:
             await self.executor.async_give_back("removed", removed=True)
         except Exception:
             _LOGGER.exception("Putting the values back failed")
-        try:
-            await self.executor.async_hand_back_automations(removed=True)
-        except Exception:
-            _LOGGER.exception("Switching the battery automations on again failed")
         await self._state_store.async_remove()
         await self._config_store.async_remove()
         await self._backup_store.async_remove()
@@ -617,91 +603,10 @@ class JoeRuntime:
         return pairs if pair in pairs else [*pairs, pair]
 
     def automations(self) -> list[dict[str, Any]]:
-        """Automations that write to the batteries (and which ones Joe switched off)."""
-        switched_off: dict[str, Any] = self.executor.data["automations_off"]
-        registry = er.async_get(self._hass)
-        # Switched on again by hand, or deleted: Joe forgets it. Not just because
-        # it no longer writes to a battery Joe knows – it stays off until then.
-        for entity_id in list(switched_off):
-            state = self._hass.states.get(entity_id)
-            if (state and state.state == "on") or (
-                state is None and registry.async_get(entity_id) is None
-            ):
-                del switched_off[entity_id]
-        lent: dict[str, Any] = self.executor.data["automations_lent"]
-        for entity_id in list(lent):
-            if self._hass.states.get(entity_id) is None and (
-                registry.async_get(entity_id) is None
-            ):
-                del lent[entity_id]
-        found = battery_automations.find(self._hass, self._config, switched_off)
-        for automation in found:
-            # Switched on again by Joe: he takes it over once he can.
-            automation["lent"] = lent.get(automation["entity_id"])
-        listed = {a["entity_id"] for a in found}
-        # Joe's own ones that write to no battery he knows (any more) are
-        # listed all the same: off, or lent while he is not back.
-        for entity_id in [*switched_off, *(e for e in lent if e not in switched_off)]:
-            if entity_id not in listed:
-                state = self._hass.states.get(entity_id)
-                found.append(
-                    {
-                        "entity_id": entity_id,
-                        "name": state.name if state else entity_id,
-                        "on": bool(state and state.state == "on"),
-                        "writes": [],
-                        "switched_off": switched_off.get(entity_id),
-                        "lent": lent.get(entity_id),
-                    }
-                )
-        return found
-
-    async def async_switch_automations(
-        self, on: bool, entity_ids: list[str] | None = None
-    ) -> list[str]:
-        """All (or some) battery automations off, or the ones Joe switched off on again.
-
-        Off only what Joe takes over at once: one that coordinates batteries
-        Joe cannot coordinate himself right now (not live, a lever missing …)
-        keeps running and is lent to him – he switches it off himself once he
-        can (control/executor.py _async_team_hands).
-        """
-        switched_off: dict[str, Any] = self.executor.data["automations_off"]
-        lent: dict[str, Any] = self.executor.data["automations_lent"]
-        found = self.automations()
-        if entity_ids is None:
-            entity_ids = [
-                a["entity_id"] for a in found if (a["switched_off"] if on else a["on"])
-            ]
-        if not on:
-            later, reason = self.executor.team_cannot_take(found)
-            stamp = dt_util.now().isoformat(timespec="seconds")
-            for entity_id in entity_ids:
-                if entity_id in later:
-                    lent[entity_id] = {"at": stamp, "reason": reason}
-                else:
-                    lent.pop(entity_id, None)
-            entity_ids = [e for e in entity_ids if e not in later]
-        german = (self._hass.config.language or "").startswith("de")
-        if on:
-            message = (
-                "wurde von Energy Joe wieder eingeschaltet"
-                if german
-                else "was switched on again by Energy Joe"
-            )
-        else:
-            message = (
-                "wurde von Energy Joe ausgeschaltet, damit sie die Steuerung der "
-                "Speicher nicht überschreibt"
-                if german
-                else "was switched off by Energy Joe so that it does not overwrite "
-                "Energy Joe's battery steering"
-            )
-        failed = await battery_automations.async_switch(
-            self._hass, entity_ids, on, switched_off, message
-        )
-        await self.executor.async_save()
-        return failed
+        """Automations that write to the batteries, with what they write.
+        They are the owner's: Joe lists them and says when they get in his
+        way, he never switches them."""
+        return battery_automations.find(self._hass, self._config)
 
     async def async_refresh_plan(self) -> dict[str, Any] | None:
         """Plan again now (the panel's "plan again")."""

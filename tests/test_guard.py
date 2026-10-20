@@ -330,9 +330,11 @@ async def test_joes_own_command_by_day_is_not_fought(
     assert kinds(executor) == ["guard_joe"]
 
 
-async def test_an_automation_doing_it_keeps_joe_out(
+async def test_an_automation_in_the_way_does_not_keep_joe_out(
     hass: HomeAssistant, freezer
 ) -> None:
+    """The owner's own watchdog writes the same levers: that is the owner's
+    business (Joe names it elsewhere), the watchdog steps in all the same."""
     freezer.move_to("2026-10-18T14:00:00+02:00")
     calls = install(hass)
     executor, _ = await guarded(hass)
@@ -345,16 +347,7 @@ async def test_an_automation_doing_it_keeps_joe_out(
                 {"entity_id": MANUAL, "battery_id": "venus", "joe": False},
                 {"entity_id": ALLOW_CHARGE, "battery_id": "venus", "joe": False},
             ],
-        },
-        # One that writes the BYD's limits is no watchdog of the Venus.
-        {
-            "entity_id": "automation.r2",
-            "name": "Akku-Interlock R2",
-            "on": True,
-            "writes": [
-                {"entity_id": "number.charge_limit", "battery_id": "byd", "joe": False}
-            ],
-        },
+        }
     ]
     with patch(
         "custom_components.energy_joe.control.automations.find", return_value=owner
@@ -363,26 +356,9 @@ async def test_an_automation_doing_it_keeps_joe_out(
         for _ in range(3):
             await executor.async_guard()
             freezer.tick(timedelta(seconds=20))
-        # A second time: logged once only.
-        flows(hass, byd=-900, venus=0)
-        await executor.async_guard()
-        flows(hass, byd=-900, venus=800)
-        for _ in range(3):
-            freezer.tick(timedelta(seconds=70))
-            await executor.async_guard()
-    assert calls == []
-    assert kinds(executor) == ["guard_automation"]
-    assert executor.data["log"][-1]["names"] == [owner[0]["name"]]
-    assert executor.view["guard"]["automations"] == [owner[0]["name"]]
-    assert executor.view["guard"]["last"]["result"] == "automation"
-    # Switched off: Joe takes over.
-    owner[0]["on"] = False
-    with patch(
-        "custom_components.energy_joe.control.automations.find", return_value=owner
-    ):
-        freezer.tick(timedelta(seconds=70))
-        await executor.async_guard()
-    assert calls == [(MANUAL, "on"), (MANUAL, "off")]
+    assert calls[:2] == [(MANUAL, "on"), (MANUAL, "off")]
+    assert "guard_automation" not in kinds(executor)
+    assert "automations" not in executor.view["guard"]
 
 
 async def test_only_live_writes(hass: HomeAssistant, freezer) -> None:
