@@ -121,8 +121,6 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
       cutoff: typeof entry.value === "number" ? formatNumber(t.lang, entry.value, 1) : "–",
       level: typeof entry.soc === "number" ? formatNumber(t.lang, entry.soc, 1) : "–",
       names: Array.isArray(entry.names) ? entry.names.map((n) => `„${String(n)}“`).join(", ") : "",
-      why: t.optional(`team.given_back.why.${String(entry.reason ?? entry.problem ?? "")}`) ?? "",
-      direction: t.optional(`log.team_hold.${String(entry.direction ?? "")}`) ?? "",
       // Charging along, helping, a base load (control/team_day.py): the active one and the others.
       active: nameOf(entry.battery),
       others: Array.isArray(entry.batteries) ? together(t, entry.batteries.map(nameOf)) : "",
@@ -135,12 +133,6 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
     }
     if (entry.kind === "team_review") {
       return t(typeof entry.batteries === "object" && entry.batteries ? "log.team_review.short" : "log.team_review", team);
-    }
-    if (entry.kind === "team_hold_end") {
-      return t.optional(`log.team_hold_end.${String(entry.reason)}`, team) ?? t("log.team_hold_end", team);
-    }
-    if (entry.kind === "team_given_back") {
-      return t("log.team_given_back", team);
     }
     if (entry.kind === "team_handover") {
       return t.optional(`log.team_handover.${String(entry.reason)}`, team) ?? t("log.team_handover", team);
@@ -196,8 +188,8 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
     }
     return typeof entry.problem === "string" ? `${text} ${t("log.guard.problem", { code: entry.problem })}` : text;
   }
-  if (entry.kind === "automations_back" || entry.kind === "automations_taken") {
-    // Joe stopped (his automations run again), or took them over again after the start.
+  if (entry.kind === "automations" || entry.kind === "automations_off") {
+    // The owner's automations that write to the batteries: in Joe's way, or all off again.
     const names = Array.isArray(entry.names) ? entry.names.map((n) => `„${String(n)}“`).join(", ") : "";
     return t(`log.${entry.kind}`, { ...vars, names });
   }

@@ -1,9 +1,9 @@
 """Automations that write to the batteries Joe steers.
 
 They can overwrite what Joe sets (a mode, a power, a limit), so the panel
-lists them and can switch them off at once. Joe remembers which ones it
-switched off, when and why, writes that into the automation's logbook and
-can switch exactly those on again (also when the integration is removed).
+lists them, and while one of them is switched on Joe says so ("they spit in
+my soup, better switch them off"). They are the owner's: Joe never switches
+them off or on himself (control/executor.py _async_watch_automations).
 
 Only actions count – an automation that merely reads a battery (a trigger, a
 condition, refreshing a sensor) is left out – and only the battery itself:
@@ -14,19 +14,15 @@ Scripts an automation calls are followed.
 
 from __future__ import annotations
 
-import contextlib
 from dataclasses import dataclass, field
 from typing import Any
 
 from homeassistant.components.automation import DATA_COMPONENT
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
-from homeassistant.util import dt as dt_util
 
 from .profiles import PROFILES
 
-# Why Joe switched an automation off (the panel and the logbook say it in words).
-REASON = "battery"
 # Keys of an automation step that hold conditions, not actions.
 _CONDITIONS = ("condition", "conditions", "if", "while", "until", "wait_for_trigger")
 # Actions that only read, refresh or tell: they do not steer a battery.
@@ -189,10 +185,9 @@ def battery_scope(hass: HomeAssistant, config: dict[str, Any]) -> Scope:
     return scope
 
 
-def find(
-    hass: HomeAssistant, config: dict[str, Any], switched_off: dict[str, Any]
-) -> list[dict[str, Any]]:
-    """The automations that write to a battery, with what they write."""
+def find(hass: HomeAssistant, config: dict[str, Any]) -> list[dict[str, Any]]:
+    """The automations that write to a battery, with what they write; the
+    ones switched on first."""
     component = hass.data.get(DATA_COMPONENT)
     if component is None:
         return []
@@ -241,56 +236,11 @@ def find(
                 "name": state.name if state else entity.entity_id,
                 "on": bool(state and state.state == "on"),
                 "writes": writes,
-                "switched_off": switched_off.get(entity.entity_id),
             }
         )
     return sorted(found, key=lambda a: (not a["on"], a["name"].lower()))
 
 
-async def async_switch(
-    hass: HomeAssistant,
-    entity_ids: list[str],
-    on: bool,
-    switched_off: dict[str, Any],
-    message: str,
-) -> list[str]:
-    """Switch automations off (and remember it) or back on; returns failures.
-
-    `message` goes into each automation's logbook, so the reason is also
-    visible in Home Assistant itself.
-    """
-    failed = []
-    for entity_id in entity_ids:
-        try:
-            await hass.services.async_call(
-                "automation",
-                "turn_on" if on else "turn_off",
-                {"entity_id": entity_id},
-                blocking=True,
-            )
-        except Exception:  # noqa: BLE001 - one that fails must not stop the others
-            failed.append(entity_id)
-            continue
-        if on:
-            switched_off.pop(entity_id, None)
-        else:
-            switched_off[entity_id] = {
-                "at": dt_util.now().isoformat(timespec="seconds"),
-                "reason": REASON,
-            }
-        if hass.services.has_service("logbook", "log"):
-            state = hass.states.get(entity_id)
-            # The note is a bonus: a logbook that fails changes nothing.
-            with contextlib.suppress(Exception):
-                await hass.services.async_call(
-                    "logbook",
-                    "log",
-                    {
-                        "name": state.name if state else entity_id,
-                        "message": message,
-                        "entity_id": entity_id,
-                        "domain": "energy_joe",
-                    },
-                    blocking=True,
-                )
-    return failed
+def switched_on(found: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Of these, the ones switched on: entity id and name, in the list's order."""
+    return [{"entity_id": a["entity_id"], "name": a["name"]} for a in found if a["on"]]

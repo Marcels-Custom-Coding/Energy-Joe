@@ -278,9 +278,11 @@ async def test_omnibattery_warns_about_its_own_charge_delay(
 # --- automations that write the same limit -------------------------------------------
 
 
-async def test_a_battery_whose_limit_an_automation_writes_takes_no_part(
+async def test_a_battery_whose_limit_an_automation_writes_takes_part_all_the_same(
     hass: HomeAssistant, freezer
 ) -> None:
+    """The owner's interlock writes the same limit: the owner is told (see
+    the executor's automations), the cap is written all the same."""
     freezer.move_to("2026-06-20T09:00:00+02:00")
     install_limit(hass)
     install_evcc(hass)
@@ -316,22 +318,13 @@ async def test_a_battery_whose_limit_an_automation_writes_takes_no_part(
     )
     executor, _ = await make_executor(hass, config, day_plan(dt_util.now()))
     await executor.async_check()
+    await hass.async_block_till_done()
     mine = executor.view["surplus"]["batteries"]["byd"]
-    assert mine["state"] == "automation"
-    assert mine["automations"] == ["Interlock R2"]
-    assert limit(hass) == ("5000", "off")
-    assert executor.data["saved"] == {}
-    # Switched off (in the "Störenfriede"): the battery takes part.
-    hass.states.async_set("automation.interlock_r2", "off")
-    await hass.services.async_call(
-        "automation",
-        "turn_off",
-        {"entity_id": "automation.interlock_r2"},
-        blocking=True,
-    )
-    await executor.async_check()
-    assert executor.view["surplus"]["batteries"]["byd"]["state"] == "capped"
+    assert mine["state"] == "capped"
+    assert "automations" not in mine
     assert limit(hass) == ("800.0", "on")
+    assert executor.view["automations"] == ["Interlock R2"]
+    assert hass.states.get("automation.interlock_r2").state == "on"
 
 
 async def test_a_value_someone_else_set_is_not_put_back(

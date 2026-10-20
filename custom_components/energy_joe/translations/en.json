@@ -202,6 +202,10 @@
     "battery_transfer_inside": {
       "title": "Batteries of one system charge each other",
       "description": "{charging} charges while {discharging} discharges, and both are regulated by the same system (Omnibattery, for instance). I do not step in there, its own control shares the power. Check that system's settings; Devices › Batteries › Several batteries in the Energy Joe panel shows when it happened."
+    },
+    "automations": {
+      "title": "Automations write to your batteries",
+      "description": "Your automations {names} write to your batteries and can overwrite what Joe sets. Joe does not touch them: better switch them off. The list is in the Energy Joe panel under Devices › Batteries."
     }
   },
   "exceptions": {

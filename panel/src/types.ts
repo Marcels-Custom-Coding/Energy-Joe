@@ -482,10 +482,8 @@ export interface BatteryTeam {
     | "levers"
     | "not_tested"
     | "unknown"
-    | "automation"
     | "no_grid"
     | "not_taken"
-    | "taking_over"
     | "bridging"
     | "error";
   mode: BatteryTeamMode | null;
@@ -528,27 +526,8 @@ export interface BatteryTeam {
   groups?: Record<string, { batteries: string[]; empty?: boolean; full?: boolean }>;
   /** Joe is not sure which system regulates a battery: he asks. */
   group_question?: boolean;
-  /** state "automation": the owner's automations that do it so far. */
-  automations: string[];
-  /** What Joe would say without the owner's automations ("on": he could take over now). */
-  free?: string | null;
-  /** The owner's automations Joe switched on again (still running): he takes them over once he can. */
-  lent?: string[];
-  /** state "taking_over": when Joe switches them off again (if all stays well). */
-  taking_over_at?: string | null;
   /** state "bridging": a value missing for a moment (why) – the blocks stay until then. */
   gap?: { reason: "unknown" | "levers" | "no_grid"; until: string } | null;
-  /** The last time Joe switched the owner's automations on again, why and which. */
-  given_back?: {
-    at: string;
-    reason: string;
-    names: string[];
-    failed?: string[];
-    /** Joe's blocks went back while a battery still worked: nothing blocks until the automations' condition starts anew. */
-    unblocked?: boolean;
-  } | null;
-  /** Joe holds his blocks until the active group stops charging or discharging, then gives the automations back. */
-  hold?: { since: string; direction: "charge" | "discharge"; batteries: string[]; reason: string; names: string[] } | null;
   /** "Selbst einstellen" (control/team_day.py; older backends: missing). */
   style?: BatteryTeamStyle;
   /** Why the later groups charge along now: the forecast, or the meter shows sun going to the grid. */
@@ -600,8 +579,6 @@ export interface TransferGuard {
   running: boolean;
   /** The stage reached this time (0: none yet). */
   stage: number;
-  /** Automations switched on that write the same levers: they do it so far. */
-  automations: string[];
   /** The last time it happened. */
   last: {
     since: string | null;
@@ -639,7 +616,6 @@ export type SurplusBatteryState =
   | "need_ref"
   /** Joe is finding out right now what 100 % stand for (a test limit for a few minutes). */
   | "learning"
-  /** An automation that is switched on writes the same limit. */
   | "automation"
   /** Its entities are not available right now. */
   | "unavailable"
@@ -689,8 +665,6 @@ export interface DaySurplus {
       soc: number | null;
       cap_kw: number | null;
       problem: string | null;
-      /** state "automation": the automations that write the same limit. */
-      automations?: string[];
     }
   >;
   loadpoints?: EvccLoadpoint[];
@@ -1619,6 +1593,8 @@ export interface ControlView {
   night_review?: NightReview | null;
   /** Batteries held back by a setting that is not Joe's, by id – only while it lasts (older backends: missing). */
   stuck?: Record<string, BatteryStuck>;
+  /** The owner's automations that write to a battery and are switched on (their names). They are the owner's: Joe only says so. */
+  automations?: string[];
   /** Per battery: ready to steer, or why not. */
   ready: Record<string, "ready" | "not_tested" | "outdated" | "not_controllable" | "controls_missing">;
 }

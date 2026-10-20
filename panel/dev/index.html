@@ -48,10 +48,9 @@
       Mindestreserve steht von Hand auf 100 % bei Stand 98 %; discharge/charge: das Entladen bzw. Laden ist am Wechselrichter
       gesperrt. Joe stellt nichts zurück: Karte unter „Joe braucht dich“, Hinweis unter „Jetzt“ auf der Speicher-Seite,
       Protokoll „stuck“; der Pfeil-Knopf öffnet die Entität – in der Konsole „Home Assistant would show …“)
-      ?team=sequence|together|unset|automation|parallel|along|along_export|help|base|ask|not_taken|taking_over|levers|given_back|hold (Mehrere Speicher: mit ?done=1 nacheinander,
+      ?team=sequence|together|unset|parallel|along|along_export|help|base|ask|not_taken|levers (Mehrere Speicher: mit ?done=1 nacheinander,
       der BYD arbeitet, die Venus wartet, gelernter Entladeschluss 10,5 %; unset: noch nicht gewählt, wirkt als nacheinander;
-      automation: die Interlock-Automationen machen es noch; parallel: nebeneinander laden; not_taken/levers: Joe kann
-      nicht sperren, die Automationen laufen wieder; taking_over: Joe übernimmt sie bald wieder; given_back: nicht live, gerade sperrt niemand; hold: Joe hält die Sperre, bis der BYD aufhört)
+      parallel: nebeneinander laden; not_taken/levers: Joe kann nicht sperren; ?intruder=1: eine Automation schreibt auf einen Speicher, die Sperre, bis der BYD aufhört)
       ?guard=fixed|alarm|automation|off|dry|inside (Speicher-Wächter: mit ?done=1 heute einmal nach Neustart des PD-Reglers behoben;
       alarm: läuft trotz aller Stufen weiter; automation: die Wächter-Automation macht es noch; off: Regel aus; dry: nur angezeigt;
       inside: Venus und Victron (?groups=1) laden sich gegenseitig, dasselbe System regelt beide – Joe meldet nur)
@@ -420,7 +419,7 @@
           });
         }
       }
-      // ?team=sequence|together|unset|automation|parallel|not_taken|taking_over|levers|given_back (Mehrere Speicher, control/executor.py
+      // ?team=sequence|together|unset|parallel|not_taken|levers (Mehrere Speicher, control/executor.py
       // _async_team): with ?done=1 "Nacheinander" is on, the BYD works, the Venus waits; Joe learned that the
       // BYD stops discharging at 10.5 %. unset: not chosen yet (Joe braucht dich proposes it); automation:
       // the owner's interlock automations still do it; parallel: a weak day, both charge side by side.
@@ -612,6 +611,8 @@
           team: teamView(),
           guard: guardView(),
           stuck: stuckView(),
+          // ?intruder=1: the owner's automation writes to a battery while Joe steers (he only says so).
+          automations: params.get("intruder") === "1" ? ["Akku-Hierarchie"] : [],
           // The highest import Joe measured (executor._track_grid_peak), watched for ten days.
           grid_peak: done ? { w: 6340, at: new Date(Date.now() - 3 * 86400e3).toISOString(), since: new Date(Date.now() - 10 * 86400e3).toISOString() } : null,
           ...control,
@@ -646,9 +647,7 @@
                 ? "no_limit"
                 : b.controls?.charge_limit && limitPercent && !b.limit_ref_w
                   ? "need_ref"
-                  : b.controls?.system_charge_limit && intruder
-                    ? "automation"
-                    : b.day_surplus === false
+                  : b.day_surplus === false
                       ? "left_out"
                       : shares[i]
                         ? dry
@@ -658,7 +657,6 @@
               soc: 46 - 6 * i,
               cap_kw: shares[i],
               problem: null,
-              ...(b.controls?.system_charge_limit && intruder ? { automations: ["Akku-Hierarchie"] } : {}),
             },
           ]),
         );
@@ -720,13 +718,9 @@
               ? "single"
               : Object.keys(groups).length < 2
                 ? "one_group"
-                : teamParam === "automation"
-                  ? "automation"
-                  : ["not_taken", "taking_over", "levers"].includes(teamParam)
+                : ["not_taken", "levers"].includes(teamParam)
                     ? teamParam
                     : "on";
-        const backReason = { not_taken: "not_taken", taking_over: "levers", levers: "levers", given_back: "dry" }[teamParam];
-        const lentNames = ["Interlock R2", "Interlock R3", "Akku-Boost R5"];
         const on = stateName === "on";
         return {
           state: stateName,
@@ -786,19 +780,7 @@
               },
             ]),
           ),
-          automations: stateName === "automation" ? ["Akku-Hierarchie: Venus hinter BYD", "Interlock R2", "Interlock R3", "Akku-Boost R5"] : [],
           default: rules.battery_team == null,
-          free: stateName === "taking_over" ? "on" : stateName,
-          lent: backReason ? lentNames : [],
-          taking_over_at: stateName === "taking_over" ? dayAt(0, "10:15") : null,
-          given_back: backReason
-            ? { at: dayAt(0, "10:00"), reason: backReason, names: lentNames, failed: [], unblocked: backReason === "dry" }
-            : null,
-          // ?team=hold: "Gleichzeitig" chosen while the BYD discharges – Joe holds the block until it stops.
-          hold:
-            teamParam === "hold" && first
-              ? { since: dayAt(0, "10:00"), direction: "discharge", batteries: [first.id], reason: "together", names: lentNames }
-              : null,
           groups,
           group_question: members.length >= 2 && members.some((b) => b.control_group == null && unsure(b)),
           style: rules.team_style ?? "auto",
@@ -847,7 +829,6 @@
           dry: state.mode !== "live" || guardParam === "dry",
           running: guardParam === "alarm",
           stage: guardParam === "alarm" ? 3 : 0,
-          automations: guardParam === "automation" ? ["Wächter: Batterie-zu-Batterie-Transfer (mit Eingriff)"] : [],
           last:
             guardParam && first && second
               ? {
@@ -1928,31 +1909,16 @@
               delete climateMock.overrides[msg.entity_id];
               push();
               return { ok: true };
-            case "energy_joe/automations":
-            case "energy_joe/automations/switch": {
-              // Two automations in the style of a real setup (interlock and boost).
+            case "energy_joe/automations": {
+              // Two automations in the style of a real setup (interlock and boost); the owner switches them.
               const list = (state.automationsMock = state.automationsMock ?? [
-                { entity_id: "automation.akku_interlock_r3", name: "Akku-Interlock R3: BYD-Entladen zu, wenn Venus lädt", on: true, writes: [{ entity_id: "number.discharge_limit", name: "Grenzwert für die Entladeleistung", battery: state.config.batteries[0]?.name ?? "BYD", battery_id: state.config.batteries[0]?.id ?? "storage", joe: true }], switched_off: null },
-                { entity_id: "automation.akku_boost_r5", name: "Akku-Boost R5: Venus parallel laden", on: true, writes: [{ entity_id: "number.charge_power", name: "Ladeleistung", battery: state.config.batteries[1]?.name ?? "Venus", battery_id: state.config.batteries[1]?.id ?? "venus", joe: true }, { entity_id: "select.force_mode", name: "Betriebsmodus erzwingen", battery: state.config.batteries[1]?.name ?? "Venus", battery_id: state.config.batteries[1]?.id ?? "venus", joe: true }], switched_off: null },
+                { entity_id: "automation.akku_interlock_r3", name: "Akku-Interlock R3: BYD-Entladen zu, wenn Venus lädt", on: true, writes: [{ entity_id: "number.discharge_limit", name: "Grenzwert für die Entladeleistung", battery: state.config.batteries[0]?.name ?? "BYD", battery_id: state.config.batteries[0]?.id ?? "storage", joe: true }] },
+                { entity_id: "automation.akku_boost_r5", name: "Akku-Boost R5: Venus parallel laden", on: true, writes: [{ entity_id: "number.charge_power", name: "Ladeleistung", battery: state.config.batteries[1]?.name ?? "Venus", battery_id: state.config.batteries[1]?.id ?? "venus", joe: true }, { entity_id: "select.force_mode", name: "Betriebsmodus erzwingen", battery: state.config.batteries[1]?.name ?? "Venus", battery_id: state.config.batteries[1]?.id ?? "venus", joe: true }] },
                 // ?intruder=1: it also writes Omnibattery's system charge limit (the daytime cap's lever).
                 ...(params.get("intruder") === "1"
-                  ? [{ entity_id: "automation.akku_hierarchie", name: "Akku-Hierarchie", on: true, writes: [{ entity_id: "number.omnibattery_system_max_charge_power", name: "System-Maximal-Ladeleistung", battery: state.config.batteries[1]?.name ?? "Venus", battery_id: state.config.batteries[1]?.id ?? "venus", joe: true }], switched_off: null }]
+                  ? [{ entity_id: "automation.akku_hierarchie", name: "Akku-Hierarchie", on: true, writes: [{ entity_id: "number.omnibattery_system_max_charge_power", name: "System-Maximal-Ladeleistung", battery: state.config.batteries[1]?.name ?? "Venus", battery_id: state.config.batteries[1]?.id ?? "venus", joe: true }] }]
                   : []),
               ].filter((item) => item.writes.every((w) => state.config.batteries.some((b) => b.id === w.battery_id))));
-              // ?team=not_taken|taking_over|levers|given_back: Joe switched them on again (lent).
-              if (["not_taken", "taking_over", "levers", "given_back"].includes(teamParam)) {
-                for (const item of list) item.lent ??= { at: dayAt(0, "10:00"), reason: teamParam };
-              }
-              if (msg.type.endsWith("/switch")) {
-                for (const item of list) {
-                  if (msg.entity_ids && !msg.entity_ids.includes(item.entity_id)) continue;
-                  if (msg.on && item.switched_off) Object.assign(item, { on: true, switched_off: null });
-                  if (!msg.on && item.on) Object.assign(item, { on: false, switched_off: { at: stamp(), reason: "battery" } });
-                  hass.states[item.entity_id] = { entity_id: item.entity_id, state: item.on ? "on" : "off", attributes: { friendly_name: item.name } };
-                }
-                push();
-                return { failed: [], automations: list };
-              }
               return list;
             }
             case "energy_joe/control/answer":

@@ -4,7 +4,6 @@ import { define } from "../define";
 import type { Translate } from "../i18n";
 import { shared } from "../styles/shared";
 import type { HomeAssistant } from "../types";
-import { dayText } from "./look-back";
 import { tip } from "./tip";
 
 export interface BatteryAutomation {
@@ -13,12 +12,9 @@ export interface BatteryAutomation {
   on: boolean;
   /** What it sets: an entity (or a whole device), of which battery, one of Joe's levers? */
   writes: { entity_id: string | null; name: string; battery: string; battery_id: string; joe: boolean }[];
-  switched_off: { at: string; reason: string } | null;
-  /** Switched on again by Joe (he could not coordinate the batteries himself): he takes it over once he can. */
-  lent?: { at: string; reason: string } | null;
 }
 
-/** The automations that write to Joe's batteries (and the ones he switched off). */
+/** The automations that write to Joe's batteries. */
 export async function loadBatteryAutomations(hass: HomeAssistant | undefined): Promise<BatteryAutomation[]> {
   try {
     return (await hass?.callWS<BatteryAutomation[]>({ type: "energy_joe/automations" })) ?? [];
@@ -32,35 +28,33 @@ export function automationsOf(items: BatteryAutomation[], batteryId: string): Ba
   return items.filter((item) => item.writes.some((w) => w.battery_id === batteryId));
 }
 
+/** Home Assistant's own page of automations (the owner switches them there). */
+const HA_AUTOMATIONS = "/config/automation/dashboard";
+
 /**
  * Automations that write to the batteries Joe steers: they can overwrite his
- * values, so they are listed with a button to switch them all off – and the
- * ones Joe switched off back on, with when and why.
- * With `batteryId` only the ones of that battery are shown and switched;
- * `bare` leaves out the card and its head (a device page section has both).
+ * values, so they are listed – with a word that they get in his way while
+ * they run. They are the owner's: Joe never switches them, the owner does,
+ * in Home Assistant (a link leads there).
+ * With `batteryId` only the ones of that battery are shown; `bare` leaves
+ * out the card and its head (a device page section has both).
  */
 export class JoeBatteryAutomations extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) t?: Translate;
   /** The batteries as configured: a change looks again. */
   @property() batteries = "";
-  /** Joe's mode and which batteries he may steer: only then do the automations get in the way. */
+  /** Joe's mode: only while he steers do the automations get in the way. */
   @property() mode = "";
   @property({ attribute: false }) ready: Record<string, string> = {};
-  /** Only the automations of this battery (shown and switched). */
+  /** Only the automations of this battery. */
   @property() batteryId = "";
   /** Without the card and its head. */
   @property({ type: Boolean }) bare = false;
-  /**
-   * The list, when the page loads it itself (to know whether there is any);
-   * otherwise the element looks itself. After switching it fires
-   * `joe-automations` with the new list.
-   */
+  /** The list, when the page loads it itself (to know whether there is any); otherwise the element looks itself. */
   @property({ attribute: false }) items: BatteryAutomation[] | null = null;
 
   @state() private loaded: BatteryAutomation[] = [];
-  @state() private busy = false;
-  @state() private failed = false;
 
   static styles = [
     shared,
@@ -125,9 +119,6 @@ export class JoeBatteryAutomations extends LitElement {
         flex-wrap: wrap;
         margin-top: 12px;
       }
-      .bad {
-        color: var(--joe-warn, var(--joe-crit));
-      }
     `,
   ];
 
@@ -153,6 +144,13 @@ export class JoeBatteryAutomations extends LitElement {
     return state ? state.state === "on" : item.on;
   }
 
+  /** To Home Assistant's automations, within its own page (no reload). */
+  private openHa(ev: Event): void {
+    ev.preventDefault();
+    history.pushState(null, "", HA_AUTOMATIONS);
+    window.dispatchEvent(new CustomEvent("location-changed"));
+  }
+
   protected render() {
     const t = this.t;
     const items = this.shown;
@@ -160,7 +158,6 @@ export class JoeBatteryAutomations extends LitElement {
       return nothing;
     }
     const on = items.filter((item) => this.on(item));
-    const mine = items.filter((item) => item.switched_off && !this.on(item));
     // They only get in the way where Joe may steer: a mode that steers and a tested battery.
     const steers =
       (this.mode === "advisory" || this.mode === "live") &&
@@ -183,38 +180,14 @@ export class JoeBatteryAutomations extends LitElement {
             ${item.writes.length
               ? html`<small>${t("automations.writes", { what: item.writes.map((w) => w.name).join(", "), batteries })}</small>`
               : html`<small>${t("automations.not_battery")}</small>`}
-            ${item.switched_off && !active
-              ? html`<small>
-                  ${t("automations.switched_off", {
-                    day: dayText(t.lang, item.switched_off.at, "short"),
-                    time: item.switched_off.at.slice(11, 16),
-                  })}
-                </small>`
-              : nothing}
-            ${item.lent && active
-              ? html`<small>
-                  ${t(item.lent.reason === "stopped" ? "automations.lent.stopped" : "automations.lent", {
-                    day: dayText(t.lang, item.lent.at, "short"),
-                    time: item.lent.at.slice(11, 16),
-                  })}
-                </small>`
-              : nothing}
           </li>`;
         })}
       </ul>
       <div class="actions">
-        ${on.length
-          ? html`<button type="button" class="mini-btn ${steers ? "go" : ""}" ?disabled=${this.busy} @click=${() => this.switch(false)}>
-              <ha-icon icon="mdi:pause-circle-outline"></ha-icon>${t("automations.all_off", { count: on.length })}
-            </button>`
-          : nothing}
-        ${mine.length
-          ? html`<button type="button" class="mini-btn" ?disabled=${this.busy} @click=${() => this.switch(true)}>
-              <ha-icon icon="mdi:play-circle-outline"></ha-icon>${t("automations.back_on", { count: mine.length })}
-            </button>`
-          : nothing}
-      </div>
-      ${this.failed ? html`<p class="bad">${t("automations.failed")}</p>` : nothing}`;
+        <a class="mini-btn ${on.length && steers ? "go" : ""}" href=${HA_AUTOMATIONS} @click=${(ev: Event) => this.openHa(ev)}>
+          <ha-icon icon="mdi:open-in-app"></ha-icon>${t("automations.open_ha")}
+        </a>
+      </div>`;
     if (this.bare) {
       return body;
     }
@@ -225,34 +198,6 @@ export class JoeBatteryAutomations extends LitElement {
       </div>
       ${body}
     </section>`;
-  }
-
-  private async switch(on: boolean): Promise<void> {
-    this.busy = true;
-    this.failed = false;
-    // With a battery: only its automations (the backend switches what it is given).
-    const entityIds = this.batteryId
-      ? this.shown.filter((item) => (on ? item.switched_off && !this.on(item) : this.on(item))).map((item) => item.entity_id)
-      : undefined;
-    try {
-      const answer = await this.hass?.callWS<{ failed: string[]; automations: BatteryAutomation[] }>({
-        type: "energy_joe/automations/switch",
-        on,
-        ...(entityIds ? { entity_ids: entityIds } : {}),
-      });
-      if (answer?.automations) {
-        this.loaded = answer.automations;
-        if (this.items !== null) {
-          this.items = answer.automations;
-        }
-        this.dispatchEvent(new CustomEvent("joe-automations", { detail: answer.automations }));
-      }
-      this.failed = Boolean(answer?.failed.length);
-    } catch {
-      this.failed = true;
-    } finally {
-      this.busy = false;
-    }
   }
 }
 

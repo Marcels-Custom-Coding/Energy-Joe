@@ -202,6 +202,10 @@
     "battery_transfer_inside": {
       "title": "Speicher eines Systems laden sich gegenseitig",
       "description": "{charging} lädt, während {discharging} entlädt – und beide regelt dasselbe System (zum Beispiel Omnibattery). Da greife ich nicht ein, das System verteilt die Leistung selbst. Schau in dessen Einstellungen nach; im Energy-Joe-Panel unter Geräte › Speicher › Mehrere Speicher steht, wann es war."
+    },
+    "automations": {
+      "title": "Automationen schreiben auf deine Speicher",
+      "description": "Deine Automationen {names} schreiben auf deine Speicher und können überschreiben, was Joe setzt. Joe fasst sie nicht an: Besser schaltest du sie aus. Die Liste steht im Energy-Joe-Panel unter Geräte › Speicher."
     }
   },
   "exceptions": {

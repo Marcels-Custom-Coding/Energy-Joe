@@ -110,7 +110,6 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_week_hold)
     websocket_api.async_register_command(hass, ws_week_resume)
     websocket_api.async_register_command(hass, ws_notify_targets)
-    websocket_api.async_register_command(hass, ws_automations_switch)
     websocket_api.async_register_command(hass, ws_control_boost)
     websocket_api.async_register_command(hass, ws_calendar_links)
     websocket_api.async_register_command(hass, ws_mailbox_secret)
@@ -1350,30 +1349,6 @@ def ws_automations(
     if (runtime := _runtime(hass, connection, msg)) is None:
         return
     connection.send_result(msg["id"], runtime.automations())
-
-
-@websocket_api.websocket_command(
-    {
-        vol.Required("type"): f"{DOMAIN}/automations/switch",
-        # False: off (all that are on); True: on again (the ones Joe switched off).
-        vol.Required("on"): bool,
-        vol.Optional("entity_ids"): [cv.entity_id],
-    }
-)
-@websocket_api.require_admin
-@websocket_api.async_response
-async def ws_automations_switch(
-    hass: HomeAssistant,
-    connection: websocket_api.ActiveConnection,
-    msg: dict[str, Any],
-) -> None:
-    """Switch the battery automations off at once, or Joe's ones on again."""
-    if (runtime := _runtime(hass, connection, msg)) is None:
-        return
-    failed = await runtime.async_switch_automations(msg["on"], msg.get("entity_ids"))
-    connection.send_result(
-        msg["id"], {"failed": failed, "automations": runtime.automations()}
-    )
 
 
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/climate/devices"})

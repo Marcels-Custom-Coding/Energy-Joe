@@ -152,8 +152,15 @@ def _as_bool(value: Any) -> bool:
     return bool(value)
 
 
-async def async_apply(hass: HomeAssistant, write: Write) -> None:
-    """Call the entity's service so it takes the value (raises WriteError)."""
+async def async_apply(
+    hass: HomeAssistant, write: Write, note: str | None = None
+) -> None:
+    """Call the entity's service so it takes the value (raises WriteError).
+
+    With `note` (why Joe writes it, in the owner's words) a line goes into
+    Home Assistant's logbook next to the entity, so the owner sees there what
+    Joe set and why, not only that a service changed it.
+    """
     if write.is_call:
         await _async_call(hass, write)
         return
@@ -190,10 +197,42 @@ async def async_apply(hass: HomeAssistant, write: Write) -> None:
             "Writing %s to %s failed: %s", write.value, write.entity_id, err
         )
         raise WriteError(write.entity_id, "failed") from err
+    if note:
+        async_note(hass, write, state.name, note)
     if write.pause:
         await settle(write.pause)
     if write.ready_for:
         await async_ready(hass, write.ready_for, write.ready_s)
+
+
+def async_note(hass: HomeAssistant, write: Write, name: str, note: str) -> None:
+    """A line in the logbook of the entity Joe wrote: "Energy Joe" as who,
+    the value and the reason. A bonus: a logbook that fails changes nothing,
+    and the device call does not wait for it."""
+    if not hass.services.has_service("logbook", "log"):
+        return
+    german = (hass.config.language or "").startswith("de")
+    value = write.value
+    if isinstance(value, bool):
+        shown = ("an" if value else "aus") if german else ("on" if value else "off")
+    elif isinstance(value, float) and value.is_integer():
+        shown = str(int(value))
+    else:
+        shown = str(value)
+    hass.async_create_task(
+        hass.services.async_call(
+            "logbook",
+            "log",
+            {
+                "name": "Energy Joe",
+                "message": f"{name} → {shown}: {note}",
+                "entity_id": write.entity_id,
+                "domain": "energy_joe",
+            },
+            blocking=False,
+        ),
+        eager_start=False,
+    )
 
 
 async def settle(seconds: float) -> None:

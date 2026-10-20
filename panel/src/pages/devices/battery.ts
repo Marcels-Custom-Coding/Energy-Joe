@@ -3,15 +3,14 @@ import { property, state } from "lit/decorators.js";
 import "../../components/battery-automations";
 import {
   batteryTeam,
-  givenBack,
   groupOf,
   groupsPatch,
   guardText,
+  quoted,
   selfRegulating,
   teamGroups,
-  teamOrder,
-  teamHold,
   teamLearnedText,
+  teamOrder,
   teamReason,
   teamReviewText,
   teamText,
@@ -435,9 +434,6 @@ export class JoeBatteryGroup extends DeviceSection {
         void saveConfig(this, { rules: { battery_team: next } });
       }
     };
-    const automations = team?.state === "automation";
-    const back = givenBack(t, team);
-    const hold = teamHold(t, team);
     const reason = shown === "sequence" ? teamReason(t, team) : null;
     const review = shown === "sequence" ? teamReviewText(t, team) : null;
     return html`<section class="card" data-tipped data-anchor=${TEAM_ANCHOR}>
@@ -458,7 +454,7 @@ export class JoeBatteryGroup extends DeviceSection {
         ${tip(t, "team_mode")}
         ${mode ? sourceChip(t, sourceOf(config, "rules.battery_team")) : html`<span class="chip">${t("team.mode.default")}</span>`}
       </div>
-      ${team && !automations ? html`<p class="team-now">${teamText(t, team)}</p>` : nothing}
+      ${team ? html`<p class="team-now">${teamText(t, team)}</p>` : nothing}
       <div class="team-notes">
         ${reason
           ? html`<div class="note" role="status" data-tipped>
@@ -478,39 +474,8 @@ export class JoeBatteryGroup extends DeviceSection {
               <span>${t("team.default")} ${tip(t, "team_default")}</span>
             </div>`
           : nothing}
-        ${hold
-          ? html`<div class="note" role="status" data-tipped>
-              <ha-icon icon="mdi:lock-clock"></ha-icon>
-              <span>${hold} ${tip(t, "team_hold")}</span>
-            </div>`
-          : nothing}
-        ${back
-          ? html`<div class="note ${back.problem ? "warn" : ""}" role="status" data-tipped>
-              <ha-icon icon="mdi:robot-outline"></ha-icon>
-              <span>
-                ${back.text} ${tip(t, "team_given_back")}
-                <span class="note-actions">
-                  <button type="button" class="mini-btn" @click=${() => revealAnchor(this.renderRoot, "automations")}>
-                    ${t("team.automations.go")}
-                  </button>
-                </span>
-              </span>
-            </div>`
-          : nothing}
         ${team?.group_question ? this.renderGroupQuestion(t, config) : nothing}
-        ${automations
-          ? html`<div class="note warn" role="status">
-              <ha-icon icon="mdi:robot-confused-outline"></ha-icon>
-              <span>
-                ${t("team.automations", { names: (team?.automations ?? []).map((n) => `„${n}“`).join(", ") })}
-                <span class="note-actions">
-                  <button type="button" class="mini-btn go" @click=${() => revealAnchor(this.renderRoot, "automations")}>
-                    ${t("team.automations.go")}
-                  </button>
-                </span>
-              </span>
-            </div>`
-          : nothing}
+        ${this.renderAutomationsNote(t, this.state?.control?.automations ?? [])}
         ${this.renderGuard(t, config)}
       </div>
       ${shown === "sequence"
@@ -606,18 +571,26 @@ export class JoeBatteryGroup extends DeviceSection {
       return nothing;
     }
     const alarm = guard.state === "on" && guard.last?.result === "alarm" && !guard.last.dry;
-    const handed = guard.state === "on" && guard.automations.length > 0;
-    return html`<div class="note guard ${alarm || handed ? "warn" : ""}" role="status" data-tipped data-anchor="guard">
+    return html`<div class="note guard ${alarm ? "warn" : ""}" role="status" data-tipped data-anchor="guard">
       <ha-icon icon="mdi:shield-sync-outline"></ha-icon>
+      <span><b>${t("guard.title")}</b> ${tip(t, "guard")} · ${guardText(t, guard, config)}</span>
+    </div>`;
+  }
+
+  /** The owner's automations that write to the batteries right now: they get in Joe's way, the owner switches them. */
+  private renderAutomationsNote(t: Translate, names: string[]): TemplateResult | typeof nothing {
+    if (!names.length) {
+      return nothing;
+    }
+    return html`<div class="note warn" role="status">
+      <ha-icon icon="mdi:robot-confused-outline"></ha-icon>
       <span>
-        <b>${t("guard.title")}</b> ${tip(t, "guard")} · ${guardText(t, guard, config)}
-        ${handed
-          ? html`<span class="note-actions">
-              <button type="button" class="mini-btn go" @click=${() => revealAnchor(this.renderRoot, "automations")}>
-                ${t("team.automations.go")}
-              </button>
-            </span>`
-          : nothing}
+        ${t("team.automations", { names: quoted(names) })}
+        <span class="note-actions">
+          <button type="button" class="mini-btn go" @click=${() => revealAnchor(this.renderRoot, "automations")}>
+            ${t("team.automations.go")}
+          </button>
+        </span>
       </span>
     </div>`;
   }
