@@ -7716,14 +7716,14 @@ function qe(e, t, n) {
 }
 //#endregion
 //#region src/define.ts
-var Je = "0.9.29";
+var Je = "0.9.30";
 function V(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Je, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.29" && Xe();
+	n.joeVersion !== "0.9.30" && Xe();
 }
 var Ye = !1;
 function Xe() {
