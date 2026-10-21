@@ -58,14 +58,13 @@ OVER_KW = 0.1
 # power for this long (hysteresis).
 ALONG_BACK = 0.8
 ALONG_OFF = timedelta(minutes=10)
-# Helping: grid import (W) while the active group discharges at this share of
-# its power, for this long; it waits again once the need is below HELP_BACK of
-# the active group's power for HELP_OFF.
-HELP_W = 200.0
-HELP_NEAR = 0.85
-HELP_DWELL = timedelta(seconds=60)
+# Helping: the house drew from the grid for a while (team.quick "import")
+# although the active group gives – at its limit or only a trickle, it does
+# not matter –: the next one helps. It waits again once the house drew
+# nothing for a while (team.quick "calm") and the active group could carry
+# the need alone (below HELP_BACK of its power); a need above its power
+# would call the helper right back.
 HELP_BACK = 0.8
-HELP_OFF = timedelta(minutes=2)
 # A base load: the quantile of the house's need over the last BASE_SPAN, in
 # steps, at least BASE_MIN_W; samples every few seconds, BASE_SAMPLES at least.
 BASE_QUANTILE = 0.1
@@ -218,38 +217,28 @@ def lead_start(
 def help_step(
     store: dict[str, Any],
     can: bool,
-    import_w: float,
-    discharge_w: float,
+    importing: bool,
+    calm: bool,
     need_kw: float,
     active_kw: float,
     now: datetime,
 ) -> bool:
-    """Whether the next group helps discharging: the house draws from the grid
-    (at least HELP_W) although the active group discharges near its power
-    (HELP_NEAR), for HELP_DWELL. It waits again once the need stayed below
-    HELP_BACK of the active group's power for HELP_OFF (or `can` ends)."""
+    """Whether the next group helps discharging. `importing`: the house drew
+    from the grid for a while, `calm`: it drew nothing for a while (both
+    from team.quick). It starts with `importing`; it ends with `calm` once
+    the active group could carry the need alone (below HELP_BACK of its
+    power), or when `can` ends."""
     if not can:
         store.clear()
         return False
-    stamp = now.isoformat(timespec="seconds")
     if not store.get("on"):
-        near = discharge_w >= active_kw * 1000 * HELP_NEAR
-        if import_w < HELP_W or not near:
-            store.pop("since", None)
+        if not importing:
             return False
-        since = store.setdefault("since", stamp)
-        if now - datetime.fromisoformat(since) < HELP_DWELL:
-            return False
-        store.update(on=True, at=stamp)
-        store.pop("low_since", None)
+        store.update(on=True, at=now.isoformat(timespec="seconds"))
         return True
-    if need_kw < active_kw * HELP_BACK:
-        low = store.setdefault("low_since", stamp)
-        if now - datetime.fromisoformat(low) >= HELP_OFF:
-            store.clear()
-            return False
-    else:
-        store.pop("low_since", None)
+    if calm and need_kw < active_kw * HELP_BACK:
+        store.clear()
+        return False
     return True
 
 

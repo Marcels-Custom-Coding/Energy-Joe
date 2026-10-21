@@ -330,7 +330,7 @@ export class EnergyJoePanel extends LitElement {
         this.joe = joe;
         this.failed = false;
       },
-      { type: "energy_joe/subscribe" },
+      { type: "energy_joe/subscribe", language: this.hass.language },
     );
     this.unsubscribe.catch(() => {
       this.failed = true;

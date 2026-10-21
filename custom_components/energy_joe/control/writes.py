@@ -153,13 +153,17 @@ def _as_bool(value: Any) -> bool:
 
 
 async def async_apply(
-    hass: HomeAssistant, write: Write, note: str | None = None
+    hass: HomeAssistant,
+    write: Write,
+    note: str | None = None,
+    language: str | None = None,
 ) -> None:
     """Call the entity's service so it takes the value (raises WriteError).
 
     With `note` (why Joe writes it, in the owner's words) a line goes into
     Home Assistant's logbook next to the entity, so the owner sees there what
-    Joe set and why, not only that a service changed it.
+    Joe set and why, not only that a service changed it; `language` ("de",
+    "en") is the owner's, else Home Assistant's.
     """
     if write.is_call:
         await _async_call(hass, write)
@@ -198,20 +202,26 @@ async def async_apply(
         )
         raise WriteError(write.entity_id, "failed") from err
     if note:
-        async_note(hass, write, state.name, note)
+        async_note(hass, write, state.name, note, language)
     if write.pause:
         await settle(write.pause)
     if write.ready_for:
         await async_ready(hass, write.ready_for, write.ready_s)
 
 
-def async_note(hass: HomeAssistant, write: Write, name: str, note: str) -> None:
+def async_note(
+    hass: HomeAssistant,
+    write: Write,
+    name: str,
+    note: str,
+    language: str | None = None,
+) -> None:
     """A line in the logbook of the entity Joe wrote: "Energy Joe" as who,
     the value and the reason. A bonus: a logbook that fails changes nothing,
     and the device call does not wait for it."""
     if not hass.services.has_service("logbook", "log"):
         return
-    german = (hass.config.language or "").startswith("de")
+    german = (language or hass.config.language or "").startswith("de")
     value = write.value
     if isinstance(value, bool):
         shown = ("an" if value else "aus") if german else ("on" if value else "off")

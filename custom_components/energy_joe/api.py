@@ -296,7 +296,13 @@ async def ws_places_set(
     connection.send_result(msg["id"])
 
 
-@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/subscribe"})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/subscribe",
+        # The language the panel shows: Joe's own words follow it.
+        vol.Optional("language"): cv.string,
+    }
+)
 @websocket_api.require_admin
 @callback
 def ws_subscribe(
@@ -307,6 +313,8 @@ def ws_subscribe(
     """Send Joe's state now and after every change."""
     if (runtime := _runtime(hass, connection, msg)) is None:
         return
+    if msg.get("language"):
+        runtime.async_set_language(msg["language"])
 
     @callback
     def forward(state: dict[str, Any]) -> None:

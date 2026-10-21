@@ -1,4 +1,4 @@
-import { A as e, D as t, H as n, J as r, K as i, O as a, Q as o, _ as s, at as c, ft as l, g as u, h as d, it as f, k as p, l as m, lt as h, nt as g, ot as _, q as v, r as y, st as b, t as x, x as S, y as C } from "./tokens-dmJq75lH.js";
+import { A as e, D as t, H as n, J as r, K as i, O as a, Q as o, _ as s, at as c, ft as l, g as u, h as d, it as f, k as p, l as m, lt as h, nt as g, ot as _, q as v, r as y, st as b, t as x, x as S, y as C } from "./tokens-C7dXi-q3.js";
 //#region src/energy-joe-cards.ts
 var w = {
 	state: void 0,
@@ -10,7 +10,10 @@ var w = {
 		return this.listeners.add(t), this.state && t(this.state), (!this.unsubscribe || this.hass?.connection !== e.connection) && (this.hass = e, this.unsubscribe = e.connection.subscribeMessage((e) => {
 			this.state = e, this.failed = !1;
 			for (let t of this.listeners) t(e);
-		}, { type: "energy_joe/subscribe" }).catch((e) => {
+		}, {
+			type: "energy_joe/subscribe",
+			language: e.language
+		}).catch((e) => {
 			throw this.failed = !0, this.unsubscribe = void 0, e;
 		}), this.unsubscribe.catch(() => void 0)), () => {
 			this.listeners.delete(t), !this.listeners.size && this.unsubscribe && (this.unsubscribe.then((e) => e()).catch(() => void 0), this.unsubscribe = void 0, this.state = void 0);
