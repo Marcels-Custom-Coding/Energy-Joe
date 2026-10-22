@@ -95,6 +95,10 @@ NOTES = {
     "free": ("Freigegeben", "Released"),
     "team": ("Nacheinander: {name} ist dran", "One after the other: {name}'s turn"),
     "team_back": ("Nacheinander: Sperre zurück", "One after the other: block put back"),
+    "team_along": (
+        "Nebenher: {name} lädt mit {watts} W fest",
+        "Alongside: {name} charges with a fixed {watts} W",
+    ),
     "cap": ("Tagsüber gedrosselt (Überschuss)", "Capped by day (surplus)"),
     "day": ("Netzfreundlicher Morgen", "Grid-friendly morning"),
     "guard": ("Speicher-Wächter: Stufe {stage}", "Battery watchdog: stage {stage}"),
@@ -467,11 +471,15 @@ class JoeExecutor:
         # batteries' powers of the last check (for the most they do) and the
         # base load per battery to write now.
         self._team_samples: list[tuple[datetime, float]] = []
+        # The surplus every few seconds (kW), for charging along with a fixed power.
+        self._team_surplus: list[tuple[datetime, float]] = []
         # What the meter's timers last said about the active group (see
         # _team_quick): a change checks at once.
         self._team_quick_seen: tuple[str, ...] | None = None
         self._team_prev: dict[str, float] = {}
         self._team_base_w: dict[str, float] = {}
+        # The fixed power (W) each battery charging along gets (see _team_along).
+        self._team_along_w: dict[str, float] = {}
         # The last hint for the daytime cap while Joe coordinated (kept while
         # a value is missing for a moment), and whether a lever is gone for real.
         self._team_hint: dict[str, Any] | None = None
@@ -2129,6 +2137,7 @@ class JoeExecutor:
             # and what he asks.
             "style": team_day.style_of(rules),
             "along": None,
+            "along_w": {},
             "along_plan": None,
             "help": False,
             "base": None,
@@ -2201,8 +2210,9 @@ class JoeExecutor:
             store.update(active=None, since=None)
             store["along"], store["help"], store["quick"] = {}, {}, {}
             self._team_base_w = {}
-            if store.get("along_why"):
-                store["along_why"] = None
+            self._team_along_w = {}
+            if store.get("along_on"):
+                store["along_on"] = False
                 self._log("team_along_end", reason=state)
         self._team_review(config, info, groups, now)
         self.team = info
@@ -2535,8 +2545,12 @@ class JoeExecutor:
                     ),
                 )
             store.update(active=chosen, since=now.isoformat(timespec="seconds"))
-            # Helping and what the meter showed count for the group whose turn it was.
+            # Helping, charging along and what the meter showed count for the
+            # group whose turn it was.
             store["along"], store["help"], store["quick"] = {}, {}, {}
+            if store.get("along_on"):
+                store["along_on"] = False
+                self._log("team_along_end", reason="handover")
         # The panel names the group by its batteries (the first one leads).
         info["active"] = group.ids[0]
         info["active_group"] = chosen
@@ -2547,21 +2561,22 @@ class JoeExecutor:
                 empty=team_group.empty, full=team_group.full
             )
         style = team_day.style_of(rules)
-        # Charging side by side (a weak day, more sun than the active group
-        # takes) is off until it comes with a fixed power for the second
-        # group (_team_parallel, _team_along): two systems regulating freely
-        # at one meter fight each other.
         info["parallel"] = False
-        info["along"] = None
         info["along_plan"] = None
         grid = measurement_kw(
             self._hass.states.get, config["measurements"]["grid_power"]
         )
-        # The later groups with room (for the day's note) and those not
-        # empty (helping, a base load), each in its own order.
+        # The later groups with room (charging along, the day's note) and
+        # those not empty (helping, a base load), each in its own order.
         waiting = [g for g in charge_order if g.id != chosen and not g.full]
         givers = [g for g in discharge_order if g.id != chosen and not g.empty]
-        side: set[str] = set()
+        # The next group charging along with a fixed power (its share of the
+        # surplus by room), the active one regulating the rest: never two
+        # systems regulating freely at one meter (see control/team_day.py).
+        roles = {battery["id"]: role for battery, role in candidates}
+        side, self._team_along_w = self._team_along(
+            config, group, waiting, flow, deficit, grid, seen, roles, now, info
+        )
         helping = self._team_help(
             group, givers, flow, deficit, grid, powers, give, style, seen, now, info
         )
@@ -2584,16 +2599,17 @@ class JoeExecutor:
                 entry = info["batteries"][member.id]
                 if team_group.id == chosen:
                     # While others help, the active one may not charge from
-                    # them; it is free otherwise.
-                    want[member.id] = (bool(helpers), False)
+                    # them; while another charges along, not discharge into
+                    # it; it is free otherwise.
+                    want[member.id] = (bool(helpers), bool(side))
                     entry.update(
                         charge="blocked" if helpers else "free",
-                        discharge="free",
+                        discharge="blocked" if side else "free",
                         why="active",
                     )
                 elif member.id in side:
                     want[member.id] = (False, True)
-                    entry.update(charge="free", discharge="blocked", why="parallel")
+                    entry.update(charge="free", discharge="blocked", why="along")
                 elif member.id in helpers:
                     want[member.id] = (True, why_helper == "base")
                     entry.update(charge="blocked", discharge="free", why=why_helper)
@@ -2612,7 +2628,7 @@ class JoeExecutor:
             plan_from = (info.get("along_plan") or {}).get("from")
             self._team_pending = {
                 "room": flow == "surplus" and bool(waiting),
-                "along": False,
+                "along": bool(side),
                 "planned": datetime.fromisoformat(plan_from) if plan_from else None,
                 "export_kw": max(0.0, -(grid or 0.0)),
                 "socs": {m.id: m.soc for m in members},
@@ -2663,92 +2679,129 @@ class JoeExecutor:
     def _team_along(
         self,
         config: dict[str, Any],
-        plan: dict[str, Any] | None,
-        order: list[team_rules.Group],
         active: team_rules.Group,
         waiting: list[team_rules.Group],
         flow: str | None,
         deficit: float | None,
         grid: float | None,
+        seen: dict[str, bool],
+        roles: dict[str, RoleAdapter | None],
         now: datetime,
         info: dict[str, Any],
-    ) -> str | None:
-        """Why the later groups charge along now: "forecast" (from the hour on
-        in which the surplus is more than the active group can take, the
-        learned lead before it once the owner said yes), "export" (the house
-        gives to the grid although the active group is free to charge), or
-        None (see control/team_day.py).
+    ) -> tuple[set[str], dict[str, float]]:
+        """The next group charging along with a fixed power (see
+        control/team_day.py): its batteries and the power (W) each one gets,
+        its share of the surplus by room; nothing while it is off.
 
-        Not while something holds the surplus back on purpose: the daytime
-        cap leaves it to evcc (and counts the waiting groups' room for the
-        active one), the grid-friendly morning leaves it to the grid.
+        Only a group whose charging power Joe can set (a forced-charge mode
+        with a power, Fronius over Modbus with its reference), in surplus,
+        while the active group is not full and nothing holds the surplus
+        back on purpose (the daytime cap, the grid-friendly morning). The
+        surplus is the lowest seen over the last two minutes (what all
+        batteries take plus what goes to the grid). Once the house drew from
+        the grid for a while (team.quick "import"), the power is cut by what
+        was drawn and the cut holds for a while; below the least worth
+        setting it ends.
         """
-        rules = config["rules"]
         store: dict[str, Any] = self.data["team"]
-        style = team_day.style_of(rules)
+        along: dict[str, Any] = store["along"]
         held = bool(self.data["surplus"]["caps"]) or bool(self.data.get("day"))
-        window = None
-        if style != "strict" and plan and plan.get("hours") and waiting:
-            created = (
-                datetime.fromisoformat(plan["created"]) if plan.get("created") else None
-            )
-            # The forecast as it is (the learned factor is in it): starting a
-            # little early costs nothing, starting late sends sun to the grid.
-            found = day_surplus.slots(plan["hours"], created, now, 1.0)
-            window = team_day.overflow(
-                found, order, active.id, day_surplus.pv_end(found, now)
-            )
-        lead = 0.0
-        if rules.get("team_early") is True:
-            lead = float((store.get("lead") or {}).get("minutes") or 0.0)
-        start = team_day.lead_start(window, lead)
-        if window is not None and start is not None:
-            info["along_plan"] = {
-                "from": start.isoformat(timespec="minutes"),
-                "until": window[1].isoformat(timespec="minutes"),
-                "lead_min": round(lead),
-                "batteries": [k for g in waiting for k in g.ids],
-            }
+        style = team_day.style_of(config["rules"])
+        second = next(
+            (
+                g
+                for g in waiting
+                if g.room >= team_rules.WORTH_KWH
+                and all(
+                    roles.get(k) is not None and roles[k].along_lever() for k in g.ids
+                )
+            ),
+            None,
+        )
         can = (
             style != "strict"
             and flow == "surplus"
-            and bool(waiting)
+            and second is not None
             and not active.full
             and not held
             and deficit is not None
         )
-        by_meter = team_day.along_step(
-            store["along"],
-            can,
-            max(0.0, -(grid or 0.0)) * 1000,
-            max(0.0, -(deficit or 0.0)),
-            active.max_kw,
-            now,
+        samples = [v for _, v in self._team_surplus]
+        covered = bool(samples) and now - self._team_surplus[0][0] >= timedelta(
+            seconds=60
         )
-        by_forecast = (
-            can
-            and window is not None
-            and start is not None
-            and start <= now < window[1]
-        )
-        why = "export" if by_meter else "forecast" if by_forecast else None
-        before = store.get("along_why")
-        if why != before:
-            store["along_why"] = why
-            if why:
-                self._log(
-                    "team_along",
-                    reason=why,
-                    battery=active.ids[0],
-                    batteries=[k for g in waiting for k in g.ids],
-                    until=window[1].isoformat(timespec="minutes") if window else None,
-                )
+        surplus = min(samples) if covered else max(0.0, -(deficit or 0.0))
+        was = bool(store.get("along_on"))
+        on = team_day.along_step(along, can, surplus, now)
+        watts: dict[str, float] = {}
+        ended = None
+        if on:
+            assert second is not None
+            kw = team_day.along_power(surplus, active.room, second.room, second.max_kw)
+            current = along.get("kw")
+            cap_at = along.get("cap_at")
+            if cap_at and now - _at(cap_at) < team_day.ALONG_HOLD:
+                # A cut holds for a while, whatever the sun does meanwhile.
+                kw = min(kw, float(along.get("cap") or 0.0))
+            cut_to_zero = False
+            if seen["import"] and current:
+                cut = team_day.along_cut(current, max(0.0, (grid or 0.0) * 1000))
+                if cut < kw:
+                    kw = cut
+                    cut_to_zero = kw <= 0
+                    along.update(cap=kw, cap_at=now.isoformat(timespec="seconds"))
+                    # The next cut needs the house drawing for a while again:
+                    # the meter gets its time to settle after this one.
+                    store["quick"].pop("import", None)
+                    if kw > 0:
+                        self._log(
+                            "team_along_cut",
+                            battery=active.ids[0],
+                            batteries=second.ids,
+                            power=round(kw * 1000),
+                        )
+            if cut_to_zero:
+                team_day.along_end(along, now)
+                on = False
+                ended = "import"
             else:
-                self._log(
-                    "team_along_end", reason="flow" if flow != "surplus" else "less"
+                # Little sun for a moment: the least worth setting, until the
+                # surplus stayed low for a while (then the phase ends).
+                kw = max(kw, team_day.ALONG_MIN_KW)
+                if (
+                    current is None
+                    or abs(kw - current) >= team_day.ALONG_CHANGE_KW - 1e-9
+                ):
+                    along["kw"] = kw
+                kw = float(along["kw"])
+                rooms = {m.id: m.room for m in second.members}
+                total = sum(rooms.values()) or 1.0
+                watts = {k: round(kw * 1000 * r / total) for k, r in rooms.items()}
+        if on and not was:
+            assert second is not None
+            self._log(
+                "team_along",
+                reason="fixed",
+                battery=active.ids[0],
+                batteries=second.ids,
+                power=round(float(along["kw"]) * 1000),
+            )
+        elif was and not on:
+            if ended is None:
+                ended = (
+                    "flow"
+                    if flow != "surplus"
+                    else "held"
+                    if held
+                    else "full"
+                    if second is None
+                    else "less"
                 )
-        info["along"] = why
-        return why
+            self._log("team_along_end", reason=ended)
+        store["along_on"] = on
+        info["along"] = "fixed" if on else None
+        info["along_w"] = watts
+        return (set(watts) if on else set()), watts
 
     def _team_help(
         self,
@@ -2893,6 +2946,21 @@ class JoeExecutor:
         self._team_samples.append((now, deficit * 1000))
         team_day.trim(self._team_samples, now)
 
+    def _team_surplus_sample(
+        self, config: dict[str, Any], powers: dict[str, float], now: datetime
+    ) -> None:
+        """The surplus right now (kW: what the batteries take plus what goes
+        to the grid), every few seconds, for charging along with a fixed
+        power (its lowest value over team_day.ALONG_SPAN counts)."""
+        deficit = self._team_deficit(config, powers)
+        if deficit is None:
+            return
+        self._team_surplus.append((now, -deficit))
+        while (
+            self._team_surplus and now - self._team_surplus[0][0] > team_day.ALONG_SPAN
+        ):
+            self._team_surplus.pop(0)
+
     def _team_review(
         self,
         config: dict[str, Any],
@@ -2945,7 +3013,8 @@ class JoeExecutor:
             )
             info["learned"] = deepcopy(lead)
             info["review"] = deepcopy(summary)
-        # Nothing to suggest while charging along is off (see _team_choose).
+        # Nothing to ask: charging along goes by the meter now, with a fixed
+        # power (see _team_along); there is no lead to learn.
         info["suggest"] = None
 
     def _team_evening(self, local: datetime) -> bool:
@@ -3097,39 +3166,6 @@ class JoeExecutor:
             ):
                 self.on_cutoff(key, value)
 
-    def _team_parallel(
-        self,
-        config: dict[str, Any],
-        plan: dict[str, Any] | None,
-        members: list[team_rules.Member],
-        now: datetime,
-        today: str,
-    ) -> bool:
-        """Whether the batteries charge side by side today: the cautious sun
-        would not fill them one after the other before it goes. Once decided,
-        for the rest of the day (no back and forth with the clouds)."""
-        store: dict[str, Any] = self.data["team"]
-        if store["parallel"] == today:
-            return True
-        hours = (plan or {}).get("hours")
-        if not plan or not hours or all(m.full for m in members):
-            return False
-        caution = day_surplus.CAUTION.get(config["rules"]["day_caution"], 0.8)
-        created = (
-            datetime.fromisoformat(plan["created"]) if plan.get("created") else None
-        )
-        found = day_surplus.slots(hours, created, now, caution)
-        end = day_surplus.pv_end(found, now)
-        if end is None or now >= end:
-            return False
-        if not any(s.surplus > 0 for s in found if s.start < end):
-            return False
-        if team_rules.sequential_fills(found, members, end):
-            return False
-        store["parallel"] = today
-        self._log("team_parallel", until=end.isoformat(timespec="minutes"))
-        return True
-
     async def _async_team_apply(
         self,
         config: dict[str, Any],
@@ -3188,6 +3224,17 @@ class JoeExecutor:
             if base is not None and discharge:
                 # A base load: the discharge limit at that power instead of 0.
                 writes = self._team_base_writes(adapter, whole, writes, base)
+            along = self._team_along_w.get(key)
+            note = self._note("team", name=leader)
+            if along is not None and discharge and not charge:
+                # Charging along: the fixed power with the block of discharging.
+                writes = adapter.team_along(self._hass, writes, along)
+                note = self._note(
+                    "team_along", name=batteries[key]["name"], watts=round(along)
+                )
+            elif (store["blocks"].get(key) or {}).get("along_w") is not None:
+                # Charging along is over: its mode off before the block.
+                writes = [*adapter.team_along_exit(self._hass), *writes]
             problem = None
             # A block that had arrived and is undone (Fronius sets its
             # registers back when its Modbus control restarts): written again
@@ -3201,9 +3248,7 @@ class JoeExecutor:
                 if len(resets) >= TEAM_RESETS:
                     problem = "reset"
             if writes and problem is None:
-                problem = await self._async_write(
-                    adapter, writes, now, "team", self._note("team", name=leader)
-                )
+                problem = await self._async_write(adapter, writes, now, "team", note)
             if give_back or adapter.own_entities(*BLOCK_OPERATIONS):
                 # Within one battery, too: its new block first, then what is
                 # free (what own steps of another block wrote, too).
@@ -3216,7 +3261,7 @@ class JoeExecutor:
                 adapter,
                 whole,
                 charge and not charge_taken,
-                discharge and base is None,
+                discharge and base is None and along is None,
                 now,
             ):
                 # Each value may show what Joe wrote, the block counts only
@@ -3232,19 +3277,21 @@ class JoeExecutor:
             }
             if base is not None and discharge:
                 blocks["base_w"] = base
+            if along is not None and discharge:
+                blocks["along_w"] = along
             if charge and charge_taken:
                 # Blocked all the same, by the limit someone else holds at 0.
                 entry["charge"] = "blocked"
-            shown = {k: v for k, v in blocks.items() if k != "base_w"}
+            shown = {k: v for k, v in blocks.items() if k in ("charge", "discharge")}
             if {
                 k: v
                 for k, v in store["blocks"]
                 .get(key, {"charge": False, "discharge": False})
                 .items()
-                if k != "base_w"
+                if k in ("charge", "discharge")
             } != shown:
                 self._log("team_block", battery=key, **shown)
-            if blocks["charge"] or blocks["discharge"] or "base_w" in blocks:
+            if any(blocks.values()):
                 store["blocks"][key] = blocks
             else:
                 store["blocks"].pop(key, None)
@@ -3381,6 +3428,11 @@ class JoeExecutor:
         battery = next((b for b in config["batteries"] if b["id"] == key), None)
         adapter = make_adapter(battery) if battery else None
         if isinstance(adapter, RoleAdapter):
+            if (store["blocks"].get(key) or {}).get("along_w") is not None and (
+                leave := adapter.team_along_exit(self._hass)
+            ):
+                # Charging along with a fixed power: its mode off first.
+                await self._async_write(adapter, leave, now, "team_back")
             roles = adapter.team_release_roles()
             if key in self.data["surplus"]["caps"] or self._day_holds(key):
                 # The cap or the morning holds the charge limit (with the
@@ -3463,6 +3515,7 @@ class JoeExecutor:
             if power is not None:
                 powers[battery["id"]] = power
         self._team_sample(config, powers, now)
+        self._team_surplus_sample(config, powers, now)
         self._team_quick(config, powers, now)
         state = "on"
         if not config["rules"].get("transfer_guard", True):

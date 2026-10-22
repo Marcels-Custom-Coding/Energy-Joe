@@ -1,4 +1,4 @@
-import { $ as e, A as t, B as n, C as r, D as i, E as a, F as o, G as s, H as c, I as l, J as u, K as d, L as f, M as p, N as m, O as h, P as g, Q as ee, R as _, S as te, T as ne, U as re, V as v, W as ie, X as ae, Y as oe, Z as y, _ as se, a as ce, at as b, b as le, c as ue, ct as de, d as x, dt as fe, et as S, f as C, ft as w, g as pe, h as me, i as he, it as T, j as ge, k as _e, l as E, lt as D, m as ve, n as ye, nt as be, o as xe, ot as O, p as Se, q as k, r as A, rt as Ce, s as we, st as j, t as Te, tt as M, u as Ee, ut as De, v as Oe, w as ke, x as N, y as Ae, z as je } from "./tokens-DmTBcJCk.js";
+import { $ as e, A as t, B as n, C as r, D as i, E as a, F as o, G as s, H as c, I as l, J as u, K as d, L as f, M as p, N as m, O as h, P as g, Q as ee, R as _, S as te, T as ne, U as re, V as v, W as ie, X as ae, Y as oe, Z as y, _ as se, a as ce, at as b, b as le, c as ue, ct as de, d as x, dt as fe, et as S, f as C, ft as w, g as pe, h as me, i as he, it as T, j as ge, k as _e, l as E, lt as D, m as ve, n as ye, nt as be, o as xe, ot as O, p as Se, q as k, r as A, rt as Ce, s as we, st as j, t as Te, tt as M, u as Ee, ut as De, v as Oe, w as ke, x as N, y as Ae, z as je } from "./tokens-CtZ4H9js.js";
 //#region src/assets.ts
 var Me = import.meta.url.replace(/[^/]*$/, ""), Ne = (e) => `${Me}${e}`, Pe = /* @__PURE__ */ new Set(["welcome"]), Fe = /* @__PURE__ */ new Set([
 	"night-charge",
@@ -6595,10 +6595,14 @@ function Ti(e, t) {
 function Ei(e, t) {
 	if (!t || t.state !== "on" || !t.active) return null;
 	let n = yi(e, t, xi(t)), r = Ci(t, "along");
-	if (t.along && r.length) return e(`team.reason.along.${t.along}`, {
-		active: n,
-		others: yi(e, t, r)
-	});
+	if (t.along && r.length) {
+		let i = Object.values(t.along_w ?? {}).reduce((e, t) => e + t, 0);
+		return e(`team.reason.along.${t.along}`, {
+			active: n,
+			others: yi(e, t, r),
+			watts: v(e.lang, i, 0)
+		});
+	}
 	let i = Ci(t, "helps");
 	if (t.help && i.length) return e("team.reason.help", {
 		active: n,

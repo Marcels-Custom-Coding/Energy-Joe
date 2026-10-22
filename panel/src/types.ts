@@ -531,9 +531,11 @@ export interface BatteryTeam {
   /** "Selbst einstellen" (control/team_day.py; older backends: missing). */
   style?: BatteryTeamStyle;
   /** Why the later groups charge along now: the forecast, or the meter shows sun going to the grid. */
-  along?: "forecast" | "export" | null;
+  along?: "forecast" | "export" | "fixed" | null;
   /** From when (and until when) the forecast lets the later groups charge along today, and the lead in it. */
   along_plan?: { from: string; until: string; lead_min: number; batteries: string[] } | null;
+  /** The fixed power (W) each battery charging along gets right now (older backends: missing). */
+  along_w?: Record<string, number>;
   /** The next groups help discharging (a big load). */
   help?: boolean;
   /** The base load the next group gives now (W). */

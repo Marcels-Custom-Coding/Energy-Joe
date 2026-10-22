@@ -33,9 +33,11 @@ at which its discharging drops to nothing. A battery that stopped is usable
 again once it has charged 5 % above that level.
 
 While the house still draws from the grid although the active one gives
-(a big load), the next one helps discharging (control/team_day.py). Charging
-side by side is off until it comes with a fixed power for the second one:
-two systems regulating freely at one meter fight each other.
+(a big load), the next one helps discharging (control/team_day.py). While
+the sun gives more than is worth leaving to one, the next one charges along
+with a fixed power Joe sets, its share of the surplus by room, and the
+active one regulates the rest: never two systems regulating freely at one
+meter, they fight each other.
 
 Groups ("Wer regelt ihn?"): batteries regulated by one system take turns
 as one. Omnibattery regulates all its batteries (a Venus, a Victron) with one

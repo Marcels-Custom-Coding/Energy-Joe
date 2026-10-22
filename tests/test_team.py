@@ -529,12 +529,13 @@ async def test_the_cutoff_is_learned_and_hands_over(
     assert "team_cutoff" in kinds and "team_handover" in kinds
 
 
-async def test_nobody_charges_side_by_side_until_it_comes_with_a_fixed_power(
+async def test_the_venus_charges_along_with_a_fixed_power_and_leaves_on_a_cloud(
     hass: HomeAssistant, freezer
 ) -> None:
-    """A weak day (the sun would not fill both): one after the other all the
-    same. Two systems regulating freely at one meter fight each other;
-    charging along comes back with a fixed power for the second one."""
+    """The BYD takes the sun; after five minutes of surplus the Venus charges
+    along with a fixed power (her manual mode, the power, the forced mode)
+    and the BYD may not discharge meanwhile. A cloud turns the flow: the
+    Venus goes back to her own control and waits blocked again."""
     freezer.move_to("2026-06-20T09:00:00+02:00")
     install_team(hass, byd_soc=20, venus_soc=20)
     flows(hass, grid=-800, byd=1200)
@@ -544,21 +545,40 @@ async def test_nobody_charges_side_by_side_until_it_comes_with_a_fixed_power(
     view = executor.view["team"]
     assert view["parallel"] is False and view["along"] is None
     assert view["active"] == "byd"
-    assert view["batteries"]["venus"]["why"] == "waits_full"
+    assert venus_levers(hass) == ("0.0", "0.0", "on")
+    for _ in range(60):
+        freezer.tick(timedelta(seconds=5))
+        await executor.async_guard()
+    await executor.async_check()
+    view = executor.view["team"]
+    assert view["along"] == "fixed"
+    assert view["batteries"]["venus"]["why"] == "along"
+    assert view["batteries"]["byd"]["discharge"] == "blocked"
     never_opposite(view)
+    # Room: BYD 7.9 kWh, Venus 4.0 kWh – her share of the 2 kW is 0.6 kW.
+    assert view["along_w"] == {"venus": 600}
+    assert hass.states.get("switch.venus_manual_mode").state == "on"
+    assert hass.states.get("number.charge_power").state == "600.0"
+    assert hass.states.get("select.force_mode").state == "Charge"
+    assert venus_levers(hass) == ("2500.0", "0.0", "on")
+    assert byd_levers(hass) == ("100.0", "off", "0.0", "on")
+    # A cloud: the BYD covers the house for a while – the flow turns, charging
+    # along ends, the Venus goes back to her own control and waits.
+    flows(hass, grid=0, byd=-400)
+    for _ in range(3):
+        for _ in range(12):
+            freezer.tick(timedelta(seconds=5))
+            await executor.async_guard()
+        await executor.async_check()
+    view = executor.view["team"]
+    assert view["along"] is None
+    assert hass.states.get("select.force_mode").state == "None"
+    assert hass.states.get("number.charge_power").state == "0.0"
+    assert hass.states.get("switch.venus_manual_mode").state == "off"
     assert venus_levers(hass) == ("0.0", "0.0", "on")
     assert byd_levers(hass) == ("100.0", "off", "100.0", "off")
     kinds = [e["kind"] for e in executor.data["log"]]
-    assert "team_parallel" not in kinds and "team_along" not in kinds
-    # A cloud (the BYD covers the house), the sun again: nothing changes.
-    flows(hass, grid=0, byd=-400)
-    freezer.tick(timedelta(minutes=1))
-    await executor.async_check()
-    flows(hass, grid=-800, byd=1200)
-    freezer.tick(timedelta(minutes=1))
-    await executor.async_check()
-    assert executor.view["team"]["active"] == "byd"
-    assert venus_levers(hass) == ("0.0", "0.0", "on")
+    assert kinds.count("team_along") == 1 and kinds.count("team_along_end") == 1
 
 
 async def test_only_one_after_the_other_is_strict_on_a_weak_day_too(

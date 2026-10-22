@@ -3,6 +3,11 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.34
+
+- **Nebenher laden mit fester Leistung.** Gibt die Sonne fünf Minuten lang mehr als 600 W Überschuss, obwohl der aktive Speicher lädt, lädt der nächste mit – nicht als zweiter Regler, sondern mit einer festen Leistung, die ich jede Minute neu ausrechne: sein Anteil am Überschuss nach freiem Platz, so werden beide etwa gleichzeitig voll; höchstens seine eigene Leistung, höchstens der Überschuss minus 300 W, damit dem aktiven etwas zum Regeln bleibt. Grundlage ist der niedrigste Überschuss der letzten zwei Minuten, also was alle Speicher nehmen plus was ins Netz geht, nicht die Einspeisung, die der aktive ja auf null regelt. Neu geschrieben wird erst ab 200 W Unterschied. Der aktive darf währenddessen nicht entladen. Die Venus als zweite: Omnibattery manuell und „Laden X W“; der BYD als zweiter: die Entladerate unter 0 über Modbus, nur aus der Sonne, Netzladen fasse ich nicht an. Zieht das Haus 20 Sekunden über 150 W aus dem Netz, nehme ich dem zweiten so viel weg, wie bezogen wird, und halte das zehn Minuten; unter 300 W ist Schluss. Schluss auch nach zehn Minuten unter 600 W, wenn das Haus wieder Strom braucht, der zweite voll ist oder die Drossel für die Wallbox den Überschuss braucht; danach frühestens nach zehn Minuten wieder. Nur mit „Automatisch“, nie mit „Nur nacheinander“.
+- Nicht geprüft an echter Anlage: alles davon.
+
 ## 0.9.33
 
 - **Werksreset.** Unter Einstellungen › Wartung & Sichern gibt es „Alles auf Anfang“: Ich stelle jeden Hebel zurück, den ich noch halte, lösche alles, was ich mir gemerkt habe (Einstellungen, Gelerntes, Verlauf, Pläne, Ergebnisse, Kalender, Postfächer, Autos, Klima), und beginne mit der Einrichtung von vorn, als hättest du mich gerade installiert. Deine Automationen und Helfer, meine Entitäten und der Download in HACS bleiben. Davor fragt ein Hinweis nach und erinnert ans Sichern; was ich nicht zurückstellen konnte, sage ich dir danach.
