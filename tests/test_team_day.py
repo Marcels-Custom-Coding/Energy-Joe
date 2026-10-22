@@ -285,6 +285,9 @@ async def test_the_next_one_charges_along_with_a_fixed_share_of_the_surplus(
     for _ in range(5):
         freezer.tick(timedelta(seconds=5))
         await executor.async_guard()
+    # The tick itself has Joe check at once; a check right after cuts no
+    # further: the next cut needs 20 seconds of drawing again.
+    await hass.async_block_till_done()
     await executor.async_check()
     assert executor.view["team"]["along_w"] == {"byd": 1700}
     assert byd_levers(hass)[2] == "-34.0"

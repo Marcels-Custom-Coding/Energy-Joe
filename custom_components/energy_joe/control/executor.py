@@ -2750,6 +2750,9 @@ class JoeExecutor:
                     kw = cut
                     cut_to_zero = kw <= 0
                     along.update(cap=kw, cap_at=now.isoformat(timespec="seconds"))
+                    # The next cut needs the house drawing for a while again:
+                    # the meter gets its time to settle after this one.
+                    store["quick"].pop("import", None)
                     if kw > 0:
                         self._log(
                             "team_along_cut",
