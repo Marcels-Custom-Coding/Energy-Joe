@@ -143,6 +143,10 @@ NOTES = {
         "Nachtplan: heute Nacht nichts – keine Antwort auf meine Frage",
         "Night plan: nothing tonight – no answer to my question",
     ),
+    "factory_reset": (
+        "Werksreset: alles zurückgestellt und gelöscht",
+        "Factory reset: everything put back and deleted",
+    ),
 }
 # The reasons a night is left alone: Joe's own (the plan's first of these)
 # and the owner's (see _why).
@@ -4592,6 +4596,10 @@ class JoeExecutor:
         if key is None or key not in NOTES:
             return None
         return NOTES[key][0 if self.language() == "de" else 1].format(**values)
+
+    def words(self, key: str, **values: Any) -> str | None:
+        """Joe's words for the logbook (see NOTES), in the owner's language."""
+        return self._note(key, **values)
 
     def language(self) -> str:
         """The owner's language for Joe's own words ("de" or "en")."""

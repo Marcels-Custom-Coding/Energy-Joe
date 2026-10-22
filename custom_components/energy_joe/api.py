@@ -92,6 +92,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_plan_refresh)
     websocket_api.async_register_command(hass, ws_learning)
     websocket_api.async_register_command(hass, ws_learning_reset)
+    websocket_api.async_register_command(hass, ws_reset_all)
     websocket_api.async_register_command(hass, ws_learning_answer)
     websocket_api.async_register_command(hass, ws_log)
     websocket_api.async_register_command(hass, ws_control_test)
@@ -657,6 +658,23 @@ async def ws_learning_reset(
         connection.send_error(msg["id"], "not_learning", "Joe is not learning.")
         return
     connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/reset_all"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_reset_all(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Everything back to the first day: Joe puts his values back, deletes
+    all his data and starts the setup over (runtime.async_factory_reset).
+    Answers with what he could not put back (entity -> value)."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    left = await runtime.async_factory_reset()
+    connection.send_result(msg["id"], {"left": left})
 
 
 @websocket_api.websocket_command(

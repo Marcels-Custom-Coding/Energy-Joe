@@ -1127,6 +1127,8 @@ var Pe = {
 	"signpost.setup.terms": "Ersteinrichtung, Assistent, von vorn, Neustart, Einrichtung",
 	"signpost.diagnostics": "Diagnose",
 	"signpost.diagnostics.terms": "Fehler melden, Fehlerbericht, Diagnose herunterladen, Debug, Problem",
+	"signpost.reset_all": "Werksreset",
+	"signpost.reset_all.terms": "Alles löschen, auf Anfang, zurücksetzen, neu installieren, Werkseinstellungen, Reset",
 	"signpost.about": "Über Joe",
 	"signpost.about.terms": "Version, Home-Assistant-Version, Update, Info",
 	"signpost.entities": "Joes Entitäten",
@@ -1314,6 +1316,18 @@ var Pe = {
 	"settings.maintenance.diagnostics": "Diagnose für eine Fehlermeldung",
 	"settings.maintenance.diagnostics.hint": "Die Datei holst du in Home Assistant: Einstellungen › Geräte & Dienste › Energy Joe, dann im Menü ⋮ „Diagnose herunterladen“.",
 	"settings.maintenance.diagnostics.open": "Energy Joe in HA öffnen",
+	"settings.reset": "Alles auf Anfang",
+	"settings.reset.all": "Werksreset",
+	"settings.reset.hint": "Alles, was ich mir gemerkt habe, wird gelöscht, und die Einrichtung beginnt von vorn. Sichere vorher deine Einstellungen, wenn du sie behalten willst.",
+	"settings.reset.button": "Alles löschen …",
+	"settings.reset.confirm": "Wirklich alles löschen? Ich stelle zuerst jeden Hebel zurück, den ich noch halte. Dann lösche ich Einstellungen, Gelerntes, den ganzen Verlauf, Pläne und Ergebnisse, Kalender, Postfächer, Autos und Klima und beginne mit der Einrichtung von vorn. Deine Automationen und Helfer, meine Entitäten und der Download in HACS bleiben. Das lässt sich nicht rückgängig machen.",
+	"settings.reset.go": "Ja, alles löschen",
+	"settings.reset.working": "Ich stelle zurück und lösche …",
+	"settings.reset.done": "Alles gelöscht. Ich starte neu, die Seite lädt gleich.",
+	"settings.reset.left": "Alles gelöscht, aber diese Werte konnte ich nicht zurückstellen: {entities}. Stell sie bitte am Gerät zurück. Die Seite lädt gleich.",
+	"tip.reset_all.title": "Was macht der Werksreset?",
+	"tip.reset_all.text": "Danach ist es, als hättest du mich gerade erst installiert: Ich stelle jeden Hebel zurück, den ich noch halte, lösche alle meine Daten und beginne mit der Einrichtung von vorn. Den Verlauf lese ich dann wieder aus Home Assistant, das dauert im Hintergrund ein paar Minuten.",
+	"tip.reset_all.hint": "Soll etwas bleiben? Dann vorher unter „Sichern“ die Einstellungen herunterladen.",
 	"tip.diagnostics.title": "Wozu die Diagnose?",
 	"tip.diagnostics.text": "Wenn etwas nicht klappt und du einen Fehler meldest, hilft diese Datei beim Suchen. Sie zeigt, was ich weiß und vorhabe. Namen von Personen, Kalender und Postfach-Adressen ersetze ich vorher durch Platzhalter.",
 	"tip.diagnostics.hint": "Schau die Datei kurz durch, bevor du sie weitergibst.",
@@ -4667,6 +4681,8 @@ var Pe = {
 	"signpost.setup.terms": "first setup, assistant, from the start, restart, setup",
 	"signpost.diagnostics": "Diagnostics",
 	"signpost.diagnostics.terms": "report a bug, bug report, download diagnostics, debug, problem",
+	"signpost.reset_all": "Factory reset",
+	"signpost.reset_all.terms": "delete everything, start over, reset, reinstall, factory settings",
 	"signpost.about": "About Joe",
 	"signpost.about.terms": "Version, Home Assistant version, update, info",
 	"signpost.entities": "Joe's entities",
@@ -4854,6 +4870,18 @@ var Pe = {
 	"settings.maintenance.diagnostics": "Diagnostics for a bug report",
 	"settings.maintenance.diagnostics.hint": "You get the file in Home Assistant: Settings › Devices & services › Energy Joe, then “Download diagnostics” in the ⋮ menu.",
 	"settings.maintenance.diagnostics.open": "Open Energy Joe in HA",
+	"settings.reset": "Back to the start",
+	"settings.reset.all": "Factory reset",
+	"settings.reset.hint": "Everything I remember is deleted and the setup starts over. Save your settings first if you want to keep them.",
+	"settings.reset.button": "Delete everything …",
+	"settings.reset.confirm": "Really delete everything? First I put back every lever I still hold. Then I delete settings, what I learned, the whole history, plans and results, calendars, mailboxes, cars and climate, and start the setup over. Your automations and helpers, my entities and the download in HACS stay. This cannot be undone.",
+	"settings.reset.go": "Yes, delete everything",
+	"settings.reset.working": "Putting back and deleting …",
+	"settings.reset.done": "Everything deleted. I am starting over, the page reloads in a moment.",
+	"settings.reset.left": "Everything deleted, but I could not put these values back: {entities}. Please put them back at the device. The page reloads in a moment.",
+	"tip.reset_all.title": "What does the factory reset do?",
+	"tip.reset_all.text": "Afterwards it is as if you had just installed me: I put back every lever I still hold, delete all my data and start the setup over. The history I then read again from Home Assistant, which takes a few minutes in the background.",
+	"tip.reset_all.hint": "Want to keep something? Download the settings under “Backup” first.",
 	"tip.diagnostics.title": "What are diagnostics for?",
 	"tip.diagnostics.text": "If something doesn't work and you report a bug, this file helps find it. It shows what I know and plan. I replace names of people, calendars and mailbox addresses with placeholders first.",
 	"tip.diagnostics.hint": "Take a quick look at the file before you pass it on.",
@@ -7754,14 +7782,14 @@ function qe(e, t, n) {
 }
 //#endregion
 //#region src/define.ts
-var Je = "0.9.32";
+var Je = "0.9.33";
 function V(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Je, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.32" && Xe();
+	n.joeVersion !== "0.9.33" && Xe();
 }
 var Ye = !1;
 function Xe() {

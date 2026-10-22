@@ -3,6 +3,11 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.33
+
+- **Werksreset.** Unter Einstellungen › Wartung & Sichern gibt es „Alles auf Anfang“: Ich stelle jeden Hebel zurück, den ich noch halte, lösche alles, was ich mir gemerkt habe (Einstellungen, Gelerntes, Verlauf, Pläne, Ergebnisse, Kalender, Postfächer, Autos, Klima), und beginne mit der Einrichtung von vorn, als hättest du mich gerade installiert. Deine Automationen und Helfer, meine Entitäten und der Download in HACS bleiben. Davor fragt ein Hinweis nach und erinnert ans Sichern; was ich nicht zurückstellen konnte, sage ich dir danach.
+- Nicht geprüft an echter Anlage: alles davon.
+
 ## 0.9.32
 
 - **Ein Puffer macht aus einer Nacht, die sich lohnt, kein „nichts“ mehr.** Die Mindestersparnis habe ich bisher am Ziel samt Puffer geprüft. Stand der gelernte Puffer am Maximum, verdoppelte er das Ziel (bei dir von 47 auf 83 %), die Ersparnis fiel unter 5 ct, und ich ließ die ganze Nacht aus: beide Speicher leer, das Haus zog bis zum Morgen 1,5 kW aus dem Netz, so in den Nächten zum 19., 20. und 22.10. Jetzt prüfe ich die Ersparnis am Optimum. Lohnt sich der Puffer obendrauf nicht mehr, lade ich das Optimum, nicht nichts.

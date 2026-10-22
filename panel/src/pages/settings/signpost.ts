@@ -87,6 +87,7 @@ export const SIGNPOST = [
   { id: "backup", to: { tab: "settings", section: "maintenance", id: "backup" } },
   { id: "setup", to: { tab: "settings", section: "maintenance", id: "setup" } },
   { id: "diagnostics", to: { tab: "settings", section: "maintenance", id: "diagnostics" } },
+  { id: "reset_all", to: { tab: "settings", section: "maintenance", id: "reset" } },
   { id: "about", to: { tab: "settings", section: "about" } },
   { id: "entities", to: { tab: "settings", section: "about", id: "entities" } },
   { id: "cards", to: { tab: "settings", section: "about", id: "cards" } },

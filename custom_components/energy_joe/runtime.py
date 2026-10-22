@@ -24,6 +24,7 @@ from .control.cars import CarWatcher
 from .control.climate import ClimateController
 from .control.executor import JoeExecutor
 from .control.notify import JoeNotifier
+from .control.writes import async_line
 from .discovery import (
     adopted_controls,
     async_car_sources,
@@ -130,6 +131,7 @@ class JoeRuntime:
             hass, model.CONFIG_VERSION, f"{CONFIG_KEY}.unreadable", **_READABLE
         )
         self._hass = hass
+        self._entry_id = entry_id
         self._state: dict[str, Any] = deepcopy(DEFAULT_STATE)
         self._config: dict[str, Any] = model.default_config()
         self._listeners: set[StateListener] = set()
@@ -314,18 +316,20 @@ class JoeRuntime:
         await self._state_store.async_save(self._state)
         await self._config_store.async_save(self._config)
 
-    async def async_remove(self) -> None:
-        """Delete all stored data (integration removed).
+    async def async_remove(self, *, give_back: bool = True) -> None:
+        """Delete all stored data (integration removed, or the factory reset).
 
         Every value Joe noted goes back first (with a few tries; what stays is
-        told to the owner, the originals would be gone with the data).
+        told to the owner, the originals would be gone with the data), unless
+        the running Joe put them back already (give_back False).
         """
         await self._async_load_config()
         await self.executor.async_load()
-        try:
-            await self.executor.async_give_back("removed", removed=True)
-        except Exception:
-            _LOGGER.exception("Putting the values back failed")
+        if give_back:
+            try:
+                await self.executor.async_give_back("removed", removed=True)
+            except Exception:
+                _LOGGER.exception("Putting the values back failed")
         await self._state_store.async_remove()
         await self._config_store.async_remove()
         await self._backup_store.async_remove()
@@ -337,6 +341,30 @@ class JoeRuntime:
         await self.climate.async_remove()
         await self.cars.async_remove()
         await self.executor.async_forget()
+
+    async def async_factory_reset(self) -> dict[str, Any]:
+        """Everything back to the first day (the panel's "Werksreset"): every
+        value Joe noted goes back (with a few tries; what stays is told to the
+        owner and returned), all stored data is deleted, and Joe starts again
+        with the setup. Home Assistant's own things (automations, helpers, the
+        entities) stay as they are."""
+        if words := self.executor.words("factory_reset"):
+            async_line(self._hass, words)
+        try:
+            left = await self.executor.async_give_back("removed", removed=True)
+        except Exception:  # noqa: BLE001 - the reset goes on without them
+            _LOGGER.exception("Putting the values back failed")
+            left = {}
+        entries = self._hass.config_entries
+        if self._entry_id and entries.async_get_entry(self._entry_id):
+            await entries.async_unload(self._entry_id)
+            await JoeRuntime(self._hass).async_remove(give_back=False)
+            if not await entries.async_setup(self._entry_id):
+                _LOGGER.error("Starting over after the factory reset failed")
+        else:
+            await self.async_unload()
+            await self.async_remove(give_back=False)
+        return left
 
     @callback
     def async_start(self) -> None:
