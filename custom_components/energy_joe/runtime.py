@@ -67,6 +67,9 @@ ONBOARDING_STEPS = ("welcome", "scan", "questions", "done")
 
 DEFAULT_STATE: dict[str, Any] = {
     "mode": "simulation",
+    # The owner's language as the panel last showed it ("de", "en"): for
+    # Joe's own words outside the panel (the phone, the logbook).
+    "language": None,
     "onboarding": {"step": "welcome", "completed": False},
     # Batteries whose levers differ from the profile's find, left as they
     # are by the owner: battery id -> the hash of that find (asked again
@@ -157,6 +160,8 @@ class JoeRuntime:
         self.notifier = JoeNotifier(
             hass, lambda: self._config, self.executor.async_answer_tonight
         )
+        self.notifier.language = lambda: self._state.get("language")
+        self.executor._language = lambda: self._state.get("language")
         self.executor.notifier = self.notifier
         self.executor.on_learned = self._learned_limit_ref
         self.executor.on_cutoff = self._learned_cutoff
@@ -718,6 +723,15 @@ class JoeRuntime:
     def config(self) -> dict[str, Any]:
         """Return a copy of the configuration."""
         return deepcopy(self._config)
+
+    @callback
+    def async_set_language(self, language: str | None) -> None:
+        """The panel says which language the owner reads: Joe keeps it for
+        his own words outside the panel."""
+        chosen = (language or "")[:2].lower() or None
+        if chosen and chosen != self._state.get("language"):
+            self._state["language"] = chosen
+            self._changed(state=True)
 
     @callback
     def async_set_mode(self, mode: str) -> None:

@@ -16,23 +16,26 @@ charging and one for discharging:
 - deficit (the house needs more than the sun gives): the first in the
   discharge order that is not empty.
 
-The active one keeps working until it cannot serve the flow any more (full
-while there is surplus, empty while there is need): then the next takes over
-at once. A battery earlier in the order takes over only when the flow has
-lasted a while (no back and forth with every cloud).
+The active one keeps working until it cannot serve the flow any more, and
+that is seen at the meter, not guessed from a level: it gives nothing (or
+takes nothing) although the house draws from the grid (or gives to it) for
+SEEN. Then the next one takes over at once; a group with less than WORTH_KWH
+to give or to take is not worth a handover, so with every battery full the
+active one simply stays and the surplus goes to the grid. Nobody hands over
+just because the order would prefer another one: the order only says who
+comes next. A battery at the owner's own floor counts as empty without
+waiting for the meter (the reserve is the owner's decision).
 
 "Empty" is the level at which a battery really stops discharging (a BYD at
-about 10.5 % while its reserve says 5 %). Joe learns it: while a battery is
-free to discharge and the house needs power, he notes the level at which its
-discharging drops to nothing. Until he knows it, the battery works until it
-stops by itself. With a known cutoff the next one takes over 1.5 % above it,
-and the first is usable again once it has charged 5 % above it.
+about 10.5 % while its reserve says 5 %). Joe learns it for the plan: while
+a battery is free to discharge and the house needs power, he notes the level
+at which its discharging drops to nothing. A battery that stopped is usable
+again once it has charged 5 % above that level.
 
-When the sun will not fill the batteries one after the other before it goes
-(cautious forecast), they charge side by side: the others become free to
-charge (never forced; their own control takes what is left), discharging
-stays blocked for them, and on a cloud they are blocked again at once (not
-with "Nur nacheinander", see control/team_day.py).
+While the house still draws from the grid although the active one gives
+(a big load), the next one helps discharging (control/team_day.py). Charging
+side by side is off until it comes with a fixed power for the second one:
+two systems regulating freely at one meter fight each other.
 
 Groups ("Wer regelt ihn?"): batteries regulated by one system take turns
 as one. Omnibattery regulates all its batteries (a Venus, a Victron) with one
@@ -57,9 +60,8 @@ from typing import Any
 
 from ..plan.surplus import FULL_KWH, Slot
 
-# Above the cutoff: the next battery takes over here (%) ...
-HANDOVER = 1.5
-# ... and the first is usable again once it has charged this far above it.
+# A battery that stopped is usable again once it has charged this far above
+# the level it stopped at (%).
 BACK = 5.0
 # Full at (or above) this level; usable again for charging below FULL_BACK.
 FULL = 99.0
@@ -67,8 +69,6 @@ FULL_BACK = 97.0
 # Surplus or deficit beyond this counts (kW), once it has lasted FLOW_DWELL.
 FLOW_KW = 0.15
 FLOW_DWELL = timedelta(minutes=2)
-# A battery earlier in the order takes over after the flow lasted this long.
-PREFER_DWELL = timedelta(minutes=10)
 # Without a known cutoff: what Joe counts on when nothing else says (%).
 DEFAULT_CUTOFF = 10.0
 # Watching for the real cutoff: discharging stopped (below IDLE_W) while the
@@ -81,17 +81,24 @@ SPAN = timedelta(minutes=5)
 RECENT = timedelta(minutes=30)
 MAX_SOC = 30.0
 KEEP = 5
-# A battery that charges no more while the house gives to the grid is full,
-# too (its own charge target, a BMS limit).
-EXPORT_W = 300.0
-# A battery whose turn it is that gives nothing while the house draws at
-# least IMPORT_W from the grid for STUCK_SPAN is as empty as it goes – or
-# held back by a setting of its own (a reserve at its level, a block Joe did
-# not set): the next one takes over. It gets its turn again after
-# STUCK_RETRY, or as soon as it discharged after all.
-IMPORT_W = 300.0
-STUCK_SPAN = timedelta(minutes=15)
+# Seen at the meter (every few seconds, see quick): the active one gives
+# nothing (within IDLE_W) while the house draws at least IMPORT_W from the
+# grid, or takes nothing while the house gives at least EXPORT_W to it, for
+# SEEN: it is as empty (full) as it goes – or held back by a setting of its
+# own (a reserve at its level, a block Joe did not set). Then the next one
+# takes over. One held back well above its own stop gets its turn again
+# after STUCK_RETRY, or as soon as it discharged after all.
+IMPORT_W = 150.0
+EXPORT_W = 150.0
+SEEN = timedelta(seconds=20)
+# The house drew from the grid this long: the next one helps discharging;
+# no import for CALM: it waits again (control/team_day.py).
+CALM = timedelta(seconds=40)
 STUCK_RETRY = timedelta(minutes=60)
+# Held back: marked empty this far (%) above where it stops by itself.
+HELD_ABOVE = 3.0
+# Less than this to give or to take (kWh) is not worth a handover.
+WORTH_KWH = 0.3
 
 
 @dataclass(slots=True)
@@ -117,11 +124,15 @@ class Member:
         return max(0.0, self.capacity * (self.full_at - self.soc) / 100)
 
     @property
-    def stop(self) -> float:
-        """The level where the next one takes over."""
-        if self.cutoff is not None:
-            return self.cutoff + HANDOVER
-        return self.floor + 0.5
+    def empty_at(self) -> float:
+        """The level it stops discharging at by itself (learned), else the
+        floor it was given."""
+        return self.cutoff if self.cutoff is not None else self.floor
+
+    @property
+    def usable(self) -> float:
+        """What it can still give (kWh)."""
+        return max(0.0, self.capacity * (self.soc - self.empty_at) / 100)
 
 
 @dataclass(slots=True)
@@ -148,6 +159,10 @@ class Group:
     @property
     def room(self) -> float:
         return sum(m.room for m in self.members)
+
+    @property
+    def usable(self) -> float:
+        return sum(m.usable for m in self.members)
 
     @property
     def max_kw(self) -> float:
@@ -196,9 +211,13 @@ def mark(
     member: Member, empty_at: float | None, full_at: float | None
 ) -> tuple[bool, bool]:
     """Empty and full with hysteresis; `empty_at` and `full_at` are the levels
-    it was marked at (or None). Returns (empty, full)."""
+    it was marked at (or None). Returns (empty, full).
+
+    Empty by level only at the owner's floor (their reserve); below that the
+    meter decides (see quick). Full by level at its charge target.
+    """
     empty = member.empty
-    if member.soc <= member.stop:
+    if member.soc <= member.floor:
         empty = True
     elif empty:
         base = member.cutoff if member.cutoff is not None else (empty_at or 0.0)
@@ -219,17 +238,21 @@ def choose(
     discharge_order: list[Member] | list[Group],
     active: str | None,
     flow: str | None,
-    steady: bool,
 ) -> tuple[str, str]:
-    """The battery that may work now, and why: "start", "keep", "full",
-    "empty" (the active one could not serve the flow) or "order" (one earlier
-    in the order, after the flow lasted a while)."""
+    """The battery that may work now, and why: "start", "keep", "full" or
+    "empty" (the active one could not serve the flow, and the next one has
+    something worth giving or taking)."""
     current = next((m for m in charge_order if m.id == active), None)
     if flow == "surplus":
-        wanted = next((m for m in charge_order if not m.full), None)
+        wanted = next(
+            (m for m in charge_order if not m.full and m.room >= WORTH_KWH), None
+        )
         serves = current is not None and not current.full
     elif flow == "deficit":
-        wanted = next((m for m in discharge_order if not m.empty), None)
+        wanted = next(
+            (m for m in discharge_order if not m.empty and m.usable >= WORTH_KWH),
+            None,
+        )
         serves = current is not None and not current.empty
     else:
         wanted, serves = None, current is not None
@@ -245,8 +268,6 @@ def choose(
         return current.id, "keep"
     if not serves:
         return wanted.id, "full" if flow == "surplus" else "empty"
-    if steady:
-        return wanted.id, "order"
     return current.id, "keep"
 
 
@@ -322,32 +343,43 @@ def learned(observations: list[float]) -> float | None:
     return round(median(found), 1) if found else None
 
 
-def watch_empty(
-    watch: dict[str, Any], power_w: float, need_w: float, now: datetime
-) -> bool:
-    """Whether a battery free to discharge gives nothing while the house
-    draws from the grid, for a while (see STUCK_SPAN): as empty as it goes,
-    or held back by a setting of its own."""
-    if power_w >= -IDLE_W and need_w >= IMPORT_W:
-        since = watch.get("empty_since")
-        if since is None:
-            watch["empty_since"] = now.isoformat(timespec="seconds")
-            return False
-        return now - datetime.fromisoformat(since) >= STUCK_SPAN
-    watch.pop("empty_since", None)
-    return False
+def quick(
+    store: dict[str, Any],
+    power_w: float | None,
+    need_w: float | None,
+    grid_w: float | None,
+    now: datetime,
+) -> dict[str, bool]:
+    """What the meter has shown for a while about the active group, looked at
+    every few seconds (the executor's watchdog tick) and at every check:
 
+    - "empty": it gives nothing (within IDLE_W) while the house needs at
+      least IMPORT_W on top of the sun, for SEEN;
+    - "full": it takes nothing while the house gives at least EXPORT_W, for SEEN;
+    - "import": the house draws at least IMPORT_W from the grid for SEEN (a
+      helper is due);
+    - "calm": it draws less than IMPORT_W for CALM (a helper may wait).
 
-def watch_full(
-    watch: dict[str, Any], power_w: float, export_w: float, now: datetime
-) -> bool:
-    """Whether a battery free to charge takes nothing while the house gives
-    to the grid, for a while: it is as full as it goes."""
-    if power_w <= IDLE_W and export_w >= EXPORT_W:
-        since = watch.get("full_since")
-        if since is None:
-            watch["full_since"] = now.isoformat(timespec="seconds")
-            return False
-        return now - datetime.fromisoformat(since) >= SPAN
-    watch.pop("full_since", None)
-    return False
+    `power_w` is the group's power (positive while charging), `need_w` what
+    the house needs on top of the sun (negative: it gives), `grid_w` what
+    comes from the grid (negative: goes to it). Unknown values reset
+    everything. The timers live in `store` (the team's "quick").
+    """
+    if power_w is None or need_w is None or grid_w is None:
+        store.clear()
+        return dict.fromkeys(("empty", "full", "import", "calm"), False)
+    stamp = now.isoformat(timespec="seconds")
+    found: dict[str, bool] = {}
+    for key, holds, span in (
+        ("empty", power_w >= -IDLE_W and need_w >= IMPORT_W, SEEN),
+        ("full", power_w <= IDLE_W and need_w <= -EXPORT_W, SEEN),
+        ("import", grid_w >= IMPORT_W, SEEN),
+        ("calm", grid_w < IMPORT_W, CALM),
+    ):
+        if not holds:
+            store.pop(key, None)
+            found[key] = False
+            continue
+        since = store.setdefault(key, stamp)
+        found[key] = now - datetime.fromisoformat(since) >= span
+    return found

@@ -366,8 +366,10 @@ async def test_nacheinander_with_a_kostal_and_a_fronius(
     await executor.async_check()
     assert calls == []
     assert executor.view["team"]["state"] == "on"
-    # The BYD is empty: the Kostal's turn, its levels back as they were.
-    hass.states.async_set("sensor.byd_soc", "11.5", {"unit_of_measurement": "%"})
+    # The BYD stops by itself (10.5 %) while the house draws from the grid:
+    # the Kostal's turn after 20 seconds, its levels back as they were.
+    hass.states.async_set("sensor.byd_soc", "10.5", {"unit_of_measurement": "%"})
+    flows(hass, grid=800, byd=0)
     for _ in range(3):
         freezer.tick(timedelta(minutes=1))
         await executor.async_check()

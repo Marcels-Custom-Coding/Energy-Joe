@@ -38,7 +38,7 @@ const joe = {
             this.failed = false;
             for (const fn of this.listeners) fn(state);
           },
-          { type: "energy_joe/subscribe" },
+          { type: "energy_joe/subscribe", language: hass.language },
         )
         .catch((err) => {
           this.failed = true;

@@ -33,35 +33,33 @@ def berlin(hass: HomeAssistant) -> None:
     dt_util.set_default_time_zone(dt_util.get_time_zone("Europe/Berlin"))
 
 
-async def test_the_cap_keeps_a_blocked_discharge_of_the_system_closed(
+async def test_the_cap_leaves_a_waiting_venus_blocked(
     hass: HomeAssistant, freezer
 ) -> None:
-    """The Venus' turn, the BYD charges side by side: the Venus may not
-    discharge. Its cap shares the system's switch with the discharge limit;
-    the cap must not open it (every minute, before the block closes it again)."""
+    """The BYD's turn with the daytime cap, the Venus waits blocked both
+    ways. Her cap would share the system's switch with the discharge limit:
+    the cap goes to the BYD, the Venus' switch stays untouched (every
+    minute, nothing written anew)."""
     freezer.move_to("2026-06-20T09:00:00+02:00")
     calls = install_team(hass, byd_soc=40, venus_soc=40)
     install_evcc(hass)
-    flows(hass, grid=-2000, venus=500)
-    config = team_config(
-        team_byd(limit_ref_w=5000),
-        team_venus(),
-        day_surplus=True,
-        team_charge_order=["venus", "byd"],
-    )
+    flows(hass, grid=-2000, byd=500)
+    config = team_config(team_byd(limit_ref_w=5000), team_venus(), day_surplus=True)
     executor, _ = await make_executor(hass, config, day_plan(dt_util.now()))
-    executor.data["team"]["parallel"] = "2026-06-20"
     await executor.async_check()
     view = executor.view["team"]
-    assert view["active"] == "venus" and view["parallel"]
+    assert view["active"] == "byd" and not view["parallel"]
     assert view["batteries"]["venus"]["discharge"] == "blocked"
+    assert view["batteries"]["venus"]["charge"] == "blocked"
     never_opposite(view)
-    assert executor.view["surplus"]["batteries"]["venus"]["state"] == "capped"
-    # The discharge limit is 0 before the shared switch goes on.
+    assert executor.view["surplus"]["batteries"]["venus"]["state"] == "team_wait"
+    assert executor.view["surplus"]["batteries"]["byd"]["state"] == "capped"
+    # The discharge limit is 0 before the shared switch goes on, and the
+    # switch never goes off again.
     switch = calls.index(("switch.omni_power_limits", "on"))
     assert calls.index(("number.omni_max_discharge", "0.0")) < switch
-    assert ("number.omni_max_discharge", "2500.0") not in calls
-    assert venus_levers(hass) == ("600.0", "0.0", "on")
+    assert ("switch.omni_power_limits", "off") not in calls
+    assert venus_levers(hass) == ("0.0", "0.0", "on")
     for _ in range(2):
         calls.clear()
         freezer.tick(timedelta(minutes=1))

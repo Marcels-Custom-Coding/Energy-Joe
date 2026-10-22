@@ -44,6 +44,7 @@ Joe braucht kein Vorwissen. Er findet selbst, was er braucht, fragt in Alltagssp
 
 - Joe steuert über wenige Grundgriffe (Mindest-Ladestand, Netzladen, Betriebsart mit Zwangsladen, Lade- und Entladegrenze, Sperr-Schalter) und kennt sie für viele Integrationen – siehe „Unterstützte Speicher“. Für andere schlägt er passende Regler vor.
 - Vor dem ersten Steuern macht er einen Testlauf.
+- Mehrere Speicher, die sich selbst auf 0 am Zähler regeln (ein Fronius, Omnibattery): nacheinander. Genau einer arbeitet, die anderen sind vorab gesperrt. Übergeben wird nur nach dem Zähler: Gibt oder nimmt der aktive 20 Sekunden lang nichts, obwohl das Haus zieht oder einspeist, ist der nächste dran; zieht das Haus trotz allem aus dem Netz, hilft der nächste mit.
 - In den Modi „Vorschlagen“ (fragt jeden Abend) und „Live“ hält und lädt er die Speicher und stellt am Ende alles zurück – auch nach einem Neustart oder per Notfall-Knopf.
 - Automationen, die auf dieselben Regler schreiben, listet er auf und sagt dir, wenn sie ihm beim Steuern in die Suppe spucken. Schalten tust du sie selbst, Joe fasst sie nie an. Jeden Regler, den er setzt, trägt er mit Grund ins Logbuch von Home Assistant ein.
 - Sicherheitsgrenzen: Höchstpreis fürs Netzladen, Mindestersparnis, Schutz der Hauptsicherung, Meldung, wenn ein Speicher trotz Laden nicht voller wird oder wegen einer Einstellung, die nicht von Joe ist, nicht arbeiten kann (Reserve auf dem Stand, fremde Sperre) – Joe stellt nur zurück, was er selbst geschrieben hat. Auf Wunsch gelegentlich eine Pflegeladung bis 100 %.

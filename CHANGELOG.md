@@ -3,6 +3,15 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.31
+
+- **Übergabe nur nach dem Zähler.** Wer dran ist, bleibt dran, bis er nichts mehr gibt oder nichts mehr nimmt. Gibt der aktive Speicher 20 Sekunden lang nichts, während das Haus über 150 W braucht, übernimmt der nächste; nimmt er 20 Sekunden lang nichts, während das Haus einspeist, ebenso. Dafür schaue ich alle 5 Sekunden auf den Zähler, nicht mehr nur jede Minute. Keine Übergabe mehr nach Prozent (der BYD lief gestern Nacht bis 12,6 % und wurde dann gesperrt, obwohl er bis 11 % konnte) und keine mehr nach der Reihenfolge: Die sagt nur, wer als Nächster kommt. Die eigene Untergrenze zählt weiter als leer, denn die ist deine Entscheidung.
+- **Keine Übergabe an einen Speicher, der fast voll oder fast leer ist**, unter 0,3 kWh Platz oder Rest. Zwei volle Speicher schaukeln sich nicht mehr auf: Der aktive bleibt, der Überschuss geht ins Netz. Gestern Mittag waren das vier Übergaben in einer Stunde bei 93 bis 100 %.
+- **Helfer nach 20 Sekunden.** Zieht das Haus 20 Sekunden lang über 150 W aus dem Netz, obwohl der aktive Speicher gibt, egal ob am Limit oder nur ein Tröpfeln, darf der nächste mit entladen. 40 Sekunden ohne Bezug, und er wartet wieder, es sei denn, der Bedarf liegt noch über dem, was der aktive allein schafft, denn dann wäre er gleich wieder dran. Gestern um 12:56 hätte der volle BYD so nach 20 Sekunden ausgeholfen, statt dass 1,5 kW aus dem Netz kamen.
+- **Nebenher laden ist aus**, bis es mit einer festen Leistung für den zweiten Speicher wiederkommt. Zwei Regler, die frei an einem Zähler arbeiten, kämpfen gegeneinander; das war das Ping-Pong am Morgen. Bis dahin wird an schwachen Tagen vielleicht nur ein Speicher voll. Die Frage „soll ich früher mitladen lassen?“ stelle ich solange nicht.
+- **Meine Worte in deiner Sprache.** Push und Logbuch-Zeilen kommen in der Sprache, in der du das Panel zuletzt gesehen hast, nicht mehr in der des HA-Servers.
+- Nicht geprüft an echter Anlage: alles davon.
+
 ## 0.9.30
 
 - **Deine Automationen fasse ich nicht mehr an.** Bisher schaltete ich Automationen, die auf deine Speicher schreiben, auf Wunsch aus – und von selbst wieder ein, sobald ich nicht koordinierte, etwa bei einer fehlenden Grenze, nach einem Neustart oder beim Wechsel auf Modbus. So kam die 2000-W-Falle zweimal zurück. Damit ist Schluss: Ich schalte keine Automation mehr aus oder ein, auch nicht beim Deinstallieren. Der Knopf im Panel ist weg, dafür führt ein Link zu den Automationen in Home Assistant. Läuft eine, die auf einen Speicher schreibt, während ich steuere, sage ich es: unter „Joe braucht dich“, auf der Speicherseite, im Protokoll und einmal aufs Handy – „spuckt mir in die Suppe, besser ausschalten“. Ich arbeite trotzdem weiter, auch beim Drosseln am Tag und beim Wächter; du entscheidest.

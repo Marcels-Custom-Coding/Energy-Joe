@@ -58,40 +58,71 @@ def member(key: str, soc: float, cutoff: float | None = None, **extra: Any):
 # --- the decisions -------------------------------------------------------------------
 
 
-def test_discharging_hands_over_at_the_cutoff_and_comes_back_with_hysteresis() -> None:
+def test_discharging_hands_over_only_when_the_meter_says_so() -> None:
     byd, venus = member("byd", 30, cutoff=10.5), member("venus", 60, cutoff=12)
     order = [byd, venus]
-    assert team.choose(order, order, None, "deficit", False) == ("byd", "start")
-    # 12.1 % is above 10.5 + 1.5: the BYD keeps working.
-    byd.soc = 12.1
+    assert team.choose(order, order, None, "deficit") == ("byd", "start")
+    # 11 %: just above where it stops by itself – still the BYD's turn,
+    # nobody stops it early.
+    byd.soc = 11.0
     byd.empty, byd.full = team.mark(byd, None, None)
     assert not byd.empty
-    assert team.choose(order, order, "byd", "deficit", False) == ("byd", "keep")
-    byd.soc = 12.0
-    byd.empty, byd.full = team.mark(byd, None, None)
-    assert byd.empty
-    assert team.choose(order, order, "byd", "deficit", False) == ("venus", "empty")
-    # Charged a little (14 %): still empty for the hand-over, no back and forth.
+    assert team.choose(order, order, "byd", "deficit") == ("byd", "keep")
+    # Marked empty by the meter (it gave nothing while the house drew from
+    # the grid, see quick): the Venus.
+    byd.empty = True
+    assert team.choose(order, order, "byd", "deficit") == ("venus", "empty")
+    # Charged a little (14 %): still empty, no back and forth.
     byd.soc = 14.0
+    byd.empty, _ = team.mark(byd, 11.0, None)
+    assert byd.empty
+    assert team.choose(order, order, "venus", "deficit") == ("venus", "keep")
+    # 5 % above where it stopped: usable again. Nobody hands over by the
+    # order alone: the Venus keeps going until she is empty.
+    byd.soc = 16.0
+    byd.empty, _ = team.mark(byd, 11.0, None)
+    assert not byd.empty
+    assert team.choose(order, order, "venus", "deficit") == ("venus", "keep")
+    venus.empty = True
+    assert team.choose(order, order, "venus", "deficit") == ("byd", "empty")
+    # At the owner's floor it counts as empty without the meter.
+    byd.soc = byd.floor
     byd.empty, _ = team.mark(byd, None, None)
     assert byd.empty
-    assert team.choose(order, order, "venus", "deficit", True) == ("venus", "keep")
-    # 5 % above the cutoff: usable again, the order counts once the flow lasted.
-    byd.soc = 15.5
-    byd.empty, _ = team.mark(byd, None, None)
-    assert not byd.empty
-    assert team.choose(order, order, "venus", "deficit", False) == ("venus", "keep")
-    assert team.choose(order, order, "venus", "deficit", True) == ("byd", "order")
+
+
+def test_nobody_hands_over_to_one_with_nothing_worth_giving_or_taking() -> None:
+    byd = member("byd", 99.5, cutoff=11)
+    venus = member("venus", 98, cutoff=12, capacity=5.12)
+    byd.empty, byd.full = team.mark(byd, None, None)
+    assert byd.full
+    # Both full in surplus: the Venus with 0.1 kWh of room is not worth it,
+    # the BYD stays and the surplus goes to the grid.
+    assert team.choose([byd, venus], [byd, venus], "byd", "surplus") == ("byd", "keep")
+    venus.soc = 90
+    assert team.choose([byd, venus], [byd, venus], "byd", "surplus") == (
+        "venus",
+        "full",
+    )
+    # In deficit the Venus with 0.03 kWh above her stop is not worth it either.
+    venus.soc, venus.full = 12.5, False
+    byd.empty = True
+    assert team.choose([byd, venus], [byd, venus], "byd", "deficit") == ("byd", "keep")
+    venus.soc = 30
+    assert team.choose([byd, venus], [byd, venus], "byd", "deficit") == (
+        "venus",
+        "empty",
+    )
 
 
 def test_charging_hands_over_when_full_and_by_its_own_order() -> None:
     byd, venus = member("byd", 98.6), member("venus", 40)
     charge = [byd, venus]
     discharge = [venus, byd]
-    assert team.choose(charge, discharge, "byd", "surplus", False) == ("byd", "keep")
+    assert team.choose(charge, discharge, "byd", "surplus") == ("byd", "keep")
     byd.empty, byd.full = team.mark(byd, None, None)
     assert byd.full
-    assert team.choose(charge, discharge, "byd", "surplus", False) == ("venus", "full")
+    assert team.choose(charge, discharge, "byd", "surplus") == ("venus", "full")
     # Full stays full until it dropped below 97 %.
     byd.soc = 97.5
     _, byd.full = team.mark(byd, None, 99.0)
@@ -104,10 +135,7 @@ def test_charging_hands_over_when_full_and_by_its_own_order() -> None:
     _, still = team.mark(venus, None, 95.0)
     assert not still
     # The discharge order is its own: the Venus discharges first.
-    assert team.choose(charge, discharge, "venus", "deficit", True) == (
-        "venus",
-        "keep",
-    )
+    assert team.choose(charge, discharge, "venus", "deficit") == ("venus", "keep")
 
 
 def test_the_order_puts_named_ones_first() -> None:
@@ -370,9 +398,21 @@ async def test_the_hand_over_both_ways(hass: HomeAssistant, freezer) -> None:
     executor, _ = await make_executor(hass, config, day_plan(dt_util.now()))
     await executor.async_check()
     assert executor.view["team"]["active"] == "byd"
-    # The BYD reaches its learned cutoff + 1.5 %: blocked first, the Venus freed.
+    # 12 %: still the BYD's turn, nobody stops it early.
     levels(hass, byd=12)
+    freezer.tick(timedelta(minutes=1))
+    await executor.async_check()
+    assert executor.view["team"]["active"] == "byd"
+    # It stops by itself at 10.5 %, the house draws from the grid. Not at once …
+    levels(hass, byd=10.5)
+    flows(hass, grid=700, byd=0)
+    await executor.async_check()
+    freezer.tick(timedelta(seconds=10))
+    await executor.async_check()
+    assert executor.view["team"]["active"] == "byd"
+    # … but after 20 seconds of that: blocked first, the Venus freed.
     calls.clear()
+    freezer.tick(timedelta(seconds=10))
     await executor.async_check()
     view = executor.view["team"]
     assert view["active"] == "venus"
@@ -388,38 +428,27 @@ async def test_the_hand_over_both_ways(hass: HomeAssistant, freezer) -> None:
         ("number.omni_max_charge", "2500.0"),
         ("number.omni_max_discharge", "2500.0"),
     ]
+    kinds = [e["kind"] for e in executor.data["log"]]
+    assert "team_empty" in kinds and "team_stuck" not in kinds
     handover = [e for e in executor.data["log"] if e["kind"] == "team_handover"]
     assert handover[-1]["battery"] == "venus" and handover[-1]["reason"] == "empty"
-    # The sun comes: the BYD charges at 14 %, but it is the Venus' turn until
-    # the surplus lasted (no back and forth with every cloud).
+    # The sun comes: the Venus charges. The BYD stays blocked – nobody hands
+    # over by the order alone, no back and forth with every cloud.
     flows(hass, grid=-500, venus=1000)
-    levels(hass, byd=14)
-    for _ in range(3):
+    for _ in range(4):
         freezer.tick(timedelta(minutes=3))
         await executor.async_check()
         assert executor.view["team"]["active"] == "venus"
-    freezer.tick(timedelta(minutes=7))
+    # The Venus is full: the BYD takes the rest of the sun (it has room).
+    levels(hass, venus=99.6)
+    flows(hass, grid=-500, venus=0)
+    before = len(calls)
     await executor.async_check()
     view = executor.view["team"]
     assert view["active"] == "byd"
+    assert view["batteries"]["venus"]["why"] == "full"
     never_opposite(view)
-    # The BYD charged to full: the Venus takes the rest of the sun.
-    levels(hass, byd=99)
-    await executor.async_check()
-    assert executor.view["team"]["active"] == "venus"
-    assert executor.view["team"]["batteries"]["byd"]["why"] == "full"
-    assert byd_levers(hass) == ("0.0", "on", "0.0", "on")
-    # Evening: the house needs power; the BYD (first to discharge) takes over
-    # once the need lasted.
-    flows(hass, grid=0, venus=-600)
-    for _ in range(3):
-        freezer.tick(timedelta(minutes=3))
-        await executor.async_check()
-        assert executor.view["team"]["active"] == "venus"
-    freezer.tick(timedelta(minutes=7))
-    before = len(calls)
-    await executor.async_check()
-    assert executor.view["team"]["active"] == "byd"
+    assert venus_levers(hass) == ("0.0", "0.0", "on")
     # The BYD freed: the switches off first, then the limits back.
     freed = [c for c in calls[before:] if "omni" not in c[0]]
     assert freed == [
@@ -428,10 +457,48 @@ async def test_the_hand_over_both_ways(hass: HomeAssistant, freezer) -> None:
         ("number.charge_limit", "100.0"),
         ("number.discharge_limit", "100.0"),
     ]
+    # Evening: the BYD, charged to 40 %, gives; the Venus waits until the
+    # BYD is empty, however long the need lasts.
+    levels(hass, byd=40)
+    flows(hass, grid=0, byd=-600)
+    for _ in range(4):
+        freezer.tick(timedelta(minutes=3))
+        await executor.async_check()
+        assert executor.view["team"]["active"] == "byd"
     # Omnibattery stays in automatic mode throughout.
     assert not any(
         e in ("switch.venus_manual_mode", "select.force_mode") for e, _ in calls
     )
+
+
+async def test_the_meter_is_looked_at_every_few_seconds(
+    hass: HomeAssistant, freezer
+) -> None:
+    """The watchdog's tick advances the meter's timers: the handover comes
+    after 20 seconds of nothing, not at the next minute's check."""
+    freezer.move_to("2026-10-10T19:00:00+02:00")
+    install_team(hass, byd_soc=20, venus_soc=60)
+    flows(hass, grid=0, byd=-800)
+    config = team_config(team_byd(cutoff_soc=10.5), team_venus())
+    executor, _ = await make_executor(hass, config, day_plan(dt_util.now()))
+    await executor.async_check()
+    assert executor.view["team"]["active"] == "byd"
+    levels(hass, byd=10.5)
+    flows(hass, grid=700, byd=0)
+    for _ in range(3):
+        freezer.tick(timedelta(seconds=5))
+        await executor.async_guard()
+        await hass.async_block_till_done()
+        assert executor.view["team"]["active"] == "byd"
+    for _ in range(2):
+        freezer.tick(timedelta(seconds=5))
+        await executor.async_guard()
+        await hass.async_block_till_done()
+    view = executor.view["team"]
+    assert view["active"] == "venus"
+    never_opposite(view)
+    assert byd_levers(hass) == ("0.0", "on", "0.0", "on")
+    assert venus_levers(hass) == ("2500.0", "2500.0", "off")
 
 
 async def test_the_cutoff_is_learned_and_hands_over(
@@ -462,7 +529,12 @@ async def test_the_cutoff_is_learned_and_hands_over(
     assert "team_cutoff" in kinds and "team_handover" in kinds
 
 
-async def test_side_by_side_on_a_weak_day(hass: HomeAssistant, freezer) -> None:
+async def test_nobody_charges_side_by_side_until_it_comes_with_a_fixed_power(
+    hass: HomeAssistant, freezer
+) -> None:
+    """A weak day (the sun would not fill both): one after the other all the
+    same. Two systems regulating freely at one meter fight each other;
+    charging along comes back with a fixed power for the second one."""
     freezer.move_to("2026-06-20T09:00:00+02:00")
     install_team(hass, byd_soc=20, venus_soc=20)
     flows(hass, grid=-800, byd=1200)
@@ -470,21 +542,23 @@ async def test_side_by_side_on_a_weak_day(hass: HomeAssistant, freezer) -> None:
     executor, _ = await make_executor(hass, team_config(), plan)
     await executor.async_check()
     view = executor.view["team"]
-    assert view["parallel"] is True
+    assert view["parallel"] is False and view["along"] is None
     assert view["active"] == "byd"
-    assert view["batteries"]["venus"]["why"] == "parallel"
-    never_opposite(view)
-    # The Venus may charge (its own control), never discharge; the BYD neither.
-    assert venus_levers(hass) == ("2500.0", "0.0", "on")
-    assert byd_levers(hass)[2:] == ("0.0", "on")
-    assert any(e["kind"] == "team_parallel" for e in executor.data["log"])
-    # A cloud: the Venus is blocked again at once, the BYD is free.
-    flows(hass, grid=400, byd=0)
-    await executor.async_check()
-    view = executor.view["team"]
+    assert view["batteries"]["venus"]["why"] == "waits_full"
     never_opposite(view)
     assert venus_levers(hass) == ("0.0", "0.0", "on")
     assert byd_levers(hass) == ("100.0", "off", "100.0", "off")
+    kinds = [e["kind"] for e in executor.data["log"]]
+    assert "team_parallel" not in kinds and "team_along" not in kinds
+    # A cloud (the BYD covers the house), the sun again: nothing changes.
+    flows(hass, grid=0, byd=-400)
+    freezer.tick(timedelta(minutes=1))
+    await executor.async_check()
+    flows(hass, grid=-800, byd=1200)
+    freezer.tick(timedelta(minutes=1))
+    await executor.async_check()
+    assert executor.view["team"]["active"] == "byd"
+    assert venus_levers(hass) == ("0.0", "0.0", "on")
 
 
 async def test_only_one_after_the_other_is_strict_on_a_weak_day_too(
@@ -1063,7 +1137,8 @@ async def test_a_block_the_fronius_undoes_is_written_again(
     hass: HomeAssistant, freezer
 ) -> None:
     freezer.move_to("2026-10-10T19:00:00+02:00")
-    calls = install_team(hass, byd_soc=12, venus_soc=60)
+    # The BYD at its floor (its reserve, 5 %): empty, the Venus works.
+    calls = install_team(hass, byd_soc=5, venus_soc=60)
     flows(hass, grid=0, venus=-800)
     config = team_config(team_byd(cutoff_soc=10.5), team_venus())
     executor, _ = await make_executor(hass, config, day_plan(dt_util.now()))

@@ -3481,7 +3481,9 @@ var Pe = {
 	"log.team_handover.full": "Speicherwechsel: {previous} ist voll – {battery} lädt weiter",
 	"log.team_handover.order": "Speicherwechsel: {battery} ist wieder dran (Reihenfolge), {previous} wartet",
 	"log.team_handover.stuck": "Speicherwechsel: {previous} liefert nichts ({level} %) – {battery} übernimmt",
-	"log.team_stuck": "{battery} ist dran, liefert aber seit 15 Minuten nichts, während das Haus aus dem Netz zieht – der nächste Speicher übernimmt",
+	"log.team_stuck": "{battery} ist dran, liefert aber seit 20 Sekunden nichts, während das Haus aus dem Netz zieht, und ist dabei nicht leer – festgehalten; der nächste Speicher übernimmt",
+	"log.team_full": "{battery} nimmt seit 20 Sekunden nichts, während das Haus einspeist – voll, der nächste Speicher übernimmt",
+	"log.team_empty": "{battery} liefert seit 20 Sekunden nichts, während das Haus aus dem Netz zieht – leer, der nächste Speicher übernimmt",
 	"log.stuck": "{battery} kann nicht arbeiten, und das war nicht ich (Stand {soc} %)",
 	"log.stuck.reserve": "{battery} kann nicht entladen: die Reserve steht auf {value} %, der Stand bei {soc} % – das war nicht ich",
 	"log.stuck.discharge": "{battery} kann nicht entladen: am Gerät ist das Entladen gesperrt ({value}) – das war nicht ich",
@@ -7002,7 +7004,9 @@ var Pe = {
 	"log.team_handover.full": "Battery change: {previous} is full – {battery} keeps charging",
 	"log.team_handover.order": "Battery change: {battery} is up again (order), {previous} waits",
 	"log.team_handover.stuck": "Battery change: {previous} gives nothing ({level} %) – {battery} takes over",
-	"log.team_stuck": "{battery} has its turn but has given nothing for 15 minutes while the house draws from the grid – the next battery takes over",
+	"log.team_stuck": "{battery} has its turn but has given nothing for 20 seconds while the house draws from the grid, and is not empty – held back; the next battery takes over",
+	"log.team_full": "{battery} has taken nothing for 20 seconds while the house gives to the grid – full, the next battery takes over",
+	"log.team_empty": "{battery} has given nothing for 20 seconds while the house draws from the grid – empty, the next battery takes over",
 	"log.stuck": "{battery} cannot work, and that was not me (level {soc} %)",
 	"log.stuck.reserve": "{battery} cannot discharge: its reserve is at {value} %, its level at {soc} % – that was not me",
 	"log.stuck.discharge": "{battery} cannot discharge: discharging is blocked at the device ({value}) – that was not me",
@@ -7716,14 +7720,14 @@ function qe(e, t, n) {
 }
 //#endregion
 //#region src/define.ts
-var Je = "0.9.30";
+var Je = "0.9.31";
 function V(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Je, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.30" && Xe();
+	n.joeVersion !== "0.9.31" && Xe();
 }
 var Ye = !1;
 function Xe() {

@@ -106,6 +106,9 @@ class JoeNotifier:
         self._unsub: CALLBACK_TYPE | None = None
         # The answer to "which car is plugged in?" (set by the runtime).
         self.on_car: Callable[[str, str], Awaitable[None]] | None = None
+        # The owner's language as the panel last showed it (the runtime keeps
+        # it); None: Home Assistant's.
+        self.language: Callable[[], str | None] | None = None
 
     def start(self) -> None:
         if self._unsub is None:
@@ -117,8 +120,11 @@ class JoeNotifier:
             self._unsub = None
 
     def _text(self, key: str, **values: Any) -> str:
+        chosen = self.language() if self.language else None
         language = (
-            "de" if (self._hass.config.language or "en").startswith("de") else "en"
+            "de"
+            if (chosen or self._hass.config.language or "en").startswith("de")
+            else "en"
         )
         return TEXTS[language][key].format(**values)
 

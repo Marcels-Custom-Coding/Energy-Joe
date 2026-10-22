@@ -299,9 +299,13 @@ DEFAULT_DATA: dict[str, Any] = {
         # Per battery: when a block that had arrived was found undone.
         "resets": {},
         # Batteries marked empty because they gave nothing while it was their
-        # turn and the house drew from the grid: when, and the level then
-        # (see team.watch_empty; their turn comes again after STUCK_RETRY).
+        # turn and the house drew from the grid, well above where they stop
+        # by themselves (held back): when, and the level then (their turn
+        # comes again after STUCK_RETRY).
         "stuck": {},
+        # What the meter showed about the active group, and since when (see
+        # team.quick): looked at every few seconds.
+        "quick": {},
         # By day with sense (see control/team_day.py): charging along and
         # helping to discharge (their hysteresis), why the later groups
         # charge along now, the base load written, the most each battery
@@ -388,6 +392,9 @@ class JoeExecutor:
         self._plan = plan
         self._mode = mode
         self._changed = changed
+        # The owner's language as the panel last showed it (the runtime
+        # keeps it); None: Home Assistant's.
+        self._language: Callable[[], str | None] | None = None
         self._store: Store[dict[str, Any]] = Store(hass, STORE_VERSION, STORE_KEY)
         self.data: dict[str, Any] = _fresh()
         self._lock = asyncio.Lock()
@@ -419,6 +426,9 @@ class JoeExecutor:
         # batteries' powers of the last check (for the most they do) and the
         # base load per battery to write now.
         self._team_samples: list[tuple[datetime, float]] = []
+        # What the meter's timers last said about the active group (see
+        # _team_quick): a change checks at once.
+        self._team_quick_seen: tuple[str, ...] | None = None
         self._team_prev: dict[str, float] = {}
         self._team_base_w: dict[str, float] = {}
         # The last hint for the daytime cap while Joe coordinated (kept while
@@ -1125,7 +1135,7 @@ class JoeExecutor:
                 if not new_calls:
                     continue
                 try:
-                    await async_apply(self._hass, write, note)
+                    await async_apply(self._hass, write, note, self.language())
                 except WriteError as err:
                     problem = err.code
                     self._log(
@@ -1163,7 +1173,7 @@ class JoeExecutor:
                     continue
                 saved[write.entity_id] = original
             try:
-                await async_apply(self._hass, write, note)
+                await async_apply(self._hass, write, note, self.language())
             except WriteError as err:
                 problem = err.code
                 self._log(
@@ -2141,7 +2151,7 @@ class JoeExecutor:
         else:
             self._team_hint = None
             store.update(active=None, since=None)
-            store["along"], store["help"] = {}, {}
+            store["along"], store["help"], store["quick"] = {}, {}, {}
             self._team_base_w = {}
             if store.get("along_why"):
                 store["along_why"] = None
@@ -2356,6 +2366,7 @@ class JoeExecutor:
             ):
                 stuck.pop(battery["id"])
                 store["empty"].pop(battery["id"], None)
+                store["quick"] = {}
         for battery, role in candidates:
             entry = info["batteries"][battery["id"]]
             size = sizes.get(battery["id"]) or battery.get("capacity_kwh") or 5.0
@@ -2394,62 +2405,60 @@ class JoeExecutor:
             member.empty, member.full = empty, full
             members.append(member)
         teams = team_rules.grouped(members, {k: v[0] for k, v in groups.items()})
-        flow, steady, raw = self._team_flow(deficit, now)
+        flow, raw = self._team_flow(deficit, now)
         info["flow"] = flow
         active = store["active"]
-        # A group free to charge that takes nothing while the house gives to
-        # the grid is as full as it goes (its own target, a BMS limit); not
-        # while the grid-friendly morning holds its charging back.
+        # What the meter showed about the active group for a while (looked
+        # at every few seconds, see _team_quick): it takes nothing while the
+        # house gives to the grid – as full as it goes (its own target, a BMS
+        # limit; not while the grid-friendly morning holds its charging back)
+        # – or it gives nothing while the house draws from the grid: as empty
+        # as it goes, or held back by a setting of its own (see
+        # _async_watch_stuck). The next one takes over.
         current = next((g for g in teams if g.id == active), None)
+        seen = self._team_seen(current, powers, deficit, now)
+        info["seen"] = seen
         if (
             current is not None
+            and seen["full"]
             and not current.full
-            and deficit is not None
-            and all(k in powers for k in current.ids)
             and not self.data.get("day")
         ):
-            watch = store["watch"].setdefault(f"group:{current.id}", {})
-            power = sum(powers[k] for k in current.ids)
-            if team_rules.watch_full(watch, power, -deficit * 1000, now):
-                for member in current.members:
-                    if not member.full:
-                        member.full = True
-                        store["full"][member.id] = member.soc
-        # One free to discharge that gives nothing while the house draws from
-        # the grid is as empty as it goes, or held back by a setting of its
-        # own (see _async_watch_stuck): the next one takes over.
-        if (
-            current is not None
-            and not current.empty
-            and deficit is not None
-            and all(k in powers for k in current.ids)
-        ):
-            watch = store["watch"].setdefault(f"group:{current.id}", {})
-            power = sum(powers[k] for k in current.ids)
-            if team_rules.watch_empty(watch, power, deficit * 1000, now):
-                for member in current.members:
-                    if not member.empty:
-                        member.empty = True
-                        store["empty"][member.id] = member.soc
+            for member in current.members:
+                if not member.full:
+                    member.full = True
+                    store["full"][member.id] = member.soc
+            self._log(
+                "team_full",
+                battery=current.ids[0],
+                batteries=current.ids,
+                soc=self._team_level(current),
+            )
+        if current is not None and seen["empty"] and not current.empty:
+            held_back = False
+            for member in current.members:
+                if not member.empty:
+                    member.empty = True
+                    store["empty"][member.id] = member.soc
+                    if member.soc >= member.empty_at + team_rules.HELD_ABOVE:
+                        # Well above where it stops by itself: held back, it
+                        # gets its turn again after a while.
+                        held_back = True
                         stuck[member.id] = {
                             "at": now.isoformat(timespec="seconds"),
                             "soc": member.soc,
                         }
-                self._log(
-                    "team_stuck",
-                    battery=current.ids[0],
-                    batteries=current.ids,
-                    soc=round(
-                        sum(m.soc for m in current.members) / len(current.members), 1
-                    ),
-                )
+            self._log(
+                "team_stuck" if held_back else "team_empty",
+                battery=current.ids[0],
+                batteries=current.ids,
+                soc=self._team_level(current),
+            )
         charge_order = team_rules.ordered(teams, self._team_charge_order(rules))
         discharge_order = team_rules.ordered(
             teams, rules.get("team_discharge_order") or []
         )
-        chosen, why = team_rules.choose(
-            charge_order, discharge_order, active, flow, steady
-        )
+        chosen, why = team_rules.choose(charge_order, discharge_order, active, flow)
         group = next(g for g in teams if g.id == chosen)
         if chosen != active:
             if active is not None:
@@ -2459,7 +2468,7 @@ class JoeExecutor:
                     and previous
                     and any(k in stuck for k in previous.ids)
                 ):
-                    # Not empty: it gave nothing (see watch_empty).
+                    # Not empty: it gave nothing (held back).
                     why = "stuck"
                 self._log(
                     "team_handover",
@@ -2478,8 +2487,8 @@ class JoeExecutor:
                     ),
                 )
             store.update(active=chosen, since=now.isoformat(timespec="seconds"))
-            # Charging along and helping count for the group whose turn it was.
-            store["along"], store["help"] = {}, {}
+            # Helping and what the meter showed count for the group whose turn it was.
+            store["along"], store["help"], store["quick"] = {}, {}, {}
         # The panel names the group by its batteries (the first one leads).
         info["active"] = group.ids[0]
         info["active_group"] = chosen
@@ -2490,26 +2499,23 @@ class JoeExecutor:
                 empty=team_group.empty, full=team_group.full
             )
         style = team_day.style_of(rules)
-        # "Nur nacheinander" is strict: not side by side on a weak day either.
-        parallel = style != "strict" and self._team_parallel(
-            config, plan, charge_order, now, today
-        )
-        info["parallel"] = parallel
+        # Charging side by side (a weak day, more sun than the active group
+        # takes) is off until it comes with a fixed power for the second
+        # group (_team_parallel, _team_along): two systems regulating freely
+        # at one meter fight each other.
+        info["parallel"] = False
+        info["along"] = None
+        info["along_plan"] = None
         grid = measurement_kw(
             self._hass.states.get, config["measurements"]["grid_power"]
         )
-        # The later groups with room (charging along) and those not empty
-        # (helping, a base load), each in its own order.
+        # The later groups with room (for the day's note) and those not
+        # empty (helping, a base load), each in its own order.
         waiting = [g for g in charge_order if g.id != chosen and not g.full]
         givers = [g for g in discharge_order if g.id != chosen and not g.empty]
-        along = self._team_along(
-            config, plan, charge_order, group, waiting, flow, deficit, grid, now, info
-        )
         side: set[str] = set()
-        if (parallel or along) and flow == "surplus" and raw == "surplus":
-            side = {k for g in waiting for k in g.ids}
         helping = self._team_help(
-            group, givers, flow, deficit, grid, powers, give, style, now, info
+            group, givers, flow, deficit, grid, powers, give, style, seen, now, info
         )
         helpers: set[str] = set()
         why_helper = "helps"
@@ -2529,22 +2535,17 @@ class JoeExecutor:
             for member in team_group.members:
                 entry = info["batteries"][member.id]
                 if team_group.id == chosen:
-                    # Side by side, nobody may discharge into the others (nor
-                    # charge from them while they help): on a cloud they are
-                    # blocked again and the active group is free.
-                    want[member.id] = (bool(helpers), bool(side))
+                    # While others help, the active one may not charge from
+                    # them; it is free otherwise.
+                    want[member.id] = (bool(helpers), False)
                     entry.update(
                         charge="blocked" if helpers else "free",
-                        discharge="blocked" if side else "free",
+                        discharge="free",
                         why="active",
                     )
                 elif member.id in side:
                     want[member.id] = (False, True)
-                    entry.update(
-                        charge="free",
-                        discharge="blocked",
-                        why="along" if along and not parallel else "parallel",
-                    )
+                    entry.update(charge="free", discharge="blocked", why="parallel")
                 elif member.id in helpers:
                     want[member.id] = (True, why_helper == "base")
                     entry.update(charge="blocked", discharge="free", why=why_helper)
@@ -2562,9 +2563,8 @@ class JoeExecutor:
         if not info["dry"]:
             plan_from = (info.get("along_plan") or {}).get("from")
             self._team_pending = {
-                "room": flow == "surplus"
-                and any(not set(g.ids) & side for g in waiting),
-                "along": bool(side),
+                "room": flow == "surplus" and bool(waiting),
+                "along": False,
                 "planned": datetime.fromisoformat(plan_from) if plan_from else None,
                 "export_kw": max(0.0, -(grid or 0.0)),
                 "socs": {m.id: m.soc for m in members},
@@ -2712,12 +2712,13 @@ class JoeExecutor:
         powers: dict[str, float],
         give: dict[str, float],
         style: str,
+        seen: dict[str, bool],
         now: datetime,
         info: dict[str, Any],
     ) -> bool:
-        """Whether the next groups help discharging: the house draws from the
-        grid for a while although the active group gives about all it can
-        (see control/team_day.py); not in "Nur nacheinander"."""
+        """Whether the next groups help discharging: the house drew from the
+        grid for a while although the active group gives (see
+        control/team_day.py and team.quick); not in "Nur nacheinander"."""
         store: dict[str, Any] = self.data["team"]
         can = (
             style != "strict"
@@ -2732,8 +2733,8 @@ class JoeExecutor:
         on = team_day.help_step(
             store["help"],
             can,
-            max(0.0, grid or 0.0) * 1000,
-            max(0.0, -sum(powers.get(k, 0.0) for k in active.ids)),
+            seen["import"],
+            seen["calm"],
             max(0.0, deficit or 0.0),
             sum(give.get(k, 0.0) for k in active.ids),
             now,
@@ -2896,12 +2897,8 @@ class JoeExecutor:
             )
             info["learned"] = deepcopy(lead)
             info["review"] = deepcopy(summary)
-        if config["rules"].get("team_early") is None:
-            review = (store.get("reviews") or [None])[-1]
-            if review and (
-                local.date() - datetime.fromisoformat(review["day"]).date()
-            ) <= timedelta(days=1):
-                info["suggest"] = team_day.suggestion(review, store.get("lead"))
+        # Nothing to suggest while charging along is off (see _team_choose).
+        info["suggest"] = None
 
     def _team_evening(self, local: datetime) -> bool:
         """After sunset (half an hour), at 22:00 at the latest."""
@@ -2917,9 +2914,8 @@ class JoeExecutor:
 
     def _team_flow(
         self, deficit: float | None, now: datetime
-    ) -> tuple[str | None, bool, str | None]:
-        """The flow Joe goes by (once seen for a while), whether it has lasted
-        long enough for the order to count, and the flow seen right now."""
+    ) -> tuple[str | None, str | None]:
+        """The flow Joe goes by (once seen for a while) and the flow seen right now."""
         store: dict[str, Any] = self.data["team"]
         raw = None
         if deficit is not None:
@@ -2937,11 +2933,68 @@ class JoeExecutor:
                 and now - datetime.fromisoformat(store["raw_since"]) >= dwell
             ):
                 store.update(flow=raw, flow_since=stamp)
-        since = store.get("flow_since")
-        steady = bool(
-            since and now - datetime.fromisoformat(since) >= team_rules.PREFER_DWELL
+        return store["flow"], raw
+
+    def _team_seen(
+        self,
+        current: team_rules.Group | None,
+        powers: dict[str, float],
+        deficit: float | None,
+        now: datetime,
+    ) -> dict[str, bool]:
+        """What the meter showed about the active group for a while (see
+        team.quick): the timers live in the team's store, advanced here and
+        every few seconds by _team_quick."""
+        store: dict[str, Any] = self.data["team"]
+        grid = measurement_kw(
+            self._hass.states.get, self._config()["measurements"]["grid_power"]
         )
-        return store["flow"], steady, raw
+        if (
+            current is None
+            or deficit is None
+            or grid is None
+            or any(k not in powers for k in current.ids)
+        ):
+            return team_rules.quick(store["quick"], None, None, None, now)
+        power = sum(powers[k] for k in current.ids)
+        return team_rules.quick(store["quick"], power, deficit * 1000, grid * 1000, now)
+
+    @staticmethod
+    def _team_level(group: team_rules.Group) -> float:
+        """The group's level (its batteries' mean, %)."""
+        return round(sum(m.soc for m in group.members) / len(group.members), 1)
+
+    def _team_quick(
+        self, config: dict[str, Any], powers: dict[str, float], now: datetime
+    ) -> None:
+        """Every few seconds (the watchdog's tick): advance the meter's timers
+        for the active group and, once they say something new (empty, full,
+        a helper due or done), check at once instead of at the next minute."""
+        if self.team.get("state") != "on" or self.team.get("dry"):
+            self._team_quick_seen = None
+            return
+        store: dict[str, Any] = self.data["team"]
+        ids = self.team.get("active_batteries") or []
+        if not ids or any(k not in powers for k in ids):
+            return
+        deficit = self._team_deficit(config, powers)
+        grid = measurement_kw(
+            self._hass.states.get, config["measurements"]["grid_power"]
+        )
+        if deficit is None or grid is None:
+            return
+        seen = team_rules.quick(
+            store["quick"],
+            sum(powers[k] for k in ids),
+            deficit * 1000,
+            grid * 1000,
+            now,
+        )
+        flags = tuple(sorted(k for k, v in seen.items() if v))
+        if flags != self._team_quick_seen:
+            self._team_quick_seen = flags
+            if flags and not self._lock.locked():
+                self._hass.async_create_task(self.async_check(), eager_start=False)
 
     def _team_deficit(
         self, config: dict[str, Any], powers: dict[str, float]
@@ -3362,6 +3415,7 @@ class JoeExecutor:
             if power is not None:
                 powers[battery["id"]] = power
         self._team_sample(config, powers, now)
+        self._team_quick(config, powers, now)
         state = "on"
         if not config["rules"].get("transfer_guard", True):
             state = "off"
@@ -3560,7 +3614,9 @@ class JoeExecutor:
         if clean:
             for write in role.guard_exit(self._hass):
                 try:
-                    await async_apply(self._hass, write, self._note("guard", stage=1))
+                    await async_apply(
+                        self._hass, write, self._note("guard", stage=1), self.language()
+                    )
                 except WriteError as err:
                     return True, err.code
                 await joe_writes.settle(max(write.pause, guard_rules.PACE_S))
@@ -3639,7 +3695,9 @@ class JoeExecutor:
         for adapter in called:
             for write in adapter.op_steps("release", self._hass) or []:
                 try:
-                    await async_apply(self._hass, write, self._note("guard_back"))
+                    await async_apply(
+                        self._hass, write, self._note("guard_back"), self.language()
+                    )
                 except WriteError as err:
                     self._log(
                         "failed", battery=None, entity=err.entity_id, code=err.code
@@ -3662,7 +3720,9 @@ class JoeExecutor:
             if index:
                 await joe_writes.settle(guard_rules.PACE_S)
             try:
-                await async_apply(self._hass, write, self._note("guard", stage=stage))
+                await async_apply(
+                    self._hass, write, self._note("guard", stage=stage), self.language()
+                )
             except WriteError as err:
                 self._log("failed", battery=None, entity=err.entity_id, code=err.code)
                 return err.code
@@ -3682,7 +3742,9 @@ class JoeExecutor:
                 await joe_writes.settle(guard_rules.PACE_S)
             if not matches(self._hass, fit(self._hass, write)):
                 try:
-                    await async_apply(self._hass, write, self._note("guard_back"))
+                    await async_apply(
+                        self._hass, write, self._note("guard_back"), self.language()
+                    )
                 except WriteError:
                     failed.append(entity_id)
                     continue
@@ -4098,7 +4160,7 @@ class JoeExecutor:
         for write in writes:
             if write.is_call:
                 try:
-                    await async_apply(self._hass, write, note)
+                    await async_apply(self._hass, write, note, self.language())
                 except WriteError as err:
                     errors.append(err.entity_id)
                 continue
@@ -4115,7 +4177,7 @@ class JoeExecutor:
                 continue
             if not matches(self._hass, fit(self._hass, write)):
                 try:
-                    await async_apply(self._hass, write, note)
+                    await async_apply(self._hass, write, note, self.language())
                 except WriteError as err:
                     errors.append(err.entity_id)
                     continue
@@ -4481,11 +4543,20 @@ class JoeExecutor:
 
     def _note(self, key: str | None, **values: Any) -> str | None:
         """Why Joe writes something, for the logbook (see NOTES); None when
-        there are no words for it."""
+        there are no words for it. In the owner's language: the panel's, as
+        last seen, else Home Assistant's."""
         if key is None or key not in NOTES:
             return None
-        german = (self._hass.config.language or "").startswith("de")
-        return NOTES[key][0 if german else 1].format(**values)
+        return NOTES[key][0 if self.language() == "de" else 1].format(**values)
+
+    def language(self) -> str:
+        """The owner's language for Joe's own words ("de" or "en")."""
+        chosen = self._language() if self._language else None
+        return (
+            "de"
+            if (chosen or self._hass.config.language or "en").startswith("de")
+            else "en"
+        )
 
     async def _async_watch_stuck(self, config: dict[str, Any], now: datetime) -> None:
         """A battery that cannot work because of a setting Joe did not write
@@ -4994,7 +5065,7 @@ class JoeExecutor:
             if not write.is_call and write.entity_id not in saved:
                 saved[write.entity_id] = read(hass, write.entity_id)
             try:
-                await async_apply(hass, write, note)
+                await async_apply(hass, write, note, self.language())
             except WriteError as err:
                 errors.append({"entity_id": err.entity_id, "code": err.code})
         await self._async_save()
@@ -5021,7 +5092,7 @@ class JoeExecutor:
         note = self._note("release")
         for write in restore:
             try:
-                await async_apply(hass, write, note)
+                await async_apply(hass, write, note, self.language())
             except WriteError as err:
                 errors.append({"entity_id": err.entity_id, "code": err.code})
         await asyncio.sleep(TEST_RELEASE)
