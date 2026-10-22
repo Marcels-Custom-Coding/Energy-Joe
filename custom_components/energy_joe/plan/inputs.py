@@ -43,8 +43,6 @@ ASSUMED = Prices(night=0.20, day=0.30, feed_in=0.08, assumed=True)
 # and never scales by more than these limits.
 MIN_R2 = 0.4
 SCALE_LIMITS = (0.5, 2.0)
-# A learned battery size counts if it fits the nominal one this well.
-CAPACITY_LIMITS = (0.5, 1.15)
 # Dynamic tariffs: where Joe looks for the cheapest window unless the user
 # set a span, and how long running night actions need at least (hours).
 DEFAULT_SEARCH = {"start": "20:00", "end": "07:00"}
@@ -318,12 +316,18 @@ async def async_build_input(
     battery_models = learned.get("battery_models") or {}
     efficiencies: list[tuple[float, float]] = []
     for battery in config["batteries"]:
-        capacity = battery["capacity_kwh"] or energy_kwh(
-            hass.states.get(battery["capacity_entity"] or "")
+        found = battery_models.get(battery["id"])
+        # The nominal size, as the device or the user says. Joe measures the
+        # real one from charge and discharge runs (learn.models.battery_runs)
+        # but only shows it: the plan is not moved by a measurement. Only a
+        # battery nobody could size takes the measured one.
+        capacity = (
+            battery["capacity_kwh"]
+            or energy_kwh(hass.states.get(battery["capacity_entity"] or ""))
+            or (found or {}).get("measured_kwh")
         )
-        if found := battery_models.get(battery["id"]):
-            capacity = _real_capacity(config, battery["id"], capacity, found)
-            efficiency = found["efficiency"]
+        if found:
+            efficiency = found.get("efficiency") or 0.9
             converter = found.get("converter") or {}
             if config["rules"]["converter_losses"] and converter.get("factor"):
                 # The inverter's losses on the way in and out again.
@@ -888,21 +892,6 @@ def _group_scale(group: dict[str, Any] | None, outlook: dict[str, Any]) -> float
         return 1.0
     workday = outlook["meta"]["workday"]
     return max(0.3, min(3.0, expected(group, workday, temp, None) / group["average"]))
-
-
-def _real_capacity(
-    config: dict[str, Any],
-    battery_id: str,
-    nominal: float | None,
-    found: dict[str, Any],
-) -> float | None:
-    """The size Joe measured, unless the user set one or it does not fit the nominal."""
-    if model.source_of(config, f"batteries[{battery_id}].capacity_kwh") == "user":
-        return nominal
-    real = found["capacity_kwh"]
-    if nominal and not CAPACITY_LIMITS[0] <= real / nominal <= CAPACITY_LIMITS[1]:
-        return nominal
-    return real
 
 
 def _efficiency(found: list[tuple[float, float]]) -> float:

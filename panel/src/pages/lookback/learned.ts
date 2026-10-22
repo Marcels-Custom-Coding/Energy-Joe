@@ -795,7 +795,7 @@ export class JoeLookbackLearned extends LitElement {
       "mdi:battery-heart-variant",
       t("learn.battery"),
       tip(t, "learn_battery"),
-      config.batteries.map((battery) => batteryLearned(t, config, data.learned, battery, data.needs.models)),
+      config.batteries.map((battery) => batteryLearned(t, config, this.hass, data.learned, battery, data.needs.models)),
       t("learn.battery.none"),
     );
   }

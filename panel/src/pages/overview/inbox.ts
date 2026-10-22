@@ -16,6 +16,7 @@ import { stuckSince, stuckText, stuckTitle } from "../../components/battery-stuc
 import { mergeAnswers, mergeQuestion } from "../../components/car-sources";
 import { daySurplus, surplusAbility, surplusConflicts } from "../../components/day-surplus";
 import { haOpen, type HaTarget } from "../../components/ha-open";
+import { fixed } from "../../components/look-back";
 import { checkText } from "../../components/texts";
 import { tip } from "../../components/tip";
 import { allowedCars, carRoute, pointRoute } from "../../cars";
@@ -25,6 +26,7 @@ import { actionPlace, deviceRoute, findDevice, newFindings, type DeviceEntry, ty
 import { entityName } from "../../entities";
 import { laterList, laterOpen, questionHome } from "../../homes";
 import type { TipName, Translate } from "../../i18n";
+import { capacityBasis, capacityOff } from "../../learned-view";
 import { PANEL, format, href, onLink, type Route } from "../../router";
 import { shared } from "../../styles/shared";
 import type { BatteryRolesItem, Check, ClimateFound, Discovery, HomeAssistant, JoeState } from "../../types";
@@ -289,6 +291,23 @@ export function inboxItems(t: Translate, joe: JoeState, inputs: InboxInputs = {}
         to: deviceRoute({ group: "battery", id: battery.id }),
       });
     }
+  }
+  // The size measured from charge and discharge runs is far from the one Joe
+  // plans with (the device's or the owner's): he says so and leaves the
+  // decision to the owner – the row stays until the two agree.
+  for (const battery of config.batteries) {
+    const measured = config.learned?.battery_models?.[battery.id]?.measured_kwh;
+    const basis = capacityBasis(config, inputs.hass, battery);
+    if (measured == null || !basis || !capacityOff(basis.value, measured)) continue;
+    const values = { name: battery.name, measured: fixed(t.lang, measured, 1), basis: fixed(t.lang, basis.value, 1) };
+    items.push({
+      id: `capacity:${battery.id}`,
+      hide: [],
+      icon: "mdi:battery-alert-variant-outline",
+      title: t(basis.own ? "overview.todo.capacity.user" : "overview.todo.capacity.device", values),
+      text: t("overview.todo.capacity.text", values),
+      to: deviceRoute({ group: "battery", id: battery.id }),
+    });
   }
   // The daytime surplus: evcc settings against it, a cap that does not take.
   const surplus = daySurplus(joe);

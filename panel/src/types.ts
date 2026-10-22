@@ -732,9 +732,23 @@ export interface Learned {
   };
   /** How well each forecast source fits ("main" and the alternatives). */
   sources: Record<string, { factor: number; error: number; days: number }>;
+  /**
+   * Per battery: the day fit (the losses, and the size it once gave) and the
+   * size measured from charge and discharge runs. Joe plans with the device's
+   * or the owner's size; the measurement is only shown.
+   */
   battery_models: Record<
     string,
-    { capacity_kwh: number; efficiency: number; days: number; converter?: { factor: number; nights: number } | null }
+    {
+      capacity_kwh?: number;
+      efficiency?: number;
+      days?: number;
+      converter?: { factor: number; nights: number } | null;
+      /** Usable kWh per 100 %, the median of the runs. */
+      measured_kwh?: number;
+      /** How many charge and discharge runs went into it. */
+      runs?: number;
+    }
   >;
   action_models: Record<string, { rate_k_per_h: number; loss_k_per_h: number; demand_k: number; days: number }>;
   /** Per car charged by need: real consumption (kWh/100 km), extra per degree below 15 °C, usual km. */

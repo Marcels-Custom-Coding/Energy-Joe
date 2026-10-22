@@ -39,6 +39,13 @@ HALF_LIFE_DAYS = 120
 OLD_WEIGHT = 0.2
 # Grid-charging nights before Joe trusts the inverter's losses.
 CONVERTER_NIGHTS = 5
+# A battery hour belongs to a charge (discharge) run from this much energy one
+# way with at most this much (or 5 %) the other way; a run must move the level
+# this many points; this many runs make a measured size.
+RUN_MIN_KWH = 0.15
+RUN_OTHER_KWH = 0.05
+RUN_MIN_CHANGE = 25.0
+RUN_MIN_RUNS = 3
 # More than this between two odometer readings is a glitch, not a drive (km).
 MAX_STEP_KM = 1500.0
 
@@ -290,6 +297,89 @@ def battery_model(
         "efficiency": round(efficiency, 3),
         "days": len(features),
     }
+
+
+def battery_runs(
+    days: dict[str, dict[str, Any]], battery_id: str, efficiency: float | None
+) -> dict[str, Any] | None:
+    """Usable size measured from charge and discharge runs (kWh per 100 %).
+
+    Runs instead of days: most days end near where they started, and idle
+    hours drift, so the day fit above is shaky. A run of consecutive hours
+    that only charge (or only discharge) and moves the level by at least
+    RUN_MIN_CHANGE points gives a size of its own: energy over level change,
+    with the one-way losses taken out. The level marks are end-of-hour
+    readings (live hours) or hourly means (read back from the history), so
+    the levels before and after a run take both neighbours into account: for
+    a charge run the lower of the hour before and the first run hour, and
+    the higher of the last run hour and the hour after. The size is the
+    median of at least RUN_MIN_RUNS runs.
+    """
+    hours: list[tuple[datetime, dict[str, Any]]] = []
+    for _, data in sorted(days.items()):
+        for hour in data.get("hours") or []:
+            entry = (hour.get("bat") or {}).get(battery_id)
+            if entry is not None and hour.get("start"):
+                hours.append((datetime.fromisoformat(hour["start"]), entry))
+    hours.sort(key=lambda item: item[0])
+    eta = math.sqrt(efficiency or 0.9)
+    sizes: list[float] = []
+    # Stretches of consecutive hours: a gap in time ends a run and its neighbours.
+    stretch: list[dict[str, Any]] = []
+    for index, (start, entry) in enumerate(hours):
+        stretch.append(entry)
+        following = hours[index + 1][0] if index + 1 < len(hours) else None
+        if following is not None and following - start == timedelta(hours=1):
+            continue
+        sizes.extend(_run_sizes(stretch, eta))
+        stretch = []
+    if len(sizes) < RUN_MIN_RUNS:
+        return None
+    return {"measured_kwh": round(median(sizes), 2), "runs": len(sizes)}
+
+
+def _flow_class(entry: dict[str, Any]) -> str:
+    """What a battery hour did: "charge", "discharge" or "still" (little, mixed)."""
+    charged, discharged = entry.get("in", 0.0), entry.get("out", 0.0)
+    if charged >= RUN_MIN_KWH and discharged <= max(RUN_OTHER_KWH, 0.05 * charged):
+        return "charge"
+    if discharged >= RUN_MIN_KWH and charged <= max(RUN_OTHER_KWH, 0.05 * discharged):
+        return "discharge"
+    return "still"
+
+
+def _run_sizes(entries: list[dict[str, Any]], eta: float) -> list[float]:
+    """The size each run in a stretch of consecutive hours measured (see battery_runs)."""
+    classes = [_flow_class(e) for e in entries]
+    sizes = []
+    first = 0
+    while first < len(entries):
+        kind = classes[first]
+        last = first
+        while last + 1 < len(entries) and classes[last + 1] == kind:
+            last += 1
+        if kind != "still" and first > 0 and last + 1 < len(entries):
+            marks = [
+                entries[index].get("soc")
+                for index in (first - 1, first, last, last + 1)
+            ]
+            if all(mark is not None for mark in marks):
+                if kind == "charge":
+                    before, after = min(marks[0], marks[1]), max(marks[2], marks[3])
+                    energy = sum(e.get("in", 0.0) for e in entries[first : last + 1])
+                else:
+                    before, after = max(marks[0], marks[1]), min(marks[2], marks[3])
+                    energy = sum(e.get("out", 0.0) for e in entries[first : last + 1])
+                points = abs(after - before)
+                if points >= RUN_MIN_CHANGE:
+                    share = points / 100
+                    sizes.append(
+                        energy * eta / share
+                        if kind == "charge"
+                        else energy / (eta * share)
+                    )
+        first = last + 1
+    return sizes
 
 
 def converter_model(

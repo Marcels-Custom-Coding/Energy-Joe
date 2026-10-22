@@ -1,6 +1,6 @@
 import { css, html, nothing, type TemplateResult } from "lit";
 import { dayText, fixed } from "./components/look-back";
-import { formatNumber } from "./entities";
+import { energyKwh, formatNumber } from "./entities";
 import type { Translate } from "./i18n";
 import {
   DAY_LABELS,
@@ -8,6 +8,7 @@ import {
   type BatteryConfig,
   type CarConfig,
   type ConsumerConfig,
+  type HomeAssistant,
   type JoeConfig,
   type JoeState,
   type Learned,
@@ -79,32 +80,87 @@ export const learnedStyles = css`
   }
 `;
 
-/** What a battery really holds and gives back. */
-export function batteryLearned(t: Translate, config: JoeConfig, learned: Learned, battery: BatteryConfig, need: number): LearnedRow {
+/** The measured size counts as off when it is this far from the size Joe plans with. */
+export const CAPACITY_OFF = 0.15;
+
+/**
+ * The size Joe plans with: the owner's value, else the device's (read into
+ * the config or from its capacity entity); null when none is known.
+ */
+export function capacityBasis(
+  config: JoeConfig,
+  hass: HomeAssistant | undefined,
+  battery: BatteryConfig,
+): { value: number; own: boolean; measured?: boolean } | null {
+  const own = battery.capacity_kwh != null && config.provenance[`batteries[${battery.id}].capacity_kwh`]?.source === "user";
+  const value = battery.capacity_kwh ?? (hass ? energyKwh(hass, battery.capacity_entity) : null);
+  if (value) {
+    return { value, own };
+  }
+  // Nobody could size it: Joe plans with what he measured.
+  const measured = config.learned?.battery_models?.[battery.id]?.measured_kwh;
+  return measured ? { value: measured, own: false, measured: true } : null;
+}
+
+/** Whether the measured size is too far from the one Joe plans with (only when both are known). */
+export function capacityOff(basis: number | null | undefined, measured: number | null | undefined): boolean {
+  return basis != null && measured != null && basis > 0 && Math.abs(measured - basis) / basis > CAPACITY_OFF;
+}
+
+/** "11 Läufen" / "1 Lauf": the charge and discharge runs a measurement came from. */
+export function runsText(t: Translate, runs: number): string {
+  const [one, other] = t("word.run").split("|");
+  return `${formatNumber(t.lang, runs, 0)} ${runs === 1 ? one : other}`;
+}
+
+/** A battery: the size Joe plans with, the size he measured from runs, and what comes back out. */
+export function batteryLearned(
+  t: Translate,
+  config: JoeConfig,
+  hass: HomeAssistant | undefined,
+  learned: Learned,
+  battery: BatteryConfig,
+  need: number,
+): LearnedRow {
   const lang = t.lang;
   const found = learned.battery_models?.[battery.id];
-  const nominal = battery.capacity_kwh;
-  const own = config.provenance[`batteries[${battery.id}].capacity_kwh`]?.source === "user";
-  let note: string;
-  if (!found) {
-    note = battery.power ? t("learn.battery.learning", { need }) : t("learn.battery.no_power");
-  } else if (own && nominal) {
-    note = t("learn.battery.user", { value: fixed(lang, nominal, 1) });
-  } else if (nominal && (found.capacity_kwh / nominal < 0.5 || found.capacity_kwh / nominal > 1.15)) {
-    note = t("learn.battery.odd", { value: fixed(lang, nominal, 1) });
+  const basis = capacityBasis(config, hass, battery);
+  const measured = found?.measured_kwh ?? null;
+  const values: string[] = [];
+  if (basis?.measured) {
+    values.push(t("learn.battery.basis.measured", { value: fixed(lang, basis.value, 1), runs: runsText(t, found?.runs ?? 0) }));
+  } else if (basis) {
+    values.push(t(basis.own ? "learn.battery.basis.user" : "learn.battery.basis.device", { value: fixed(lang, basis.value, 1) }));
+  }
+  if (measured != null && !basis?.measured) {
+    values.push(t("learn.battery.measured", { value: fixed(lang, measured, 1), runs: runsText(t, found?.runs ?? 0) }));
+  }
+  if (found?.efficiency != null) {
+    values.push(t("learn.battery.efficiency", { value: formatNumber(lang, found.efficiency * 100, 0) }));
+  }
+  if (found?.converter) {
+    values.push(t("learn.battery.converter", { value: formatNumber(lang, found.converter.factor * 100, 0) }));
+  }
+  const notes: string[] = [];
+  if (!basis) {
+    notes.push(t("learn.battery.basis.none"));
+  }
+  if (!battery.power) {
+    notes.push(t("learn.battery.no_power"));
   } else {
-    note = nominal ? t("learn.battery.uses_nominal", { value: fixed(lang, nominal, 1) }) : t("learn.battery.uses");
+    if (measured == null) {
+      notes.push(t("learn.battery.measuring"));
+    } else if (basis && capacityOff(basis.value, measured)) {
+      notes.push(t("learn.battery.mismatch", { value: fixed(lang, basis.value, 1) }));
+    }
+    if (found?.efficiency == null) {
+      notes.push(t("learn.battery.learning", { need }));
+    }
   }
   return {
     name: battery.name,
-    values: found
-      ? [
-          t("learn.battery.capacity", { value: fixed(lang, found.capacity_kwh, 1) }),
-          t("learn.battery.efficiency", { value: formatNumber(lang, found.efficiency * 100, 0) }),
-          ...(found.converter ? [t("learn.battery.converter", { value: formatNumber(lang, found.converter.factor * 100, 0) })] : []),
-        ]
-      : [t("learn.still")],
-    note,
+    values: values.length ? values : [t("learn.still")],
+    note: notes.length ? notes.join(" ") : undefined,
   };
 }
 
