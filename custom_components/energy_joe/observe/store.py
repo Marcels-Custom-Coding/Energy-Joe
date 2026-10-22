@@ -22,7 +22,9 @@ CACHED_MONTHS = 4
 
 
 # 2: consumption is the balance of grid, sun and storage, like the Energy dashboard.
-HOURS_FORMAT = 2
+# 3: an impossible consumption counts as a counting error (records.compose);
+#    the hours are read again once, and the look-backs of those days with them.
+HOURS_FORMAT = 3
 
 
 def _month(day: str) -> str:
@@ -137,6 +139,13 @@ class HistoryStore:
             self._schedule(_month(day))
         if records:
             self._meta.async_delay_save(self._index, SAVE_DELAY)
+
+    async def async_forget_evaluations(self, first: str, last: str) -> None:
+        """Drop the look-backs of these days (their hours were read again)."""
+        for day in [d for d in self._days if first <= d <= last]:
+            data = await self._async_day_for_write(day)
+            if data.pop("evaluation", None) is not None:
+                self._schedule(_month(day))
 
     async def async_update_day(self, day: str, **fields: Any) -> None:
         """Set day-level facts (forecast, workday) without touching the hours."""

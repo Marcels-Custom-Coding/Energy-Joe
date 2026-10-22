@@ -1393,6 +1393,7 @@ var Pe = {
 	"review.home.off": "In den letzten {days} Tagen zeigt dein Sensor {pct} % {direction} als Netz + PV ± Speicher. Fehlt darin vielleicht eine kleine PV-Anlage? Ich rechne mit Netz + PV ± Speicher.",
 	"review.home.less": "weniger",
 	"review.home.more": "mehr",
+	"review.home.off_balance": "In den letzten {days} Tagen zeigt dein Sensor {pct} % weniger als Netz + PV ± Speicher. So viel macht keine kleine PV-Anlage aus – da habe ich vermutlich eine Stunde falsch gezählt. Unmögliche Stunden lasse ich weg und lese sie aus Home Assistant neu.",
 	"review.home.none": "Kennst du keinen? Kein Problem – dann rechne ich den Hausverbrauch aus Netz, PV und Speicher selbst aus.",
 	"review.home.without": "Hab ich nicht",
 	"review.home.computed": "rechne ich aus Netz, PV und Speicher aus",
@@ -1961,6 +1962,14 @@ var Pe = {
 	"overview.result.last": "Letzte Nacht",
 	"overview.result.night": "Nacht zum {day}",
 	"overview.result.none": "Nach der ersten geplanten Nacht rechne ich nach, was mein Plan gebracht hätte.",
+	"overview.result.left": "{night}: nicht geladen – {why}",
+	"overview.left.small_saving": "die Ersparnis lag unter deiner Mindestersparnis",
+	"overview.left.enough": "die Speicher reichten, bis die Sonne übernimmt",
+	"overview.left.not_worth": "Laden aus dem Netz lohnte sich nicht",
+	"overview.left.max_price": "der Strom lag über deinem Höchstpreis",
+	"overview.left.skipped": "von dir ausgesetzt",
+	"overview.left.declined": "du hast abgelehnt",
+	"overview.left.unanswered": "keine Antwort auf meine Frage",
 	"tip.inbox.title": "Was steht hier?",
 	"tip.inbox.text": "Alles, wobei ich dich brauche: deine Antwort für heute Nacht, Hinweise zu deinen Geräten, noch nicht Eingerichtetes, neu gefundene Geräte und Fragen zu auffälligen Tagen. Hinweise auf Fehler stehen oben und bleiben, bis der Fehler behoben ist. Zuerst zeige ich drei Zeilen, den Rest unter „weitere zeigen“. Ein Tipp auf eine Zeile bringt dich dorthin, wo du es erledigst. Ist nichts offen, verschwindet der Kasten.",
 	"tip.todo_dismiss.title": "Was macht „Brauch ich nicht“?",
@@ -4078,6 +4087,14 @@ var Pe = {
 	"log.charge_slow": "{battery} lädt nur mit {power} statt {planned} kW aus dem Netz – vermutlich lässt der Wechselrichter so nur wenig zu; ich plane ihn ab jetzt damit",
 	"log.charge_slow_end": "{battery} lädt wieder schneller ({power} kW) – ich plane ihn wieder mit voller Leistung",
 	"log.night_charged": "{battery}: {charged} von {planned} kWh geladen",
+	"log.night_none": "Heute Nacht lade ich nicht",
+	"log.night_none.small_saving": "Heute Nacht lade ich nicht: Die Ersparnis läge unter deiner Mindestersparnis (gerechnet hatte ich {target} %, {kwh} kWh)",
+	"log.night_none.enough": "Heute Nacht lade ich nicht: Die Speicher reichen, bis die Sonne um {sun} Uhr übernimmt",
+	"log.night_none.not_worth": "Heute Nacht lade ich nicht: Laden aus dem Netz würde sich nicht lohnen",
+	"log.night_none.max_price": "Heute Nacht lade ich nicht: Der Strom liegt über deinem Höchstpreis",
+	"log.night_none.skipped": "Heute Nacht ausgesetzt, wie du es wolltest",
+	"log.night_none.declined": "Heute Nacht lade ich nicht: Du hast abgelehnt",
+	"log.night_none.unanswered": "Heute Nacht lade ich nicht: Keine Antwort auf meine Frage",
 	"log.probe.ok": "Probe „{op}“ bei {battery}: geschrieben, zurückgelesen, zurückgestellt ✓",
 	"log.probe.failed": "Probe „{op}“ bei {battery}: nicht geklappt",
 	"tip.a_name.title": "Wie soll das Gerät heißen?",
@@ -4916,6 +4933,7 @@ var Pe = {
 	"review.home.off": "Over the last {days} days your sensor shows {pct} % {direction} than grid + solar ± storage. Maybe a small solar system is missing from it? I'm using grid + solar ± storage.",
 	"review.home.less": "less",
 	"review.home.more": "more",
+	"review.home.off_balance": "Over the last {days} days your sensor shows {pct} % less than grid + solar ± storage. No small solar system explains that much – I probably counted an hour wrong. Hours that cannot be real are left out and read again from Home Assistant.",
 	"review.home.none": "Don't know one? No problem – I'll work out home consumption from grid, solar and battery myself.",
 	"review.home.without": "I don't have one",
 	"review.home.computed": "worked out from grid, solar and battery",
@@ -5484,6 +5502,14 @@ var Pe = {
 	"overview.result.last": "Last night",
 	"overview.result.night": "Night to {day}",
 	"overview.result.none": "After the first planned night I work out what my plan would have saved.",
+	"overview.result.left": "{night}: not charged – {why}",
+	"overview.left.small_saving": "the saving stayed below your minimum",
+	"overview.left.enough": "the batteries lasted until the sun takes over",
+	"overview.left.not_worth": "charging from the grid did not pay",
+	"overview.left.max_price": "the price was above your limit",
+	"overview.left.skipped": "skipped by you",
+	"overview.left.declined": "you declined",
+	"overview.left.unanswered": "no answer to my question",
 	"tip.inbox.title": "What is this?",
 	"tip.inbox.text": "Everything I need you for: your answer for tonight, notes about your devices, what isn't set up yet, newly found devices and questions about unusual days. Error notes stay at the top until the error is fixed. I show three lines first, the rest under “Show … more”. Tapping a line takes you to where you sort it out. If nothing is open, this box disappears.",
 	"tip.todo_dismiss.title": "What does “Don't need it” do?",
@@ -7601,6 +7627,14 @@ var Pe = {
 	"log.charge_slow": "{battery} charges from the grid at only {power} instead of {planned} kW – the inverter probably allows little this way; from now on I plan it with that",
 	"log.charge_slow_end": "{battery} charges faster again ({power} kW) – I plan it at full power again",
 	"log.night_charged": "{battery}: {charged} of {planned} kWh charged",
+	"log.night_none": "I am not charging tonight",
+	"log.night_none.small_saving": "I am not charging tonight: the saving would stay below your minimum (I had worked out {target} %, {kwh} kWh)",
+	"log.night_none.enough": "I am not charging tonight: the batteries last until the sun takes over at {sun}",
+	"log.night_none.not_worth": "I am not charging tonight: charging from the grid would not pay",
+	"log.night_none.max_price": "I am not charging tonight: the price is above your limit",
+	"log.night_none.skipped": "Skipped tonight, as you wanted",
+	"log.night_none.declined": "I am not charging tonight: you declined",
+	"log.night_none.unanswered": "I am not charging tonight: no answer to my question",
 	"log.probe.ok": "Probe “{op}” on {battery}: written, read back, put back ✓",
 	"log.probe.failed": "Probe “{op}” on {battery}: did not work",
 	"tip.a_name.title": "What should the device be called?",
@@ -7720,14 +7754,14 @@ function qe(e, t, n) {
 }
 //#endregion
 //#region src/define.ts
-var Je = "0.9.31";
+var Je = "0.9.32";
 function V(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Je, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.31" && Xe();
+	n.joeVersion !== "0.9.32" && Xe();
 }
 var Ye = !1;
 function Xe() {

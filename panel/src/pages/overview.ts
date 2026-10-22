@@ -701,16 +701,33 @@ export class JoeOverview extends LitElement {
     const results = joe.results;
     const last = results?.last;
     const label = t("overview.result");
+    const currency = this.hass?.config?.currency;
+    const zone = this.hass?.config?.time_zone;
+    // The night is named after the morning it ends on.
+    const nightName = (end: string) =>
+      end === today(zone) ? t("overview.result.last") : t("overview.result.night", { day: dayText(t.lang, end, "weekday") });
+    const since = results?.since ?? results?.first;
+    const total = results
+      ? t("overview.result.total", {
+          since: since ? dayText(t.lang, since) : "–",
+          value: money(t, results.saving, currency, true),
+          nights: nights(t, results.days),
+        })
+      : "";
+    // A night Joe left alone, told as it began: the newest word on the last night,
+    // since the look-back only counts nights with a plan.
+    const left = joe.control?.last_night;
+    const leftEnd = left?.night.slice(0, 10);
+    const lastEnd = last?.window?.end.slice(0, 10) ?? last?.date;
+    if (left && leftEnd && (!lastEnd || leftEnd >= lastEnd)) {
+      const why = t.optional(`overview.left.${left.why}`) ?? t("overview.left.enough");
+      const text = t("overview.result.left", { night: nightName(leftEnd), why });
+      return this.line(RESULT, "mdi:calculator-variant-outline", label, text, "", cls, total);
+    }
     if (!results || !last) {
       return this.line(RESULT, "mdi:calculator-variant-outline", label, t("overview.result.none"), "", cls);
     }
-    const currency = this.hass?.config?.currency;
-    // The night is named after the morning it ends on.
-    const end = last.window?.end.slice(0, 10) ?? last.date;
-    const night =
-      end === today(this.hass?.config?.time_zone)
-        ? t("overview.result.last")
-        : t("overview.result.night", { day: dayText(t.lang, end, "weekday") });
+    const night = nightName(lastEnd ?? last.date);
     const saving = last.saving;
     const tone = saving > 0.005 ? "good" : saving < -0.005 ? "bad" : "";
     const text =
@@ -719,12 +736,6 @@ export class JoeOverview extends LitElement {
         : tone === "bad"
           ? t("overview.result.cost", { night, value: money(t, -saving, currency) })
           : t("overview.result.same", { night });
-    const since = results.since ?? results.first;
-    const total = t("overview.result.total", {
-      since: since ? dayText(t.lang, since) : "–",
-      value: money(t, results.saving, currency, true),
-      nights: nights(t, results.days),
-    });
     const provisional = !last.final && last.until ? ` · ${t("overview.result.provisional", { time: last.until.slice(11, 16) })}` : "";
     return this.line(RESULT, "mdi:calculator-variant-outline", label, text, tone, cls, `${total}${provisional}`);
   }

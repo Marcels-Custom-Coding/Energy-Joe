@@ -9,6 +9,7 @@ from custom_components.energy_joe.const import DOMAIN
 from custom_components.energy_joe.diagnostics import async_get_config_entry_diagnostics
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.util import dt as dt_util
 
 
 async def _setup(hass: HomeAssistant) -> MockConfigEntry:
@@ -232,8 +233,23 @@ async def test_diagnostics_hide_personal_data(ready_hass: HomeAssistant) -> None
     hass.data[DOMAIN]._config["learned"]["presence"] = {
         "person.robin": {"office": {"hours": 9.0, "days": 12}}
     }
+    # An hour of the last days with who was at home: only by number.
+    hour = dt_util.now().replace(minute=0, second=0, microsecond=0)
+    await hass.data[DOMAIN].history.async_put_hours(
+        [
+            {
+                "start": hour.isoformat(),
+                "src": "live",
+                "cov": 1.0,
+                "home": 1.2,
+                "present": {"person.robin": 1.0},
+            }
+        ]
+    )
 
     diagnostics = await async_get_config_entry_diagnostics(hass, entry)
+    recent = diagnostics["history"]["recent"][hour.date().isoformat()]
+    assert recent["hours"][0]["present"] == {"person 1": 1.0}
     person = diagnostics["config"]["persons"][0]
     assert person["name"] == "**REDACTED**"
     assert person["calendars"] == "**REDACTED**"

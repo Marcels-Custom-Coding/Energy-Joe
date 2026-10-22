@@ -38,7 +38,7 @@ from .mail import oauth
 from .mail.inbox import CarInboxes
 from .modbus import ModbusInverters, Settings as ModbusSettings
 from .observe.observer import BACKFILL_DAYS, JoeObserver
-from .observe.store import HistoryStore
+from .observe.store import HOURS_FORMAT, HistoryStore
 from .plan import cars as model_cars
 from .plan.car_calendar import CarCalendarStore
 from .plan.inputs import battery_floor, device_floor
@@ -218,6 +218,10 @@ class JoeRuntime:
         await self._async_load_config()
         self.modbus.async_apply(self._config["batteries"])
         await self.history.async_load()
+        if self.history.format < HOURS_FORMAT:
+            # The hours are read again (observer.async_start): what the old
+            # ones taught about the buffer goes with them.
+            await self.learner.async_forget_buffer()
         await self.executor.async_load()
         await self.calendars.async_load()
         await self.inbox.async_load()

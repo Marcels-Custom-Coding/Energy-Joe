@@ -52,7 +52,7 @@ from .actions import ActionAdapter
 from .adapters import Adapter, Desired, RoleAdapter, make_adapter
 from .groups import proposed_group
 from .profiles import BLOCK_OPERATIONS, OPERATIONS, profile_for
-from .writes import Write, WriteError, async_apply, fit, matches, read
+from .writes import Write, WriteError, async_apply, async_line, fit, matches, read
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -114,7 +114,40 @@ NOTES = {
     "learn": ("Testgrenze: Bezugsgröße lernen", "Test limit: learning the reference"),
     "action_on": ("Nachtplan: an", "Night plan: on"),
     "action_off": ("Nachtplan: aus", "Night plan: off"),
+    # A night Joe leaves alone, and why (see _tell_night_left).
+    "night_none_small_saving": (
+        "Nachtplan: heute Nacht nichts – die Ersparnis läge unter deiner Mindestersparnis",
+        "Night plan: nothing tonight – the saving would stay below your minimum",
+    ),
+    "night_none_enough": (
+        "Nachtplan: heute Nacht nichts – die Speicher reichen, bis die Sonne übernimmt",
+        "Night plan: nothing tonight – the batteries last until the sun takes over",
+    ),
+    "night_none_not_worth": (
+        "Nachtplan: heute Nacht nichts – Laden aus dem Netz lohnt sich nicht",
+        "Night plan: nothing tonight – charging from the grid does not pay",
+    ),
+    "night_none_max_price": (
+        "Nachtplan: heute Nacht nichts – der Strom liegt über deinem Höchstpreis",
+        "Night plan: nothing tonight – the price is above your limit",
+    ),
+    "night_none_skipped": (
+        "Nachtplan: heute Nacht ausgesetzt, wie du es wolltest",
+        "Night plan: skipped tonight, as you wanted",
+    ),
+    "night_none_declined": (
+        "Nachtplan: heute Nacht nichts – du hast abgelehnt",
+        "Night plan: nothing tonight – you declined",
+    ),
+    "night_none_unanswered": (
+        "Nachtplan: heute Nacht nichts – keine Antwort auf meine Frage",
+        "Night plan: nothing tonight – no answer to my question",
+    ),
 }
+# The reasons a night is left alone: Joe's own (the plan's first of these)
+# and the owner's (see _why).
+LEFT_ALONE = ("nothing", "skipped", "declined", "unanswered")
+NIGHT_WHYS = ("small_saving", "enough", "not_worth", "max_price")
 # Modes in which Joe writes to the batteries (in the simulation he only watches).
 STEERING = ("advisory", "live")
 # A test run: how long each step lasts (seconds).
@@ -241,6 +274,10 @@ DEFAULT_DATA: dict[str, Any] = {
     # The last night looked back on: what was planned against what each
     # battery took (see _review_night).
     "night_review": None,
+    # The last night Joe left alone and why (see _tell_night_left), and the
+    # night it was told for.
+    "last_night": None,
+    "night_told": None,
     # Batteries held back by a setting that is not Joe's (a reserve at the
     # level, a block someone else set) while it matters: battery -> reason,
     # since, the entity and its value, the level (see _async_watch_stuck);
@@ -702,11 +739,18 @@ class JoeExecutor:
             if self.data["night"] and night is not None and self.data["night"] != night:
                 self._end_night()
             self._set_status("day" if day else reason, night, day, boosts, keep)
+            told = (
+                reason in LEFT_ALONE
+                and plan is not None
+                and night is not None
+                and self._tell_night_left(plan, reason, night, now)
+            )
             self._watch([])
             # Originals and caps survive a crash: saved whenever they change.
             if (
                 boosts
                 or ended
+                or told
                 or day
                 or peaked
                 or reviewed
@@ -4828,6 +4872,41 @@ class JoeExecutor:
         }
         return True
 
+    def _tell_night_left(
+        self, plan: dict[str, Any], reason: str, night: str, now: datetime
+    ) -> bool:
+        """A night Joe leaves alone, told once as it begins: why, into his
+        log, the logbook and the panel (where the plan's own words are gone
+        by morning). Returns whether it was told now."""
+        if self.data.get("night_told") == night:
+            return False
+        self.data["night_told"] = night
+        why = reason
+        if reason == "nothing":
+            why = next(
+                (r for r in plan.get("reasons") or [] if r in NIGHT_WHYS), "enough"
+            )
+        self.data["last_night"] = {
+            "night": night,
+            "reason": reason,
+            "why": why,
+            "sun": plan.get("sun_takes_over"),
+            "target": plan.get("target"),
+            "kwh": plan.get("grid_charge_kwh"),
+            "at": now.isoformat(timespec="seconds"),
+        }
+        self._log(
+            "night_none",
+            why=why,
+            reason=reason,
+            sun=plan.get("sun_takes_over"),
+            target=plan.get("target"),
+            kwh=plan.get("grid_charge_kwh"),
+        )
+        if note := self._note(f"night_none_{why}"):
+            async_line(self._hass, note)
+        return True
+
     def _start_night(self, night: str) -> None:
         self.data.update(
             night=night,
@@ -5328,6 +5407,8 @@ class JoeExecutor:
             # night's look back (see _async_watch_slow, _review_night).
             "night_slow": self.data["night_slow"],
             "night_review": self.data.get("night_review"),
+            # The last night Joe left alone and why (see _tell_night_left).
+            "last_night": self.data.get("last_night"),
             # Batteries held back by a setting that is not Joe's (see
             # _async_watch_stuck).
             "stuck": self.data.get("stuck") or {},

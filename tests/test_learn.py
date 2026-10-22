@@ -542,3 +542,41 @@ def test_night_over_midnight_shows_on_the_morning_day() -> None:
     own = day_view("2026-10-04", {"plan": plan, "evaluation": evaluation}, window, {})
     assert own["evaluation"] is None
     assert own["plan_soc_slots"][22] == 20
+
+
+async def test_the_buffer_is_forgotten_when_the_hours_are_read_again(
+    hass: HomeAssistant,
+) -> None:
+    """A learned buffer goes back to its start with the hours it came from;
+    a buffer the owner set stays."""
+    store = HistoryStore(hass)
+    await store.async_load()
+    config = model.apply_update(
+        model.default_config(),
+        {"learned": {"buffer": 1.0, "buffer_days": 17}},
+        "learned",
+    )
+    config = model.apply_update(config, {"rules": {"buffer_factor": 1.0}}, "learned")
+    holder = {"config": config}
+
+    def update(patch: dict[str, Any], source: str) -> None:
+        holder["config"] = model.apply_update(holder["config"], patch, source)
+
+    learner = JoeLearner(hass, store, lambda: holder["config"], update, lambda: None)
+    await learner.async_forget_buffer()
+    learned = holder["config"]["learned"]
+    assert learned["buffer"] is None
+    assert learned["buffer_days"] == 0
+    default = model.default_config()["rules"]["buffer_factor"]
+    assert holder["config"]["rules"]["buffer_factor"] == default
+    assert model.source_of(holder["config"], "rules.buffer_factor") == "default"
+
+    own = model.apply_update(
+        model.default_config(), {"rules": {"buffer_factor": 0.8}}, "user"
+    )
+    holder["config"] = model.apply_update(
+        own, {"learned": {"buffer": 1.0, "buffer_days": 17}}, "learned"
+    )
+    await learner.async_forget_buffer()
+    assert holder["config"]["rules"]["buffer_factor"] == 0.8
+    assert holder["config"]["learned"]["buffer"] is None

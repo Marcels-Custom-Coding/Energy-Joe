@@ -478,3 +478,73 @@ async def test_learning_follows_the_history(
     assert filled == [True]
     await observer.async_stop()
     await store.async_unload()
+
+
+def test_an_impossible_consumption_is_a_counting_error() -> None:
+    """An hour's balance no home can take: the sensor stands in, a live hour
+    counts as incomplete so the history reads it again."""
+    start = dt_util.parse_datetime("2026-10-21T18:00:00+02:00")
+    live = compose(
+        start,
+        HourParts(
+            grid=Flow(1.6, 0.0, 1.0),
+            home=Flow(1.6, 0.0, 1.0),
+            solar=[Flow(0.1, 0.0, 1.0)],
+            batteries={"b1": Flow(0.0, 1602.0, 1.0)},
+        ),
+        "live",
+    )
+    assert live["home"] == pytest.approx(1.6)
+    assert live["home_implausible"] == pytest.approx(1603.7)
+    assert "home_calc" not in live
+    assert live["cov"] == 0.0
+    # Read from the recorder it keeps its coverage: nothing better would come.
+    read = compose(
+        start,
+        HourParts(
+            grid=Flow(1.6, 0.0, 1.0),
+            home=Flow(1.6, 0.0, 1.0),
+            batteries={"b1": Flow(0.0, 1602.0, 1.0)},
+        ),
+        "stats",
+    )
+    assert read["home"] == pytest.approx(1.6)
+    assert read["cov"] == 1.0
+    # Many times the sensor is no balcony system either.
+    off = compose(
+        start, HourParts(grid=Flow(30.0, 0.0, 1.0), home=Flow(1.5, 0.0, 1.0)), "live"
+    )
+    assert off["home"] == pytest.approx(1.5)
+    assert off["home_implausible"] == 30.0
+    # Without a sensor the hour has no consumption at all.
+    alone = compose(start, HourParts(grid=Flow(150.0, 0.0, 1.0)), "live")
+    assert "home" not in alone
+    assert alone["home_implausible"] == 150.0
+    # A wallbox the sensor misses is not a counting error.
+    car = compose(
+        start, HourParts(grid=Flow(12.0, 0.0, 1.0), home=Flow(1.0, 0.0, 1.0)), "live"
+    )
+    assert car["home"] == pytest.approx(12.0)
+    assert "home_implausible" not in car
+
+
+async def test_the_look_backs_go_with_the_hours_read_again(
+    hass: HomeAssistant,
+) -> None:
+    """Reading days again drops what Joe concluded from their old hours."""
+    store = HistoryStore(hass)
+    await store.async_load()
+    await store.async_put_hours(
+        [
+            {"start": f"2026-10-{day}T18:00:00+02:00", "src": "live", "cov": 1.0}
+            for day in ("19", "20", "21")
+        ]
+    )
+    for day, saving in (("19", 0.1), ("20", 0.6), ("21", 0.2)):
+        await store.async_update_day(
+            f"2026-10-{day}", evaluation={"complete": True, "saving": saving}
+        )
+    await store.async_forget_evaluations("2026-10-20", "2026-10-22")
+    assert "evaluation" not in await store.async_day("2026-10-20")
+    assert "evaluation" not in await store.async_day("2026-10-21")
+    assert (await store.async_day("2026-10-19"))["evaluation"]["saving"] == 0.1

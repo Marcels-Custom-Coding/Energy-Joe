@@ -482,6 +482,20 @@ class JoeLearner:
             self._update({"learned": {"models_day": None}}, "learned")
         await self.async_run()
 
+    async def async_forget_buffer(self) -> None:
+        """The buffer learned so far goes back to its start: the hours it
+        came from are read again (observe/store.py HOURS_FORMAT), and their
+        look-backs with them."""
+        config = self._config()
+        now = dt_util.now().isoformat(timespec="seconds")
+        self._update(
+            {"learned": {"buffer": None, "buffer_days": 0, "updated": now}}, "default"
+        )
+        if model.source_of(config, "rules.buffer_factor") == "learned":
+            default = model.default_config()["rules"]["buffer_factor"]
+            self._update({"rules": {"buffer_factor": default}}, "default")
+        self._changed()
+
     async def async_reset(self, scope: str = "all") -> None:
         """Forget what Joe learned (everything or one area) and count again from now."""
         config = self._config()

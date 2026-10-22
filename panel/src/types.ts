@@ -1499,6 +1499,17 @@ export interface BatteryStuck {
 }
 
 /** The last night looked back on: what was planned against what each battery took (executor._review_night). */
+/** A night Joe left alone: the owner's reason (skipped, declined, unanswered) or his own (the plan's). */
+export interface NightLeft {
+  night: string;
+  reason: "nothing" | "skipped" | "declined" | "unanswered";
+  why: string;
+  sun: string | null;
+  target: number | null;
+  kwh: number | null;
+  at: string;
+}
+
 export interface NightReview {
   night: string;
   at: string;
@@ -1591,6 +1602,8 @@ export interface ControlView {
   night_slow?: Record<string, NightSlow>;
   /** The last night looked back on: planned against charged, per battery (older backends: missing). */
   night_review?: NightReview | null;
+  /** The last night Joe left alone and why (older backends: missing). */
+  last_night?: NightLeft | null;
   /** Batteries held back by a setting that is not Joe's, by id – only while it lasts (older backends: missing). */
   stuck?: Record<string, BatteryStuck>;
   /** The owner's automations that write to a battery and are switched on (their names). They are the owner's: Joe only says so. */

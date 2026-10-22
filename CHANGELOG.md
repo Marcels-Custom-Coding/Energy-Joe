@@ -3,6 +3,16 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.32
+
+- **Ein Puffer macht aus einer Nacht, die sich lohnt, kein „nichts“ mehr.** Die Mindestersparnis habe ich bisher am Ziel samt Puffer geprüft. Stand der gelernte Puffer am Maximum, verdoppelte er das Ziel (bei dir von 47 auf 83 %), die Ersparnis fiel unter 5 ct, und ich ließ die ganze Nacht aus: beide Speicher leer, das Haus zog bis zum Morgen 1,5 kW aus dem Netz, so in den Nächten zum 19., 20. und 22.10. Jetzt prüfe ich die Ersparnis am Optimum. Lohnt sich der Puffer obendrauf nicht mehr, lade ich das Optimum, nicht nichts.
+- **Unmögliche Stunden fliegen raus.** In deinem Verlauf stand für 18 Uhr ein Mittelwert von 133 kWh in einer Stunde, der Modelltag hatte 170 statt rund 40 kWh, und daraus hatte ich den Puffer gelernt. Eine Stunde mit mehr als 100 kWh oder mit einem Vielfachen dessen, was dein Verbrauchssensor sah, zählt jetzt als Zählfehler: Der Sensor steht ein, und eine live gezählte Stunde lese ich aus Home Assistant neu. Woher der Ausreißer kam, habe ich nicht gefunden; in Home Assistants Statistiken ist er nicht.
+- **Der Verlauf wird einmal neu gelesen**, die letzten 56 Tage aus Home Assistants Statistiken. Der gelernte Puffer fängt dabei von vorn an, die Rückblicke der gelesenen Tage auch, und „hatte gespart“ rechnet sich daraus neu.
+- **Eine Nacht, die ich auslasse, steht im Protokoll und im Logbuch**, mit Grund: Ersparnis unter deiner Mindestersparnis, die Speicher reichen bis die Sonne übernimmt, über dem Höchstpreis, von dir ausgesetzt, abgelehnt oder keine Antwort. Die Übersicht sagt es bei „Was es gebracht hätte“ auch am Morgen danach noch.
+- **Die Diagnose-Datei trägt die Stunden der letzten 14 Tage**, damit so ein Ausreißer beim nächsten Mal zu finden ist.
+- Der Hinweis unter Geräte › Netz & Sonne dreht sich um, wenn deine Bilanz weit über dem Sensor liegt: Dann ist die Bilanz verdächtig, nicht der Sensor.
+- Nicht geprüft an echter Anlage: alles davon. Ob die Nacht lädt, zeigt sich um Mitternacht im Protokoll.
+
 ## 0.9.31
 
 - **Übergabe nur nach dem Zähler.** Wer dran ist, bleibt dran, bis er nichts mehr gibt oder nichts mehr nimmt. Gibt der aktive Speicher 20 Sekunden lang nichts, während das Haus über 150 W braucht, übernimmt der nächste; nimmt er 20 Sekunden lang nichts, während das Haus einspeist, ebenso. Dafür schaue ich alle 5 Sekunden auf den Zähler, nicht mehr nur jede Minute. Keine Übergabe mehr nach Prozent (der BYD lief gestern Nacht bis 12,6 % und wurde dann gesperrt, obwohl er bis 11 % konnte) und keine mehr nach der Reihenfolge: Die sagt nur, wer als Nächster kommt. Die eigene Untergrenze zählt weiter als leer, denn die ist deine Entscheidung.

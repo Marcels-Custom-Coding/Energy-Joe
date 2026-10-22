@@ -203,6 +203,12 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
   if (entry.kind === "released" && entry.reason === "day_buffer") {
     return t("log.released.day_buffer", vars);
   }
+  if (entry.kind === "night_none") {
+    // A night left alone: why (the plan's reason or the owner's), the sun's time and what was planned.
+    const sun = typeof entry.sun === "string" ? entry.sun.slice(11, 16) : "–";
+    const kwh = typeof entry.kwh === "number" ? formatNumber(t.lang, entry.kwh, 1) : "–";
+    return t.optional(`log.night_none.${String(entry.why)}`, { ...vars, sun, kwh }) ?? t("log.night_none", { ...vars, sun, kwh });
+  }
   if (entry.kind === "surplus_end") {
     return t.optional(`log.surplus_end.${String(entry.reason)}`, vars) ?? t("log.surplus_end", vars);
   }

@@ -245,6 +245,21 @@ def async_note(
     )
 
 
+def async_line(hass: HomeAssistant, message: str) -> None:
+    """A line of Joe's own in the logbook, with no entity (a decision)."""
+    if not hass.services.has_service("logbook", "log"):
+        return
+    hass.async_create_task(
+        hass.services.async_call(
+            "logbook",
+            "log",
+            {"name": "Energy Joe", "message": message, "domain": "energy_joe"},
+            blocking=False,
+        ),
+        eager_start=False,
+    )
+
+
 async def settle(seconds: float) -> None:
     """Give a device time between commands (tests replace this)."""
     await asyncio.sleep(seconds)

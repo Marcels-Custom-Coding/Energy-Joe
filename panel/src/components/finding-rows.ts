@@ -567,7 +567,10 @@ function homeNotes(t: Translate, config: JoeConfig): TemplateResult[] {
   const check = config.learned.home_check;
   if (check && check.calc_kwh > 0) {
     const off = (check.sensor_kwh - check.calc_kwh) / check.calc_kwh;
-    if (Math.abs(off) >= 0.1) {
+    if (off <= -0.5) {
+      // Half or less of the balance on the sensor: no small solar system explains that, an hour was counted wrong.
+      notes.push(infoNote(t("review.home.off_balance", { days: check.days, pct: formatNumber(t.lang, -off * 100, 0) })));
+    } else if (Math.abs(off) >= 0.1) {
       notes.push(
         infoNote(
           t("review.home.off", {

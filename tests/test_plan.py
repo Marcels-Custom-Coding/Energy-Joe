@@ -519,3 +519,23 @@ def test_grid_first_may_wait_longer() -> None:
     assert grid["day"] is not None
     if saving["day"] is not None:
         assert grid["day"]["defer_until"] >= saving["day"]["defer_until"]
+
+
+def test_the_buffer_never_turns_a_night_that_pays_into_nothing() -> None:
+    """A learned buffer that eats the saving is dropped; the optimum stays.
+
+    Once a buffer at its maximum doubled a target and the saving fell under
+    the minimum: Joe left the whole night alone with both batteries empty.
+    """
+    plain = make_plan(plan_input(solar=10, soc=12, min_saving=0.05))
+    assert plain["kind"] == "charge"
+    assert plain["cost"]["saving"] >= 0.05
+    buffered = make_plan(plan_input(solar=10, soc=12, buffer=3.0, min_saving=0.05))
+    assert buffered["kind"] == "charge"
+    assert buffered["target"] == plain["optimum"]
+    assert "buffer_dropped" in buffered["notes"]
+    assert "small_saving" not in buffered["reasons"]
+    # A buffer that still pays stays on top.
+    kept = make_plan(plan_input(solar=8, soc=15, buffer=0.5, min_saving=0.05))
+    assert kept["target"] > kept["optimum"]
+    assert "buffer_dropped" not in kept["notes"]
