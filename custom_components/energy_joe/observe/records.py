@@ -20,6 +20,9 @@ from homeassistant.util import dt as dt_util
 COMPLETE = 0.9
 # Fields only a live watch can know; history keeps them when it fills an hour.
 CONTEXT_FIELDS = ("temp", "present", "fc_today", "fc_tomorrow", "fc_remaining")
+# No home takes this much in an hour (100 kW for a full hour): more is a
+# counting error, not consumption.
+IMPLAUSIBLE_KWH = 100.0
 
 
 @dataclass(slots=True)
@@ -159,6 +162,19 @@ def compose(start: datetime, parts: HourParts, source: str) -> dict[str, Any]:
     elif parts.home is not None:
         coverages.append(parts.home.coverage)
         home = sensor
+    # A balance far beyond anything a home can take, or several times what
+    # its own consumption sensor saw, is a counting error (a counter that
+    # jumped, a reading in the wrong unit), not consumption: the sensor
+    # stands in where it can, else the hour has no consumption. A live hour
+    # counts as incomplete then, so the history reads it again.
+    if home is not None and (
+        home > IMPLAUSIBLE_KWH or (sensor is not None and home > 4 * sensor + 20)
+    ):
+        record["home_implausible"] = round(home, 4)
+        record.pop("home_calc", None)
+        home = sensor if sensor is not None and 0 <= sensor <= IMPLAUSIBLE_KWH else None
+        if source == "live":
+            coverages.append(0.0)
 
     for name, value in (
         ("home", home),

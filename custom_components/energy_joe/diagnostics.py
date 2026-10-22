@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
 
 from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.util import dt as dt_util
 
 from .runtime import DATA_RUNTIME
 
@@ -86,11 +88,38 @@ async def async_get_config_entry_diagnostics(
     if isinstance(state.get("mailbox"), dict):
         state["mailbox"] = async_redact_data(state["mailbox"], TO_REDACT)
     observe = state.get("observe", {})
+    # The hours of the last two weeks as stored (energies, levels, coverage,
+    # what was read and what was marked impossible): enough to see a
+    # consumption gone wrong. Who was at home only by number.
+    today = dt_util.now().date()
+    recent = await runtime.history.async_days(
+        (today - timedelta(days=14)).isoformat(), today.isoformat()
+    )
+    days: dict[str, Any] = {}
+    for day, data in recent.items():
+        hours = []
+        for hour in data.get("hours") or []:
+            item = dict(hour)
+            if isinstance(item.get("present"), dict):
+                item["present"] = {
+                    ids.get(key, REDACTED): value
+                    for key, value in item["present"].items()
+                }
+            hours.append(item)
+        days[day] = {
+            "hours": hours,
+            "workday": data.get("workday"),
+            "fc": data.get("fc"),
+        }
     return {
         "loaded": True,
         "state": state,
         "config": async_redact_data(config, TO_REDACT),
-        "history": {**runtime.history.overview(), "months": runtime.history.months},
+        "history": {
+            **runtime.history.overview(),
+            "months": runtime.history.months,
+            "recent": days,
+        },
         "observe": observe,
         # What Joe changed and still has to put back (entity ids and values),
         # his log, what several batteries do together (as stored and as the

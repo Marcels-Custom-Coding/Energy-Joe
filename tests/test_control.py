@@ -928,3 +928,45 @@ async def test_the_morning_lets_go_when_the_sun_lags(
     live.data["day_released"] = None
     await live.async_check()
     assert hass.states.get("number.charge_limit").state == "100"
+
+
+async def test_a_night_left_alone_is_told_once(hass: HomeAssistant, freezer) -> None:
+    """Why Joe does nothing tonight goes into his log, the logbook and the
+    panel as the night begins, once; by morning the plan's own words are gone."""
+    freezer.move_to("2026-10-22T00:00:30+02:00")
+    install_devices(hass, byd_soc=12, venus_soc=12)
+    lines: list[dict[str, Any]] = []
+    hass.services.async_register(
+        "logbook", "log", lambda call: lines.append(dict(call.data))
+    )
+    config = configured(fronius_battery(), venus_battery())
+    plan = night_plan(dt_util.now(), kind="none", target=83)
+    plan.update(
+        reasons=["small_saving"],
+        grid_charge_kwh=8.77,
+        sun_takes_over="2026-10-22T09:30+02:00",
+    )
+    executor, _ = await make_executor(hass, config, plan)
+    await executor.async_check()
+    await hass.async_block_till_done()
+    assert executor.status["reason"] == "nothing"
+    told = [e for e in executor.data["log"] if e["kind"] == "night_none"]
+    assert len(told) == 1
+    assert told[0]["why"] == "small_saving"
+    assert told[0]["target"] == 83
+    assert told[0]["kwh"] == 8.77
+    assert executor.view["last_night"]["why"] == "small_saving"
+    assert executor.view["last_night"]["night"] == "2026-10-22T00:00:00+02:00"
+    assert lines == [
+        {
+            "name": "Energy Joe",
+            "message": "Night plan: nothing tonight – the saving would stay below your minimum",
+            "domain": "energy_joe",
+        }
+    ]
+    # Said once a night.
+    freezer.move_to("2026-10-22T01:00:30+02:00")
+    await executor.async_check()
+    await hass.async_block_till_done()
+    assert len([e for e in executor.data["log"] if e["kind"] == "night_none"]) == 1
+    assert len(lines) == 1

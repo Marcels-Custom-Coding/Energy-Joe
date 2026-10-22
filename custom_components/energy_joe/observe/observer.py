@@ -445,6 +445,8 @@ class JoeObserver:
             await self._store.async_put_hours(records, force=rebuild)
             self._store.set_read_back(days)
             if rebuild:
+                # What the old hours taught about the nights goes with them.
+                await self._store.async_forget_evaluations(day_key(start), day_key(end))
                 self._store.set_format(HOURS_FORMAT)
             state = (
                 "done"

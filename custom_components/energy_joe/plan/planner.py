@@ -457,9 +457,19 @@ def _plan(inp: PlanInput) -> dict[str, Any]:
     reasons: list[str] = []
 
     # The buffer: more energy above the reserve while Joe is still learning.
+    # Only as long as the night still pays with it; otherwise the optimum
+    # alone (a buffer that ate the saving once turned a whole night into
+    # nothing, see "small_saving" below).
     target = optimum
+    notes: list[str] = []
     if optimum > inp.reserve:
         target = min(highest, round(optimum + inp.buffer * (optimum - inp.reserve)))
+        if target > optimum:
+            worth = base.cost - simulate(inp, capacity * optimum / 100).cost
+            buffered = base.cost - simulate(inp, capacity * target / 100).cost
+            if buffered < inp.min_saving <= worth:
+                target = optimum
+                notes.append("buffer_dropped")
     if (
         inp.force_target is not None
         and target < inp.force_target
@@ -685,7 +695,7 @@ def _plan(inp: PlanInput) -> dict[str, Any]:
         # without one: the settings show the suggestion).
         "morning_buffer": buffer,
         "reasons": reasons,
-        "notes": list(inp.notes),
+        "notes": [*inp.notes, *notes],
         "meta": inp.meta,
         "actions": [
             {**action, "cost": round(_action_cost(inp, action), 2)}
