@@ -312,3 +312,62 @@ async def test_removing_joe_puts_the_values_back_first(
     ]
     assert "number.stuck" in message and "100" in message
     assert "number.reserve" not in message
+
+
+async def test_the_factory_reset_starts_over(
+    ready_hass: HomeAssistant,
+    hass_ws_client: WebSocketGenerator,
+    hass_storage: dict[str, Any],
+) -> None:
+    """Everything back to the first day: the values go back, all data is
+    gone, and Joe is up again with the setup to do."""
+    hass = ready_hass
+    attributes = {"min": 0, "max": 100, "step": 1}
+    hass.states.async_set("input_number.reserve", "30", attributes)
+
+    def keep(call: Any) -> None:
+        entity_id = call.data["entity_id"]
+        entity_id = entity_id[0] if isinstance(entity_id, list) else entity_id
+        hass.states.async_set(entity_id, str(float(call.data["value"])), attributes)
+
+    # Joe's own number entities load the real "number" services: a helper instead.
+    hass.services.async_register("input_number", "set_value", keep)
+    lines: list[str] = []
+    hass.services.async_register(
+        "logbook", "log", lambda call: lines.append(call.data["message"])
+    )
+    entry = MockConfigEntry(domain=DOMAIN, data={})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    runtime = hass.data[DOMAIN]
+    runtime.async_update_config({"rules": {"reserve_soc": 20}}, "user")
+    runtime.async_set_onboarding(step="done", completed=True)
+    runtime.executor.data["saved"] = {"input_number.reserve": 5.0}
+    await runtime.executor.async_save()
+    await runtime.history.async_put_hours(
+        [{"start": "2026-10-20T18:00:00+02:00", "src": "live", "cov": 1.0, "home": 1.0}]
+    )
+    await hass.async_block_till_done()
+
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id({"type": f"{DOMAIN}/reset_all"})
+    msg = await client.receive_json()
+    assert msg["success"]
+    assert msg["result"] == {"left": {}}
+    await hass.async_block_till_done()
+
+    assert hass.states.get("input_number.reserve").state == "5.0"
+    # The lever's own line and the reset's, whichever the loop ran first.
+    assert set(lines) == {
+        "reserve → 5: Put back",
+        "Factory reset: everything put back and deleted",
+    }
+    fresh = hass.data[DOMAIN]
+    assert fresh is not runtime
+    assert fresh.state["onboarding"]["completed"] is False
+    assert fresh.config["rules"]["reserve_soc"] == 10
+    assert fresh.history.overview()["day_count"] == 0
+    for key in (f"{DOMAIN}.state", f"{DOMAIN}.config", f"{DOMAIN}.control"):
+        assert key not in hass_storage
+    assert await hass.config_entries.async_unload(entry.entry_id)

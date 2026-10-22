@@ -21,6 +21,10 @@ export class JoeSettingsMaintenance extends SettingsSection {
   /** A backup file read and waiting for the user's yes. */
   @state() private backup?: { name: string; when: string; config: Record<string, unknown> };
   @state() private backupNote?: { ok: boolean; text: string };
+  /** The factory reset: asked, running, and what came of it. */
+  @state() private confirmReset = false;
+  @state() private resetting = false;
+  @state() private resetNote?: { ok: boolean; text: string };
 
   static styles = [
     shared,
@@ -46,6 +50,12 @@ export class JoeSettingsMaintenance extends SettingsSection {
       .group > .note {
         margin-bottom: 10px;
       }
+      .group.danger {
+        margin-top: 24px;
+      }
+      .group.danger h2 {
+        color: var(--error-color);
+      }
     `,
   ];
 
@@ -55,7 +65,7 @@ export class JoeSettingsMaintenance extends SettingsSection {
       return nothing;
     }
     return html`<div class="list">
-      ${this.renderObserve(t, joe)} ${this.renderBackup(t)} ${this.renderSetup(t)}
+      ${this.renderObserve(t, joe)} ${this.renderBackup(t)} ${this.renderSetup(t)} ${this.renderReset(t)}
     </div>`;
   }
 
@@ -245,6 +255,63 @@ export class JoeSettingsMaintenance extends SettingsSection {
         >
       </div>
     </section>`;
+  }
+
+  /** Everything back to the first day: a question first, then Joe puts back, deletes and starts over. */
+  private renderReset(t: Translate): TemplateResult {
+    return html`<section class="group danger" data-anchor="reset">
+      <h2>${t("settings.reset")}</h2>
+      <div class="row" data-tipped>
+        <div>
+          <div class="name"><b>${t("settings.reset.all")}</b>${tip(t, "reset_all")}</div>
+          <small>${t("settings.reset.hint")}</small>
+        </div>
+        <button type="button" class="btn btn-danger" ?disabled=${this.resetting || this.confirmReset} @click=${() => (this.confirmReset = true)}>
+          ${t("settings.reset.button")}
+        </button>
+      </div>
+      ${this.confirmReset
+        ? html`<div class="note warn">
+            <ha-icon icon="mdi:alert-outline"></ha-icon>
+            <span>
+              ${this.resetting ? t("settings.reset.working") : t("settings.reset.confirm")}
+              <span class="confirm">
+                <button type="button" class="btn btn-danger" ?disabled=${this.resetting} @click=${() => void this.resetAll()}>
+                  ${t("settings.reset.go")}
+                </button>
+                <button type="button" class="btn btn-ghost" ?disabled=${this.resetting} @click=${() => (this.confirmReset = false)}>
+                  ${t("common.cancel")}
+                </button>
+              </span>
+            </span>
+          </div>`
+        : nothing}
+      ${this.resetNote
+        ? html`<div class="note ${this.resetNote.ok ? "ok" : "warn"}">
+            <ha-icon icon=${this.resetNote.ok ? "mdi:check" : "mdi:alert-outline"}></ha-icon><span>${this.resetNote.text}</span>
+          </div>`
+        : nothing}
+    </section>`;
+  }
+
+  private async resetAll(): Promise<void> {
+    const t = this.t!;
+    this.resetting = true;
+    try {
+      const result = await this.hass!.callWS<{ left?: Record<string, unknown> }>({ type: "energy_joe/reset_all" });
+      const left = Object.keys(result?.left ?? {});
+      this.confirmReset = false;
+      this.resetNote = left.length
+        ? { ok: false, text: t("settings.reset.left", { entities: left.join(", ") }) }
+        : { ok: true, text: t("settings.reset.done") };
+      // Joe is up again with an empty memory; the page follows him to the setup.
+      window.setTimeout(() => window.location.reload(), left.length ? 8000 : 2500);
+    } catch (err) {
+      this.confirmReset = false;
+      this.resetNote = { ok: false, text: t("settings.backup.failed", { error: String((err as { message?: string })?.message ?? err) }) };
+    } finally {
+      this.resetting = false;
+    }
   }
 }
 

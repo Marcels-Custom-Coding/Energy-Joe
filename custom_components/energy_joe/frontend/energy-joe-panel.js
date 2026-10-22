@@ -1,4 +1,4 @@
-import { $ as e, A as t, B as n, C as r, D as i, E as a, F as o, G as s, H as c, I as l, J as u, K as d, L as f, M as p, N as m, O as h, P as g, Q as ee, R as _, S as te, T as ne, U as re, V as v, W as ie, X as ae, Y as oe, Z as y, _ as se, a as ce, at as b, b as le, c as ue, ct as de, d as x, dt as fe, et as S, f as C, ft as w, g as pe, h as me, i as he, it as T, j as ge, k as _e, l as E, lt as D, m as ve, n as ye, nt as be, o as xe, ot as O, p as Se, q as k, r as A, rt as Ce, s as we, st as j, t as Te, tt as M, u as Ee, ut as De, v as Oe, w as ke, x as N, y as Ae, z as je } from "./tokens-DgO_Tycl.js";
+import { $ as e, A as t, B as n, C as r, D as i, E as a, F as o, G as s, H as c, I as l, J as u, K as d, L as f, M as p, N as m, O as h, P as g, Q as ee, R as _, S as te, T as ne, U as re, V as v, W as ie, X as ae, Y as oe, Z as y, _ as se, a as ce, at as b, b as le, c as ue, ct as de, d as x, dt as fe, et as S, f as C, ft as w, g as pe, h as me, i as he, it as T, j as ge, k as _e, l as E, lt as D, m as ve, n as ye, nt as be, o as xe, ot as O, p as Se, q as k, r as A, rt as Ce, s as we, st as j, t as Te, tt as M, u as Ee, ut as De, v as Oe, w as ke, x as N, y as Ae, z as je } from "./tokens-DmTBcJCk.js";
 //#region src/assets.ts
 var Me = import.meta.url.replace(/[^/]*$/, ""), Ne = (e) => `${Me}${e}`, Pe = /* @__PURE__ */ new Set(["welcome"]), Fe = /* @__PURE__ */ new Set([
 	"night-charge",
@@ -23972,6 +23972,9 @@ u("joe-settings-about", Ru);
 //#endregion
 //#region src/pages/settings/maintenance.ts
 var zu = "/config/integrations/integration/energy_joe", Bu = class extends Au {
+	constructor(...e) {
+		super(...e), this.confirmReset = !1, this.resetting = !1;
+	}
 	static {
 		this.styles = [
 			k,
@@ -23997,13 +24000,19 @@ var zu = "/config/integrations/integration/energy_joe", Bu = class extends Au {
       .group > .note {
         margin-bottom: 10px;
       }
+      .group.danger {
+        margin-top: 24px;
+      }
+      .group.danger h2 {
+        color: var(--error-color);
+      }
     `
 		];
 	}
 	render() {
 		let { t: e, state: t } = this;
 		return !e || !t ? j : D`<div class="list">
-      ${this.renderObserve(e, t)} ${this.renderBackup(e)} ${this.renderSetup(e)}
+      ${this.renderObserve(e, t)} ${this.renderBackup(e)} ${this.renderSetup(e)} ${this.renderReset(e)}
     </div>`;
 	}
 	renderObserve(e, t) {
@@ -24177,8 +24186,60 @@ var zu = "/config/integrations/integration/energy_joe", Bu = class extends Au {
       </div>
     </section>`;
 	}
+	renderReset(e) {
+		return D`<section class="group danger" data-anchor="reset">
+      <h2>${e("settings.reset")}</h2>
+      <div class="row" data-tipped>
+        <div>
+          <div class="name"><b>${e("settings.reset.all")}</b>${l(e, "reset_all")}</div>
+          <small>${e("settings.reset.hint")}</small>
+        </div>
+        <button type="button" class="btn btn-danger" ?disabled=${this.resetting || this.confirmReset} @click=${() => this.confirmReset = !0}>
+          ${e("settings.reset.button")}
+        </button>
+      </div>
+      ${this.confirmReset ? D`<div class="note warn">
+            <ha-icon icon="mdi:alert-outline"></ha-icon>
+            <span>
+              ${this.resetting ? e("settings.reset.working") : e("settings.reset.confirm")}
+              <span class="confirm">
+                <button type="button" class="btn btn-danger" ?disabled=${this.resetting} @click=${() => void this.resetAll()}>
+                  ${e("settings.reset.go")}
+                </button>
+                <button type="button" class="btn btn-ghost" ?disabled=${this.resetting} @click=${() => this.confirmReset = !1}>
+                  ${e("common.cancel")}
+                </button>
+              </span>
+            </span>
+          </div>` : j}
+      ${this.resetNote ? D`<div class="note ${this.resetNote.ok ? "ok" : "warn"}">
+            <ha-icon icon=${this.resetNote.ok ? "mdi:check" : "mdi:alert-outline"}></ha-icon><span>${this.resetNote.text}</span>
+          </div>` : j}
+    </section>`;
+	}
+	async resetAll() {
+		let e = this.t;
+		this.resetting = !0;
+		try {
+			let t = await this.hass.callWS({ type: "energy_joe/reset_all" }), n = Object.keys(t?.left ?? {});
+			this.confirmReset = !1, this.resetNote = n.length ? {
+				ok: !1,
+				text: e("settings.reset.left", { entities: n.join(", ") })
+			} : {
+				ok: !0,
+				text: e("settings.reset.done")
+			}, window.setTimeout(() => window.location.reload(), n.length ? 8e3 : 2500);
+		} catch (t) {
+			this.confirmReset = !1, this.resetNote = {
+				ok: !1,
+				text: e("settings.backup.failed", { error: String(t?.message ?? t) })
+			};
+		} finally {
+			this.resetting = !1;
+		}
+	}
 };
-d([T()], Bu.prototype, "backup", void 0), d([T()], Bu.prototype, "backupNote", void 0), u("joe-settings-maintenance", Bu);
+d([T()], Bu.prototype, "backup", void 0), d([T()], Bu.prototype, "backupNote", void 0), d([T()], Bu.prototype, "confirmReset", void 0), d([T()], Bu.prototype, "resetting", void 0), d([T()], Bu.prototype, "resetNote", void 0), u("joe-settings-maintenance", Bu);
 //#endregion
 //#region src/pages/settings/notify.ts
 var Vu = class extends Au {
@@ -24890,6 +24951,14 @@ var Ku = [
 			tab: "settings",
 			section: "maintenance",
 			id: "diagnostics"
+		}
+	},
+	{
+		id: "reset_all",
+		to: {
+			tab: "settings",
+			section: "maintenance",
+			id: "reset"
 		}
 	},
 	{
