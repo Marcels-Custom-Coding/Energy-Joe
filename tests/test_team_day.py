@@ -87,34 +87,43 @@ def test_the_forecast_says_when_the_sun_is_more_than_the_venus_takes() -> None:
     )
 
 
-def test_charging_along_by_the_meter_has_a_hysteresis() -> None:
+def test_charging_along_starts_and_ends_with_the_surplus_seen_for_a_while() -> None:
     now = at("2026-06-20", 12)
     store: dict[str, Any] = {}
-    # Export for less than a minute: not yet.
-    assert not team_day.along_step(store, True, 800, 3.3, 2.5, now)
-    assert not team_day.along_step(
-        store, True, 800, 3.3, 2.5, now + timedelta(seconds=30)
-    )
-    assert team_day.along_step(store, True, 800, 3.3, 2.5, now + timedelta(seconds=60))
-    # Both charge, nothing goes to the grid any more: it stays while the sun
-    # is more than the Venus alone takes.
-    later = now + timedelta(minutes=5)
-    assert team_day.along_step(store, True, 0, 3.0, 2.5, later)
-    # Less sun for a while (below 80 % of 2.5 kW): alone again after 10 min.
-    assert team_day.along_step(store, True, 0, 1.5, 2.5, later + timedelta(minutes=1))
-    assert team_day.along_step(store, True, 0, 1.5, 2.5, later + timedelta(minutes=9))
-    assert not team_day.along_step(
-        store, True, 0, 1.5, 2.5, later + timedelta(minutes=11)
-    )
-    # It may not (the daytime cap, a cloud): over at once.
-    assert not team_day.along_step(store, True, 800, 3.3, 2.5, later)
-    assert team_day.along_step(
-        store, True, 800, 3.3, 2.5, later + timedelta(minutes=12)
-    )
-    assert not team_day.along_step(
-        store, False, 800, 3.3, 2.5, later + timedelta(minutes=13)
-    )
-    assert store == {}
+    # Surplus for less than five minutes: not yet.
+    assert not team_day.along_step(store, True, 1.2, now)
+    assert not team_day.along_step(store, True, 1.2, now + timedelta(minutes=4))
+    assert team_day.along_step(store, True, 1.2, now + timedelta(minutes=5))
+    assert store["on"] is True
+    # Little surplus for a while: over after ten minutes, not before.
+    later = now + timedelta(minutes=20)
+    assert team_day.along_step(store, True, 0.4, later)
+    assert team_day.along_step(store, True, 0.4, later + timedelta(minutes=9))
+    assert not team_day.along_step(store, True, 0.4, later + timedelta(minutes=10))
+    # After an end the next start waits ten minutes, whatever the sun does,
+    # and the five minutes of surplus come on top.
+    assert not team_day.along_step(store, True, 3.0, later + timedelta(minutes=15))
+    assert not team_day.along_step(store, True, 3.0, later + timedelta(minutes=20))
+    assert not team_day.along_step(store, True, 3.0, later + timedelta(minutes=24))
+    assert team_day.along_step(store, True, 3.0, later + timedelta(minutes=25))
+    # It may not (a cloud turned the flow, the daytime cap): over at once.
+    assert not team_day.along_step(store, False, 3.0, later + timedelta(minutes=26))
+    assert store.get("off_at")
+    assert not team_day.along_step(store, True, 3.0, later + timedelta(minutes=35))
+
+
+def test_the_fixed_power_is_the_share_by_room_within_bounds() -> None:
+    # 3 kW surplus, the active one with 6 kWh room, the next with 4 kWh: 1.2 kW.
+    assert team_day.along_power(3.0, 6.0, 4.0, 2.5) == pytest.approx(1.2)
+    # Never more than the next one takes, nor the surplus less the margin.
+    assert team_day.along_power(3.0, 1.0, 9.0, 2.5) == pytest.approx(2.5)
+    assert team_day.along_power(1.0, 1.0, 9.0, 2.5) == pytest.approx(0.7)
+    # In steps of 100 W; below 300 W nothing.
+    assert team_day.along_power(3.33, 6.0, 4.0, 2.5) == pytest.approx(1.3)
+    assert team_day.along_power(0.7, 6.0, 4.0, 2.5) == 0.0
+    # The house drew 400 W: 400 W less, in steps; too little is nothing.
+    assert team_day.along_cut(2.1, 400) == pytest.approx(1.7)
+    assert team_day.along_cut(0.6, 400) == 0.0
 
 
 def test_helping_starts_with_the_meter_and_ends_once_the_active_one_copes() -> None:
@@ -224,50 +233,90 @@ def test_learning_over_the_days_is_robust_and_never_forgets_in_winter() -> None:
 # --- the executor ------------------------------------------------------------------
 
 
-async def test_nobody_charges_along_until_it_comes_with_a_fixed_power(
+async def test_the_next_one_charges_along_with_a_fixed_share_of_the_surplus(
     hass: HomeAssistant, freezer
 ) -> None:
-    """More sun than the Venus takes, by the forecast and at the meter: the
-    BYD still waits (two systems regulating freely at one meter fight each
-    other); the day notes the sun lost while it had room."""
+    """More sun than the Venus takes: after five minutes of surplus the BYD
+    charges along with a fixed power, its share of the surplus by room, from
+    the sun (Fronius over Modbus: the rate below 0); the Venus regulates the
+    rest and may not discharge. A cloud with grid import cuts the power;
+    ten minutes of little surplus end it, and the BYD waits blocked again."""
     freezer.move_to("2026-06-20T10:30:00+02:00")
     install_team(hass, byd_soc=20, venus_soc=10)
-    flows(hass, grid=0, venus=2100)
-    cfg = config(team_charge_order=["venus", "byd"])
-    executor, holder = await make_executor(hass, cfg, day_plan(dt_util.now()))
+    hass.states.async_set(
+        "number.discharge_limit",
+        "100",
+        {"min": -100, "max": 100, "step": 1, "unit_of_measurement": "%"},
+    )
+    flows(hass, grid=-900, venus=2500)
+    cfg = config(
+        team_byd(adapter="fronius_modbus", limit_ref_w=5000),
+        team_venus(),
+        team_charge_order=["venus", "byd"],
+    )
+    executor, _ = await make_executor(hass, cfg, day_plan(dt_util.now()))
     await executor.async_check()
     view = executor.view["team"]
     assert view["active"] == "venus"
-    assert view["parallel"] is False
-    assert view["along"] is None and view["along_plan"] is None
+    assert view["along"] is None
     assert view["batteries"]["byd"]["why"] == "waits_full"
     assert byd_levers(hass) == ("0.0", "on", "0.0", "on")
-    # 11:00, the sun is more than the Venus takes: 900 W go to the grid.
-    freezer.move_to("2026-06-20T11:05:00+02:00")
-    flows(hass, grid=-900, venus=2500)
+    # The surplus (3.4 kW) for five minutes, seen every few seconds.
+    for _ in range(60):
+        freezer.tick(timedelta(seconds=5))
+        await executor.async_guard()
     await executor.async_check()
-    freezer.tick(timedelta(minutes=1))
+    view = executor.view["team"]
+    assert view["along"] == "fixed"
+    assert view["batteries"]["byd"]["why"] == "along"
+    assert view["batteries"]["venus"]["why"] == "active"
+    assert view["batteries"]["venus"]["discharge"] == "blocked"
+    never_opposite(view)
+    # Room: BYD 7.9 kWh, Venus 4.6 kWh – the BYD's share of 3.4 kW is 2.1 kW,
+    # 42 % of its 5 kW reference; its charge rate open, grid charging untouched.
+    assert view["along_w"] == {"byd": 2100}
+    assert byd_levers(hass) == ("100.0", "off", "-42.0", "on")
+    assert hass.states.get("switch.grid_charging").state == "on"
+    assert venus_levers(hass) == ("2500.0", "0.0", "on")
+    assert kinds(executor).count("team_along") == 1
+    assert executor.data["team"]["blocks"]["byd"]["along_w"] == 2100
+    # A cloud: the house draws 400 W from the grid for 20 seconds – 400 W less.
+    flows(hass, grid=400, venus=2500, byd=2100)
+    for _ in range(5):
+        freezer.tick(timedelta(seconds=5))
+        await executor.async_guard()
     await executor.async_check()
+    assert executor.view["team"]["along_w"] == {"byd": 1700}
+    assert byd_levers(hass)[2] == "-34.0"
+    assert "team_along_cut" in kinds(executor)
+    # Little surplus (500 W) for ten minutes: over, the BYD waits blocked
+    # again and the Venus may discharge.
+    flows(hass, grid=0, venus=200, byd=300)
+    for _ in range(13):
+        for _ in range(12):
+            freezer.tick(timedelta(seconds=5))
+            await executor.async_guard()
+        await executor.async_check()
     view = executor.view["team"]
     assert view["along"] is None
     assert view["batteries"]["byd"]["why"] == "waits_full"
-    never_opposite(view)
     assert byd_levers(hass) == ("0.0", "on", "0.0", "on")
     assert venus_levers(hass) == ("2500.0", "2500.0", "off")
-    assert "team_along" not in kinds(executor)
-    # The day so far counts the minute that went to the grid with room.
+    assert kinds(executor).count("team_along_end") == 1
+    assert "along_w" not in executor.data["team"]["blocks"]["byd"]
+    # The day so far counts the minute that went to the grid while the BYD
+    # had room, and when charging along began.
     today = executor.data["team"]["today"]
-    assert today["room_kwh"] == pytest.approx(0.9 / 60, abs=0.001)
-    assert today["along_at"] is None
-    assert today["top"] == {"byd": 20.0, "venus": 10.0}
-    # "Nur nacheinander" says the same.
-    holder["config"] = config(team_charge_order=["venus", "byd"], team_style="strict")
-    freezer.tick(timedelta(minutes=1))
-    await executor.async_check()
-    view = executor.view["team"]
-    assert view["style"] == "strict"
-    assert view["along"] is None and view["along_plan"] is None
-    assert byd_levers(hass) == ("0.0", "on", "0.0", "on")
+    assert today["room_kwh"] > 0
+    assert today["along_at"] is not None
+    # "Nur nacheinander" never lets anyone charge along.
+    holder_config = config(
+        team_byd(adapter="fronius_modbus", limit_ref_w=5000),
+        team_venus(),
+        team_charge_order=["venus", "byd"],
+        team_style="strict",
+    )
+    assert holder_config["rules"]["team_style"] == "strict"
 
 
 async def test_the_evening_look_back_learns_but_does_not_ask(

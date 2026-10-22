@@ -121,7 +121,8 @@ function reasonNow(t: Translate, team: BatteryTeam | undefined): string | null {
   const active = groupName(t, team, activeIds(team));
   const along = withWhy(team, "along");
   if (team.along && along.length) {
-    return t(`team.reason.along.${team.along}`, { active, others: groupName(t, team, along) });
+    const watts = Object.values(team.along_w ?? {}).reduce((sum, w) => sum + w, 0);
+    return t(`team.reason.along.${team.along}`, { active, others: groupName(t, team, along), watts: formatNumber(t.lang, watts, 0) });
   }
   const helps = withWhy(team, "helps");
   if (team.help && helps.length) {

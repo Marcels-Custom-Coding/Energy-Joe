@@ -3314,6 +3314,7 @@ var Pe = {
 	"team.day.on": "Am {date}",
 	"team.reason.along.forecast": "{others} lädt mit, weil jetzt mehr Sonne kommt, als {active} allein aufnehmen kann. Entladen ist für beide gesperrt – so kann keiner den anderen laden.",
 	"team.reason.along.export": "{others} lädt mit, weil gerade Sonne ins Netz ging, obwohl {others} noch Platz hat. Entladen ist für beide gesperrt – so kann keiner den anderen laden.",
+	"team.reason.along.fixed": "{others} lädt mit {watts} W fest nebenher, {active} regelt den Rest auf null am Zähler. Entladen ist für beide gesperrt – so kann keiner den anderen laden.",
 	"team.reason.help": "{others} hilft beim Entladen, weil das Haus gerade mehr braucht, als {active} liefern kann. Laden ist für beide gesperrt.",
 	"team.reason.base": "{others} liefert die Grundlast ({w} W), {active} den Rest.",
 	"team.reason.plan": "Ab {time} Uhr lädt {others} mit – laut Vorhersage kommt dann mehr Sonne, als {active} allein aufnehmen kann.",
@@ -3374,6 +3375,12 @@ var Pe = {
 	"log.team_along_end": "Mitladen beendet – wieder nacheinander",
 	"log.team_along_end.flow": "Mitladen beendet: Das Haus braucht wieder Strom – wieder nacheinander",
 	"log.team_along_end.less": "Mitladen beendet: weniger Sonne – wieder nacheinander",
+	"log.team_along.fixed": "{others} lädt mit {watts} W fest nebenher: der Anteil am Überschuss nach Platz",
+	"log.team_along_cut": "{others}: Das Haus zog aus dem Netz – nebenher nur noch {watts} W",
+	"log.team_along_end.import": "Mitladen beendet: Das Haus zog aus dem Netz – wieder nacheinander",
+	"log.team_along_end.full": "Mitladen beendet: voll – wieder nacheinander",
+	"log.team_along_end.held": "Mitladen beendet: Der Überschuss ist für die Wallbox oder den Morgen bestimmt – wieder nacheinander",
+	"log.team_along_end.handover": "Mitladen beendet: Speicherwechsel – wieder nacheinander",
 	"log.team_help": "{others} hilft beim Entladen: Das Haus braucht {power} kW, mehr als {active} liefern kann",
 	"log.team_help_end": "Große Last vorbei: {others} wartet wieder",
 	"log.team_base": "{others} liefert jetzt die Grundlast ({watts} W)",
@@ -6868,6 +6875,7 @@ var Pe = {
 	"team.day.on": "On {date}",
 	"team.reason.along.forecast": "{others} charges along because more sun is coming now than {active} can take alone. Discharging is blocked for both – so neither can charge the other.",
 	"team.reason.along.export": "{others} charges along because sun just went to the grid although {others} still has room. Discharging is blocked for both – so neither can charge the other.",
+	"team.reason.along.fixed": "{others} charges alongside at a fixed {watts} W, {active} regulates the rest to zero at the meter. Discharging is blocked for both – so neither can charge the other.",
 	"team.reason.help": "{others} helps discharging because the house needs more right now than {active} can deliver. Charging is blocked for both.",
 	"team.reason.base": "{others} supplies the base load ({w} W), {active} the rest.",
 	"team.reason.plan": "From {time} {others} charges along – the forecast says more sun is coming then than {active} can take alone.",
@@ -6928,6 +6936,12 @@ var Pe = {
 	"log.team_along_end": "Charging along ended – one after the other again",
 	"log.team_along_end.flow": "Charging along ended: the house needs power again – one after the other again",
 	"log.team_along_end.less": "Charging along ended: less sun – one after the other again",
+	"log.team_along.fixed": "{others} charges alongside at a fixed {watts} W: its share of the surplus by room",
+	"log.team_along_cut": "{others}: the house drew from the grid – alongside only {watts} W now",
+	"log.team_along_end.import": "Charging along over: the house drew from the grid – one after the other again",
+	"log.team_along_end.full": "Charging along over: full – one after the other again",
+	"log.team_along_end.held": "Charging along over: the surplus is meant for the wallbox or the morning – one after the other again",
+	"log.team_along_end.handover": "Charging along over: hand-over – one after the other again",
 	"log.team_help": "{others} helps discharging: the house needs {power} kW, more than {active} can deliver",
 	"log.team_help_end": "Big load over: {others} waits again",
 	"log.team_base": "{others} now supplies the base load ({watts} W)",
@@ -7782,14 +7796,14 @@ function qe(e, t, n) {
 }
 //#endregion
 //#region src/define.ts
-var Je = "0.9.33";
+var Je = "0.9.34";
 function V(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Je, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.33" && Xe();
+	n.joeVersion !== "0.9.34" && Xe();
 }
 var Ye = !1;
 function Xe() {

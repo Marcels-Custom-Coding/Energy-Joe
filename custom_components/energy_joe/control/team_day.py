@@ -9,15 +9,22 @@ its limit while the house draws from the grid and the other one waits full.
 
 So, in "Automatisch" (the default):
 
-- Charging along: from the hour on in which the forecast surplus (sun minus
-  what the house needs, hour by hour) is more than the active group can
-  take while a later group still has room, the later groups may charge,
-  too, and as soon as the meter shows it (the house gives to the grid while
-  the active group is free to charge and not full, for a minute). Only
-  charging: discharging stays blocked for all of them (the active one too),
-  so no battery can charge from another. On a cloud they are blocked again
-  at once; once the surplus is clearly below what the active group takes
-  alone for a while, the next one waits again.
+- Charging along with a fixed power: once the surplus (what all batteries
+  take plus what goes to the grid, its lowest value over the last two
+  minutes) stayed above ALONG_START_KW for ALONG_START, the next group with
+  room charges, too, but never regulating: Joe sets it a fixed power, its
+  share of the surplus by room (so both get full at about the same time),
+  within what it can take and what leaves the active group a margin to
+  regulate the rest to 0 at the meter. Worked out every check, written anew
+  once it moved by ALONG_CHANGE_KW. The active group may not discharge
+  meanwhile (it would feed the other one). Once the house drew from the
+  grid for a while (team.quick "import", a cloud), the power is cut by what
+  was drawn and the cut holds for ALONG_HOLD; below the least worth setting
+  it ends. It ends, too, once the surplus stayed below ALONG_START_KW for
+  ALONG_END, with the flow, when the next one is full, or when something
+  holds the surplus back on purpose; after an end the next start waits
+  ALONG_HOLD. Only a group whose charging power Joe can set (a forced-charge
+  mode with a power, Fronius over Modbus with its reference).
 - Helping: when the house needs more for a while than the active group can
   give (grid import although it discharges near its limit), the next group
   may discharge too; charging stays blocked for both. Once the need is
@@ -49,15 +56,26 @@ from .team import Group
 
 STYLES = ("auto", "strict", "base")
 
-# Charging along: export (W) that counts, for this long; the forecast surplus
-# beyond the active group's power that counts (kW).
+# The day's note: export (W) that counts as sun lost while a group had room;
+# the forecast surplus beyond the active group's power that counts (kW).
 ALONG_W = 200.0
-ALONG_DWELL = timedelta(seconds=60)
 OVER_KW = 0.1
-# Alone again once the surplus is below this share of the active group's
-# power for this long (hysteresis).
-ALONG_BACK = 0.8
-ALONG_OFF = timedelta(minutes=10)
+# Charging along with a fixed power (executor._team_along): the surplus
+# over this span, its lowest value; the surplus to start (for this long)
+# and to stay (below it for this long: the end); a phase holds at least this
+# long after an end (and a cut).
+ALONG_SPAN = timedelta(minutes=2)
+ALONG_START_KW = 0.6
+ALONG_START = timedelta(minutes=5)
+ALONG_END = timedelta(minutes=10)
+ALONG_HOLD = timedelta(minutes=10)
+# Left to the active group to regulate with (kW); below ALONG_MIN_KW the
+# second one gets nothing; the power in steps, written anew once it moved
+# by ALONG_CHANGE_KW.
+ALONG_MARGIN_KW = 0.3
+ALONG_MIN_KW = 0.3
+ALONG_STEP_KW = 0.1
+ALONG_CHANGE_KW = 0.2
 # Helping: the house drew from the grid for a while (team.quick "import")
 # although the active group gives – at its limit or only a trickle, it does
 # not matter –: the next one helps. It waits again once the house drew
@@ -161,45 +179,74 @@ def overflow(
     return start, until
 
 
-def along_step(
-    store: dict[str, Any],
-    can: bool,
-    export_w: float,
-    surplus_kw: float,
-    active_kw: float,
-    now: datetime,
-) -> bool:
-    """Whether the next group charges along because of what the meter shows.
+def along_power(
+    surplus_kw: float, room_active: float, room_second: float, max_second_kw: float
+) -> float:
+    """The fixed charging power (kW) for the second group: its share of the
+    surplus by room (both get full at about the same time), within what it
+    can take and what leaves the active group its margin; in steps, 0 below
+    the least worth setting."""
+    total = room_active + room_second
+    share = room_second / total if total > 0 else 0.0
+    value = min(share * surplus_kw, max_second_kw, surplus_kw - ALONG_MARGIN_KW)
+    value = math.floor(value / ALONG_STEP_KW + 1e-9) * ALONG_STEP_KW
+    return round(value, 3) if value >= ALONG_MIN_KW - 1e-9 else 0.0
 
-    `can`: the active group is free to charge and not full, a later one has
-    room, the house gives (the flow), and nothing holds the surplus back on
-    purpose (the daytime cap for evcc, the grid-friendly morning). It starts
-    once the house gave at least ALONG_W to the grid for ALONG_DWELL and ends
-    once the surplus stayed below ALONG_BACK of the active group's power for
-    ALONG_OFF (or `can` ends).
+
+def along_cut(kw: float, imported_w: float) -> float:
+    """The power after the house drew from the grid: less by what was drawn,
+    in steps; 0 below the least worth setting."""
+    value = math.floor((kw - imported_w / 1000) / ALONG_STEP_KW + 1e-9) * ALONG_STEP_KW
+    return round(value, 3) if value >= ALONG_MIN_KW - 1e-9 else 0.0
+
+
+def along_step(
+    store: dict[str, Any], can: bool, surplus_kw: float, now: datetime
+) -> bool:
+    """Whether the second group charges along now (the phase), from the
+    surplus seen for a while.
+
+    `can`: surplus, a later group with room whose power Joe can set, the
+    active one not full, nothing holding the surplus back on purpose. The
+    store keeps the phase (on, at, the power kw and a cut), the dwell timers
+    and the hold after an end (off_at). It starts once the surplus stayed
+    at ALONG_START_KW or above for ALONG_START (not within ALONG_HOLD of an
+    end), ends once it stayed below for ALONG_END or `can` ends.
     """
-    if not can:
-        store.clear()
-        return False
     stamp = now.isoformat(timespec="seconds")
+    if not can:
+        if store.get("on"):
+            along_end(store, now)
+        else:
+            store.pop("high_since", None)
+        return False
     if not store.get("on"):
-        if export_w < ALONG_W:
-            store.pop("since", None)
+        off_at = store.get("off_at")
+        if off_at and now - datetime.fromisoformat(off_at) < ALONG_HOLD:
             return False
-        since = store.setdefault("since", stamp)
-        if now - datetime.fromisoformat(since) < ALONG_DWELL:
+        if surplus_kw < ALONG_START_KW:
+            store.pop("high_since", None)
             return False
+        since = store.setdefault("high_since", stamp)
+        if now - datetime.fromisoformat(since) < ALONG_START:
+            return False
+        store.clear()
         store.update(on=True, at=stamp)
-        store.pop("low_since", None)
         return True
-    if surplus_kw < active_kw * ALONG_BACK:
+    if surplus_kw < ALONG_START_KW:
         low = store.setdefault("low_since", stamp)
-        if now - datetime.fromisoformat(low) >= ALONG_OFF:
-            store.clear()
+        if now - datetime.fromisoformat(low) >= ALONG_END:
+            along_end(store, now)
             return False
     else:
         store.pop("low_since", None)
     return True
+
+
+def along_end(store: dict[str, Any], now: datetime) -> None:
+    """The phase ends now; the next start waits ALONG_HOLD."""
+    store.clear()
+    store["off_at"] = now.isoformat(timespec="seconds")
 
 
 def lead_start(

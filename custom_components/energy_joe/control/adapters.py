@@ -1222,6 +1222,64 @@ class RoleAdapter(Adapter):
         values = [r for r in roles if not r.endswith("_enabled")]
         return self._paced(self._restore(saved, *switches, *values))
 
+    # --- charging along with a fixed power (control/team_day.py) -------------------
+
+    def along_lever(self) -> bool:
+        """Whether Joe can let this battery charge with a fixed power of his
+        own by day (the second one while another regulates): a forced-charge
+        mode with a charging power (Omnibattery's manual mode), or Fronius
+        over Modbus with the reference its rate is a share of. Never a
+        ceiling only: below it the battery would regulate freely."""
+        methods = self.charge_methods()
+        if not methods or not self.can_charge:
+            return False
+        if methods[0] == "mode":
+            return self._has("charge_power") and bool(self.options.get("force_charge"))
+        if methods[0] == "modbus":
+            return float(self.battery.get("limit_ref_w") or 0) > 0
+        return False
+
+    def team_along(
+        self, hass: HomeAssistant, writes: list[Write], watts: float
+    ) -> list[Write]:
+        """The block's writes (discharging blocked, charging free) with the
+        battery charging at `watts`. Fronius over Modbus: the rate below 0
+        (that share of the reference) in place of the 0 that blocks
+        discharging, the charge rate open first (the inverter refuses a rate
+        below 0 beyond the charge rate), grid charging not touched: it takes
+        the sun. A forced-charge mode: its prepare step (a manual mode), the
+        power and the mode after the block."""
+        methods = self.charge_methods()
+        c = self.controls
+        if not methods:
+            return writes
+        if methods[0] == "modbus":
+            limit = c.get("discharge_limit")
+            return [
+                Write(c["charge_limit"], 100),
+                *(
+                    Write(w.entity_id, -self._share(watts))
+                    if w.entity_id == limit
+                    else w
+                    for w in writes
+                ),
+            ]
+        if methods[0] == "mode":
+            more = [
+                *self._prepare("mode"),
+                Write(c["charge_power"], self._power(hass, watts)),
+                Write(c["mode"], self.options["force_charge"]),
+            ]
+            return [*writes, *self._paced(more)]
+        return writes
+
+    def team_along_exit(self, hass: HomeAssistant) -> list[Write]:
+        """Charging along ends: the forced mode off, the power 0, the manual
+        mode off (Fronius over Modbus: the block's 0 does it)."""
+        if (self.charge_methods() or [""])[0] != "mode":
+            return []
+        return self._paced(self.guard_exit(hass))
+
     # --- the watchdog (control/guard.py) -----------------------------------------
 
     def guard_can_restart(self) -> bool:
