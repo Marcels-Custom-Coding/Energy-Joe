@@ -27,6 +27,7 @@ from .learning import (
 )
 from .models import (
     battery_model,
+    battery_runs,
     car_days,
     car_model,
     consumption_model,
@@ -275,15 +276,10 @@ class JoeLearner:
                 sunny, [a["id"] for a in config["forecast"]["alternatives"]]
             ),
             "battery_models": {
-                battery["id"]: {
-                    **found,
-                    "converter": converter_model(
-                        _since(learned, "battery", days, first), battery["id"]
-                    ),
-                }
+                battery["id"]: entry
                 for battery in config["batteries"]
                 if (
-                    found := battery_model(
+                    entry := _battery_entry(
                         _since(learned, "battery", days, first), battery["id"]
                     )
                 )
@@ -526,6 +522,23 @@ class JoeLearner:
             self.results = results({}, now)
             self.questions = []
         self._changed()
+
+
+def _battery_entry(
+    days: dict[str, dict[str, Any]], battery_id: str
+) -> dict[str, Any] | None:
+    """What Joe learned about a battery: the day fit (size and efficiency), the
+    inverter's losses and the size measured from charge and discharge runs.
+    The plan uses the nominal size; the measured one is shown to compare."""
+    found = battery_model(days, battery_id)
+    runs = battery_runs(days, battery_id, (found or {}).get("efficiency"))
+    if not found and not runs:
+        return None
+    return {
+        **(found or {}),
+        "converter": converter_model(days, battery_id),
+        **(runs or {}),
+    }
 
 
 def _since(

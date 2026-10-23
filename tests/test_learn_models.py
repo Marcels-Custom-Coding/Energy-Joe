@@ -13,7 +13,7 @@ from custom_components.energy_joe.observe.store import HistoryStore
 from custom_components.energy_joe.plan.inputs import async_build_input, async_tomorrow
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.util import dt as dt_util
-from tests.test_models import made_up_days
+from tests.test_models import made_up_days, run_days
 
 
 @pytest.fixture(autouse=True)
@@ -233,13 +233,9 @@ async def test_tomorrow_as_the_models_see_it(hass: HomeAssistant, freezer) -> No
     await store.async_unload()
 
 
-async def test_the_plan_uses_the_measured_battery(hass: HomeAssistant, freezer) -> None:
-    await hass.config.async_set_time_zone("Europe/Berlin")
-    freezer.move_to("2026-10-05T21:00:00+02:00")
-    hass.states.async_set("sensor.soc", "40", {"unit_of_measurement": "%"})
-    store = HistoryStore(hass)
-    await store.async_load()
-    config = model.apply_update(
+def battery_household() -> dict[str, Any]:
+    """One 10 kWh battery Joe only watches, and a cheap window at night."""
+    return model.apply_update(
         model.default_config(),
         {
             "batteries": {
@@ -257,12 +253,30 @@ async def test_the_plan_uses_the_measured_battery(hass: HomeAssistant, freezer) 
         },
         "read",
     )
+
+
+async def test_the_plan_keeps_the_nominal_battery_size(
+    hass: HomeAssistant, freezer
+) -> None:
+    """The plan takes the efficiency Joe learned, never a learned or measured size."""
+    await hass.config.async_set_time_zone("Europe/Berlin")
+    freezer.move_to("2026-10-05T21:00:00+02:00")
+    hass.states.async_set("sensor.soc", "40", {"unit_of_measurement": "%"})
+    store = HistoryStore(hass)
+    await store.async_load()
     config = model.apply_update(
-        config,
+        battery_household(),
         {
             "learned": {
                 "battery_models": {
-                    "b1": {"capacity_kwh": 9.1, "efficiency": 0.86, "days": 20}
+                    "b1": {
+                        "capacity_kwh": 6.5,
+                        "efficiency": 0.86,
+                        "days": 20,
+                        "converter": None,
+                        "measured_kwh": 9.5,
+                        "runs": 12,
+                    }
                 }
             }
         },
@@ -270,28 +284,72 @@ async def test_the_plan_uses_the_measured_battery(hass: HomeAssistant, freezer) 
     )
     inp, _ = await async_build_input(hass, config, store, dt_util.now())
     assert inp is not None
-    assert inp.batteries[0].capacity == 9.1
-    assert inp.efficiency == 0.86
-    # What the user typed in wins over what Joe measured.
-    mine = model.apply_update(
-        config, {"batteries": {"b1": {"capacity_kwh": 10.0}}}, "user"
-    )
-    inp, _ = await async_build_input(hass, mine, store, dt_util.now())
     assert inp.batteries[0].capacity == 10.0
-    # A measurement far off the nameplate is ignored.
-    odd = model.apply_update(
+    assert inp.efficiency == 0.86
+    # The size may come from the device instead of the user.
+    hass.states.async_set("sensor.capacity", "9800", {"unit_of_measurement": "Wh"})
+    device = model.apply_update(
+        config,
+        {
+            "batteries": {
+                "b1": {"capacity_kwh": None, "capacity_entity": "sensor.capacity"}
+            }
+        },
+        "read",
+    )
+    inp, _ = await async_build_input(hass, device, store, dt_util.now())
+    assert inp.batteries[0].capacity == 9.8
+    # Runs alone give no efficiency: Joe assumes 90 %.
+    runs_only = model.apply_update(
         config,
         {
             "learned": {
                 "battery_models": {
-                    "b1": {"capacity_kwh": 3.0, "efficiency": 0.9, "days": 20}
+                    "b1": {"converter": None, "measured_kwh": 9.5, "runs": 4}
                 }
             }
         },
         "learned",
     )
-    inp, _ = await async_build_input(hass, odd, store, dt_util.now())
+    inp, _ = await async_build_input(hass, runs_only, store, dt_util.now())
     assert inp.batteries[0].capacity == 10.0
+    assert inp.efficiency == 0.9
+    # Nobody could size the battery: the measured size stands in.
+    unsized = model.apply_update(
+        runs_only,
+        {"batteries": {"b1": {"capacity_kwh": None, "capacity_entity": None}}},
+        "read",
+    )
+    inp, notes = await async_build_input(hass, unsized, store, dt_util.now())
+    assert inp.batteries[0].capacity == 9.5
+    assert "capacity_unknown" not in notes
+    await store.async_unload()
+
+
+async def test_the_learner_measures_the_battery_from_runs(
+    hass: HomeAssistant, freezer
+) -> None:
+    """A few days of charge and discharge runs: too few for the day fit, enough
+    to measure the size, which is kept beside the day fit's values."""
+    await hass.config.async_set_time_zone("Europe/Berlin")
+    freezer.move_to("2026-09-08T08:00:00+02:00")
+    store = HistoryStore(hass)
+    await store.async_load()
+    for data in run_days(5, battery_id="b1").values():
+        await store.async_put_hours(data["hours"])
+    holder = {"config": battery_household()}
+
+    def update(patch: dict[str, Any], source: str) -> None:
+        holder["config"] = model.apply_update(holder["config"], patch, source)
+
+    learner = JoeLearner(hass, store, lambda: holder["config"], update, lambda: None)
+    await learner.async_start()
+    found = holder["config"]["learned"]["battery_models"]["b1"]
+    assert found["runs"] == 10
+    assert found["measured_kwh"] == pytest.approx(10, abs=0.5)
+    assert found["converter"] is None
+    assert "capacity_kwh" not in found
+    await learner.async_stop()
     await store.async_unload()
 
 

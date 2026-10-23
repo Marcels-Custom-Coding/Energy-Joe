@@ -345,7 +345,7 @@ export class JoeBatteryDevice extends DeviceSection {
         now: steered ? this.renderTest(t, battery, control) : undefined,
         steer: this.renderSteer(t, battery),
         power: this.renderPower(t, battery),
-        learned: learnedRows([batteryLearned(t, joe.config, joe.config.learned, battery, MODEL_DAYS)]),
+        learned: learnedRows([batteryLearned(t, joe.config, this.hass, joe.config.learned, battery, MODEL_DAYS)]),
         learnedArea: "battery",
         intruders: mine.length ? this.renderIntruders(t, battery) : undefined,
         remove: this.renderRemove(t, battery),

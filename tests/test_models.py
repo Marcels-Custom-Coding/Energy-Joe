@@ -11,6 +11,7 @@ import pytest
 
 from custom_components.energy_joe.learn.models import (
     battery_model,
+    battery_runs,
     class_factor,
     combined_forecast,
     consumption_model,
@@ -110,6 +111,95 @@ def test_battery_size_and_efficiency() -> None:
     assert model is not None
     assert model["efficiency"] == pytest.approx(0.9, abs=0.01)
     assert model["capacity_kwh"] == pytest.approx(10, abs=0.1)
+
+
+def run_days(
+    count: int = 4,
+    charge_hours: int = 4,
+    discharge_hours: int = 5,
+    marks: str = "mean",
+    start: float = 14.0,
+    battery_id: str = "b",
+) -> dict[str, dict[str, Any]]:
+    """A 10 kWh battery (90 % round trip) charged at night with 2.2 kWh an
+    hour and emptied again in the evening; idle hours drift down 0.15 points
+    with no energy; the third afternoon has three hours of mixed flow. The
+    level marks are hourly means (they lag the energy) or end-of-hour readings.
+    """
+    eta = math.sqrt(0.9)
+    charged = 2.2
+    discharged = charged * 0.9 * charge_hours / discharge_hours
+    soc = start
+    days = {}
+    for offset in range(count):
+        day = date(2026, 9, 1) + timedelta(days=offset)
+        hours = []
+        for h in range(24):
+            flow_in = flow_out = 0.0
+            if 1 <= h <= charge_hours:
+                flow_in = charged
+            elif 18 <= h < 18 + discharge_hours:
+                flow_out = discharged
+            elif offset == 2 and 13 <= h < 16:
+                flow_in = flow_out = 0.5
+            before = soc
+            soc += (flow_in * eta - flow_out / eta) * 10
+            if not flow_in and not flow_out:
+                soc -= 0.15
+            mark = (before + soc) / 2 if marks == "mean" else soc
+            hours.append(
+                {
+                    "start": f"{day}T{h:02d}:00:00+02:00",
+                    "cov": 1.0,
+                    "bat": {
+                        battery_id: {
+                            "in": flow_in,
+                            "out": flow_out,
+                            "soc": round(mark, 1),
+                        }
+                    },
+                }
+            )
+        days[day.isoformat()] = {"hours": hours}
+    return days
+
+
+def test_battery_runs_measures_the_size_from_runs() -> None:
+    """Each night's charge and each evening's discharge is a run; the mixed
+    afternoon and the idle drift are not, whichever way the marks were taken."""
+    for marks in ("mean", "end"):
+        found = battery_runs(run_days(marks=marks), "b", 0.9)
+        assert found is not None, marks
+        assert found["runs"] == 8
+        assert found["measured_kwh"] == pytest.approx(10, abs=0.5)
+    # Without a learned efficiency Joe assumes 90 %.
+    assert battery_runs(run_days(), "b", None)["measured_kwh"] == pytest.approx(
+        10, abs=0.5
+    )
+
+
+def test_too_few_runs_measure_nothing() -> None:
+    assert battery_runs(run_days(1), "b", 0.9) is None
+    assert battery_runs(run_days(2), "b", 0.9)["runs"] == 4
+
+
+def test_short_runs_do_not_count() -> None:
+    """One hour moves the level by 21 points: too little; two hours count."""
+    short = run_days(5, charge_hours=1, discharge_hours=1, start=50.0)
+    assert battery_runs(short, "b", 0.9) is None
+    longer = run_days(5, charge_hours=2, discharge_hours=2, start=50.0)
+    found = battery_runs(longer, "b", 0.9)
+    assert found["runs"] == 10
+    assert found["measured_kwh"] == pytest.approx(10, abs=0.5)
+
+
+def test_a_gap_in_the_hours_ends_a_run() -> None:
+    """Without the hour after a run its level after is unknown: the run is skipped."""
+    days = run_days()
+    for data in days.values():
+        del data["hours"][23]
+    found = battery_runs(days, "b", 0.9)
+    assert found["runs"] == 4
 
 
 def test_solar_factor_per_weather() -> None:

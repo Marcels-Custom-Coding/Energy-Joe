@@ -7,6 +7,7 @@ import { pickEntity, saveConfig, sourceOf } from "../../config";
 import { define } from "../../define";
 import { energyKwh, entityName, formatNumber, formatState, measurementKw } from "../../entities";
 import type { TipName, Translate } from "../../i18n";
+import { runsText } from "../../learned-view";
 import { shared } from "../../styles/shared";
 import type { BatteryConfig, BatteryFloor, HomeAssistant, JoeConfig, Measurement } from "../../types";
 
@@ -101,12 +102,6 @@ export class JoeBatteryFields extends LitElement {
         max-width: none;
       }
       .field-row {
-        flex-wrap: wrap;
-      }
-      .learned {
-        display: flex;
-        align-items: center;
-        gap: 6px;
         flex-wrap: wrap;
       }
       @media (pointer: coarse) {
@@ -214,10 +209,9 @@ export class JoeBatteryFields extends LitElement {
         ${readCapacity != null
           ? html`<p class="field-hint">${t("f.battery.capacity.read", { value: formatNumber(t.lang, readCapacity, 2) })}</p>`
           : nothing}
-        ${learned
-          ? html`<p class="field-hint learned">
-              ${sourceChip(t, { source: "learned" })}
-              ${t("battery.page.capacity.learned", { value: fixed(t.lang, learned.capacity_kwh, 1) })}
+        ${learned?.measured_kwh != null
+          ? html`<p class="field-hint">
+              ${t("battery.page.capacity.measured", { runs: runsText(t, learned.runs ?? 0), value: fixed(t.lang, learned.measured_kwh, 1) })}
             </p>`
           : unknown
             ? html`<p class="field-hint">${t("battery.page.capacity.learning")}</p>`
