@@ -453,7 +453,7 @@ export interface Rules {
   day_surplus: boolean;
   /** How much of the forecast Joe counts on: 90 / 80 / 65 %. */
   day_caution: DayCaution;
-  /** How the night weighs tomorrow's bad, typical and good day (plan/planner.py; older backends: missing, "balanced"). */
+  /** How the night weighs tomorrow's bad, typical and good day (plan/planner.py; older backends: missing, "brave"). */
   night_caution?: NightCaution;
   /** Several batteries that regulate themselves: one after the other, or left to themselves; null: not chosen (works as "sequence"). */
   battery_team?: BatteryTeamMode | null;

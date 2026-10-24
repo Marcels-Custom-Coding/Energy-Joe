@@ -104,7 +104,7 @@ CAUTION_LEVELS = {
 
 def caution_level(caution: str | None) -> float:
     """The caution as a number from 0 (bold) to 1 (cautious)."""
-    return CAUTION_LEVELS.get(caution or "", CAUTION_LEVELS["balanced"])
+    return CAUTION_LEVELS.get(caution or "", CAUTION_LEVELS["brave"])
 
 
 def scenario_weights(caution: str | None) -> dict[str, float]:
@@ -192,7 +192,7 @@ class PlanInput:
     # Tomorrow's possible days (empty: only the expected one) and what they
     # come from: the caution, the weather class and the days behind the spreads.
     scenarios: list[Scenario] = field(default_factory=list)
-    caution: str = "balanced"
+    caution: str = "brave"
     spread: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:

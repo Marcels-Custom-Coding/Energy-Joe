@@ -664,7 +664,7 @@ RULES = vol.Schema(
         # meter for evcc's PV mode (see control/surplus.py).
         vol.Optional("day_surplus", default=False): bool,
         vol.Optional("day_caution", default="normal"): vol.In(DAY_CAUTIONS),
-        vol.Optional("night_caution", default="balanced"): vol.In(NIGHT_CAUTIONS),
+        vol.Optional("night_caution", default="brave"): vol.In(NIGHT_CAUTIONS),
         # Several batteries that regulate themselves on one grid meter:
         # "sequence" one after the other (see control/team.py), "together"
         # left to themselves; None: not chosen yet (left to themselves).

@@ -60,14 +60,14 @@ def test_weights_follow_the_caution() -> None:
     )
     for caution in model.NIGHT_CAUTIONS:
         assert sum(scenario_weights(caution).values()) == pytest.approx(1.0)
-    # Unknown: balanced.
-    assert scenario_weights(None) == scenario_weights("balanced")
+    # Unknown: the default, brave.
+    assert scenario_weights(None) == scenario_weights("brave")
 
 
 def test_without_scenarios_the_plan_stays_as_it_was() -> None:
     plain = make_plan(plan_input(solar=3, soc=20))
     assert plain["risk"] is None
-    assert plain["rules"]["night_caution"] == "balanced"
+    assert plain["rules"]["night_caution"] == "brave"
     assert plain["kind"] == "charge" and plain["target"] > 20
     # Only the typical day, weighted fully: the same plan.
     only = make_plan(plan_input(solar=3, soc=20, scenarios=[Scenario("typical", 1)]))

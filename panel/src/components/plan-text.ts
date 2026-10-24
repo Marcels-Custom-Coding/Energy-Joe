@@ -195,7 +195,7 @@ export function riskSentence(t: Translate, plan: Plan, currency = "EUR"): string
 
 /** The caution the night was weighed by, as the setting names it ("Ausgewogen"). */
 export function riskCaution(t: Translate, plan: Plan): string {
-  const caution = plan.risk?.caution ?? plan.rules?.night_caution ?? "balanced";
+  const caution = plan.risk?.caution ?? plan.rules?.night_caution ?? "brave";
   return t.optional(`rule.night_caution.${caution}`) ?? caution;
 }
 

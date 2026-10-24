@@ -9373,7 +9373,7 @@ function Lt(e, t, n = "EUR") {
 	return e(c ? t.kind === "hold" ? "plan.risk.more_hold" : "plan.risk.more" : "plan.risk.less", f);
 }
 function Rt(e, t) {
-	let n = t.risk?.caution ?? t.rules?.night_caution ?? "balanced";
+	let n = t.risk?.caution ?? t.rules?.night_caution ?? "brave";
 	return e.optional(`rule.night_caution.${n}`) ?? n;
 }
 function zt(e, t) {

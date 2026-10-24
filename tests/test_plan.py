@@ -90,7 +90,7 @@ def test_grey_day_charges_slowly_over_the_window() -> None:
     assert "2026-10-04T00:00" <= plan["charge_from"] < "2026-10-04T05:00"
     assert plan["cost"]["saving"] > 0
     # Without tomorrow's scenarios only the expected day counts.
-    assert plan["risk"] is None and plan["rules"]["night_caution"] == "balanced"
+    assert plan["risk"] is None and plan["rules"]["night_caution"] == "brave"
     # One price all night: spread evenly, with less than full power, and done
     # half an hour before the window ends.
     (battery,) = plan["batteries"]

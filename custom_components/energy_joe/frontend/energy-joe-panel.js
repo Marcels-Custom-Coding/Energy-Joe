@@ -1,4 +1,4 @@
-import { $ as e, A as t, B as n, C as r, D as i, E as a, F as o, G as s, H as c, I as l, J as u, K as d, L as f, M as p, N as m, O as h, P as g, Q as _, R as ee, S as te, T as ne, U as re, V as v, W as y, X as b, Y as x, Z as S, _ as ie, a as ae, at as oe, b as se, c as ce, ct as C, d as w, dt as le, et as T, f as E, ft as D, g as ue, h as de, ht as O, i as fe, it as k, j as pe, k as me, l as A, lt as j, m as he, mt as ge, n as _e, nt as ve, o as ye, ot as be, p as xe, pt as Se, q as Ce, r as M, rt as N, s as we, st as P, t as Te, tt as Ee, u as De, ut as F, v as Oe, w as I, x as ke, y as Ae, z as L } from "./tokens-DbkwEULE.js";
+import { $ as e, A as t, B as n, C as r, D as i, E as a, F as o, G as s, H as c, I as l, J as u, K as d, L as f, M as p, N as m, O as h, P as g, Q as _, R as ee, S as te, T as ne, U as re, V as v, W as y, X as b, Y as x, Z as S, _ as ie, a as ae, at as oe, b as se, c as ce, ct as C, d as w, dt as le, et as T, f as E, ft as D, g as ue, h as de, ht as O, i as fe, it as k, j as pe, k as me, l as A, lt as j, m as he, mt as ge, n as _e, nt as ve, o as ye, ot as be, p as xe, pt as Se, q as Ce, r as M, rt as N, s as we, st as P, t as Te, tt as Ee, u as De, ut as F, v as Oe, w as I, x as ke, y as Ae, z as L } from "./tokens-DVH1-Mr8.js";
 //#region src/assets.ts
 var je = import.meta.url.replace(/[^/]*$/, ""), Me = (e) => `${je}${e}`, Ne = /* @__PURE__ */ new Set(["welcome"]), Pe = /* @__PURE__ */ new Set([
 	"night-charge",
@@ -8665,7 +8665,7 @@ function so(e, t, n) {
 		case "discharge_in_window": return e(`rule.discharge.${r.discharge_in_window}`);
 		case "day_surplus": return r.day_surplus ? `${e("rule.on")} · ${e(`rule.day_caution.${r.day_caution}`)}` : e("rule.off");
 		case "transfer_guard": return e(r.transfer_guard === !1 ? "rule.off" : "rule.on");
-		case "night_caution": return e(`rule.night_caution.${r.night_caution ?? "balanced"}`);
+		case "night_caution": return e(`rule.night_caution.${r.night_caution ?? "brave"}`);
 		case "morning_buffer": return r.morning_buffer_soc == null ? e("rule.morning_buffer.auto") : `${y(e.lang, r.morning_buffer_soc, 0)} %`;
 		default: return e(r[n] ? "rule.on" : "rule.off");
 	}
@@ -8994,7 +8994,7 @@ function xo(e, t, n) {
         </div>` : F}`;
 }
 function So(e, t, n) {
-	let r = n.rules.night_caution ?? "balanced";
+	let r = n.rules.night_caution ?? "brave";
 	return D`<div class="row stacked" data-tipped data-anchor="night_caution">
     <div>
       <div class="name">

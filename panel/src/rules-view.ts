@@ -142,7 +142,7 @@ export function ruleValue(t: Translate, config: JoeConfig, key: RuleKey): string
     case "transfer_guard":
       return t(rules.transfer_guard !== false ? "rule.on" : "rule.off");
     case "night_caution":
-      return t(`rule.night_caution.${rules.night_caution ?? "balanced"}`);
+      return t(`rule.night_caution.${rules.night_caution ?? "brave"}`);
     case "morning_buffer":
       return rules.morning_buffer_soc == null
         ? t("rule.morning_buffer.auto")
@@ -577,7 +577,7 @@ function daySurplusRow(t: Translate, host: HTMLElement, config: JoeConfig): Temp
  * typical and good day and weighs them by this choice (plan/planner.py).
  */
 function nightCautionRow(t: Translate, host: HTMLElement, config: JoeConfig): TemplateResult {
-  const caution = config.rules.night_caution ?? "balanced";
+  const caution = config.rules.night_caution ?? "brave";
   return html`<div class="row stacked" data-tipped data-anchor="night_caution">
     <div>
       <div class="name">

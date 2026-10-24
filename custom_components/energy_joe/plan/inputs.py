@@ -619,7 +619,7 @@ async def async_build_input(
                 outlook["spread"]["solar"],
                 outlook["spread"]["home"],
             ),
-            caution=rules.get("night_caution") or "balanced",
+            caution=rules.get("night_caution") or "brave",
             spread=outlook["meta"]["spread"],
             meta={
                 "consumption": consumption,
