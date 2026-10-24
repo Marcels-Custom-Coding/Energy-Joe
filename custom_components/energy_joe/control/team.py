@@ -68,6 +68,11 @@ BACK = 5.0
 # Full at (or above) this level; usable again for charging below FULL_BACK.
 FULL = 99.0
 FULL_BACK = 97.0
+# Full by the meter only this close to its top: below, a battery that takes
+# nothing pauses (a Fronius restarting after a load step, a BMS break).
+FULL_NEAR = 5.0
+# After Joe changed a battery's levers, the meter says nothing about it yet.
+TOUCH_GRACE = timedelta(minutes=2)
 # Surplus or deficit beyond this counts (kW), once it has lasted FLOW_DWELL.
 FLOW_KW = 0.15
 FLOW_DWELL = timedelta(minutes=2)
@@ -120,6 +125,11 @@ class Member:
     # Marks with hysteresis, kept by the executor between checks.
     empty: bool = False
     full: bool = False
+
+    @property
+    def near_full(self) -> bool:
+        """Close enough to its top that taking nothing means full."""
+        return self.soc >= self.full_at - FULL_NEAR
 
     @property
     def room(self) -> float:
@@ -228,6 +238,9 @@ def mark(
     full = member.full
     if member.soc >= member.full_at - 0.5:
         full = True
+    elif full and full_at is not None and full_at < member.full_at - FULL_NEAR:
+        # Marked far below its top (older versions did): it was a pause.
+        full = False
     elif full:
         top = min(member.full_at, full_at if full_at is not None else FULL)
         if member.soc <= min(FULL_BACK, top - 2):

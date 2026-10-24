@@ -581,6 +581,80 @@ async def test_the_venus_charges_along_with_a_fixed_power_and_leaves_on_a_cloud(
     assert kinds.count("team_along") == 1 and kinds.count("team_along_end") == 1
 
 
+async def test_a_pause_far_below_the_top_is_not_full(
+    hass: HomeAssistant, freezer
+) -> None:
+    """The BYD stops charging at 40 % while the house feeds 2 kW into the
+    grid (a Fronius restarting after a load step): a pause, not full. It
+    keeps its turn and its charging; only near its top taking nothing is
+    full and the Venus takes over."""
+    freezer.move_to("2026-06-20T12:30:00+02:00")
+    install_team(hass, byd_soc=40, venus_soc=50)
+    flows(hass, grid=-100, byd=1500)
+    plan = day_plan(dt_util.now(), peak=2.6)
+    executor, _ = await make_executor(hass, team_config(), plan)
+    await executor.async_check()
+    assert executor.view["team"]["active"] == "byd"
+    flows(hass, grid=-2000, byd=0)
+    for _ in range(36):
+        freezer.tick(timedelta(seconds=5))
+        await executor.async_guard()
+    await executor.async_check()
+    kinds = [e["kind"] for e in executor.data["log"]]
+    assert executor.view["team"]["active"] == "byd"
+    assert "team_full" not in kinds and kinds.count("team_pause") == 1
+    assert "byd" not in executor.data["team"]["full"]
+    assert not (executor.data["team"]["blocks"].get("byd") or {}).get("charge")
+    # Near its top taking nothing is full: the Venus takes over.
+    levels(hass, byd=96)
+    for _ in range(12):
+        freezer.tick(timedelta(seconds=5))
+        await executor.async_guard()
+    await executor.async_check()
+    kinds = [e["kind"] for e in executor.data["log"]]
+    assert "team_full" in kinds
+    assert executor.view["team"]["active"] == "venus"
+
+
+def test_an_old_full_mark_far_below_the_top_is_dropped() -> None:
+    """Older versions marked a battery full at 40 % after a pause: it is
+    usable again at once, not only 2 points below the mark."""
+    byd = member("byd", 38.9)
+    byd.full = True
+    _, full = team.mark(byd, None, 40.4)
+    assert not full
+    # Marked near its top, full keeps its hysteresis.
+    byd.soc = 97.0
+    _, full = team.mark(byd, None, 98.0)
+    assert full
+
+
+async def test_joes_own_block_says_nothing_about_full(
+    hass: HomeAssistant, freezer
+) -> None:
+    """While Joe holds the active one's charging back himself (and two
+    minutes after he changed its levers), taking nothing is not full."""
+    freezer.move_to("2026-06-20T12:30:00+02:00")
+    install_team(hass, byd_soc=96, venus_soc=50)
+    flows(hass, grid=-100, byd=1500)
+    plan = day_plan(dt_util.now(), peak=2.6)
+    executor, _ = await make_executor(hass, team_config(), plan)
+    await executor.async_check()
+    store = executor.data["team"]
+    store["blocks"]["byd"] = {"charge": True, "discharge": False}
+    flows(hass, grid=-2000, byd=0)
+    for _ in range(12):
+        freezer.tick(timedelta(seconds=5))
+        await executor.async_guard()
+    assert "team_full" not in [e["kind"] for e in executor.data["log"]]
+    store["blocks"].pop("byd")
+    store["touched"] = {"byd": dt_util.now().isoformat(timespec="seconds")}
+    for _ in range(12):
+        freezer.tick(timedelta(seconds=5))
+        await executor.async_guard()
+    assert "team_full" not in [e["kind"] for e in executor.data["log"]]
+
+
 async def test_only_one_after_the_other_is_strict_on_a_weak_day_too(
     hass: HomeAssistant, freezer
 ) -> None:

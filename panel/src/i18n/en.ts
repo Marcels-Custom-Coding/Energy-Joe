@@ -3281,6 +3281,7 @@ export const en: Record<Key, string> = {
   "log.team_handover.full": "Battery change: {previous} is full – {battery} keeps charging",
   "log.team_handover.order": "Battery change: {battery} is up again (order), {previous} waits",
   "log.team_handover.stuck": "Battery change: {previous} gives nothing ({level} %) – {battery} takes over",
+  "log.team_pause": "{battery} has its turn but takes nothing at {soc} % right now while power goes to the grid – that is no reason for \"full\": it keeps its turn, and if sun is left over the next one charges alongside meanwhile",
   "log.team_stuck": "{battery} has its turn but has given nothing for 20 seconds while the house draws from the grid, and is not empty – held back; the next battery takes over",
   "log.team_full": "{battery} has taken nothing for 20 seconds while the house gives to the grid – full, the next battery takes over",
   "log.team_empty": "{battery} has given nothing for 20 seconds while the house draws from the grid – empty, the next battery takes over",
