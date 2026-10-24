@@ -35,9 +35,11 @@ from .models import (
     daily_rows,
     group_models,
     home_check,
+    home_spread,
     hot_water_model,
     presence_by_label,
     solar_classes,
+    solar_spread,
     source_quality,
     surprises,
 )
@@ -62,6 +64,7 @@ SCOPES: dict[str, tuple[str, ...]] = {
         "solar_shift",
         "shift_days",
         "solar_classes",
+        "solar_spread",
         "sources",
     ),
     "consumption": (
@@ -71,6 +74,7 @@ SCOPES: dict[str, tuple[str, ...]] = {
         "buffer",
         "buffer_days",
         "morning_need",
+        "home_spread",
     ),
     "battery": ("battery_models",),
     "hot_water": ("action_models",),
@@ -86,6 +90,8 @@ EMPTY: dict[str, Any] = {
     "buffer_days": 0,
     "morning_need": None,
     "solar_classes": {},
+    "solar_spread": {},
+    "home_spread": {},
     "sources": {},
     "consumption_model": None,
     "group_models": {},
@@ -237,14 +243,11 @@ class JoeLearner:
         if patch:
             patch["updated"] = dt_util.now().isoformat(timespec="seconds")
             self._update({"learned": patch}, "learned")
-        # The buffer Joe uses follows the learned one unless the user set it.
-        config = self._config()
-        if (
-            margin is not None
-            and model.source_of(config, "rules.buffer_factor") != "user"
-            and config["rules"]["buffer_factor"] != margin
-        ):
-            self._update({"rules": {"buffer_factor": margin}}, "learned")
+        # The night now plans against scenarios (solar_spread, home_spread), not
+        # a learned buffer: one learned before goes back to its start, once.
+        if model.source_of(self._config(), "rules.buffer_factor") == "learned":
+            default = model.default_config()["rules"]["buffer_factor"]
+            self._update({"rules": {"buffer_factor": default}}, "default")
 
     async def _async_learn_models(self, today: date) -> None:
         """Once a day: consumption, consumers, batteries, weather, presence, hot water."""
@@ -272,6 +275,15 @@ class JoeLearner:
                 consumption, [p["id"] for p in config["persons"]]
             ),
             "solar_classes": solar_classes(solar_ratios(sunny)),
+            # How far sun and consumption strayed, over the years: the night's
+            # scenarios (plan/planner.py).
+            "solar_spread": solar_spread(
+                solar_ratios(_since(learned, "forecast", seasons, ""))
+            ),
+            "home_spread": home_spread(
+                _since(learned, "consumption", seasons, ""),
+                model.flexible_consumers(config),
+            ),
             "sources": source_quality(
                 sunny, [a["id"] for a in config["forecast"]["alternatives"]]
             ),

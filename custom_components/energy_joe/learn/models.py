@@ -48,6 +48,15 @@ RUN_MIN_CHANGE = 25.0
 RUN_MIN_RUNS = 3
 # More than this between two odometer readings is a glitch, not a drive (km).
 MAX_STEP_KM = 1500.0
+# Spreads for the night's scenarios: days a group needs, pseudo days of the
+# default (low, high) each group starts from, the days a day's expectation
+# comes from, and below which mean temperature a day is cold (°C).
+SPREAD_DAYS = 5
+SPREAD_PSEUDO_DAYS = 10
+SOLAR_SPREAD = (0.6, 1.2)
+HOME_SPREAD = (0.9, 1.15)
+SPREAD_HISTORY_DAYS = 28
+COLD_BELOW = 10.0
 
 
 @dataclass(slots=True)
@@ -442,23 +451,24 @@ def converter_model(
 
 
 def solar_classes(ratios: list[dict[str, Any]]) -> dict[str, Any]:
-    """How well the forecast fits on clear, mixed and overcast days (median ratios).
+    """How well the forecast fits on clear, mixed, overcast and rainy days (median ratios).
 
     A day's weather is its forecast against the best forecast of the 30 days
-    before it, so the classes follow the seasons. "top" is that best forecast
+    before it, so the classes follow the seasons; a day the weather forecast
+    said rain counts as "rain" whatever its height. "top" is that best forecast
     for the days to come.
     """
-    usable = sorted(
-        (r for r in ratios if r.get("ratio") is not None and r.get("forecast")),
-        key=lambda r: r.get("date") or "",
-    )
+    usable = _usable(ratios)
     if not usable:
         return {}
-    groups: dict[str, list[float]] = {"clear": [], "mixed": [], "overcast": []}
+    groups: dict[str, list[float]] = {
+        "clear": [],
+        "mixed": [],
+        "overcast": [],
+        "rain": [],
+    }
     for ratio in usable:
-        groups[
-            weather_class(ratio["forecast"], _top(usable, ratio.get("date")))
-        ].append(ratio["ratio"])
+        groups[_ratio_class(usable, ratio)].append(ratio["ratio"])
     classes = {
         name: {
             "factor": round(max(0.3, min(2.0, median(values))), 2),
@@ -472,6 +482,123 @@ def solar_classes(ratios: list[dict[str, Any]]) -> dict[str, Any]:
         "top": round(_top(usable, None), 2),
         "days": len(usable),
     }
+
+
+def _usable(ratios: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Ratio rows with a ratio and a forecast, oldest first."""
+    return sorted(
+        (r for r in ratios if r.get("ratio") is not None and r.get("forecast")),
+        key=lambda r: r.get("date") or "",
+    )
+
+
+def _ratio_class(usable: list[dict[str, Any]], ratio: dict[str, Any]) -> str:
+    """A past day's class: "rain" if rain was forecast, else by its height."""
+    if ratio.get("rain"):
+        return "rain"
+    return weather_class(ratio["forecast"], _top(usable, ratio.get("date")))
+
+
+def solar_spread(ratios: list[dict[str, Any]]) -> dict[str, Any]:
+    """How far the sun strays from the corrected forecast, per weather class.
+
+    Per class the 20 % and 80 % quantiles of the ratio (actual / forecast),
+    divided by the class median: a bad day brings "low" times what Joe expects,
+    a good one "high" times. Few days lean on a default (SPREAD_PSEUDO_DAYS).
+    Classes need SPREAD_DAYS days; "all" pools every day, rain days included.
+    """
+    usable = _usable(ratios)
+    if len(usable) < SPREAD_DAYS:
+        return {}
+    groups: dict[str, list[float]] = {
+        "clear": [],
+        "mixed": [],
+        "overcast": [],
+        "rain": [],
+        "all": [],
+    }
+    for ratio in usable:
+        groups[_ratio_class(usable, ratio)].append(ratio["ratio"])
+        groups["all"].append(ratio["ratio"])
+    result = {}
+    for name, values in groups.items():
+        middle = median(values) if len(values) >= SPREAD_DAYS else 0.0
+        if middle <= 0:
+            continue
+        result[name] = _spread(
+            [v / middle for v in values], SOLAR_SPREAD, (0.2, 1.0), (1.0, 2.0)
+        )
+    return result
+
+
+def home_spread(
+    days: dict[str, dict[str, Any]], flexible: Iterable[str] = ()
+) -> dict[str, Any]:
+    """How far a day's base consumption strays from what Joe expects, cold or mild.
+
+    A day's expectation is the mean of the same kind of day (workday or not)
+    over the 28 days before it; the ratio actual / expected gives "low" and
+    "high" as its 20 % and 80 % quantiles. Days below COLD_BELOW are "cold".
+    Few days lean on a default (SPREAD_PSEUDO_DAYS); groups need SPREAD_DAYS.
+    """
+    # Days answered as away, guests or special say nothing about a usual day.
+    rows = [row for row in daily_rows(days, flexible) if not row.excluded]
+    groups: dict[str, list[float]] = {"cold": [], "mild": [], "all": []}
+    for row in rows:
+        current = date.fromisoformat(row.date)
+        first = (current - timedelta(days=SPREAD_HISTORY_DAYS)).isoformat()
+        before = [
+            other.home
+            for other in rows
+            if first <= other.date < row.date and other.workday == row.workday
+        ]
+        if len(before) < SPREAD_DAYS:
+            continue
+        typical = sum(before) / len(before)
+        if typical <= 0:
+            continue
+        ratio = row.home / typical
+        groups["all"].append(ratio)
+        if row.temp is not None:
+            groups["cold" if row.temp < COLD_BELOW else "mild"].append(ratio)
+    if len(groups["all"]) < SPREAD_DAYS:
+        return {}
+    return {
+        name: _spread(values, HOME_SPREAD, (0.5, 1.0), (1.0, 2.0))
+        for name, values in groups.items()
+        if len(values) >= SPREAD_DAYS
+    }
+
+
+def _spread(
+    values: list[float],
+    default: tuple[float, float],
+    low_range: tuple[float, float],
+    high_range: tuple[float, float],
+) -> dict[str, Any]:
+    """The 20 % and 80 % quantiles, shrunk towards a default and kept in range."""
+    count = len(values)
+
+    def shrunk(value: float, start: float, limits: tuple[float, float]) -> float:
+        mixed = (count * value + SPREAD_PSEUDO_DAYS * start) / (
+            count + SPREAD_PSEUDO_DAYS
+        )
+        return round(max(limits[0], min(limits[1], mixed)), 3)
+
+    return {
+        "low": shrunk(_quantile(values, 0.2), default[0], low_range),
+        "high": shrunk(_quantile(values, 0.8), default[1], high_range),
+        "days": count,
+    }
+
+
+def _quantile(values: list[float], q: float) -> float:
+    """The q quantile, linear between the two nearest values."""
+    ordered = sorted(values)
+    position = q * (len(ordered) - 1)
+    below = math.floor(position)
+    above = min(below + 1, len(ordered) - 1)
+    return ordered[below] + (ordered[above] - ordered[below]) * (position - below)
 
 
 def _top(ratios: list[dict[str, Any]], day: str | None) -> float:
@@ -490,13 +617,19 @@ def _top(ratios: list[dict[str, Any]], day: str | None) -> float:
 
 
 def class_factor(
-    solar: dict[str, Any] | None, forecast: float | None
+    solar: dict[str, Any] | None, forecast: float | None, rain: bool = False
 ) -> tuple[str, float] | None:
-    """The weather class of a forecast and the factor Joe learned for it."""
+    """The weather class of a forecast and the factor Joe learned for it.
+
+    A rainy day uses the "rain" class once Joe learned one.
+    """
     if not solar or forecast is None or not solar.get("top"):
         return None
+    classes = solar.get("classes") or {}
+    if rain and (found := classes.get("rain")):
+        return ("rain", found["factor"])
     name = weather_class(forecast, solar["top"])
-    found = (solar.get("classes") or {}).get(name)
+    found = classes.get(name)
     return (name, found["factor"]) if found else None
 
 

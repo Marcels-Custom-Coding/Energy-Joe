@@ -72,6 +72,10 @@ export function planSentence(t: Translate, plan: Plan): string {
   if (plan.reasons.includes("max_price") && plan.kind !== "charge") {
     parts.push(t("plan.say.max_price"));
   }
+  if (plan.reasons.includes("caution") && plan.kind !== "none") {
+    // Above what a typical day needs: the bad day weighs in (plan.risk, 0.9.36).
+    parts.push(t("plan.say.caution"));
+  }
   if (plan.day) {
     // Grid-friendly: the morning sun goes to the grid, the battery takes the midday sun
     // (first up to the buffer, if there is one above the floor).
@@ -144,4 +148,79 @@ export function dayText(t: Translate, plan: Plan | null | undefined): string {
   return buffer && buffer.soc > buffer.floor
     ? t("devices.status.day_buffer", { time, level: String(buffer.soc) })
     : t("devices.status.day", { time });
+}
+
+/** Money as people read it: "40 ct" below 1 €, else "1,20 €". */
+export function euroText(t: Translate, value: number, currency = "EUR"): string {
+  const amount = Math.max(0, value);
+  if (currency === "EUR" && amount < 1) {
+    return `${formatNumber(t.lang, Math.round(amount * 100), 0)} ct`;
+  }
+  return new Intl.NumberFormat(t.lang, { style: "currency", currency }).format(amount);
+}
+
+/**
+ * "Warum 60 %": what the typical day would have needed and what the chosen
+ * target saves on a bad day (or costs on a good one), from plan.risk.
+ */
+export function riskSentence(t: Translate, plan: Plan, currency = "EUR"): string {
+  const risk = plan.risk;
+  if (!risk) {
+    return "";
+  }
+  const target = Math.round(plan.target ?? 0);
+  const typical = Math.round(risk.typical_target);
+  if (target === typical) {
+    return t("plan.risk.same");
+  }
+  const { bad, good } = risk.scenarios;
+  const more = target > typical;
+  // More: a bad day saves day power, a good one costs; less: the other way round.
+  const shown = more ? bad : good;
+  const saving = more ? bad.cost_typical - bad.cost : good.cost_typical - good.cost;
+  const loss = more ? good.cost - good.cost_typical : bad.cost - bad.cost_typical;
+  const vars = {
+    typical: formatNumber(t.lang, typical, 0),
+    target: formatNumber(t.lang, target, 0),
+    solar: formatNumber(t.lang, shown.solar_kwh, 1),
+    home: formatNumber(t.lang, shown.home_kwh, 1),
+    saving: euroText(t, saving, currency),
+    loss: euroText(t, loss, currency),
+  };
+  if (!more) {
+    return t("plan.risk.less", vars);
+  }
+  return t(plan.kind === "hold" ? "plan.risk.more_hold" : "plan.risk.more", vars);
+}
+
+/** The caution the night was weighed by, as the setting names it ("Ausgewogen"). */
+export function riskCaution(t: Translate, plan: Plan): string {
+  const caution = plan.risk?.caution ?? plan.rules?.night_caution ?? "brave";
+  return t.optional(`rule.night_caution.${caution}`) ?? caution;
+}
+
+/** "Wetter morgen: Regen · gelernt aus 14 Tagen Sonne und 30 Tagen Verbrauch". */
+export function riskBasis(t: Translate, plan: Plan): string {
+  const risk = plan.risk;
+  if (!risk) {
+    return "";
+  }
+  const parts: string[] = [];
+  if (risk.class) {
+    parts.push(t("plan.risk.class", { class: t(`plan.risk.class.${risk.class}`) }));
+  }
+  const { solar, home } = risk.days;
+  if (!solar && !home) {
+    parts.push(t("plan.risk.days.none"));
+  } else if (!solar || !home) {
+    parts.push(
+      t("plan.risk.days.partly", {
+        days: formatNumber(t.lang, solar || home, 0),
+        what: t(solar ? "plan.risk.days.solar" : "plan.risk.days.home"),
+      }),
+    );
+  } else {
+    parts.push(t("plan.risk.days", { solar: formatNumber(t.lang, solar, 0), home: formatNumber(t.lang, home, 0) }));
+  }
+  return parts.join(" · ");
 }

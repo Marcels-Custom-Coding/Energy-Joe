@@ -326,7 +326,8 @@ def test_results_count_since_the_reset() -> None:
 async def test_learner_evaluates_learns_and_resets(
     hass: HomeAssistant, freezer
 ) -> None:
-    """Finished plans are replayed, the buffer is learned, a reset forgets it."""
+    """Finished plans are replayed, the buffer is learned (shown, no longer
+    used: the night plans against scenarios), a reset forgets it."""
     await hass.config.async_set_time_zone("Europe/Berlin")
     freezer.move_to("2026-10-12T08:00:00+02:00")
     store = HistoryStore(hass)
@@ -362,23 +363,17 @@ async def test_learner_evaluates_learns_and_resets(
     assert learner.results["last"]["final"] is False
     config = holder["config"]
     assert config["learned"]["buffer_days"] == 8
-    assert model.source_of(config, "rules.buffer_factor") == "learned"
-    assert 0.05 <= config["rules"]["buffer_factor"] < 0.35
+    assert 0.05 <= config["learned"]["buffer"] < 0.35
+    # The buffer Joe plans with is not learned any more.
+    default = model.default_config()["rules"]["buffer_factor"]
+    assert config["rules"]["buffer_factor"] == default
+    assert model.source_of(config, "rules.buffer_factor") != "learned"
 
     learned = config["learned"]["buffer"]
-    assert learned == config["rules"]["buffer_factor"]
     update({"rules": {"buffer_factor": 0.5}}, "user")
     await learner.async_run()
     assert holder["config"]["rules"]["buffer_factor"] == 0.5
     assert holder["config"]["learned"]["buffer"] == learned
-
-    # Back to Joe's own value: the starting value gives way to the learned one.
-    default = model.apply_update(
-        holder["config"], {"rules": {"buffer_factor": 0.35}}, "default"
-    )
-    preferred = model.prefer_learned(default)
-    assert preferred["rules"]["buffer_factor"] == learned
-    assert model.source_of(preferred, "rules.buffer_factor") == "learned"
 
     # At midnight the day is complete and the result final.
     await store.async_put_hours(morning[9:])

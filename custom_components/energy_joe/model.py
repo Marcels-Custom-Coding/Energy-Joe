@@ -74,6 +74,8 @@ REPLACED = frozenset(
         "battery_models",
         "action_models",
         "car_models",
+        "solar_spread",
+        "home_spread",
         "reset",
         "alternatives",
         # Weekly profiles per mode and the ticks on a thermostat's own profiles.
@@ -611,6 +613,8 @@ ACTION = vol.Schema(
 
 # How much of the solar forecast Joe counts on for the daytime surplus.
 DAY_CAUTIONS = ("tight", "normal", "careful")
+# How much the night plan weighs a bad day tomorrow (see plan/planner.py).
+NIGHT_CAUTIONS = ("bold", "brave", "balanced", "careful", "cautious")
 # How several batteries that regulate themselves work together.
 TEAM_MODES = ("sequence", "together")
 TEAM_STYLES = ("auto", "strict", "base")
@@ -660,6 +664,7 @@ RULES = vol.Schema(
         # meter for evcc's PV mode (see control/surplus.py).
         vol.Optional("day_surplus", default=False): bool,
         vol.Optional("day_caution", default="normal"): vol.In(DAY_CAUTIONS),
+        vol.Optional("night_caution", default="brave"): vol.In(NIGHT_CAUTIONS),
         # Several batteries that regulate themselves on one grid meter:
         # "sequence" one after the other (see control/team.py), "together"
         # left to themselves; None: not chosen yet (left to themselves).
@@ -783,6 +788,10 @@ LEARNED = vol.Schema(
         vol.Optional("battery_models", default=dict): dict,
         vol.Optional("action_models", default=dict): dict,
         vol.Optional("car_models", default=dict): dict,
+        # How far a day's sun and use spread around the typical (p20/p80
+        # multipliers per weather class and per cold/mild day).
+        vol.Optional("solar_spread", default=dict): dict,
+        vol.Optional("home_spread", default=dict): dict,
         # The home's use worked out like the Energy dashboard against its own
         # consumption sensor, over the last weeks (kWh): days, calc, sensor.
         vol.Optional("home_check", default=None): vol.Any(None, dict),
@@ -1013,18 +1022,6 @@ def source_of(config: dict[str, Any], path: str) -> str:
     """Where a value came from: its own entry or the nearest parent's ("default" if none)."""
     entry = _entry_of(config.get("provenance") or {}, path)
     return entry.get("source", "default") if entry else "default"
-
-
-def prefer_learned(config: dict[str, Any]) -> dict[str, Any]:
-    """A starting value gives way to what Joe learned (so far only the buffer)."""
-    learned = config["learned"].get("buffer")
-    if (
-        learned is None
-        or source_of(config, "rules.buffer_factor") != "default"
-        or config["rules"]["buffer_factor"] == learned
-    ):
-        return config
-    return apply_update(config, {"rules": {"buffer_factor": learned}}, "learned")
 
 
 def is_protected(config: dict[str, Any], path: str) -> bool:

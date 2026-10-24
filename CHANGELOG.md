@@ -3,6 +3,15 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.36
+
+- **Ich plane die Nacht gegen einen schlechten, einen typischen und einen guten Tag.** Bisher habe ich jedes Nachtziel nur gegen den Tag gerechnet, wie er laut Prognose und Verbrauchsprofil kommen soll. Kam er schlechter, waren die Speicher abends leer, und du hast Tagesstrom gekauft. Jetzt rechne ich jedes Ziel auch gegen einen Tag mit weniger Sonne und mehr Verbrauch und gegen einen mit mehr Sonne und weniger Verbrauch, und ich nehme das Ziel, das im Mittel am wenigsten kostet. Weil eine fehlende Kilowattstunde abends den Tagespreis kostet und eine zu viel geladene nur die Verluste, lade ich bei unsicheren Tagen voller, bei sicheren knapp.
+- **Wie weit ich danebenlag, lerne ich.** Bei der Sonne je Wetterlage, jetzt auch bei Regen, bei dem die Vorhersage öfter zu hoch liegt. Beim Verbrauch getrennt nach kalten und milden Tagen. Solange ich zu wenige Tage habe, rechne ich mit vorsichtigen Annahmen. Unter Rückblick › Gelernt steht, wie sicher meine Vorhersagen sind.
+- **Neuer Regler unter Einstellungen › Regeln: Wie vorsichtig ich die Nacht plane**, von „Mutig“ bis „Vorsichtig“. Standard ist „Eher mutig“: Ein schlechter und ein guter Tag zählen gleich viel. Das hat in deinen Oktobernächten am wenigsten gekostet, weil Mehrladen an sonnigen Tagen Sonne für 6,2 ct ins Netz drückt. Bei „Ausgewogen“ zählt der schlechte Tag doppelt.
+- **Im Plan steht, warum es dieses Prozent ist**: was der typische Tag allein bräuchte, was mehr im schlechten Fall spart und was es im guten kostet.
+- **Den Puffer lerne ich nicht mehr**, die drei Tage ersetzen ihn. Ein Puffer, den du selbst einträgst, gilt weiter obendrauf.
+- Nicht geprüft an echter Anlage: alles davon.
+
 ## 0.9.35
 
 - **Die Speichergröße kommt vom Gerät, nicht mehr aus meiner Tagesrechnung.** Bisher habe ich die nutzbare Größe aus Tagesbilanzen geschätzt (Entladen = Wirkungsgrad × Geladen − Größe × Füllstandsänderung) und damit geplant. Bei dir ergab das 6,5 kWh für einen BYD mit 10,2 kWh: Die meisten Tage enden abends so voll, wie sie morgens begonnen haben, und sagen über die Größe nichts; die Stundenwerte aus der Historie sind Mittelwerte und hinken dem Füllstand bis zu einer Stunde hinterher; die erste Stunde des Tages zählte ich nicht, ihren Füllstandssprung schon; und nachts verliert der Speicher Punkte, ohne dass Energie fließt. Jetzt plane ich mit dem, was die Integration meldet, oder mit dem, was du einträgst. Nur wenn beides fehlt, nehme ich meine Messung.

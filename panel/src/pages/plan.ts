@@ -6,7 +6,7 @@ import "../components/chart";
 import { batteryTeam, teamText } from "../components/battery-team";
 import { daySurplus, surplusExtra, surplusText } from "../components/day-surplus";
 import type { ChartBand, ChartMarker, ChartSeries } from "../components/chart";
-import { planCostLine, planPose, planSentence, slotsText, timeOf, windowText } from "../components/plan-text";
+import { planCostLine, planPose, planSentence, riskBasis, riskCaution, riskSentence, slotsText, timeOf, windowText } from "../components/plan-text";
 import { mirrorRow } from "../components/mirror";
 import "../components/pose";
 import "../components/steer-tonight";
@@ -191,6 +191,13 @@ export class JoePlanPage extends LitElement {
       .note {
         margin-top: 10px;
       }
+      .risk-say {
+        margin: 0 0 4px;
+        line-height: 1.5;
+        color: var(--joe-ink-2);
+        max-width: 70ch;
+      }
+
       .empty {
         display: grid;
         grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
@@ -267,11 +274,33 @@ export class JoePlanPage extends LitElement {
         <p class="say">${planSentence(t, plan)} ${tip(t, "plan_target")}</p>
         ${cost ? html`<p class="cost">${cost}</p>` : nothing}
       </section>
+      ${this.renderRisk(t, plan)}
       <joe-steer-tonight .t=${t} .hass=${this.hass} .state=${this.state} .prefix=${this.prefix}></joe-steer-tonight>
       ${this.renderDaySurplus(t)} ${this.renderTonight(t, plan)} ${this.renderEnergy(t, plan, plan.hours)}
       ${this.renderPrices(t, plan, plan.hours)} ${this.renderSoc(t, plan, plan.hours)}
       ${this.renderMath(t, plan)}
     </div>`;
+  }
+
+  /**
+   * "Warum 60 %": the target against tomorrow's bad, typical and good day
+   * (plan.risk, 0.9.36), with the caution setting it was weighed by.
+   */
+  private renderRisk(t: Translate, plan: Plan): TemplateResult | typeof nothing {
+    const risk = plan.risk;
+    if (!risk || plan.kind === "none") {
+      return nothing;
+    }
+    return html`<section class="chart-card" data-tipped data-anchor="risk">
+      <div class="chart-head">${t("plan.risk", { target: formatNumber(t.lang, plan.target ?? 0, 0) })} ${tip(t, "plan_risk")}</div>
+      <p class="risk-say">${riskSentence(t, plan, this.hass?.config?.currency)}</p>
+      ${mirrorRow(t, this.prefix, {
+        label: t("rule.night_caution"),
+        value: riskCaution(t, plan),
+        hint: riskBasis(t, plan),
+        to: { tab: "settings", section: "rules", id: "night_caution" },
+      })}
+    </section>`;
   }
 
   /**
@@ -716,11 +745,13 @@ export class JoePlanPage extends LitElement {
       {
         label: t("plan.math.target"),
         value: `${formatNumber(t.lang, plan.target ?? 0, 0)} %`,
-        hint: t("plan.math.target.sub", {
-          optimum: formatNumber(t.lang, plan.optimum ?? 0, 0),
-          buffer: formatNumber(t.lang, (plan.rules?.buffer ?? 0) * 100, 0),
-        }),
-        to: { tab: "settings", section: "rules", id: "buffer_factor" },
+        hint: plan.rules?.buffer
+          ? t("plan.math.target.sub", {
+              optimum: formatNumber(t.lang, plan.optimum ?? 0, 0),
+              buffer: formatNumber(t.lang, plan.rules.buffer * 100, 0),
+            })
+          : t("plan.math.target.sub_none", { optimum: formatNumber(t.lang, plan.optimum ?? 0, 0) }),
+        to: { tab: "settings", section: "rules", id: plan.rules?.buffer ? "buffer_factor" : "night_caution" },
       },
       {
         label: t("plan.math.prices"),

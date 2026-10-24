@@ -411,7 +411,11 @@ def day_view(
         "plan_soc_slots": plan_slots,
         "slots": [start.strftime("%H:%M") for start in starts],
         "hours": hours,
-        "fc": {k: v for k, v in forecast.items() if k in ("ahead_kwh", "latest_kwh")},
+        "fc": {
+            k: v
+            for k, v in forecast.items()
+            if k in ("ahead_kwh", "latest_kwh", "rain")
+        },
         "fc_slots": on_slots(forecast.get("hours")),
         "fc_ahead_slots": on_slots(forecast.get("ahead_hours")),
         "workday": data.get("workday"),

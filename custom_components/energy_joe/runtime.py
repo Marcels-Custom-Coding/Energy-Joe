@@ -797,7 +797,7 @@ class JoeRuntime:
     ) -> None:
         """Merge a partial configuration update (raises vol.Invalid)."""
         config = model.apply_update(self._config, patch, source, detail)
-        self._config = model.prefer_learned(config)
+        self._config = config
         self.accounts.async_apply()
         if "batteries" in patch:
             self.modbus.async_apply(self._config["batteries"])
@@ -817,7 +817,7 @@ class JoeRuntime:
     @callback
     def async_replace_config(self, data: dict[str, Any]) -> None:
         """Take a whole configuration (an imported backup; raises vol.Invalid)."""
-        self._config = model.prefer_learned(model.migrate(data))
+        self._config = model.migrate(data)
         self.accounts.async_apply()
         self.modbus.async_apply(self._config["batteries"])
         self._changed(config=True)
@@ -946,6 +946,8 @@ PLANNED_LEARNED = (
     "battery_models",
     "action_models",
     "car_models",
+    "solar_spread",
+    "home_spread",
 )
 
 

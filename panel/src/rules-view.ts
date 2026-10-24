@@ -5,7 +5,18 @@ import { tip } from "./components/tip";
 import { saveConfig, sourceOf } from "./config";
 import { formatNumber } from "./entities";
 import type { Translate, TranslationKey } from "./i18n";
-import type { ControlView, DayCaution, DischargeMode, JoeConfig, JoeInfo, MorningBuffer, Plan, PriorityItem, Rules } from "./types";
+import type {
+  ControlView,
+  DayCaution,
+  DischargeMode,
+  JoeConfig,
+  JoeInfo,
+  MorningBuffer,
+  NightCaution,
+  Plan,
+  PriorityItem,
+  Rules,
+} from "./types";
 
 // Joe's rules: one row per rule (Einstellungen › Regeln) and the same
 // formatting for mirrors elsewhere ("Sicherheitspuffer · 120 %").
@@ -31,7 +42,8 @@ export type OtherRuleKey =
   | "converter_losses"
   | "day_surplus"
   | "morning_buffer"
-  | "transfer_guard";
+  | "transfer_guard"
+  | "night_caution";
 export type RuleKey = NumberRuleKey | OtherRuleKey;
 
 export interface NumberRule {
@@ -78,7 +90,7 @@ export const RULE_GROUPS: Record<RuleGroup, readonly RuleKey[]> = {
     "transfer_guard",
   ],
   grid: ["grid_limit_w", "max_night_kwh", "guard_grid", "max_price", "min_saving"],
-  plan: ["priority", "buffer_factor", "plan_offset_min", "reset_lead_min"],
+  plan: ["priority", "night_caution", "buffer_factor", "plan_offset_min", "reset_lead_min"],
 };
 
 /** All rules, in the order of Einstellungen › Regeln. */
@@ -86,6 +98,8 @@ export const RULE_ORDER: readonly RuleKey[] = [...RULE_GROUPS.battery, ...RULE_G
 
 const DISCHARGE: DischargeMode[] = ["until_target", "block", "free"];
 const CAUTIONS: DayCaution[] = ["tight", "normal", "careful"];
+/** From "count on the typical day" to "plan almost for the bad one" (plan/planner.py weights). */
+export const NIGHT_CAUTIONS: NightCaution[] = ["bold", "brave", "balanced", "careful", "cautious"];
 
 export function isRuleKey(key: string): key is RuleKey {
   return (RULE_ORDER as readonly string[]).includes(key);
@@ -127,6 +141,8 @@ export function ruleValue(t: Translate, config: JoeConfig, key: RuleKey): string
       return rules.day_surplus ? `${t("rule.on")} · ${t(`rule.day_caution.${rules.day_caution}`)}` : t("rule.off");
     case "transfer_guard":
       return t(rules.transfer_guard !== false ? "rule.on" : "rule.off");
+    case "night_caution":
+      return t(`rule.night_caution.${rules.night_caution ?? "brave"}`);
     case "morning_buffer":
       return rules.morning_buffer_soc == null
         ? t("rule.morning_buffer.auto")
@@ -168,6 +184,8 @@ export function ruleRow(
       return transferGuardRow(t, host, config);
     case "morning_buffer":
       return morningBufferRow(t, host, config, plan);
+    case "night_caution":
+      return nightCautionRow(t, host, config);
   }
 }
 
@@ -552,6 +570,35 @@ function daySurplusRow(t: Translate, host: HTMLElement, config: JoeConfig): Temp
           </div>
         </div>`
       : nothing}`;
+}
+
+/**
+ * How careful the night is: Joe costs every target against tomorrow's bad,
+ * typical and good day and weighs them by this choice (plan/planner.py).
+ */
+function nightCautionRow(t: Translate, host: HTMLElement, config: JoeConfig): TemplateResult {
+  const caution = config.rules.night_caution ?? "brave";
+  return html`<div class="row stacked" data-tipped data-anchor="night_caution">
+    <div>
+      <div class="name">
+        <b>${t("rule.night_caution")}</b>${tip(t, "r_night_caution")} ${sourceChip(t, sourceOf(config, "rules.night_caution"))}
+      </div>
+      <small>${t(`rule.night_caution.${caution}.hint`)}</small>
+    </div>
+    <div>
+      <joe-choice
+        compact
+        label=${t("rule.night_caution")}
+        .options=${NIGHT_CAUTIONS.map((value) => ({ value, label: t(`rule.night_caution.${value}`) }))}
+        .value=${[caution]}
+        @joe-choice=${(ev: CustomEvent<{ value: string[] }>) => {
+          if (ev.detail.value[0]) {
+            saveConfig(host, { rules: { night_caution: ev.detail.value[0] } });
+          }
+        }}
+      ></joe-choice>
+    </div>
+  </div>`;
 }
 
 /** Styles of the rule controls; the page brings .row, .name and .control. */
