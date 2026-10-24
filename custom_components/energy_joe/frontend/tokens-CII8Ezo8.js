@@ -3593,6 +3593,7 @@ var Ne = {
 	"log.team_handover.full": "Speicherwechsel: {previous} ist voll – {battery} lädt weiter",
 	"log.team_handover.order": "Speicherwechsel: {battery} ist wieder dran (Reihenfolge), {previous} wartet",
 	"log.team_handover.stuck": "Speicherwechsel: {previous} liefert nichts ({level} %) – {battery} übernimmt",
+	"log.team_pause": "{battery} ist dran, nimmt bei {soc} % aber gerade nichts, obwohl Strom ins Netz geht – kein Grund für „voll“: Er bleibt dran, und bleibt Sonne übrig, lädt der nächste solange nebenher",
 	"log.team_stuck": "{battery} ist dran, liefert aber seit 20 Sekunden nichts, während das Haus aus dem Netz zieht, und ist dabei nicht leer – festgehalten; der nächste Speicher übernimmt",
 	"log.team_full": "{battery} nimmt seit 20 Sekunden nichts, während das Haus einspeist – voll, der nächste Speicher übernimmt",
 	"log.team_empty": "{battery} liefert seit 20 Sekunden nichts, während das Haus aus dem Netz zieht – leer, der nächste Speicher übernimmt",
@@ -7236,6 +7237,7 @@ var Ne = {
 	"log.team_handover.full": "Battery change: {previous} is full – {battery} keeps charging",
 	"log.team_handover.order": "Battery change: {battery} is up again (order), {previous} waits",
 	"log.team_handover.stuck": "Battery change: {previous} gives nothing ({level} %) – {battery} takes over",
+	"log.team_pause": "{battery} has its turn but takes nothing at {soc} % right now while power goes to the grid – that is no reason for \"full\": it keeps its turn, and if sun is left over the next one charges alongside meanwhile",
 	"log.team_stuck": "{battery} has its turn but has given nothing for 20 seconds while the house draws from the grid, and is not empty – held back; the next battery takes over",
 	"log.team_full": "{battery} has taken nothing for 20 seconds while the house gives to the grid – full, the next battery takes over",
 	"log.team_empty": "{battery} has given nothing for 20 seconds while the house draws from the grid – empty, the next battery takes over",
@@ -7960,14 +7962,14 @@ function Ke(e, t, n) {
 }
 //#endregion
 //#region src/define.ts
-var qe = "0.9.37";
+var qe = "0.9.38";
 function Je(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = qe, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.37" && Xe();
+	n.joeVersion !== "0.9.38" && Xe();
 }
 var Ye = !1;
 function Xe() {

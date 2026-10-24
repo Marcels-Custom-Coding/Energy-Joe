@@ -95,6 +95,10 @@ NOTES = {
     "free": ("Freigegeben", "Released"),
     "team": ("Nacheinander: {name} ist dran", "One after the other: {name}'s turn"),
     "team_back": ("Nacheinander: Sperre zurück", "One after the other: block put back"),
+    "team_pause": (
+        "Nacheinander: {name} lädt gerade nicht (bei {soc} %), ich warte. Bleibt Sonne übrig, lädt der nächste solange mit.",
+        "One after the other: {name} is not charging right now (at {soc} %), I wait. If sun is left over, the next one charges along meanwhile.",
+    ),
     "team_along": (
         "Nebenher: {name} lädt mit {watts} W fest",
         "Alongside: {name} charges with a fixed {watts} W",
@@ -2109,7 +2113,7 @@ class JoeExecutor:
         ids = {b["id"] for b in config["batteries"]} | {
             f"group:{g[0]}" for g in groups.values()
         }
-        for key in ("empty", "full", "watch", "cutoffs", "stuck"):
+        for key in ("empty", "full", "watch", "cutoffs", "stuck", "touched"):
             store[key] = {k: v for k, v in (store.get(key) or {}).items() if k in ids}
         # A block that did not arrive counts for the day it happened.
         store["broken"] = {
@@ -2481,6 +2485,39 @@ class JoeExecutor:
             and seen["full"]
             and not current.full
             and not self.data.get("day")
+            and not all(m.near_full for m in current.members)
+        ):
+            # Takes nothing far below its top: a pause, not full. It keeps
+            # its turn and its charging; surplus meanwhile goes to the next
+            # one alongside (see _team_along).
+            if store.get("pause") != current.id:
+                store["pause"] = current.id
+                level = self._team_level(current)
+                self._log(
+                    "team_pause",
+                    battery=current.ids[0],
+                    batteries=current.ids,
+                    soc=level,
+                )
+                names = {b["id"]: b["name"] for b, _ in candidates}
+                if note := self._note(
+                    "team_pause",
+                    name=names.get(current.ids[0], current.ids[0]),
+                    soc=(
+                        f"{level:.0f}"
+                        if self.language() != "de"
+                        else f"{level:.0f}".replace(".", ",")
+                    ),
+                ):
+                    async_line(self._hass, note)
+        elif current is not None and not seen["full"]:
+            store.pop("pause", None)
+        if (
+            current is not None
+            and seen["full"]
+            and not current.full
+            and not self.data.get("day")
+            and all(m.near_full for m in current.members)
         ):
             for member in current.members:
                 if not member.full:
@@ -3074,7 +3111,23 @@ class JoeExecutor:
         ):
             return team_rules.quick(store["quick"], None, None, None, now)
         power = sum(powers[k] for k in current.ids)
-        return team_rules.quick(store["quick"], power, deficit * 1000, grid * 1000, now)
+        found = team_rules.quick(
+            store["quick"], power, deficit * 1000, grid * 1000, now
+        )
+        touched = store.get("touched") or {}
+        blocks = store.get("blocks") or {}
+        # Joe just changed its levers: the meter says nothing about the
+        # battery yet (the grid timers keep running).
+        fresh = any(
+            k in touched and now - _at(touched[k]) < team_rules.TOUCH_GRACE
+            for k in current.ids
+        )
+        # A direction Joe holds back himself says nothing about full or empty.
+        for key, direction in (("full", "charge"), ("empty", "discharge")):
+            if fresh or any((blocks.get(k) or {}).get(direction) for k in current.ids):
+                store["quick"].pop(key, None)
+                found[key] = False
+        return found
 
     @staticmethod
     def _team_level(group: team_rules.Group) -> float:
@@ -3291,6 +3344,7 @@ class JoeExecutor:
                 if k in ("charge", "discharge")
             } != shown:
                 self._log("team_block", battery=key, **shown)
+                store.setdefault("touched", {})[key] = now.isoformat(timespec="seconds")
             if any(blocks.values()):
                 store["blocks"][key] = blocks
             else:

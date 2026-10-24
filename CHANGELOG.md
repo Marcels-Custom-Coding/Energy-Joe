@@ -3,6 +3,13 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.38
+
+- **„Voll“ heißt jetzt voll.** Nahm der Speicher, der dran war, 20 Sekunden lang nichts, während Strom ins Netz ging, galt er bisher als voll, egal bei welchem Ladestand. Heute Mittag hörte der BYD bei 40 % kurz auf zu laden, vermutlich ein Gerät, das einschaltete, und der Wechselrichter brauchte danach länger, um wieder anzufangen. Ich habe ihn für voll erklärt, ihm das Laden gesperrt und den Venus drangenommen. Der lief bald am Anschlag, bis zu 3 kW gingen ins Netz. Jetzt ist ein Speicher erst nahe an seiner Obergrenze voll (5 Punkte darunter). Nimmt er weiter unten nichts, ist das eine Pause: Er bleibt dran und darf weiter laden, und bleibt Sonne übrig, lädt der nächste solange nebenher mit fester Leistung. Im Logbuch steht dann „lädt gerade nicht, ich warte“.
+- **Was ich selbst sperre, zählt nicht.** Halte ich dem Speicher, der dran ist, das Laden selbst zurück, etwa während der andere beim Entladen hilft, sagt sein „nimmt nichts“ nichts über voll. Heute habe ich so auch den Venus bei 51 % für voll erklärt. Dasselbe gilt fürs Entladen. Zwei Minuten nach jedem eigenen Schreiben an einem Speicher urteile ich gar nicht über ihn.
+- **Alte falsche „voll“-Marken fallen weg.** Ein Speicher, den eine ältere Version weit unter seiner Obergrenze für voll gehalten hat, ist sofort wieder frei.
+- Nicht geprüft an echter Anlage: alles davon.
+
 ## 0.9.37
 
 - **Ich lerne aus den Vorjahren.** Wie gut die Sonnenprognose passt, wusste ich bisher nur seit dem Tag, an dem ich mitschaue, denn alte Prognosen stehen nicht im Verlauf. Hat ein Sensor über deine Prognosen eine Langzeitstatistik, etwa ein Summen-Helfer über genau die Prognosesensoren, die ich nutze, lese ich daraus für jeden vergangenen Tag die Prognose vom frühen Morgen nach und stelle sie neben die echte Erzeugung. Den Sensor finde ich selbst, du kannst ihn unter Geräte › Netz & Sonne auch auswählen. Bei dir reicht das bis Oktober 2024 zurück.
