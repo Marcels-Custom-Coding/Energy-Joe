@@ -78,6 +78,7 @@ export const SIGNPOST = [
   { id: "rule_max_price", to: { tab: "settings", section: "rules", id: "max_price" }, title: "rule.max_price" },
   { id: "rule_min_saving", to: { tab: "settings", section: "rules", id: "min_saving" }, title: "rule.min_saving" },
   { id: "rule_priority", to: { tab: "settings", section: "rules", id: "priority" }, title: "rule.priority" },
+  { id: "rule_night_caution", to: { tab: "settings", section: "rules", id: "night_caution" }, title: "rule.night_caution" },
   { id: "rule_buffer_factor", to: { tab: "settings", section: "rules", id: "buffer_factor" }, title: "rule.buffer_factor" },
   { id: "rule_plan_offset_min", to: { tab: "settings", section: "rules", id: "plan_offset_min" }, title: "rule.plan_offset_min" },
   { id: "rule_reset_lead_min", to: { tab: "settings", section: "rules", id: "reset_lead_min" }, title: "rule.reset_lead_min" },

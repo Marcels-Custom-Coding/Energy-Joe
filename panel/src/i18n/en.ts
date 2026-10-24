@@ -565,7 +565,8 @@ export const en: Record<Key, string> = {
   "signpost.rule_max_price.terms": "too expensive, price limit",
   "signpost.rule_min_saving.terms": "worth it, minimum gain",
   "signpost.rule_priority.terms": "order, precedence",
-  "signpost.rule_buffer_factor.terms": "buffer, learn again by itself, margin",
+  "signpost.rule_buffer_factor.terms": "buffer, safety buffer, own buffer, margin",
+  "signpost.rule_night_caution.terms": "caution, risk, bad day, rain, plan the night, bold, careful, safety",
   "signpost.rule_plan_offset_min.terms": "fixed plan, time",
   "signpost.rule_reset_lead_min.terms": "lead time, switch back",
   "signpost.notify": "Notifications",
@@ -1197,6 +1198,26 @@ export const en: Record<Key, string> = {
   "tip.r_day_caution.title": "How careful should I be?",
   "tip.r_day_caution.text": "I take the solar forecast (already corrected by what I learned about your system) and count on only part of it: tight 90 %, normal 80 %, careful 65 %. From that I work out when the evening sun no longer covers the house – later in summer, earlier in winter – and how slowly the batteries may charge until then.",
   "tip.r_day_caution.hint": "The more careful, the earlier and faster the batteries charge and the less is left for evcc.",
+  "rule.night_caution": "How careful do I plan the night?",
+  "rule.night_caution.bold": "Bold",
+  "rule.night_caution.brave": "Rather bold",
+  "rule.night_caution.balanced": "Balanced",
+  "rule.night_caution.careful": "Rather careful",
+  "rule.night_caution.cautious": "Careful",
+  "rule.night_caution.bold.hint":
+    "I count on the day as it usually comes. Cheapest with sun; on rainy days you tend to buy in the evening.",
+  "rule.night_caution.brave.hint":
+    "A bad day counts as much as a good one. Mostly cheap; on dull days you sometimes buy a little in the evening.",
+  "rule.night_caution.balanced.hint":
+    "A bad day counts twice as much as a good one. Better one kilowatt-hour too much charged than expensive day power in the evening.",
+  "rule.night_caution.careful.hint":
+    "A bad day counts four times as much as a good one. You rarely buy in the evening, but I more often charge a little extra at night.",
+  "rule.night_caution.cautious.hint":
+    "I plan almost for the bad case. You rarely buy expensive power in the evening, but sometimes a bit too much at night.",
+  "tip.r_night_caution.title": "How careful should I plan the night?",
+  "tip.r_night_caution.text":
+    "How full I charge at night depends on the day after – and I never know it exactly. So I work out every target for three days: a bad one (less sun, more consumption), one as it usually comes and a good one. How far apart the three are I learn from your real days, per weather class. This choice says how much the bad day counts. I take the target that costs you least on average.",
+  "tip.r_night_caution.hint": "More careful means: a bit more cheap power at night, and less often expensive power in the evening.",
   "rule.reserve_soc.hint":
     "At least this much stays in every battery. If a battery's own floor is higher, that applies.",
   "tip.r_reserve_soc.text":
@@ -1234,8 +1255,8 @@ export const en: Record<Key, string> = {
   "rule.balance_days": "Maintenance charge",
   "rule.balance_days.hint": "Charge full once every so many days. Empty = off.",
   "rule.balance_days.unit": "days",
-  "rule.buffer_factor": "Safety buffer",
-  "rule.buffer_factor.hint": "Added to my calculation. I learn it myself – “Default” lets me learn it myself again.",
+  "rule.buffer_factor": "Own buffer",
+  "rule.buffer_factor.hint": "Only if you want one: this much I add on top. You set it yourself – I no longer learn it.",
   "rule.plan_offset_min": "Fix the plan",
   "rule.plan_offset_min.hint": "Minutes before the cheap hours begin.",
   "rule.reset_lead_min": "Put things back",
@@ -1437,9 +1458,9 @@ export const en: Record<Key, string> = {
   "tip.r_balance_days.text":
     "Many batteries only balance their cells when they get full now and then – otherwise the level shown drifts over time. If a battery has not been full for that many days and the sun won't fill it tomorrow either, I charge it to 100 % once in the cheap hours.",
   "tip.r_balance_days.hint": "Usual are 14 to 30 days. See your battery's manual.",
-  "tip.r_buffer_factor.title": "What is the safety buffer?",
+  "tip.r_buffer_factor.title": "What is the own buffer?",
   "tip.r_buffer_factor.text":
-    "This much I add to my calculation while I don't know your home well yet. The better my forecasts get, the smaller it becomes.",
+    "A margin only you set: this much I charge extra on the part above the reserve. I used to learn it myself – I no longer do. I now plan for uncertain days with a bad, a typical and a good day (see “How careful do I plan the night?”). The buffer only comes on top.",
   "tip.r_plan_offset_min.title": "When do I fix the plan?",
   "tip.r_plan_offset_min.text":
     "This many minutes before the cheap hours begin I work out the plan for the night – with the latest forecast.",
@@ -1637,6 +1658,29 @@ export const en: Record<Key, string> = {
   "plan.say.balance": "Tonight is a maintenance night: I charge full once so the batteries can balance their cells.",
   "plan.say.small_saving": "I leave it tonight: it would save less than the minimum saving you set in the rules.",
   "plan.say.max_price": "Above your highest price I don't charge from the grid.",
+  "plan.say.caution": "That is a bit more than a usual day would need – in case tomorrow brings less sun or you use more.",
+  "plan.risk": "Why {target} %",
+  "plan.risk.more":
+    "If the day comes as it usually does, {typical} % would do. I charge {target} %: if it comes out bad ({solar} kWh sun, {home} kWh consumption), that saves you {saving} of day power. If it comes out good, it costs you {loss}.",
+  "plan.risk.more_hold":
+    "If the day comes as it usually does, {typical} % would do. I hold {target} %: if it comes out bad ({solar} kWh sun, {home} kWh consumption), that saves you {saving} of day power. If it comes out good, it costs you {loss}.",
+  "plan.risk.less":
+    "If the day comes as it usually does, {typical} % would do. I only take {target} %: if it comes out good ({solar} kWh sun, {home} kWh consumption), that saves you {saving}. If it comes out bad, it costs you {loss} of day power.",
+  "plan.risk.same": "Even if the day comes out bad, more does not pay.",
+  "plan.risk.class": "Weather tomorrow: {class}",
+  "plan.risk.class.clear": "clear",
+  "plan.risk.class.mixed": "mixed",
+  "plan.risk.class.overcast": "overcast",
+  "plan.risk.class.rain": "rain",
+  "plan.risk.days": "learned from {solar} days of sun and {home} days of consumption",
+  "plan.risk.days.partly": "{what} learned from {days} days, otherwise still assumptions",
+  "plan.risk.days.solar": "Sun",
+  "plan.risk.days.home": "Consumption",
+  "plan.risk.days.none": "still assumptions, I am learning this",
+  "tip.plan_risk.title": "Why this target?",
+  "tip.plan_risk.text":
+    "I never know exactly how tomorrow will be. So I work out every target for three days: a bad one (less sun, more consumption), one as it usually comes and a good one. How much the bad day counts you set under “How careful do I plan the night?”. I take the target that costs you least on average.",
+  "tip.plan_risk.hint": "Day power is the expensive power from the grid when the batteries are empty before the sun comes.",
   "plan.say.hold":
     "I won't charge, but I'll hold the batteries at {target} % during the cheap hours – better cheap grid power now than expensive power tomorrow morning.",
   "plan.say.empty": "Without me they'd be empty at {time}.",
@@ -1707,7 +1751,9 @@ export const en: Record<Key, string> = {
   "plan.math.workday": "for a working day",
   "plan.math.day_off": "for a weekend or holiday",
   "plan.math.target": "Target",
-  "plan.math.target.sub": "{optimum} % would be needed, plus {buffer} % buffer on the part above the reserve",
+  "plan.math.target.sub":
+    "weighing a bad, a typical and a good day it would be {optimum} %, plus {buffer} % of your own buffer on the part above the reserve",
+  "plan.math.target.sub_none": "weighing a bad, a typical and a good day – without a buffer of your own",
   "plan.math.prices": "Prices",
   "plan.math.prices.value": "cheap {night} · otherwise {day} · feed-in {feed}",
   "plan.math.prices.assumed": "I don't know all prices – I assumed the missing ones. Enter them under Devices › Grid & sun.",
@@ -1723,7 +1769,8 @@ export const en: Record<Key, string> = {
   "tip.plan_refresh.text":
     "Every hour by myself, with the latest forecast. Shortly before the cheap hours I fix the plan, then it stays until the morning. **Plan again** calculates right away.",
   "tip.plan_math.title": "How do I decide?",
-  "tip.plan_math.text": "I play through the hours until the next night – for every possible target – and take the one that costs you least. Since I'm still learning, I add a buffer. **Change →** takes you to where a value is set.",
+  "tip.plan_math.text":
+    "I play through the hours until the next night – for every possible target and for a bad, a typical and a good day – and take the target that costs you least on average. I only add a buffer of my own if you have set one. **Change →** takes you to where a value is set.",
   "tip.chart_plan_energy.title": "What am I looking at?",
   "tip.chart_plan_energy.text":
     "What I expect per hour: **sun** from the forecast, your **consumption** from similar days and when I **charge from the grid**. The cheap hours are shaded.",
@@ -1736,7 +1783,7 @@ export const en: Record<Key, string> = {
 
   "learn.page.title": "What I've |learned",
   "learn.lead":
-    "Every morning I replay the night's plan with the real day. That's how I learn how well the forecast fits your home and how much buffer you really need.",
+    "Every morning I replay the night's plan with the real day. That's how I learn how well the forecast fits your home and how far off sun and consumption can be.",
   "learn.since": "Learning since {day}",
   "learn.since_start": "Learning from everything I've seen since {day}",
   "learn.updated": "last learned {day}, {time}",
@@ -1754,7 +1801,6 @@ export const en: Record<Key, string> = {
   "learn.results.chart.saving": "saved",
   "learn.still": "still learning",
   "learn.days": "from {days} days",
-  "learn.mornings": "from {count} mornings",
   "learn.solar": "Solar forecast",
   "learn.solar.less": "The forecast promises {value} % too much on average – I only count on {share} % of it.",
   "learn.solar.more": "Your system delivers {value} % more than forecast on average – I count on {share} %.",
@@ -1776,16 +1822,31 @@ export const en: Record<Key, string> = {
   "learn.shift.chart": "Sun per hour, on average",
   "learn.shift.chart.actual": "delivered",
   "learn.shift.chart.forecast": "forecast the evening before",
-  "learn.buffer": "Buffer",
-  "learn.buffer.learned":
-    "That's what I add on top of the target I need. With it, 8 out of 10 mornings would have lasted until the sun.",
-  "learn.buffer.default":
-    "My starting value, cautious on purpose. After {need} replayed nights I know how much buffer you really need – I have {have}.",
-  "learn.buffer.user": "You set this yourself – I'll leave it.",
-  "learn.buffer.user_learned": "You set this yourself. I would have taken {value} %.",
   "learn.buffer.chart": "Needed until the sun",
   "learn.buffer.chart.planned": "planned",
   "learn.buffer.chart.actual": "needed",
+  "learn.spread": "How sure my forecasts are",
+  "learn.spread.say":
+    "This is how far off my forecasts have been. With it I plan a bad and a good day at night – about every fifth day comes out even worse, every fifth even better.",
+  "learn.spread.none": "Still learning – until then I count on assumptions.",
+  "learn.spread.solar": "Sun on {class}",
+  "learn.spread.class.clear": "clear days",
+  "learn.spread.class.mixed": "mixed days",
+  "learn.spread.class.overcast": "overcast days",
+  "learn.spread.class.rain": "rainy days",
+  "learn.spread.class.all": "all days",
+  "learn.spread.bad": "bad day {value} %",
+  "learn.spread.good": "good day {value} % of the forecast",
+  "learn.spread.home": "Consumption on {group} days",
+  "learn.spread.group.cold": "cold",
+  "learn.spread.group.mild": "mild",
+  "learn.spread.group.all": "all",
+  "learn.spread.range": "{low} to {high} % of what I expected",
+  "learn.spread.buffer": "Only your own margin on top – I no longer learn it.",
+  "tip.learn_spread.title": "What do I need this for?",
+  "tip.learn_spread.text":
+    "Every morning I compare how much sun came and how much you used with what I expected. From that I learn per weather class how bad a bad day and how good a good day turns out – for consumption separately for cold and mild days. With these days I work out every target at night instead of adding a flat buffer.",
+  "tip.learn_spread.hint": "How much the bad day counts you set under Settings › Rules.",
   "learn.home": "Consumption",
   "learn.home.history": "I know your daily pattern from {days} days – working days and days off separately.",
   "learn.home.default": "I don't know your consumption well yet and use a typical household.",
@@ -1919,11 +1980,12 @@ export const en: Record<Key, string> = {
   "learn.reset.label": "Reset learning",
   "learn.reset.confirm.title": "Really |start over?",
   "learn.reset.confirm.forget": "What I forget",
-  "learn.reset.forget.all": "Forecast factors, time shift, weather classes, forecast sources, the learned buffer, all calculations for consumption, batteries, hot water and cars, how fast each room warms up, and the record of what it would have brought.",
+  "learn.reset.forget.all":
+    "Forecast factors, time shift, weather classes, forecast sources, how far off sun and consumption were, all calculations for consumption, batteries, hot water and cars, how fast each room warms up, and the record of what it would have brought.",
   "learn.reset.forget.forecast":
-    "Forecast factor, time shift, the factors per weather class and how well the forecast sources fit.",
+    "Forecast factor, time shift, the factors per weather class, how well the forecast sources fit and how far off the sun was.",
   "learn.reset.forget.consumption":
-    "The consumption and weather calculation, the calculations per device, presence by calendar and the learned buffer.",
+    "The consumption and weather calculation, the calculations per device, presence by calendar and how far off the consumption was.",
   "learn.reset.forget.battery": "The measured size and efficiency of your batteries.",
   "learn.reset.forget.hot_water": "Heating rate, standing loss and daily use of the hot water.",
   "learn.reset.confirm.keep": "What stays",
@@ -2258,10 +2320,6 @@ export const en: Record<Key, string> = {
   "tip.learn_shift.title": "What is the time offset?",
   "tip.learn_shift.text":
     "Some forecasts label their hours by the end instead of the start – then they're an hour off. Every day I check whether the curve fits better shifted by an hour, and only shift it once that's clearly the case on most days.",
-  "tip.learn_buffer.title": "Why a buffer?",
-  "tip.learn_buffer.text":
-    "I charge a bit more than needed – for mornings when you use more or the sun comes later. How much I learn from the replayed nights: enough to have lasted on 8 out of 10 mornings. Too much buffer costs money, too little does too.",
-  "tip.learn_buffer.hint": "You can set your own value under Settings › Rules.",
   "tip.learn_home.title": "What am I looking at?",
   "tip.learn_home.text":
     "How much you use per hour on average – on working days and on days off. With it I work out how much the batteries need to deliver until the sun.",

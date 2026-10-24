@@ -453,6 +453,8 @@ export interface Rules {
   day_surplus: boolean;
   /** How much of the forecast Joe counts on: 90 / 80 / 65 %. */
   day_caution: DayCaution;
+  /** How the night weighs tomorrow's bad, typical and good day (plan/planner.py; older backends: missing, "balanced"). */
+  night_caution?: NightCaution;
   /** Several batteries that regulate themselves: one after the other, or left to themselves; null: not chosen (works as "sequence"). */
   battery_team?: BatteryTeamMode | null;
   /** Battery ids in the order they charge and discharge (the others follow). */
@@ -601,6 +603,24 @@ export interface TransferGuard {
 
 export type DayCaution = "tight" | "normal" | "careful";
 
+/** How careful the night is: weights of tomorrow's bad/typical/good day, from bold .15/.50/.35 to cautious .65/.30/.05. */
+export type NightCaution = "bold" | "brave" | "balanced" | "careful" | "cautious";
+
+/** One of tomorrow's three days the night is costed against. */
+export type RiskScenario = "bad" | "typical" | "good";
+
+/** How far off a forecast has been: p20 and p80 as multipliers on the typical value, from so many days. */
+export interface Spread {
+  low: number;
+  high: number;
+  days: number;
+}
+
+/** The weather classes the sun's spread is learned for ("all": every day together). */
+export type SpreadClass = WeatherClass | "rain" | "all";
+/** The days the consumption's spread is learned for ("cold" / "mild", "all": every day together). */
+export type HomeSpreadGroup = "cold" | "mild" | "all";
+
 /** Why a battery does (not) take part in the daytime surplus. */
 export type SurplusBatteryState =
   | "takes_part"
@@ -714,9 +734,13 @@ export interface Learned {
   /** +1: the forecast's hours belong one hour later. */
   solar_shift: -1 | 0 | 1 | null;
   shift_days: number;
-  /** The buffer Joe learned, also when the user set their own. */
+  /** Old: the buffer Joe once learned (0.9.36 no longer learns it; the user's own buffer still works). */
   buffer: number | null;
   buffer_days: number;
+  /** How far off the sun forecast has been, per weather class (multipliers on the typical sun). */
+  solar_spread?: Partial<Record<SpreadClass, Spread>>;
+  /** How far off the consumption expectation has been, on cold and mild days (multipliers on the expected use). */
+  home_spread?: Partial<Record<HomeSpreadGroup, Spread>>;
   /** When learning (re)started; null: from the first day Joe knows. */
   since: string | null;
   updated: string | null;
@@ -1314,7 +1338,8 @@ export interface Plan {
   kind: "charge" | "hold" | "none" | "unavailable";
   created: string;
   fixed?: boolean;
-  reasons: string[];
+  /** PlanReason codes, or why the plan is unavailable (plan.why.*). */
+  reasons: (PlanReason | (string & {}))[];
   notes?: string[];
   window?: { start: string; end: string };
   target?: number;
@@ -1351,10 +1376,13 @@ export interface Plan {
   home_kwh?: number;
   cost?: { night_charge: number; plan: number; without: number; saving: number };
   prices?: { night: number; day: number; feed_in: number; assumed: boolean };
+  /** The night costed against tomorrow's bad, typical and good day (0.9.36); null: not costed. */
+  risk?: PlanRisk | null;
   rules?: {
     reserve: number;
     max_target: number;
     buffer: number;
+    night_caution?: NightCaution;
     discharge_mode: string;
     evening_min: number | null;
     max_price?: number | null;
@@ -1377,6 +1405,41 @@ export interface Plan {
   actions?: PlanAction[];
   /** Each car charged by need: tomorrow and where it is plugged in. */
   cars?: Record<string, PlanCar>;
+}
+
+/** Why tonight's plan reasons as it does ("caution": target above the typical day's). */
+export type PlanReason =
+  | "balance"
+  | "evening"
+  | "small_saving"
+  | "bridge"
+  | "no_sun"
+  | "hold"
+  | "enough"
+  | "max_price"
+  | "not_worth"
+  | "limit_target"
+  | "limit_energy"
+  | "caution";
+
+/** A scenario of tomorrow: its sun and use, and the euros at the chosen and at the typical target. */
+export interface PlanScenario {
+  solar_kwh: number;
+  home_kwh: number;
+  cost: number;
+  cost_typical: number;
+}
+
+/** The night against uncertainty: the weights, tomorrow's class and the three days (plan/planner.py). */
+export interface PlanRisk {
+  caution: NightCaution;
+  weights: Record<RiskScenario, number>;
+  class: WeatherClass | "rain" | null;
+  /** The target a typical day would need (%). */
+  typical_target: number;
+  scenarios: Record<RiskScenario, PlanScenario>;
+  /** How many days the spreads rest on (0: still assumptions). */
+  days: { solar: number; home: number };
 }
 
 /** Tomorrow as Joe's models see it (see plan/inputs.py). */

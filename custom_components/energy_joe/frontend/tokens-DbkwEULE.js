@@ -29,11 +29,11 @@ var e = globalThis, t = e.ShadowRoot && (e.ShadyCSS === void 0 || e.ShadyCSS.nat
 	let t = "";
 	for (let n of e.cssRules) t += n.cssText;
 	return a(t);
-})(e) : e, { is: l, defineProperty: u, getOwnPropertyDescriptor: d, getOwnPropertyNames: f, getOwnPropertySymbols: p, getPrototypeOf: m } = Object, h = globalThis, g = h.trustedTypes, _ = g ? g.emptyScript : "", ee = h.reactiveElementPolyfillSupport, v = (e, t) => e, y = {
+})(e) : e, { is: l, defineProperty: u, getOwnPropertyDescriptor: d, getOwnPropertyNames: f, getOwnPropertySymbols: p, getPrototypeOf: m } = Object, h = globalThis, g = h.trustedTypes, ee = g ? g.emptyScript : "", te = h.reactiveElementPolyfillSupport, _ = (e, t) => e, v = {
 	toAttribute(e, t) {
 		switch (t) {
 			case Boolean:
-				e = e ? _ : null;
+				e = e ? ee : null;
 				break;
 			case Object:
 			case Array: e = e == null ? e : JSON.stringify(e);
@@ -58,23 +58,23 @@ var e = globalThis, t = e.ShadowRoot && (e.ShadyCSS === void 0 || e.ShadyCSS.nat
 		}
 		return n;
 	}
-}, te = (e, t) => !l(e, t), ne = {
+}, ne = (e, t) => !l(e, t), re = {
 	attribute: !0,
 	type: String,
-	converter: y,
+	converter: v,
 	reflect: !1,
 	useDefault: !1,
-	hasChanged: te
+	hasChanged: ne
 };
 Symbol.metadata ??= Symbol("metadata"), h.litPropertyMetadata ??= /* @__PURE__ */ new WeakMap();
-var b = class extends HTMLElement {
+var y = class extends HTMLElement {
 	static addInitializer(e) {
 		this._$Ei(), (this.l ??= []).push(e);
 	}
 	static get observedAttributes() {
 		return this.finalize(), this._$Eh && [...this._$Eh.keys()];
 	}
-	static createProperty(e, t = ne) {
+	static createProperty(e, t = re) {
 		if (t.state && (t.attribute = !1), this._$Ei(), this.prototype.hasOwnProperty(e) && ((t = Object.create(t)).wrapped = !0), this.elementProperties.set(e, t), !t.noAccessor) {
 			let n = Symbol(), r = this.getPropertyDescriptor(e, n, t);
 			r !== void 0 && u(this.prototype, e, r);
@@ -100,16 +100,16 @@ var b = class extends HTMLElement {
 		};
 	}
 	static getPropertyOptions(e) {
-		return this.elementProperties.get(e) ?? ne;
+		return this.elementProperties.get(e) ?? re;
 	}
 	static _$Ei() {
-		if (this.hasOwnProperty(v("elementProperties"))) return;
+		if (this.hasOwnProperty(_("elementProperties"))) return;
 		let e = m(this);
 		e.finalize(), e.l !== void 0 && (this.l = [...e.l]), this.elementProperties = new Map(e.elementProperties);
 	}
 	static finalize() {
-		if (this.hasOwnProperty(v("finalized"))) return;
-		if (this.finalized = !0, this._$Ei(), this.hasOwnProperty(v("properties"))) {
+		if (this.hasOwnProperty(_("finalized"))) return;
+		if (this.finalized = !0, this._$Ei(), this.hasOwnProperty(_("properties"))) {
 			let e = this.properties, t = [...f(e), ...p(e)];
 			for (let n of t) this.createProperty(n, e[n]);
 		}
@@ -171,14 +171,14 @@ var b = class extends HTMLElement {
 	_$ET(e, t) {
 		let n = this.constructor.elementProperties.get(e), r = this.constructor._$Eu(e, n);
 		if (r !== void 0 && !0 === n.reflect) {
-			let i = (n.converter?.toAttribute === void 0 ? y : n.converter).toAttribute(t, n.type);
+			let i = (n.converter?.toAttribute === void 0 ? v : n.converter).toAttribute(t, n.type);
 			this._$Em = e, i == null ? this.removeAttribute(r) : this.setAttribute(r, i), this._$Em = null;
 		}
 	}
 	_$AK(e, t) {
 		let n = this.constructor, r = n._$Eh.get(e);
 		if (r !== void 0 && this._$Em !== r) {
-			let e = n.getPropertyOptions(r), i = typeof e.converter == "function" ? { fromAttribute: e.converter } : e.converter?.fromAttribute === void 0 ? y : e.converter;
+			let e = n.getPropertyOptions(r), i = typeof e.converter == "function" ? { fromAttribute: e.converter } : e.converter?.fromAttribute === void 0 ? v : e.converter;
 			this._$Em = r;
 			let a = i.fromAttribute(t, e.type);
 			this[r] = a ?? this._$Ej?.get(r) ?? a, this._$Em = null;
@@ -187,7 +187,7 @@ var b = class extends HTMLElement {
 	requestUpdate(e, t, n, r = !1, i) {
 		if (e !== void 0) {
 			let a = this.constructor;
-			if (!1 === r && (i = this[e]), n ??= a.getPropertyOptions(e), !((n.hasChanged ?? te)(i, t) || n.useDefault && n.reflect && i === this._$Ej?.get(e) && !this.hasAttribute(a._$Eu(e, n)))) return;
+			if (!1 === r && (i = this[e]), n ??= a.getPropertyOptions(e), !((n.hasChanged ?? ne)(i, t) || n.useDefault && n.reflect && i === this._$Ej?.get(e) && !this.hasAttribute(a._$Eu(e, n)))) return;
 			this.C(e, t, n);
 		}
 		!1 === this.isUpdatePending && (this._$ES = this._$EP());
@@ -251,16 +251,16 @@ var b = class extends HTMLElement {
 	updated(e) {}
 	firstUpdated(e) {}
 };
-b.elementStyles = [], b.shadowRootOptions = { mode: "open" }, b[v("elementProperties")] = /* @__PURE__ */ new Map(), b[v("finalized")] = /* @__PURE__ */ new Map(), ee?.({ ReactiveElement: b }), (h.reactiveElementVersions ??= []).push("2.1.2");
+y.elementStyles = [], y.shadowRootOptions = { mode: "open" }, y[_("elementProperties")] = /* @__PURE__ */ new Map(), y[_("finalized")] = /* @__PURE__ */ new Map(), te?.({ ReactiveElement: y }), (h.reactiveElementVersions ??= []).push("2.1.2");
 //#endregion
 //#region node_modules/lit-html/lit-html.js
-var re = globalThis, ie = (e) => e, x = re.trustedTypes, ae = x ? x.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, S = "$lit$", C = `lit$${Math.random().toFixed(9).slice(2)}$`, oe = "?" + C, se = `<${oe}>`, w = document, T = () => w.createComment(""), E = (e) => e === null || typeof e != "object" && typeof e != "function", D = Array.isArray, ce = (e) => D(e) || typeof e?.[Symbol.iterator] == "function", le = "[ 	\n\f\r]", O = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, ue = /-->/g, de = />/g, k = RegExp(`>|${le}(?:([^\\s"'>=/]+)(${le}*=${le}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`, "g"), fe = /'/g, pe = /"/g, me = /^(?:script|style|textarea|title)$/i, he = (e) => (t, ...n) => ({
+var b = globalThis, ie = (e) => e, x = b.trustedTypes, ae = x ? x.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, S = "$lit$", C = `lit$${Math.random().toFixed(9).slice(2)}$`, w = "?" + C, oe = `<${w}>`, T = document, E = () => T.createComment(""), D = (e) => e === null || typeof e != "object" && typeof e != "function", se = Array.isArray, ce = (e) => se(e) || typeof e?.[Symbol.iterator] == "function", le = "[ 	\n\f\r]", O = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, ue = /-->/g, de = />/g, k = RegExp(`>|${le}(?:([^\\s"'>=/]+)(${le}*=${le}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`, "g"), fe = /'/g, pe = /"/g, me = /^(?:script|style|textarea|title)$/i, he = (e) => (t, ...n) => ({
 	_$litType$: e,
 	strings: t,
 	values: n
-}), A = he(1), ge = he(2), j = Symbol.for("lit-noChange"), M = Symbol.for("lit-nothing"), _e = /* @__PURE__ */ new WeakMap(), N = w.createTreeWalker(w, 129);
+}), A = he(1), ge = he(2), j = Symbol.for("lit-noChange"), M = Symbol.for("lit-nothing"), _e = /* @__PURE__ */ new WeakMap(), N = T.createTreeWalker(T, 129);
 function ve(e, t) {
-	if (!D(e) || !e.hasOwnProperty("raw")) throw Error("invalid template strings array");
+	if (!se(e) || !e.hasOwnProperty("raw")) throw Error("invalid template strings array");
 	return ae === void 0 ? t : ae.createHTML(t);
 }
 var ye = (e, t) => {
@@ -269,10 +269,10 @@ var ye = (e, t) => {
 		let n = e[t], s, c, l = -1, u = 0;
 		for (; u < n.length && (o.lastIndex = u, c = o.exec(n), c !== null);) u = o.lastIndex, o === O ? c[1] === "!--" ? o = ue : c[1] === void 0 ? c[2] === void 0 ? c[3] !== void 0 && (o = k) : (me.test(c[2]) && (i = RegExp("</" + c[2], "g")), o = k) : o = de : o === k ? c[0] === ">" ? (o = i ?? O, l = -1) : c[1] === void 0 ? l = -2 : (l = o.lastIndex - c[2].length, s = c[1], o = c[3] === void 0 ? k : c[3] === "\"" ? pe : fe) : o === pe || o === fe ? o = k : o === ue || o === de ? o = O : (o = k, i = void 0);
 		let d = o === k && e[t + 1].startsWith("/>") ? " " : "";
-		a += o === O ? n + se : l >= 0 ? (r.push(s), n.slice(0, l) + S + n.slice(l) + C + d) : n + C + (l === -2 ? t : d);
+		a += o === O ? n + oe : l >= 0 ? (r.push(s), n.slice(0, l) + S + n.slice(l) + C + d) : n + C + (l === -2 ? t : d);
 	}
 	return [ve(e, a + (e[n] || "<?>") + (t === 2 ? "</svg>" : t === 3 ? "</math>" : "")), r];
-}, be = class e {
+}, P = class e {
 	constructor({ strings: t, _$litType$: n }, r) {
 		let i;
 		this.parts = [];
@@ -290,7 +290,7 @@ var ye = (e, t) => {
 						index: a,
 						name: r[2],
 						strings: n,
-						ctor: r[1] === "." ? Se : r[1] === "?" ? Ce : r[1] === "@" ? we : I
+						ctor: r[1] === "." ? xe : r[1] === "?" ? Se : r[1] === "@" ? Ce : L
 					}), i.removeAttribute(e);
 				} else e.startsWith(C) && (c.push({
 					type: 6,
@@ -300,15 +300,15 @@ var ye = (e, t) => {
 					let e = i.textContent.split(C), t = e.length - 1;
 					if (t > 0) {
 						i.textContent = x ? x.emptyScript : "";
-						for (let n = 0; n < t; n++) i.append(e[n], T()), N.nextNode(), c.push({
+						for (let n = 0; n < t; n++) i.append(e[n], E()), N.nextNode(), c.push({
 							type: 2,
 							index: ++a
 						});
-						i.append(e[t], T());
+						i.append(e[t], E());
 					}
 				}
 			} else if (i.nodeType === 8) {
-				if (i.data === oe) c.push({
+				if (i.data === w) c.push({
 					type: 2,
 					index: a
 				});
@@ -324,16 +324,16 @@ var ye = (e, t) => {
 		}
 	}
 	static createElement(e, t) {
-		let n = w.createElement("template");
+		let n = T.createElement("template");
 		return n.innerHTML = e, n;
 	}
 };
-function P(e, t, n = e, r) {
+function F(e, t, n = e, r) {
 	if (t === j) return t;
-	let i = r === void 0 ? n._$Cl : n._$Co?.[r], a = E(t) ? void 0 : t._$litDirective$;
-	return i?.constructor !== a && (i?._$AO?.(!1), a === void 0 ? i = void 0 : (i = new a(e), i._$AT(e, n, r)), r === void 0 ? n._$Cl = i : (n._$Co ??= [])[r] = i), i !== void 0 && (t = P(e, i._$AS(e, t.values), i, r)), t;
+	let i = r === void 0 ? n._$Cl : n._$Co?.[r], a = D(t) ? void 0 : t._$litDirective$;
+	return i?.constructor !== a && (i?._$AO?.(!1), a === void 0 ? i = void 0 : (i = new a(e), i._$AT(e, n, r)), r === void 0 ? n._$Cl = i : (n._$Co ??= [])[r] = i), i !== void 0 && (t = F(e, i._$AS(e, t.values), i, r)), t;
 }
-var xe = class {
+var be = class {
 	constructor(e, t) {
 		this._$AV = [], this._$AN = void 0, this._$AD = e, this._$AM = t;
 	}
@@ -344,23 +344,23 @@ var xe = class {
 		return this._$AM._$AU;
 	}
 	u(e) {
-		let { el: { content: t }, parts: n } = this._$AD, r = (e?.creationScope ?? w).importNode(t, !0);
+		let { el: { content: t }, parts: n } = this._$AD, r = (e?.creationScope ?? T).importNode(t, !0);
 		N.currentNode = r;
 		let i = N.nextNode(), a = 0, o = 0, s = n[0];
 		for (; s !== void 0;) {
 			if (a === s.index) {
 				let t;
-				s.type === 2 ? t = new F(i, i.nextSibling, this, e) : s.type === 1 ? t = new s.ctor(i, s.name, s.strings, this, e) : s.type === 6 && (t = new Te(i, this, e)), this._$AV.push(t), s = n[++o];
+				s.type === 2 ? t = new I(i, i.nextSibling, this, e) : s.type === 1 ? t = new s.ctor(i, s.name, s.strings, this, e) : s.type === 6 && (t = new we(i, this, e)), this._$AV.push(t), s = n[++o];
 			}
 			a !== s?.index && (i = N.nextNode(), a++);
 		}
-		return N.currentNode = w, r;
+		return N.currentNode = T, r;
 	}
 	p(e) {
 		let t = 0;
 		for (let n of this._$AV) n !== void 0 && (n.strings === void 0 ? n._$AI(e[t]) : (n._$AI(e, n, t), t += n.strings.length - 2)), t++;
 	}
-}, F = class e {
+}, I = class e {
 	get _$AU() {
 		return this._$AM?._$AU ?? this._$Cv;
 	}
@@ -378,7 +378,7 @@ var xe = class {
 		return this._$AB;
 	}
 	_$AI(e, t = this) {
-		e = P(this, e, t), E(e) ? e === M || e == null || e === "" ? (this._$AH !== M && this._$AR(), this._$AH = M) : e !== this._$AH && e !== j && this._(e) : e._$litType$ === void 0 ? e.nodeType === void 0 ? ce(e) ? this.k(e) : this._(e) : this.T(e) : this.$(e);
+		e = F(this, e, t), D(e) ? e === M || e == null || e === "" ? (this._$AH !== M && this._$AR(), this._$AH = M) : e !== this._$AH && e !== j && this._(e) : e._$litType$ === void 0 ? e.nodeType === void 0 ? ce(e) ? this.k(e) : this._(e) : this.T(e) : this.$(e);
 	}
 	O(e) {
 		return this._$AA.parentNode.insertBefore(e, this._$AB);
@@ -387,24 +387,24 @@ var xe = class {
 		this._$AH !== e && (this._$AR(), this._$AH = this.O(e));
 	}
 	_(e) {
-		this._$AH !== M && E(this._$AH) ? this._$AA.nextSibling.data = e : this.T(w.createTextNode(e)), this._$AH = e;
+		this._$AH !== M && D(this._$AH) ? this._$AA.nextSibling.data = e : this.T(T.createTextNode(e)), this._$AH = e;
 	}
 	$(e) {
-		let { values: t, _$litType$: n } = e, r = typeof n == "number" ? this._$AC(e) : (n.el === void 0 && (n.el = be.createElement(ve(n.h, n.h[0]), this.options)), n);
+		let { values: t, _$litType$: n } = e, r = typeof n == "number" ? this._$AC(e) : (n.el === void 0 && (n.el = P.createElement(ve(n.h, n.h[0]), this.options)), n);
 		if (this._$AH?._$AD === r) this._$AH.p(t);
 		else {
-			let e = new xe(r, this), n = e.u(this.options);
+			let e = new be(r, this), n = e.u(this.options);
 			e.p(t), this.T(n), this._$AH = e;
 		}
 	}
 	_$AC(e) {
 		let t = _e.get(e.strings);
-		return t === void 0 && _e.set(e.strings, t = new be(e)), t;
+		return t === void 0 && _e.set(e.strings, t = new P(e)), t;
 	}
 	k(t) {
-		D(this._$AH) || (this._$AH = [], this._$AR());
+		se(this._$AH) || (this._$AH = [], this._$AR());
 		let n = this._$AH, r, i = 0;
-		for (let a of t) i === n.length ? n.push(r = new e(this.O(T()), this.O(T()), this, this.options)) : r = n[i], r._$AI(a), i++;
+		for (let a of t) i === n.length ? n.push(r = new e(this.O(E()), this.O(E()), this, this.options)) : r = n[i], r._$AI(a), i++;
 		i < n.length && (this._$AR(r && r._$AB.nextSibling, i), n.length = i);
 	}
 	_$AR(e = this._$AA.nextSibling, t) {
@@ -416,7 +416,7 @@ var xe = class {
 	setConnected(e) {
 		this._$AM === void 0 && (this._$Cv = e, this._$AP?.(e));
 	}
-}, I = class {
+}, L = class {
 	get tagName() {
 		return this.element.tagName;
 	}
@@ -428,43 +428,43 @@ var xe = class {
 	}
 	_$AI(e, t = this, n, r) {
 		let i = this.strings, a = !1;
-		if (i === void 0) e = P(this, e, t, 0), a = !E(e) || e !== this._$AH && e !== j, a && (this._$AH = e);
+		if (i === void 0) e = F(this, e, t, 0), a = !D(e) || e !== this._$AH && e !== j, a && (this._$AH = e);
 		else {
 			let r = e, o, s;
-			for (e = i[0], o = 0; o < i.length - 1; o++) s = P(this, r[n + o], t, o), s === j && (s = this._$AH[o]), a ||= !E(s) || s !== this._$AH[o], s === M ? e = M : e !== M && (e += (s ?? "") + i[o + 1]), this._$AH[o] = s;
+			for (e = i[0], o = 0; o < i.length - 1; o++) s = F(this, r[n + o], t, o), s === j && (s = this._$AH[o]), a ||= !D(s) || s !== this._$AH[o], s === M ? e = M : e !== M && (e += (s ?? "") + i[o + 1]), this._$AH[o] = s;
 		}
 		a && !r && this.j(e);
 	}
 	j(e) {
 		e === M ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, e ?? "");
 	}
-}, Se = class extends I {
+}, xe = class extends L {
 	constructor() {
 		super(...arguments), this.type = 3;
 	}
 	j(e) {
 		this.element[this.name] = e === M ? void 0 : e;
 	}
-}, Ce = class extends I {
+}, Se = class extends L {
 	constructor() {
 		super(...arguments), this.type = 4;
 	}
 	j(e) {
 		this.element.toggleAttribute(this.name, !!e && e !== M);
 	}
-}, we = class extends I {
+}, Ce = class extends L {
 	constructor(e, t, n, r, i) {
 		super(e, t, n, r, i), this.type = 5;
 	}
 	_$AI(e, t = this) {
-		if ((e = P(this, e, t, 0) ?? M) === j) return;
+		if ((e = F(this, e, t, 0) ?? M) === j) return;
 		let n = this._$AH, r = e === M && n !== M || e.capture !== n.capture || e.once !== n.once || e.passive !== n.passive, i = e !== M && (n === M || r);
 		r && this.element.removeEventListener(this.name, this, n), i && this.element.addEventListener(this.name, this, e), this._$AH = e;
 	}
 	handleEvent(e) {
 		typeof this._$AH == "function" ? this._$AH.call(this.options?.host ?? this.element, e) : this._$AH.handleEvent(e);
 	}
-}, Te = class {
+}, we = class {
 	constructor(e, t, n) {
 		this.element = e, this.type = 6, this._$AN = void 0, this._$AM = t, this.options = n;
 	}
@@ -472,33 +472,33 @@ var xe = class {
 		return this._$AM._$AU;
 	}
 	_$AI(e) {
-		P(this, e);
+		F(this, e);
 	}
-}, Ee = {
+}, Te = {
 	M: S,
 	P: C,
-	A: oe,
+	A: w,
 	C: 1,
 	L: ye,
-	R: xe,
+	R: be,
 	D: ce,
-	V: P,
-	I: F,
-	H: I,
-	N: Ce,
-	U: we,
-	B: Se,
-	F: Te
-}, De = re.litHtmlPolyfillSupport;
-De?.(be, F), (re.litHtmlVersions ??= []).push("3.3.3");
-var Oe = (e, t, n) => {
+	V: F,
+	I,
+	H: L,
+	N: Se,
+	U: Ce,
+	B: xe,
+	F: we
+}, Ee = b.litHtmlPolyfillSupport;
+Ee?.(P, I), (b.litHtmlVersions ??= []).push("3.3.3");
+var De = (e, t, n) => {
 	let r = n?.renderBefore ?? t, i = r._$litPart$;
 	if (i === void 0) {
 		let e = n?.renderBefore ?? null;
-		r._$litPart$ = i = new F(t.insertBefore(T(), e), e, void 0, n ?? {});
+		r._$litPart$ = i = new I(t.insertBefore(E(), e), e, void 0, n ?? {});
 	}
 	return i._$AI(e), i;
-}, ke = globalThis, L = class extends b {
+}, R = globalThis, z = class extends y {
 	constructor() {
 		super(...arguments), this.renderOptions = { host: this }, this._$Do = void 0;
 	}
@@ -508,7 +508,7 @@ var Oe = (e, t, n) => {
 	}
 	update(e) {
 		let t = this.render();
-		this.hasUpdated || (this.renderOptions.isConnected = this.isConnected), super.update(e), this._$Do = Oe(t, this.renderRoot, this.renderOptions);
+		this.hasUpdated || (this.renderOptions.isConnected = this.isConnected), super.update(e), this._$Do = De(t, this.renderRoot, this.renderOptions);
 	}
 	connectedCallback() {
 		super.connectedCallback(), this._$Do?.setConnected(!0);
@@ -520,18 +520,18 @@ var Oe = (e, t, n) => {
 		return j;
 	}
 };
-L._$litElement$ = !0, L.finalized = !0, ke.litElementHydrateSupport?.({ LitElement: L });
-var Ae = ke.litElementPolyfillSupport;
-Ae?.({ LitElement: L }), (ke.litElementVersions ??= []).push("4.2.2");
+z._$litElement$ = !0, z.finalized = !0, R.litElementHydrateSupport?.({ LitElement: z });
+var Oe = R.litElementPolyfillSupport;
+Oe?.({ LitElement: z }), (R.litElementVersions ??= []).push("4.2.2");
 //#endregion
 //#region node_modules/@lit/reactive-element/decorators/property.js
-var je = {
+var ke = {
 	attribute: !0,
 	type: String,
-	converter: y,
+	converter: v,
 	reflect: !1,
-	hasChanged: te
-}, Me = (e = je, t, n) => {
+	hasChanged: ne
+}, Ae = (e = ke, t, n) => {
 	let { kind: r, metadata: i } = n, a = globalThis.litPropertyMetadata.get(i);
 	if (a === void 0 && globalThis.litPropertyMetadata.set(i, a = /* @__PURE__ */ new Map()), r === "setter" && ((e = Object.create(e)).wrapped = !0), a.set(n.name, e), r === "accessor") {
 		let { name: r } = n;
@@ -554,16 +554,16 @@ var je = {
 	}
 	throw Error("Unsupported decorator location: " + r);
 };
-function R(e) {
-	return (t, n) => typeof n == "object" ? Me(e, t, n) : ((e, t, n) => {
+function B(e) {
+	return (t, n) => typeof n == "object" ? Ae(e, t, n) : ((e, t, n) => {
 		let r = t.hasOwnProperty(n);
 		return t.constructor.createProperty(n, e), r ? Object.getOwnPropertyDescriptor(t, n) : void 0;
 	})(e, t, n);
 }
 //#endregion
 //#region node_modules/@lit/reactive-element/decorators/state.js
-function z(e) {
-	return R({
+function V(e) {
+	return B({
 		...e,
 		state: !0,
 		attribute: !1
@@ -571,10 +571,10 @@ function z(e) {
 }
 //#endregion
 //#region node_modules/@lit/reactive-element/decorators/base.js
-var Ne = (e, t, n) => (n.configurable = !0, n.enumerable = !0, Reflect.decorate && typeof t != "object" && Object.defineProperty(e, t, n), n);
+var je = (e, t, n) => (n.configurable = !0, n.enumerable = !0, Reflect.decorate && typeof t != "object" && Object.defineProperty(e, t, n), n);
 //#endregion
 //#region node_modules/@lit/reactive-element/decorators/query.js
-function B(e, t) {
+function Me(e, t) {
 	return (n, r, i) => {
 		let a = (t) => t.renderRoot?.querySelector(e) ?? null;
 		if (t) {
@@ -589,19 +589,19 @@ function B(e, t) {
 					}
 				};
 			})();
-			return Ne(n, r, { get() {
+			return je(n, r, { get() {
 				let n = e.call(this);
 				return n === void 0 && (n = a(this), (n !== null || this.hasUpdated) && t.call(this, n)), n;
 			} });
 		}
-		return Ne(n, r, { get() {
+		return je(n, r, { get() {
 			return a(this);
 		} });
 	};
 }
 //#endregion
 //#region src/i18n/de.ts
-var Pe = {
+var Ne = {
 	"tab.overview": "Übersicht",
 	"tab.plan": "Plan",
 	"tab.review": "Rückblick",
@@ -1113,7 +1113,8 @@ var Pe = {
 	"signpost.rule_max_price.terms": "zu teuer, Preisgrenze",
 	"signpost.rule_min_saving.terms": "lohnt sich, Mindestgewinn",
 	"signpost.rule_priority.terms": "Reihenfolge, Vorrang",
-	"signpost.rule_buffer_factor.terms": "Puffer, Wieder selbst lernen, Aufschlag",
+	"signpost.rule_buffer_factor.terms": "Puffer, Sicherheitspuffer, eigener Puffer, Aufschlag",
+	"signpost.rule_night_caution.terms": "Vorsicht, Risiko, schlechter Tag, Regen, Nacht planen, mutig, vorsichtig, Sicherheit",
 	"signpost.rule_plan_offset_min.terms": "fester Plan, Uhrzeit",
 	"signpost.rule_reset_lead_min.terms": "Vorlauf, zurückschalten",
 	"signpost.notify": "Benachrichtigungen",
@@ -1697,6 +1698,20 @@ var Pe = {
 	"tip.r_day_caution.title": "Wie vorsichtig soll ich sein?",
 	"tip.r_day_caution.text": "Ich nehme die Sonnenvorhersage (schon mit dem, was ich über deine Anlage gelernt habe) und rechne nur mit einem Teil davon: knapp 90 %, normal 80 %, vorsichtig 65 %. Damit bestimme ich, wann die Sonne am Abend nicht mehr fürs Haus reicht – im Sommer später, im Winter früher – und wie langsam die Speicher bis dahin laden dürfen.",
 	"tip.r_day_caution.hint": "Je vorsichtiger, desto früher und schneller laden die Speicher und desto weniger bleibt für evcc.",
+	"rule.night_caution": "Wie vorsichtig plane ich die Nacht?",
+	"rule.night_caution.bold": "Mutig",
+	"rule.night_caution.brave": "Eher mutig",
+	"rule.night_caution.balanced": "Ausgewogen",
+	"rule.night_caution.careful": "Eher vorsichtig",
+	"rule.night_caution.cautious": "Vorsichtig",
+	"rule.night_caution.bold.hint": "Ich rechne mit dem Tag, wie er meistens kommt. Bei Sonne am günstigsten, bei Regen kaufst du abends eher zu.",
+	"rule.night_caution.brave.hint": "Ein schlechter Tag zählt so viel wie ein guter. Meist günstig, an trüben Tagen kaufst du abends manchmal etwas zu.",
+	"rule.night_caution.balanced.hint": "Ein schlechter Tag zählt doppelt so viel wie ein guter. Lieber eine Kilowattstunde zu viel geladen als abends teuren Tagesstrom.",
+	"rule.night_caution.careful.hint": "Ein schlechter Tag zählt viermal so viel wie ein guter. Abends kaufst du nur selten zu, dafür lade ich nachts öfter etwas mehr.",
+	"rule.night_caution.cautious.hint": "Ich plane fast für den schlechten Fall. Du kaufst abends selten teuer, dafür manchmal etwas zu viel nachts.",
+	"tip.r_night_caution.title": "Wie vorsichtig soll ich die Nacht planen?",
+	"tip.r_night_caution.text": "Wie voll ich nachts lade, hängt am Tag danach – und den kenne ich nie genau. Darum rechne ich jedes Ziel für drei Tage durch: einen schlechten (weniger Sonne, mehr Verbrauch), einen wie meistens und einen guten. Wie weit die drei auseinanderliegen, lerne ich aus deinen echten Tagen, je Wetterlage. Diese Wahl sagt, wie stark der schlechte Tag zählt. Ich nehme das Ziel, das dich im Schnitt am wenigsten kostet.",
+	"tip.r_night_caution.hint": "Vorsichtiger heißt: nachts etwas mehr günstigen Strom, dafür abends seltener teuren.",
 	"rule.reserve_soc.hint": "Mindestens so viel bleibt in jedem Speicher. Hat ein Speicher eine höhere Entladegrenze, gilt die.",
 	"tip.r_reserve_soc.text": "Die Untergrenze für alle Speicher – zum Beispiel als Notreserve oder um die Speicher zu schonen. Jeder Speicher hat zusätzlich seine eigene Entladegrenze (am Gerät eingestellt, siehe Speicher). Ich rechne je Speicher mit dem höheren der beiden Werte.",
 	"tip.r_reserve_soc.hint": "10 % passen für die meisten Speicher.",
@@ -1732,8 +1747,8 @@ var Pe = {
 	"rule.balance_days": "Pflegeladung",
 	"rule.balance_days.hint": "Alle so viele Tage einmal ganz voll laden. Leer = aus.",
 	"rule.balance_days.unit": "Tage",
-	"rule.buffer_factor": "Sicherheitspuffer",
-	"rule.buffer_factor.hint": "Aufschlag auf meine Rechnung. Den lerne ich selbst – „Startwert“ lässt mich wieder selbst lernen.",
+	"rule.buffer_factor": "Eigener Puffer",
+	"rule.buffer_factor.hint": "Nur wenn du ihn willst: So viel lege ich zusätzlich obendrauf. Den stellst du selbst ein – ich lerne ihn nicht mehr.",
 	"rule.plan_offset_min": "Plan festlegen",
 	"rule.plan_offset_min.hint": "Minuten vor Beginn der günstigen Zeit.",
 	"rule.reset_lead_min": "Zurückstellen",
@@ -1891,8 +1906,8 @@ var Pe = {
 	"tip.r_balance_days.title": "Was ist eine Pflegeladung?",
 	"tip.r_balance_days.text": "Viele Speicher gleichen ihre Zellen nur ab, wenn sie ab und zu ganz voll werden – sonst stimmt die Ladestandsanzeige mit der Zeit nicht mehr. War ein Speicher so viele Tage nicht voll und füllt ihn auch die Sonne morgen nicht, lade ich ihn in der günstigen Zeit einmal auf 100 %.",
 	"tip.r_balance_days.hint": "Üblich sind 14 bis 30 Tage. Steht im Handbuch deines Speichers.",
-	"tip.r_buffer_factor.title": "Was ist der Sicherheitspuffer?",
-	"tip.r_buffer_factor.text": "So viel schlage ich auf meine Rechnung drauf, solange ich dein Haus noch nicht gut kenne. Je besser meine Prognosen treffen, desto kleiner wird er.",
+	"tip.r_buffer_factor.title": "Was ist der eigene Puffer?",
+	"tip.r_buffer_factor.text": "Ein Aufschlag, den nur du festlegst: So viel lade ich zusätzlich auf den Teil über der Reserve. Früher habe ich ihn selbst gelernt – das mache ich nicht mehr. Unsichere Tage plane ich jetzt mit einem schlechten, einem üblichen und einem guten Tag ein (siehe „Wie vorsichtig plane ich die Nacht?“). Der Puffer kommt nur noch obendrauf.",
 	"tip.r_plan_offset_min.title": "Wann lege ich den Plan fest?",
 	"tip.r_plan_offset_min.text": "So viele Minuten vor Beginn der günstigen Zeit rechne ich den Plan für die Nacht aus – mit der neuesten Prognose.",
 	"tip.r_reset_lead_min.title": "Warum vor dem Ende zurückstellen?",
@@ -2074,6 +2089,25 @@ var Pe = {
 	"plan.say.balance": "Heute ist Pflegenacht: Ich lade einmal ganz voll, damit die Speicher ihre Zellen abgleichen.",
 	"plan.say.small_saving": "Heute Nacht lasse ich es: Es würde weniger bringen, als du in den Regeln als Mindestersparnis eingestellt hast.",
 	"plan.say.max_price": "Über deinem Höchstpreis lade ich nicht aus dem Netz.",
+	"plan.say.caution": "Das ist etwas mehr, als ein gewöhnlicher Tag bräuchte – für den Fall, dass morgen weniger Sonne kommt oder ihr mehr braucht.",
+	"plan.risk": "Warum {target} %",
+	"plan.risk.more": "Wenn der Tag kommt wie meistens, reichten {typical} %. Ich lade {target} %: Kommt er schlecht ({solar} kWh Sonne, {home} kWh Verbrauch), sparst du damit {saving} Tagesstrom. Kommt er gut, kostet es dich {loss}.",
+	"plan.risk.more_hold": "Wenn der Tag kommt wie meistens, reichten {typical} %. Ich halte {target} %: Kommt er schlecht ({solar} kWh Sonne, {home} kWh Verbrauch), sparst du damit {saving} Tagesstrom. Kommt er gut, kostet es dich {loss}.",
+	"plan.risk.less": "Wenn der Tag kommt wie meistens, reichten {typical} %. Ich nehme nur {target} %: Kommt er gut ({solar} kWh Sonne, {home} kWh Verbrauch), sparst du damit {saving}. Kommt er schlecht, kostet es dich {loss} Tagesstrom.",
+	"plan.risk.same": "Auch wenn der Tag schlecht kommt, lohnt mehr nicht.",
+	"plan.risk.class": "Wetter morgen: {class}",
+	"plan.risk.class.clear": "klar",
+	"plan.risk.class.mixed": "gemischt",
+	"plan.risk.class.overcast": "bedeckt",
+	"plan.risk.class.rain": "Regen",
+	"plan.risk.days": "gelernt aus {solar} Tagen Sonne und {home} Tagen Verbrauch",
+	"plan.risk.days.partly": "{what} gelernt aus {days} Tagen, sonst noch Annahmen",
+	"plan.risk.days.solar": "Sonne",
+	"plan.risk.days.home": "Verbrauch",
+	"plan.risk.days.none": "noch Annahmen, ich lerne das",
+	"tip.plan_risk.title": "Warum gerade dieses Ziel?",
+	"tip.plan_risk.text": "Wie morgen wird, weiß ich nie genau. Darum rechne ich jedes Ziel für drei Tage durch: einen schlechten (weniger Sonne, mehr Verbrauch), einen wie meistens und einen guten. Wie stark der schlechte Tag zählt, stellst du bei „Wie vorsichtig plane ich die Nacht?“ ein. Ich nehme das Ziel, das dich im Schnitt am wenigsten kostet.",
+	"tip.plan_risk.hint": "Tagesstrom ist der teure Strom aus dem Netz, wenn die Speicher vor der Sonne leer sind.",
 	"plan.say.hold": "Ich lade nicht, halte die Speicher in der günstigen Zeit aber bei {target} % – lieber jetzt günstig aus dem Netz als morgen früh teuer.",
 	"plan.say.empty": "Ohne mich wären sie um {time} Uhr leer.",
 	"plan.say.none": "Heute Nacht muss ich nichts tun: Die Speicher reichen, bis die Sonne um {time} Uhr übernimmt.",
@@ -2140,7 +2174,8 @@ var Pe = {
 	"plan.math.workday": "für einen Arbeitstag",
 	"plan.math.day_off": "für ein Wochenende oder einen Feiertag",
 	"plan.math.target": "Ziel",
-	"plan.math.target.sub": "nötig wären {optimum} %, dazu {buffer} % Puffer auf den Teil über der Reserve",
+	"plan.math.target.sub": "abgewogen nach schlechtem, üblichem und gutem Tag wären es {optimum} %, dazu {buffer} % deines eigenen Puffers auf den Teil über der Reserve",
+	"plan.math.target.sub_none": "abgewogen nach schlechtem, üblichem und gutem Tag – ohne eigenen Puffer",
 	"plan.math.prices": "Preise",
 	"plan.math.prices.value": "günstig {night} · sonst {day} · Einspeisung {feed}",
 	"plan.math.prices.assumed": "Nicht alle Preise kenne ich – die fehlenden habe ich angenommen. Trag sie unter Geräte › Netz & Sonne ein.",
@@ -2153,7 +2188,7 @@ var Pe = {
 	"tip.plan_refresh.title": "Wann rechne ich neu?",
 	"tip.plan_refresh.text": "Jede Stunde von allein, mit der neuesten Prognose. Kurz vor der günstigen Zeit lege ich den Plan fest, danach bleibt er bis zum Morgen. Mit **Neu rechnen** rechne ich sofort.",
 	"tip.plan_math.title": "Wie entscheide ich?",
-	"tip.plan_math.text": "Ich spiele die Stunden bis zur nächsten Nacht durch – für jedes mögliche Ziel – und nehme das, bei dem du am wenigsten bezahlst. Weil ich noch lerne, lege ich einen Puffer drauf. **Ändern →** bringt dich dorthin, wo ein Wert eingestellt wird.",
+	"tip.plan_math.text": "Ich spiele die Stunden bis zur nächsten Nacht durch – für jedes mögliche Ziel und für einen schlechten, einen üblichen und einen guten Tag – und nehme das Ziel, bei dem du im Schnitt am wenigsten bezahlst. Einen eigenen Puffer lege ich nur drauf, wenn du einen eingestellt hast. **Ändern →** bringt dich dorthin, wo ein Wert eingestellt wird.",
 	"tip.chart_plan_energy.title": "Was sehe ich hier?",
 	"tip.chart_plan_energy.text": "Was ich pro Stunde erwarte: **Sonne** laut Prognose, deinen **Verbrauch** aus ähnlichen Tagen und wann ich **aus dem Netz lade**. Hinterlegt ist die günstige Zeit.",
 	"tip.chart_plan_prices.title": "Was sehe ich hier?",
@@ -2161,7 +2196,7 @@ var Pe = {
 	"tip.chart_plan_soc.title": "Was sehe ich hier?",
 	"tip.chart_plan_soc.text": "Wie voll die Speicher **mit Plan** wären und wie voll **ohne Plan**. Der Unterschied ist das, was ich dir spare.",
 	"learn.page.title": "Was ich |gelernt habe",
-	"learn.lead": "Jeden Morgen spiele ich den Plan der Nacht mit dem echten Tag nach. Daraus lerne ich, wie gut die Prognose bei dir trifft und wie viel Puffer du wirklich brauchst.",
+	"learn.lead": "Jeden Morgen spiele ich den Plan der Nacht mit dem echten Tag nach. Daraus lerne ich, wie gut die Prognose bei dir trifft und wie weit Sonne und Verbrauch danebenliegen können.",
 	"learn.since": "Ich lerne seit {day}",
 	"learn.since_start": "Ich lerne aus allem, was ich seit {day} gesehen habe",
 	"learn.updated": "zuletzt dazugelernt {day}, {time} Uhr",
@@ -2177,7 +2212,6 @@ var Pe = {
 	"learn.results.chart.saving": "gespart",
 	"learn.still": "lerne noch",
 	"learn.days": "aus {days} Tagen",
-	"learn.mornings": "aus {count} Morgen",
 	"learn.solar": "Sonnenprognose",
 	"learn.solar.less": "Die Prognose verspricht bei dir im Schnitt {value} % zu viel – ich rechne nur mit {share} % davon.",
 	"learn.solar.more": "Deine Anlage liefert im Schnitt {value} % mehr, als die Prognose verspricht – ich rechne mit {share} %.",
@@ -2197,14 +2231,29 @@ var Pe = {
 	"learn.shift.chart": "Sonne pro Stunde, im Schnitt",
 	"learn.shift.chart.actual": "geliefert",
 	"learn.shift.chart.forecast": "Prognose vom Vorabend",
-	"learn.buffer": "Puffer",
-	"learn.buffer.learned": "So viel lege ich auf das nötige Ziel drauf. Damit hätte es an 8 von 10 Morgen bis zur Sonne gereicht.",
-	"learn.buffer.default": "Mein Startwert, bewusst vorsichtig. Nach {need} nachgespielten Nächten weiß ich, wie viel Puffer du wirklich brauchst – {have} habe ich.",
-	"learn.buffer.user": "Den hast du selbst eingestellt – ich lasse ihn so.",
-	"learn.buffer.user_learned": "Den hast du selbst eingestellt. Ich hätte {value} % genommen.",
 	"learn.buffer.chart": "Bis zur Sonne gebraucht",
 	"learn.buffer.chart.planned": "geplant",
 	"learn.buffer.chart.actual": "gebraucht",
+	"learn.spread": "Wie sicher meine Vorhersagen sind",
+	"learn.spread.say": "So weit lagen meine Vorhersagen bisher daneben. Damit plane ich nachts einen schlechten und einen guten Tag ein – etwa jeder fünfte Tag kommt noch schlechter, jeder fünfte noch besser.",
+	"learn.spread.none": "Lerne ich noch – bis dahin rechne ich mit Annahmen.",
+	"learn.spread.solar": "Sonne bei {class}",
+	"learn.spread.class.clear": "klarem Himmel",
+	"learn.spread.class.mixed": "gemischtem Wetter",
+	"learn.spread.class.overcast": "bedecktem Himmel",
+	"learn.spread.class.rain": "Regen",
+	"learn.spread.class.all": "jedem Wetter",
+	"learn.spread.bad": "schlechter Tag {value} %",
+	"learn.spread.good": "guter Tag {value} % der Prognose",
+	"learn.spread.home": "Verbrauch an {group} Tagen",
+	"learn.spread.group.cold": "kalten",
+	"learn.spread.group.mild": "milden",
+	"learn.spread.group.all": "allen",
+	"learn.spread.range": "{low} bis {high} % des Erwarteten",
+	"learn.spread.buffer": "Nur dein eigener Aufschlag obendrauf – den lerne ich nicht mehr.",
+	"tip.learn_spread.title": "Wozu brauche ich das?",
+	"tip.learn_spread.text": "Jeden Morgen vergleiche ich, wie viel Sonne kam und wie viel ihr gebraucht habt, mit dem, was ich erwartet hatte. Daraus lerne ich je Wetterlage, wie schlecht ein schlechter und wie gut ein guter Tag ausfällt – beim Verbrauch getrennt nach kalten und milden Tagen. Mit diesen Tagen rechne ich nachts jedes Ziel durch, statt pauschal einen Puffer draufzulegen.",
+	"tip.learn_spread.hint": "Wie stark der schlechte Tag zählt, stellst du unter Einstellungen › Regeln ein.",
 	"learn.home": "Verbrauch",
 	"learn.home.history": "Deinen Tagesgang kenne ich aus {days} Tagen – Arbeitstage und freie Tage getrennt.",
 	"learn.home.default": "Deinen Verbrauch kenne ich noch nicht gut und rechne mit einem typischen Haushalt.",
@@ -2321,9 +2370,9 @@ var Pe = {
 	"learn.reset.label": "Lernen zurücksetzen",
 	"learn.reset.confirm.title": "Wirklich |neu anfangen?",
 	"learn.reset.confirm.forget": "Das vergesse ich",
-	"learn.reset.forget.all": "Prognose-Faktoren, Zeitversatz, Wetterlagen, Prognosequellen, den gelernten Puffer, alle Rechnungen zu Verbrauch, Speichern, Warmwasser und Autos, wie schnell jeder Raum warm wird, und die Bilanz, was es gebracht hätte.",
-	"learn.reset.forget.forecast": "Prognose-Faktor, Zeitversatz, die Faktoren je Wetterlage und wie gut die Prognosequellen treffen.",
-	"learn.reset.forget.consumption": "Die Rechnung zu Verbrauch und Wetter, die Rechnungen je Gerät, die Anwesenheit nach Kalender und den gelernten Puffer.",
+	"learn.reset.forget.all": "Prognose-Faktoren, Zeitversatz, Wetterlagen, Prognosequellen, wie weit Sonne und Verbrauch danebenlagen, alle Rechnungen zu Verbrauch, Speichern, Warmwasser und Autos, wie schnell jeder Raum warm wird, und die Bilanz, was es gebracht hätte.",
+	"learn.reset.forget.forecast": "Prognose-Faktor, Zeitversatz, die Faktoren je Wetterlage, wie gut die Prognosequellen treffen und wie weit die Sonne danebenlag.",
+	"learn.reset.forget.consumption": "Die Rechnung zu Verbrauch und Wetter, die Rechnungen je Gerät, die Anwesenheit nach Kalender und wie weit der Verbrauch danebenlag.",
 	"learn.reset.forget.battery": "Die gemessene Größe und den Wirkungsgrad deiner Speicher.",
 	"learn.reset.forget.hot_water": "Heizrate, Standverlust und Tagesverbrauch des Warmwassers.",
 	"learn.reset.confirm.keep": "Das bleibt",
@@ -2628,9 +2677,6 @@ var Pe = {
 	"tip.learn_solar.text": "Ich vergleiche jeden Tag die Prognose vom Vorabend mit dem, was deine Anlage geliefert hat, und nehme den mittleren Wert der letzten vier Wochen. Ausreißer wie ein verschneites Dach fallen so kaum ins Gewicht. Jede neue Prognose rechne ich damit um.",
 	"tip.learn_shift.title": "Was ist der Zeitversatz?",
 	"tip.learn_shift.text": "Manche Prognosen geben ihre Stunden mit dem Ende statt dem Anfang an – dann liegen sie eine Stunde daneben. Ich prüfe jeden Tag, ob die Kurve um eine Stunde verschoben besser passt, und verschiebe sie erst, wenn das an den meisten Tagen klar so ist.",
-	"tip.learn_buffer.title": "Wozu der Puffer?",
-	"tip.learn_buffer.text": "Ich lade etwas mehr, als nötig wäre – für Morgen, an denen ihr mehr braucht oder die Sonne später kommt. Wie viel, lerne ich aus den nachgespielten Nächten: so viel, dass es an 8 von 10 Morgen gereicht hätte. Zu viel Puffer kostet Geld, zu wenig auch.",
-	"tip.learn_buffer.hint": "Einen eigenen Wert stellst du unter Einstellungen › Regeln ein.",
 	"tip.learn_home.title": "Was sehe ich hier?",
 	"tip.learn_home.text": "Wie viel ihr im Schnitt pro Stunde verbraucht – an Arbeitstagen und an freien Tagen. Damit rechne ich aus, wie viel die Speicher bis zur Sonne liefern müssen.",
 	"tip.learn_accuracy.title": "Was sehe ich hier?",
@@ -4168,7 +4214,7 @@ var Pe = {
 	"error.action": "Fehler beim Speichern",
 	loading: "Joe sattelt auf …",
 	"menu.sidebar": "Home-Assistant-Menü"
-}, Fe = {
+}, Pe = {
 	"tab.overview": "Overview",
 	"tab.plan": "Plan",
 	"tab.review": "Review",
@@ -4680,7 +4726,8 @@ var Pe = {
 	"signpost.rule_max_price.terms": "too expensive, price limit",
 	"signpost.rule_min_saving.terms": "worth it, minimum gain",
 	"signpost.rule_priority.terms": "order, precedence",
-	"signpost.rule_buffer_factor.terms": "buffer, learn again by itself, margin",
+	"signpost.rule_buffer_factor.terms": "buffer, safety buffer, own buffer, margin",
+	"signpost.rule_night_caution.terms": "caution, risk, bad day, rain, plan the night, bold, careful, safety",
 	"signpost.rule_plan_offset_min.terms": "fixed plan, time",
 	"signpost.rule_reset_lead_min.terms": "lead time, switch back",
 	"signpost.notify": "Notifications",
@@ -5264,6 +5311,20 @@ var Pe = {
 	"tip.r_day_caution.title": "How careful should I be?",
 	"tip.r_day_caution.text": "I take the solar forecast (already corrected by what I learned about your system) and count on only part of it: tight 90 %, normal 80 %, careful 65 %. From that I work out when the evening sun no longer covers the house – later in summer, earlier in winter – and how slowly the batteries may charge until then.",
 	"tip.r_day_caution.hint": "The more careful, the earlier and faster the batteries charge and the less is left for evcc.",
+	"rule.night_caution": "How careful do I plan the night?",
+	"rule.night_caution.bold": "Bold",
+	"rule.night_caution.brave": "Rather bold",
+	"rule.night_caution.balanced": "Balanced",
+	"rule.night_caution.careful": "Rather careful",
+	"rule.night_caution.cautious": "Careful",
+	"rule.night_caution.bold.hint": "I count on the day as it usually comes. Cheapest with sun; on rainy days you tend to buy in the evening.",
+	"rule.night_caution.brave.hint": "A bad day counts as much as a good one. Mostly cheap; on dull days you sometimes buy a little in the evening.",
+	"rule.night_caution.balanced.hint": "A bad day counts twice as much as a good one. Better one kilowatt-hour too much charged than expensive day power in the evening.",
+	"rule.night_caution.careful.hint": "A bad day counts four times as much as a good one. You rarely buy in the evening, but I more often charge a little extra at night.",
+	"rule.night_caution.cautious.hint": "I plan almost for the bad case. You rarely buy expensive power in the evening, but sometimes a bit too much at night.",
+	"tip.r_night_caution.title": "How careful should I plan the night?",
+	"tip.r_night_caution.text": "How full I charge at night depends on the day after – and I never know it exactly. So I work out every target for three days: a bad one (less sun, more consumption), one as it usually comes and a good one. How far apart the three are I learn from your real days, per weather class. This choice says how much the bad day counts. I take the target that costs you least on average.",
+	"tip.r_night_caution.hint": "More careful means: a bit more cheap power at night, and less often expensive power in the evening.",
 	"rule.reserve_soc.hint": "At least this much stays in every battery. If a battery's own floor is higher, that applies.",
 	"tip.r_reserve_soc.text": "The lowest level for all batteries – e.g. as an emergency reserve or to spare the batteries. Each battery also has its own discharge floor (set on the device, see the battery). For each battery I use the higher of the two.",
 	"tip.r_reserve_soc.hint": "10 % fits most batteries.",
@@ -5299,8 +5360,8 @@ var Pe = {
 	"rule.balance_days": "Maintenance charge",
 	"rule.balance_days.hint": "Charge full once every so many days. Empty = off.",
 	"rule.balance_days.unit": "days",
-	"rule.buffer_factor": "Safety buffer",
-	"rule.buffer_factor.hint": "Added to my calculation. I learn it myself – “Default” lets me learn it myself again.",
+	"rule.buffer_factor": "Own buffer",
+	"rule.buffer_factor.hint": "Only if you want one: this much I add on top. You set it yourself – I no longer learn it.",
 	"rule.plan_offset_min": "Fix the plan",
 	"rule.plan_offset_min.hint": "Minutes before the cheap hours begin.",
 	"rule.reset_lead_min": "Put things back",
@@ -5458,8 +5519,8 @@ var Pe = {
 	"tip.r_balance_days.title": "What is a maintenance charge?",
 	"tip.r_balance_days.text": "Many batteries only balance their cells when they get full now and then – otherwise the level shown drifts over time. If a battery has not been full for that many days and the sun won't fill it tomorrow either, I charge it to 100 % once in the cheap hours.",
 	"tip.r_balance_days.hint": "Usual are 14 to 30 days. See your battery's manual.",
-	"tip.r_buffer_factor.title": "What is the safety buffer?",
-	"tip.r_buffer_factor.text": "This much I add to my calculation while I don't know your home well yet. The better my forecasts get, the smaller it becomes.",
+	"tip.r_buffer_factor.title": "What is the own buffer?",
+	"tip.r_buffer_factor.text": "A margin only you set: this much I charge extra on the part above the reserve. I used to learn it myself – I no longer do. I now plan for uncertain days with a bad, a typical and a good day (see “How careful do I plan the night?”). The buffer only comes on top.",
 	"tip.r_plan_offset_min.title": "When do I fix the plan?",
 	"tip.r_plan_offset_min.text": "This many minutes before the cheap hours begin I work out the plan for the night – with the latest forecast.",
 	"tip.r_reset_lead_min.title": "Why put things back before the end?",
@@ -5641,6 +5702,25 @@ var Pe = {
 	"plan.say.balance": "Tonight is a maintenance night: I charge full once so the batteries can balance their cells.",
 	"plan.say.small_saving": "I leave it tonight: it would save less than the minimum saving you set in the rules.",
 	"plan.say.max_price": "Above your highest price I don't charge from the grid.",
+	"plan.say.caution": "That is a bit more than a usual day would need – in case tomorrow brings less sun or you use more.",
+	"plan.risk": "Why {target} %",
+	"plan.risk.more": "If the day comes as it usually does, {typical} % would do. I charge {target} %: if it comes out bad ({solar} kWh sun, {home} kWh consumption), that saves you {saving} of day power. If it comes out good, it costs you {loss}.",
+	"plan.risk.more_hold": "If the day comes as it usually does, {typical} % would do. I hold {target} %: if it comes out bad ({solar} kWh sun, {home} kWh consumption), that saves you {saving} of day power. If it comes out good, it costs you {loss}.",
+	"plan.risk.less": "If the day comes as it usually does, {typical} % would do. I only take {target} %: if it comes out good ({solar} kWh sun, {home} kWh consumption), that saves you {saving}. If it comes out bad, it costs you {loss} of day power.",
+	"plan.risk.same": "Even if the day comes out bad, more does not pay.",
+	"plan.risk.class": "Weather tomorrow: {class}",
+	"plan.risk.class.clear": "clear",
+	"plan.risk.class.mixed": "mixed",
+	"plan.risk.class.overcast": "overcast",
+	"plan.risk.class.rain": "rain",
+	"plan.risk.days": "learned from {solar} days of sun and {home} days of consumption",
+	"plan.risk.days.partly": "{what} learned from {days} days, otherwise still assumptions",
+	"plan.risk.days.solar": "Sun",
+	"plan.risk.days.home": "Consumption",
+	"plan.risk.days.none": "still assumptions, I am learning this",
+	"tip.plan_risk.title": "Why this target?",
+	"tip.plan_risk.text": "I never know exactly how tomorrow will be. So I work out every target for three days: a bad one (less sun, more consumption), one as it usually comes and a good one. How much the bad day counts you set under “How careful do I plan the night?”. I take the target that costs you least on average.",
+	"tip.plan_risk.hint": "Day power is the expensive power from the grid when the batteries are empty before the sun comes.",
 	"plan.say.hold": "I won't charge, but I'll hold the batteries at {target} % during the cheap hours – better cheap grid power now than expensive power tomorrow morning.",
 	"plan.say.empty": "Without me they'd be empty at {time}.",
 	"plan.say.none": "Nothing to do tonight: the batteries last until the sun takes over at {time}.",
@@ -5707,7 +5787,8 @@ var Pe = {
 	"plan.math.workday": "for a working day",
 	"plan.math.day_off": "for a weekend or holiday",
 	"plan.math.target": "Target",
-	"plan.math.target.sub": "{optimum} % would be needed, plus {buffer} % buffer on the part above the reserve",
+	"plan.math.target.sub": "weighing a bad, a typical and a good day it would be {optimum} %, plus {buffer} % of your own buffer on the part above the reserve",
+	"plan.math.target.sub_none": "weighing a bad, a typical and a good day – without a buffer of your own",
 	"plan.math.prices": "Prices",
 	"plan.math.prices.value": "cheap {night} · otherwise {day} · feed-in {feed}",
 	"plan.math.prices.assumed": "I don't know all prices – I assumed the missing ones. Enter them under Devices › Grid & sun.",
@@ -5720,7 +5801,7 @@ var Pe = {
 	"tip.plan_refresh.title": "When do I plan again?",
 	"tip.plan_refresh.text": "Every hour by myself, with the latest forecast. Shortly before the cheap hours I fix the plan, then it stays until the morning. **Plan again** calculates right away.",
 	"tip.plan_math.title": "How do I decide?",
-	"tip.plan_math.text": "I play through the hours until the next night – for every possible target – and take the one that costs you least. Since I'm still learning, I add a buffer. **Change →** takes you to where a value is set.",
+	"tip.plan_math.text": "I play through the hours until the next night – for every possible target and for a bad, a typical and a good day – and take the target that costs you least on average. I only add a buffer of my own if you have set one. **Change →** takes you to where a value is set.",
 	"tip.chart_plan_energy.title": "What am I looking at?",
 	"tip.chart_plan_energy.text": "What I expect per hour: **sun** from the forecast, your **consumption** from similar days and when I **charge from the grid**. The cheap hours are shaded.",
 	"tip.chart_plan_prices.title": "What am I looking at?",
@@ -5728,7 +5809,7 @@ var Pe = {
 	"tip.chart_plan_soc.title": "What am I looking at?",
 	"tip.chart_plan_soc.text": "How full the batteries would be **with the plan** and **without it**. The difference is what I save you.",
 	"learn.page.title": "What I've |learned",
-	"learn.lead": "Every morning I replay the night's plan with the real day. That's how I learn how well the forecast fits your home and how much buffer you really need.",
+	"learn.lead": "Every morning I replay the night's plan with the real day. That's how I learn how well the forecast fits your home and how far off sun and consumption can be.",
 	"learn.since": "Learning since {day}",
 	"learn.since_start": "Learning from everything I've seen since {day}",
 	"learn.updated": "last learned {day}, {time}",
@@ -5744,7 +5825,6 @@ var Pe = {
 	"learn.results.chart.saving": "saved",
 	"learn.still": "still learning",
 	"learn.days": "from {days} days",
-	"learn.mornings": "from {count} mornings",
 	"learn.solar": "Solar forecast",
 	"learn.solar.less": "The forecast promises {value} % too much on average – I only count on {share} % of it.",
 	"learn.solar.more": "Your system delivers {value} % more than forecast on average – I count on {share} %.",
@@ -5764,14 +5844,29 @@ var Pe = {
 	"learn.shift.chart": "Sun per hour, on average",
 	"learn.shift.chart.actual": "delivered",
 	"learn.shift.chart.forecast": "forecast the evening before",
-	"learn.buffer": "Buffer",
-	"learn.buffer.learned": "That's what I add on top of the target I need. With it, 8 out of 10 mornings would have lasted until the sun.",
-	"learn.buffer.default": "My starting value, cautious on purpose. After {need} replayed nights I know how much buffer you really need – I have {have}.",
-	"learn.buffer.user": "You set this yourself – I'll leave it.",
-	"learn.buffer.user_learned": "You set this yourself. I would have taken {value} %.",
 	"learn.buffer.chart": "Needed until the sun",
 	"learn.buffer.chart.planned": "planned",
 	"learn.buffer.chart.actual": "needed",
+	"learn.spread": "How sure my forecasts are",
+	"learn.spread.say": "This is how far off my forecasts have been. With it I plan a bad and a good day at night – about every fifth day comes out even worse, every fifth even better.",
+	"learn.spread.none": "Still learning – until then I count on assumptions.",
+	"learn.spread.solar": "Sun on {class}",
+	"learn.spread.class.clear": "clear days",
+	"learn.spread.class.mixed": "mixed days",
+	"learn.spread.class.overcast": "overcast days",
+	"learn.spread.class.rain": "rainy days",
+	"learn.spread.class.all": "all days",
+	"learn.spread.bad": "bad day {value} %",
+	"learn.spread.good": "good day {value} % of the forecast",
+	"learn.spread.home": "Consumption on {group} days",
+	"learn.spread.group.cold": "cold",
+	"learn.spread.group.mild": "mild",
+	"learn.spread.group.all": "all",
+	"learn.spread.range": "{low} to {high} % of what I expected",
+	"learn.spread.buffer": "Only your own margin on top – I no longer learn it.",
+	"tip.learn_spread.title": "What do I need this for?",
+	"tip.learn_spread.text": "Every morning I compare how much sun came and how much you used with what I expected. From that I learn per weather class how bad a bad day and how good a good day turns out – for consumption separately for cold and mild days. With these days I work out every target at night instead of adding a flat buffer.",
+	"tip.learn_spread.hint": "How much the bad day counts you set under Settings › Rules.",
 	"learn.home": "Consumption",
 	"learn.home.history": "I know your daily pattern from {days} days – working days and days off separately.",
 	"learn.home.default": "I don't know your consumption well yet and use a typical household.",
@@ -5888,9 +5983,9 @@ var Pe = {
 	"learn.reset.label": "Reset learning",
 	"learn.reset.confirm.title": "Really |start over?",
 	"learn.reset.confirm.forget": "What I forget",
-	"learn.reset.forget.all": "Forecast factors, time shift, weather classes, forecast sources, the learned buffer, all calculations for consumption, batteries, hot water and cars, how fast each room warms up, and the record of what it would have brought.",
-	"learn.reset.forget.forecast": "Forecast factor, time shift, the factors per weather class and how well the forecast sources fit.",
-	"learn.reset.forget.consumption": "The consumption and weather calculation, the calculations per device, presence by calendar and the learned buffer.",
+	"learn.reset.forget.all": "Forecast factors, time shift, weather classes, forecast sources, how far off sun and consumption were, all calculations for consumption, batteries, hot water and cars, how fast each room warms up, and the record of what it would have brought.",
+	"learn.reset.forget.forecast": "Forecast factor, time shift, the factors per weather class, how well the forecast sources fit and how far off the sun was.",
+	"learn.reset.forget.consumption": "The consumption and weather calculation, the calculations per device, presence by calendar and how far off the consumption was.",
 	"learn.reset.forget.battery": "The measured size and efficiency of your batteries.",
 	"learn.reset.forget.hot_water": "Heating rate, standing loss and daily use of the hot water.",
 	"learn.reset.confirm.keep": "What stays",
@@ -6195,9 +6290,6 @@ var Pe = {
 	"tip.learn_solar.text": "Every day I compare the previous evening's forecast with what your system delivered and take the middle value of the last four weeks. Outliers like a snow-covered roof hardly count that way. I convert every new forecast with it.",
 	"tip.learn_shift.title": "What is the time offset?",
 	"tip.learn_shift.text": "Some forecasts label their hours by the end instead of the start – then they're an hour off. Every day I check whether the curve fits better shifted by an hour, and only shift it once that's clearly the case on most days.",
-	"tip.learn_buffer.title": "Why a buffer?",
-	"tip.learn_buffer.text": "I charge a bit more than needed – for mornings when you use more or the sun comes later. How much I learn from the replayed nights: enough to have lasted on 8 out of 10 mornings. Too much buffer costs money, too little does too.",
-	"tip.learn_buffer.hint": "You can set your own value under Settings › Rules.",
 	"tip.learn_home.title": "What am I looking at?",
 	"tip.learn_home.text": "How much you use per hour on average – on working days and on days off. With it I work out how much the batteries need to deliver until the sun.",
 	"tip.learn_accuracy.title": "What am I looking at?",
@@ -7735,22 +7827,22 @@ var Pe = {
 	"error.action": "Saving failed",
 	loading: "Joe is saddling up …",
 	"menu.sidebar": "Home Assistant menu"
-}, Ie = /* @__PURE__ */ new Map();
-function Le(e, t) {
+}, Fe = /* @__PURE__ */ new Map();
+function Ie(e, t) {
 	return e.replace(/\{(\w+)\}/g, (e, n) => String(t?.[n] ?? ""));
 }
-function Re(e) {
-	let t = e || "en", n = Ie.get(t);
+function Le(e) {
+	let t = e || "en", n = Fe.get(t);
 	if (n) return n;
-	let r = t.startsWith("de") ? Pe : Fe, i = ((e, t) => Le(r[e], t));
-	return i.optional = (e, t) => e in r ? Le(r[e], t) : void 0, Object.defineProperty(i, "lang", { value: t }), Ie.set(t, i), i;
+	let r = t.startsWith("de") ? Ne : Pe, i = ((e, t) => Ie(r[e], t));
+	return i.optional = (e, t) => e in r ? Ie(r[e], t) : void 0, Object.defineProperty(i, "lang", { value: t }), Fe.set(t, i), i;
 }
-function ze(e) {
+function Re(e) {
 	return e.split("|");
 }
 //#endregion
 //#region src/components/bits.ts
-var Be = A`<svg
+var ze = A`<svg
   class="swoosh"
   viewBox="0 0 300 16"
   preserveAspectRatio="none"
@@ -7758,11 +7850,11 @@ var Be = A`<svg
 >
   <path d="M2 13 C 70 5, 190 1, 298 3 L 298 6 C 190 5, 80 9, 4 15 Z" fill="currentColor" />
 </svg>`;
-function Ve(e, t = "h2", n) {
-	let r = ze(e), i = r.length - 1, a = r.map((e, t) => t === i && r.length > 1 ? A`<span class="hl">${e}</span>` : e.endsWith("!") ? A`${e}<br />` : A`${e}`), o = n ? A`<span class="title-tip">${n}</span>` : "";
+function Be(e, t = "h2", n) {
+	let r = Re(e), i = r.length - 1, a = r.map((e, t) => t === i && r.length > 1 ? A`<span class="hl">${e}</span>` : e.endsWith("!") ? A`${e}<br />` : A`${e}`), o = n ? A`<span class="title-tip">${n}</span>` : "";
 	return t === "h1" ? A`<h1 class="display">${a}${o}</h1>` : A`<h2 class="display">${a}${o}</h2>`;
 }
-function He(e, t) {
+function Ve(e, t) {
 	let n = t >= .85 ? 4 : t >= .65 ? 3 : t >= .45 ? 2 : 1, r = e(`conf.${n}`);
 	return A`<span class="conf" role="img" aria-label=${r} title=${r}>
     ${[
@@ -7773,27 +7865,27 @@ function He(e, t) {
 	].map((e) => A`<i class=${e <= n ? "on" : ""}></i>`)}
   </span>`;
 }
-var Ue = {
+var He = {
 	read: "mdi:eye-outline",
 	learned: "mdi:auto-fix",
 	user: "mdi:account-edit-outline",
 	default: "mdi:tune-variant"
 };
-function We(e, t) {
+function Ue(e, t) {
 	let n = t?.source ?? "default";
 	return A`<span class="chip ${n}"
-    ><ha-icon icon=${Ue[n]}></ha-icon>${e(`source.${n}`)}</span
+    ><ha-icon icon=${He[n]}></ha-icon>${e(`source.${n}`)}</span
   >`;
 }
-function Ge(e, t) {
+function We(e, t) {
 	let n = {};
 	for (let [e, r] of Object.entries(t)) (typeof r == "string" || typeof r == "number") && (n[e] = r);
 	return e.optional(`reason.${t.code}`, n) ?? t.code;
 }
-function Ke(e) {
+function Ge(e) {
 	history.pushState(null, "", e), window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: !1 } }));
 }
-function qe(e, t, n) {
+function Ke(e, t, n) {
 	if (!e) return A`<span title=${n ?? ""}>${t}</span>`;
 	let r = `/config/devices/device/${e}`;
 	return A`<a
@@ -7801,21 +7893,21 @@ function qe(e, t, n) {
     href=${r}
     title=${n ?? ""}
     @click=${(e) => {
-		e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0 || (e.preventDefault(), Ke(r));
+		e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0 || (e.preventDefault(), Ge(r));
 	}}
     >${t}</a
   >`;
 }
 //#endregion
 //#region src/define.ts
-var Je = "0.9.35";
-function V(e, t) {
+var qe = "0.9.36";
+function Je(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
-		t.joeVersion = Je, customElements.define(e, t);
+		t.joeVersion = qe, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.35" && Xe();
+	n.joeVersion !== "0.9.36" && Xe();
 }
 var Ye = !1;
 function Xe() {
@@ -8859,7 +8951,7 @@ function lt(e, t) {
 }
 //#endregion
 //#region src/components/tip.ts
-var ut = 120, dt = 220, ft = 8, pt = 10, q, J = class extends L {
+var ut = 120, dt = 220, ft = 8, pt = 10, q, J = class extends z {
 	constructor(...e) {
 		super(...e), this.label = "", this.open = !1, this.pinned = !1, this.keepOnBlur = !1, this.onOutside = (e) => {
 			e.composedPath().includes(this) || this.close();
@@ -9103,7 +9195,7 @@ var ut = 120, dt = 220, ft = 8, pt = 10, q, J = class extends L {
 		t.style.left = `${Math.round(c)}px`, t.style.top = `${Math.round(a)}px`, t.style.setProperty("--arrow", `${Math.round(l)}px`), t.dataset.place = o;
 	}
 };
-H([R({ attribute: !1 })], J.prototype, "tip", void 0), H([R()], J.prototype, "label", void 0), H([z()], J.prototype, "open", void 0), H([B("button")], J.prototype, "button", void 0), H([B(".bubble")], J.prototype, "bubble", void 0);
+H([B({ attribute: !1 })], J.prototype, "tip", void 0), H([B()], J.prototype, "label", void 0), H([V()], J.prototype, "open", void 0), H([Me("button")], J.prototype, "button", void 0), H([Me(".bubble")], J.prototype, "bubble", void 0);
 function mt(e) {
 	return e.split("\n").map((e) => A`<p>
         ${e.split(/\*\*(.+?)\*\*/).map((e, t) => t % 2 ? A`<strong>${e}</strong>` : e)}
@@ -9120,7 +9212,7 @@ function ht(e, t, n, r = []) {
 function Y(e, t, n, r) {
 	return A`<joe-tip .tip=${ht(e, t, n, r)} label=${e("tip.label")}></joe-tip>`;
 }
-V("joe-tip", J);
+Je("joe-tip", J);
 //#endregion
 //#region src/cars.ts
 function gt(e, t) {
@@ -9222,7 +9314,7 @@ function Mt(e, t) {
 	})) : t.kind === "charge" ? n.push(e("plan.say.charge", {
 		from: Z(t.charge_from),
 		target: r
-	})) : t.kind === "hold" ? (n.push(e("plan.say.hold", { target: r })), t.empty_without && n.push(e("plan.say.empty", { time: Z(t.empty_without) }))) : t.reasons.includes("small_saving") ? n.push(e("plan.say.small_saving")) : n.push(i ? e("plan.say.none", { time: Z(i) }) : e("plan.say.none_nosun")), t.reasons.includes("max_price") && t.kind !== "charge" && n.push(e("plan.say.max_price")), t.day) {
+	})) : t.kind === "hold" ? (n.push(e("plan.say.hold", { target: r })), t.empty_without && n.push(e("plan.say.empty", { time: Z(t.empty_without) }))) : t.reasons.includes("small_saving") ? n.push(e("plan.say.small_saving")) : n.push(i ? e("plan.say.none", { time: Z(i) }) : e("plan.say.none_nosun")), t.reasons.includes("max_price") && t.kind !== "charge" && n.push(e("plan.say.max_price")), t.reasons.includes("caution") && t.kind !== "none" && n.push(e("plan.say.caution")), t.day) {
 		let r = {
 			time: Z(t.day.defer_until),
 			kwh: K(e.lang, t.day.held_kwh, 0)
@@ -9258,20 +9350,60 @@ function Ft(e, t) {
 		level: String(i.soc)
 	}) : e("devices.status.day", { time: r });
 }
+function It(e, t, n = "EUR") {
+	let r = Math.max(0, t);
+	return n === "EUR" && r < 1 ? `${K(e.lang, Math.round(r * 100), 0)} ct` : new Intl.NumberFormat(e.lang, {
+		style: "currency",
+		currency: n
+	}).format(r);
+}
+function Lt(e, t, n = "EUR") {
+	let r = t.risk;
+	if (!r) return "";
+	let i = Math.round(t.target ?? 0), a = Math.round(r.typical_target);
+	if (i === a) return e("plan.risk.same");
+	let { bad: o, good: s } = r.scenarios, c = i > a, l = c ? o : s, u = c ? o.cost_typical - o.cost : s.cost_typical - s.cost, d = c ? s.cost - s.cost_typical : o.cost - o.cost_typical, f = {
+		typical: K(e.lang, a, 0),
+		target: K(e.lang, i, 0),
+		solar: K(e.lang, l.solar_kwh, 1),
+		home: K(e.lang, l.home_kwh, 1),
+		saving: It(e, u, n),
+		loss: It(e, d, n)
+	};
+	return e(c ? t.kind === "hold" ? "plan.risk.more_hold" : "plan.risk.more" : "plan.risk.less", f);
+}
+function Rt(e, t) {
+	let n = t.risk?.caution ?? t.rules?.night_caution ?? "balanced";
+	return e.optional(`rule.night_caution.${n}`) ?? n;
+}
+function zt(e, t) {
+	let n = t.risk;
+	if (!n) return "";
+	let r = [];
+	n.class && r.push(e("plan.risk.class", { class: e(`plan.risk.class.${n.class}`) }));
+	let { solar: i, home: a } = n.days;
+	return !i && !a ? r.push(e("plan.risk.days.none")) : !i || !a ? r.push(e("plan.risk.days.partly", {
+		days: K(e.lang, i || a, 0),
+		what: e(i ? "plan.risk.days.solar" : "plan.risk.days.home")
+	})) : r.push(e("plan.risk.days", {
+		solar: K(e.lang, i, 0),
+		home: K(e.lang, a, 0)
+	})), r.join(" · ");
+}
 //#endregion
 //#region src/router.ts
-var It = "/energy-joe", Lt = [
+var Bt = "/energy-joe", Vt = [
 	"overview",
 	"plan",
 	"review",
 	"devices",
 	"household",
 	"settings"
-], Rt = [
+], Ht = [
 	"overview",
 	"plan",
 	"review"
-], zt = {
+], Ut = {
 	review: [
 		"result",
 		"days",
@@ -9307,29 +9439,29 @@ var It = "/energy-joe", Lt = [
 	devices: "all",
 	household: "people",
 	settings: "operation"
-}, Bt = {
+}, Wt = {
 	history: "/review/days",
 	learn: "/review/learned",
 	climate: "/devices/climate"
 };
-function Vt(e) {
-	return e in zt;
+function Gt(e) {
+	return e in Ut;
 }
-function Ht(e) {
+function Kt(e) {
 	try {
 		return decodeURIComponent(e);
 	} catch {
 		return e;
 	}
 }
-function Ut(e) {
-	let t = e.split(/[?#]/, 1)[0].split("/").filter(Boolean).map(Ht), [n, r, i, a, ...o] = t;
+function qt(e) {
+	let t = e.split(/[?#]/, 1)[0].split("/").filter(Boolean).map(Kt), [n, r, i, a, ...o] = t;
 	if (!n) return { route: { tab: "overview" } };
-	let s = Bt[n];
+	let s = Wt[n];
 	if (s) {
 		let e = [s, ...t.slice(1).map(encodeURIComponent)].join("/");
 		return {
-			route: Ut(e).route,
+			route: qt(e).route,
 			redirect: e
 		};
 	}
@@ -9338,11 +9470,11 @@ function Ut(e) {
 		redirect: "/plan"
 	} : { route: { tab: "plan" } };
 	let c = n;
-	if (!Lt.includes(c) || !Vt(c)) return {
+	if (!Vt.includes(c) || !Gt(c)) return {
 		route: { tab: "overview" },
 		redirect: "/"
 	};
-	if (r && !zt[c].includes(r)) return {
+	if (r && !Ut[c].includes(r)) return {
 		route: {
 			tab: c,
 			section: Q[c]
@@ -9355,49 +9487,49 @@ function Ut(e) {
 	};
 	return i && (l.id = i), a && (l.sub = a), o.length && (l.rest = o), { route: l };
 }
-function Wt(e) {
+function Jt(e) {
 	if (typeof e == "string") return e.startsWith("/") ? e : `/${e}`;
 	if (e.tab === "overview") return "/";
-	let t = [e.tab], n = e.section ?? (e.id && Vt(e.tab) ? Q[e.tab] : void 0);
+	let t = [e.tab], n = e.section ?? (e.id && Gt(e.tab) ? Q[e.tab] : void 0);
 	return n && (t.push(n), e.id && (t.push(e.id), e.sub && t.push(e.sub, ...e.rest ?? []))), `/${t.map(encodeURIComponent).join("/")}`;
 }
-function Gt(e, t) {
-	let n = Wt(t);
+function Yt(e, t) {
+	let n = Jt(t);
 	return n === "/" ? e : `${e}${n}`;
 }
-function Kt(e, t, n = {}) {
+function Xt(e, t, n = {}) {
 	e.dispatchEvent(new CustomEvent("joe-navigate", {
 		detail: {
-			path: Wt(t),
+			path: Jt(t),
 			...n
 		},
 		bubbles: !0,
 		composed: !0
 	}));
 }
-function qt(e, t) {
+function Zt(e, t) {
 	return (n) => {
-		n.defaultPrevented || n.metaKey || n.ctrlKey || n.shiftKey || n.altKey || n.button !== 0 || (n.preventDefault(), Kt(n.currentTarget ?? window, e, t));
+		n.defaultPrevented || n.metaKey || n.ctrlKey || n.shiftKey || n.altKey || n.button !== 0 || (n.preventDefault(), Xt(n.currentTarget ?? window, e, t));
 	};
 }
-function Jt(e, t, n, r) {
-	return A`<a class=${r ?? ""} href=${Gt(e, t)} @click=${qt(t)}>${n}</a>`;
+function Qt(e, t, n, r) {
+	return A`<a class=${r ?? ""} href=${Yt(e, t)} @click=${Zt(t)}>${n}</a>`;
 }
-function Yt(e, t) {
+function $t(e, t) {
 	if (history.state?.joeSheet) {
 		history.back();
 		return;
 	}
-	Kt(e, t, { replace: !0 });
+	Xt(e, t, { replace: !0 });
 }
-function Xt(e, t) {
+function en(e, t) {
 	let n = e.querySelector(`[data-anchor="${CSS.escape(t)}"]`);
 	return n ? (n.scrollIntoView({
 		block: "start",
 		behavior: "smooth"
-	}), n.classList.remove("flash"), n.offsetWidth, n.classList.add("flash"), window.setTimeout(() => n.classList.remove("flash"), 1500), Zt(n), !0) : !1;
+	}), n.classList.remove("flash"), n.offsetWidth, n.classList.add("flash"), window.setTimeout(() => n.classList.remove("flash"), 1500), tn(n), !0) : !1;
 }
-function Zt(e) {
+function tn(e) {
 	let t = !1, n = () => {
 		t = !0;
 	}, r = [
@@ -9418,7 +9550,7 @@ function Zt(e) {
 }
 //#endregion
 //#region src/components/car-charge.ts
-var $ = class extends L {
+var $ = class extends z {
 	constructor(...e) {
 		super(...e), this.flush = !1, this.values = {}, this.failed = !1;
 	}
@@ -9537,7 +9669,7 @@ var $ = class extends L {
 		}
 		let p = [...u.soc ? ["%"] : [], ...u.range ? ["km"] : []];
 		if (!p.length) return A`<p class="boost off">${e("devices.charge.no_level", { car: n.name })}</p>`;
-		let m = this.unit && p.includes(this.unit) ? this.unit : p[0], h = this.values[m] ?? (m === "%" ? 80 : 200), g = m === "%" ? 100 : 1500, _ = (e) => {
+		let m = this.unit && p.includes(this.unit) ? this.unit : p[0], h = this.values[m] ?? (m === "%" ? 80 : 200), g = m === "%" ? 100 : 1500, ee = (e) => {
 			let t = e?.querySelector("input"), n = Number.parseFloat((t?.value ?? "").replace(",", "."));
 			return Math.round(Math.min(g, Math.max(1, Number.isFinite(n) ? n : h)));
 		};
@@ -9546,7 +9678,7 @@ var $ = class extends L {
       data-tipped
       novalidate
       @submit=${(e) => {
-			e.preventDefault(), this.boost(_(e.target), m);
+			e.preventDefault(), this.boost(ee(e.target), m);
 		}}
     >
       <label class="toggle-label" for="boost-${r.id}">${e("devices.charge.label_at", { point: r.name })}</label>
@@ -9588,7 +9720,7 @@ var $ = class extends L {
           type="button"
           class="mini-btn"
           ?disabled=${!i || !r.enabled}
-          @click=${(e) => this.tonight(!0, _(e.target.closest("form")), m)}
+          @click=${(e) => this.tonight(!0, ee(e.target.closest("form")), m)}
         >
           <ha-icon icon="mdi:weather-night"></ha-icon>${e("devices.charge.tonight")}
         </button>
@@ -9629,13 +9761,13 @@ var $ = class extends L {
 		}
 	}
 };
-H([R({ attribute: !1 })], $.prototype, "hass", void 0), H([R({ attribute: !1 })], $.prototype, "t", void 0), H([R({ attribute: !1 })], $.prototype, "state", void 0), H([R({ attribute: !1 })], $.prototype, "car", void 0), H([R({
+H([B({ attribute: !1 })], $.prototype, "hass", void 0), H([B({ attribute: !1 })], $.prototype, "t", void 0), H([B({ attribute: !1 })], $.prototype, "state", void 0), H([B({ attribute: !1 })], $.prototype, "car", void 0), H([B({
 	type: Boolean,
 	reflect: !0
-})], $.prototype, "flush", void 0), H([z()], $.prototype, "values", void 0), H([z()], $.prototype, "unit", void 0), H([z()], $.prototype, "failed", void 0), V("joe-car-charge", $);
+})], $.prototype, "flush", void 0), H([V()], $.prototype, "values", void 0), H([V()], $.prototype, "unit", void 0), H([V()], $.prototype, "failed", void 0), Je("joe-car-charge", $);
 //#endregion
 //#region src/styles/tokens.ts
-var Qt = o`
+var nn = o`
   :host {
     --joe-bg: #fbf6ec;
     --joe-surface: #ffffff;
@@ -9724,4 +9856,4 @@ var Qt = o`
   }
 `;
 //#endregion
-export { Ge as $, xt as A, nt as B, yt as C, Ct as D, Et as E, St as F, lt as G, at as H, Y as I, V as J, H as K, ct as L, _t as M, bt as N, X as O, wt as P, Ke as Q, rt as R, jt as S, Dt as T, st as U, K as V, G as W, qe as X, He as Y, Ve as Z, Nt as _, Lt as a, R as at, At as b, Wt as c, j as ct, Kt as d, ge as dt, We as et, qt as f, o as ft, Pt as g, Ft as h, zt as i, z as it, Tt as j, gt as k, Gt as l, A as lt, Xt as m, Q as n, Re as nt, Rt as o, L as ot, Ut as p, Ze as q, It as r, B as rt, Yt as s, M as st, Qt as t, Be as tt, Jt as u, Ee as ut, kt as v, vt as w, Z as x, Mt as y, it as z };
+export { Ke as $, Ct as A, ct as B, At as C, vt as D, yt as E, _t as F, at as G, it as H, bt as I, lt as J, st as K, wt as L, gt as M, xt as N, Dt as O, Tt as P, Ve as Q, St as R, Lt as S, jt as T, nt as U, rt as V, K as W, Ze as X, H as Y, Je as Z, Nt as _, Vt as a, Le as at, zt as b, Jt as c, B as ct, Xt as d, j as dt, Be as et, Zt as f, A as ft, Pt as g, Ft as h, o as ht, Ut as i, ze as it, X as j, Et as k, Yt as l, z as lt, en as m, ge as mt, Q as n, We as nt, Ht as o, Me as ot, qt as p, Te as pt, G as q, Bt as r, Ue as rt, $t as s, V as st, nn as t, Ge as tt, Qt as u, M as ut, kt as v, Z as w, Rt as x, Mt as y, Y as z };

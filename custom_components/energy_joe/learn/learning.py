@@ -41,7 +41,8 @@ def _complete_solar(hours: list[dict[str, Any]]) -> bool:
 
 
 def solar_ratios(days: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
-    """Forecast from the evening before against the real production, per day."""
+    """Forecast from the evening before against the real production, per day,
+    and whether rain was forecast for it (fc.rain, see observe/observer.py)."""
     result = []
     for day, data in days.items():
         forecast = (data.get("fc") or {}).get("ahead_kwh")
@@ -57,6 +58,7 @@ def solar_ratios(days: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
                 "ratio": round(actual / forecast, 3)
                 if forecast >= SMALL_FORECAST
                 else None,
+                "rain": bool((data.get("fc") or {}).get("rain")),
             }
         )
     return result

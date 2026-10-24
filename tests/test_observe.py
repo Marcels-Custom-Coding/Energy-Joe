@@ -29,7 +29,7 @@ from custom_components.energy_joe.observe.records import (
     summarize,
 )
 from custom_components.energy_joe.observe.store import HistoryStore
-from homeassistant.core import HomeAssistant, State
+from homeassistant.core import HomeAssistant, ServiceCall, State, SupportsResponse
 from homeassistant.util import dt as dt_util
 
 POWER_W = {"unit_of_measurement": "W", "device_class": "power"}
@@ -298,6 +298,51 @@ async def test_observer_records_live_hours(
     tomorrow = await store.async_day("2026-10-04")
     assert tomorrow["fc"]["ahead_kwh"] == 12.5
     assert tomorrow["fc"]["alt"] == {"solcast": 10.0}
+    await observer.async_stop()
+    await store.async_unload()
+
+
+async def test_observer_keeps_whether_rain_is_forecast(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory
+) -> None:
+    """Tomorrow's rain flag is stored next to the forecast, which it keeps."""
+    await hass.config.async_set_time_zone("Europe/Berlin")
+    freezer.move_to("2026-10-03T12:00:00+02:00")
+    energy = {"unit_of_measurement": "kWh", "device_class": "energy"}
+    hass.states.async_set("sensor.fc_tomorrow", "12.5", energy)
+    hass.states.async_set("weather.home", "rainy", {"temperature": 11})
+
+    def forecasts(call: ServiceCall) -> dict[str, Any]:
+        return {
+            "weather.home": {
+                "forecast": [
+                    {
+                        "datetime": "2026-10-04T12:00:00+02:00",
+                        "temperature": 12,
+                        "templow": 6,
+                        "condition": "rainy",
+                    }
+                ]
+            }
+        }
+
+    hass.services.async_register(
+        "weather", "get_forecasts", forecasts, supports_response=SupportsResponse.ONLY
+    )
+    store = HistoryStore(hass)
+    await store.async_load()
+    await store.async_update_day("2026-10-04", fc={"alt": {"solcast": 10.0}})
+    observer = JoeObserver(hass, store, lambda: None)
+    await observer.async_start(
+        config_with(forecast={"tomorrow": ["sensor.fc_tomorrow"]})
+    )
+    await hass.async_block_till_done()
+    tomorrow = await store.async_day("2026-10-04")
+    assert tomorrow["fc"] == {
+        "alt": {"solcast": 10.0},
+        "ahead_kwh": 12.5,
+        "rain": True,
+    }
     await observer.async_stop()
     await store.async_unload()
 

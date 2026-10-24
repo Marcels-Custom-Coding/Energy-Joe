@@ -24,21 +24,28 @@ import {
   type LearnedRow,
 } from "../../learned-view";
 import { PANEL, href, onLink, revealAnchor, type Route } from "../../router";
+import { ruleValue } from "../../rules-view";
 import { shared } from "../../styles/shared";
 import {
   LEARN_SCOPES,
   type ClimateFound,
   type ConsumptionModel,
   type HomeAssistant,
+  type HomeSpreadGroup,
   type JoeState,
   type LearnScope,
   type Learning,
+  type SpreadClass,
   type WeatherClass,
 } from "../../types";
 
-// Nights shown in the buffer chart.
+// Nights shown in the chart "Bis zur Sonne gebraucht".
 const RECENT = 14;
 const WEATHER: WeatherClass[] = ["clear", "mixed", "overcast"];
+/** The sun's spread per weather class, then over all days (learn/models.py solar_spread). */
+const SPREAD_CLASSES: SpreadClass[] = ["clear", "mixed", "overcast", "rain", "all"];
+/** The consumption's spread on cold and mild days, then over all days (learn/models.py home_spread). */
+const HOME_GROUPS: HomeSpreadGroup[] = ["cold", "mild", "all"];
 const FORECAST_NAMES: Record<string, string> = {
   forecast_solar: "Forecast.Solar",
   open_meteo_solar_forecast: "Open-Meteo Solar Forecast",
@@ -59,7 +66,7 @@ function expectedKwh(model: ConsumptionModel, workday: boolean, temp: number): n
   return Math.max(0, value);
 }
 
-/** Rückblick › Gelernt: the sun, consumption, buffer, devices, presence, climate – and starting over. */
+/** Rückblick › Gelernt: the sun, consumption, how sure the forecasts are, devices, presence, climate – and starting over. */
 export class JoeLookbackLearned extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) t?: Translate;
@@ -67,7 +74,7 @@ export class JoeLookbackLearned extends LitElement {
   @property({ attribute: false }) prefix = PANEL;
   @property({ attribute: false }) route?: Route;
   @property({ attribute: false }) climateFound?: ClimateFound;
-  /** sun|consumption|buffer|battery|devices|hot_water|car|presence|climate|reset */
+  /** sun|consumption|spread|battery|devices|hot_water|car|presence|climate|reset */
   @property({ attribute: false }) anchor?: string;
 
   @state() private data?: Learning;
@@ -334,7 +341,7 @@ export class JoeLookbackLearned extends LitElement {
               </div>
               <div class="group" data-anchor="consumption">
                 <div class="eyebrow section"><ha-icon icon="mdi:home-lightning-bolt-outline"></ha-icon>${t("past.learned.group.consumption")}</div>
-                <div class="grid">${this.renderHome(t, data)} ${this.renderWeather(t, data)} ${this.renderBuffer(t, data)}</div>
+                <div class="grid">${this.renderHome(t, data)} ${this.renderWeather(t, data)} ${this.renderSpread(t, data)}</div>
               </div>
               <div class="group">
                 <div class="eyebrow section"><ha-icon icon="mdi:devices"></ha-icon>${t("past.learned.group.devices")}</div>
@@ -485,18 +492,42 @@ export class JoeLookbackLearned extends LitElement {
       </div>`;
   }
 
-  private renderBuffer(t: Translate, data: Learning): TemplateResult {
-    const { value, source } = data.buffer;
+  /**
+   * "Wie sicher meine Vorhersagen sind": how far off the sun (per weather
+   * class) and the consumption (cold and mild days) have been – the night
+   * plans its bad and good day with it (0.9.36). The buffer is only the
+   * owner's extra on top; Joe no longer learns it.
+   */
+  private renderSpread(t: Translate, data: Learning): TemplateResult {
+    const lang = t.lang;
     const learned = data.learned;
-    const percent = (factor: number) => formatNumber(t.lang, factor * 100, 0);
-    let say: string;
-    if (source === "user") {
-      say = learned.buffer != null ? t("learn.buffer.user_learned", { value: percent(learned.buffer) }) : t("learn.buffer.user");
-    } else if (source === "learned") {
-      say = t("learn.buffer.learned");
-    } else {
-      say = t("learn.buffer.default", { need: data.needs.buffer, have: learned.buffer_days });
-    }
+    const config = this.state!.config;
+    const percent = (factor: number) => formatNumber(lang, factor * 100, 0);
+    const solar = learned.solar_spread ?? {};
+    const home = learned.home_spread ?? {};
+    const rows: LearnedRow[] = [
+      ...SPREAD_CLASSES.filter((name) => solar[name]).map((name) => {
+        const found = solar[name]!;
+        return {
+          name: t("learn.spread.solar", { class: t(`learn.spread.class.${name}`) }),
+          values: [
+            t("learn.spread.bad", { value: percent(found.low) }),
+            t("learn.spread.good", { value: percent(found.high) }),
+            t("learn.days", { days: found.days }),
+          ],
+        };
+      }),
+      ...HOME_GROUPS.filter((name) => home[name]).map((name) => {
+        const found = home[name]!;
+        return {
+          name: t("learn.spread.home", { group: t(`learn.spread.group.${name}`) }),
+          values: [
+            t("learn.spread.range", { low: percent(found.low), high: percent(found.high) }),
+            t("learn.days", { days: found.days }),
+          ],
+        };
+      }),
+    ];
     const recent = data.accuracy.slice(-RECENT);
     const series: ChartSeries[] = [
       {
@@ -514,21 +545,23 @@ export class JoeLookbackLearned extends LitElement {
         digits: 1,
       },
     ];
-    return html`<section class="card" data-tipped data-anchor="buffer">
+    return html`<section class="card" data-tipped data-anchor="spread">
       <div class="head">
-        <div class="eyebrow"><ha-icon icon="mdi:shield-half-full"></ha-icon>${t("learn.buffer")}</div>
-        ${tip(t, "learn_buffer")}
+        <div class="eyebrow"><ha-icon icon="mdi:shield-half-full"></ha-icon>${t("learn.spread")}</div>
+        ${tip(t, "learn_spread")}
       </div>
-      <div class="figure">
-        <div class="big">${percent(value)}<small> %</small></div>
-        ${sourceChip(t, { source })}
-        ${source === "learned" ? html`<span class="chip">${t("learn.mornings", { count: learned.buffer_days })}</span>` : nothing}
-      </div>
-      <p class="say">${say}</p>
+      <p class="say">${rows.length ? t("learn.spread.say") : t("learn.spread.none")}</p>
+      ${rows.length ? learnedRows(rows) : nothing}
       ${recent.length > 1 ? this.chartWithLegend(t, recent.map((a) => a.date), series, "kWh", t("learn.buffer.chart")) : nothing}
       ${mirrorRow(t, this.prefix, {
+        label: t("rule.night_caution"),
+        value: ruleValue(t, config, "night_caution"),
+        to: { tab: "settings", section: "rules", id: "night_caution" },
+      })}
+      ${mirrorRow(t, this.prefix, {
         label: t("rule.buffer_factor"),
-        value: `${percent(value)} %`,
+        value: ruleValue(t, config, "buffer_factor"),
+        hint: t("learn.spread.buffer"),
         to: { tab: "settings", section: "rules", id: "buffer_factor" },
       })}
     </section>`;

@@ -22,6 +22,7 @@ from homeassistant.helpers.event import (
 )
 from homeassistant.util import dt as dt_util
 
+from ..learn.context import async_weather_day
 from .backfill import async_backfill, energy_counters, missing_hours
 from .readings import (
     Integrator,
@@ -340,6 +341,16 @@ class JoeObserver:
             )
         if (value := sum_kwh(get, forecast["tomorrow"])) is not None:
             await self._store.async_update_day(tomorrow, fc={"ahead_kwh": value})
+        # Whether rain is forecast, so the past can be told apart by weather.
+        if weather := self._config["context"]["weather_entity"]:
+            sky = await async_weather_day(
+                self._hass, weather, today + timedelta(days=1)
+            )
+            # No temperature and no rain: the forecast did not answer.
+            if sky["temp"] is not None or sky["rain"]:
+                await self._store.async_update_day(
+                    tomorrow, fc={"rain": bool(sky["rain"])}
+                )
         # Other forecasts for the same panels, so Joe learns how well each fits.
         others = {
             source["id"]: value

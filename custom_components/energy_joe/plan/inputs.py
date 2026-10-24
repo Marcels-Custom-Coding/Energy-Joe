@@ -15,7 +15,14 @@ from .. import model
 from ..control.adapters import RoleAdapter, make_adapter
 from ..control.groups import group_of
 from ..learn.context import async_day_labels, async_weather_day
-from ..learn.models import class_factor, combined_forecast, expected
+from ..learn.models import (
+    HOME_SPREAD,
+    SOLAR_SPREAD,
+    class_factor,
+    combined_forecast,
+    expected,
+    weather_class,
+)
 from ..observe.readings import energy_kwh, number, sum_kwh
 from ..observe.records import base_home, hour_starts, local_hour
 from ..observe.store import HistoryStore
@@ -23,7 +30,7 @@ from .actions import plan_actions, reserved_kw, reserved_quarters
 from .car_calendar import CarCalendarStore, own_events
 from .cars import action_by_id, detect_all, need_for, point_of
 from .ev import car_need
-from .planner import Battery, Hour, PlanInput, Prices, best_window
+from .planner import Battery, Hour, PlanInput, Prices, best_window, make_scenarios
 from .prices import async_price_slots, quarters
 from .trips import PlaceStore, async_trips
 
@@ -49,6 +56,10 @@ DEFAULT_SEARCH = {"start": "20:00", "end": "07:00"}
 ACTION_HOURS = 3
 # A battery counts as full from this level (for the maintenance charge).
 FULL = 99.0
+# Below this mean temperature (°C) a day counts as cold for the use (the
+# spreads Joe assumes until he learned them: learn.models SOLAR_SPREAD and
+# HOME_SPREAD).
+COLD_DAY = 10.0
 
 
 def next_window(now: datetime, window: dict[str, str]) -> tuple[datetime, datetime]:
@@ -599,6 +610,17 @@ async def async_build_input(
             force_target=100.0 if balance else None,
             defer_kw=defer_kw,
             morning_need=(learned.get("morning_need") or {}).get("kwh"),
+            # Joe's own buffer gave way to tomorrow's scenarios; the owner's stays.
+            buffer=rules["buffer_factor"]
+            if model.source_of(config, "rules.buffer_factor") == "user"
+            else 0.0,
+            scenarios=make_scenarios(
+                rules.get("night_caution"),
+                outlook["spread"]["solar"],
+                outlook["spread"]["home"],
+            ),
+            caution=rules.get("night_caution") or "balanced",
+            spread=outlook["meta"]["spread"],
             meta={
                 "consumption": consumption,
                 "solar": sun_meta,
@@ -724,7 +746,6 @@ def _input(
         one_by_one=rules.get("battery_team") != "together",
         max_night_kwh=rules["max_night_kwh"],
         discharge_mode=rules["discharge_in_window"],
-        buffer=rules["buffer_factor"],
         max_price=rules["max_price"],
         min_saving=rules["min_saving"],
         force_target=force,
@@ -855,11 +876,18 @@ async def async_tomorrow(
         )
         if combined is not None and main >= 1.0:
             factor, source = combined / main, "combined"
-    weather = class_factor(learned.get("solar_classes"), main)
+    rain = bool(sky["rain"])
+    weather = class_factor(learned.get("solar_classes"), main, rain=rain)
     if weather is not None:
         meta["weather"] = weather[0]
         if factor is None:
             factor, source = weather[1], "weather"
+    top = (learned.get("solar_classes") or {}).get("top")
+    sky_class = (
+        weather[0] if weather else weather_class(main, top) if main and top else None
+    )
+    spread = pick_spread(learned, sky_class, rain, temp)
+    meta["spread"] = {k: spread[k] for k in ("class", "groups", "days")}
     meta.update(
         solar_forecast=None if main is None else round(main, 2),
         solar_combined=combined,
@@ -872,7 +900,51 @@ async def async_tomorrow(
         "meta": meta,
         "temp": temp,
         "rain": sky["rain"],
+        "spread": spread,
     }
+
+
+def pick_spread(
+    learned: dict[str, Any], sky: str | None, rain: bool, temp: float | None
+) -> dict[str, Any]:
+    """How far tomorrow's sun and use may spread around the typical day.
+
+    The sun's spread of a rainy day, else of tomorrow's weather class, else
+    of all days; the use's of a cold or a mild day, else of all days; until
+    Joe learned them, his assumptions.
+    """
+    solar_groups = [*(["rain"] if rain else []), *([sky] if sky else []), "all"]
+    home_groups = [
+        *([] if temp is None else ["cold" if temp < COLD_DAY else "mild"]),
+        "all",
+    ]
+    solar = _spread(learned.get("solar_spread"), solar_groups, SOLAR_SPREAD)
+    home = _spread(learned.get("home_spread"), home_groups, HOME_SPREAD)
+    return {
+        "solar": solar[1],
+        "home": home[1],
+        "class": solar[0] if solar[0] not in ("all", None) else None,
+        "groups": {"solar": solar[0], "home": home[0]},
+        "days": {"solar": solar[2], "home": home[2]},
+    }
+
+
+def _spread(
+    spreads: Any, groups: list[str], default: tuple[float, float]
+) -> tuple[str | None, tuple[float, float], int]:
+    """The first group with a learned spread: its name, (low, high) and days."""
+    for group in groups:
+        found = spreads.get(group) if isinstance(spreads, dict) else None
+        if not isinstance(found, dict):
+            continue
+        low, high = found.get("low"), found.get("high")
+        if (
+            isinstance(low, int | float)
+            and isinstance(high, int | float)
+            and 0 < low <= high
+        ):
+            return group, (float(low), float(high)), int(found.get("days") or 0)
+    return None, default, 0
 
 
 def _presence(learned: dict[str, Any], labels: dict[str, str]) -> float | None:

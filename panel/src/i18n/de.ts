@@ -574,7 +574,8 @@ export const de = {
   "signpost.rule_max_price.terms": "zu teuer, Preisgrenze",
   "signpost.rule_min_saving.terms": "lohnt sich, Mindestgewinn",
   "signpost.rule_priority.terms": "Reihenfolge, Vorrang",
-  "signpost.rule_buffer_factor.terms": "Puffer, Wieder selbst lernen, Aufschlag",
+  "signpost.rule_buffer_factor.terms": "Puffer, Sicherheitspuffer, eigener Puffer, Aufschlag",
+  "signpost.rule_night_caution.terms": "Vorsicht, Risiko, schlechter Tag, Regen, Nacht planen, mutig, vorsichtig, Sicherheit",
   "signpost.rule_plan_offset_min.terms": "fester Plan, Uhrzeit",
   "signpost.rule_reset_lead_min.terms": "Vorlauf, zurückschalten",
   "signpost.notify": "Benachrichtigungen",
@@ -1210,6 +1211,26 @@ export const de = {
   "tip.r_day_caution.title": "Wie vorsichtig soll ich sein?",
   "tip.r_day_caution.text": "Ich nehme die Sonnenvorhersage (schon mit dem, was ich über deine Anlage gelernt habe) und rechne nur mit einem Teil davon: knapp 90 %, normal 80 %, vorsichtig 65 %. Damit bestimme ich, wann die Sonne am Abend nicht mehr fürs Haus reicht – im Sommer später, im Winter früher – und wie langsam die Speicher bis dahin laden dürfen.",
   "tip.r_day_caution.hint": "Je vorsichtiger, desto früher und schneller laden die Speicher und desto weniger bleibt für evcc.",
+  "rule.night_caution": "Wie vorsichtig plane ich die Nacht?",
+  "rule.night_caution.bold": "Mutig",
+  "rule.night_caution.brave": "Eher mutig",
+  "rule.night_caution.balanced": "Ausgewogen",
+  "rule.night_caution.careful": "Eher vorsichtig",
+  "rule.night_caution.cautious": "Vorsichtig",
+  "rule.night_caution.bold.hint":
+    "Ich rechne mit dem Tag, wie er meistens kommt. Bei Sonne am günstigsten, bei Regen kaufst du abends eher zu.",
+  "rule.night_caution.brave.hint":
+    "Ein schlechter Tag zählt so viel wie ein guter. Meist günstig, an trüben Tagen kaufst du abends manchmal etwas zu.",
+  "rule.night_caution.balanced.hint":
+    "Ein schlechter Tag zählt doppelt so viel wie ein guter. Lieber eine Kilowattstunde zu viel geladen als abends teuren Tagesstrom.",
+  "rule.night_caution.careful.hint":
+    "Ein schlechter Tag zählt viermal so viel wie ein guter. Abends kaufst du nur selten zu, dafür lade ich nachts öfter etwas mehr.",
+  "rule.night_caution.cautious.hint":
+    "Ich plane fast für den schlechten Fall. Du kaufst abends selten teuer, dafür manchmal etwas zu viel nachts.",
+  "tip.r_night_caution.title": "Wie vorsichtig soll ich die Nacht planen?",
+  "tip.r_night_caution.text":
+    "Wie voll ich nachts lade, hängt am Tag danach – und den kenne ich nie genau. Darum rechne ich jedes Ziel für drei Tage durch: einen schlechten (weniger Sonne, mehr Verbrauch), einen wie meistens und einen guten. Wie weit die drei auseinanderliegen, lerne ich aus deinen echten Tagen, je Wetterlage. Diese Wahl sagt, wie stark der schlechte Tag zählt. Ich nehme das Ziel, das dich im Schnitt am wenigsten kostet.",
+  "tip.r_night_caution.hint": "Vorsichtiger heißt: nachts etwas mehr günstigen Strom, dafür abends seltener teuren.",
   "rule.reserve_soc.hint":
     "Mindestens so viel bleibt in jedem Speicher. Hat ein Speicher eine höhere Entladegrenze, gilt die.",
   "tip.r_reserve_soc.text":
@@ -1247,8 +1268,9 @@ export const de = {
   "rule.balance_days": "Pflegeladung",
   "rule.balance_days.hint": "Alle so viele Tage einmal ganz voll laden. Leer = aus.",
   "rule.balance_days.unit": "Tage",
-  "rule.buffer_factor": "Sicherheitspuffer",
-  "rule.buffer_factor.hint": "Aufschlag auf meine Rechnung. Den lerne ich selbst – „Startwert“ lässt mich wieder selbst lernen.",
+  "rule.buffer_factor": "Eigener Puffer",
+  "rule.buffer_factor.hint":
+    "Nur wenn du ihn willst: So viel lege ich zusätzlich obendrauf. Den stellst du selbst ein – ich lerne ihn nicht mehr.",
   "rule.plan_offset_min": "Plan festlegen",
   "rule.plan_offset_min.hint": "Minuten vor Beginn der günstigen Zeit.",
   "rule.reset_lead_min": "Zurückstellen",
@@ -1452,9 +1474,9 @@ export const de = {
   "tip.r_balance_days.text":
     "Viele Speicher gleichen ihre Zellen nur ab, wenn sie ab und zu ganz voll werden – sonst stimmt die Ladestandsanzeige mit der Zeit nicht mehr. War ein Speicher so viele Tage nicht voll und füllt ihn auch die Sonne morgen nicht, lade ich ihn in der günstigen Zeit einmal auf 100 %.",
   "tip.r_balance_days.hint": "Üblich sind 14 bis 30 Tage. Steht im Handbuch deines Speichers.",
-  "tip.r_buffer_factor.title": "Was ist der Sicherheitspuffer?",
+  "tip.r_buffer_factor.title": "Was ist der eigene Puffer?",
   "tip.r_buffer_factor.text":
-    "So viel schlage ich auf meine Rechnung drauf, solange ich dein Haus noch nicht gut kenne. Je besser meine Prognosen treffen, desto kleiner wird er.",
+    "Ein Aufschlag, den nur du festlegst: So viel lade ich zusätzlich auf den Teil über der Reserve. Früher habe ich ihn selbst gelernt – das mache ich nicht mehr. Unsichere Tage plane ich jetzt mit einem schlechten, einem üblichen und einem guten Tag ein (siehe „Wie vorsichtig plane ich die Nacht?“). Der Puffer kommt nur noch obendrauf.",
   "tip.r_plan_offset_min.title": "Wann lege ich den Plan fest?",
   "tip.r_plan_offset_min.text":
     "So viele Minuten vor Beginn der günstigen Zeit rechne ich den Plan für die Nacht aus – mit der neuesten Prognose.",
@@ -1656,6 +1678,30 @@ export const de = {
   "plan.say.small_saving":
     "Heute Nacht lasse ich es: Es würde weniger bringen, als du in den Regeln als Mindestersparnis eingestellt hast.",
   "plan.say.max_price": "Über deinem Höchstpreis lade ich nicht aus dem Netz.",
+  "plan.say.caution":
+    "Das ist etwas mehr, als ein gewöhnlicher Tag bräuchte – für den Fall, dass morgen weniger Sonne kommt oder ihr mehr braucht.",
+  "plan.risk": "Warum {target} %",
+  "plan.risk.more":
+    "Wenn der Tag kommt wie meistens, reichten {typical} %. Ich lade {target} %: Kommt er schlecht ({solar} kWh Sonne, {home} kWh Verbrauch), sparst du damit {saving} Tagesstrom. Kommt er gut, kostet es dich {loss}.",
+  "plan.risk.more_hold":
+    "Wenn der Tag kommt wie meistens, reichten {typical} %. Ich halte {target} %: Kommt er schlecht ({solar} kWh Sonne, {home} kWh Verbrauch), sparst du damit {saving} Tagesstrom. Kommt er gut, kostet es dich {loss}.",
+  "plan.risk.less":
+    "Wenn der Tag kommt wie meistens, reichten {typical} %. Ich nehme nur {target} %: Kommt er gut ({solar} kWh Sonne, {home} kWh Verbrauch), sparst du damit {saving}. Kommt er schlecht, kostet es dich {loss} Tagesstrom.",
+  "plan.risk.same": "Auch wenn der Tag schlecht kommt, lohnt mehr nicht.",
+  "plan.risk.class": "Wetter morgen: {class}",
+  "plan.risk.class.clear": "klar",
+  "plan.risk.class.mixed": "gemischt",
+  "plan.risk.class.overcast": "bedeckt",
+  "plan.risk.class.rain": "Regen",
+  "plan.risk.days": "gelernt aus {solar} Tagen Sonne und {home} Tagen Verbrauch",
+  "plan.risk.days.partly": "{what} gelernt aus {days} Tagen, sonst noch Annahmen",
+  "plan.risk.days.solar": "Sonne",
+  "plan.risk.days.home": "Verbrauch",
+  "plan.risk.days.none": "noch Annahmen, ich lerne das",
+  "tip.plan_risk.title": "Warum gerade dieses Ziel?",
+  "tip.plan_risk.text":
+    "Wie morgen wird, weiß ich nie genau. Darum rechne ich jedes Ziel für drei Tage durch: einen schlechten (weniger Sonne, mehr Verbrauch), einen wie meistens und einen guten. Wie stark der schlechte Tag zählt, stellst du bei „Wie vorsichtig plane ich die Nacht?“ ein. Ich nehme das Ziel, das dich im Schnitt am wenigsten kostet.",
+  "tip.plan_risk.hint": "Tagesstrom ist der teure Strom aus dem Netz, wenn die Speicher vor der Sonne leer sind.",
   "plan.say.hold":
     "Ich lade nicht, halte die Speicher in der günstigen Zeit aber bei {target} % – lieber jetzt günstig aus dem Netz als morgen früh teuer.",
   "plan.say.empty": "Ohne mich wären sie um {time} Uhr leer.",
@@ -1727,7 +1773,9 @@ export const de = {
   "plan.math.workday": "für einen Arbeitstag",
   "plan.math.day_off": "für ein Wochenende oder einen Feiertag",
   "plan.math.target": "Ziel",
-  "plan.math.target.sub": "nötig wären {optimum} %, dazu {buffer} % Puffer auf den Teil über der Reserve",
+  "plan.math.target.sub":
+    "abgewogen nach schlechtem, üblichem und gutem Tag wären es {optimum} %, dazu {buffer} % deines eigenen Puffers auf den Teil über der Reserve",
+  "plan.math.target.sub_none": "abgewogen nach schlechtem, üblichem und gutem Tag – ohne eigenen Puffer",
   "plan.math.prices": "Preise",
   "plan.math.prices.value": "günstig {night} · sonst {day} · Einspeisung {feed}",
   "plan.math.prices.assumed": "Nicht alle Preise kenne ich – die fehlenden habe ich angenommen. Trag sie unter Geräte › Netz & Sonne ein.",
@@ -1743,7 +1791,8 @@ export const de = {
   "tip.plan_refresh.text":
     "Jede Stunde von allein, mit der neuesten Prognose. Kurz vor der günstigen Zeit lege ich den Plan fest, danach bleibt er bis zum Morgen. Mit **Neu rechnen** rechne ich sofort.",
   "tip.plan_math.title": "Wie entscheide ich?",
-  "tip.plan_math.text": "Ich spiele die Stunden bis zur nächsten Nacht durch – für jedes mögliche Ziel – und nehme das, bei dem du am wenigsten bezahlst. Weil ich noch lerne, lege ich einen Puffer drauf. **Ändern →** bringt dich dorthin, wo ein Wert eingestellt wird.",
+  "tip.plan_math.text":
+    "Ich spiele die Stunden bis zur nächsten Nacht durch – für jedes mögliche Ziel und für einen schlechten, einen üblichen und einen guten Tag – und nehme das Ziel, bei dem du im Schnitt am wenigsten bezahlst. Einen eigenen Puffer lege ich nur drauf, wenn du einen eingestellt hast. **Ändern →** bringt dich dorthin, wo ein Wert eingestellt wird.",
   "tip.chart_plan_energy.title": "Was sehe ich hier?",
   "tip.chart_plan_energy.text":
     "Was ich pro Stunde erwarte: **Sonne** laut Prognose, deinen **Verbrauch** aus ähnlichen Tagen und wann ich **aus dem Netz lade**. Hinterlegt ist die günstige Zeit.",
@@ -1756,7 +1805,7 @@ export const de = {
 
   "learn.page.title": "Was ich |gelernt habe",
   "learn.lead":
-    "Jeden Morgen spiele ich den Plan der Nacht mit dem echten Tag nach. Daraus lerne ich, wie gut die Prognose bei dir trifft und wie viel Puffer du wirklich brauchst.",
+    "Jeden Morgen spiele ich den Plan der Nacht mit dem echten Tag nach. Daraus lerne ich, wie gut die Prognose bei dir trifft und wie weit Sonne und Verbrauch danebenliegen können.",
   "learn.since": "Ich lerne seit {day}",
   "learn.since_start": "Ich lerne aus allem, was ich seit {day} gesehen habe",
   "learn.updated": "zuletzt dazugelernt {day}, {time} Uhr",
@@ -1774,7 +1823,6 @@ export const de = {
   "learn.results.chart.saving": "gespart",
   "learn.still": "lerne noch",
   "learn.days": "aus {days} Tagen",
-  "learn.mornings": "aus {count} Morgen",
   "learn.solar": "Sonnenprognose",
   "learn.solar.less": "Die Prognose verspricht bei dir im Schnitt {value} % zu viel – ich rechne nur mit {share} % davon.",
   "learn.solar.more": "Deine Anlage liefert im Schnitt {value} % mehr, als die Prognose verspricht – ich rechne mit {share} %.",
@@ -1796,16 +1844,31 @@ export const de = {
   "learn.shift.chart": "Sonne pro Stunde, im Schnitt",
   "learn.shift.chart.actual": "geliefert",
   "learn.shift.chart.forecast": "Prognose vom Vorabend",
-  "learn.buffer": "Puffer",
-  "learn.buffer.learned":
-    "So viel lege ich auf das nötige Ziel drauf. Damit hätte es an 8 von 10 Morgen bis zur Sonne gereicht.",
-  "learn.buffer.default":
-    "Mein Startwert, bewusst vorsichtig. Nach {need} nachgespielten Nächten weiß ich, wie viel Puffer du wirklich brauchst – {have} habe ich.",
-  "learn.buffer.user": "Den hast du selbst eingestellt – ich lasse ihn so.",
-  "learn.buffer.user_learned": "Den hast du selbst eingestellt. Ich hätte {value} % genommen.",
   "learn.buffer.chart": "Bis zur Sonne gebraucht",
   "learn.buffer.chart.planned": "geplant",
   "learn.buffer.chart.actual": "gebraucht",
+  "learn.spread": "Wie sicher meine Vorhersagen sind",
+  "learn.spread.say":
+    "So weit lagen meine Vorhersagen bisher daneben. Damit plane ich nachts einen schlechten und einen guten Tag ein – etwa jeder fünfte Tag kommt noch schlechter, jeder fünfte noch besser.",
+  "learn.spread.none": "Lerne ich noch – bis dahin rechne ich mit Annahmen.",
+  "learn.spread.solar": "Sonne bei {class}",
+  "learn.spread.class.clear": "klarem Himmel",
+  "learn.spread.class.mixed": "gemischtem Wetter",
+  "learn.spread.class.overcast": "bedecktem Himmel",
+  "learn.spread.class.rain": "Regen",
+  "learn.spread.class.all": "jedem Wetter",
+  "learn.spread.bad": "schlechter Tag {value} %",
+  "learn.spread.good": "guter Tag {value} % der Prognose",
+  "learn.spread.home": "Verbrauch an {group} Tagen",
+  "learn.spread.group.cold": "kalten",
+  "learn.spread.group.mild": "milden",
+  "learn.spread.group.all": "allen",
+  "learn.spread.range": "{low} bis {high} % des Erwarteten",
+  "learn.spread.buffer": "Nur dein eigener Aufschlag obendrauf – den lerne ich nicht mehr.",
+  "tip.learn_spread.title": "Wozu brauche ich das?",
+  "tip.learn_spread.text":
+    "Jeden Morgen vergleiche ich, wie viel Sonne kam und wie viel ihr gebraucht habt, mit dem, was ich erwartet hatte. Daraus lerne ich je Wetterlage, wie schlecht ein schlechter und wie gut ein guter Tag ausfällt – beim Verbrauch getrennt nach kalten und milden Tagen. Mit diesen Tagen rechne ich nachts jedes Ziel durch, statt pauschal einen Puffer draufzulegen.",
+  "tip.learn_spread.hint": "Wie stark der schlechte Tag zählt, stellst du unter Einstellungen › Regeln ein.",
   "learn.home": "Verbrauch",
   "learn.home.history": "Deinen Tagesgang kenne ich aus {days} Tagen – Arbeitstage und freie Tage getrennt.",
   "learn.home.default": "Deinen Verbrauch kenne ich noch nicht gut und rechne mit einem typischen Haushalt.",
@@ -1940,11 +2003,12 @@ export const de = {
   "learn.reset.label": "Lernen zurücksetzen",
   "learn.reset.confirm.title": "Wirklich |neu anfangen?",
   "learn.reset.confirm.forget": "Das vergesse ich",
-  "learn.reset.forget.all": "Prognose-Faktoren, Zeitversatz, Wetterlagen, Prognosequellen, den gelernten Puffer, alle Rechnungen zu Verbrauch, Speichern, Warmwasser und Autos, wie schnell jeder Raum warm wird, und die Bilanz, was es gebracht hätte.",
+  "learn.reset.forget.all":
+    "Prognose-Faktoren, Zeitversatz, Wetterlagen, Prognosequellen, wie weit Sonne und Verbrauch danebenlagen, alle Rechnungen zu Verbrauch, Speichern, Warmwasser und Autos, wie schnell jeder Raum warm wird, und die Bilanz, was es gebracht hätte.",
   "learn.reset.forget.forecast":
-    "Prognose-Faktor, Zeitversatz, die Faktoren je Wetterlage und wie gut die Prognosequellen treffen.",
+    "Prognose-Faktor, Zeitversatz, die Faktoren je Wetterlage, wie gut die Prognosequellen treffen und wie weit die Sonne danebenlag.",
   "learn.reset.forget.consumption":
-    "Die Rechnung zu Verbrauch und Wetter, die Rechnungen je Gerät, die Anwesenheit nach Kalender und den gelernten Puffer.",
+    "Die Rechnung zu Verbrauch und Wetter, die Rechnungen je Gerät, die Anwesenheit nach Kalender und wie weit der Verbrauch danebenlag.",
   "learn.reset.forget.battery": "Die gemessene Größe und den Wirkungsgrad deiner Speicher.",
   "learn.reset.forget.hot_water": "Heizrate, Standverlust und Tagesverbrauch des Warmwassers.",
   "learn.reset.confirm.keep": "Das bleibt",
@@ -2284,10 +2348,6 @@ export const de = {
   "tip.learn_shift.title": "Was ist der Zeitversatz?",
   "tip.learn_shift.text":
     "Manche Prognosen geben ihre Stunden mit dem Ende statt dem Anfang an – dann liegen sie eine Stunde daneben. Ich prüfe jeden Tag, ob die Kurve um eine Stunde verschoben besser passt, und verschiebe sie erst, wenn das an den meisten Tagen klar so ist.",
-  "tip.learn_buffer.title": "Wozu der Puffer?",
-  "tip.learn_buffer.text":
-    "Ich lade etwas mehr, als nötig wäre – für Morgen, an denen ihr mehr braucht oder die Sonne später kommt. Wie viel, lerne ich aus den nachgespielten Nächten: so viel, dass es an 8 von 10 Morgen gereicht hätte. Zu viel Puffer kostet Geld, zu wenig auch.",
-  "tip.learn_buffer.hint": "Einen eigenen Wert stellst du unter Einstellungen › Regeln ein.",
   "tip.learn_home.title": "Was sehe ich hier?",
   "tip.learn_home.text":
     "Wie viel ihr im Schnitt pro Stunde verbraucht – an Arbeitstagen und an freien Tagen. Damit rechne ich aus, wie viel die Speicher bis zur Sonne liefern müssen.",

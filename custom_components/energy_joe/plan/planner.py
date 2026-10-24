@@ -4,8 +4,10 @@ The plan is one number per night, the target charge level at the end of the
 cheap window. Below it Joe charges from the grid (as late as possible), above
 it he lets the batteries discharge only down to it, so they still reach the
 morning. Joe simulates the hours from now until the next cheap window for every
-target from the reserve to the highest allowed level and takes the cheapest;
-then he adds his safety buffer.
+target from the reserve to the highest allowed level and takes the cheapest.
+Each target is costed against three days of tomorrow (bad, typical, good),
+weighted by the owner's caution: too little costs the day price, too much only
+the losses, so an uncertain tomorrow charges fuller.
 
 All energies are kWh, powers kW, charge levels percent, prices per kWh.
 """
@@ -80,6 +82,52 @@ class Prices:
 
 
 @dataclass(slots=True)
+class Scenario:
+    """One possible tomorrow: the sun and the home's use as multipliers on the
+    typical day (only the hours from the window's end on)."""
+
+    name: str
+    weight: float
+    solar: float = 1.0
+    home: float = 1.0
+
+
+# How much the bad day counts, from the owner's caution (model.NIGHT_CAUTIONS).
+CAUTION_LEVELS = {
+    "bold": 0.0,
+    "brave": 0.25,
+    "balanced": 0.5,
+    "careful": 0.75,
+    "cautious": 1.0,
+}
+
+
+def caution_level(caution: str | None) -> float:
+    """The caution as a number from 0 (bold) to 1 (cautious)."""
+    return CAUTION_LEVELS.get(caution or "", CAUTION_LEVELS["balanced"])
+
+
+def scenario_weights(caution: str | None) -> dict[str, float]:
+    """The weights of the bad, typical and good day (they add up to 1)."""
+    level = caution_level(caution)
+    bad = 0.15 + 0.5 * level
+    good = 0.35 - 0.3 * level
+    return {"bad": bad, "typical": 1 - bad - good, "good": good}
+
+
+def make_scenarios(
+    caution: str | None, solar: tuple[float, float], home: tuple[float, float]
+) -> list[Scenario]:
+    """Bad (less sun, more use), typical and good day from the spreads (low, high)."""
+    weights = scenario_weights(caution)
+    return [
+        Scenario("bad", weights["bad"], solar[0], home[1]),
+        Scenario("typical", weights["typical"]),
+        Scenario("good", weights["good"], solar[1], home[0]),
+    ]
+
+
+@dataclass(slots=True)
 class PlanInput:
     """Everything the plan depends on."""
 
@@ -141,6 +189,11 @@ class PlanInput:
     # Where the grid limit comes from: "user", "learned" (the highest import
     # Joe measured) or None.
     grid_limit_source: str | None = None
+    # Tomorrow's possible days (empty: only the expected one) and what they
+    # come from: the caution, the weather class and the days behind the spreads.
+    scenarios: list[Scenario] = field(default_factory=list)
+    caution: str = "balanced"
+    spread: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         # In UTC, like the hours (see Hour).
@@ -431,29 +484,80 @@ def with_window(inp: PlanInput, first: int, last: int) -> PlanInput:
     )
 
 
+def _scaled(inp: PlanInput, scenario: Scenario) -> PlanInput:
+    """The plan input as on one of tomorrow's possible days."""
+    if scenario.solar == 1 and scenario.home == 1:
+        return inp
+    return replace(
+        inp,
+        hours=[
+            replace(h, solar=h.solar * scenario.solar, home=h.home * scenario.home)
+            if h.start >= inp.window_end
+            else h
+            for h in inp.hours
+        ],
+        scenarios=[],
+    )
+
+
+def _cases(inp: PlanInput) -> list[tuple[Scenario, PlanInput]]:
+    """Tomorrow's possible days with their (normalised) weights; without
+    scenarios the expected day alone."""
+    total = sum(max(0.0, s.weight) for s in inp.scenarios)
+    if total <= 0:
+        return [(Scenario("typical", 1.0), inp)]
+    return [
+        (replace(s, weight=max(0.0, s.weight) / total), _scaled(inp, s))
+        for s in inp.scenarios
+    ]
+
+
+def _expected(
+    cases: list[tuple[Scenario, PlanInput]],
+    typical: PlanInput,
+    target: float | None,
+    known: Run,
+    fixed: list[float] | None = None,
+) -> float:
+    """The weighted cost of a target over tomorrow's days (`known`: the
+    typical day's run, not played through again)."""
+    return sum(
+        s.weight
+        * (known.cost if case is typical else simulate(case, target, fixed).cost)
+        for s, case in cases
+    )
+
+
+def _cheapest(costs: dict[int, float], charged: dict[int, float], small: float) -> int:
+    """The cheapest target (equal costs: the lower one)."""
+    best = min(costs, key=lambda p: (round(costs[p], 4), p))
+    # A few watt-hours from the grid are not worth an action.
+    without = [p for p in costs if charged[p] <= EPSILON]
+    if charged[best] < small and without:
+        best = min(without, key=lambda p: (round(costs[p], 4), p))
+    return best
+
+
 def _plan(inp: PlanInput) -> dict[str, Any]:
+    cases = _cases(inp)
+    # The typical day is the one that is shown, shared out and refined.
+    inp = next((case for s, case in cases if s.name == "typical"), inp)
     capacity = inp.capacity
     base = simulate(inp, None)
+    base_cost = _expected(cases, inp, None, base)
     lowest = math.ceil(inp.reserve)
     highest = max(lowest, math.floor(min(inp.max_target, 100)))
-    best: tuple[float, int] | None = None
-    best_without_charge: tuple[float, int] | None = None
     small = max(0.1, capacity * 0.01)
     charged: dict[int, float] = {}
+    costs: dict[int, float] = {}
+    typical_costs: dict[int, float] = {}
     for percent in range(lowest, highest + 1):
         run = simulate(inp, capacity * percent / 100)
-        key = (round(run.cost, 4), percent)
         charged[percent] = run.grid_charge
-        if best is None or key < best:
-            best = key
-        if run.grid_charge <= EPSILON and (
-            best_without_charge is None or key < best_without_charge
-        ):
-            best_without_charge = key
-    optimum = best[1] if best else lowest
-    # A few watt-hours from the grid are not worth an action.
-    if charged.get(optimum, 0.0) < small and best_without_charge is not None:
-        optimum = best_without_charge[1]
+        typical_costs[percent] = run.cost
+        costs[percent] = _expected(cases, inp, capacity * percent / 100, run)
+    optimum = _cheapest(costs, charged, small)
+    typical_target = _cheapest(typical_costs, charged, small)
     reasons: list[str] = []
 
     # The buffer: more energy above the reserve while Joe is still learning.
@@ -465,8 +569,8 @@ def _plan(inp: PlanInput) -> dict[str, Any]:
     if optimum > inp.reserve:
         target = min(highest, round(optimum + inp.buffer * (optimum - inp.reserve)))
         if target > optimum:
-            worth = base.cost - simulate(inp, capacity * optimum / 100).cost
-            buffered = base.cost - simulate(inp, capacity * target / 100).cost
+            worth = base_cost - costs[optimum]
+            buffered = base_cost - costs[target]
             if buffered < inp.min_saving <= worth:
                 target = optimum
                 notes.append("buffer_dropped")
@@ -528,14 +632,18 @@ def _plan(inp: PlanInput) -> dict[str, Any]:
         and inp.discharge_mode != "free"
     )
     kind = "charge" if charging else "hold" if held and target > inp.reserve else "none"
-    # Not worth the effort: below the saving the user wants, Joe leaves it be.
-    if (
-        kind != "none"
-        and "balance" not in reasons
-        and base.cost - run.cost < inp.min_saving
-    ):
+    # Not worth the effort: below the saving the user wants (on the whole
+    # of tomorrow's days), Joe leaves it be.
+    saving = base.cost - run.cost
+    if inp.scenarios:
+        fixed = shared.hourly if shared else None
+        planned = _expected(cases, inp, capacity * target / 100, night, fixed)
+        saving = base_cost - (planned + run.cost - night.cost)
+    if kind != "none" and "balance" not in reasons and saving < inp.min_saving:
         kind = "none"
         reasons.append("small_saving")
+    if kind != "none" and optimum > typical_target:
+        reasons.append("caution")
 
     sun = _crossing(inp)
     empty = _when_level(
@@ -689,7 +797,9 @@ def _plan(inp: PlanInput) -> dict[str, Any]:
             "grid_friendly": inp.grid_friendly,
             "grid_first": inp.grid_first,
             "morning_buffer": inp.morning_buffer,
+            "night_caution": inp.caution,
         },
+        "risk": _risk(inp, cases, target, typical_target),
         "day": day,
         # The buffer Joe keeps on a grid-friendly morning (also on a day
         # without one: the settings show the suggestion).
@@ -717,6 +827,38 @@ def _plan(inp: PlanInput) -> dict[str, Any]:
             }
             for i, hour in enumerate(inp.hours)
         ],
+    }
+
+
+def _risk(
+    inp: PlanInput,
+    cases: list[tuple[Scenario, PlanInput]],
+    target: int,
+    typical_target: int,
+) -> dict[str, Any] | None:
+    """Tomorrow's days as the plan weighed them (None: only the expected one)."""
+    if not inp.scenarios:
+        return None
+    capacity = inp.capacity
+    days = inp.spread.get("days") or {}
+    scenarios = {}
+    for scenario, case in cases:
+        tomorrow = [h for h in case.hours if h.start >= case.window_end]
+        scenarios[scenario.name] = {
+            "solar_kwh": round(sum(h.solar for h in tomorrow), 2),
+            "home_kwh": round(sum(h.home for h in tomorrow), 2),
+            "cost": round(simulate(case, capacity * target / 100).cost, 2),
+            "cost_typical": round(
+                simulate(case, capacity * typical_target / 100).cost, 2
+            ),
+        }
+    return {
+        "caution": inp.caution,
+        "weights": {s.name: round(s.weight, 2) for s, _ in cases},
+        "class": inp.spread.get("class"),
+        "typical_target": typical_target,
+        "scenarios": scenarios,
+        "days": {"solar": days.get("solar", 0), "home": days.get("home", 0)},
     }
 
 
