@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 import logging
 from typing import Any
 
@@ -15,6 +15,8 @@ from .. import model
 from ..observe.readings import energy_kwh, to_km
 from ..observe.store import HistoryStore
 from ..plan.cars import NEED_ENTITIES, stable_entity
+from ..plan.inputs import ASSUMED
+from ..plan.planner import Prices
 from .context import async_day_labels, async_sensor_series
 from .evaluate import evaluate
 from .learning import (
@@ -43,6 +45,7 @@ from .models import (
     source_quality,
     surprises,
 )
+from .replay import ReplaySetup, replay_nights
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -55,6 +58,8 @@ MODEL_DAYS = 60
 # Consumption follows the seasons: those models learn from years, recent days
 # weighing most (see learn.models), so Joe need not start anew every winter.
 SEASON_DAYS = 730
+# How often Joe replays his past nights with every caution (learn/replay.py).
+REPLAY_EVERY = timedelta(days=7)
 HOT_WATER_DAYS = 21
 # What a reset forgets, by area (see async_reset).
 SCOPES: dict[str, tuple[str, ...]] = {
@@ -66,6 +71,7 @@ SCOPES: dict[str, tuple[str, ...]] = {
         "solar_classes",
         "solar_spread",
         "sources",
+        "replay",
     ),
     "consumption": (
         "consumption_model",
@@ -75,6 +81,7 @@ SCOPES: dict[str, tuple[str, ...]] = {
         "buffer_days",
         "morning_need",
         "home_spread",
+        "replay",
     ),
     "battery": ("battery_models",),
     "hot_water": ("action_models",),
@@ -99,6 +106,7 @@ EMPTY: dict[str, Any] = {
     "battery_models": {},
     "action_models": {},
     "car_models": {},
+    "replay": None,
 }
 # Answers to "what was special about this day?" (see async_answer).
 ANSWERS = ("normal", "guests", "away", "special")
@@ -126,6 +134,9 @@ class JoeLearner:
         self.results: dict[str, Any] | None = None
         # Recent days far off what Joe expected, to ask the user about.
         self.questions: list[dict[str, Any]] = []
+        # The history brought in past days: replay the nights again.
+        self._replay_due = False
+        self._replay_tried: str | None = None
 
     @property
     def active(self) -> bool:
@@ -207,6 +218,7 @@ class JoeLearner:
             fresh = True
         self._learn(days, today)
         await self._async_learn_models(today)
+        await self._async_replay(now)
         questions = self._questions(days, today)
         if fresh or self.results is None or questions != self.questions:
             self.questions = questions
@@ -268,21 +280,22 @@ class JoeLearner:
             model.flexible_consumers(config),
         )
         sunny = _since(learned, "forecast", days, first)
+        ratios = solar_ratios(_since(learned, "forecast", seasons, ""))
         values: dict[str, Any] = {
             "consumption_model": consumption_model(rows),
             "group_models": group_models(rows, config["consumers"]),
             "presence": presence_by_label(
                 consumption, [p["id"] for p in config["persons"]]
             ),
-            "solar_classes": solar_classes(solar_ratios(sunny)),
-            # How far sun and consumption strayed, over the years: the night's
-            # scenarios (plan/planner.py).
-            "solar_spread": solar_spread(
-                solar_ratios(_since(learned, "forecast", seasons, ""))
-            ),
+            # How well the forecast fits per weather, and how far sun and
+            # consumption strayed, over the years with the season counting
+            # double: the night's scenarios (plan/planner.py).
+            "solar_classes": solar_classes(ratios, today),
+            "solar_spread": solar_spread(ratios, today),
             "home_spread": home_spread(
                 _since(learned, "consumption", seasons, ""),
                 model.flexible_consumers(config),
+                today,
             ),
             "sources": source_quality(
                 sunny, [a["id"] for a in config["forecast"]["alternatives"]]
@@ -321,6 +334,88 @@ class JoeLearner:
         if len(patch) > 1:
             patch["updated"] = dt_util.now().isoformat(timespec="seconds")
         self._update({"learned": patch}, "learned")
+
+    async def _async_replay(self, now: datetime) -> None:
+        """Once a week (and when past days came in): what each caution would
+        have cost on the past nights. Only shown, never planned with."""
+        config = self._config()
+        learned = config["learned"]
+        found = learned.get("replay")
+        today = now.date()
+        if found and found.get("updated"):
+            updated = datetime.fromisoformat(found["updated"])
+            if not self._replay_due and now - updated < REPLAY_EVERY:
+                return
+        elif not self._replay_due and self._replay_tried == today.isoformat():
+            return
+        self._replay_due = False
+        self._replay_tried = today.isoformat()
+        value = None
+        if (setup := self._replay_setup(config)) is not None:
+            days = await self._history.async_days(
+                (today - timedelta(days=SEASON_DAYS)).isoformat(),
+                (today - timedelta(days=1)).isoformat(),
+            )
+            days = _since(
+                learned, "forecast", _since(learned, "consumption", days, ""), ""
+            )
+            value = await self._hass.async_add_executor_job(replay_nights, days, setup)
+        if value != found:
+            updated = dt_util.now().isoformat(timespec="seconds")
+            self._update({"learned": {"replay": value, "updated": updated}}, "learned")
+
+    def _replay_setup(self, config: dict[str, Any]) -> ReplaySetup | None:
+        """All batteries as one and the fixed tariff (None: nothing to replay)."""
+        tariff = config["tariff"]
+        if tariff["kind"] != "fixed_window" or not tariff["window"]:
+            return None
+        rules = config["rules"]
+        models = config["learned"].get("battery_models") or {}
+        batteries: list[tuple[str, float]] = []
+        charge = discharge = 0.0
+        efficiencies: list[tuple[float, float]] = []
+        for battery in config["batteries"]:
+            found = models.get(battery["id"]) or {}
+            capacity = (
+                battery["capacity_kwh"]
+                or energy_kwh(self._hass.states.get(battery["capacity_entity"] or ""))
+                or found.get("measured_kwh")
+            )
+            if not capacity:
+                continue
+            # As the plan has it (plan/inputs.py).
+            default_w = min(5.0, capacity * 0.5) * 1000
+            charge += (battery["max_charge_w"] or default_w) / 1000
+            discharge += (battery["max_discharge_w"] or default_w) / 1000
+            if found:
+                efficiency = found.get("efficiency") or 0.9
+                converter = found.get("converter") or {}
+                if rules["converter_losses"] and converter.get("factor"):
+                    efficiency *= converter["factor"] ** 2
+                efficiencies.append((efficiency, capacity))
+            batteries.append((battery["id"], capacity))
+        if not batteries:
+            return None
+        weight = sum(size for _, size in efficiencies)
+        night, day = tariff["night_price"], tariff["day_price"]
+        feed_in = tariff["feed_in_price"]
+        return ReplaySetup(
+            batteries=batteries,
+            charge_kw=charge,
+            discharge_kw=discharge,
+            efficiency=sum(v * size for v, size in efficiencies) / weight
+            if weight
+            else 0.9,
+            reserve=rules["reserve_soc"],
+            prices=Prices(
+                night=night if night is not None else ASSUMED.night,
+                day=day if day is not None else ASSUMED.day,
+                feed_in=feed_in if feed_in is not None else ASSUMED.feed_in,
+            ),
+            window_start=time.fromisoformat(tariff["window"]["start"]),
+            window_end=time.fromisoformat(tariff["window"]["end"]),
+            flexible=model.flexible_consumers(config),
+        )
 
     async def _async_label_days(
         self, config: dict[str, Any], days: dict[str, dict[str, Any]]
@@ -486,6 +581,7 @@ class JoeLearner:
 
     async def async_relearn(self) -> None:
         """Learn the models again today (new days arrived from the history)."""
+        self._replay_due = True
         if self._config()["learned"].get("models_day") is not None:
             self._update({"learned": {"models_day": None}}, "learned")
         await self.async_run()

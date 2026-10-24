@@ -1,6 +1,7 @@
 import { css, html, nothing, type TemplateResult } from "lit";
 import { sourceChip } from "./components/bits";
 import "./components/choice";
+import { euroText } from "./components/plan-text";
 import { tip } from "./components/tip";
 import { saveConfig, sourceOf } from "./config";
 import { formatNumber } from "./entities";
@@ -584,6 +585,7 @@ function nightCautionRow(t: Translate, host: HTMLElement, config: JoeConfig): Te
         <b>${t("rule.night_caution")}</b>${tip(t, "r_night_caution")} ${sourceChip(t, sourceOf(config, "rules.night_caution"))}
       </div>
       <small>${t(`rule.night_caution.${caution}.hint`)}</small>
+      ${replayLine(t, host, config, caution)}
     </div>
     <div>
       <joe-choice
@@ -599,6 +601,34 @@ function nightCautionRow(t: Translate, host: HTMLElement, config: JoeConfig): Te
       ></joe-choice>
     </div>
   </div>`;
+}
+
+/**
+ * What the weekly replay of past nights says about the chosen level: the
+ * cheapest level and how much less it would have cost, or that the setting
+ * was the cheapest. Only a hint; Joe never changes the setting himself.
+ */
+function replayLine(t: Translate, host: HTMLElement, config: JoeConfig, caution: NightCaution): TemplateResult | typeof nothing {
+  const replay = config.learned?.replay;
+  if (!replay) {
+    return nothing;
+  }
+  if (replay.best === caution) {
+    return html`<small class="replay">${t("rule.night_caution.replay_same")}</small>`;
+  }
+  const mine = replay.costs[caution];
+  const best = replay.costs[replay.best];
+  if (mine == null || best == null) {
+    return nothing;
+  }
+  const currency = (host as HTMLElement & { hass?: { config?: { currency?: string } } }).hass?.config?.currency;
+  return html`<small class="replay">
+    ${t("rule.night_caution.replay", {
+      nights: replay.nights,
+      best: t(`rule.night_caution.${replay.best}`),
+      diff: euroText(t, mine - best, currency),
+    })}
+  </small>`;
 }
 
 /** Styles of the rule controls; the page brings .row, .name and .control. */
@@ -665,6 +695,11 @@ export const ruleStyles = css`
     flex-wrap: wrap;
     align-items: center;
     gap: 8px 10px;
+  }
+  small.replay {
+    display: block;
+    margin-top: 4px;
+    color: var(--joe-ink-2);
   }
   .row.stacked {
     display: grid;

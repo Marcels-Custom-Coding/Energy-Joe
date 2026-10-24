@@ -706,10 +706,10 @@ export class JoePlanPage extends LitElement {
         value: kwh(plan.home_kwh),
         hint:
           consumption?.source === "history"
-            ? t("plan.math.home.history", {
+            ? `${t("plan.math.home.history", {
                 days: consumption.days,
                 kind: t(plan.meta?.workday === false ? "plan.math.day_off" : "plan.math.workday"),
-              })
+              })}${consumption.years ? `, ${t("plan.math.home.years", { days: consumption.years })}` : ""}`
             : t("plan.math.home.default"),
       },
     ];

@@ -11,11 +11,13 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from functools import partial
 import logging
 from typing import Any
 
 from homeassistant.core import HomeAssistant, State
+from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 
 from .readings import (
@@ -31,6 +33,12 @@ from .records import Flow, HourParts, compose, hour_starts
 _LOGGER = logging.getLogger(__name__)
 
 HOUR = 3600.0
+# A day's forecast is read from its sensor early in the morning, when it holds
+# the whole day and the sun has not started yet (local hours, in this order).
+FORECAST_HOURS = (4, 5, 3)
+# Less than this is a sensor that had no forecast yet.
+MIN_FORECAST_KWH = 0.1
+ENERGY_TO_KWH = {"Wh": 0.001, "kWh": 1.0, "MWh": 1000.0}
 
 
 @dataclass(slots=True)
@@ -406,3 +414,103 @@ def missing_hours(
         datetime.fromisoformat(r["start"]) for r in known if r.get("cov", 0) >= 0.9
     }
     return [h for h in hour_starts(start, end) if h not in complete]
+
+
+def forecast_history_candidates(
+    hass: HomeAssistant, config: dict[str, Any]
+) -> list[str]:
+    """Sensors that may hold the whole day's forecast in the statistics.
+
+    The user's pick, else min_max helpers summing exactly Joe's "today" sensors.
+    """
+    forecast = config["forecast"]
+    if chosen := forecast.get("history_entity"):
+        return [chosen]
+    today = set(forecast["today"])
+    if not today:
+        return []
+    registry = er.async_get(hass)
+    found = []
+    for entry in hass.config_entries.async_entries("min_max"):
+        options = entry.options
+        if (
+            options.get("type") != "sum"
+            or set(options.get("entity_ids") or []) != today
+        ):
+            continue
+        found.extend(
+            item.entity_id
+            for item in er.async_entries_for_config_entry(registry, entry.entry_id)
+            if item.domain == "sensor"
+        )
+    return found
+
+
+async def async_forecast_history_entity(
+    hass: HomeAssistant, config: dict[str, Any]
+) -> tuple[str, float] | None:
+    """The forecast sensor with hourly means in kWh, Wh or MWh, and its factor to kWh."""
+    if "recorder" not in hass.config.components:
+        return None
+    candidates = forecast_history_candidates(hass, config)
+    if not candidates:
+        return None
+    from homeassistant.components.recorder import get_instance  # noqa: PLC0415
+    from homeassistant.components.recorder.models import (  # noqa: PLC0415
+        StatisticMeanType,
+    )
+    from homeassistant.components.recorder.statistics import (  # noqa: PLC0415
+        get_metadata,
+    )
+
+    found = await get_instance(hass).async_add_executor_job(
+        partial(get_metadata, hass, statistic_ids=set(candidates))
+    )
+    for entity in candidates:
+        if entity not in found:
+            continue
+        meta = found[entity][1]
+        factor = ENERGY_TO_KWH.get(meta.get("unit_of_measurement") or "")
+        has_mean = meta.get("mean_type", StatisticMeanType.NONE) != (
+            StatisticMeanType.NONE
+        ) or meta.get("has_mean")
+        if factor is not None and has_mean:
+            return entity, factor
+    return None
+
+
+def forecast_by_day(rows: list[dict[str, Any]], factor: float) -> dict[str, float]:
+    """A day's forecast in kWh from hourly means: the early-morning hour."""
+    means: dict[tuple[str, int], float] = {}
+    for row in sorted(rows, key=lambda r: r["start"]):
+        if row.get("mean") is None:
+            continue
+        local = dt_util.as_local(dt_util.utc_from_timestamp(row["start"]))
+        # On the doubled hour of the clock change the first one counts.
+        means.setdefault((local.date().isoformat(), local.hour), row["mean"])
+    result: dict[str, float] = {}
+    for day in sorted({day for day, _ in means}):
+        for hour in FORECAST_HOURS:
+            kwh = means.get((day, hour), 0.0) * factor
+            # Missing or still empty: the next hour may have it.
+            if kwh >= MIN_FORECAST_KWH:
+                result[day] = round(kwh, 3)
+                break
+    return result
+
+
+async def async_forecast_history(
+    hass: HomeAssistant, entity: str, factor: float, first: date, last: date
+) -> dict[str, float]:
+    """Each day's forecast (kWh) from first to last, read from the statistics."""
+    from homeassistant.components.recorder import get_instance  # noqa: PLC0415
+    from homeassistant.components.recorder.statistics import (  # noqa: PLC0415
+        statistics_during_period,
+    )
+
+    start = dt_util.as_utc(dt_util.start_of_local_day(first))
+    end = dt_util.as_utc(dt_util.start_of_local_day(last + timedelta(days=1)))
+    stats = await get_instance(hass).async_add_executor_job(
+        statistics_during_period, hass, start, end, {entity}, "hour", None, {"mean"}
+    )
+    return forecast_by_day(stats.get(entity) or [], factor)

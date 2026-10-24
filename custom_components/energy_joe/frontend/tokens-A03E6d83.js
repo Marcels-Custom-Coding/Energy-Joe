@@ -744,6 +744,7 @@ var Ne = {
 	"climate.open_device": "Gerät in Home Assistant öffnen ({id})",
 	"climate.open_meter": "Messgerät in Home Assistant öffnen",
 	"pick.night.title": "Was sagt dir, dass ihr im Bett seid?",
+	"pick.forecast_history.title": "Welcher Sensor kennt den Verlauf deiner Prognose?",
 	"tip.climate_night.text": "Nachts schalte ich die Klimaanlage aus und rechtzeitig vor deiner Morgenzeit wieder an, damit es dann angenehm ist. Woran ich die Nacht erkenne – feste Uhrzeit oder eine Entität –, stellst du unter Haushalt › Nachtruhe ein. Wie lange der Raum zum Abkühlen braucht, lerne ich mit der Zeit.",
 	"tip.climate_night_source.title": "Woran erkennt Joe die Nacht?",
 	"tip.climate_night_source.text": "„An festen Uhrzeiten“: jede Klimaanlage hat ihre Zeit von – bis. „An einer Entität“: Nacht ist, solange die gewählte Entität „an“ ist – etwa ein Helfer (input_boolean), den deine Gute-Nacht-Routine einschaltet und morgens wieder aus, ein Bettsensor oder ein Zeitplan.",
@@ -1709,6 +1710,8 @@ var Ne = {
 	"rule.night_caution.balanced.hint": "Ein schlechter Tag zählt doppelt so viel wie ein guter. Lieber eine Kilowattstunde zu viel geladen als abends teuren Tagesstrom.",
 	"rule.night_caution.careful.hint": "Ein schlechter Tag zählt viermal so viel wie ein guter. Abends kaufst du nur selten zu, dafür lade ich nachts öfter etwas mehr.",
 	"rule.night_caution.cautious.hint": "Ich plane fast für den schlechten Fall. Du kaufst abends selten teuer, dafür manchmal etwas zu viel nachts.",
+	"rule.night_caution.replay": "Im Rückspiel über {nights} Nächte wäre „{best}“ am günstigsten gewesen: {diff} weniger als deine Einstellung.",
+	"rule.night_caution.replay_same": "Im Rückspiel war deine Einstellung am günstigsten.",
 	"tip.r_night_caution.title": "Wie vorsichtig soll ich die Nacht planen?",
 	"tip.r_night_caution.text": "Wie voll ich nachts lade, hängt am Tag danach – und den kenne ich nie genau. Darum rechne ich jedes Ziel für drei Tage durch: einen schlechten (weniger Sonne, mehr Verbrauch), einen wie meistens und einen guten. Wie weit die drei auseinanderliegen, lerne ich aus deinen echten Tagen, je Wetterlage. Diese Wahl sagt, wie stark der schlechte Tag zählt. Ich nehme das Ziel, das dich im Schnitt am wenigsten kostet.",
 	"tip.r_night_caution.hint": "Vorsichtiger heißt: nachts etwas mehr günstigen Strom, dafür abends seltener teuren.",
@@ -2171,6 +2174,7 @@ var Ne = {
 	"plan.math.home": "Verbrauch morgen",
 	"plan.math.home.history": "aus {days} Tagen, {kind}",
 	"plan.math.home.default": "Startwert eines typischen Haushalts",
+	"plan.math.home.years": "dazu {days} Tage aus den Vorjahren",
 	"plan.math.workday": "für einen Arbeitstag",
 	"plan.math.day_off": "für ein Wochenende oder einen Feiertag",
 	"plan.math.target": "Ziel",
@@ -2237,6 +2241,18 @@ var Ne = {
 	"learn.spread": "Wie sicher meine Vorhersagen sind",
 	"learn.spread.say": "So weit lagen meine Vorhersagen bisher daneben. Damit plane ich nachts einen schlechten und einen guten Tag ein – etwa jeder fünfte Tag kommt noch schlechter, jeder fünfte noch besser.",
 	"learn.spread.none": "Lerne ich noch – bis dahin rechne ich mit Annahmen.",
+	"learn.spread.season": "Tage aus derselben Jahreszeit zählen doppelt – auch aus früheren Jahren.",
+	"learn.replay": "Mein Regler im Rückspiel",
+	"learn.replay.say": "{nights} Nächte vom {first} bis {last}, gerechnet mit dem echten Wetter und Verbrauch. Daneben steht, was jede Stufe gegenüber deiner Einstellung gekostet hätte.",
+	"learn.replay.equal": "wie deine Einstellung",
+	"learn.replay.more": "{value} teurer",
+	"learn.replay.less": "{value} günstiger",
+	"learn.replay.typical": "nur der typische Tag",
+	"learn.replay.yours": "deine Einstellung",
+	"learn.replay.best": "am günstigsten",
+	"learn.replay.season": "Nur diese Jahreszeit ({nights} Nächte)",
+	"learn.replay.only": "Das zeige ich dir nur – deine Einstellung ändere ich nicht.",
+	"learn.replay.none": "Ich spiele meine Nächte einmal pro Woche nach. Dafür brauche ich mindestens zehn Nächte mit Prognose.",
 	"learn.spread.solar": "Sonne bei {class}",
 	"learn.spread.class.clear": "klarem Himmel",
 	"learn.spread.class.mixed": "gemischtem Wetter",
@@ -2691,6 +2707,10 @@ var Ne = {
 	"tip.learn_weather.title": "Warum nach Wetterlage?",
 	"tip.learn_weather.text": "Viele Prognosen liegen an klaren Tagen gut und an trüben deutlich daneben – oder umgekehrt. Deshalb merke ich mir für klare, wechselhafte und trübe Tage einen eigenen Faktor und nehme für morgen den, der zur Prognose passt. Die Grenzen wandern mit der Jahreszeit.",
 	"tip.learn_combine.title": "Was heißt kombinieren?",
+	"tip.learn_replay.title": "Was ist das Rückspiel?",
+	"tip.learn_replay.text": "Einmal pro Woche spiele ich meine vergangenen Nächte noch mal durch – mit jeder Stufe des Reglers und mit dem Wetter und Verbrauch, die wirklich kamen. So siehst du, welche Stufe dich am wenigsten gekostet hätte.\n**Nur der typische Tag**: ohne schlechten und guten Tag gerechnet.\nIch zeige das nur – deine Einstellung ändere ich nicht.",
+	"tip.forecast_history.title": "Woraus lerne ich die letzten Jahre?",
+	"tip.forecast_history.text": "Nimm einen Sensor mit Verlauf (Langzeit-Statistik) für die Sonnenprognose – am besten einen Summen-Helfer über deine Prognose-Sensoren. Daraus hole ich mir die Prognosen der letzten bis zu zwei Jahre und vergleiche sie mit der Sonne, die wirklich kam. So lerne ich, wie weit die Prognose danebenlag – vor allem in derselben Jahreszeit früherer Jahre.\n**Wieder automatisch**: Ich nehme die Summe der Prognose-Sensoren, die ich sowieso nutze.",
 	"tip.learn_combine.text": "Jede Prognose rechne ich erst mit ihrem eigenen Faktor um. Dann zählt jede so viel, wie gut sie bisher getroffen hat: Eine Quelle, die selten danebenliegt, zählt mehr als eine, die stark schwankt.\n**Aus**: Ich nehme nur die Hauptprognose.",
 	"tip.learn_battery.title": "Was messe ich am Speicher?",
 	"tip.learn_battery.text": "Wie viel beim Laden und Entladen verloren geht – das fließt in den Plan ein. Und aus Lade- und Entladeläufen, wie viel wirklich hineinpasst – das zeige ich dir nur. Rechnen tue ich mit der Größe, die das Gerät meldet oder die du eingetragen hast. Weicht die Messung deutlich ab, sage ich es dir, und du entscheidest.",
@@ -3085,6 +3105,16 @@ var Ne = {
 	"grid.tariff.discard": "Verwerfen",
 	"grid.solar.say": "Was deine Anlage gerade liefert und was die Prognose für morgen erwartet.",
 	"grid.solar.factor": "Gelernter Faktor für die Prognose",
+	"grid.forecast_history": "Prognose-Verlauf",
+	"grid.forecast_history.done": "{days} Tage seit {from}",
+	"grid.forecast_history.none": "Kein Sensor mit Verlauf gefunden – wähl einen aus, dann lerne ich aus den letzten Jahren.",
+	"grid.forecast_history.running": "Lese ich gerade …",
+	"grid.forecast_history.failed": "Das Lesen hat nicht geklappt – ich versuche es später noch mal.",
+	"grid.forecast_history.auto": "automatisch",
+	"grid.forecast_history.auto_hint": "Ohne deine Auswahl nehme ich die Summe der Prognose-Sensoren, die ich sowieso nutze.",
+	"grid.forecast_history.pick": "Auswählen",
+	"grid.forecast_history.change": "Ändern",
+	"grid.forecast_history.auto_back": "Wieder automatisch",
 	"grid.home.say": "Was im Haus gerade verbraucht wird. Daraus lerne ich, wie viel ihr wann braucht.",
 	"grid.home.devices": "Geräte zuordnen →",
 	"tip.grid_tariff.title": "Wie stelle ich den Tarif ein?",
@@ -4357,6 +4387,7 @@ var Ne = {
 	"climate.open_device": "Open the device in Home Assistant ({id})",
 	"climate.open_meter": "Open the meter in Home Assistant",
 	"pick.night.title": "What tells you that you are in bed?",
+	"pick.forecast_history.title": "Which sensor knows your forecast's history?",
 	"tip.climate_night.text": "At night I switch the air conditioner off and back on in good time before your morning time, so it is comfortable by then. How I tell it's night – fixed times or an entity – you set under Household › Bedtime. How long the room takes to cool down, I learn over time.",
 	"tip.climate_night_source.title": "How does Joe tell night?",
 	"tip.climate_night_source.text": "“By fixed times”: each air conditioner has its own from – to. “By an entity”: it is night while the chosen entity is “on” – e.g. a helper (input_boolean) your good-night routine switches on and off again in the morning, a bed sensor or a schedule.",
@@ -5322,6 +5353,8 @@ var Ne = {
 	"rule.night_caution.balanced.hint": "A bad day counts twice as much as a good one. Better one kilowatt-hour too much charged than expensive day power in the evening.",
 	"rule.night_caution.careful.hint": "A bad day counts four times as much as a good one. You rarely buy in the evening, but I more often charge a little extra at night.",
 	"rule.night_caution.cautious.hint": "I plan almost for the bad case. You rarely buy expensive power in the evening, but sometimes a bit too much at night.",
+	"rule.night_caution.replay": "In the replay over {nights} nights “{best}” would have been the cheapest: {diff} less than your setting.",
+	"rule.night_caution.replay_same": "In the replay your setting was the cheapest.",
 	"tip.r_night_caution.title": "How careful should I plan the night?",
 	"tip.r_night_caution.text": "How full I charge at night depends on the day after – and I never know it exactly. So I work out every target for three days: a bad one (less sun, more consumption), one as it usually comes and a good one. How far apart the three are I learn from your real days, per weather class. This choice says how much the bad day counts. I take the target that costs you least on average.",
 	"tip.r_night_caution.hint": "More careful means: a bit more cheap power at night, and less often expensive power in the evening.",
@@ -5784,6 +5817,7 @@ var Ne = {
 	"plan.math.home": "Consumption tomorrow",
 	"plan.math.home.history": "from {days} days, {kind}",
 	"plan.math.home.default": "default of a typical household",
+	"plan.math.home.years": "plus {days} days from earlier years",
 	"plan.math.workday": "for a working day",
 	"plan.math.day_off": "for a weekend or holiday",
 	"plan.math.target": "Target",
@@ -5850,6 +5884,18 @@ var Ne = {
 	"learn.spread": "How sure my forecasts are",
 	"learn.spread.say": "This is how far off my forecasts have been. With it I plan a bad and a good day at night – about every fifth day comes out even worse, every fifth even better.",
 	"learn.spread.none": "Still learning – until then I count on assumptions.",
+	"learn.spread.season": "Days from the same season count double – also from earlier years.",
+	"learn.replay": "My setting in the replay",
+	"learn.replay.say": "{nights} nights from {first} to {last}, worked out with the real weather and use. Next to each level: what it would have cost compared with your setting.",
+	"learn.replay.equal": "same as your setting",
+	"learn.replay.more": "{value} more",
+	"learn.replay.less": "{value} less",
+	"learn.replay.typical": "only the typical day",
+	"learn.replay.yours": "your setting",
+	"learn.replay.best": "cheapest",
+	"learn.replay.season": "Only this season ({nights} nights)",
+	"learn.replay.only": "I only show you this – I don't change your setting.",
+	"learn.replay.none": "I replay my nights once a week. For that I need at least ten nights with a forecast.",
 	"learn.spread.solar": "Sun on {class}",
 	"learn.spread.class.clear": "clear days",
 	"learn.spread.class.mixed": "mixed days",
@@ -6304,6 +6350,10 @@ var Ne = {
 	"tip.learn_weather.title": "Why by weather?",
 	"tip.learn_weather.text": "Many forecasts are good on clear days and clearly off on overcast ones – or the other way round. So I keep a factor each for clear, mixed and overcast days and use the one that fits tomorrow's forecast. The limits move with the seasons.",
 	"tip.learn_combine.title": "What does combining mean?",
+	"tip.learn_replay.title": "What is the replay?",
+	"tip.learn_replay.text": "Once a week I replay my past nights – with every level of the setting and with the weather and use that really came. So you see which level would have cost you the least.\n**Only the typical day**: worked out without a bad and a good day.\nI only show this – I don't change your setting.",
+	"tip.forecast_history.title": "What do I learn the past years from?",
+	"tip.forecast_history.text": "Pick a sensor with history (long-term statistics) for the solar forecast – ideally a sum helper over your forecast sensors. From it I fetch the forecasts of up to the last two years and compare them with the sun that really came. That way I learn how far off the forecast was – especially in the same season of earlier years.\n**Back to automatic**: I use the sum of the forecast sensors I already use.",
 	"tip.learn_combine.text": "I first correct each forecast with its own factor. Then each counts as much as it has been right so far: a source that is rarely off counts more than one that varies a lot.\n**Off**: I only use the main forecast.",
 	"tip.learn_battery.title": "What do I measure on the battery?",
 	"tip.learn_battery.text": "How much is lost when charging and discharging – that goes into the plan. And from charge and discharge runs, how much really fits in – that I only show you. I plan with the size the device reports or you entered. If the measurement is far off, I tell you, and you decide.",
@@ -6698,6 +6748,16 @@ var Ne = {
 	"grid.tariff.discard": "Discard",
 	"grid.solar.say": "What your system delivers right now and what the forecast expects for tomorrow.",
 	"grid.solar.factor": "Learned factor for the forecast",
+	"grid.forecast_history": "Forecast history",
+	"grid.forecast_history.done": "{days} days since {from}",
+	"grid.forecast_history.none": "No sensor with history found – pick one and I'll learn from the past years.",
+	"grid.forecast_history.running": "Reading it right now …",
+	"grid.forecast_history.failed": "Reading it did not work – I'll try again later.",
+	"grid.forecast_history.auto": "automatic",
+	"grid.forecast_history.auto_hint": "Without your pick I use the sum of the forecast sensors I already use.",
+	"grid.forecast_history.pick": "Choose",
+	"grid.forecast_history.change": "Change",
+	"grid.forecast_history.auto_back": "Back to automatic",
 	"grid.home.say": "What the house uses right now. From it I learn how much you need and when.",
 	"grid.home.devices": "Assign devices →",
 	"tip.grid_tariff.title": "How do I set the tariff?",
@@ -7900,14 +7960,14 @@ function Ke(e, t, n) {
 }
 //#endregion
 //#region src/define.ts
-var qe = "0.9.36";
+var qe = "0.9.37";
 function Je(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = qe, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.36" && Xe();
+	n.joeVersion !== "0.9.37" && Xe();
 }
 var Ye = !1;
 function Xe() {
@@ -9856,4 +9916,4 @@ var nn = o`
   }
 `;
 //#endregion
-export { Ke as $, Ct as A, ct as B, At as C, vt as D, yt as E, _t as F, at as G, it as H, bt as I, lt as J, st as K, wt as L, gt as M, xt as N, Dt as O, Tt as P, Ve as Q, St as R, Lt as S, jt as T, nt as U, rt as V, K as W, Ze as X, H as Y, Je as Z, Nt as _, Vt as a, Le as at, zt as b, Jt as c, B as ct, Xt as d, j as dt, Be as et, Zt as f, A as ft, Pt as g, Ft as h, o as ht, Ut as i, ze as it, X as j, Et as k, Yt as l, z as lt, en as m, ge as mt, Q as n, We as nt, Ht as o, Me as ot, qt as p, Te as pt, G as q, Bt as r, Ue as rt, $t as s, V as st, nn as t, Ge as tt, Qt as u, M as ut, kt as v, Z as w, Rt as x, Mt as y, Y as z };
+export { Ve as $, Et as A, Y as B, Lt as C, yt as D, jt as E, Tt as F, K as G, rt as H, _t as I, G as J, at as K, bt as L, X as M, gt as N, vt as O, xt as P, Je as Q, wt as R, Rt as S, Z as T, it as U, ct as V, nt as W, H as X, lt as Y, Ze as Z, Pt as _, Vt as a, ze as at, Mt as b, Jt as c, V as ct, Xt as d, M as dt, Ke as et, Zt as f, j as ft, It as g, o as gt, Ft as h, ge as ht, Ut as i, Ue as it, Ct as j, Dt as k, Yt as l, B as lt, en as m, Te as mt, Q as n, Ge as nt, Ht as o, Le as ot, qt as p, A as pt, st as q, Bt as r, We as rt, $t as s, Me as st, nn as t, Be as tt, Qt as u, z as ut, Nt as v, At as w, zt as x, kt as y, St as z };

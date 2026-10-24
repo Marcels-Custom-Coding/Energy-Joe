@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable
 import contextlib
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 import logging
 from typing import Any
 
@@ -23,7 +23,13 @@ from homeassistant.helpers.event import (
 from homeassistant.util import dt as dt_util
 
 from ..learn.context import async_weather_day
-from .backfill import async_backfill, energy_counters, missing_hours
+from .backfill import (
+    async_backfill,
+    async_forecast_history,
+    async_forecast_history_entity,
+    energy_counters,
+    missing_hours,
+)
 from .readings import (
     Integrator,
     energy_kwh,
@@ -83,7 +89,13 @@ class JoeObserver:
         self._platforms: dict[str, Any] | None = None
         self._backfill: asyncio.Task[None] | None = None
         self._backfill_again: int | None = None
-        self.status: dict[str, Any] = {"active": False, "backfill": {"state": "idle"}}
+        # Whether the forecast sensor with statistics was looked for since the start.
+        self._forecast_checked = False
+        self.status: dict[str, Any] = {
+            "active": False,
+            "backfill": {"state": "idle"},
+            "forecast_history": _forecast_status(None, "none", {}),
+        }
 
     @property
     def active(self) -> bool:
@@ -115,6 +127,11 @@ class JoeObserver:
             active=True, since=dt_util.as_local(now).isoformat(timespec="seconds")
         )
         self.status.update(self._store.overview())
+        done = self._store.forecast_history
+        self.status["forecast_history"] = _forecast_status(
+            done.get("entity"), "done" if done.get("entity") else "none", done
+        )
+        self._forecast_checked = False
         self._changed()
         await self._async_forecast(now)
         if self._store.format < HOURS_FORMAT:
@@ -428,9 +445,21 @@ class JoeObserver:
         )
 
     async def _async_backfill(self, days: int, rebuild: bool) -> None:
+        filled = await self._async_backfill_hours(days, rebuild)
+        if not self._forecast_checked and self._bucket is not None:
+            self._forecast_checked = True
+            filled = await self._async_forecast_history() or filled
+        if filled and self._filled:
+            self._filled()
+        if (again := self._backfill_again) is not None:
+            self._backfill_again = None
+            self._hass.loop.call_soon(self.start_backfill, again)
+
+    async def _async_backfill_hours(self, days: int, rebuild: bool) -> bool:
+        """Read the hours; whether any came in."""
         end = self._bucket
         if end is None:
-            return
+            return False
         start = end - timedelta(days=days)
         if not rebuild:
             known = await self._store.async_days(day_key(start), day_key(end))
@@ -439,7 +468,7 @@ class JoeObserver:
             )
             if not missing:
                 self._store.set_read_back(days)
-                return
+                return False
             start = missing[0]
         self.status["backfill"] = {"state": "running", "from": start.isoformat()}
         self._changed()
@@ -471,11 +500,82 @@ class JoeObserver:
             }
         self.status.update(self._store.overview())
         self._changed()
-        if self.status["backfill"].get("hours") and self._filled:
-            self._filled()
-        if (again := self._backfill_again) is not None:
-            self._backfill_again = None
-            self._hass.loop.call_soon(self.start_backfill, again)
+        return bool(self.status["backfill"].get("hours"))
+
+    async def _async_forecast_history(self) -> bool:
+        """Past days without a forecast get one from a sensor's long-term
+        statistics, once per sensor; whether any day got one."""
+        done = self._store.forecast_history
+        try:
+            found = await async_forecast_history_entity(self._hass, self._config)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            _LOGGER.exception("Looking for the forecast's statistics failed")
+            found = None
+        if found is None or found[0] == done.get("entity"):
+            entity = None if found is None else found[0]
+            state = "none" if entity is None else "done"
+            self.status["forecast_history"] = _forecast_status(entity, state, done)
+            self._changed()
+            return False
+        entity, factor = found
+        self.status["forecast_history"] = _forecast_status(entity, "running", {})
+        self._changed()
+        yesterday = dt_util.as_local(self._bucket).date() - timedelta(days=1)
+        first = self._store.overview()["first_day"]
+        written = 0
+        try:
+            values = (
+                await async_forecast_history(
+                    self._hass, entity, factor, date.fromisoformat(first), yesterday
+                )
+                if first and first <= yesterday.isoformat()
+                else {}
+            )
+            days: list[str] = []
+            for month in self._store.months:
+                known = await self._store.async_days(f"{month}-01", f"{month}-31")
+                for day, data in known.items():
+                    if day > yesterday.isoformat():
+                        continue
+                    fc = data.get("fc") or {}
+                    # Only days without a forecast of their own, or with one
+                    # from another sensor's statistics.
+                    own = fc.get("from") == "statistics"
+                    if day in values and (fc.get("ahead_kwh") is None or own):
+                        await self._store.async_update_day(
+                            day, fc={"ahead_kwh": values[day], "from": "statistics"}
+                        )
+                        written += 1
+                        days.append(day)
+                    elif own:
+                        days.append(day)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            _LOGGER.exception("Reading the forecast's statistics failed")
+            self.status["forecast_history"] = _forecast_status(entity, "failed", {})
+            self._changed()
+            return False
+        self._store.set_forecast_history(entity, len(days), min(days, default=None))
+        self.status["forecast_history"] = _forecast_status(
+            entity, "done", self._store.forecast_history
+        )
+        self._changed()
+        return written > 0
+
+
+def _forecast_status(
+    entity: str | None, state: str, done: dict[str, Any]
+) -> dict[str, Any]:
+    """What the panel shows about the past days' forecasts."""
+    return {
+        "entity": entity,
+        "state": state,
+        "days": int(done.get("days") or 0),
+        "from": done.get("from"),
+    }
 
 
 def _at_home(state: Any) -> float | None:

@@ -159,6 +159,7 @@ export const en: Record<Key, string> = {
   "climate.open_device": "Open the device in Home Assistant ({id})",
   "climate.open_meter": "Open the meter in Home Assistant",
   "pick.night.title": "What tells you that you are in bed?",
+  "pick.forecast_history.title": "Which sensor knows your forecast's history?",
   "tip.climate_night.text":
     "At night I switch the air conditioner off and back on in good time before your morning time, so it is comfortable by then. How I tell it's night – fixed times or an entity – you set under Household › Bedtime. How long the room takes to cool down, I learn over time.",
   "tip.climate_night_source.title": "How does Joe tell night?",
@@ -1214,6 +1215,9 @@ export const en: Record<Key, string> = {
     "A bad day counts four times as much as a good one. You rarely buy in the evening, but I more often charge a little extra at night.",
   "rule.night_caution.cautious.hint":
     "I plan almost for the bad case. You rarely buy expensive power in the evening, but sometimes a bit too much at night.",
+  "rule.night_caution.replay":
+    "In the replay over {nights} nights “{best}” would have been the cheapest: {diff} less than your setting.",
+  "rule.night_caution.replay_same": "In the replay your setting was the cheapest.",
   "tip.r_night_caution.title": "How careful should I plan the night?",
   "tip.r_night_caution.text":
     "How full I charge at night depends on the day after – and I never know it exactly. So I work out every target for three days: a bad one (less sun, more consumption), one as it usually comes and a good one. How far apart the three are I learn from your real days, per weather class. This choice says how much the bad day counts. I take the target that costs you least on average.",
@@ -1748,6 +1752,7 @@ export const en: Record<Key, string> = {
   "plan.math.home": "Consumption tomorrow",
   "plan.math.home.history": "from {days} days, {kind}",
   "plan.math.home.default": "default of a typical household",
+  "plan.math.home.years": "plus {days} days from earlier years",
   "plan.math.workday": "for a working day",
   "plan.math.day_off": "for a weekend or holiday",
   "plan.math.target": "Target",
@@ -1829,6 +1834,18 @@ export const en: Record<Key, string> = {
   "learn.spread.say":
     "This is how far off my forecasts have been. With it I plan a bad and a good day at night – about every fifth day comes out even worse, every fifth even better.",
   "learn.spread.none": "Still learning – until then I count on assumptions.",
+  "learn.spread.season": "Days from the same season count double – also from earlier years.",
+  "learn.replay": "My setting in the replay",
+  "learn.replay.say": "{nights} nights from {first} to {last}, worked out with the real weather and use. Next to each level: what it would have cost compared with your setting.",
+  "learn.replay.equal": "same as your setting",
+  "learn.replay.more": "{value} more",
+  "learn.replay.less": "{value} less",
+  "learn.replay.typical": "only the typical day",
+  "learn.replay.yours": "your setting",
+  "learn.replay.best": "cheapest",
+  "learn.replay.season": "Only this season ({nights} nights)",
+  "learn.replay.only": "I only show you this – I don't change your setting.",
+  "learn.replay.none": "I replay my nights once a week. For that I need at least ten nights with a forecast.",
   "learn.spread.solar": "Sun on {class}",
   "learn.spread.class.clear": "clear days",
   "learn.spread.class.mixed": "mixed days",
@@ -2340,6 +2357,12 @@ export const en: Record<Key, string> = {
   "tip.learn_weather.text":
     "Many forecasts are good on clear days and clearly off on overcast ones – or the other way round. So I keep a factor each for clear, mixed and overcast days and use the one that fits tomorrow's forecast. The limits move with the seasons.",
   "tip.learn_combine.title": "What does combining mean?",
+  "tip.learn_replay.title": "What is the replay?",
+  "tip.learn_replay.text":
+    "Once a week I replay my past nights – with every level of the setting and with the weather and use that really came. So you see which level would have cost you the least.\n**Only the typical day**: worked out without a bad and a good day.\nI only show this – I don't change your setting.",
+  "tip.forecast_history.title": "What do I learn the past years from?",
+  "tip.forecast_history.text":
+    "Pick a sensor with history (long-term statistics) for the solar forecast – ideally a sum helper over your forecast sensors. From it I fetch the forecasts of up to the last two years and compare them with the sun that really came. That way I learn how far off the forecast was – especially in the same season of earlier years.\n**Back to automatic**: I use the sum of the forecast sensors I already use.",
   "tip.learn_combine.text":
     "I first correct each forecast with its own factor. Then each counts as much as it has been right so far: a source that is rarely off counts more than one that varies a lot.\n**Off**: I only use the main forecast.",
   "tip.learn_battery.title": "What do I measure on the battery?",
@@ -2769,6 +2792,16 @@ export const en: Record<Key, string> = {
   "grid.tariff.discard": "Discard",
   "grid.solar.say": "What your system delivers right now and what the forecast expects for tomorrow.",
   "grid.solar.factor": "Learned factor for the forecast",
+  "grid.forecast_history": "Forecast history",
+  "grid.forecast_history.done": "{days} days since {from}",
+  "grid.forecast_history.none": "No sensor with history found – pick one and I'll learn from the past years.",
+  "grid.forecast_history.running": "Reading it right now …",
+  "grid.forecast_history.failed": "Reading it did not work – I'll try again later.",
+  "grid.forecast_history.auto": "automatic",
+  "grid.forecast_history.auto_hint": "Without your pick I use the sum of the forecast sensors I already use.",
+  "grid.forecast_history.pick": "Choose",
+  "grid.forecast_history.change": "Change",
+  "grid.forecast_history.auto_back": "Back to automatic",
   "grid.home.say": "What the house uses right now. From it I learn how much you need and when.",
   "grid.home.devices": "Assign devices →",
   "tip.grid_tariff.title": "How do I set the tariff?",

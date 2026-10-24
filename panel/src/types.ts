@@ -349,6 +349,11 @@ export interface ForecastConfig {
   alternatives: ForecastSource[];
   /** Whether Joe may combine the sources (off: only the main forecast). */
   combine: boolean;
+  /**
+   * The forecast sensor with long-term statistics Joe fills past days from
+   * (up to two years); null: a sum helper over the forecast sensors he uses.
+   */
+  history_entity?: string | null;
 }
 
 export type DayLabel = "home_office" | "office" | "travel" | "vacation" | "guests" | "home";
@@ -785,6 +790,26 @@ export interface Learned {
   models_day: string | null;
   /** When an area was reset last. */
   reset: Partial<Record<LearnScope, string>>;
+  /** The past nights replayed with every caution level (weekly, only shown; never changes the setting). */
+  replay?: NightReplay | null;
+}
+
+/** What the replayed nights would have cost per caution level ("typical": only the typical day), in euros. */
+export type ReplayCosts = Record<NightCaution | "typical", number>;
+
+/** A replay of past nights: how many, from when to when, the cost per level and the cheapest. */
+export interface ReplayBlock {
+  nights: number;
+  first: string;
+  last: string;
+  costs: ReplayCosts;
+  best: NightCaution;
+}
+
+/** Joe's nights replayed with the real weather and use, also only for this season. */
+export interface NightReplay extends ReplayBlock {
+  season: ReplayBlock | null;
+  updated: string;
 }
 
 export type WeatherClass = "clear" | "mixed" | "overcast";
@@ -1271,6 +1296,16 @@ export interface ObserveStatus {
   last_day?: string | null;
   day_count?: number;
   backfill: { state: "idle" | "running" | "done" | "unavailable" | "failed"; hours?: number; from?: string };
+  /** Past solar forecasts read from a sensor with long-term statistics (missing on older backends). */
+  forecast_history?: ForecastHistory;
+}
+
+/** Where past solar forecasts came from: the sensor, how far it got, how many days since when. */
+export interface ForecastHistory {
+  entity: string | null;
+  state: "done" | "none" | "running" | "failed";
+  days: number;
+  from: string | null;
 }
 
 export interface PlanHour {
@@ -1393,7 +1428,8 @@ export interface Plan {
     grid_limit_source?: "user" | "learned" | null;
   };
   meta?: {
-    consumption: { source: "history" | "default"; days: number };
+    /** years: days of the same weeks in earlier years mixed in at half weight. */
+    consumption: { source: "history" | "default"; days: number; years?: number };
     solar: { sources: Record<string, "hours" | "sum" | "none">; totals: Record<string, number> };
     solar_factor: number;
     workday?: boolean | null;

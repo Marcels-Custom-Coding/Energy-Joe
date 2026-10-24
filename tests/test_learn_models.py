@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
 from typing import Any
 
 import pytest
@@ -457,3 +457,86 @@ def test_last_winter_still_teaches_the_heating() -> None:
     assert found is not None
     assert found["heat"] == pytest.approx(0.6, abs=0.1)
     assert found["base"] == pytest.approx(8.2, abs=0.5)
+
+
+async def put_home_days(
+    store: HistoryStore, first: date, count: int, home: float
+) -> None:
+    zone = dt_util.get_default_time_zone()
+    records = []
+    for offset in range(count):
+        day = first + timedelta(days=offset)
+        records.extend(
+            {
+                "start": datetime.combine(day, time(hour), tzinfo=zone).isoformat(),
+                "src": "stats",
+                "cov": 1.0,
+                "home": home,
+            }
+            for hour in range(24)
+        )
+    await store.async_put_hours(records)
+
+
+async def test_the_profile_adds_the_same_weeks_of_earlier_years(
+    hass: HomeAssistant,
+) -> None:
+    from custom_components.energy_joe.plan.inputs import async_consumption
+
+    store = HistoryStore(hass)
+    await store.async_load()
+    today = date(2026, 10, 24)
+    await put_home_days(store, today - timedelta(days=28), 28, 1.0)
+    # Without earlier years the profile stays as it was.
+    profiles, meta = await async_consumption(store, today)
+    assert meta == {"source": "history", "days": 28}
+    assert profiles[True][12] == pytest.approx(1.0)
+    # Last year's weeks around the date count half, the rest of last year not.
+    await put_home_days(store, date(2025, 10, 10), 29, 2.0)
+    await put_home_days(store, date(2025, 12, 1), 10, 9.0)
+    profiles, meta = await async_consumption(store, today)
+    assert meta == {"source": "history", "days": 57, "years": 29}
+
+    def kinds(first: date, count: int) -> dict[bool, int]:
+        found = [(first + timedelta(days=d)).weekday() < 5 for d in range(count)]
+        return {kind: found.count(kind) for kind in (True, False)}
+
+    recent = kinds(today - timedelta(days=28), 28)
+    last_year = kinds(date(2025, 10, 10), 29)
+    for kind in (True, False):
+        # Weighted mean per kind of day: last year's 2 kWh at half weight.
+        expected = (recent[kind] + 0.5 * 2.0 * last_year[kind]) / (
+            recent[kind] + 0.5 * last_year[kind]
+        )
+        assert profiles[kind][12] == pytest.approx(expected)
+    # Two years back as well.
+    await put_home_days(store, date(2024, 10, 10), 29, 2.0)
+    profiles, meta = await async_consumption(store, today)
+    assert meta["years"] == 58
+    two_years = kinds(date(2024, 10, 10), 29)
+    earlier = last_year[True] + two_years[True]
+    assert profiles[True][12] == pytest.approx(
+        (recent[True] + earlier) / (recent[True] + 0.5 * earlier)
+    )
+    await store.async_unload()
+
+
+def test_profile_weights_per_day() -> None:
+    from custom_components.energy_joe.plan.inputs import consumption_profiles
+
+    def day(home: float) -> dict[str, Any]:
+        return {
+            "workday": True,
+            "hours": [
+                {"start": f"2026-10-01T{h:02d}:00:00+02:00", "cov": 1.0, "home": home}
+                for h in range(24)
+            ],
+        }
+
+    days = {"2026-10-01": day(1.0), "2026-10-02": day(1.0), "2025-10-01": day(4.0)}
+    plain, meta = consumption_profiles(days)
+    assert plain[True][8] == pytest.approx(2.0)
+    assert meta == {"source": "history", "days": 3}
+    weighted, meta = consumption_profiles(days, [], {"2025-10-01": 0.5})
+    assert weighted[True][8] == pytest.approx((1 + 1 + 0.5 * 4) / 2.5)
+    assert meta == {"source": "history", "days": 3, "years": 1}

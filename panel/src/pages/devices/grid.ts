@@ -14,7 +14,8 @@ import {
 import { haOpen, haTarget } from "../../components/ha-open";
 import { mirrorRow } from "../../components/mirror";
 import { tip } from "../../components/tip";
-import { saveConfig, sourceOf } from "../../config";
+import { dayText } from "../../components/look-back";
+import { pickEntity, saveConfig, sourceOf } from "../../config";
 import { define } from "../../define";
 import "../../editors/tariff-form";
 import { entityName, formatNumber } from "../../entities";
@@ -288,6 +289,7 @@ export class JoeGridPage extends DeviceSection {
           : nothing}
         ${forecast.provider
           ? html`<div class="mirrors">
+              ${this.renderForecastHistory(t, ctx)}
               <div class="mirror">
                 <div class="mirror-text">
                   <span class="mirror-label">${t("grid.solar.factor")}</span>
@@ -303,6 +305,74 @@ export class JoeGridPage extends DeviceSection {
             </div>`
           : nothing}`,
     );
+  }
+
+  /**
+   * "Prognose-Verlauf": the sensor with long-term statistics Joe reads past
+   * forecasts from (the user's pick, else a sum helper over the forecast
+   * sensors), how far he got, and a way to pick one or go back to automatic.
+   */
+  private renderForecastHistory(t: Translate, ctx: RowContext): TemplateResult {
+    const chosen = ctx.config.forecast.history_entity ?? null;
+    const status = this.state?.observe?.forecast_history;
+    const entity = status?.entity ?? chosen;
+    const name = entity ? entityName(ctx.hass, entity) : t("grid.forecast_history.auto");
+    let value: string;
+    let hint: string | undefined = chosen ? undefined : t("grid.forecast_history.auto_hint");
+    switch (status?.state) {
+      case "done":
+        value = status.from
+          ? `${name} · ${t("grid.forecast_history.done", { days: status.days, from: dayText(t.lang, status.from) })}`
+          : name;
+        break;
+      case "running":
+        value = t("grid.forecast_history.running");
+        break;
+      case "none":
+        value = t("grid.forecast_history.none");
+        hint = undefined;
+        break;
+      case "failed":
+        value = t("grid.forecast_history.failed");
+        break;
+      default:
+        value = name;
+    }
+    return html`<div class="mirror" data-tipped>
+      <div class="mirror-text">
+        <span class="mirror-label">${t("grid.forecast_history")}</span>${tip(t, "forecast_history")}
+        <span class="mirror-sep" aria-hidden="true">·</span>
+        <span class="mirror-value">${value}</span>
+        ${chosen ? sourceChip(t, sourceOf(ctx.config, "forecast.history_entity") ?? { source: "user" }) : nothing}
+        ${hint ? html`<small class="mirror-hint">${hint}</small>` : nothing}
+      </div>
+      <button type="button" class="mini-btn quiet" @click=${() => void this.pickHistory(chosen)}>
+        ${t(chosen ? "grid.forecast_history.change" : "grid.forecast_history.pick")}
+      </button>
+      ${chosen
+        ? html`<button
+            type="button"
+            class="mini-btn quiet"
+            @click=${() => void saveConfig(this, { forecast: { history_entity: null } })}
+          >
+            ${t("grid.forecast_history.auto_back")}
+          </button>`
+        : nothing}
+    </div>`;
+  }
+
+  private async pickHistory(chosen: string | null): Promise<void> {
+    const t = this.t;
+    if (!t) return;
+    const picked = await pickEntity(this, {
+      heading: t("pick.forecast_history.title"),
+      tip: "forecast_history",
+      filter: "energy",
+      selected: chosen ? [chosen] : [],
+    });
+    if (picked) {
+      void saveConfig(this, { forecast: { history_entity: picked.selected[0] ?? null } });
+    }
   }
 
   /** Per PV measurement: "Ist ohne Sonne aus – das ist normal" (no warning at night, 0 W in the records). */
