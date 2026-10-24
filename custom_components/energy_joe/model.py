@@ -76,6 +76,7 @@ REPLACED = frozenset(
         "car_models",
         "solar_spread",
         "home_spread",
+        "replay",
         "reset",
         "alternatives",
         # Weekly profiles per mode and the ticks on a thermostat's own profiles.
@@ -259,6 +260,10 @@ FORECAST = vol.Schema(
         vol.Optional("alternatives", default=list): [FORECAST_SOURCE],
         # Whether Joe may combine the sources (off: only the main forecast).
         vol.Optional("combine", default=True): bool,
+        # A sensor with long-term statistics of the whole day's forecast (a
+        # helper summing the "today" sensors), so past days get a forecast.
+        # None: Joe looks for one himself (observe/backfill.py).
+        vol.Optional("history_entity", default=None): _ENTITY,
     },
     extra=vol.ALLOW_EXTRA,
 )
@@ -786,6 +791,7 @@ LEARNED = vol.Schema(
         vol.Optional("solar_classes", default=dict): dict,
         vol.Optional("sources", default=dict): dict,
         vol.Optional("battery_models", default=dict): dict,
+        vol.Optional("replay", default=None): vol.Any(None, dict),
         vol.Optional("action_models", default=dict): dict,
         vol.Optional("car_models", default=dict): dict,
         # How far a day's sun and use spread around the typical (p20/p80

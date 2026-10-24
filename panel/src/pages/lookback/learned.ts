@@ -5,6 +5,7 @@ import "../../components/chart";
 import type { ChartSeries } from "../../components/chart";
 import { dayText, fixed } from "../../components/look-back";
 import { mirrorRow } from "../../components/mirror";
+import { euroText } from "../../components/plan-text";
 import "../../components/pose";
 import "../../components/sheet";
 import { tip } from "../../components/tip";
@@ -35,6 +36,8 @@ import {
   type JoeState,
   type LearnScope,
   type Learning,
+  type NightCaution,
+  type ReplayBlock,
   type SpreadClass,
   type WeatherClass,
 } from "../../types";
@@ -46,6 +49,16 @@ const WEATHER: WeatherClass[] = ["clear", "mixed", "overcast"];
 const SPREAD_CLASSES: SpreadClass[] = ["clear", "mixed", "overcast", "rain", "all"];
 /** The consumption's spread on cold and mild days, then over all days (learn/models.py home_spread). */
 const HOME_GROUPS: HomeSpreadGroup[] = ["cold", "mild", "all"];
+/** "1,20 € teurer", "40 ct günstiger" or "wie deine Einstellung": a level against the user's. */
+function replayDiff(t: Translate, diff: number, currency: string | undefined): string {
+  if (Math.abs(diff) < 0.005) {
+    return t("learn.replay.equal");
+  }
+  return t(diff > 0 ? "learn.replay.more" : "learn.replay.less", { value: euroText(t, Math.abs(diff), currency) });
+}
+
+/** The levels of the replay, from bold to cautious, then only the typical day. */
+const REPLAY_LEVELS: (NightCaution | "typical")[] = ["bold", "brave", "balanced", "careful", "cautious", "typical"];
 const FORECAST_NAMES: Record<string, string> = {
   forecast_solar: "Forecast.Solar",
   open_meteo_solar_forecast: "Open-Meteo Solar Forecast",
@@ -74,7 +87,7 @@ export class JoeLookbackLearned extends LitElement {
   @property({ attribute: false }) prefix = PANEL;
   @property({ attribute: false }) route?: Route;
   @property({ attribute: false }) climateFound?: ClimateFound;
-  /** sun|consumption|spread|battery|devices|hot_water|car|presence|climate|reset */
+  /** sun|consumption|spread|replay|battery|devices|hot_water|car|presence|climate|reset */
   @property({ attribute: false }) anchor?: string;
 
   @state() private data?: Learning;
@@ -233,6 +246,12 @@ export class JoeLookbackLearned extends LitElement {
         align-items: center;
         gap: 6px;
       }
+      .season-note {
+        margin: 8px 0 0;
+        font-size: 12.5px;
+        line-height: 1.4;
+        color: var(--joe-muted);
+      }
       .danger p {
         margin: 10px 0 0;
         color: var(--joe-ink-2);
@@ -341,7 +360,10 @@ export class JoeLookbackLearned extends LitElement {
               </div>
               <div class="group" data-anchor="consumption">
                 <div class="eyebrow section"><ha-icon icon="mdi:home-lightning-bolt-outline"></ha-icon>${t("past.learned.group.consumption")}</div>
-                <div class="grid">${this.renderHome(t, data)} ${this.renderWeather(t, data)} ${this.renderSpread(t, data)}</div>
+                <div class="grid">
+                  ${this.renderHome(t, data)} ${this.renderWeather(t, data)} ${this.renderSpread(t, data)}
+                  ${this.renderReplay(t, data)}
+                </div>
               </div>
               <div class="group">
                 <div class="eyebrow section"><ha-icon icon="mdi:devices"></ha-icon>${t("past.learned.group.devices")}</div>
@@ -551,7 +573,7 @@ export class JoeLookbackLearned extends LitElement {
         ${tip(t, "learn_spread")}
       </div>
       <p class="say">${rows.length ? t("learn.spread.say") : t("learn.spread.none")}</p>
-      ${rows.length ? learnedRows(rows) : nothing}
+      ${rows.length ? html`${learnedRows(rows)}<p class="season-note">${t("learn.spread.season")}</p>` : nothing}
       ${recent.length > 1 ? this.chartWithLegend(t, recent.map((a) => a.date), series, "kWh", t("learn.buffer.chart")) : nothing}
       ${mirrorRow(t, this.prefix, {
         label: t("rule.night_caution"),
@@ -564,6 +586,49 @@ export class JoeLookbackLearned extends LitElement {
         hint: t("learn.spread.buffer"),
         to: { tab: "settings", section: "rules", id: "buffer_factor" },
       })}
+    </section>`;
+  }
+
+  /**
+   * "Mein Regler im Rückspiel": Joe's past nights replayed weekly with every
+   * caution level against the real weather and use. It only shows; the
+   * setting stays the user's.
+   */
+  private renderReplay(t: Translate, data: Learning): TemplateResult {
+    const replay = data.learned.replay ?? this.state?.config.learned.replay ?? null;
+    const current = this.state?.config.rules.night_caution ?? "brave";
+    const currency = this.hass?.config?.currency;
+    const rows = (block: ReplayBlock): LearnedRow[] =>
+      REPLAY_LEVELS.filter((level) => block.costs[level] != null).map((level) => ({
+        name: level === "typical" ? t("learn.replay.typical") : t(`rule.night_caution.${level}`),
+        values: [
+          ...(level === current ? [html`<span class="chip">${t("learn.replay.yours")}</span>`] : []),
+          ...(level === block.best ? [html`<span class="chip ok">${t("learn.replay.best")}</span>`] : []),
+          // Costs credit feed-in and what is left at the end: a difference to
+          // the user's level reads right, the sum itself is no bill.
+          html`<b>${replayDiff(t, block.costs[level] - (block.costs[current] ?? block.costs[level]), currency)}</b>`,
+        ],
+      }));
+    return html`<section class="card" data-tipped data-anchor="replay">
+      <div class="head">
+        <div class="eyebrow"><ha-icon icon="mdi:history"></ha-icon>${t("learn.replay")}</div>
+        ${tip(t, "learn_replay")}
+      </div>
+      ${replay
+        ? html`<p class="say">
+              ${t("learn.replay.say", {
+                nights: replay.nights,
+                first: dayText(t.lang, replay.first),
+                last: dayText(t.lang, replay.last),
+              })}
+            </p>
+            ${learnedRows(rows(replay))}
+            ${replay.season
+              ? html`<div class="sub-head"><b>${t("learn.replay.season", { nights: replay.season.nights })}</b></div>
+                  ${learnedRows(rows(replay.season))}`
+              : nothing}
+            <p class="season-note">${t("learn.replay.only")}</p>`
+        : html`<p class="say">${t("learn.replay.none")}</p>`}
     </section>`;
   }
 

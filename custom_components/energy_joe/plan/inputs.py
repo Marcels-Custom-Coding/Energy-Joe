@@ -39,6 +39,12 @@ _LOGGER = logging.getLogger(__name__)
 # Days of history Joe looks at for the consumption, and how many of a kind he wants.
 PROFILE_DAYS = 28
 MIN_DAYS = 3
+# The same weeks of earlier years count too: this many years back, this many
+# days around the date, at this weight (two years of them weigh about as much
+# as the last month).
+PROFILE_YEARS = 2
+PROFILE_AROUND = 14
+YEAR_WEIGHT = 0.5
 # A typical household (about 8 kWh a day) until Joe has seen enough of this one.
 DEFAULT_PROFILE = [
     0.25, 0.22, 0.20, 0.20, 0.20, 0.22, 0.30, 0.45, 0.45, 0.35, 0.30, 0.32,
@@ -124,20 +130,46 @@ async def async_consumption(
     """Expected consumption per hour of the day, for working days and days off.
 
     Without the flexible devices (the car, surplus and cheap-hour devices):
-    what the home battery has to cover.
+    what the home battery has to cover. The last PROFILE_DAYS count fully, the
+    same weeks of earlier years (PROFILE_AROUND days around the date) at
+    YEAR_WEIGHT.
     """
     days = await history.async_days(
         (today - timedelta(days=PROFILE_DAYS)).isoformat(),
         (today - timedelta(days=1)).isoformat(),
     )
-    return consumption_profiles(days, flexible or [])
+    weights = dict.fromkeys(days, 1.0)
+    for years in range(1, PROFILE_YEARS + 1):
+        middle = _years_back(today, years)
+        earlier = await history.async_days(
+            (middle - timedelta(days=PROFILE_AROUND)).isoformat(),
+            (middle + timedelta(days=PROFILE_AROUND)).isoformat(),
+        )
+        for day, data in earlier.items():
+            days[day] = data
+            weights[day] = YEAR_WEIGHT
+    return consumption_profiles(days, flexible or [], weights)
+
+
+def _years_back(day: date, years: int) -> date:
+    """The same date some years before; 29 February becomes the 28th."""
+    try:
+        return day.replace(year=day.year - years)
+    except ValueError:
+        return day.replace(year=day.year - years, day=28)
 
 
 def consumption_profiles(
-    days: dict[str, dict[str, Any]], flexible: list[str] | None = None
+    days: dict[str, dict[str, Any]],
+    flexible: list[str] | None = None,
+    weights: dict[str, float] | None = None,
 ) -> tuple[dict[bool, list[float]], dict[str, Any]]:
-    """Average consumption per hour of the day from stored days (see async_consumption)."""
-    rows: dict[bool, list[list[float | None]]] = {True: [], False: []}
+    """Average consumption per hour of the day from stored days (see async_consumption).
+
+    Weights per day (default 1.0) make a weighted mean; meta "years" counts
+    the days used at less than full weight (earlier years), if any.
+    """
+    rows: dict[bool, list[tuple[list[float | None], float]]] = {True: [], False: []}
     for day, data in days.items():
         hours = [
             h for h in data.get("hours") or [] if "home" in h and h.get("cov", 0) >= 0.8
@@ -152,13 +184,16 @@ def consumption_profiles(
         workday = data.get("workday")
         if workday is None:
             workday = date.fromisoformat(day).weekday() < 5
-        rows[workday].append(values)
+        rows[workday].append((values, (weights or {}).get(day, 1.0)))
 
-    def average(group: list[list[float | None]]) -> list[float]:
+    def average(group: list[tuple[list[float | None], float]]) -> list[float]:
         result = []
         for hour in range(24):
-            known = [row[hour] for row in group if row[hour] is not None]
-            result.append(sum(known) / len(known) if known else DEFAULT_PROFILE[hour])
+            known = [(row[hour], w) for row, w in group if row[hour] is not None]
+            total = sum(w for _, w in known)
+            result.append(
+                sum(v * w for v, w in known) / total if total else DEFAULT_PROFILE[hour]
+            )
         return result
 
     everything = rows[True] + rows[False]
@@ -171,7 +206,10 @@ def consumption_profiles(
         kind: average(rows[kind] if len(rows[kind]) >= MIN_DAYS else everything)
         for kind in (True, False)
     }
-    return profiles, {"source": "history", "days": len(everything)}
+    meta: dict[str, Any] = {"source": "history", "days": len(everything)}
+    if earlier := sum(1 for _, w in everything if w < 1.0):
+        meta["years"] = earlier
+    return profiles, meta
 
 
 def _bell(

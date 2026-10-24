@@ -51,6 +51,9 @@ class HistoryStore:
         self.format = HOURS_FORMAT
         # How many days back the recorder was read once (see observer.READ_BACK_DAYS).
         self.read_back = 0
+        # Which sensor gave past days their forecast from the statistics:
+        # {"entity": ..., "days": ..., "from": ...} (see observer).
+        self.forecast_history: dict[str, Any] = {}
 
     async def async_load(self) -> None:
         """Read the index and the two most recent months."""
@@ -59,6 +62,7 @@ class HistoryStore:
         self._days = sorted(meta.get("days", []))
         self.format = meta.get("format", 1 if self._days else HOURS_FORMAT)
         self.read_back = int(meta.get("read_back", 0))
+        self.forecast_history = dict(meta.get("forecast_history") or {})
         for month in self._months[-2:]:
             await self._async_month(month)
 
@@ -163,6 +167,7 @@ class HistoryStore:
             "days": self._days,
             "format": self.format,
             "read_back": self.read_back,
+            "forecast_history": self.forecast_history,
         }
 
     def set_format(self, value: int) -> None:
@@ -171,6 +176,10 @@ class HistoryStore:
 
     def set_read_back(self, days: int) -> None:
         self.read_back = max(self.read_back, days)
+        self._meta.async_delay_save(self._index, SAVE_DELAY)
+
+    def set_forecast_history(self, entity: str, days: int, first: str | None) -> None:
+        self.forecast_history = {"entity": entity, "days": days, "from": first}
         self._meta.async_delay_save(self._index, SAVE_DELAY)
 
     async def _async_day_for_write(self, day: str) -> dict[str, Any]:

@@ -3,6 +3,15 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.37
+
+- **Ich lerne aus den Vorjahren.** Wie gut die Sonnenprognose passt, wusste ich bisher nur seit dem Tag, an dem ich mitschaue, denn alte Prognosen stehen nicht im Verlauf. Hat ein Sensor über deine Prognosen eine Langzeitstatistik, etwa ein Summen-Helfer über genau die Prognosesensoren, die ich nutze, lese ich daraus für jeden vergangenen Tag die Prognose vom frühen Morgen nach und stelle sie neben die echte Erzeugung. Den Sensor finde ich selbst, du kannst ihn unter Geräte › Netz & Sonne auch auswählen. Bei dir reicht das bis Oktober 2024 zurück.
+- **Die Jahreszeit zählt doppelt.** Sonnenfaktor und Streuung lerne ich jetzt aus bis zu zwei Jahren; Tage, die im Kalender höchstens 30 Tage vom heutigen entfernt liegen, zählen doppelt, egal aus welchem Jahr. Ein Oktober lernt so vor allem aus anderen Oktobern.
+- **Das Tagesprofil kennt die Vorjahre.** Neben den letzten 28 Tagen zählen dieselben Wochen der Vorjahre mit halbem Gewicht. Dunkle Morgen und Heizung im Herbst kommen so schon im ersten kalten Oktober an.
+- **Ich spiele meine Nächte nach.** Einmal pro Woche rechne ich jede vergangene Nacht mit Prognose noch einmal mit jeder Stufe des Reglers „Wie vorsichtig plane ich die Nacht?“ durch und schaue, was sie am echten Tag gekostet hätte. Das Ergebnis steht unter Rückblick › Gelernt, für alle Nächte und nur für diese Jahreszeit. Wäre eine andere Stufe günstiger gewesen, steht das bei der Einstellung. Umstellen tust du selbst.
+- Ob es an einem vergangenen Tag geregnet hat, steht nicht im Verlauf. Die Regen-Klasse lerne ich deshalb erst ab jetzt, die Vorjahre zählen nach klar, gemischt und bedeckt.
+- Nicht geprüft an echter Anlage: alles davon.
+
 ## 0.9.36
 
 - **Ich plane die Nacht gegen einen schlechten, einen typischen und einen guten Tag.** Bisher habe ich jedes Nachtziel nur gegen den Tag gerechnet, wie er laut Prognose und Verbrauchsprofil kommen soll. Kam er schlechter, waren die Speicher abends leer, und du hast Tagesstrom gekauft. Jetzt rechne ich jedes Ziel auch gegen einen Tag mit weniger Sonne und mehr Verbrauch und gegen einen mit mehr Sonne und weniger Verbrauch, und ich nehme das Ziel, das im Mittel am wenigsten kostet. Weil eine fehlende Kilowattstunde abends den Tagespreis kostet und eine zu viel geladene nur die Verluste, lade ich bei unsicheren Tagen voller, bei sicheren knapp.

@@ -57,6 +57,10 @@ SOLAR_SPREAD = (0.6, 1.2)
 HOME_SPREAD = (0.9, 1.15)
 SPREAD_HISTORY_DAYS = 28
 COLD_BELOW = 10.0
+# Days this close to today's date in any year (the season) count this many
+# times in the weather classes and spreads.
+SEASON_WINDOW = 30
+SEASON_WEIGHT = 2
 
 
 @dataclass(slots=True)
@@ -450,28 +454,63 @@ def converter_model(
     return {"factor": round(min(1.0, factor), 3), "nights": len(ratios)}
 
 
-def solar_classes(ratios: list[dict[str, Any]]) -> dict[str, Any]:
+def season_weight(day: date, today: date) -> int:
+    """How much a day counts for today: SEASON_WEIGHT within SEASON_WINDOW days
+    of today's date in any year (around new year too), else 1."""
+    distance = min(
+        abs((_in_year(day, today.year + shift) - today).days) for shift in (-1, 0, 1)
+    )
+    return SEASON_WEIGHT if distance <= SEASON_WINDOW else 1
+
+
+def _in_year(day: date, year: int) -> date:
+    """The same date in another year; 29 February becomes the 28th."""
+    try:
+        return day.replace(year=year)
+    except ValueError:
+        return day.replace(year=year, day=28)
+
+
+def _weight(row: dict[str, Any] | DayRow, today: date | None) -> int:
+    """A row's season weight, 1 without today or a date."""
+    day = row.date if isinstance(row, DayRow) else row.get("date")
+    if today is None or not day:
+        return 1
+    return season_weight(date.fromisoformat(day), today)
+
+
+def _weighted(values: Iterable[tuple[float, int]]) -> list[float]:
+    """Each value repeated by its weight, for weighted medians and quantiles."""
+    return [value for value, weight in values for _ in range(weight)]
+
+
+def solar_classes(
+    ratios: list[dict[str, Any]], today: date | None = None
+) -> dict[str, Any]:
     """How well the forecast fits on clear, mixed, overcast and rainy days (median ratios).
 
     A day's weather is its forecast against the best forecast of the 30 days
     before it, so the classes follow the seasons; a day the weather forecast
     said rain counts as "rain" whatever its height. "top" is that best forecast
-    for the days to come.
+    for the days to come. With today, days of the season count double
+    (season_weight); "days" counts each day once.
     """
     usable = _usable(ratios)
     if not usable:
         return {}
-    groups: dict[str, list[float]] = {
+    groups: dict[str, list[tuple[float, int]]] = {
         "clear": [],
         "mixed": [],
         "overcast": [],
         "rain": [],
     }
     for ratio in usable:
-        groups[_ratio_class(usable, ratio)].append(ratio["ratio"])
+        groups[_ratio_class(usable, ratio)].append(
+            (ratio["ratio"], _weight(ratio, today))
+        )
     classes = {
         name: {
-            "factor": round(max(0.3, min(2.0, median(values))), 2),
+            "factor": round(max(0.3, min(2.0, median(_weighted(values)))), 2),
             "days": len(values),
         }
         for name, values in groups.items()
@@ -499,18 +538,21 @@ def _ratio_class(usable: list[dict[str, Any]], ratio: dict[str, Any]) -> str:
     return weather_class(ratio["forecast"], _top(usable, ratio.get("date")))
 
 
-def solar_spread(ratios: list[dict[str, Any]]) -> dict[str, Any]:
+def solar_spread(
+    ratios: list[dict[str, Any]], today: date | None = None
+) -> dict[str, Any]:
     """How far the sun strays from the corrected forecast, per weather class.
 
     Per class the 20 % and 80 % quantiles of the ratio (actual / forecast),
     divided by the class median: a bad day brings "low" times what Joe expects,
     a good one "high" times. Few days lean on a default (SPREAD_PSEUDO_DAYS).
     Classes need SPREAD_DAYS days; "all" pools every day, rain days included.
+    With today, days of the season count double (season_weight).
     """
     usable = _usable(ratios)
     if len(usable) < SPREAD_DAYS:
         return {}
-    groups: dict[str, list[float]] = {
+    groups: dict[str, list[tuple[float, int]]] = {
         "clear": [],
         "mixed": [],
         "overcast": [],
@@ -518,21 +560,24 @@ def solar_spread(ratios: list[dict[str, Any]]) -> dict[str, Any]:
         "all": [],
     }
     for ratio in usable:
-        groups[_ratio_class(usable, ratio)].append(ratio["ratio"])
-        groups["all"].append(ratio["ratio"])
+        value = (ratio["ratio"], _weight(ratio, today))
+        groups[_ratio_class(usable, ratio)].append(value)
+        groups["all"].append(value)
     result = {}
     for name, values in groups.items():
-        middle = median(values) if len(values) >= SPREAD_DAYS else 0.0
+        middle = median(_weighted(values)) if len(values) >= SPREAD_DAYS else 0.0
         if middle <= 0:
             continue
         result[name] = _spread(
-            [v / middle for v in values], SOLAR_SPREAD, (0.2, 1.0), (1.0, 2.0)
+            [(v / middle, w) for v, w in values], SOLAR_SPREAD, (0.2, 1.0), (1.0, 2.0)
         )
     return result
 
 
 def home_spread(
-    days: dict[str, dict[str, Any]], flexible: Iterable[str] = ()
+    days: dict[str, dict[str, Any]],
+    flexible: Iterable[str] = (),
+    today: date | None = None,
 ) -> dict[str, Any]:
     """How far a day's base consumption strays from what Joe expects, cold or mild.
 
@@ -540,10 +585,11 @@ def home_spread(
     over the 28 days before it; the ratio actual / expected gives "low" and
     "high" as its 20 % and 80 % quantiles. Days below COLD_BELOW are "cold".
     Few days lean on a default (SPREAD_PSEUDO_DAYS); groups need SPREAD_DAYS.
+    With today, days of the season count double (season_weight).
     """
     # Days answered as away, guests or special say nothing about a usual day.
     rows = [row for row in daily_rows(days, flexible) if not row.excluded]
-    groups: dict[str, list[float]] = {"cold": [], "mild": [], "all": []}
+    groups: dict[str, list[tuple[float, int]]] = {"cold": [], "mild": [], "all": []}
     for row in rows:
         current = date.fromisoformat(row.date)
         first = (current - timedelta(days=SPREAD_HISTORY_DAYS)).isoformat()
@@ -557,7 +603,7 @@ def home_spread(
         typical = sum(before) / len(before)
         if typical <= 0:
             continue
-        ratio = row.home / typical
+        ratio = (row.home / typical, _weight(row, today))
         groups["all"].append(ratio)
         if row.temp is not None:
             groups["cold" if row.temp < COLD_BELOW else "mild"].append(ratio)
@@ -571,13 +617,15 @@ def home_spread(
 
 
 def _spread(
-    values: list[float],
+    values: list[tuple[float, int]],
     default: tuple[float, float],
     low_range: tuple[float, float],
     high_range: tuple[float, float],
 ) -> dict[str, Any]:
-    """The 20 % and 80 % quantiles, shrunk towards a default and kept in range."""
+    """The weighted 20 % and 80 % quantiles of (value, weight) pairs, shrunk
+    towards a default by the number of days and kept in range."""
     count = len(values)
+    weighted = _weighted(values)
 
     def shrunk(value: float, start: float, limits: tuple[float, float]) -> float:
         mixed = (count * value + SPREAD_PSEUDO_DAYS * start) / (
@@ -586,8 +634,8 @@ def _spread(
         return round(max(limits[0], min(limits[1], mixed)), 3)
 
     return {
-        "low": shrunk(_quantile(values, 0.2), default[0], low_range),
-        "high": shrunk(_quantile(values, 0.8), default[1], high_range),
+        "low": shrunk(_quantile(weighted, 0.2), default[0], low_range),
+        "high": shrunk(_quantile(weighted, 0.8), default[1], high_range),
         "days": count,
     }
 
