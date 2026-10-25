@@ -3511,6 +3511,12 @@ var Ne = {
 	"tip.team_group.title": "Wer regelt den Speicher?",
 	"tip.team_group.text": "Manche Systeme regeln mehrere Speicher zusammen – Omnibattery zum Beispiel einen Marstek Venus und einen Victron. Die verteilen die Leistung selbst, deshalb behandle ich sie als eine Gruppe. Ein Fronius- oder Kostal-Wechselrichter regelt nur seinen eigenen Speicher.",
 	"tip.team_group.hint": "Nacheinander heißt: Immer nur eine Gruppe arbeitet, die anderen sperre ich. Den Vorschlag mache ich aus der Integration in Home Assistant.",
+	"overview.todo.together.title": "Die Speicher laufen gegeneinander – „Nacheinander“ ist aus",
+	"overview.todo.together.text": "Um {time} hat {discharging} in {charging} entladen. Mit „Nacheinander“ arbeitet immer nur einer, der andere wartet gesperrt – dann passiert das nicht mehr.",
+	"overview.todo.together.fix": "Nacheinander einschalten",
+	"tip.team_sequence_on.title": "Was passiert bei „Nacheinander einschalten“?",
+	"tip.team_sequence_on.text": "Ich schalte unter Geräte › Speicher › Mehrere Speicher auf „Nacheinander“: Einer lädt und füllt die Lücken, der andere darf solange nicht entladen. Ist der erste leer oder voll, übernimmt der nächste.",
+	"tip.team_sequence_on.hint": "Zurückstellen kannst du es dort jederzeit.",
 	"tip.team_groups_confirm.title": "Was passiert bei „Vorschlag passt“?",
 	"tip.team_groups_confirm.text": "Ich merke mir die Zuordnung, wie sie gerade unter Mehrere Speicher steht, und frage nicht mehr.",
 	"tip.team_groups_confirm.hint": "Ändern kannst du sie jederzeit unter Geräte › Speicher › Mehrere Speicher bei „Wer regelt ihn?“.",
@@ -7164,6 +7170,12 @@ var Ne = {
 	"tip.team_group.title": "Who regulates the battery?",
 	"tip.team_group.text": "Some systems regulate several batteries together – Omnibattery, for instance, a Marstek Venus and a Victron. They share the power themselves, so I treat them as one group. A Fronius or Kostal inverter regulates only its own battery.",
 	"tip.team_group.hint": "One after the other means: only one group works at a time, I block the others. I make the proposal from the integration in Home Assistant.",
+	"overview.todo.together.title": "The batteries run against each other – “One after the other” is off",
+	"overview.todo.together.text": "At {time} {discharging} discharged into {charging}. With “One after the other” only one works at a time and the other waits blocked – then this no longer happens.",
+	"overview.todo.together.fix": "Turn on one after the other",
+	"tip.team_sequence_on.title": "What does “Turn on one after the other” do?",
+	"tip.team_sequence_on.text": "I switch Devices › Batteries › Several batteries to “One after the other”: one charges and fills the gaps, the other may not discharge meanwhile. Once the first is empty or full, the next one takes over.",
+	"tip.team_sequence_on.hint": "You can switch it back there any time.",
 	"tip.team_groups_confirm.title": "What does “Proposal is right” do?",
 	"tip.team_groups_confirm.text": "I keep the assignment as it is shown under Several batteries and stop asking.",
 	"tip.team_groups_confirm.hint": "You can change it any time under Devices › Batteries › Several batteries at “Who regulates it?”.",
@@ -7980,14 +7992,14 @@ function Ke(e, t, n) {
 }
 //#endregion
 //#region src/define.ts
-var qe = "0.9.39";
+var qe = "0.9.40";
 function Je(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = qe, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.39" && Xe();
+	n.joeVersion !== "0.9.40" && Xe();
 }
 var Ye = !1;
 function Xe() {
