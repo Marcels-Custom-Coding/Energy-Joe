@@ -3,6 +3,11 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.40
+
+- **Ein Tipp statt Suchen.** Laufen die Speicher gegeneinander, während „Nacheinander“ aus ist (bei dir seit meinem Rat von gestern), steht das unter „Joe braucht dich“: wann welcher Speicher in welchen entladen hat, und ein Knopf „Nacheinander einschalten“. Ein Tipp, und ich halte die beiden wieder auseinander. „Brauch ich nicht“ blendet den Hinweis für diesen Tag aus.
+- Nicht geprüft an echter Anlage: alles davon.
+
 ## 0.9.39
 
 - **Der Wächter merkt sich, wenn es wieder passiert.** Lief der Venus gestern Nachmittag in den BYD, habe ich ihn neu gestartet, nach einer halben Minute war Ruhe, ein paar Minuten später ging es wieder los, rund 25-mal in einer Dreiviertelstunde. Läuft jetzt derselbe Speicher innerhalb von zehn Minuten ein zweites Mal in dieselbe Richtung gegen den anderen, sperre ich ihm diese Richtung und halte die Sperre, statt sie nach fünf Sekunden zurückzugeben. Frei wird er erst wieder, wenn er gebraucht wird: wenn das Haus eine Minute lang Strom aus dem Netz zieht und der andere nichts mehr gibt (beim gesperrten Laden spiegelbildlich: Einspeisung, und der andere nimmt nichts), wenn die Sonne weg ist, wenn die Nacht beginnt, wenn das Nacheinander wieder übernimmt, spätestens nach zwölf Stunden. Ist das Nacheinander an, hält es die Speicher ohnehin auseinander, dann bleibt es beim kurzen Eingriff. Im Logbuch und im Protokoll steht, was gesperrt ist und warum es wieder frei ist.

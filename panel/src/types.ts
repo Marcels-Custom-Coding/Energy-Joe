@@ -597,7 +597,7 @@ export interface TransferGuard {
     discharging: string[];
     stage: number;
     /** "inside": batteries of one group (one system) charged each other – Joe does not step in. */
-    result: "running" | "fixed" | "alarm" | "automation" | "joe" | "inside";
+    result: "running" | "fixed" | "alarm" | "automation" | "joe" | "inside" | "hold";
     /** "inside" that has stopped. */
     over?: boolean;
     dry: boolean;

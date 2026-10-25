@@ -362,6 +362,37 @@ export function inboxItems(t: Translate, joe: JoeState, inputs: InboxInputs = {}
       to: teamTo,
     });
   }
+  // Running against each other while "Nacheinander" is off: one tap turns it
+  // on (it keeps them apart for good; the watchdog only steps in after).
+  const last = guard?.last;
+  if (
+    team?.state === "together" &&
+    last &&
+    !last.dry &&
+    ["running", "fixed", "hold", "alarm"].includes(last.result) &&
+    Date.now() - Date.parse(last.at) < 24 * 3600 * 1000
+  ) {
+    const day = last.at.slice(0, 10);
+    const id = `team:together:${day}`;
+    items.push({
+      id,
+      hide: [id],
+      icon: "mdi:battery-sync-outline",
+      warn: true,
+      title: t("overview.todo.together.title"),
+      text: t("overview.todo.together.text", {
+        discharging: last.discharging.map((k) => config.batteries.find((b) => b.id === k)?.name ?? k).join(", "),
+        charging: last.charging.map((k) => config.batteries.find((b) => b.id === k)?.name ?? k).join(", "),
+        time: last.at.slice(11, 16),
+      }),
+      to: teamTo,
+      fix: {
+        label: t("overview.todo.together.fix"),
+        tip: "team_sequence_on",
+        patch: { rules: { battery_team: "sequence" } },
+      },
+    });
+  }
   // Not sure which system regulates a battery: "Welche Speicher werden vom
   // selben System geregelt?" ("Vorschlag passt" keeps Joe's proposal).
   if (team?.group_question) {
