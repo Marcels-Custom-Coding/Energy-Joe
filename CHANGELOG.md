@@ -3,6 +3,11 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.41
+
+- **Erst warten, dann fragen.** Steckst du ein Auto an, frage ich nicht mehr sofort „Welches Auto ist das?“. evcc und die App des Autos brauchen ein paar Minuten, bis sie wissen, wer dranhängt, und meist erledigt sich die Frage damit von selbst. Ich frage erst, wenn es nach fünf Minuten noch keiner weiß.
+- Nicht geprüft an echter Anlage: alles davon.
+
 ## 0.9.40
 
 - **Ein Tipp statt Suchen.** Laufen die Speicher gegeneinander, während „Nacheinander“ aus ist (bei dir seit meinem Rat von gestern), steht das unter „Joe braucht dich“: wann welcher Speicher in welchen entladen hat, und ein Knopf „Nacheinander einschalten“. Ein Tipp, und ich halte die beiden wieder auseinander. „Brauch ich nicht“ blendet den Hinweis für diesen Tag aus.

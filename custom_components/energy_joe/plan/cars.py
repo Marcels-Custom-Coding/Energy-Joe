@@ -36,6 +36,9 @@ from ..observe.readings import UNAVAILABLE, GetState, distance_km, number
 HOW = ("evcc", "plugged", "home", "answer", "assume")
 # An answer without a plug-in to tie it to (no "connected" sensor) counts this long.
 ANSWER_HOURS = 18
+# Just plugged in: evcc and the car's own app take a while to say which car
+# it is; Joe asks only after this long.
+ASK_WAIT = timedelta(minutes=5)
 # evcc's select says nothing is identified.
 NO_VEHICLE = ("", "null", "none", "-")
 PLUGGED = ("on", "true", "plugged", "plugged_in", "connected", "1", "yes", "locked")
@@ -377,10 +380,18 @@ def detect_all(
         ):
             entry.update(state="car", car=assume, how="assume")
             continue
-        # Ask only when something is plugged in for sure.
+        # Ask only when something is plugged in for sure, and not in the
+        # first minutes: evcc usually tells by then.
         entry["ask"] = entry["state"] == "unknown" and bool(
             entry["connected"] or entry["vehicle"]
         )
+        since = session(get, point)
+        if (
+            entry["ask"]
+            and since is not None
+            and now - datetime.fromisoformat(since) < ASK_WAIT
+        ):
+            entry.update(ask=False, waiting=True)
     return result
 
 

@@ -246,7 +246,12 @@ def test_the_only_car_at_home(hass: HomeAssistant) -> None:
 def test_an_unknown_car_is_left_alone_and_asked_about(hass: HomeAssistant) -> None:
     config = two_cars()
     plug(hass, "ebox")
+    # Just plugged in: evcc may still tell, Joe waits before he asks.
     found = cars.detect_all(config, hass.states.get)["ebox"]
+    assert found["state"] == "unknown" and found["ask"] is False
+    assert found["waiting"] is True
+    later = dt_util.now() + cars.ASK_WAIT
+    found = cars.detect_all(config, hass.states.get, now=later)["ebox"]
     assert found["state"] == "unknown" and found["ask"] is True
     start = dt_util.start_of_local_day(date(2026, 10, 5))
     (entry,) = plan_actions(
@@ -711,7 +716,7 @@ class Notes:
         pass
 
 
-async def test_joe_asks_once_and_hears_the_answer(hass: HomeAssistant) -> None:
+async def test_joe_asks_once_and_hears_the_answer(hass: HomeAssistant, freezer) -> None:
     config = two_cars()
     notes = Notes()
     replans: list[bool] = []
@@ -726,6 +731,10 @@ async def test_joe_asks_once_and_hears_the_answer(hass: HomeAssistant) -> None:
     watcher.replan = replan
     plug(hass, "ebox")
     await watcher.async_check()
+    # Not in the first minutes: evcc usually tells which car it is by then.
+    assert notes.asked == []
+    freezer.tick(cars.ASK_WAIT)
+    await watcher.async_check()
     await watcher.async_check()
     assert notes.asked == [
         ("ebox", "Parkplatz eBox", [("kona", "Kona"), ("zoe", "Zoe")])
@@ -736,6 +745,27 @@ async def test_joe_asks_once_and_hears_the_answer(hass: HomeAssistant) -> None:
     assert replans
     with pytest.raises(ValueError):
         await watcher.async_answer("ebox", "nobody")
+
+
+async def test_evcc_naming_the_car_in_time_means_no_question(
+    hass: HomeAssistant, freezer
+) -> None:
+    """Plugged in, evcc names the car two minutes later: Joe never asks."""
+    config = two_cars()
+    notes = Notes()
+    watcher = CarWatcher(
+        hass, lambda: config, lambda: "live", lambda: None, lambda: None
+    )
+    watcher.notifier = notes
+    plug(hass, "ebox")
+    await watcher.async_check()
+    freezer.tick(timedelta(minutes=2))
+    plug(hass, "ebox", "db:27")
+    await watcher.async_check()
+    freezer.tick(cars.ASK_WAIT)
+    await watcher.async_check()
+    assert notes.asked == []
+    assert watcher.status["points"]["ebox"]["car"] == "kona"
 
 
 async def test_evccs_id_is_learned(hass: HomeAssistant) -> None:
