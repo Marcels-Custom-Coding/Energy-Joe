@@ -16,6 +16,7 @@ from custom_components.energy_joe.plan.inputs import PEAK_DAYS, grid_limit
 from custom_components.energy_joe.plan.planner import (
     Battery,
     _price,
+    _starts,
     make_plan,
     night_slots,
     simulate,
@@ -249,6 +250,26 @@ def test_one_after_the_other_in_the_evening() -> None:
     plan = make_plan(inp)
     found = by_id(plan)
     assert found["venus"]["soc_start"] < found["byd"]["soc_start"]
+
+
+def test_a_sunny_day_before_the_night_raises_every_start() -> None:
+    """Planned in the morning: the sun fills the batteries by evening, the
+    window starts higher than now. Each battery's start rises by its room, so
+    the night shares the rest out right and no battery falls short."""
+    inp = plan_input(solar=0, soc=11, batteries=two(byd={"soc": 11}, venus={"soc": 12}))
+    starts = _starts(inp, 16.5)
+    pooled = (starts["byd"] * 10 + starts["venus"] * 5) / 15
+    assert pooled == pytest.approx(16.5, abs=0.01)
+    assert starts["byd"] > 11 and starts["venus"] > 12
+
+
+def test_all_the_way_up_means_every_battery_full() -> None:
+    """A night to 100 %: every battery to 100 %, not 100 % and 85 %."""
+    plan = make_plan(
+        plan_input(solar=0, soc=11, batteries=two(byd={"soc": 11}, venus={"soc": 12}))
+    )
+    assert plan["target"] == 100
+    assert {b["target"] for b in plan["batteries"]} == {100}
 
 
 def test_the_learned_grid_limit_waits_a_week() -> None:

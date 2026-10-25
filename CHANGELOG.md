@@ -3,6 +3,12 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.39
+
+- **Der Wächter merkt sich, wenn es wieder passiert.** Lief der Venus gestern Nachmittag in den BYD, habe ich ihn neu gestartet, nach einer halben Minute war Ruhe, ein paar Minuten später ging es wieder los, rund 25-mal in einer Dreiviertelstunde. Läuft jetzt derselbe Speicher innerhalb von zehn Minuten ein zweites Mal in dieselbe Richtung gegen den anderen, sperre ich ihm diese Richtung und halte die Sperre, statt sie nach fünf Sekunden zurückzugeben. Frei wird er erst wieder, wenn er gebraucht wird: wenn das Haus eine Minute lang Strom aus dem Netz zieht und der andere nichts mehr gibt (beim gesperrten Laden spiegelbildlich: Einspeisung, und der andere nimmt nichts), wenn die Sonne weg ist, wenn die Nacht beginnt, wenn das Nacheinander wieder übernimmt, spätestens nach zwölf Stunden. Ist das Nacheinander an, hält es die Speicher ohnehin auseinander, dann bleibt es beim kurzen Eingriff. Im Logbuch und im Protokoll steht, was gesperrt ist und warum es wieder frei ist.
+- **100 % heißt jeder Speicher voll.** Plante ich am Vormittag die Nacht, rechnete ich zwar damit, dass die Sonne beide Speicher bis zum Abend etwas füllt, teilte die Nachtladung aber mit den Ständen vom Vormittag auf. Dann bekam der BYD seine vollen 9,1 kWh und der Venus nur noch 3,7 kWh, Ziel 85 %, obwohl oben 100 % stand. Jetzt steigt der Startwert jedes Speichers mit, nach seinem freien Platz, und steht das Ziel auf 100 %, ist jeder Speicher auf 100 % gesetzt.
+- Nicht geprüft an echter Anlage: alles davon.
+
 ## 0.9.38
 
 - **„Voll“ heißt jetzt voll.** Nahm der Speicher, der dran war, 20 Sekunden lang nichts, während Strom ins Netz ging, galt er bisher als voll, egal bei welchem Ladestand. Heute Mittag hörte der BYD bei 40 % kurz auf zu laden, vermutlich ein Gerät, das einschaltete, und der Wechselrichter brauchte danach länger, um wieder anzufangen. Ich habe ihn für voll erklärt, ihm das Laden gesperrt und den Venus drangenommen. Der lief bald am Anschlag, bis zu 3 kW gingen ins Netz. Jetzt ist ein Speicher erst nahe an seiner Obergrenze voll (5 Punkte darunter). Nimmt er weiter unten nichts, ist das eine Pause: Er bleibt dran und darf weiter laden, und bleibt Sonne übrig, lädt der nächste solange nebenher mit fester Leistung. Im Logbuch steht dann „lädt gerade nicht, ich warte“.

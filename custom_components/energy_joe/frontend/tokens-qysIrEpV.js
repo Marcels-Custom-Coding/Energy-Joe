@@ -3352,6 +3352,7 @@ var Ne = {
 	"guard.state.single": "Ich brauche die Leistung von mindestens zwei Speichern, um aufzupassen.",
 	"guard.last.running.1": "{time}: Die Speicher liefen gegeneinander – ich habe die eigene Regelung von {battery} neu gestartet.",
 	"guard.last.running.2": "{time}: Die Speicher liefen gegeneinander – ich habe bei {battery} {direction} 5 s gesperrt.",
+	"guard.last.hold": "{time}: Die Speicher liefen kurz hintereinander wieder gegeneinander – bei {battery} ist {direction} gesperrt, bis er gebraucht wird.",
 	"guard.last.alarm": "{time}: Die Speicher laufen weiter gegeneinander, auch nach Neustart und kurzer Sperre – schau bitte nach.",
 	"guard.last.fixed.1": "{time}: Die Speicher liefen gegeneinander – behoben, nachdem ich die eigene Regelung von {battery} neu gestartet habe (nach {duration}).",
 	"guard.last.fixed.2": "{time}: Die Speicher liefen gegeneinander – behoben nach kurzer Sperre bei {battery} (nach {duration}).",
@@ -3630,6 +3631,14 @@ var Ne = {
 	"log.guard_block.discharge": "Läuft noch gegeneinander – bei {battery} das Entladen 5 s gesperrt",
 	"log.guard_block.charge.dry": "Läuft noch gegeneinander – ich würde bei {battery} das Laden 5 s sperren",
 	"log.guard_block.discharge.dry": "Läuft noch gegeneinander – ich würde bei {battery} das Entladen 5 s sperren",
+	"log.guard_hold.discharge": "Schon wieder gegeneinander – {battery} darf jetzt nicht mehr entladen, bis er gebraucht wird",
+	"log.guard_hold.charge": "Schon wieder gegeneinander – {battery} darf jetzt nicht mehr laden, bis er gebraucht wird",
+	"log.guard_hold_end.needed": "Sperre bei {battery} aufgehoben: das Haus brauchte ihn, der andere gab nichts mehr",
+	"log.guard_hold_end.sun": "Sperre bei {battery} aufgehoben: die Sonne ist weg",
+	"log.guard_hold_end.night": "Sperre bei {battery} aufgehoben: die Nacht beginnt, jetzt steuere ich",
+	"log.guard_hold_end.team": "Sperre bei {battery} aufgehoben: das Nacheinander übernimmt",
+	"log.guard_hold_end.max": "Sperre bei {battery} nach zwölf Stunden aufgehoben",
+	"log.guard_hold_end.off": "Sperre bei {battery} aufgehoben: der Wächter ist aus",
 	"log.guard_alarm": "Läuft weiter gegeneinander – ich melde mich",
 	"log.guard_alarm.dry": "Läuft weiter gegeneinander – ich würde mich melden",
 	"log.guard_fixed.1": "Behoben nach Neustart der eigenen Regelung (nach {duration})",
@@ -6996,6 +7005,7 @@ var Ne = {
 	"guard.state.single": "I need the power of at least two batteries to keep watch.",
 	"guard.last.running.1": "{time}: The batteries ran against each other – I restarted {battery}'s own control.",
 	"guard.last.running.2": "{time}: The batteries ran against each other – I blocked {direction} of {battery} for 5 s.",
+	"guard.last.hold": "{time}: The batteries ran against each other again within minutes – {direction} is blocked on {battery} until it is needed.",
 	"guard.last.alarm": "{time}: The batteries keep running against each other, even after a restart and a short block – please have a look.",
 	"guard.last.fixed.1": "{time}: The batteries ran against each other – fixed by restarting {battery}'s own control (after {duration}).",
 	"guard.last.fixed.2": "{time}: The batteries ran against each other – fixed by a short block of {battery} (after {duration}).",
@@ -7274,6 +7284,14 @@ var Ne = {
 	"log.guard_block.discharge": "Still running against each other – blocked discharging of {battery} for 5 s",
 	"log.guard_block.charge.dry": "Still running against each other – I would block charging of {battery} for 5 s",
 	"log.guard_block.discharge.dry": "Still running against each other – I would block discharging of {battery} for 5 s",
+	"log.guard_hold.discharge": "Against each other again – {battery} may no longer discharge until it is needed",
+	"log.guard_hold.charge": "Against each other again – {battery} may no longer charge until it is needed",
+	"log.guard_hold_end.needed": "Block on {battery} lifted: the house needed it, the other one gave nothing more",
+	"log.guard_hold_end.sun": "Block on {battery} lifted: the sun is gone",
+	"log.guard_hold_end.night": "Block on {battery} lifted: the night begins, now I steer",
+	"log.guard_hold_end.team": "Block on {battery} lifted: one after the other takes over",
+	"log.guard_hold_end.max": "Block on {battery} lifted after twelve hours",
+	"log.guard_hold_end.off": "Block on {battery} lifted: the watchdog is off",
 	"log.guard_alarm": "Keeps running against each other – I let you know",
 	"log.guard_alarm.dry": "Keeps running against each other – I would let you know",
 	"log.guard_fixed.1": "Fixed by restarting its own control (after {duration})",
@@ -7962,14 +7980,14 @@ function Ke(e, t, n) {
 }
 //#endregion
 //#region src/define.ts
-var qe = "0.9.38";
+var qe = "0.9.39";
 function Je(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = qe, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.38" && Xe();
+	n.joeVersion !== "0.9.39" && Xe();
 }
 var Ye = !1;
 function Xe() {

@@ -18,6 +18,12 @@ in stages, the way the owner's own automation did:
    (Venus: the allow switches of every battery its Omnibattery regulates;
    Fronius: the charge or discharge limit at 0 with its switch on), then
    back as it was.
+   The same battery running the same way again within REPEAT_WINDOW (and
+   no "Nacheinander" to keep the two apart): the block is held ("hold")
+   instead of a few seconds, until the other one needs it (the house draws
+   from the grid, or gives to it, for NEED_SPAN while the other does nothing
+   about it), the sun is down, Joe steers the night, "Nacheinander" comes
+   back or HOLD_MAX has passed.
 3. Still opposite after another WAIT: Joe speaks up ("Joe braucht dich" and,
    if wanted, a push), once per time it happens and at most once per
    COOLDOWN.
@@ -54,13 +60,21 @@ PULSE_S = 2.0
 BLOCK_S = 5.0
 # Between commands to a device that needs time (s), when its profile says none.
 PACE_S = 1.0
+# The same battery the same way this often within REPEAT_WINDOW: held.
+REPEATS = 2
+REPEAT_WINDOW = timedelta(minutes=10)
+# A held block ends once the house has needed the battery this long, at the
+# latest after HOLD_MAX.
+NEED_SPAN = timedelta(seconds=60)
+NEED_W = 150.0
+HOLD_MAX = timedelta(hours=12)
 # Stage 3: a push at most this often.
 COOLDOWN = timedelta(hours=1)
 # How often Joe looks at the meters.
 EVERY = timedelta(seconds=5)
 
 # What happened last ("last" in the store): the stage reached and the result.
-RESULTS = ("running", "fixed", "alarm", "automation", "joe", "inside")
+RESULTS = ("running", "fixed", "alarm", "automation", "joe", "inside", "hold")
 
 
 def fresh() -> dict[str, Any]:
@@ -86,6 +100,10 @@ def fresh() -> dict[str, Any]:
         # The last block with levers that write to flash (stage 2 waits
         # Profile.flash_gap_s between two).
         "flash_at": None,
+        # When each battery ran which way ("key:direction" -> ISO times).
+        "episodes": {},
+        # A block held after repeats: battery, direction, since, need_since.
+        "hold": None,
     }
 
 
@@ -176,3 +194,65 @@ def seconds_since(since: str | None, now: datetime) -> int:
     if not since:
         return 0
     return max(0, round((now - datetime.fromisoformat(since)).total_seconds()))
+
+
+def repeated(store: dict[str, Any], key: str, direction: str, now: datetime) -> bool:
+    """Note one time a battery ran one way; whether it did so REPEATS times
+    within REPEAT_WINDOW (this one included)."""
+    episodes: dict[str, list[str]] = store.setdefault("episodes", {})
+    first = now - REPEAT_WINDOW
+    for name in list(episodes):
+        episodes[name] = [
+            t for t in episodes[name] if datetime.fromisoformat(t) >= first
+        ]
+        if not episodes[name]:
+            episodes.pop(name)
+    times = episodes.setdefault(f"{key}:{direction}", [])
+    times.append(now.isoformat(timespec="seconds"))
+    return len(times) >= REPEATS
+
+
+def hold_over(
+    hold: dict[str, Any],
+    now: datetime,
+    *,
+    grid_w: float | None,
+    others_w: list[float],
+    sun_down: bool,
+    steering: bool,
+    team_on: bool,
+) -> str | None:
+    """Why a held block ends now ("team", "night", "sun", "max", "needed"),
+    or None. `grid_w`: from the grid (negative: to it); `others_w`: the other
+    batteries' power (positive while charging)."""
+    if team_on:
+        return "team"
+    if steering:
+        return "night"
+    if sun_down:
+        return "sun"
+    if now - datetime.fromisoformat(hold["since"]) >= HOLD_MAX:
+        return "max"
+    if hold["direction"] == "discharge":
+        # The house draws from the grid and the others give nothing.
+        needed = (
+            grid_w is not None
+            and grid_w >= NEED_W
+            and all(w > -LIMIT_W for w in others_w)
+        )
+    else:
+        # The house gives to the grid and the others take nothing.
+        needed = (
+            grid_w is not None
+            and grid_w <= -NEED_W
+            and all(w < LIMIT_W for w in others_w)
+        )
+    if not needed:
+        hold["need_since"] = None
+        return None
+    if hold.get("need_since") is None:
+        hold["need_since"] = now.isoformat(timespec="seconds")
+        return None
+    if now - datetime.fromisoformat(hold["need_since"]) >= NEED_SPAN:
+        return "needed"
+    return None

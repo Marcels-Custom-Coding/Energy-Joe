@@ -168,6 +168,12 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
       text = t(entry.clean ? `log.guard_restart.clean${dry}` : `log.guard_restart${dry}`, guard);
     } else if (entry.kind === "guard_block") {
       text = t(`log.guard_block.${entry.direction === "discharge" ? "discharge" : "charge"}${dry}`, guard);
+    } else if (entry.kind === "guard_hold") {
+      text = t(`log.guard_hold.${entry.direction === "discharge" ? "discharge" : "charge"}`, guard);
+    } else if (entry.kind === "guard_hold_end") {
+      const reasons = ["needed", "sun", "night", "team", "max", "off"] as const;
+      const reason = reasons.find((r) => r === entry.reason) ?? "off";
+      text = t(`log.guard_hold_end.${reason}`, guard);
     } else if (entry.kind === "guard_alarm") {
       text = t(`log.guard_alarm${dry}`, guard);
     } else if (entry.kind === "guard_inside") {
