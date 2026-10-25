@@ -1677,6 +1677,7 @@ export const de = {
   "plan.preview_at": "Vorschau, Stand {time} Uhr",
   "plan.refresh": "Neu rechnen",
   "plan.say.charge": "Ich lade ab {from} Uhr auf {target} % – mehr braucht's nicht.",
+  "plan.say.charge_full": "Ich lade ab {from} Uhr voll, auf {target} %.",
   "plan.say.charge_slots": "Ich lade in den günstigsten Viertelstunden der Nacht ({slots}) auf {target} %.",
   "plan.say.balance": "Heute ist Pflegenacht: Ich lade einmal ganz voll, damit die Speicher ihre Zellen abgleichen.",
   "plan.say.small_saving":
@@ -1691,7 +1692,9 @@ export const de = {
     "Wenn der Tag kommt wie meistens, reichten {typical} %. Ich halte {target} %: Kommt er schlecht ({solar} kWh Sonne, {home} kWh Verbrauch), sparst du damit {saving} Tagesstrom. Kommt er gut, kostet es dich {loss}.",
   "plan.risk.less":
     "Wenn der Tag kommt wie meistens, reichten {typical} %. Ich nehme nur {target} %: Kommt er gut ({solar} kWh Sonne, {home} kWh Verbrauch), sparst du damit {saving}. Kommt er schlecht, kostet es dich {loss} Tagesstrom.",
-  "plan.risk.same": "Auch wenn der Tag schlecht kommt, lohnt mehr nicht.",
+  "plan.risk.same": "Mehr spart nichts: Was ich zusätzlich lade, ersetzt morgen keinen Tagesstrom – es drängt mittags Sonne ins Netz oder liegt bis zur nächsten Nacht im Speicher. Das gilt auch, wenn der Tag schlecht kommt.",
+  "plan.risk.full": "{target} % ist voll – mehr passt nicht hinein. Damit kommst du bis zur nächsten Nacht.",
+  "plan.risk.full_short": "{target} % ist voll – mehr passt nicht hinein. Selbst so sind die Speicher morgen gegen {time} Uhr leer; danach kommen bis zur nächsten Nacht noch etwa {kwh} kWh zum Tagespreis aus dem Netz.",
   "plan.risk.class": "Wetter morgen: {class}",
   "plan.risk.class.clear": "klar",
   "plan.risk.class.mixed": "gemischt",

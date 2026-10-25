@@ -1658,6 +1658,7 @@ export const en: Record<Key, string> = {
   "plan.preview_at": "preview, as of {time}",
   "plan.refresh": "Plan again",
   "plan.say.charge": "I'll charge to {target} % from {from} – no more than needed.",
+  "plan.say.charge_full": "I'll charge full from {from}, to {target} %.",
   "plan.say.charge_slots": "I charge in the cheapest quarter hours of the night ({slots}) to {target} %.",
   "plan.say.balance": "Tonight is a maintenance night: I charge full once so the batteries can balance their cells.",
   "plan.say.small_saving": "I leave it tonight: it would save less than the minimum saving you set in the rules.",
@@ -1670,7 +1671,9 @@ export const en: Record<Key, string> = {
     "If the day comes as it usually does, {typical} % would do. I hold {target} %: if it comes out bad ({solar} kWh sun, {home} kWh consumption), that saves you {saving} of day power. If it comes out good, it costs you {loss}.",
   "plan.risk.less":
     "If the day comes as it usually does, {typical} % would do. I only take {target} %: if it comes out good ({solar} kWh sun, {home} kWh consumption), that saves you {saving}. If it comes out bad, it costs you {loss} of day power.",
-  "plan.risk.same": "Even if the day comes out bad, more does not pay.",
+  "plan.risk.same": "More saves nothing: whatever I'd charge on top replaces no day power tomorrow – it pushes midday sun to the grid or sits in the battery until the next night. That holds even if the day turns out bad.",
+  "plan.risk.full": "{target} % is full – nothing more fits in. That gets you to the next night.",
+  "plan.risk.full_short": "{target} % is full – nothing more fits in. Even so the batteries are empty tomorrow around {time}; after that about {kwh} kWh come from the grid at the day price until the next night.",
   "plan.risk.class": "Weather tomorrow: {class}",
   "plan.risk.class.clear": "clear",
   "plan.risk.class.mixed": "mixed",
