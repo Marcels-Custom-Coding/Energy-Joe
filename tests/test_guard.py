@@ -220,19 +220,67 @@ async def test_fixed_after_the_restart_and_a_cooldown_for_the_push(
     assert kinds(executor) == ["guard_restart", "guard_fixed"]
     fixed = executor.data["log"][-1]
     assert fixed["stage"] == 1 and fixed["seconds"] == 20
-    # Discharging: the second stage blocks discharging.
+    # Discharging: the second stage blocks discharging (apart from the first
+    # by more than the window in which a repeat is held).
+    freezer.tick(timedelta(minutes=11))
     await occurrence(3)
     blocks = [e for e in executor.data["log"] if e["kind"] == "guard_block"]
     assert blocks[-1]["direction"] == "discharge"
     assert executor.notifier.async_problem.await_count == 1
     # Within the hour: no second push, but the log says it.
-    freezer.tick(timedelta(minutes=10))
+    freezer.tick(timedelta(minutes=11))
     await occurrence(3)
     assert executor.notifier.async_problem.await_count == 1
     assert kinds(executor).count("guard_alarm") == 2
     freezer.tick(timedelta(hours=1))
     await occurrence(3)
     assert executor.notifier.async_problem.await_count == 2
+
+
+async def test_a_repeat_within_minutes_is_held_until_needed(
+    hass: HomeAssistant, freezer
+) -> None:
+    """The Venus discharges into the BYD again within ten minutes: a restart
+    does not last, so her discharging stays blocked – until the house draws
+    from the grid for a minute while the BYD gives nothing."""
+    freezer.move_to("2026-10-18T14:00:00+02:00")
+    install(hass)
+    hass.states.async_set("sun.sun", "above_horizon")
+    executor, _ = await guarded(hass)
+
+    async def against() -> None:
+        flows(hass, byd=500, venus=-300)
+        await executor.async_guard()
+        freezer.tick(timedelta(seconds=20))
+        await executor.async_guard()
+        flows(hass, byd=500, venus=0)
+        await executor.async_guard()
+
+    await against()
+    assert kinds(executor) == ["guard_restart", "guard_fixed"]
+    freezer.tick(timedelta(minutes=3))
+    await against()
+    hold = executor.data["guard"]["hold"]
+    assert hold is not None and hold["battery"] == "venus"
+    assert hold["direction"] == "discharge"
+    assert executor.data["guard"]["last"]["result"] == "hold"
+    assert "guard_hold" in kinds(executor)
+    held = dict(executor.data["guard"]["held"])
+    assert held
+    # The block stays while the BYD charges or covers the house.
+    for _ in range(24):
+        freezer.tick(timedelta(seconds=5))
+        await executor.async_guard()
+    assert executor.data["guard"]["hold"] is not None
+    # The BYD is empty: the house draws from the grid, nobody gives.
+    flows(hass, byd=0, venus=0, grid=600)
+    for _ in range(14):
+        freezer.tick(timedelta(seconds=5))
+        await executor.async_guard()
+    assert executor.data["guard"]["hold"] is None
+    assert not executor.data["guard"]["held"]
+    end = [e for e in executor.data["log"] if e["kind"] == "guard_hold_end"]
+    assert end and end[-1]["reason"] == "needed"
 
 
 async def test_a_manual_mode_held_by_someone_else_ends_cleanly(

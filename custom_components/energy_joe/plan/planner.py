@@ -721,6 +721,16 @@ def _plan(inp: PlanInput) -> dict[str, Any]:
                 # Its place in the order of charging (0: gets first).
                 rank=list(shared.takers).index(battery.id),
             )
+        if (
+            shared is not None
+            and target >= highest
+            and battery.grid
+            and battery.controllable
+            and entry["target"] < highest
+        ):
+            # All the way up: every battery full, not a sum that only adds
+            # up to it (a share cut short by rounding or by the day).
+            entry["target"] = highest
         batteries.append(entry)
     slots = _joined(
         [slot for entry in batteries for slot in entry["slots"]]
@@ -1180,7 +1190,19 @@ def _starts(inp: PlanInput, at_start: float) -> dict[str, float]:
     of them alike.
     """
     drop = max(0.0, _soc_now(inp) - at_start)
+    rise = max(0.0, at_start - _soc_now(inp))
     result: dict[str, float] = {}
+    if rise > 0:
+        # The sun fills them by evening: by their room, like the pooled
+        # level the window starts from (else the night shares out too
+        # little to the last ones).
+        energy = rise / 100 * inp.capacity
+        room = {b.id: max(0.0, 100 - b.soc) / 100 * b.capacity for b in inp.batteries}
+        total = sum(room.values())
+        for battery in inp.batteries:
+            part = energy * room[battery.id] / total if total > 0 else 0.0
+            result[battery.id] = min(100.0, battery.soc + 100 * part / battery.capacity)
+        return result
     for battery in inp.batteries:
         low = max(inp.reserve, battery.floor)
         result[battery.id] = (

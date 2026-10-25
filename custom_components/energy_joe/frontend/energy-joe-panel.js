@@ -1,4 +1,4 @@
-import { $ as e, A as t, B as n, C as r, D as i, E as a, F as o, G as s, H as c, I as l, J as u, K as d, L as f, M as p, N as m, O as h, P as g, Q as _, R as ee, S as te, T as v, U as ne, V as re, W as ie, X as y, Y as ae, Z as b, _ as oe, a as se, at as x, b as ce, c as le, ct as S, d as C, dt as w, et as ue, f as T, ft as de, g as fe, gt as E, h as pe, ht as me, i as he, it as D, j as ge, k as _e, l as O, lt as k, m as ve, mt as ye, n as be, nt as xe, o as Se, ot as Ce, p as we, pt as A, q as Te, r as j, rt as Ee, s as De, st as Oe, t as ke, tt as M, u as Ae, ut as N, v as je, w as Me, x as Ne, y as Pe, z as Fe } from "./tokens-CII8Ezo8.js";
+import { $ as e, A as t, B as n, C as r, D as i, E as a, F as o, G as s, H as c, I as l, J as u, K as d, L as f, M as p, N as m, O as h, P as g, Q as _, R as ee, S as te, T as v, U as ne, V as re, W as ie, X as y, Y as ae, Z as b, _ as oe, a as se, at as x, b as ce, c as le, ct as S, d as C, dt as w, et as ue, f as T, ft as de, g as fe, gt as E, h as pe, ht as me, i as he, it as D, j as ge, k as _e, l as O, lt as k, m as ve, mt as ye, n as be, nt as xe, o as Se, ot as Ce, p as we, pt as A, q as Te, r as j, rt as Ee, s as De, st as Oe, t as ke, tt as M, u as Ae, ut as N, v as je, w as Me, x as Ne, y as Pe, z as Fe } from "./tokens-qysIrEpV.js";
 //#region src/assets.ts
 var Ie = import.meta.url.replace(/[^/]*$/, ""), Le = (e) => `${Ie}${e}`, Re = /* @__PURE__ */ new Set(["welcome"]), ze = /* @__PURE__ */ new Set([
 	"night-charge",
@@ -6996,7 +6996,14 @@ function ua(e, t, n, r) {
 			entities: Array.isArray(n.entities) ? n.entities.map((e) => r ? c(r, String(e)) : String(e)).join(", ") : "",
 			duration: t < 120 ? e("guard.seconds", { n: t }) : e("guard.minutes", { n: Math.round(t / 60) })
 		}, o = n.dry ? ".dry" : "", s;
-		return s = n.kind === "guard_restart" ? e(n.clean ? `log.guard_restart.clean${o}` : `log.guard_restart${o}`, i) : n.kind === "guard_block" ? e(`log.guard_block.${n.direction === "discharge" ? "discharge" : "charge"}${o}`, i) : n.kind === "guard_alarm" ? e(`log.guard_alarm${o}`, i) : n.kind === "guard_inside" ? e(`log.guard_inside${o}`, i) : n.kind === "guard_fixed" ? e(`log.guard_fixed.${Math.min(3, Math.max(1, Number(n.stage) || 1))}`, i) : n.kind === "guard_restored" ? Array.isArray(n.failed) && n.failed.length > 0 ? e("log.guard_restored.failed", {
+		return s = n.kind === "guard_restart" ? e(n.clean ? `log.guard_restart.clean${o}` : `log.guard_restart${o}`, i) : n.kind === "guard_block" ? e(`log.guard_block.${n.direction === "discharge" ? "discharge" : "charge"}${o}`, i) : n.kind === "guard_hold" ? e(`log.guard_hold.${n.direction === "discharge" ? "discharge" : "charge"}`, i) : n.kind === "guard_hold_end" ? e(`log.guard_hold_end.${[
+			"needed",
+			"sun",
+			"night",
+			"team",
+			"max",
+			"off"
+		].find((e) => e === n.reason) ?? "off"}`, i) : n.kind === "guard_alarm" ? e(`log.guard_alarm${o}`, i) : n.kind === "guard_inside" ? e(`log.guard_inside${o}`, i) : n.kind === "guard_fixed" ? e(`log.guard_fixed.${Math.min(3, Math.max(1, Number(n.stage) || 1))}`, i) : n.kind === "guard_restored" ? Array.isArray(n.failed) && n.failed.length > 0 ? e("log.guard_restored.failed", {
 			...i,
 			entities: n.failed.map((e) => r ? c(r, String(e)) : String(e)).join(", ")
 		}) : e(n.reason === "start" ? "log.guard_restored.start" : "log.guard_restored", i) : e.optional(`log.${n.kind}`, i) ?? n.kind, typeof n.problem == "string" ? `${s} ${e("log.guard.problem", { code: n.problem })}` : s;

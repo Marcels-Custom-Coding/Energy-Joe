@@ -110,6 +110,10 @@ NOTES = {
         "Speicher-Wächter: zurück wie vorher",
         "Battery watchdog: back as it was",
     ),
+    "guard_hold": (
+        "Speicher-Wächter: {name} wieder gegen den anderen – {direction} bleibt gesperrt, bis er gebraucht wird",
+        "Battery watchdog: {name} against the other again – {direction} stays blocked until it is needed",
+    ),
     "release": ("Zurückgestellt", "Put back"),
     "test": ("Testlauf: {step}", "Test run: {step}"),
     "probe": ("Probe: {step}", "Probe: {step}"),
@@ -542,6 +546,8 @@ class JoeExecutor:
         # What the watchdog switched before a restart goes back first.
         async with self._lock:
             await self._async_guard_restore("start")
+        # A block held before the restart is given back with it.
+        self.data["guard"]["hold"] = None
         self._unsubs.append(
             async_track_time_interval(self._hass, self._on_tick, CHECK_EVERY)
         )
@@ -3579,6 +3585,19 @@ class JoeExecutor:
         elif len(powers) < 2:
             state = "single"
         dry = mode != "live"
+        if store.get("hold"):
+            reason = (
+                "off" if state != "on" else self._guard_hold_over(store, powers, now)
+            )
+            if reason is None:
+                # Held after repeats: it stays until the other one needs it.
+                self._guard_publish(config, state, dry, False, now)
+                return
+            async with self._lock:
+                await self._async_guard_restore(f"hold_{reason}")
+            self._log("guard_hold_end", battery=store["hold"]["battery"], reason=reason)
+            store["hold"] = None
+            await self._async_save()
         if store["held"]:
             # Left over (a failed write, a mode change): back first.
             async with self._lock:
@@ -3665,6 +3684,23 @@ class JoeExecutor:
         ):
             self._log("guard_flash", **detail)
             stage = 3
+        if (
+            store.get("episode") != store["since"]
+            and guard_rules.repeated(store, key, direction, now)
+            and not dry
+            and self.team.get("state") != "on"
+            and any(
+                adapter.guard_can_block(direction, whole) for adapter, whole in group
+            )
+        ):
+            store["episode"] = store["since"]
+            # The same way again within minutes: a restart does not last.
+            # Its direction stays blocked until the other one needs it.
+            await self._async_guard_hold_block(
+                store, group, key, direction, batteries, detail, now
+            )
+            return
+        store["episode"] = store["since"]
         problem: str | None = None
         if stage == 1:
             assert role is not None
@@ -3699,6 +3735,76 @@ class JoeExecutor:
             direction,
         )
         await self._async_save()
+
+    async def _async_guard_hold_block(
+        self,
+        store: dict[str, Any],
+        group: list[tuple[RoleAdapter, bool]],
+        key: str,
+        direction: str,
+        batteries: dict[str, dict[str, Any]],
+        detail: dict[str, Any],
+        now: datetime,
+    ) -> None:
+        """Block a battery's direction and keep it (see guard.hold_over)."""
+        writes: list[Write] = []
+        for adapter, whole in group:
+            for write in adapter.guard_block(direction, whole, self._hass):
+                if not write.is_call and all(
+                    w.entity_id != write.entity_id for w in writes
+                ):
+                    writes.append(write)
+        problem = await self._async_guard_hold(writes, 2) if writes else "no_lever"
+        self._log("guard_hold", direction=direction, problem=problem, **detail)
+        if problem is None:
+            store["hold"] = {
+                "battery": key,
+                "direction": direction,
+                "since": now.isoformat(timespec="seconds"),
+                "need_since": None,
+            }
+            words = {
+                "de": {"charge": "Laden", "discharge": "Entladen"},
+                "en": {"charge": "charging", "discharge": "discharging"},
+            }[self.language()]
+            if note := self._note(
+                "guard_hold",
+                name=batteries[key]["name"],
+                direction=words[direction],
+            ):
+                async_line(self._hass, note)
+        else:
+            await self._async_guard_restore("done")
+        guard_rules.done(store, 2, dt_util.now())
+        self._guard_last(
+            store,
+            dt_util.now(),
+            2,
+            "hold" if problem is None else "running",
+            detail,
+            False,
+            direction,
+        )
+        await self._async_save()
+
+    def _guard_hold_over(
+        self, store: dict[str, Any], powers: dict[str, float], now: datetime
+    ) -> str | None:
+        """Why the held block ends now, or None (see guard.hold_over)."""
+        hold = store["hold"]
+        grid = measurement_kw(
+            self._hass.states.get, self._config()["measurements"]["grid_power"]
+        )
+        sun = self._hass.states.get("sun.sun")
+        return guard_rules.hold_over(
+            hold,
+            now,
+            grid_w=None if grid is None else grid * 1000,
+            others_w=[w for k, w in powers.items() if k != hold["battery"]],
+            sun_down=sun is not None and sun.state == "below_horizon",
+            steering=self.status.get("reason") == "steering",
+            team_on=self.team.get("state") == "on",
+        )
 
     async def _async_guard_fixed(
         self, store: dict[str, Any], since: str | None, stage: int, now: datetime
