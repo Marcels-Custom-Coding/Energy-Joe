@@ -808,6 +808,18 @@ LEARNED = vol.Schema(
     extra=vol.ALLOW_EXTRA,
 )
 
+# The second look (see learn/sparring.py): once a day a language model, an
+# ai_task entity the owner picks, checks Joe's numbers and texts. Off by default.
+SPARRING = vol.Schema(
+    {
+        vol.Optional("enabled", default=False): bool,
+        vol.Optional("entity", default=None): vol.Any(
+            None, vol.All(cv.entity_id, vol.Match(r"^ai_task\.[a-z0-9_]+$"))
+        ),
+    },
+    extra=vol.ALLOW_EXTRA,
+)
+
 PROVENANCE = vol.Schema(
     {
         vol.Required("source"): vol.In(SOURCES),
@@ -857,6 +869,7 @@ CONFIG = vol.Schema(
         vol.Optional("climate", default=dict): CLIMATE,
         vol.Optional("answers", default=dict): ANSWERS,
         vol.Optional("learned", default=dict): LEARNED,
+        vol.Optional("sparring", default=dict): SPARRING,
         vol.Optional("provenance", default=dict): {str: PROVENANCE},
     },
     extra=vol.ALLOW_EXTRA,

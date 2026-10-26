@@ -3,6 +3,13 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.44
+
+- **Zweiter Blick.** Jeden Morgen um 6 Uhr kann ich meine Zahlen einem Sprachmodell zeigen, das du in Home Assistant als KI-Aufgabe eingerichtet hast: was ich für die letzten Nächte geplant hatte und was wirklich kam, was ich gelernt habe, wie vorsichtig ich plane, was mein Rückspiel sagt, und meine Textvorlagen. Es sucht Fehler in meinen Zahlen und Sätze, die nicht zu den Zahlen passen, und schreibt einen besseren Wortlaut dazu. Einschalten unter Einstellungen › Betrieb › Zweiter Blick; dort siehst du auch genau, was ich schicke. Personen, Orte und Termine gehen nicht mit.
+- Die Antwort steht im Rückblick unter Gelernt › Zweiter Blick, neue Funde melde ich unter „Joe braucht dich“. Jeder Befund braucht einen Beleg; finde ich die Zahl dazu nicht in meinen eigenen Daten, sage ich das dazu.
+- Vorschläge zeige ich nur, übernommen wird nichts von allein. Erlaubt sind vorerst Vorschläge zu „Wie vorsichtig plane ich die Nacht?“, und daneben steht, was mein eigenes Rückspiel dazu sagt.
+- Nicht geprüft an echter Anlage: alles davon, auch wie gut das Sprachmodell antwortet.
+
 ## 0.9.43
 
 - **Jeder Weg ist eine eigene Strecke.** Für das Laden nach Bedarf habe ich bisher die Entfernung von zu Hause zu jedem Termin genommen und sie für „Hin und zurück“ verdoppelt. Jetzt fahre ich den Tag ab, wie du ihn fährst: von zu Hause zum ersten Termin, von dort zum nächsten und vom letzten wieder heim, jede Strecke beim Routendienst einzeln gefragt. Ein Rückweg, der anders verläuft oder länger ist, zählt so, wie er ist, und zwei Termine hintereinander kosten nicht mehr zweimal die volle Strecke ab Haus. Unter „Fahrten morgen“ steht bei jedem Termin, woher die Strecke kommt, und als letzte Zeile „Zurück nach Hause“.

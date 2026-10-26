@@ -8,6 +8,7 @@ import { controlText } from "../components/control-status";
 import { batteryTeam, teamDoing } from "../components/battery-team";
 import { daySurplus, surplusDoing } from "../components/day-surplus";
 import "../components/pose";
+import { loadSparring, sparringNews } from "../components/sparring";
 import "../components/steer-tonight";
 import { steerAsks, steerShown } from "../components/steer-tonight";
 import { tip } from "../components/tip";
@@ -19,7 +20,17 @@ import type { Translate } from "../i18n";
 import type { DeviceEntry } from "../device-model";
 import { PANEL, href, onLink, type Route } from "../router";
 import { shared } from "../styles/shared";
-import type { Check, ClimateFound, DaySummary, Discovery, HistoryDays, HomeAssistant, JoeInfo, JoeState } from "../types";
+import type {
+  Check,
+  ClimateFound,
+  DaySummary,
+  Discovery,
+  HistoryDays,
+  HomeAssistant,
+  JoeInfo,
+  JoeState,
+  SparringState,
+} from "../types";
 import { batteryNow } from "./devices/battery-device";
 import "./overview/climate-list";
 import { climateRooms } from "./overview/climate-list";
@@ -57,8 +68,13 @@ export class JoeOverview extends LitElement {
   @property({ attribute: false }) info?: JoeInfo;
 
   @state() private week?: DaySummary[];
+  /** The second look's reports, for "Joe braucht dich" (only while it is on). */
+  @state() private sparring?: SparringState;
 
   private marker?: string;
+  /** Whether the second look was on at the last load; turning it on or off loads again. */
+  private sparringOn?: boolean;
+  private loadingSparring = false;
 
   static styles = [
     shared,
@@ -378,6 +394,7 @@ export class JoeOverview extends LitElement {
   connectedCallback(): void {
     super.connectedCallback();
     this.loadWeek();
+    this.loadSparring();
   }
 
   protected willUpdate(changed: PropertyValues<this>): void {
@@ -385,8 +402,29 @@ export class JoeOverview extends LitElement {
     const marker = `${observe?.last_hour ?? ""}|${observe?.backfill.state ?? ""}|${observe?.day_count ?? 0}`;
     if (changed.has("state") && this.marker !== undefined && marker !== this.marker) {
       this.loadWeek();
+      this.loadSparring();
+    } else if (changed.has("state") && Boolean(this.state?.config.sparring?.enabled) !== this.sparringOn) {
+      this.loadSparring();
     }
     this.marker = marker;
+  }
+
+  /** Beside the rest, never in its way: the overview renders without it and adds the row when it comes. */
+  private async loadSparring(): Promise<void> {
+    if (!this.state) {
+      return;
+    }
+    this.sparringOn = Boolean(this.state.config.sparring?.enabled);
+    if (!this.sparringOn) {
+      this.sparring = undefined;
+      return;
+    }
+    if (this.loadingSparring) {
+      return;
+    }
+    this.loadingSparring = true;
+    this.sparring = (await loadSparring(this.hass)) ?? this.sparring;
+    this.loadingSparring = false;
   }
 
   private async loadWeek(): Promise<void> {
@@ -411,6 +449,7 @@ export class JoeOverview extends LitElement {
       checks: this.checks,
       devices: this.devices,
       profiles: this.info?.profiles,
+      sparring: sparringNews(this.sparring),
     });
     // Tonight's yes/no in Vorschlagen leads "Joe braucht dich" instead of sitting in the night card.
     const ask = steerAsks(joe);

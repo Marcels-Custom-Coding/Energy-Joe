@@ -27,6 +27,7 @@ import {
 import { PANEL, href, onLink, revealAnchor, type Route } from "../../router";
 import { ruleValue } from "../../rules-view";
 import { shared } from "../../styles/shared";
+import "./sparring";
 import {
   LEARN_SCOPES,
   type ClimateFound,
@@ -87,7 +88,7 @@ export class JoeLookbackLearned extends LitElement {
   @property({ attribute: false }) prefix = PANEL;
   @property({ attribute: false }) route?: Route;
   @property({ attribute: false }) climateFound?: ClimateFound;
-  /** sun|consumption|spread|replay|battery|devices|hot_water|car|presence|climate|reset */
+  /** sun|consumption|spread|replay|battery|devices|hot_water|car|presence|climate|sparring|reset */
   @property({ attribute: false }) anchor?: string;
 
   @state() private data?: Learning;
@@ -375,6 +376,9 @@ export class JoeLookbackLearned extends LitElement {
               <div class="group">
                 <div class="eyebrow section"><ha-icon icon="mdi:account-group-outline"></ha-icon>${t("past.learned.group.household")}</div>
                 <div class="grid">${this.renderPresence(t, data)}</div>
+              </div>
+              <div class="group" data-anchor="sparring">
+                <joe-sparring-reports .t=${t} .hass=${this.hass} .state=${this.state} .prefix=${this.prefix}></joe-sparring-reports>
               </div>
               ${this.renderReset(t)}`
           : nothing}

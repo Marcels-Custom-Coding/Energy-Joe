@@ -59,6 +59,10 @@
       ?bnotes=1 (Hinweise zum Steuern: beim ersten Speicher eine Freischaltung im Gerät und eine ausgeschaltete Entität;
       auf der Speicher-Seite ein Kostal ohne Ladestand und ein SMA, den Joe nicht steuern kann)
       ?later=1 (die Frage zum Homeoffice wurde in der Einrichtung mit „Später“ übersprungen: Fragen, Los und Übersicht › Joe braucht dich)
+      ?sparring=1|fail|empty|off|none (Zweiter Blick, Einstellungen › Betrieb und Rückblick › Gelernt: 1 an, ein neuer Bericht mit
+      Befunden (einer ohne Beleg), Text-Befund, Vorschlag und Frage, dazu zwei ältere – „Joe braucht dich“ zeigt ihn; fail: die
+      letzte Prüfung schlug fehl; empty: an, noch kein Bericht; off: KI-Aufgabe da, aber aus; none: keine KI-Aufgabe in HA.
+      „Jetzt prüfen“ antwortet nach 2 s mit einem neuen Bericht)
       ?preview=fronius|venus|huawei|modbus (Vorgänge im Dialog „Regler für …“, ?page=devices/battery/storage/control bzw. venus, huawei;
       die Antworten kommen aus panel/dev/previews/<fall>.json – echtes Backend-Format aus scripts/make_dev_previews.py:
       fronius: Marcels BYD mit alter, falscher Zuordnung – Grenzen unter Lade-/Entladeleistung, Ladegrenze (aktiv) und
@@ -1279,6 +1283,111 @@
       };
       const push = () => listeners.forEach((cb) => cb(view()));
 
+      // 0.9.44 Zweiter Blick (?sparring=…): an ai_task entity in HA and the reports energy_joe/sparring returns.
+      const sparringMock = (() => {
+        const which = params.get("sparring");
+        const entity = "ai_task.google_ai_task";
+        state.config.sparring = { enabled: ["1", "fail", "empty"].includes(which ?? ""), entity: which && which !== "none" ? entity : null };
+        if (which && which !== "none") {
+          sample.hass.states[entity] = { entity_id: entity, state: "unknown", attributes: { friendly_name: "Google AI Task" } };
+        }
+        const day = (offset, time) => {
+          const d = new Date(Date.now() + 2 * 3600e3 - offset * 864e5);
+          return `${d.toISOString().slice(0, 10)}T${time}+02:00`;
+        };
+        const report = (at, extra) => ({
+          at,
+          entity,
+          ok: true,
+          error: null,
+          seen: true,
+          summary: "",
+          findings: [],
+          texts: [],
+          proposals: [],
+          questions: [],
+          dropped: 0,
+          ...extra,
+        });
+        const full = report(day(0, "06:00:04"), {
+          seen: false,
+          summary: "Die Nächte passen meist, aber am Montag war der Speicher um 5 Uhr leer, obwohl 2,1 kWh übrig sein sollten.",
+          findings: [
+            {
+              title: "Speicher zwei Mal vor dem Morgen leer",
+              evidence: "Montag geplant 2,1 kWh Rest, gemessen 0,0 kWh; Mittwoch geplant 1,4 kWh, gemessen 0,2 kWh.",
+              area: "night",
+              checked: true,
+            },
+            {
+              title: "Sonnenfaktor wirkt zu hoch",
+              evidence: "Der Faktor liegt bei 1,35, an trüben Tagen kamen nur 60 % der Prognose.",
+              area: "solar",
+              checked: false,
+            },
+          ],
+          texts: [
+            {
+              key: "plan.lead",
+              template: "Heute Nacht lade ich {kwh} kWh, damit du bis zur Sonne kommst.",
+              problem: "Bei 0 kWh klingt der Satz, als würde trotzdem geladen.",
+              better: "Heute Nacht lade ich nicht – der Speicher reicht bis zur Sonne.",
+            },
+          ],
+          proposals: [
+            {
+              setting: "rules.night_caution",
+              value: "careful",
+              current: "brave",
+              reason: "In zwei von sieben Nächten war der Speicher vor dem Morgen leer.",
+              replay: { best: "balanced", cost: { bold: 4.1, brave: 3.6, balanced: 3.2, careful: 3.4, cautious: 3.9, typical: 3.7 } },
+            },
+          ],
+          questions: ["Läuft morgens um 5 Uhr regelmäßig ein großer Verbraucher, etwa eine Wärmepumpe?"],
+          dropped: 1,
+        });
+        const reports =
+          which === "1"
+            ? [full, report(day(1, "06:00:02"), { summary: "Alles stimmig." }), report(day(2, "06:00:03"), { ok: false, error: "Der Dienst ai_task.generate_data antwortete nicht rechtzeitig." })]
+            : which === "fail"
+              ? [report(day(0, "06:00:05"), { ok: false, error: "Die Antwort war kein JSON." })]
+              : [];
+        const brief = {
+          nights: [
+            { date: "2026-10-20", planned_kwh: 6.2, charged_kwh: 6.0, rest_planned_kwh: 2.1, rest_kwh: 0.0, solar_forecast_kwh: 8.4, solar_kwh: 5.1 },
+            { date: "2026-10-21", planned_kwh: 4.0, charged_kwh: 4.1, rest_planned_kwh: 1.2, rest_kwh: 1.5, solar_forecast_kwh: 11.2, solar_kwh: 12.0 },
+          ],
+          learned: { solar_factor: 1.35, solar_days: 21, capacity_kwh: { storage: 9.5, venus: 5.12 }, consumption_model: { base: 7.8, heat: 0.31, workday: -0.6 } },
+          rules: { night_caution: "brave" },
+          replay: { best: "balanced", nights: 14 },
+          texts: Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`plan.example_${i}`, `Beispielsatz {value} Nummer ${i}`])),
+        };
+        return {
+          view: () => ({
+            enabled: state.config.sparring?.enabled ?? false,
+            entity: state.config.sparring?.entity ?? null,
+            running: false,
+            next: state.config.sparring?.enabled ? day(-1, "06:00:00") : null,
+            reports: structuredClone(reports),
+            brief: structuredClone(brief),
+          }),
+          async run() {
+            if (!state.config.sparring?.enabled || !state.config.sparring?.entity) {
+              throw { code: "not_ready", message: "Zweiter Blick ist aus" };
+            }
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            const fresh = { ...structuredClone(full), at: stamp() };
+            reports.unshift(fresh);
+            return fresh;
+          },
+          seen(at) {
+            const found = reports.find((r) => r.at === at);
+            if (found) found.seen = true;
+            return null;
+          },
+        };
+      })();
+
       // 0.9.14: the air conditioner's meter sits on its HA device (device-model.ts puts it to the climate device).
       sample.hass.entities["sensor.ac_office_energy"] = { entity_id: "sensor.ac_office_energy", device_id: "ac1", area_id: null };
       // 0.9.15 Einstellungen › Über Joe: Joe's own entities in HA (with ?done=1 or ?joe_entities=1, off with ?joe_entities=0).
@@ -2020,6 +2129,13 @@
               };
               return { ...(answers[which] ?? answers.ok), host, port, unit, hosts };
             }
+            case "energy_joe/sparring":
+              return sparringMock.view();
+            case "energy_joe/sparring/run":
+              return sparringMock.run();
+            case "energy_joe/sparring/seen":
+              console.info("[dev] sparring/seen", msg.at);
+              return sparringMock.seen(msg.at);
             case "energy_joe/battery/probe":
               return previewMock.probe(msg);
             case "energy_joe/battery/roles":
