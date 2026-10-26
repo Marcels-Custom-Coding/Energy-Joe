@@ -20202,8 +20202,9 @@ var xu = {
       }
       blockquote {
         margin: 10px 0 0;
-        padding: 2px 0 2px 12px;
-        border-left: 3px solid var(--joe-amber);
+        padding: 10px 14px;
+        border-radius: 12px;
+        background: var(--joe-surface-2);
         font-size: 15px;
         line-height: 1.5;
         max-width: 66ch;
