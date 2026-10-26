@@ -169,9 +169,15 @@ class JoePlanner:
             hits = [t for t in trips if normalize(t["location"]) == key]
             if not hits:
                 continue
-            factor = 2 if (car.get("need") or {}).get("round_trip", True) else 1
             for trip in hits:
-                trip.update(km=round(place["km"] * factor, 1), source=place["source"])
+                # The user's distance is one way from home: the leg from home
+                # and the way back home; legs from another place stay.
+                if trip.get("from") is None:
+                    trip.update(km=round(place["km"], 1), source=place["source"])
+                if "back_km" in trip:
+                    trip.update(
+                        back_km=round(place["km"], 1), back_source=place["source"]
+                    )
             action = action_by_id(config, point_of(detected, car_id))
             found = car_need(
                 need_for(

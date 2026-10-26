@@ -3,6 +3,12 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.43
+
+- **Jeder Weg ist eine eigene Strecke.** Für das Laden nach Bedarf habe ich bisher die Entfernung von zu Hause zu jedem Termin genommen und sie für „Hin und zurück“ verdoppelt. Jetzt fahre ich den Tag ab, wie du ihn fährst: von zu Hause zum ersten Termin, von dort zum nächsten und vom letzten wieder heim, jede Strecke beim Routendienst einzeln gefragt. Ein Rückweg, der anders verläuft oder länger ist, zählt so, wie er ist, und zwei Termine hintereinander kosten nicht mehr zweimal die volle Strecke ab Haus. Unter „Fahrten morgen“ steht bei jedem Termin, woher die Strecke kommt, und als letzte Zeile „Zurück nach Hause“.
+- Deine eigene Entfernung für einen Ort gilt weiter einfach, für den Weg hin von zu Hause und zurück nach Hause.
+- Nicht geprüft an echter Anlage: alles davon.
+
 ## 0.9.42
 
 - **Ehrliche Sätze bei vollen Speichern.** Stand das Nachtziel auf 100 %, schrieb ich „mehr braucht's nicht“ und „Auch wenn der Tag schlecht kommt, lohnt mehr nicht“. Das ist Unsinn: Mehr passt schlicht nicht hinein. Jetzt steht da „Ich lade ab 00:00 Uhr voll“ und bei „Warum 100 %“, wie weit es reicht: entweder bis zur nächsten Nacht oder „Selbst so sind die Speicher morgen gegen 18:00 Uhr leer; danach kommen noch etwa 6,9 kWh zum Tagespreis aus dem Netz“, aus meiner eigenen Rechnung für morgen.

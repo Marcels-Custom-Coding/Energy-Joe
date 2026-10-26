@@ -126,7 +126,11 @@ def car_need(
     )
     sensor = consumption_kwh(_state(get, need.get("consumption_entity")))
     per_100km, source = consumption(need, learned, sensor, temp, rain)
-    trips_km = round(sum(t.get("km") or 0.0 for t in trips), 1)
+    # The day's round: each leg (from home or the place before) and the way
+    # back home (see plan/trips.py).
+    trips_km = round(
+        sum((t.get("km") or 0.0) + (t.get("back_km") or 0.0) for t in trips), 1
+    )
     usual = need.get("daily_km")
     if usual is None:
         usual = learned.get("workday_km" if workday else "day_off_km")

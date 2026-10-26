@@ -290,22 +290,32 @@ async def test_trips_from_the_calendar(hass: HomeAssistant) -> None:
     trips = await async_trips(hass, config, need()["need"], places, date(2026, 10, 5))
     assert [t["location"] for t in trips] == ["zone.office", "Hauptstr. 1, Potsdam"]
     office, customer = trips
-    # 8.9 km straight line times 1.3, there and back.
-    assert office["source"] == "zone" and office["km"] == pytest.approx(23.2, abs=0.2)
+    # Home to the office: 8.9 km straight line times 1.3, no service.
+    assert office["source"] == "zone" and office["km"] == pytest.approx(11.6, abs=0.2)
+    assert office["from"] is None and "back_km" not in office
+    # From the office on to the customer, then back home: each leg on its own.
     assert customer == {
         "start": "2026-10-05T10:00:00+02:00",
         "location": "Hauptstr. 1, Potsdam",
-        "km": 72.4,
+        "from": "zone.office",
+        "km": 36.2,
         "minutes": 42,
         "source": "waze",
+        "back_km": 36.2,
+        "back_minutes": 42,
+        "back_source": "waze",
     }
-    assert asked[0]["origin"] == "zone.home" and asked[0]["region"] == "eu"
-    # Kept: no second question; a correction by the user wins.
+    assert asked[0]["origin"] == "zone.office" and asked[0]["region"] == "eu"
+    assert asked[0]["destination"] == "Hauptstr. 1, Potsdam"
+    assert asked[1]["origin"] == "Hauptstr. 1, Potsdam"
+    assert asked[1]["destination"] == "zone.home"
+    # Kept: no second question; a correction by the user wins on the way home.
     await async_trips(hass, config, need()["need"], places, date(2026, 10, 5))
-    assert len(asked) == 1
+    assert len(asked) == 2
     await places.async_set("Hauptstr. 1, Potsdam", 30.0)
     trips = await async_trips(hass, config, need()["need"], places, date(2026, 10, 5))
-    assert trips[1]["km"] == 60.0 and trips[1]["source"] == "user"
+    assert trips[1]["back_km"] == 30.0 and trips[1]["back_source"] == "user"
+    assert trips[1]["km"] == 36.2
     # Without a service a free-text place stays unknown.
     unrouted = model.validate({**config, "routing": {"service": None}})
     fresh = PlaceStore(hass)
@@ -314,6 +324,64 @@ async def test_trips_from_the_calendar(hass: HomeAssistant) -> None:
     trips = await async_trips(hass, unrouted, need()["need"], fresh, date(2026, 10, 5))
     assert trips[1]["km"] is None
     assert not is_place("https://zoom.us/j/1") and is_place("Marktplatz 3, Ulm")
+
+
+async def test_a_day_is_one_round_with_its_own_way_back(hass: HomeAssistant) -> None:
+    """Two appointments: home → A, A → B, B → home, each leg asked on its
+    own (here the way back is longer); "Hin und zurück" off: no way back."""
+    distances = {
+        ("zone.home", "A-Str. 1"): 20.0,
+        ("A-Str. 1", "B-Str. 2"): 15.0,
+        ("B-Str. 2", "zone.home"): 30.0,
+    }
+    events = [
+        {"summary": "B", "start": "2026-10-05T14:00:00+02:00", "location": "B-Str. 2"},
+        {"summary": "A", "start": "2026-10-05T09:00:00+02:00", "location": "A-Str. 1"},
+    ]
+
+    def get_events(call: ServiceCall) -> dict[str, Any]:
+        return {"calendar.anna": {"events": events}}
+
+    def waze(call: ServiceCall) -> dict[str, Any]:
+        km = distances[(call.data["origin"], call.data["destination"])]
+        return {
+            "routes": [{"duration": km, "distance": km, "name": "", "street_names": []}]
+        }
+
+    hass.services.async_register(
+        "calendar", "get_events", get_events, supports_response=SupportsResponse.ONLY
+    )
+    hass.services.async_register(
+        "waze_travel_time",
+        "get_travel_times",
+        waze,
+        supports_response=SupportsResponse.ONLY,
+    )
+    config = model.validate(
+        {
+            "version": model.CONFIG_VERSION,
+            "persons": [{"id": "anna", "name": "Anna", "calendars": ["calendar.anna"]}],
+            "routing": {"service": "waze"},
+        }
+    )
+    trips = await async_trips(
+        hass, config, need()["need"], PlaceStore(hass), date(2026, 10, 5)
+    )
+    assert [(t["location"], t["from"], t["km"]) for t in trips] == [
+        ("A-Str. 1", None, 20.0),
+        ("B-Str. 2", "A-Str. 1", 15.0),
+    ]
+    assert trips[-1]["back_km"] == 30.0
+    found = car_need(need()["need"], hass.states.get, trips, None, 10.0, False, True)
+    assert found["trips_km"] == 65.0
+    one_way = await async_trips(
+        hass,
+        config,
+        need(round_trip=False)["need"],
+        PlaceStore(hass),
+        date(2026, 10, 5),
+    )
+    assert "back_km" not in one_way[-1]
 
 
 async def test_open_street_map_route(hass: HomeAssistant, aioclient_mock) -> None:
@@ -604,9 +672,9 @@ async def test_calendars_trips_and_retries(hass: HomeAssistant) -> None:
     trips = await async_trips(hass, config, need()["need"], places, date(2026, 10, 5))
     assert [t["location"] for t in trips] == ["Restaurant Am See"]
     assert trips[0]["start"] == "2026-10-05T19:00:00+02:00" and trips[0]["km"] is None
-    # Waze found nothing: not asked again on the next run.
+    # Waze found nothing (there nor back): not asked again on the next run.
     await async_trips(hass, config, need()["need"], places, date(2026, 10, 5))
-    assert calls["waze"] == 1
+    assert calls["waze"] == 2
     # Nobody's calendar chosen: no trips; everyone: both persons.
     assert (
         await async_trips(
@@ -696,9 +764,13 @@ async def test_a_correction_reaches_the_fixed_plan(hass: HomeAssistant) -> None:
         {
             "start": "2026-10-05T09:00:00+02:00",
             "location": "Hauptstr. 1",
-            "km": 600.0,
+            "from": None,
+            "km": 300.0,
             "minutes": 300,
             "source": "waze",
+            "back_km": 300.0,
+            "back_minutes": 300,
+            "back_source": "waze",
         }
     ]
     found = car_need(need()["need"], hass.states.get, trips, None, 10.0, False, True)
@@ -724,7 +796,8 @@ async def test_a_correction_reaches_the_fixed_plan(hass: HomeAssistant) -> None:
     await planner.places.async_set("Hauptstr. 1", 30.0)
     await planner.async_correct_needs("Hauptstr. 1")
     entry = planner.plan["actions"][0]
-    assert entry["need"]["trips"][0]["km"] == 60.0
+    assert entry["need"]["trips"][0]["km"] == 30.0
+    assert entry["need"]["trips"][0]["back_km"] == 30.0
     assert entry["need"]["trips"][0]["source"] == "user"
     assert entry["target"] < 100
     await store.async_unload()
@@ -745,9 +818,13 @@ async def test_a_longer_trip_after_fixing_charges_tonight(hass: HomeAssistant) -
         {
             "start": "2026-10-05T09:00:00+02:00",
             "location": "Messe Hannover",
+            "from": None,
             "km": None,
             "minutes": None,
             "source": None,
+            "back_km": None,
+            "back_minutes": None,
+            "back_source": None,
         }
     ]
     found = car_need(need()["need"], hass.states.get, trips, None, 10.0, False, True)
@@ -778,7 +855,8 @@ async def test_a_longer_trip_after_fixing_charges_tonight(hass: HomeAssistant) -
     entry = planner.plan["actions"][0]
     assert entry["run"] is True
     assert entry["reasons"] == ["need"]
-    assert entry["need"]["trips"][0]["km"] == 300.0
+    assert entry["need"]["trips"][0]["km"] == 150.0
+    assert entry["need"]["trips"][0]["back_km"] == 150.0
     assert entry["target"] == 100
     # Charging the missing energy takes longer than a few minutes: an earlier start.
     assert datetime.fromisoformat(entry["start"]) < end - timedelta(hours=1)

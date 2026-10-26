@@ -1204,7 +1204,13 @@ export interface CarTrip {
   location: string;
   km: number | null;
   minutes: number | null;
-  source: "waze" | "google" | "osm" | "zone" | "user" | null;
+  source: "waze" | "google" | "osm" | "zone" | "user" | "same" | null;
+  /** The leg starts at this place (the appointment before); null or missing: from home. */
+  from?: string | null;
+  /** The last one with "Hin und zurück": the way back home, asked on its own. */
+  back_km?: number | null;
+  back_minutes?: number | null;
+  back_source?: "waze" | "google" | "osm" | "zone" | "user" | "same" | null;
 }
 
 /** What tomorrow's driving needs (plan action entry "need"). */

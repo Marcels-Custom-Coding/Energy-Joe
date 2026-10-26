@@ -16,6 +16,7 @@ export class JoeCarNeed extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) t?: Translate;
   @property({ attribute: false }) action?: PlanAction;
+  /** Kept for the callers; the legs come from the plan now. */
   @property({ attribute: false }) roundTrip = true;
 
   @state() private editing?: string;
@@ -157,7 +158,9 @@ export class JoeCarNeed extends LitElement {
         ${trips.map(
           (trip) => html`<li>
             <span>${trip.start.includes("T") ? timeOf(trip.start) : t("need.all_day")}</span>
-            <span class="where">${trip.location}</span>
+            <span class="where"
+              >${trip.location}${trip.from ? html`<small> ${t("need.leg_from", { place: trip.from })}</small>` : nothing}</span
+            >
             ${this.editing === trip.location
               ? this.renderEdit(t, trip)
               : html`<span class=${trip.km == null ? "km unknown" : "km"}>
@@ -175,13 +178,31 @@ export class JoeCarNeed extends LitElement {
                   </button>`}
           </li>`,
         )}
+        ${this.renderBack(t, trips[trips.length - 1])}
       </ul>
       ${this.failed ? html`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon>${t("error.action")}</div>` : nothing}
     </div>`;
   }
 
+  /** The way back home from the last appointment, a leg of its own. */
+  private renderBack(t: Translate, last: CarTrip | undefined): TemplateResult | typeof nothing {
+    if (!last || !("back_km" in last)) {
+      return nothing;
+    }
+    const km = last.back_km;
+    return html`<li>
+      <span></span>
+      <span class="where">${t("need.leg_home")}</span>
+      <span class=${km == null ? "km unknown" : "km"}>
+        ${km == null ? t("need.km_unknown") : t(`need.km.${last.back_source ?? "zone"}`, { km: formatNumber(t.lang, km, 0) })}
+      </span>
+      <span></span>
+    </li>`;
+  }
+
   private renderEdit(t: Translate, trip: CarTrip): TemplateResult {
-    const oneWay = trip.km == null ? "" : String(Math.round(trip.km / (this.roundTrip ? 2 : 1)));
+    // The user's value is one way from home (it counts there and back).
+    const oneWay = trip.km == null || trip.from ? "" : String(Math.round(trip.km));
     return html`<form
       @submit=${(ev: Event) => {
         ev.preventDefault();
