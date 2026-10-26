@@ -94,6 +94,9 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_learning_reset)
     websocket_api.async_register_command(hass, ws_reset_all)
     websocket_api.async_register_command(hass, ws_learning_answer)
+    websocket_api.async_register_command(hass, ws_sparring)
+    websocket_api.async_register_command(hass, ws_sparring_run)
+    websocket_api.async_register_command(hass, ws_sparring_seen)
     websocket_api.async_register_command(hass, ws_log)
     websocket_api.async_register_command(hass, ws_control_test)
     websocket_api.async_register_command(hass, ws_battery_preview)
@@ -696,6 +699,61 @@ async def ws_learning_answer(
         return
     if not await runtime.async_answer_day(msg["date"].isoformat(), msg["answer"]):
         connection.send_error(msg["id"], "not_learning", "Joe is not learning.")
+        return
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/sparring"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_sparring(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """The second look: the setting, the kept reports and what Joe sends."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    connection.send_result(msg["id"], await runtime.sparring.async_view())
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/sparring/run"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_sparring_run(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Take the second look now; answers with the new report."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    if not runtime.sparring.ready:
+        connection.send_error(
+            msg["id"], "not_ready", "The second look is off or has no entity."
+        )
+        return
+    connection.send_result(msg["id"], await runtime.sparring.async_run())
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/sparring/seen",
+        vol.Required("at"): str,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_sparring_seen(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """The owner read a report."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    if not await runtime.sparring.async_seen(msg["at"]):
+        connection.send_error(msg["id"], "not_found", "No report of that moment.")
         return
     connection.send_result(msg["id"])
 

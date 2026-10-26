@@ -17,6 +17,7 @@ import { mergeAnswers, mergeQuestion } from "../../components/car-sources";
 import { daySurplus, surplusAbility, surplusConflicts } from "../../components/day-surplus";
 import { haOpen, type HaTarget } from "../../components/ha-open";
 import { fixed } from "../../components/look-back";
+import { SPARRING_ROUTE, sparringCount, sparringPoints } from "../../components/sparring";
 import { checkText } from "../../components/texts";
 import { tip } from "../../components/tip";
 import { allowedCars, carRoute, pointRoute } from "../../cars";
@@ -29,7 +30,7 @@ import type { TipName, Translate } from "../../i18n";
 import { capacityBasis, capacityOff } from "../../learned-view";
 import { PANEL, format, href, onLink, type Route } from "../../router";
 import { shared } from "../../styles/shared";
-import type { BatteryRolesItem, Check, ClimateFound, Discovery, HomeAssistant, JoeState } from "../../types";
+import type { BatteryRolesItem, Check, ClimateFound, Discovery, HomeAssistant, JoeState, SparringReport } from "../../types";
 
 /**
  * One thing Joe needs from the user: a check, a problem, something not set up
@@ -106,6 +107,8 @@ export interface InboxInputs {
   devices?: DeviceEntry[];
   /** Names of the profiles (profile key -> name). */
   profiles?: Record<string, string>;
+  /** The second look's newest report while it waits to be read (sparringNews). */
+  sparring?: SparringReport;
 }
 
 /** The key in answers.ignored that hides a row. */
@@ -566,6 +569,19 @@ export function inboxItems(t: Translate, joe: JoeState, inputs: InboxInputs = {}
       }),
       text: t("overview.todo.later.text", { place: home.place }),
       to: home.to,
+    });
+  }
+
+  // --- Zweiter Blick: a new report; it goes once the section in Rückblick has been on screen ---
+  const report = inputs.sparring;
+  if (report) {
+    items.push({
+      id: `sparring:${report.at}`,
+      hide: [],
+      icon: "mdi:eye-check-outline",
+      title: t("sparring.todo", { points: sparringPoints(t, sparringCount(report)) }),
+      text: report.summary || t("sparring.todo.text"),
+      to: SPARRING_ROUTE,
     });
   }
 

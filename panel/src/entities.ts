@@ -22,6 +22,7 @@ export type FilterName =
   | "night"
   | "toggle_like"
   | "presence"
+  | "ai_task"
   | "any";
 
 const POWER_UNITS = ["W", "kW", "MW"];
@@ -57,6 +58,8 @@ const FILTERS: Record<FilterName, (entity: HassEntity) => boolean> = {
   night: toggleLike,
   toggle_like: toggleLike,
   presence: (e) => ["group", "input_boolean", "binary_sensor", "switch", "person", "device_tracker"].includes(domain(e)),
+  // A language model set up in Home Assistant (KI-Aufgabe), for the second look.
+  ai_task: (e) => domain(e) === "ai_task",
   any: () => true,
 };
 

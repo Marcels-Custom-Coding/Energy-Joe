@@ -35,6 +35,7 @@ from .discovery import (
     role_hash,
 )
 from .learn.learner import JoeLearner
+from .learn.sparring import JoeSparring
 from .mail import oauth
 from .mail.inbox import CarInboxes
 from .modbus import ModbusInverters, Settings as ModbusSettings
@@ -162,6 +163,16 @@ class JoeRuntime:
         self.notifier = JoeNotifier(
             hass, lambda: self._config, self.executor.async_answer_tonight
         )
+        # Once a day a language model's second look at the numbers and texts.
+        self.sparring = JoeSparring(
+            hass,
+            self.history,
+            lambda: self._config,
+            entry_id,
+            lambda: self.planner.plan,
+            lambda: self.learner.results,
+            lambda: self.executor.data["log"],
+        )
         self.notifier.language = lambda: self._state.get("language")
         self.executor._language = lambda: self._state.get("language")
         self.executor.notifier = self.notifier
@@ -230,6 +241,7 @@ class JoeRuntime:
         await self.accounts.async_load()
         await self.climate.async_load()
         await self.cars.async_load()
+        await self.sparring.async_load()
 
     async def _async_load_config(self) -> None:
         """The stored configuration, migrated and checked. One Joe cannot read
@@ -304,9 +316,11 @@ class JoeRuntime:
         self.accounts.async_stop()
         self.climate.async_stop()
         self.cars.stop()
+        self.sparring.cancel()
         await self.executor.async_stop()
         await self.modbus.async_unload()
         async with self._observe_lock:
+            await self.sparring.async_stop()
             await self.learner.async_stop()
             await self.planner.async_stop()
             await self.observer.async_stop()
@@ -340,6 +354,7 @@ class JoeRuntime:
         await self.accounts.async_remove()
         await self.climate.async_remove()
         await self.cars.async_remove()
+        await self.sparring.async_remove()
         await self.executor.async_forget()
 
     async def async_factory_reset(self) -> dict[str, Any]:
@@ -358,7 +373,7 @@ class JoeRuntime:
         entries = self._hass.config_entries
         if self._entry_id and entries.async_get_entry(self._entry_id):
             await entries.async_unload(self._entry_id)
-            await JoeRuntime(self._hass).async_remove(give_back=False)
+            await JoeRuntime(self._hass, self._entry_id).async_remove(give_back=False)
             if not await entries.async_setup(self._entry_id):
                 _LOGGER.error("Starting over after the factory reset failed")
         else:
@@ -884,6 +899,7 @@ class JoeRuntime:
             if not self._started:
                 return
             if self._observed is None:
+                await self.sparring.async_stop()
                 await self.learner.async_stop()
                 await self.planner.async_stop()
                 await self.observer.async_stop()
@@ -892,6 +908,7 @@ class JoeRuntime:
                 await self.observer.async_start(self.config)
                 await self.planner.async_start(self.config)
                 await self.learner.async_start()
+                await self.sparring.async_start()
             else:
                 # Only rules, the tariff or learned values changed: plan again.
                 await self.planner.async_update(self.config)

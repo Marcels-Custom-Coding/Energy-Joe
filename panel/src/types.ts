@@ -1289,9 +1289,75 @@ export interface JoeConfig {
   calendar: CalendarConfig;
   routing: RoutingConfig;
   climate?: ClimateConfig;
+  /** The second look by a language model (0.9.44; missing on older backends). */
+  sparring?: SparringConfig;
   answers: Answers;
   learned: Learned;
   provenance: Record<string, Provenance>;
+}
+
+// --- Zweiter Blick: a language model checks Joe's numbers and texts once a day ---
+
+/** Off until the user turns it on; entity is an ai_task entity of Home Assistant. */
+export interface SparringConfig {
+  enabled: boolean;
+  entity: string | null;
+}
+
+export type SparringArea = "night" | "solar" | "consumption" | "battery" | "car" | "other";
+
+/** Something the model noticed, with the numbers it rests on; checked: they are in what Joe sent. */
+export interface SparringFinding {
+  title: string;
+  evidence: string;
+  area: SparringArea;
+  checked: boolean;
+}
+
+/** One of Joe's text templates that does not fit the numbers, and a better wording. */
+export interface SparringText {
+  key: string;
+  template: string;
+  problem: string;
+  better: string;
+}
+
+/** A setting the model would change; Joe only shows it, the user decides. */
+export interface SparringProposal {
+  /** "rules.night_caution" */
+  setting: string;
+  value: string | number | boolean;
+  current: string | number | boolean | null;
+  reason: string;
+  /** What Joe's own replay says about it (night caution: the cheapest level and the cost per level). */
+  replay: { best: string; cost?: Record<string, number> } | null;
+}
+
+/** One check, newest first in energy_joe/sparring; ok false: it failed (error says why). */
+export interface SparringReport {
+  at: string;
+  entity: string | null;
+  ok: boolean;
+  error: string | null;
+  seen: boolean;
+  summary: string;
+  findings: SparringFinding[];
+  texts: SparringText[];
+  proposals: SparringProposal[];
+  questions: string[];
+  /** Entries left out (an unknown setting or text, something broken). */
+  dropped: number;
+}
+
+/** energy_joe/sparring: the switch, the next check, the reports and what Joe sends. */
+export interface SparringState {
+  enabled: boolean;
+  entity: string | null;
+  running: boolean;
+  next: string | null;
+  reports: SparringReport[];
+  /** The summary sent last, or a fresh preview before the first check. */
+  brief: Record<string, unknown> | null;
 }
 
 export interface ObserveStatus {

@@ -29,6 +29,7 @@ export const SIGNPOST = [
   { id: "days", to: { tab: "review", section: "days" } },
   { id: "learned", to: { tab: "review", section: "learned" } },
   { id: "learned_reset", to: { tab: "review", section: "learned", id: "reset" } },
+  { id: "sparring_reports", to: { tab: "review", section: "learned", id: "sparring" } },
   { id: "log", to: { tab: "review", section: "log" } },
   // Things: devices.
   { id: "devices", to: { tab: "devices", section: "all" } },
@@ -58,6 +59,7 @@ export const SIGNPOST = [
   // Joe himself.
   { id: "mode", to: { tab: "settings", section: "operation" } },
   { id: "grid_friendly", to: { tab: "settings", section: "operation", id: "grid_friendly" } },
+  { id: "sparring", to: { tab: "settings", section: "operation", id: "sparring" } },
   { id: "rules", to: { tab: "settings", section: "rules" } },
   { id: "rule_reserve_soc", to: { tab: "settings", section: "rules", id: "reserve_soc" }, title: "rule.reserve_soc" },
   { id: "rule_max_target_soc", to: { tab: "settings", section: "rules", id: "max_target_soc" }, title: "rule.max_target_soc" },

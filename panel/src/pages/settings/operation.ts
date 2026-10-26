@@ -9,13 +9,15 @@ import { shared } from "../../styles/shared";
 import { morningBuffer, ruleValue } from "../../rules-view";
 import type { JoeMode, JoeState } from "../../types";
 import { SettingsSection } from "./base";
+import "./sparring";
 import { settingsStyles } from "./styles";
 
 const MODES: JoeMode[] = ["simulation", "advisory", "live", "off"];
 
 /**
  * Einstellungen › Betrieb: what the modes mean (switching lives in the header
- * dialog only, this button opens it) and how grid-friendly Joe behaves.
+ * dialog only, this button opens it), how grid-friendly Joe behaves, and his
+ * second look by a language model (anchor sparring).
  */
 export class JoeSettingsOperation extends SettingsSection {
   static styles = [
@@ -91,6 +93,13 @@ export class JoeSettingsOperation extends SettingsSection {
         </ul>
         ${this.gridFriendlyRows(t, joe)}
       </section>
+      <joe-settings-sparring
+        data-anchor="sparring"
+        .t=${t}
+        .hass=${this.hass}
+        .state=${joe}
+        .prefix=${this.prefix}
+      ></joe-settings-sparring>
     </div>`;
   }
 

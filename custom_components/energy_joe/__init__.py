@@ -130,7 +130,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Delete Joe's stored state when the integration is removed."""
-    await JoeRuntime(hass).async_remove()
+    await JoeRuntime(hass, entry.entry_id).async_remove()
 
 
 def _file_hashes(*paths: Path) -> tuple[str, ...]:
