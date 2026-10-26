@@ -89,12 +89,16 @@ async def test_a_car_gets_its_own_calendar(
     async def route(routing: Any, text: str) -> dict[str, Any]:
         return {"km": 120.0, "minutes": 80, "source": "osm"}
 
+    async def leg(routing: Any, origin: str, destination: str) -> dict[str, Any]:
+        return {"km": 120.0, "minutes": 80, "source": "osm"}
+
     places = PlaceStore(hass)
     places.async_distance = route  # type: ignore[method-assign]
+    places.async_leg = leg  # type: ignore[method-assign]
     need = runtime.config["cars"][0]["need"]
     trips = await async_trips(hass, runtime.config, need, places, tomorrow, own)
     assert [t["location"] for t in trips] == ["Messe Hannover"]
-    assert trips[0]["km"] == 240.0
+    assert trips[0]["km"] == 120.0 and trips[0]["back_km"] == 120.0
     # Deleted in Home Assistant's calendar: gone.
     await ws.send_json_auto_id(
         {"type": "calendar/event/delete", "entity_id": calendar, "uid": event["uid"]}

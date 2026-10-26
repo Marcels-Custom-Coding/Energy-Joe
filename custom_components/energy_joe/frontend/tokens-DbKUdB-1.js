@@ -2629,7 +2629,7 @@ var Pe = {
 	"need.too_far": "Eine volle Ladung reicht für morgen nicht – plant unterwegs einen Ladestopp ein.",
 	"devices.action.reached_need": "Ziel erreicht ({target} {unit}) – für heute fertig.",
 	"devices.action.why.need_capacity": "Die Akkugröße des Autos kenne ich nicht – ich entscheide nach der Sonne.",
-	"need.trips": "Morgen {km} km ({count} Termine) + {reserve} km Reserve = {total} km.",
+	"need.trips": "Morgen {km} km hin und zurück ({count} Termine) + {reserve} km Reserve = {total} km.",
 	"need.unknown_trips": "Bei {count} Termin(en) kenne ich die Entfernung noch nicht – trag sie unten ein.",
 	"need.usual": "Morgen etwa {km} km wie üblich + {reserve} km Reserve = {total} km.",
 	"need.reserve_only": "Morgen keine Fahrt bekannt – es bleibt bei {reserve} km Reserve.",
@@ -2646,6 +2646,9 @@ var Pe = {
 	"need.trips.title": "Termine morgen",
 	"need.all_day": "ganztägig",
 	"need.km_unknown": "Entfernung unbekannt",
+	"need.leg_from": "von {place}",
+	"need.leg_home": "Zurück nach Hause",
+	"need.km.same": "{km} km (gleicher Ort)",
 	"need.km.waze": "{km} km (Waze)",
 	"need.km.google": "{km} km (Google)",
 	"need.km.osm": "{km} km (OpenStreetMap)",
@@ -2760,7 +2763,7 @@ var Pe = {
 	"tip.calendar_connect.title": "Wie kommt mein Kalender nach Home Assistant?",
 	"tip.calendar_connect.text": "**Google**: Google-Kalender-Integration.\n**iCloud, Infomaniak, Nextcloud**: CalDAV-Integration (bei iCloud mit App-Passwort).\n**iCal-Link**: Remote Calendar – jeder Kalender mit Abo-Link.\n**Microsoft 365 / Outlook**: über HACS die Integration „Microsoft 365 Calendar“ (Exchange Online und private Konten).\nDie Knöpfe öffnen die Einrichtung in Home Assistant.",
 	"tip.a_need_round_trip.title": "Hin und zurück?",
-	"tip.a_need_round_trip.text": "Meist fährt man zum Termin und wieder heim – dann zähle ich die Strecke doppelt.",
+	"tip.a_need_round_trip.text": "Meist fährt man zum Termin und wieder heim – dann rechne ich den Rückweg vom letzten Termin nach Hause als eigene Strecke mit. Mehrere Termine an einem Tag fahre ich der Reihe nach ab: von zu Hause zum ersten, von dort zum nächsten und zum Schluss heim.",
 	"tip.mail_provider.title": "Was muss ich beim Anbieter tun?",
 	"tip.mail_provider.text": "**web.de und GMX**: in den Einstellungen unter „POP3/IMAP Abruf“ den Zugriff erlauben, dann reicht das normale Passwort.\n**Gmail**: myaccount.google.com → Sicherheit → Bestätigung in zwei Schritten einschalten → App-Passwörter.\n**T-Online**: im Kundencenter ein E-Mail-Passwort anlegen.\n**Anderer Anbieter**: IMAP und SMTP stehen in dessen Hilfe.",
 	"tip.mail_address.title": "Welche Adresse?",
@@ -6291,7 +6294,7 @@ var Pe = {
 	"need.too_far": "One full charge is not enough for tomorrow – plan a charging stop on the way.",
 	"devices.action.reached_need": "Target reached ({target} {unit}) – done for today.",
 	"devices.action.why.need_capacity": "I don't know the car's battery size – I decide by the sun.",
-	"need.trips": "Tomorrow {km} km ({count} appointments) + {reserve} km reserve = {total} km.",
+	"need.trips": "Tomorrow {km} km there and back ({count} appointments) + {reserve} km reserve = {total} km.",
 	"need.unknown_trips": "For {count} appointment(s) I don't know the distance yet – enter it below.",
 	"need.usual": "Tomorrow about {km} km as usual + {reserve} km reserve = {total} km.",
 	"need.reserve_only": "No trip known for tomorrow – the {reserve} km reserve stays.",
@@ -6308,6 +6311,9 @@ var Pe = {
 	"need.trips.title": "Appointments tomorrow",
 	"need.all_day": "all day",
 	"need.km_unknown": "distance unknown",
+	"need.leg_from": "from {place}",
+	"need.leg_home": "Back home",
+	"need.km.same": "{km} km (same place)",
 	"need.km.waze": "{km} km (Waze)",
 	"need.km.google": "{km} km (Google)",
 	"need.km.osm": "{km} km (OpenStreetMap)",
@@ -6422,7 +6428,7 @@ var Pe = {
 	"tip.calendar_connect.title": "How does my calendar get into Home Assistant?",
 	"tip.calendar_connect.text": "**Google**: the Google Calendar integration.\n**iCloud, Infomaniak, Nextcloud**: the CalDAV integration (iCloud with an app password).\n**iCal link**: Remote Calendar – any calendar with a subscription link.\n**Microsoft 365 / Outlook**: via HACS the “Microsoft 365 Calendar” integration (Exchange Online and personal accounts).\nThe buttons open the setup in Home Assistant.",
 	"tip.a_need_round_trip.title": "There and back?",
-	"tip.a_need_round_trip.text": "Usually you drive to the appointment and back home – then I count the distance twice.",
+	"tip.a_need_round_trip.text": "Usually you drive to the appointment and back home – then I add the way back from the last appointment home as a leg of its own. Several appointments in a day I drive in order: from home to the first, from there to the next and home at the end.",
 	"tip.mail_provider.title": "What do I have to do at the provider?",
 	"tip.mail_provider.text": "**web.de and GMX**: allow access under “POP3/IMAP” in the settings, then the normal password is enough.\n**Gmail**: myaccount.google.com → Security → turn on 2-step verification → App passwords.\n**T-Online**: create an email password in the customer center.\n**Other provider**: IMAP and SMTP are in its help pages.",
 	"tip.mail_address.title": "Which address?",
@@ -7998,14 +8004,14 @@ function qe(e, t, n) {
 }
 //#endregion
 //#region src/define.ts
-var Je = "0.9.42";
+var Je = "0.9.43";
 function Ye(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Je, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.42" && Ze();
+	n.joeVersion !== "0.9.43" && Ze();
 }
 var Xe = !1;
 function Ze() {

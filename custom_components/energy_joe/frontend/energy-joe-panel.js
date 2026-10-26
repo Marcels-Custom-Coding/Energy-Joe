@@ -1,4 +1,4 @@
-import { $ as e, A as t, B as n, C as r, D as i, E as a, F as o, G as s, H as c, I as l, J as u, K as d, L as f, M as p, N as m, O as h, P as g, Q as _, R as ee, S as te, T as v, U as ne, V as re, W as ie, X as y, Y as ae, Z as b, _ as oe, a as se, at as x, b as ce, c as le, ct as S, d as C, dt as w, et as ue, f as T, ft as de, g as fe, gt as E, h as pe, ht as me, i as he, it as D, j as ge, k as _e, l as O, lt as k, m as ve, mt as ye, n as be, nt as xe, o as Se, ot as Ce, p as we, pt as A, q as Te, r as j, rt as Ee, s as De, st as Oe, t as ke, tt as M, u as Ae, ut as N, v as je, w as Me, x as Ne, y as Pe, z as Fe } from "./tokens-PlRpqos8.js";
+import { $ as e, A as t, B as n, C as r, D as i, E as a, F as o, G as s, H as c, I as l, J as u, K as d, L as f, M as p, N as m, O as h, P as g, Q as _, R as ee, S as te, T as v, U as ne, V as re, W as ie, X as y, Y as ae, Z as b, _ as oe, a as se, at as x, b as ce, c as le, ct as S, d as C, dt as w, et as ue, f as T, ft as de, g as fe, gt as E, h as pe, ht as me, i as he, it as D, j as ge, k as _e, l as O, lt as k, m as ve, mt as ye, n as be, nt as xe, o as Se, ot as Ce, p as we, pt as A, q as Te, r as j, rt as Ee, s as De, st as Oe, t as ke, tt as M, u as Ae, ut as N, v as je, w as Me, x as Ne, y as Pe, z as Fe } from "./tokens-DbKUdB-1.js";
 //#region src/assets.ts
 var Ie = import.meta.url.replace(/[^/]*$/, ""), Le = (e) => `${Ie}${e}`, Re = /* @__PURE__ */ new Set(["welcome"]), ze = /* @__PURE__ */ new Set([
 	"night-charge",
@@ -12075,7 +12075,9 @@ var bs = class extends N {
       <ul>
         ${t.map((t) => A`<li>
             <span>${t.start.includes("T") ? v(t.start) : e("need.all_day")}</span>
-            <span class="where">${t.location}</span>
+            <span class="where"
+              >${t.location}${t.from ? A`<small> ${e("need.leg_from", { place: t.from })}</small>` : w}</span
+            >
             ${this.editing === t.location ? this.renderEdit(e, t) : A`<span class=${t.km == null ? "km unknown" : "km"}>
                     ${t.km == null ? e("need.km_unknown") : e(`need.km.${t.source ?? "zone"}`, { km: s(e.lang, t.km, 0) })}
                   </span>
@@ -12088,12 +12090,25 @@ var bs = class extends N {
                     <ha-icon icon="mdi:pencil-outline"></ha-icon>
                   </button>`}
           </li>`)}
+        ${this.renderBack(e, t[t.length - 1])}
       </ul>
       ${this.failed ? A`<div class="note warn"><ha-icon icon="mdi:alert-outline"></ha-icon>${e("error.action")}</div>` : w}
     </div>`;
 	}
+	renderBack(e, t) {
+		if (!t || !("back_km" in t)) return w;
+		let n = t.back_km;
+		return A`<li>
+      <span></span>
+      <span class="where">${e("need.leg_home")}</span>
+      <span class=${n == null ? "km unknown" : "km"}>
+        ${n == null ? e("need.km_unknown") : e(`need.km.${t.back_source ?? "zone"}`, { km: s(e.lang, n, 0) })}
+      </span>
+      <span></span>
+    </li>`;
+	}
 	renderEdit(e, t) {
-		let n = t.km == null ? "" : String(Math.round(t.km / (this.roundTrip ? 2 : 1)));
+		let n = t.km == null || t.from ? "" : String(Math.round(t.km));
 		return A`<form
       @submit=${(e) => {
 			e.preventDefault();

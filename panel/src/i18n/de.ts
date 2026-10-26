@@ -2294,7 +2294,7 @@ export const de = {
   "need.too_far": "Eine volle Ladung reicht für morgen nicht – plant unterwegs einen Ladestopp ein.",
   "devices.action.reached_need": "Ziel erreicht ({target} {unit}) – für heute fertig.",
   "devices.action.why.need_capacity": "Die Akkugröße des Autos kenne ich nicht – ich entscheide nach der Sonne.",
-  "need.trips": "Morgen {km} km ({count} Termine) + {reserve} km Reserve = {total} km.",
+  "need.trips": "Morgen {km} km hin und zurück ({count} Termine) + {reserve} km Reserve = {total} km.",
   "need.unknown_trips": "Bei {count} Termin(en) kenne ich die Entfernung noch nicht – trag sie unten ein.",
   "need.usual": "Morgen etwa {km} km wie üblich + {reserve} km Reserve = {total} km.",
   "need.reserve_only": "Morgen keine Fahrt bekannt – es bleibt bei {reserve} km Reserve.",
@@ -2311,6 +2311,9 @@ export const de = {
   "need.trips.title": "Termine morgen",
   "need.all_day": "ganztägig",
   "need.km_unknown": "Entfernung unbekannt",
+  "need.leg_from": "von {place}",
+  "need.leg_home": "Zurück nach Hause",
+  "need.km.same": "{km} km (gleicher Ort)",
   "need.km.waze": "{km} km (Waze)",
   "need.km.google": "{km} km (Google)",
   "need.km.osm": "{km} km (OpenStreetMap)",
@@ -2462,7 +2465,7 @@ export const de = {
   "tip.calendar_connect.text":
     "**Google**: Google-Kalender-Integration.\n**iCloud, Infomaniak, Nextcloud**: CalDAV-Integration (bei iCloud mit App-Passwort).\n**iCal-Link**: Remote Calendar – jeder Kalender mit Abo-Link.\n**Microsoft 365 / Outlook**: über HACS die Integration „Microsoft 365 Calendar“ (Exchange Online und private Konten).\nDie Knöpfe öffnen die Einrichtung in Home Assistant.",
   "tip.a_need_round_trip.title": "Hin und zurück?",
-  "tip.a_need_round_trip.text": "Meist fährt man zum Termin und wieder heim – dann zähle ich die Strecke doppelt.",
+  "tip.a_need_round_trip.text": "Meist fährt man zum Termin und wieder heim – dann rechne ich den Rückweg vom letzten Termin nach Hause als eigene Strecke mit. Mehrere Termine an einem Tag fahre ich der Reihe nach ab: von zu Hause zum ersten, von dort zum nächsten und zum Schluss heim.",
   "tip.mail_provider.title": "Was muss ich beim Anbieter tun?",
   "tip.mail_provider.text":
     "**web.de und GMX**: in den Einstellungen unter „POP3/IMAP Abruf“ den Zugriff erlauben, dann reicht das normale Passwort.\n**Gmail**: myaccount.google.com → Sicherheit → Bestätigung in zwei Schritten einschalten → App-Passwörter.\n**T-Online**: im Kundencenter ein E-Mail-Passwort anlegen.\n**Anderer Anbieter**: IMAP und SMTP stehen in dessen Hilfe.",

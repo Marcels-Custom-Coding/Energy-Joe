@@ -1,5 +1,9 @@
 """Tomorrow's trips: appointments with a place in the calendars, and how far.
 
+A day is driven as one round: home → first place → next place → … → home
+(the last leg only with "Hin und zurück"), each leg asked of the service on
+its own, so a way back that differs counts as it is.
+
 The distance comes from the service the user picked in the panel: Waze
 (through Home Assistant's own action, free), a Google travel time entry
 (with its API key) or OpenStreetMap (Photon finds the place, OSRM the
@@ -53,6 +57,8 @@ ONLINE = (
     "telefon",
     "phone",
 )
+# Home as an end of a leg.
+HOME = "zone.home"
 TIMEOUT = 10
 USER_AGENT = "EnergyJoe (+https://github.com/Marcels-Custom-Coding/Energy-Joe)"
 
@@ -74,26 +80,34 @@ class PlaceStore:
         self._hass = hass
         self._store: Store[dict[str, Any]] = Store(hass, STORE_VERSION, STORE_KEY)
         self.places: dict[str, dict[str, Any]] = {}
+        # Legs between two places and from a place back home ("a|b" -> result).
+        self.legs: dict[str, dict[str, Any]] = {}
         self._loaded = False
         # Places the service could not find: (service, place) -> when it was asked.
         self._failed: dict[tuple[str, str], datetime] = {}
 
     async def async_load(self) -> None:
         if not self._loaded:
-            self.places = ((await self._store.async_load()) or {}).get("places", {})
+            stored = (await self._store.async_load()) or {}
+            self.places = stored.get("places", {})
+            self.legs = stored.get("legs", {})
             self._loaded = True
 
+    def _data(self) -> dict[str, Any]:
+        return {"places": self.places, "legs": self.legs}
+
     def _save(self) -> None:
-        self._store.async_delay_save(lambda: {"places": self.places}, 10)
+        self._store.async_delay_save(self._data, 10)
 
     async def async_flush(self) -> None:
         """Write pending changes now (unload), so no delayed save fires later."""
         if self._loaded:
-            await self._store.async_save({"places": self.places})
+            await self._store.async_save(self._data())
 
     async def async_remove(self) -> None:
         """Forget all places (integration removed)."""
         self.places = {}
+        self.legs = {}
         self._failed = {}
         self._loaded = False
         await self._store.async_remove()
@@ -104,6 +118,8 @@ class PlaceStore:
         key = normalize(text)
         # Corrected or to be worked out again: no back-off for this place.
         self._failed = {k: v for k, v in self._failed.items() if k[1] != key}
+        # The way back from it and legs touching it are asked again too.
+        self.legs = {k: v for k, v in self.legs.items() if key not in k.split("|")}
         if km is None:
             self.places.pop(key, None)
         else:
@@ -146,6 +162,40 @@ class PlaceStore:
         self._save()
         return self.places[key]
 
+    async def async_leg(
+        self, routing: dict[str, Any], origin: str, destination: str
+    ) -> dict[str, Any] | None:
+        """One leg of the day's round: from home (see async_distance), back
+        home or between two places, each asked of the service on its own."""
+        if origin == HOME:
+            return await self.async_distance(routing, destination)
+        await self.async_load()
+        first = normalize(origin)
+        if destination != HOME and normalize(destination) == first:
+            return {"km": 0.0, "minutes": 0, "source": "same"}
+        if destination == HOME:
+            own = self.places.get(first)
+            if own and own["source"] == "user":
+                # The user's distance counts both ways.
+                return own
+        key = f"{first}|{HOME if destination == HOME else normalize(destination)}"
+        found = self.legs.get(key)
+        asked = dt_util.parse_datetime(found["at"]) if found else None
+        if found and asked is not None and dt_util.now() - asked < REFRESH:
+            return found
+        failed_key = (str(routing.get("service")), key)
+        failed = self._failed.get(failed_key)
+        if failed and dt_util.now() - failed < RETRY:
+            return found
+        result = await async_route_between(self._hass, routing, origin, destination)
+        if result is None:
+            self._failed[failed_key] = dt_util.now()
+            return found
+        self._failed.pop(failed_key, None)
+        self.legs[key] = {**result, "at": dt_util.now().isoformat(timespec="seconds")}
+        self._save()
+        return self.legs[key]
+
 
 async def async_trips(
     hass: HomeAssistant,
@@ -155,7 +205,9 @@ async def async_trips(
     day: date,
     own: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
-    """The appointments with a place on a day, with the distance there (and back).
+    """The appointments with a place on a day, each with the leg that leads
+    there (from home or from the place before), the last one with the way
+    back home ("Hin und zurück").
 
     From the car's own calendar (`own`: Joe's appointments of this car on the
     day), the car's further calendars and the chosen persons' calendars.
@@ -200,8 +252,7 @@ async def async_trips(
 
     found = [own or [], *await asyncio.gather(*(_events(c) for c in calendars))]
     seen: set[tuple[str, str]] = set()
-    trips = []
-    factor = 2 if need["round_trip"] else 1
+    stops: list[tuple[str, str]] = []
     for events in found:
         for event in events:
             location = (event.get("location") or "").strip()
@@ -213,17 +264,35 @@ async def async_trips(
             if (normalize(location), when) in seen:
                 continue
             seen.add((normalize(location), when))
-            place = await places.async_distance(config["routing"], location)
-            trips.append(
-                {
-                    "start": when,
-                    "location": location,
-                    "km": round(place["km"] * factor, 1) if place else None,
-                    "minutes": place.get("minutes") if place else None,
-                    "source": place["source"] if place else None,
-                }
-            )
-    trips.sort(key=lambda t: t["start"])
+            stops.append((when, location))
+    stops.sort()
+    routing = config["routing"]
+    trips: list[dict[str, Any]] = []
+    previous = HOME
+    for when, location in stops:
+        leg = await places.async_leg(routing, previous, location)
+        came = None if previous == HOME else previous
+        if leg is None and previous != HOME:
+            # No route from the place before: from home instead.
+            leg, came = await places.async_distance(routing, location), None
+        trips.append(
+            {
+                "start": when,
+                "location": location,
+                "from": came,
+                "km": round(leg["km"], 1) if leg else None,
+                "minutes": leg.get("minutes") if leg else None,
+                "source": leg["source"] if leg else None,
+            }
+        )
+        previous = location
+    if trips and need["round_trip"]:
+        back = await places.async_leg(routing, previous, HOME)
+        trips[-1].update(
+            back_km=round(back["km"], 1) if back else None,
+            back_minutes=back.get("minutes") if back else None,
+            back_source=back["source"] if back else None,
+        )
     return trips
 
 
@@ -247,16 +316,33 @@ def _local_start(value: Any, day: date) -> str | None:
 async def async_route(
     hass: HomeAssistant, routing: dict[str, Any], text: str
 ) -> dict[str, Any] | None:
-    """Ask the chosen service (or the zones) how far a place is."""
-    home = (hass.config.latitude, hass.config.longitude)
+    """Ask the chosen service (or the zones) how far a place is from home."""
+    return await async_route_between(hass, routing, HOME, text)
+
+
+def _position(hass: HomeAssistant, text: str) -> tuple[float, float] | None:
+    """Home, a zone or an entity with a position; None for free text."""
+    if text == HOME:
+        return hass.config.latitude, hass.config.longitude
     coordinates = find_coordinates(hass, text)
-    if coordinates and coordinates != text:
-        # A zone or an entity with a position: no service needed.
-        try:
-            lat, lon = (float(v) for v in coordinates.split(","))
-        except ValueError:
-            return None
-        km = (straight(home[0], home[1], lat, lon) or 0.0) / 1000
+    if not coordinates or coordinates == text:
+        return None
+    try:
+        lat, lon = (float(v) for v in coordinates.split(","))
+    except ValueError:
+        return None
+    return lat, lon
+
+
+async def async_route_between(
+    hass: HomeAssistant, routing: dict[str, Any], origin: str, destination: str
+) -> dict[str, Any] | None:
+    """Ask the chosen service (or the zones) how far it is from one place to
+    another (home is HOME)."""
+    start, end = _position(hass, origin), _position(hass, destination)
+    if start is not None and end is not None:
+        # Zones or entities with a position: no service needed.
+        km = (straight(start[0], start[1], end[0], end[1]) or 0.0) / 1000
         return {
             "km": round(km * (DETOUR if km <= 100 else DETOUR_LONG), 1),
             "minutes": None,
@@ -265,11 +351,13 @@ async def async_route(
     service = routing.get("service")
     try:
         if service == "waze":
-            return await _async_waze(hass, text)
+            return await _async_waze(hass, origin, destination)
         if service == "google" and routing.get("google_entry"):
-            return await _async_google(hass, routing["google_entry"], text)
+            return await _async_google(
+                hass, routing["google_entry"], origin, destination
+            )
         if service == "osm":
-            return await _async_osm(hass, routing, text)
+            return await _async_osm(hass, routing, origin, destination)
     except Exception:  # noqa: BLE001 - a service that fails leaves the distance unknown
         _LOGGER.debug(
             "Distance to a place not available from %s", service, exc_info=True
@@ -347,15 +435,17 @@ async def async_drive_home(
     return None
 
 
-async def _async_waze(hass: HomeAssistant, text: str) -> dict[str, Any] | None:
+async def _async_waze(
+    hass: HomeAssistant, origin: str, destination: str
+) -> dict[str, Any] | None:
     if not hass.services.has_service("waze_travel_time", "get_travel_times"):
         # From 2026.8 on the action works without a Waze entry.
         if (MAJOR_VERSION, MINOR_VERSION) < (2026, 8):
             return None
         await async_setup_component(hass, "waze_travel_time", {})
     data: dict[str, Any] = {
-        "origin": "zone.home",
-        "destination": text,
+        "origin": origin,
+        "destination": destination,
         "region": _region(hass.config.country),
         "units": "metric",
         "realtime": False,
@@ -384,15 +474,15 @@ async def _async_waze(hass: HomeAssistant, text: str) -> dict[str, Any] | None:
 
 
 async def _async_google(
-    hass: HomeAssistant, entry_id: str, text: str
+    hass: HomeAssistant, entry_id: str, origin: str, destination: str
 ) -> dict[str, Any] | None:
     response = await hass.services.async_call(
         "google_travel_time",
         "get_travel_times",
         {
             "config_entry_id": entry_id,
-            "origin": "zone.home",
-            "destination": text,
+            "origin": origin,
+            "destination": destination,
             "mode": "driving",
             "units": "metric",
         },
@@ -409,11 +499,13 @@ async def _async_google(
     }
 
 
-async def _async_osm(
+async def _async_geocode(
     hass: HomeAssistant, routing: dict[str, Any], text: str
-) -> dict[str, Any] | None:
+) -> tuple[float, float] | None:
+    """Where a place is (Photon); home, zones and entities need no search."""
+    if (position := _position(hass, text)) is not None:
+        return position
     session = async_get_clientsession(hass)
-    headers = {"User-Agent": USER_AGENT}
     lat, lon = hass.config.latitude, hass.config.longitude
     # The search only needs to know the area (about 1 km), not the house.
     url = (
@@ -421,15 +513,29 @@ async def _async_osm(
         f"&lat={round(lat, 2)}&lon={round(lon, 2)}&limit=1"
     )
     async with asyncio.timeout(TIMEOUT):
-        response = await session.get(url, headers=headers)
+        response = await session.get(url, headers={"User-Agent": USER_AGENT})
         response.raise_for_status()
         found = await response.json()
     features = (found or {}).get("features") or []
     if not features:
         return None
-    to_lon, to_lat = features[0]["geometry"]["coordinates"][:2]
     # One request per second is the fair use of these free services.
     await asyncio.sleep(1)
+    to_lon, to_lat = features[0]["geometry"]["coordinates"][:2]
+    return float(to_lat), float(to_lon)
+
+
+async def _async_osm(
+    hass: HomeAssistant, routing: dict[str, Any], origin: str, destination: str
+) -> dict[str, Any] | None:
+    session = async_get_clientsession(hass)
+    headers = {"User-Agent": USER_AGENT}
+    start = await _async_geocode(hass, routing, origin)
+    end = await _async_geocode(hass, routing, destination)
+    if start is None or end is None:
+        return None
+    lat, lon = start
+    to_lat, to_lon = end
     route_url = f"{routing['router_url']}{lon},{lat};{to_lon},{to_lat}?overview=false"
     async with asyncio.timeout(TIMEOUT):
         response = await session.get(route_url, headers=headers)
