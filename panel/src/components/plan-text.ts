@@ -58,7 +58,7 @@ export function planSentence(t: Translate, plan: Plan): string {
   if (plan.kind === "charge" && plan.tariff === "dynamic" && plan.charge_slots?.length) {
     parts.push(t("plan.say.charge_slots", { slots: slotsText(plan), target }));
   } else if (plan.kind === "charge") {
-    parts.push(t("plan.say.charge", { from: timeOf(plan.charge_from), target }));
+    parts.push(t(atTop(plan) ? "plan.say.charge_full" : "plan.say.charge", { from: timeOf(plan.charge_from), target }));
   } else if (plan.kind === "hold") {
     parts.push(t("plan.say.hold", { target }));
     if (plan.empty_without) {
@@ -159,6 +159,33 @@ export function euroText(t: Translate, value: number, currency = "EUR"): string 
   return new Intl.NumberFormat(t.lang, { style: "currency", currency }).format(amount);
 }
 
+/** The night's target is as high as it goes (100 %, or the owner's highest). */
+export function atTop(plan: Plan): boolean {
+  const top = Math.min(100, plan.rules?.max_target ?? 100);
+  return (plan.target ?? 0) >= top - 0.5;
+}
+
+/**
+ * When the batteries are empty again after the window on the typical day
+ * (the plan's own hours), and how much comes from the grid at the day price
+ * from then until the next night; null if they last.
+ */
+export function emptyAgain(plan: Plan): { at: string; kwh: number } | null {
+  const end = plan.window?.end;
+  const hours = plan.hours ?? [];
+  const floor = (plan.rules?.reserve ?? 0) + 0.5;
+  if (!end || !hours.length) {
+    return null;
+  }
+  const after = hours.filter((h) => Date.parse(h.start) >= Date.parse(end) && !h.window);
+  const index = after.findIndex((h) => h.soc <= floor);
+  if (index < 0) {
+    return null;
+  }
+  const kwh = after.slice(index).reduce((sum, h) => sum + h.grid_in, 0);
+  return kwh >= 0.1 ? { at: after[index].start, kwh } : null;
+}
+
 /**
  * "Warum 60 %": what the typical day would have needed and what the chosen
  * target saves on a bad day (or costs on a good one), from plan.risk.
@@ -170,6 +197,17 @@ export function riskSentence(t: Translate, plan: Plan, currency = "EUR"): string
   }
   const target = Math.round(plan.target ?? 0);
   const typical = Math.round(risk.typical_target);
+  if (atTop(plan)) {
+    // Full: more does not fit in – the question is only how far it gets.
+    const empty = emptyAgain(plan);
+    return empty
+      ? t("plan.risk.full_short", {
+          target: formatNumber(t.lang, target, 0),
+          time: timeOf(empty.at),
+          kwh: formatNumber(t.lang, empty.kwh, 1),
+        })
+      : t("plan.risk.full", { target: formatNumber(t.lang, target, 0) });
+  }
   if (target === typical) {
     return t("plan.risk.same");
   }

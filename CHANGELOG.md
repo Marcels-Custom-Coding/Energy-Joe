@@ -3,6 +3,12 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.42
+
+- **Ehrliche Sätze bei vollen Speichern.** Stand das Nachtziel auf 100 %, schrieb ich „mehr braucht's nicht“ und „Auch wenn der Tag schlecht kommt, lohnt mehr nicht“. Das ist Unsinn: Mehr passt schlicht nicht hinein. Jetzt steht da „Ich lade ab 00:00 Uhr voll“ und bei „Warum 100 %“, wie weit es reicht: entweder bis zur nächsten Nacht oder „Selbst so sind die Speicher morgen gegen 18:00 Uhr leer; danach kommen noch etwa 6,9 kWh zum Tagespreis aus dem Netz“, aus meiner eigenen Rechnung für morgen.
+- **„Mehr spart nichts“ sagt jetzt, warum**: Was ich zusätzlich laden würde, ersetzt morgen keinen Tagesstrom, es drängt mittags Sonne ins Netz oder liegt bis zur nächsten Nacht im Speicher.
+- Nicht geprüft an echter Anlage: alles davon.
+
 ## 0.9.41
 
 - **Erst warten, dann fragen.** Steckst du ein Auto an, frage ich nicht mehr sofort „Welches Auto ist das?“. evcc und die App des Autos brauchen ein paar Minuten, bis sie wissen, wer dranhängt, und meist erledigt sich die Frage damit von selbst. Ich frage erst, wenn es nach fünf Minuten noch keiner weiß.
