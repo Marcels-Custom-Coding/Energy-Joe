@@ -3306,6 +3306,7 @@ export const en: Record<Key, string> = {
   "log.stuck.reserve": "{battery} cannot discharge: its reserve is at {value} %, its level at {soc} % – that was not me",
   "log.stuck.discharge": "{battery} cannot discharge: discharging is blocked at the device ({value}) – that was not me",
   "log.stuck.charge": "{battery} cannot charge: charging is blocked at the device ({value}) – that was not me",
+  "log.stuck.evcc": "{battery} is not discharging: evcc holds it while the car charges – that is how evcc is set, so I do not report it as a problem",
   "log.stuck_over": "{battery} can work again",
   "log.team_block.both": "{battery}: charging and discharging blocked",
   "log.team_block.charge": "{battery}: charging blocked",

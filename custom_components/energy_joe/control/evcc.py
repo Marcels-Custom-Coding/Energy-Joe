@@ -31,6 +31,11 @@ SETTINGS = {
     "buffer_start_soc": ("bufferstartsoc", "buffer_start_soc"),
 }
 BOOST_KEYS = ("batteryboost", "battery_boost")
+# evcc's battery mode: "normal", or "hold"/"charge" while evcc steers the home
+# battery itself (its discharge lock while a car charges fast). The state is
+# translated ("entladen sperren"), so anything but normal counts.
+MODE_KEYS = ("batterymode", "battery_mode_value", "battery_mode")
+FREE_MODES = ("normal", "unknown", "unbekannt", "unavailable", "")
 
 
 def snapshot(hass: HomeAssistant) -> Snapshot:
@@ -112,6 +117,23 @@ def settings(snap: Snapshot) -> dict[str, Any]:
         if entity:
             result[f"{name}_entity"] = entity.entity_id
     return result
+
+
+def battery_held(snap: Snapshot) -> bool:
+    """evcc steers the home battery itself right now (its mode is not "normal")."""
+    entity = next(
+        (
+            e
+            for e in snap.entities.values()
+            if e.domain == "sensor" and any(e.has_key(k) for k in MODE_KEYS)
+        ),
+        None,
+    )
+    return (
+        entity is not None
+        and entity.state is not None
+        and entity.state.strip().lower() not in FREE_MODES
+    )
 
 
 def conflicts(

@@ -4837,6 +4837,9 @@ class JoeExecutor:
         grid = measurement_kw(
             self._hass.states.get, config["measurements"]["grid_power"]
         )
+        # evcc's discharge lock while a car charges fast is wanted: one line
+        # in the log, no problem to tell.
+        held = evcc.battery_held(evcc.snapshot(self._hass))
         ids = {b["id"] for b in config["batteries"]}
         for key in [k for k in (*watch, *known) if k not in ids]:
             watch.pop(key, None)
@@ -4850,6 +4853,8 @@ class JoeExecutor:
                 if isinstance(adapter, RoleAdapter) and soc is not None
                 else None
             )
+            if found is not None and found["direction"] == "discharge" and held:
+                found = {**found, "reason": "evcc"}
             if found is not None and found["reason"] == "reserve":
                 # A reserve at the owner's own floor is no setting gone wrong.
                 floor = battery.get("floor_soc") or battery.get("cutoff_soc")
@@ -4892,6 +4897,15 @@ class JoeExecutor:
                 }
                 continue
             if now - _at(mark["since"]) < STUCK_FOR:
+                continue
+            if found["reason"] == "evcc":
+                if key in known:
+                    await self.notifier.async_clear(f"stuck_{key}")
+                    known.pop(key)
+                    self._changed()
+                if not mark.get("told"):
+                    mark["told"] = True
+                    self._log("stuck", battery=key, reason="evcc", soc=round(soc, 1))
                 continue
             if key in known and known[key]["reason"] == found["reason"]:
                 continue

@@ -287,6 +287,11 @@ def session(get: GetState, point: dict[str, Any]) -> str | None:
     return state.last_changed.isoformat()
 
 
+def plug_unknown(get: GetState, point: dict[str, Any]) -> bool:
+    """The plug sensor says nothing right now (unavailable, or HA just started)."""
+    return bool(point.get("connected_entity")) and _connected(get, point) is None
+
+
 def answer_valid(
     get: GetState, point: dict[str, Any], answer: dict[str, Any] | None, now: datetime
 ) -> bool:

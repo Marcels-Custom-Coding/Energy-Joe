@@ -3618,6 +3618,7 @@ var Pe = {
 	"log.stuck.reserve": "{battery} kann nicht entladen: die Reserve steht auf {value} %, der Stand bei {soc} % – das war nicht ich",
 	"log.stuck.discharge": "{battery} kann nicht entladen: am Gerät ist das Entladen gesperrt ({value}) – das war nicht ich",
 	"log.stuck.charge": "{battery} kann nicht laden: am Gerät ist das Laden gesperrt ({value}) – das war nicht ich",
+	"log.stuck.evcc": "{battery} entlädt gerade nicht: evcc hält ihn fest, solange das Auto lädt – so ist es in evcc eingestellt, ich melde das nicht als Problem",
 	"log.stuck_over": "{battery} kann wieder arbeiten",
 	"log.team_block.both": "{battery}: Laden und Entladen gesperrt",
 	"log.team_block.charge": "{battery}: Laden gesperrt",
@@ -7478,6 +7479,7 @@ var Pe = {
 	"log.stuck.reserve": "{battery} cannot discharge: its reserve is at {value} %, its level at {soc} % – that was not me",
 	"log.stuck.discharge": "{battery} cannot discharge: discharging is blocked at the device ({value}) – that was not me",
 	"log.stuck.charge": "{battery} cannot charge: charging is blocked at the device ({value}) – that was not me",
+	"log.stuck.evcc": "{battery} is not discharging: evcc holds it while the car charges – that is how evcc is set, so I do not report it as a problem",
 	"log.stuck_over": "{battery} can work again",
 	"log.team_block.both": "{battery}: charging and discharging blocked",
 	"log.team_block.charge": "{battery}: charging blocked",
@@ -8394,14 +8396,14 @@ function qe(e, t, n) {
 }
 //#endregion
 //#region src/define.ts
-var Je = "0.9.44";
+var Je = "0.9.45";
 function Ye(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = Je, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.44" && Ze();
+	n.joeVersion !== "0.9.45" && Ze();
 }
 var Xe = !1;
 function Ze() {
