@@ -10,6 +10,7 @@ import type {
   ControlView,
   DayCaution,
   DischargeMode,
+  HouseOnly,
   JoeConfig,
   JoeInfo,
   MorningBuffer,
@@ -42,6 +43,7 @@ export type OtherRuleKey =
   | "discharge_in_window"
   | "converter_losses"
   | "day_surplus"
+  | "car_house_only"
   | "morning_buffer"
   | "transfer_guard"
   | "night_caution";
@@ -87,6 +89,7 @@ export const RULE_GROUPS: Record<RuleGroup, readonly RuleKey[]> = {
     "discharge_in_window",
     "converter_losses",
     "day_surplus",
+    "car_house_only",
     "morning_buffer",
     "transfer_guard",
   ],
@@ -183,6 +186,8 @@ export function ruleRow(
       return daySurplusRow(t, host, config);
     case "transfer_guard":
       return transferGuardRow(t, host, config);
+    case "car_house_only":
+      return carHouseRow(t, host, config, control);
     case "morning_buffer":
       return morningBufferRow(t, host, config, plan);
     case "night_caution":
@@ -419,6 +424,55 @@ function converterRow(t: Translate, host: HTMLElement, config: JoeConfig): Templ
         aria-checked=${String(rules.converter_losses)}
         aria-labelledby="converter-losses"
         @click=${() => saveConfig(host, { rules: { converter_losses: !rules.converter_losses } })}
+      ></button>
+    </div>
+  </div>`;
+}
+
+/** What Joe does about a car charging fast right now, in one sentence (nothing while the rule is off). */
+export function houseText(t: Translate, config: JoeConfig, house: HouseOnly | undefined): string {
+  if (!config.rules.car_house_only || !house || house.state === "off") {
+    return "";
+  }
+  const nameOf = (id: string) => config.batteries.find((b) => b.id === id)?.name ?? id;
+  const names = (house.batteries ?? []).map(nameOf).join(", ");
+  const vars = {
+    w: formatNumber(t.lang, house.w ?? 0, 0),
+    names: names || t("rule.car_house_only.battery"),
+    loadpoint: (house.loadpoints ?? []).join(", ") || "evcc",
+  };
+  if (house.state === "no_lever") {
+    const lines = Object.entries(house.problems ?? {}).map(([id, code]) =>
+      t(`rule.car_house_only.problem.${code}`, { name: nameOf(id) }),
+    );
+    return `${t("rule.car_house_only.state.no_lever")} ${lines.join(" ")}`;
+  }
+  return t(`rule.car_house_only.state.${house.state}`, vars);
+}
+
+/**
+ * A car charging fast by day (evcc's mode "now"): the house from the battery
+ * whose turn it is, the car from the grid (control/house.py). Joe switches
+ * evcc's discharge lock off meanwhile and back afterwards.
+ */
+function carHouseRow(t: Translate, host: HTMLElement, config: JoeConfig, control?: ControlView): TemplateResult {
+  const on = config.rules.car_house_only === true;
+  const state = houseText(t, config, control?.house);
+  return html`<div class="row" data-tipped data-anchor="car_house_only">
+    <div>
+      <div class="name"><b id="car-house-only">${t("rule.car_house_only")}</b>${tip(t, "r_car_house_only")}</div>
+      <small>${t("rule.car_house_only.hint")}</small>
+      ${state ? html`<small class="replay">${state}</small>` : nothing}
+    </div>
+    <div class="control">
+      ${sourceChip(t, sourceOf(config, "rules.car_house_only"))}
+      <button
+        type="button"
+        class="switch"
+        role="switch"
+        aria-checked=${String(on)}
+        aria-labelledby="car-house-only"
+        @click=${() => saveConfig(host, { rules: { car_house_only: !on } })}
       ></button>
     </div>
   </div>`;

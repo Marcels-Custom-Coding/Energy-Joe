@@ -30,7 +30,7 @@ import { findDevice, ignoredBatteries, newFindings, type DeviceEntry } from "../
 import type { Translate } from "../../i18n";
 import { formatNumber } from "../../entities";
 import { href, navigate, onLink, revealAnchor, type Route } from "../../router";
-import { ruleStyles, ruleValue, type RuleKey } from "../../rules-view";
+import { houseText, ruleStyles, ruleValue, type RuleKey } from "../../rules-view";
 import { shared } from "../../styles/shared";
 import type { BatteryConfig, BatteryFinding, BatteryTeamMode, BatteryTeamStyle, JoeConfig } from "../../types";
 import "./battery-device";
@@ -51,6 +51,7 @@ const BATTERY_RULES: readonly RuleKey[] = [
   "discharge_in_window",
   "converter_losses",
   "day_surplus",
+  "car_house_only",
   "transfer_guard",
 ];
 
@@ -770,7 +771,12 @@ export class JoeBatteryGroup extends DeviceSection {
             label: t(`rule.${key}`),
             value: ruleValue(t, config, key),
             source: sourceOf(config, `rules.${key}`),
-            hint: key === "day_surplus" && surplus ? surplusText(t, surplus) : undefined,
+            hint:
+              key === "day_surplus" && surplus
+                ? surplusText(t, surplus)
+                : key === "car_house_only"
+                  ? houseText(t, config, this.state?.control?.house) || undefined
+                  : undefined,
             to,
           });
         })}

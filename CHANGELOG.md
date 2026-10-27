@@ -3,6 +3,13 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.46
+
+- **Beim Schnellladen: Haus aus dem Speicher, Auto aus dem Netz.** Neuer Schalter unter Einstellungen › Regeln (bei den Speicher-Regeln, auch unter Geräte › Speicher). Lädt das Auto über evcc im Modus „Schnell“, schalte ich die Entladesperre in evcc aus und lasse den Speicher nur so viel geben, wie das Haus ohne Wallbox braucht – etwa 800 W statt 11 800 W, alle paar Sekunden nachgeregelt. Scheint die Sonne mit, gibt er nur, was danach noch fehlt. Beide Speicher wechseln sich wie sonst ab, der andere bleibt gesperrt. Nachts im günstigen Fenster bleibt alles wie bisher, bei „Smart“ und den anderen Modi auch. Ist Schnellladen vorbei, stelle ich die Entladesperre in evcc wieder so ein, wie sie war. Standard: aus.
+- **Hält evcc den Speicher, warten alle.** Ist der Schalter aus und sperrt evcc beim Schnellladen den Hausspeicher, übernimmt nicht mehr der andere Speicher und entlädt ins Auto – beide warten, bis evcc freigibt. Laden bei Sonnenüberschuss geht weiter.
+- Unter Regeln steht, was gerade läuft („das Haus bekommt 800 W aus BYD“, „wartet auf evcc“) oder warum es bei deiner Anlage nicht geht.
+- Nicht geprüft an echter Anlage: alles davon, besonders wie Fronius und evcc mit derselben Entladerate umgehen.
+
 ## 0.9.45
 
 - **Ein Neustart vergisst das Auto nicht mehr.** Hast du mir gesagt, welches Auto an der Wallbox hängt, galt die Antwort nur, solange der Steckzustand dieselbe Uhrzeit trug. Ein Neustart von Home Assistant (etwa beim Update) gibt ihm eine neue, und schon war das Auto für mich unbekannt, und an ein unbekanntes Auto gehe ich nicht ran. So blieb das Auto in der Nacht zum 27.10. leer. Jetzt schaue ich im Verlauf nach, ob dazwischen wirklich ausgesteckt wurde; wenn nicht, bleibt es dasselbe Auto. Auch ein kurzes „nicht verfügbar“ der Wallbox löscht die Antwort nicht mehr.

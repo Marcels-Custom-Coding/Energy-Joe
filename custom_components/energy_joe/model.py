@@ -690,6 +690,10 @@ RULES = vol.Schema(
         # the other discharges): Joe restarts the culprit's own control, blocks
         # it for a few seconds and speaks up (see control/guard.py).
         vol.Optional("transfer_guard", default=True): bool,
+        # A car charging fast by day (evcc's mode "now"): the house from the
+        # battery whose turn it is, the car from the grid; Joe switches evcc's
+        # discharge lock off meanwhile and back afterwards (control/house.py).
+        vol.Optional("car_house_only", default=False): bool,
         # Expert: count the inverter's losses when charging from the grid,
         # measured at the grid meter (a battery's own meter may sit behind it).
         vol.Optional("converter_losses", default=False): bool,

@@ -72,6 +72,7 @@ export const SIGNPOST = [
   },
   { id: "rule_converter_losses", to: { tab: "settings", section: "rules", id: "converter_losses" }, title: "rule.converter_losses" },
   { id: "rule_day_surplus", to: { tab: "settings", section: "rules", id: "day_surplus" }, title: "rule.day_surplus" },
+  { id: "rule_car_house_only", to: { tab: "settings", section: "rules", id: "car_house_only" }, title: "rule.car_house_only" },
   { id: "rule_morning_buffer", to: { tab: "settings", section: "rules", id: "morning_buffer" }, title: "rule.morning_buffer" },
   { id: "rule_transfer_guard", to: { tab: "settings", section: "rules", id: "transfer_guard" }, title: "rule.transfer_guard" },
   { id: "rule_grid_limit_w", to: { tab: "settings", section: "rules", id: "grid_limit_w" }, title: "rule.grid_limit_w" },
