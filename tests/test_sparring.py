@@ -47,7 +47,7 @@ ANSWER = {
     "findings": [
         {
             "title": "Morgens leer",
-            "evidence": "Am 24.10. lag das Ziel bei 60 %, der Speicher fiel auf 10,0 %.",
+            "evidence": "Das Ziel lag bei 60 %, der Speicher fiel auf 10,0 %.",
             "area": "night",
         },
         {"title": "Erfunden", "evidence": "Du hast 77,7 kWh verbraucht.", "area": "x"},

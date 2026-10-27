@@ -9,8 +9,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from custom_components.energy_joe.control import team as team_rules
+from custom_components.energy_joe.control import evcc, team as team_rules
 from custom_components.energy_joe.control.notify import JoeNotifier
+from custom_components.energy_joe.discovery.snapshot import EntityInfo, Snapshot
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 
@@ -259,3 +260,47 @@ async def test_the_phone_hears_it_only_with_its_own_switch(hass: HomeAssistant) 
         assert push.await_count == 2
     # The notification in Home Assistant is there either way, per battery.
     await joe.async_clear("stuck_byd")
+
+
+async def test_evcc_holding_the_battery_is_no_problem(
+    hass: HomeAssistant, freezer
+) -> None:
+    """A car charges fast and evcc locks the home battery: wanted, only logged."""
+    freezer.move_to("2026-10-19T19:00:00+02:00")
+    install_team(hass, byd_soc=60, venus_soc=98)
+    percent = {"min": 0, "max": 100, "step": 1, "unit_of_measurement": "%"}
+    hass.states.async_set("number.discharge_limit", "0", percent)
+    hass.states.async_set("switch.discharge_limit", "on")
+    flows(hass, grid=1000, byd=0, venus=0)
+    config = team_config(team_byd(cutoff_soc=10.5), team_venus())
+    executor, _ = await make_executor(hass, config, day_plan(dt_util.now()))
+    executor.notifier = notifier()
+    with patch(
+        "custom_components.energy_joe.control.evcc.battery_held", return_value=True
+    ):
+        for _ in range(4):
+            await executor.async_check()
+            freezer.tick(timedelta(minutes=5))
+    assert "byd" not in executor.data["stuck"]
+    assert all(
+        call.args[0] != "stuck_discharge"
+        for call in executor.notifier.async_problem.await_args_list
+    )
+
+
+def test_evcc_says_when_it_holds_the_battery() -> None:
+    def snap(state: str) -> Snapshot:
+        mode = EntityInfo(
+            entity_id="sensor.evcc_battery_mode_value",
+            name="Batterie Modus",
+            state=state,
+            platform="evcc_intg",
+            unique_id="evcc_intg.evcc_battery_mode_value",
+        )
+        return Snapshot(entities={mode.entity_id: mode})
+
+    assert evcc.battery_held(snap("entladen sperren"))
+    assert evcc.battery_held(snap("hold"))
+    assert not evcc.battery_held(snap("normal"))
+    assert not evcc.battery_held(snap("Unbekannt"))
+    assert not evcc.battery_held(Snapshot(entities={}))

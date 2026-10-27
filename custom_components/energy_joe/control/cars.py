@@ -177,6 +177,7 @@ class CarWatcher:
             return
         now = now or dt_util.now()
         config = self._config()
+        await self._async_carry_answers(config, now)
         detected = self.detect()
         self._forget_old(detected)
         self._learn_vehicles(config, detected)
@@ -196,6 +197,34 @@ class CarWatcher:
                     _LOGGER.exception("Planning the charge points again failed")
             self._changed()
 
+    async def _async_carry_answers(self, config: dict[str, Any], now: datetime) -> None:
+        """A restart gives the plug sensor a new time though nobody unplugged:
+        the same plug-in keeps its answer. Unplugged in between (the recorder
+        knows), the answer is over; without the recorder it holds ANSWER_HOURS.
+        """
+        get = self._hass.states.get
+        changed = False
+        for point_id, answer in self.data["answers"].items():
+            action = model_cars.action_by_id(config, point_id)
+            point = (action or {}).get("point") or {}
+            since = model_cars.session(get, point)
+            if since is None or not answer.get("since") or since == answer["since"]:
+                continue
+            unplugged = await _async_unplugged_since(
+                self._hass, point.get("connected_entity"), answer["since"]
+            )
+            if unplugged is None:
+                at = answer.get("at")
+                unplugged = not at or now - datetime.fromisoformat(at) >= timedelta(
+                    hours=model_cars.ANSWER_HOURS
+                )
+            if unplugged:
+                continue
+            answer["since"] = since
+            changed = True
+        if changed:
+            await self._async_save()
+
     def _forget_old(self, detected: dict[str, dict[str, Any]]) -> None:
         """Answers for a plug-in that is over go; so does the note that Joe asked."""
         config = self._config()
@@ -203,6 +232,12 @@ class CarWatcher:
         now = dt_util.now()
         for point_id in list(self.data["answers"]):
             action = model_cars.action_by_id(config, point_id)
+            # A plug sensor that says nothing (a restart, evcc away for a
+            # moment) is no unplugging: the answer waits.
+            if action is not None and model_cars.plug_unknown(
+                get, action.get("point") or {}
+            ):
+                continue
             if action is None or not model_cars.answer_valid(
                 get, action.get("point") or {}, self.data["answers"][point_id], now
             ):
@@ -376,3 +411,32 @@ class CarWatcher:
 
     async def _async_save(self) -> None:
         await self._store.async_save(self.data)
+
+
+async def _async_unplugged_since(
+    hass: HomeAssistant, entity_id: str | None, since: str
+) -> bool | None:
+    """Whether the plug sensor showed "unplugged" since then (None: no recorder)."""
+    if not entity_id or "recorder" not in hass.config.components:
+        return None
+    from homeassistant.components.recorder import get_instance, history  # noqa: PLC0415
+
+    try:
+        found = await get_instance(hass).async_add_executor_job(
+            history.state_changes_during_period,
+            hass,
+            dt_util.as_utc(datetime.fromisoformat(since)),
+            dt_util.utcnow(),
+            entity_id,
+            True,
+            False,
+            None,
+            False,
+        )
+    except Exception:  # noqa: BLE001
+        _LOGGER.debug("No history for %s", entity_id, exc_info=True)
+        return None
+    return any(
+        state.state.lower() in model_cars.UNPLUGGED
+        for state in found.get(entity_id) or []
+    )

@@ -3,6 +3,12 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.45
+
+- **Ein Neustart vergisst das Auto nicht mehr.** Hast du mir gesagt, welches Auto an der Wallbox hängt, galt die Antwort nur, solange der Steckzustand dieselbe Uhrzeit trug. Ein Neustart von Home Assistant (etwa beim Update) gibt ihm eine neue, und schon war das Auto für mich unbekannt, und an ein unbekanntes Auto gehe ich nicht ran. So blieb das Auto in der Nacht zum 27.10. leer. Jetzt schaue ich im Verlauf nach, ob dazwischen wirklich ausgesteckt wurde; wenn nicht, bleibt es dasselbe Auto. Auch ein kurzes „nicht verfügbar“ der Wallbox löscht die Antwort nicht mehr.
+- **evcc darf den Speicher halten.** Lädt das Auto schnell und sperrt evcc dafür das Entladen des Hausspeichers („Entladesperre“), melde ich das nicht mehr als Problem, sondern schreibe nur eine Zeile ins Logbuch.
+- Nicht geprüft an echter Anlage: beides.
+
 ## 0.9.44
 
 - **Zweiter Blick.** Jeden Morgen um 6 Uhr kann ich meine Zahlen einem Sprachmodell zeigen, das du in Home Assistant als KI-Aufgabe eingerichtet hast: was ich für die letzten Nächte geplant hatte und was wirklich kam, was ich gelernt habe, wie vorsichtig ich plane, was mein Rückspiel sagt, und meine Textvorlagen. Es sucht Fehler in meinen Zahlen und Sätze, die nicht zu den Zahlen passen, und schreibt einen besseren Wortlaut dazu. Einschalten unter Einstellungen › Betrieb › Zweiter Blick; dort siehst du auch genau, was ich schicke. Personen, Orte und Termine gehen nicht mit.

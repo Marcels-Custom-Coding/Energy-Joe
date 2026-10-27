@@ -3338,6 +3338,7 @@ export const de = {
   "log.stuck.reserve": "{battery} kann nicht entladen: die Reserve steht auf {value} %, der Stand bei {soc} % – das war nicht ich",
   "log.stuck.discharge": "{battery} kann nicht entladen: am Gerät ist das Entladen gesperrt ({value}) – das war nicht ich",
   "log.stuck.charge": "{battery} kann nicht laden: am Gerät ist das Laden gesperrt ({value}) – das war nicht ich",
+  "log.stuck.evcc": "{battery} entlädt gerade nicht: evcc hält ihn fest, solange das Auto lädt – so ist es in evcc eingestellt, ich melde das nicht als Problem",
   "log.stuck_over": "{battery} kann wieder arbeiten",
   "log.team_block.both": "{battery}: Laden und Entladen gesperrt",
   "log.team_block.charge": "{battery}: Laden gesperrt",

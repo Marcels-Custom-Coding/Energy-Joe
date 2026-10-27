@@ -747,6 +747,35 @@ async def test_joe_asks_once_and_hears_the_answer(hass: HomeAssistant, freezer) 
         await watcher.async_answer("ebox", "nobody")
 
 
+async def test_an_answer_outlasts_a_restart(hass: HomeAssistant, freezer) -> None:
+    """HA starts again, the plug sensor gets a new time: still the same car."""
+    config = two_cars()
+    watcher = CarWatcher(
+        hass, lambda: config, lambda: "live", lambda: None, lambda: None
+    )
+    watcher.notifier = Notes()
+    plug(hass, "ebox")
+    await watcher.async_check()
+    await watcher.async_answer("ebox", "zoe")
+    assert watcher.status["points"]["ebox"]["car"] == "zoe"
+    # The restart: first nothing, then "on" again with a new last_changed.
+    freezer.tick(timedelta(hours=2))
+    hass.states.async_set("binary_sensor.evcc_ebox_connected", "unavailable")
+    await watcher.async_check()
+    assert "ebox" in watcher.data["answers"]
+    freezer.tick(timedelta(seconds=30))
+    hass.states.async_set("binary_sensor.evcc_ebox_connected", "on")
+    await watcher.async_check()
+    assert watcher.status["points"]["ebox"]["state"] == "car"
+    assert watcher.status["points"]["ebox"]["car"] == "zoe"
+    # Unplugged for real: the answer is over.
+    hass.states.async_set("binary_sensor.evcc_ebox_connected", "off")
+    await watcher.async_check()
+    plug(hass, "ebox")
+    await watcher.async_check()
+    assert watcher.status["points"]["ebox"]["state"] == "unknown"
+
+
 async def test_evcc_naming_the_car_in_time_means_no_question(
     hass: HomeAssistant, freezer
 ) -> None:
