@@ -194,6 +194,13 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
     }
     return typeof entry.problem === "string" ? `${text} ${t("log.guard.problem", { code: entry.problem })}` : text;
   }
+  if (entry.kind === "house" || entry.kind === "house_end") {
+    // A car charging fast: the house from the battery (control/house.py).
+    const house = { ...vars, watts: typeof entry.power === "number" ? formatNumber(t.lang, entry.power, 0) : "–" };
+    return entry.kind === "house_end"
+      ? (t.optional(`log.house_end.${String(entry.reason)}`, house) ?? t("log.house_end", house))
+      : t("log.house", house);
+  }
   if (entry.kind === "automations" || entry.kind === "automations_off") {
     // The owner's automations that write to the batteries: in Joe's way, or all off again.
     const names = Array.isArray(entry.names) ? entry.names.map((n) => `„${String(n)}“`).join(", ") : "";

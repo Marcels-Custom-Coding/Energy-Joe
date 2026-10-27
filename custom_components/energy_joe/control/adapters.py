@@ -1280,6 +1280,117 @@ class RoleAdapter(Adapter):
             return []
         return self._paced(self.guard_exit(hass))
 
+    # --- the house from the battery while a car charges fast (control/house.py) ----
+
+    def house_lever(self, hass: HomeAssistant, whole_system: bool = True) -> str | None:
+        """How Joe lets this battery give a fixed power by day: "limit" its
+        discharge limit at that power while it regulates below it (the
+        house's need is far less than the car takes, so it gives all of it):
+        in W or kW, in % only with the reference its rates are a share of
+        ("limit_ref_w"; Fronius counts both rates in % of WChaMax, SunSpec
+        model 124); "mode" a forced discharge with a power of its own
+        (Omnibattery's manual mode). None: neither."""
+        if self.team_lever(whole_system) in ("limit", "system"):
+            roles = self.discharge_roles()
+            unit = self._unit(hass, roles[1]) if roles else None
+            if unit in ("W", "kW") or (
+                unit == "%" and float(self.battery.get("limit_ref_w") or 0) > 0
+            ):
+                return "limit"
+        if (
+            self._has("mode", "discharge_power")
+            and self.options.get("force_discharge")
+            and (self._unit(hass, "discharge_power") or "W") in ("W", "kW")
+        ):
+            return "mode"
+        return None
+
+    def house_problem(
+        self, hass: HomeAssistant, whole_system: bool = True
+    ) -> str | None:
+        """Why Joe cannot let this battery give a fixed power by day, or None:
+        "need_ref" (a limit in % without its reference), "unavailable" (its
+        limit cannot be read now), "no_power_lever"."""
+        if self.house_lever(hass, whole_system):
+            return None
+        roles = self.discharge_roles()
+        if self.team_lever(whole_system) in ("limit", "system") and roles:
+            state = hass.states.get(self.controls[roles[1]])
+            if not available(state):
+                return "unavailable"
+            if self._unit(hass, roles[1]) == "%":
+                return "need_ref"
+        return "no_power_lever"
+
+    def team_house(
+        self,
+        hass: HomeAssistant,
+        writes: list[Write],
+        watts: float,
+        whole_system: bool = True,
+    ) -> list[Write]:
+        """The block's writes (discharging blocked) with the battery giving
+        `watts` instead: the discharge limit at that power in place of its 0
+        ("limit"), or – what blocks discharging left out and allowed – the
+        prepare step (a manual mode), the power and the forced discharge
+        ("mode"). Never more than the house's need: in steps down."""
+        lever = self.house_lever(hass, whole_system)
+        c = self.controls
+        if lever == "limit":
+            roles = self.discharge_roles()
+            assert roles is not None
+            entity_id = c[roles[1]]
+            value = self._house_value(hass, roles[1], watts)
+            return [
+                Write(w.entity_id, value) if w.entity_id == entity_id else w
+                for w in writes
+            ]
+        if lever == "mode":
+            blocking = set(self._direction_entities("discharge"))
+            kept = [w for w in writes if w.entity_id not in blocking]
+            toggle = self._toggle("discharge")
+            if toggle:
+                kept.append(Write(c[toggle[0]], not toggle[1]))
+            more = [
+                *self._prepare("mode"),
+                Write(
+                    c["discharge_power"],
+                    self._house_value(hass, "discharge_power", watts),
+                ),
+                Write(c["mode"], self.options["force_discharge"]),
+            ]
+            return self._paced([*kept, *more])
+        return writes
+
+    def team_house_exit(self, hass: HomeAssistant, lever: str | None) -> list[Write]:
+        """The fixed power ends: a forced discharge off, its power 0, the
+        manual mode off (a limit goes back with the block's own writes)."""
+        if lever != "mode":
+            return []
+        return self._paced(self.guard_exit(hass))
+
+    def _unit(self, hass: HomeAssistant, role: str) -> str | None:
+        state = hass.states.get(self.controls.get(role) or "")
+        return state.attributes.get("unit_of_measurement") if state else None
+
+    def _house_value(self, hass: HomeAssistant, role: str, watts: float) -> float:
+        """A power (W) in the unit of the entity of `role`: % of the reference
+        (down to a tenth), kW or W; never below the limit's smallest power
+        but 0 (VARTA), below 0 where the limit runs so."""
+        watts = max(0.0, watts)
+        unit = self._unit(hass, role) or "W"
+        if unit == "%":
+            reference = float(self.battery.get("limit_ref_w") or 0)
+            if reference <= 0:
+                return 0.0
+            return min(100.0, math.floor(1000 * watts / reference) / 10)
+        if 0 < watts < self.profile.limit_min_w:
+            watts = self.profile.limit_min_w
+        low, high = _range(hass, self.controls.get(role), 0, math.inf)
+        if high <= 0 < -low:
+            watts = -watts
+        return round(watts / 1000, 3) if unit == "kW" else round(watts)
+
     # --- the watchdog (control/guard.py) -----------------------------------------
 
     def guard_can_restart(self) -> bool:

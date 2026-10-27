@@ -2,6 +2,7 @@ import { LitElement, css, html, nothing } from "lit";
 import { property, state } from "lit/decorators.js";
 import { define } from "../define";
 import type { Translate } from "../i18n";
+import { houseText } from "../rules-view";
 import { shared } from "../styles/shared";
 import type { HomeAssistant, JoeState } from "../types";
 import { daySurplus } from "./day-surplus";
@@ -94,6 +95,8 @@ export class JoeControlStatus extends LitElement {
         : nothing;
     }
     const text = controlText(t, joe);
+    // A car charging fast: the house from the battery (only while it runs).
+    const house = ["on", "wait"].includes(control.house?.state ?? "") ? houseText(t, joe.config, control.house) : "";
     const pill =
       joe.mode === "simulation"
         ? html`<span class="pill-sim">${t("mode.simulation")}</span>`
@@ -106,6 +109,9 @@ export class JoeControlStatus extends LitElement {
         ${pill} ${tip(t, "plan_steer")}
       </div>
       <p class="status-text">${text}</p>
+      ${house
+        ? html`<div class="note"><ha-icon icon="mdi:ev-station"></ha-icon><span>${house}</span>${tip(t, "r_car_house_only")}</div>`
+        : nothing}
       ${this.renderRelease(t, control.pending, canRelease)}
     </section>`;
   }

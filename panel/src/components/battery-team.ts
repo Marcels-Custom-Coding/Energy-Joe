@@ -85,6 +85,10 @@ function part(t: Translate, team: BatteryTeam, ids: string[]): string {
   if (entry.why === "base") {
     return t("team.part.base", { ...vars, w: formatNumber(t.lang, team.base?.w ?? 0, 0) });
   }
+  if (entry.why === "house") {
+    // A car charging fast: the house's need, a fixed power (control/house.py).
+    return t("team.part.house", { ...vars, w: formatNumber(t.lang, team.house_w ?? 0, 0) });
+  }
   return t(`team.part.${entry.why ?? "waits_empty"}`, vars);
 }
 

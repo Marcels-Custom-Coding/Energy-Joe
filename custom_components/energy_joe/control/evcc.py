@@ -1,6 +1,8 @@
 """What evcc (the evcc_intg integration) shows: its loadpoints and battery settings.
 
-Joe only reads here. A loadpoint in a PV mode ("pv", "minpv") that could use
+Joe reads here, with one exception: evcc's discharge lock (LOCK_KEYS), which
+he switches off while a car charges fast and the house comes from the battery
+(control/house.py), and back as it was afterwards (LockAdapter). A loadpoint in a PV mode ("pv", "minpv") that could use
 a surplus (a car is connected, or it drives a heater) is the reason to leave
 daytime surplus at the grid meter (see plan/surplus.py).
 
@@ -20,6 +22,9 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er
 
 from ..discovery.find import find_wallboxes
 from ..discovery.snapshot import DeviceInfo, EntityInfo, Snapshot
+from ..observe.readings import to_kw
+from .adapters import Adapter
+from .house import FAST_MODES
 
 PLATFORM = "evcc_intg"
 PV_MODES = ("pv", "minpv")
@@ -36,6 +41,12 @@ BOOST_KEYS = ("batteryboost", "battery_boost")
 # translated ("entladen sperren"), so anything but normal counts.
 MODE_KEYS = ("batterymode", "battery_mode_value", "battery_mode")
 FREE_MODES = ("normal", "unknown", "unbekannt", "unavailable", "")
+# evcc's discharge lock ("Hausbatterie: Entladesperre", unique id
+# "evcc_intg.evcc_battery_discharge_control"): on, evcc holds the home battery
+# while a car charges fast.
+LOCK_KEYS = ("batterydischargecontrol", "battery_discharge_control")
+# The key Joe notes his writes to it under (in place of a battery's id).
+LOCK_ID = "evcc"
 
 
 def snapshot(hass: HomeAssistant) -> Snapshot:
@@ -86,6 +97,9 @@ def loadpoints(snap: Snapshot) -> list[dict[str, Any]]:
         )
         heating = found["kind"] == "heating"
         plugged = connected is not None and connected.state == "on"
+        charging = snap.get(entities.get("charging"))
+        power = snap.get(entities.get("power"))
+        value = power.number if power is not None else None
         result.append(
             {
                 "id": found["device_id"],
@@ -96,9 +110,49 @@ def loadpoints(snap: Snapshot) -> list[dict[str, Any]]:
                 "boost": boost is not None and boost.state == "on",
                 # PV mode and something that can take power.
                 "wants": found["mode"] in PV_MODES and (heating or plugged),
+                "charging": charging is not None and charging.state == "on",
+                # What it charges now (kW; None: not known).
+                "power_kw": None if value is None else to_kw(value, power.unit),
+                "power_entity": power.entity_id if power is not None else None,
             }
         )
     return result
+
+
+def fast(points: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The loadpoints with a car that charges fast right now (mode "now")."""
+    return [
+        p
+        for p in points
+        if p["kind"] == "car" and p["mode"] in FAST_MODES and p["charging"]
+    ]
+
+
+def discharge_lock(snap: Snapshot) -> EntityInfo | None:
+    """evcc's discharge lock (a switch), if evcc_intg has it."""
+    return next(
+        (
+            e
+            for e in snap.entities.values()
+            if e.domain == "switch" and any(e.has_key(k) for k in LOCK_KEYS)
+        ),
+        None,
+    )
+
+
+class LockAdapter(Adapter):
+    """evcc's discharge lock as Joe switches it: noted before the first write
+    and put back like a battery's lever (the release covers it, too)."""
+
+    kind = "evcc"
+
+    def __init__(self, entity_id: str) -> None:
+        super().__init__(
+            {"id": LOCK_ID, "name": "evcc", "controls": {"lock": entity_id}}
+        )
+
+    def missing(self, hass: HomeAssistant) -> list[str]:
+        return [] if hass.states.get(self.controls["lock"]) else ["lock"]
 
 
 def settings(snap: Snapshot) -> dict[str, Any]:

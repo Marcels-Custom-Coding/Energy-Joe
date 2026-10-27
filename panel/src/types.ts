@@ -471,6 +471,8 @@ export interface Rules {
   team_early?: boolean | null;
   /** The watchdog: step in when batteries charge each other (older backends: missing, on). */
   transfer_guard?: boolean;
+  /** A car charging fast by day (evcc "now"): the house from the battery, the car from the grid (older backends: missing, off). */
+  car_house_only?: boolean;
 }
 
 export type BatteryTeamMode = "sequence" | "together";
@@ -519,7 +521,7 @@ export interface BatteryTeam {
       floor: number;
       charge: "free" | "blocked" | null;
       discharge: "free" | "blocked" | null;
-      why: "active" | "parallel" | "along" | "helps" | "base" | "waits_full" | "waits_empty" | "full" | "empty" | null;
+      why: "active" | "parallel" | "along" | "helps" | "base" | "house" | "evcc" | "waits_full" | "waits_empty" | "full" | "empty" | null;
       problem: string | null;
       empty?: boolean;
       full?: boolean;
@@ -549,6 +551,8 @@ export interface BatteryTeam {
   base?: { w: number; batteries: string[] } | null;
   /** "Grundlast teilen" chosen, but no waiting group's power can be set. */
   base_problem?: "no_power_lever" | null;
+  /** A car charging fast: the fixed power the active group gives the house (W; older backends: missing). */
+  house_w?: number | null;
   /** The lead Joe learned from the days (minutes) and from how many days. */
   learned?: { minutes: number; days: number; updated?: string } | null;
   /** The owner's answer to "früher mitladen?" (null: not answered). */
@@ -661,6 +665,47 @@ export interface EvccLoadpoint {
   boost: boolean;
   /** In a PV mode and able to take power (a car connected, or a heater). */
   wants: boolean;
+}
+
+/** Why a battery cannot give the house a fixed power while a car charges fast. */
+export type HouseOnlyProblem = "need_ref" | "no_power_lever" | "no_meter" | "not_tested" | "unavailable";
+
+/**
+ * A car charging fast by day: the house from the battery, the car from the
+ * grid (executor._house_check, control/house.py).
+ */
+export interface HouseOnly {
+  /** on: the battery gives the house's need; wait: evcc's lock is off, evcc has not let go yet; the others say why not. */
+  state:
+    | "off"
+    | "on"
+    | "wait"
+    | "idle"
+    | "night"
+    | "dry"
+    | "no_evcc"
+    | "no_lock"
+    | "no_battery"
+    | "together"
+    | "one_group"
+    | "no_lever"
+    | "lock_taken"
+    | "team"
+    | "error";
+  /** Per battery what is missing (state "no_lever"). */
+  problems?: Record<string, HouseOnlyProblem>;
+  /** The evcc loadpoints whose car charges fast now (their names). */
+  loadpoints?: string[];
+  /** evcc's discharge lock (entity id). */
+  lock?: string | null;
+  /** What the house needs without the wallbox on top of the sun, and what the battery gives (W). */
+  need_w?: number | null;
+  w?: number | null;
+  /** The batteries that give it now. */
+  batteries?: string[];
+  since?: string | null;
+  /** state "team": why Joe does not coordinate the batteries now. */
+  team?: BatteryTeam["state"];
 }
 
 /** What the daytime surplus does (or would do) now (executor._async_surplus). */
@@ -1783,6 +1828,8 @@ export interface ControlView {
   team?: BatteryTeam;
   /** The watchdog: batteries running against each other (older backends: missing). */
   guard?: TransferGuard;
+  /** A car charging fast: the house from the battery (older backends: missing). */
+  house?: HouseOnly;
   /** The highest import from the grid Joe measured (W), when, and since when he watches. */
   grid_peak?: { w: number; at: string; since: string } | null;
   /** Batteries that charge much slower from the grid than planned (older backends: missing). */

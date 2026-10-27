@@ -37,7 +37,8 @@ While the house still draws from the grid although the active one gives
 the sun gives more than is worth leaving to one, the next one charges along
 with a fixed power Joe sets, its share of the surplus by room, and the
 active one regulates the rest: never two systems regulating freely at one
-meter, they fight each other.
+meter, they fight each other. While a car charges fast, the active one gives
+the house's need as a fixed power and nobody helps (control/house.py).
 
 Groups ("Wer regelt ihn?"): batteries regulated by one system take turns
 as one. Omnibattery regulates all its batteries (a Venus, a Victron) with one

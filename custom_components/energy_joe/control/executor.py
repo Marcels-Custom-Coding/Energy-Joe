@@ -43,6 +43,7 @@ from . import (
     automations as battery_automations,
     evcc,
     guard as guard_rules,
+    house as house_rules,
     operations,
     team as team_rules,
     team_day,
@@ -95,6 +96,10 @@ NOTES = {
     "free": ("Freigegeben", "Released"),
     "team": ("Nacheinander: {name} ist dran", "One after the other: {name}'s turn"),
     "team_back": ("Nacheinander: Sperre zurück", "One after the other: block put back"),
+    "team_evcc": (
+        "evcc hält den Speicher, solange das Auto lädt – die anderen warten auch",
+        "evcc holds the battery while the car charges – the others wait, too",
+    ),
     "team_pause": (
         "Nacheinander: {name} lädt gerade nicht (bei {soc} %), ich warte. Bleibt Sonne übrig, lädt der nächste solange mit.",
         "One after the other: {name} is not charging right now (at {soc} %), I wait. If sun is left over, the next one charges along meanwhile.",
@@ -102,6 +107,18 @@ NOTES = {
     "team_along": (
         "Nebenher: {name} lädt mit {watts} W fest",
         "Alongside: {name} charges with a fixed {watts} W",
+    ),
+    "house": (
+        "Schnellladen: Haus aus dem Speicher ({watts} W)",
+        "Fast charging: the house from the battery ({watts} W)",
+    ),
+    "house_evcc": (
+        "Schnellladen: Entladesperre in evcc aus, das Haus kommt aus dem Speicher",
+        "Fast charging: evcc's discharge lock off, the house comes from the battery",
+    ),
+    "house_evcc_back": (
+        "Schnellladen vorbei: Entladesperre in evcc wieder wie vorher",
+        "Fast charging over: evcc's discharge lock back as it was",
     ),
     "cap": ("Tagsüber gedrosselt (Überschuss)", "Capped by day (surplus)"),
     "day": ("Netzfreundlicher Morgen", "Grid-friendly morning"),
@@ -377,6 +394,9 @@ DEFAULT_DATA: dict[str, Any] = {
     # The watchdog: two batteries running against each other (see
     # _async_guard and control/guard.py).
     "guard": guard_rules.fresh(),
+    # A car charging fast: the house from the battery (see _async_house and
+    # control/house.py).
+    "house": house_rules.fresh(),
 }
 
 type Changed = Callable[[], None]
@@ -499,6 +519,24 @@ class JoeExecutor:
         self._day_buffer_freed = False
         # What the watchdog does now, for the panel.
         self.guard: dict[str, Any] = {"state": "off"}
+        # A car charging fast (see _async_house): what the panel shows, the
+        # house's need every few seconds while it runs (W), the watch of
+        # those few seconds, whether the house is to come from the battery
+        # now and evcc has let go of it, and the power the active group's
+        # batteries give (W) with the lever each one uses.
+        self.house: dict[str, Any] = {"state": "off"}
+        self._house_shown: dict[str, Any] = {}
+        self._house_samples: list[tuple[datetime, float]] = []
+        self._house_unsub: CALLBACK_TYPE | None = None
+        self._house_go = False
+        self._house_free = False
+        self._house_w: float | None = None
+        self._team_house_w: dict[str, float] = {}
+        self._team_house_lever: dict[str, str] = {}
+        # evcc holds the home battery now (its discharge lock while a car
+        # charges fast) and the house does not come from the battery: the
+        # owner's wish, no battery discharges (see _team_choose).
+        self._evcc_held = False
         # The owner's automations that write to a battery and are switched on
         # (entity id and name), for the panel (see _async_watch_automations).
         self.automations: list[dict[str, Any]] = []
@@ -535,6 +573,10 @@ class JoeExecutor:
                 **guard_rules.fresh(),
                 **(stored.get("guard") or {}),
             }
+            self.data["house"] = {
+                **house_rules.fresh(),
+                **(stored.get("house") or {}),
+            }
 
     @property
     def active(self) -> bool:
@@ -570,6 +612,7 @@ class JoeExecutor:
         for unsub in self._unsubs:
             unsub()
         self._unsubs = []
+        self._house_watch(False)
         if self._ask_unsub:
             self._ask_unsub()
             self._ask_unsub = None
@@ -705,6 +748,18 @@ class JoeExecutor:
             keep |= held
             was_capped = bool(self.data["surplus"]["caps"])
             try:
+                self._house_check(config, plan, mode, now)
+            except Exception:
+                _LOGGER.exception("Looking at the car charging fast failed")
+                self._house_go = False
+            try:
+                self._evcc_held = not self._house_serving and evcc.battery_held(
+                    evcc.snapshot(self._hass)
+                )
+            except Exception:
+                _LOGGER.exception("Looking at evcc's battery mode failed")
+                self._evcc_held = False
+            try:
                 want, hint = await self._async_team(config, plan, mode, now)
             except Exception:
                 # Never keep a block Joe cannot work out: give them back.
@@ -730,6 +785,13 @@ class JoeExecutor:
                 _LOGGER.exception("Blocking the batteries failed")
                 await self._async_team_off(config, now, "error")
                 self.team = {**self.team, "state": "error"}
+            try:
+                keep |= await self._async_house(config, keep, now)
+            except Exception:
+                # Never keep evcc's lock off without knowing why: back.
+                _LOGGER.exception("The house from the battery failed")
+                self._house_go = False
+                await self._async_house_end(config, now, "error")
             if self._dirty_except(keep):
                 # The grid-friendly morning is over: its own reason, no second
                 # morning message.
@@ -789,6 +851,11 @@ class JoeExecutor:
         except Exception:
             _LOGGER.exception("Watching the batteries failed")
         await self._async_team_off(config, now, "night")
+        # The night's plan counts: the car and the house from the grid.
+        self._house_go = False
+        self.house = {**self._house_blank(), "state": "night"}
+        await self._async_house_end(config, now, "night")
+        self._house_publish()
         if self.data["night"] != night:
             self._start_night(night)
         items = self._steerable(config, plan)
@@ -2156,6 +2223,8 @@ class JoeExecutor:
             "early": rules.get("team_early"),
             "review": deepcopy((store.get("reviews") or [None])[-1]),
             "suggest": None,
+            # A car charging fast: the power the active group gives (W).
+            "house_w": None,
         }
         candidates: list[tuple[dict[str, Any], RoleAdapter | None]] = []
         powers: dict[str, float] = {}
@@ -2224,6 +2293,9 @@ class JoeExecutor:
             if store.get("along_on"):
                 store["along_on"] = False
                 self._log("team_along_end", reason=state)
+            if store.get("evcc_hold"):
+                store["evcc_hold"] = False
+                self._log("team_evcc_end", reason=state)
         self._team_review(config, info, groups, now)
         self.team = info
         if state != "on":
@@ -2626,9 +2698,22 @@ class JoeExecutor:
         helpers: set[str] = set()
         why_helper = "helps"
         self._team_base_w = {}
+        # A car charging fast: the active group gives the house's need, a
+        # fixed power; nobody helps, gives a base load or charges along,
+        # not even while Joe waits for evcc to let go (see _async_house).
+        self._team_house_w, self._team_house_lever = {}, {}
+        if self._house_serving:
+            self._team_house_w = self._team_house(config, group, roles, groups)
+            info["house_w"] = self._house_w
         if helping and raw == "deficit":
             helpers = {k for g in givers for k in g.ids}
-        elif style == "base" and flow == "deficit" and raw == "deficit":
+        elif (
+            style == "base"
+            and flow == "deficit"
+            and raw == "deficit"
+            and not self._house_go
+            and not self._evcc_held
+        ):
             base = self._team_base(config, givers, give, groups, info)
             if base is not None:
                 base_group, watts = base
@@ -2640,7 +2725,26 @@ class JoeExecutor:
         for team_group in teams:
             for member in team_group.members:
                 entry = info["batteries"][member.id]
-                if team_group.id == chosen:
+                if team_group.id == chosen and self._evcc_held:
+                    # evcc holds the battery while a car charges fast: the
+                    # owner's wish, no battery discharges into the car –
+                    # the active one neither (evcc may hold another one).
+                    want[member.id] = (bool(helpers), True)
+                    entry.update(
+                        charge="blocked" if helpers else "free",
+                        discharge="blocked",
+                        why="evcc",
+                    )
+                elif team_group.id == chosen and member.id in self._team_house_w:
+                    # The house's need, a fixed power (its discharge limit
+                    # at it, or a forced discharge): never into the car.
+                    want[member.id] = (bool(helpers), True)
+                    entry.update(
+                        charge="blocked" if helpers else "free",
+                        discharge="free",
+                        why="house",
+                    )
+                elif team_group.id == chosen:
                     # While others help, the active one may not charge from
                     # them; while another charges along, not discharge into
                     # it; it is free otherwise.
@@ -2665,6 +2769,16 @@ class JoeExecutor:
                         entry["why"] = "empty" if team_group.empty else "waits_empty"
                 entry["empty"] = member.empty
                 entry["full"] = member.full
+        if self._evcc_held != bool(store.get("evcc_hold")):
+            # Once per hold: evcc holds, the others wait, too; then as usual.
+            store["evcc_hold"] = self._evcc_held
+            self._log(
+                "team_evcc" if self._evcc_held else "team_evcc_end",
+                battery=group.ids[0],
+                batteries=group.ids,
+            )
+            if self._evcc_held and (note := self._note("team_evcc")):
+                async_line(self._hass, note)
         # The day so far is noted once the daytime cap had its say (see _team_note).
         self._team_pending = None
         if not info["dry"]:
@@ -2768,6 +2882,7 @@ class JoeExecutor:
             and not active.full
             and not held
             and deficit is not None
+            and not self._house_go
         )
         samples = [v for _, v in self._team_surplus]
         covered = bool(samples) and now - self._team_surplus[0][0] >= timedelta(
@@ -2872,6 +2987,8 @@ class JoeExecutor:
             and deficit is not None
             and grid is not None
             and all(k in powers for k in active.ids)
+            and not self._house_go
+            and not self._evcc_held
         )
         before = bool(store["help"].get("on"))
         on = team_day.help_step(
@@ -3118,7 +3235,7 @@ class JoeExecutor:
             return team_rules.quick(store["quick"], None, None, None, now)
         power = sum(powers[k] for k in current.ids)
         found = team_rules.quick(
-            store["quick"], power, deficit * 1000, grid * 1000, now
+            store["quick"], power, self._team_need_w(deficit), grid * 1000, now
         )
         touched = store.get("touched") or {}
         blocks = store.get("blocks") or {}
@@ -3128,9 +3245,16 @@ class JoeExecutor:
             k in touched and now - _at(touched[k]) < team_rules.TOUCH_GRACE
             for k in current.ids
         )
-        # A direction Joe holds back himself says nothing about full or empty.
+        # A direction Joe holds back himself says nothing about full or
+        # empty; nor does discharging while evcc holds the battery (a car
+        # charging fast, Joe waiting for evcc to let go or not taking over).
+        waiting = self._team_evcc_holds
         for key, direction in (("full", "charge"), ("empty", "discharge")):
-            if fresh or any((blocks.get(k) or {}).get(direction) for k in current.ids):
+            if (
+                fresh
+                or any((blocks.get(k) or {}).get(direction) for k in current.ids)
+                or (key == "empty" and waiting)
+            ):
                 store["quick"].pop(key, None)
                 found[key] = False
         return found
@@ -3162,10 +3286,14 @@ class JoeExecutor:
         seen = team_rules.quick(
             store["quick"],
             sum(powers[k] for k in ids),
-            deficit * 1000,
+            self._team_need_w(deficit),
             grid * 1000,
             now,
         )
+        if self._team_evcc_holds:
+            # evcc holds the battery (see _team_seen).
+            store["quick"].pop("empty", None)
+            seen["empty"] = False
         flags = tuple(sorted(k for k, v in seen.items() if v))
         if flags != self._team_quick_seen:
             self._team_quick_seen = flags
@@ -3204,7 +3332,9 @@ class JoeExecutor:
             soc = number(self._hass.states.get(battery["soc_entity"]))
             if power is None or soc is None:
                 continue
-            blocked = (store["blocks"].get(key) or {}).get("discharge", False)
+            block = store["blocks"].get(key) or {}
+            # Held at the house's need it may stand still on purpose, too.
+            blocked = block.get("discharge", False) or "house_w" in block
             watch = store["watch"].setdefault(key, {})
             found = team_rules.watch_cutoff(
                 watch, soc, power, deficit * 1000, not blocked, now
@@ -3294,11 +3424,32 @@ class JoeExecutor:
             elif (store["blocks"].get(key) or {}).get("along_w") is not None:
                 # Charging along is over: its mode off before the block.
                 writes = [*adapter.team_along_exit(self._hass), *writes]
+            house = self._team_house_w.get(key)
+            before = store["blocks"].get(key) or {}
+            if house is not None and discharge:
+                # A car charging fast: the house's need instead of the block.
+                writes = adapter.team_house(self._hass, writes, house, whole)
+                note = self._note("house", watts=round(house))
+                if "house_w" not in before:
+                    # The meter says nothing about it until it has followed.
+                    store.setdefault("touched", {})[key] = now.isoformat(
+                        timespec="seconds"
+                    )
+            elif before.get("house_w") is not None:
+                # The house from the battery is over: a forced discharge off
+                # before the block.
+                writes = [
+                    *adapter.team_house_exit(self._hass, before.get("house")),
+                    *writes,
+                ]
             problem = None
             # A block that had arrived and is undone (Fronius sets its
             # registers back when its Modbus control restarts): written again
             # at once; too often, and Joe cannot rely on it.
-            if self._team_undone(adapter, whole, now):
+            # evcc let go of the battery it held: its own writes undid the
+            # block on purpose, no reset of the device.
+            released = bool(before.get("evcc")) and not self._evcc_held
+            if not released and self._team_undone(adapter, whole, now):
                 resets = store["resets"].setdefault(key, [])
                 resets.append(now.isoformat(timespec="seconds"))
                 resets[:] = [
@@ -3320,7 +3471,7 @@ class JoeExecutor:
                 adapter,
                 whole,
                 charge and not charge_taken,
-                discharge and base is None and along is None,
+                discharge and base is None and along is None and house is None,
                 now,
             ):
                 # Each value may show what Joe wrote, the block counts only
@@ -3332,12 +3483,18 @@ class JoeExecutor:
                 broken.append((key, groups[key], problem))
             blocks: dict[str, Any] = {
                 "charge": charge and not charge_taken,
-                "discharge": discharge and base is None,
+                "discharge": discharge and base is None and house is None,
             }
             if base is not None and discharge:
                 blocks["base_w"] = base
             if along is not None and discharge:
                 blocks["along_w"] = along
+            if house is not None and discharge:
+                blocks.update(
+                    house_w=house, house=self._team_house_lever.get(key, "limit")
+                )
+            if self._evcc_held and discharge:
+                blocks["evcc"] = True
             if charge and charge_taken:
                 # Blocked all the same, by the limit someone else holds at 0.
                 entry["charge"] = "blocked"
@@ -3488,22 +3645,34 @@ class JoeExecutor:
         battery = next((b for b in config["batteries"] if b["id"] == key), None)
         adapter = make_adapter(battery) if battery else None
         if isinstance(adapter, RoleAdapter):
-            if (store["blocks"].get(key) or {}).get("along_w") is not None and (
+            block = store["blocks"].get(key) or {}
+            if block.get("along_w") is not None and (
                 leave := adapter.team_along_exit(self._hass)
             ):
                 # Charging along with a fixed power: its mode off first.
                 await self._async_write(adapter, leave, now, "team_back")
-            roles = adapter.team_release_roles()
-            if key in self.data["surplus"]["caps"] or self._day_holds(key):
-                # The cap or the morning holds the charge limit (with the
-                # system's shared switch all of it): theirs to give back.
-                held = set(adapter.limit_roles() or ())
-                if adapter.limit_shared():
-                    held |= set(adapter.discharge_roles() or ())
-                roles = [r for r in roles if r not in held]
-            await self._async_team_free(adapter, roles, now)
+            if block.get("house_w") is not None and (
+                leave := adapter.team_house_exit(self._hass, block.get("house"))
+            ):
+                # The house's need with a forced discharge: its mode off first.
+                await self._async_write(adapter, leave, now, "team_back")
+            await self._async_team_free(adapter, self._free_roles(adapter), now)
             self._log("team_block", battery=key, charge=False, discharge=False)
         store["blocks"].pop(key, None)
+
+    def _free_roles(self, adapter: RoleAdapter) -> list[str]:
+        """Every role a block by day may have written, but for those the
+        daytime cap or the morning hold."""
+        roles = adapter.team_release_roles()
+        key = adapter.battery["id"]
+        if key in self.data["surplus"]["caps"] or self._day_holds(key):
+            # The cap or the morning holds the charge limit (with the
+            # system's shared switch all of it): theirs to give back.
+            held = set(adapter.limit_roles() or ())
+            if adapter.limit_shared():
+                held |= set(adapter.discharge_roles() or ())
+            roles = [r for r in roles if r not in held]
+        return roles
 
     async def _async_team_free(
         self,
@@ -3537,6 +3706,409 @@ class JoeExecutor:
         if not any(e in saved for e in adapter.entities()):
             key = adapter.battery["id"]
             self.data["active"] = [k for k in self.data["active"] if k != key]
+
+    # --- a car charging fast: the house from the battery (control/house.py) ------
+
+    @property
+    def _house_serving(self) -> bool:
+        """The house comes from the battery now: wanted, and evcc let go of it."""
+        return self._house_go and self._house_free
+
+    @property
+    def _team_evcc_holds(self) -> bool:
+        """evcc holds the battery: not taking over, or Joe waits for it to
+        let go (a battery that gives nothing then is not empty)."""
+        return self._evcc_held or (self._house_go and not self._house_free)
+
+    def _team_need_w(self, deficit: float) -> float:
+        """What the active group is to give, for the meter's timers (W): the
+        house's need on top of the sun, or its fixed power while a car
+        charges fast (giving nothing more is no sign of being empty then)."""
+        if self._house_serving and self._house_w is not None:
+            return self._house_w
+        return deficit * 1000
+
+    def _house_regulating(self, config: dict[str, Any]) -> list[dict[str, Any]]:
+        """The batteries that regulate themselves (as _async_team sees them)."""
+        return [
+            b
+            for b in config["batteries"]
+            if (
+                self._proposed_regulating(b)
+                if b.get("self_regulating") is None
+                else bool(b["self_regulating"])
+            )
+        ]
+
+    def _house_check(
+        self,
+        config: dict[str, Any],
+        plan: dict[str, Any] | None,
+        mode: str,
+        now: datetime,
+    ) -> None:
+        """Whether the house is to come from the battery now (rules.car_house_only,
+        see control/house.py), its need and what the panel shows.
+
+        Only while a car of an evcc loadpoint charges in mode "now", outside
+        Joe's cheap window (the night's plan counts), only live; only with
+        evcc's discharge lock found and every battery that regulates itself
+        able to give a fixed power (one that could not would discharge into
+        the car), taking turns ("Nacheinander") or one alone. evcc has let go
+        of the battery once its lock is off and its battery mode is normal
+        again: only then Joe writes the power (evcc's own writes would
+        undo his).
+        """
+        store: dict[str, Any] = self.data["house"]
+        self._house_go = self._house_free = False
+        info = self.house = self._house_blank()
+        if not config["rules"].get("car_house_only"):
+            return
+        snap = evcc.snapshot(self._hass)
+        points = [p for p in evcc.loadpoints(snap) if p["kind"] == "car"]
+        lock = evcc.discharge_lock(snap)
+        fast = evcc.fast(points)
+        info.update(
+            loadpoints=[p["name"] for p in fast],
+            lock=lock.entity_id if lock else None,
+        )
+        state = self._house_problem(config, points, lock, info)
+        if state is None:
+            window = (plan or {}).get("window")
+            if window and _at(window["start"]) <= now < _at(window["end"]):
+                state = "night"
+            elif not fast:
+                state = "idle"
+            elif mode != "live":
+                state = "dry"
+            elif lock is not None and lock.entity_id in self.data["external"]:
+                # The owner switched evcc's lock back on: his for the night.
+                state = "lock_taken"
+        if state is not None:
+            info["state"] = state
+            self._house_samples = []
+            if store["on"]:
+                # It ends: what the meter showed of the active group meant
+                # its fixed power (and the car's import), not a helper due.
+                self.data["team"]["quick"] = {}
+            return
+        assert lock is not None
+        need = self._house_need(config, points)
+        if need is not None:
+            house_rules.sample(self._house_samples, now, need)
+        target = house_rules.target_w(self._house_samples)
+        written = store.get("w")
+        self._house_w = target if house_rules.moved(target, written) else written
+        self._house_go = True
+        self._house_free = lock.state == "off" and not evcc.battery_held(snap)
+        info.update(
+            state="on" if self._house_free else "wait",
+            need_w=None if need is None else round(need),
+            w=self._house_w,
+        )
+
+    def _house_blank(self) -> dict[str, Any]:
+        """What the panel shows of it, before a look: the state, what is
+        missing per battery, the loadpoints charging fast, evcc's lock, the
+        house's need and the power given (W), who gives it and since when."""
+        return {
+            "state": "off",
+            "problems": {},
+            "loadpoints": [],
+            "lock": None,
+            "need_w": None,
+            "w": None,
+            "batteries": [],
+            "since": self.data["house"].get("since"),
+        }
+
+    def _house_problem(
+        self,
+        config: dict[str, Any],
+        points: list[dict[str, Any]],
+        lock: Any,
+        info: dict[str, Any],
+    ) -> str | None:
+        """Why the house cannot come from the battery at all, or None; per
+        battery what is missing goes to the panel."""
+        if not points:
+            return "no_evcc"
+        if lock is None:
+            return "no_lock"
+        batteries = self._house_regulating(config)
+        if not batteries:
+            return "no_battery"
+        groups = {k: v[0] for k, v in self._team_groups(config).items()}
+        keys = {groups[b["id"]] for b in batteries}
+        if len(keys) >= 2 and (config["rules"].get("battery_team") or "sequence") != (
+            "sequence"
+        ):
+            # Left to themselves, the others would discharge into the car.
+            return "together"
+        if len(keys) == 1 and len(batteries) > 1:
+            return "one_group"
+        problems: dict[str, str] = {}
+        for battery in batteries:
+            adapter = make_adapter(battery)
+            if not isinstance(adapter, RoleAdapter):
+                problems[battery["id"]] = "no_power_lever"
+                continue
+            whole = self._whole_system(config, groups, battery, adapter)
+            found = adapter.house_problem(self._hass, whole)
+            if found is None and not (battery.get("power") or {}).get("entity_id"):
+                # Without its meter the need would follow its own power.
+                found = "no_meter"
+            if found is None and not self.tested(battery):
+                found = "not_tested"
+            if found:
+                problems[battery["id"]] = found
+        info["problems"] = problems
+        if self.data["house"]["on"] and set(problems.values()) == {"unavailable"}:
+            # A lever missing for a moment ends nothing ("Nacheinander"
+            # bridges it, see _team_grace).
+            return None
+        return "no_lever" if problems else None
+
+    def _house_need(
+        self, config: dict[str, Any], points: list[dict[str, Any]]
+    ) -> float | None:
+        """The house's need without the wallbox on top of the sun (W): from the
+        grid meter, every battery's meter and evcc's charge power of each
+        loadpoint with a car (see control/house.py)."""
+        grid = measurement_kw(
+            self._hass.states.get, config["measurements"]["grid_power"]
+        )
+        batteries = [
+            _charge_w(self._hass, b)
+            for b in config["batteries"]
+            if (b.get("power") or {}).get("entity_id")
+        ]
+        charged = [
+            p["power_kw"] if p["charging"] else (p["power_kw"] or 0.0) for p in points
+        ]
+        return house_rules.need_w(grid, batteries, charged)
+
+    def _team_house(
+        self,
+        config: dict[str, Any],
+        group: team_rules.Group,
+        roles: dict[str, RoleAdapter | None],
+        groups: dict[str, tuple[str, str, bool]],
+    ) -> dict[str, float]:
+        """The fixed power (W) each battery of the active group gives while a
+        car charges fast, and the lever each one uses (_team_house_lever);
+        nothing while one of them has none."""
+        batteries = {b["id"]: b for b in config["batteries"]}
+        keys = {k: v[0] for k, v in groups.items()}
+        levers: dict[str, str] = {}
+        entities: set[str] = set()
+        for key in group.ids:
+            role = roles.get(key)
+            if role is None:
+                return {}
+            whole = self._whole_system(config, keys, batteries[key], role)
+            lever = role.house_lever(self._hass, whole)
+            discharge = role.discharge_roles()
+            if lever is None:
+                return {}
+            levers[key] = lever
+            entities.add(
+                role.controls[discharge[1]]
+                if lever == "limit" and discharge
+                else role.controls.get("discharge_power", key)
+            )
+        self._team_house_lever = levers
+        # One limit for the whole group (the system's): each the whole power.
+        shared = len(group.ids) > 1 and len(entities) == 1
+        return house_rules.shares(self._house_w or 0.0, group.ids, shared)
+
+    async def _async_house(
+        self, config: dict[str, Any], keep: set[str], now: datetime
+    ) -> set[str]:
+        """evcc's lock off while the house comes from the battery, back as it
+        was once it is over; with one battery regulating alone its fixed
+        power, too (while Joe coordinates several, _team_choose and
+        _async_team_apply write it). Returns what is to stay as it is."""
+        store: dict[str, Any] = self.data["house"]
+        info = self.house
+        single: dict[str, Any] | None = None
+        if self._house_go:
+            if self._team_ids(config):
+                # Several systems: only while Joe coordinates them.
+                state = self.team.get("state")
+                if state not in ("on", "bridging"):
+                    info.update(state="team", team=state)
+                    self._house_go = self._house_free = False
+            else:
+                single = self._house_regulating(config)[0]
+        if not self._house_go:
+            await self._async_house_end(config, now, info["state"])
+            self._house_publish()
+            return set()
+        lock = info["lock"]
+        if not store["on"]:
+            store.update(
+                house_rules.fresh(),
+                on=True,
+                since=now.isoformat(timespec="seconds"),
+                lock=lock,
+            )
+            self._log(
+                "house",
+                battery=(single or {}).get("id") or self.team.get("active"),
+                loadpoint=", ".join(info["loadpoints"]),
+                power=round(self._house_w or 0.0),
+            )
+        self._house_watch(True)
+        await self._async_write(
+            evcc.LockAdapter(lock), [Write(lock, False)], now, "house_evcc"
+        )
+        result = {lock, evcc.LOCK_ID}
+        serving: list[str] = []
+        if self._house_serving:
+            if single is not None:
+                result |= await self._async_house_single(config, single, keep, now)
+                serving = [single["id"]]
+            else:
+                serving = list(self._team_house_w)
+            store["w"] = self._house_w
+        saved: dict[str, Any] = self.data["saved"]
+        for battery in config["batteries"]:
+            adapter = make_adapter(battery)
+            if battery["id"] in serving and adapter is not None:
+                # A forced discharge's mode, power and manual mode stay, too.
+                result |= {e for e in adapter.entities() if e in saved}
+                result.add(battery["id"])
+        info.update(since=store["since"], batteries=serving)
+        self._house_publish()
+        return result
+
+    async def _async_house_single(
+        self,
+        config: dict[str, Any],
+        battery: dict[str, Any],
+        keep: set[str],
+        now: datetime,
+    ) -> set[str]:
+        """The fixed power for the one battery that regulates alone: as a
+        block of discharging with the power in place of its 0 (see
+        RoleAdapter.team_house); a charge limit someone else holds (the
+        daytime cap, the morning) stays theirs."""
+        adapter = make_adapter(battery)
+        assert isinstance(adapter, RoleAdapter)
+        groups = {k: v[0] for k, v in self._team_groups(config).items()}
+        whole = self._whole_system(config, groups, battery, adapter)
+        taken = any(e in keep for e in adapter.team_charge_entities(whole))
+        writes, _ = adapter.team_block(
+            self._hass, False, True, taken, whole, self.data["saved"]
+        )
+        watts = self._house_w or 0.0
+        writes = adapter.team_house(self._hass, writes, watts, whole)
+        await self._async_write(
+            adapter, writes, now, "house", self._note("house", watts=round(watts))
+        )
+        self.data["house"]["single"] = {
+            "battery": battery["id"],
+            "lever": adapter.house_lever(self._hass, whole),
+        }
+        return {w.entity_id for w in writes} | {battery["id"]}
+
+    async def _async_house_end(
+        self, config: dict[str, Any], now: datetime, reason: str
+    ) -> None:
+        """It is over: the one battery back as it was (with several, the
+        blocks of "Nacheinander" took it back already), then evcc's lock as
+        it was before Joe – not if the owner switched it meanwhile. What
+        does not go back stays noted: the release keeps trying."""
+        store: dict[str, Any] = self.data["house"]
+        self._house_samples = []
+        self._house_w = None
+        if not store["on"]:
+            self._house_watch(False)
+            return
+        single = store.get("single")
+        battery = next(
+            (
+                b
+                for b in config["batteries"]
+                if b["id"] == (single or {}).get("battery")
+            ),
+            None,
+        )
+        adapter = make_adapter(battery) if battery else None
+        if single and isinstance(adapter, RoleAdapter):
+            if leave := adapter.team_house_exit(self._hass, single.get("lever")):
+                await self._async_write(adapter, leave, now, "release")
+            await self._async_team_free(adapter, self._free_roles(adapter), now)
+        lock = store.get("lock")
+        saved: dict[str, Any] = self.data["saved"]
+        if lock and lock in saved:
+            back = Write(lock, saved[lock])
+            await self._async_write(
+                evcc.LockAdapter(lock), [back], now, "house_evcc_back"
+            )
+            if matches(self._hass, fit(self._hass, back)):
+                saved.pop(lock, None)
+                self.data["written"].pop(lock, None)
+        if not lock or lock not in saved:
+            self.data["active"] = [k for k in self.data["active"] if k != evcc.LOCK_ID]
+        self._log("house_end", reason=reason)
+        store.update(house_rules.fresh())
+        self._house_watch(False)
+
+    def _house_watch(self, on: bool) -> None:
+        """The look every few seconds, only while it runs."""
+        if on and self._house_unsub is None:
+            self._house_unsub = async_track_time_interval(
+                self._hass, self._on_house_tick, house_rules.EVERY
+            )
+        elif not on and self._house_unsub is not None:
+            self._house_unsub()
+            self._house_unsub = None
+
+    @callback
+    def _on_house_tick(self, now: datetime) -> None:
+        self._hass.async_create_task(self.async_house_tick(), eager_start=False)
+
+    async def async_house_tick(self) -> None:
+        """Every few seconds while the house comes from the battery: its need
+        looked at; Joe checks at once when evcc let go of the battery, the
+        power is to move or the car stopped charging fast."""
+        if self.testing or self.probe_running or self._lock.locked():
+            return
+        try:
+            due = self._house_look(self._config(), dt_util.now())
+        except Exception:
+            _LOGGER.exception("Looking at the house's need failed")
+            return
+        if due:
+            self._hass.async_create_task(self.async_check(), eager_start=False)
+
+    def _house_look(self, config: dict[str, Any], now: datetime) -> bool:
+        """One look: whether a check is due now."""
+        if not self.data["house"]["on"]:
+            return False
+        snap = evcc.snapshot(self._hass)
+        points = [p for p in evcc.loadpoints(snap) if p["kind"] == "car"]
+        if not evcc.fast(points):
+            return True
+        if not self._house_free:
+            lock = evcc.discharge_lock(snap)
+            return (
+                lock is not None and lock.state == "off" and not evcc.battery_held(snap)
+            )
+        need = self._house_need(config, points)
+        if need is not None:
+            house_rules.sample(self._house_samples, now, need)
+        return house_rules.moved(
+            house_rules.target_w(self._house_samples), self.data["house"].get("w")
+        )
+
+    def _house_publish(self) -> None:
+        """Tell the panel when what it shows of it changed."""
+        if self.house != self._house_shown:
+            self._house_shown = deepcopy(self.house)
+            self._changed()
 
     # --- the watchdog: batteries running against each other -------------------
 
@@ -5637,6 +6209,8 @@ class JoeExecutor:
             "surplus": self.surplus,
             "team": self.team,
             "guard": self.guard,
+            # A car charging fast: the house from the battery (see _async_house).
+            "house": self.house,
             "grid_peak": self.data.get("grid_peak"),
             # Batteries charging much slower than planned, and the last
             # night's look back (see _async_watch_slow, _review_night).
