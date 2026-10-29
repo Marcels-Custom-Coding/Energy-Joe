@@ -3,6 +3,13 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.48
+
+- **Ich rechne alle 5 Minuten neu – und sofort, wenn sich etwas ändert.** Bisher habe ich einmal pro Stunde geplant und ab Beginn des günstigen Fensters gar nicht mehr. Jetzt rechne ich alle 5 Minuten, und zusätzlich nach spätestens einer halben Minute, wenn eine neue Sonnenprognose kommt, ein Termin in einem Auto-Kalender dazukommt, ein Auto angesteckt wird oder du etwas einstellst.
+- **Auch in der Nacht.** Im laufenden Fenster rechne ich Autos, Wallboxen und Geräte mit dem aktuellen Ladestand und den aktuellen Terminen neu – ein Termin, der nachts noch dazukommt, zählt sofort.
+- **Das Speicherziel darf nachts nur steigen.** Wird die Prognose für morgen schlechter, hebe ich das Ziel an (ab 3 Prozentpunkten) und lade weiter, auch wenn das alte Ziel schon erreicht war. Wird sie besser, bleibt das Ziel, damit nichts hin und her schaltet. Im Plan steht dann „Um 02:10 Uhr habe ich nachgerechnet und das Ziel angehoben …“, im Logbuch eine Zeile mit dem Grund.
+- Nicht geprüft an echter Anlage: alles davon, besonders das Anheben mitten in der Nacht.
+
 ## 0.9.47
 
 - **„Heute Nacht laden“ wirkt auch nach Mitternacht.** Ab Beginn des günstigen Fensters steht der Nachtplan fest. Hast du danach „Heute Nacht laden“ gewählt (etwa bis 100 km), habe ich das zwar gespeichert, den festen Plan aber nicht neu gerechnet – die Wallbox blieb aus. Jetzt rechne ich in dem Fall genau diese Aktion im laufenden Fenster neu, der Rest des Plans bleibt. Wieder ausschalten geht genauso.

@@ -1498,7 +1498,7 @@ export const en: Record<Key, string> = {
     "A margin only you set: this much I charge extra on the part above the reserve. I used to learn it myself – I no longer do. I now plan for uncertain days with a bad, a typical and a good day (see “How careful do I plan the night?”). The buffer only comes on top.",
   "tip.r_plan_offset_min.title": "When do I fix the plan?",
   "tip.r_plan_offset_min.text":
-    "This many minutes before the cheap hours begin I work out the plan for the night – with the latest forecast.",
+    "This many minutes before the cheap hours begin I fix the plan for the night – with the latest forecast. Until then I work it out again every 5 minutes. After that the time stays, and I only ever raise the batteries' target.",
   "tip.r_reset_lead_min.title": "Why put things back before the end?",
   "tip.r_reset_lead_min.text":
     "This many minutes before the cheap window ends I put everything back, for example the wallbox from “Now” to “PV”. Some devices keep running for a moment – this way nothing lands in the pricier day tariff.",
@@ -1694,6 +1694,14 @@ export const en: Record<Key, string> = {
   "plan.say.balance": "Tonight is a maintenance night: I charge full once so the batteries can balance their cells.",
   "plan.say.small_saving": "I leave it tonight: it would save less than the minimum saving you set in the rules.",
   "plan.say.max_price": "Above your highest price I don't charge from the grid.",
+  "plan.raised": "At {time} I checked again and raised the target: {changes}.",
+  "plan.raised.change": "{name} from {from} to {to} %",
+  "plan.raised.why.sun": "The forecast for tomorrow got worse.",
+  "plan.raised.why.use": "I expect more use tomorrow than before.",
+  "plan.raised.why.again": "With the charge level and the values of now the old target was no longer enough.",
+  "tip.plan_raised.title": "Why do I raise the target?",
+  "tip.plan_raised.text":
+    "Even when the plan is fixed I check again every 5 minutes – with the charge level and the forecast of now. If a target comes out at least 3 percentage points higher, I raise it and charge on, even if the battery had already reached the old one. If it comes out lower, the fixed target stays: I never lower it.",
   "plan.say.caution": "That is a bit more than a usual day would need – in case tomorrow brings less sun or you use more.",
   "plan.risk": "Why {target} %",
   "plan.risk.more":
@@ -1741,7 +1749,7 @@ export const en: Record<Key, string> = {
   "plan.why.no_prices": "Your price sensor does not provide a price list for the coming hours. Pick a sensor that has them under Devices › Grid & sun › Tariff (e.g. Nord Pool, EPEX Spot, Tibber, ENTSO-E).",
   "plan.why.prices_pending": "The prices for the night are not there yet – they usually come around 1 pm. Then I plan.",
   "plan.why.no_battery": "Without a battery whose size I know, there's nothing to plan at night.",
-  "plan.why.failed": "Something went wrong while planning. I'll try again at the next full hour.",
+  "plan.why.failed": "Something went wrong while planning. I'll try again in five minutes.",
   "plan.note.capacity_unknown": "One battery is missing from the calculation because I don't know its size.",
   "plan.note.soc_unknown": "One battery is missing from the calculation because its charge level isn't reporting.",
   "plan.note.not_controllable":
@@ -1806,7 +1814,7 @@ export const en: Record<Key, string> = {
   "tip.plan_target.hint": "In the simulation I don't switch anything – I only show what I would do.",
   "tip.plan_refresh.title": "When do I plan again?",
   "tip.plan_refresh.text":
-    "Every hour by myself, with the latest forecast. Shortly before the cheap hours I fix the plan, then it stays until the morning. **Plan again** calculates right away.",
+    "Every 5 minutes by myself, and right away when something changes: a car is plugged in or out, an appointment comes up, the solar forecast is new or you change a setting. Shortly before the cheap hours I fix the plan. Then the time stays, but I keep checking: cars and devices I plan again, the batteries' target I only raise – I never lower it. **Plan again** calculates right away.",
   "tip.plan_math.title": "How do I decide?",
   "tip.plan_math.text":
     "I play through the hours until the next night – for every possible target and for a bad, a typical and a good day – and take the target that costs you least on average. I only add a buffer of my own if you have set one. **Change →** takes you to where a value is set.",
@@ -3956,6 +3964,9 @@ export const en: Record<Key, string> = {
   "log.charge_slow": "{battery} charges from the grid at only {power} instead of {planned} kW – the inverter probably allows little this way; from now on I plan it with that",
   "log.charge_slow_end": "{battery} charges faster again ({power} kW) – I plan it at full power again",
   "log.night_charged": "{battery}: {charged} of {planned} kWh charged",
+  "log.raised.sun": "Target for {battery} raised: {before} → {target} % – the forecast for tomorrow got worse ({sun_from} → {sun_to} kWh of sun)",
+  "log.raised.use": "Target for {battery} raised: {before} → {target} % – I expect more use tomorrow than before",
+  "log.raised.again": "Target for {battery} raised: {before} → {target} % – with the charge level and the values of now the old target is not enough",
   "log.night_none": "I am not charging tonight",
   "log.night_none.small_saving": "I am not charging tonight: the saving would stay below your minimum (I had worked out {target} %, {kwh} kWh)",
   "log.night_none.enough": "I am not charging tonight: the batteries last until the sun takes over at {sun}",

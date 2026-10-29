@@ -1467,6 +1467,8 @@ export interface PlanBattery {
   controllable: boolean;
   /** Whether Joe can charge it from the grid at all. */
   grid?: boolean;
+  /** Its target raised in the fixed plan: from the one it was fixed with, when and why. */
+  raised?: { from: number; at: string; why: PlanRaise["why"] };
 }
 
 /** Up to this level the batteries take the morning sun, then Joe holds back (planner.morning_buffer). */
@@ -1558,6 +1560,27 @@ export interface Plan {
   actions?: PlanAction[];
   /** Each car charged by need: tomorrow and where it is plugged in. */
   cars?: Record<string, PlanCar>;
+  /** A fixed plan: the target it was fixed with, once Joe raised one (plan/scheduler.py). */
+  target_fixed?: number;
+  /** A fixed plan: the batteries whose target Joe raised tonight, oldest first. */
+  raised?: PlanRaise[];
+  /** A fixed plan: when Joe worked it out again last. */
+  checked?: string;
+}
+
+/** A battery's target raised in the fixed plan (it only ever goes up). */
+export interface PlanRaise {
+  battery: string;
+  name: string;
+  /** Before this raise, and the target the night was fixed with. */
+  from: number;
+  first: number;
+  to: number;
+  at: string;
+  /** "sun": less sun tomorrow, "use": more use, "again": the values of now in general. */
+  why: "sun" | "use" | "again";
+  sun_from?: number | null;
+  sun_to?: number | null;
 }
 
 /** Why tonight's plan reasons as it does ("caution": target above the typical day's). */

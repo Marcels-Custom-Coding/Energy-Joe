@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date, datetime, time, timedelta
 import logging
 import math
@@ -347,11 +348,15 @@ async def async_build_input(
     detected: dict[str, dict[str, Any]] | None = None,
     grid_peak: dict[str, Any] | None = None,
     slow: dict[str, float] | None = None,
+    window: tuple[datetime, datetime] | None = None,
 ) -> tuple[PlanInput | None, list[str]]:
     """Gather everything for tonight's plan; None with reasons if there is nothing to plan.
 
     `slow`: per battery the power (W) it was measured to charge with at night
     when it took far less than planned (see executor._async_watch_slow).
+    `window`: the window of tonight's fixed plan; it stays (a dynamic tariff's
+    best window is not searched again). The night is worked out from now on,
+    with the levels the batteries have now.
     """
     tariff = config["tariff"]
     dynamic = tariff["kind"] == "dynamic"
@@ -433,6 +438,9 @@ async def async_build_input(
         for s in hour_starts(local_hour(now), window_start + timedelta(days=1))
     ]
     window_start, window_end = dt_util.as_utc(window_start), dt_util.as_utc(window_end)
+    span = (window_start, window_end)
+    if window is not None:
+        window_start, window_end = dt_util.as_utc(window[0]), dt_util.as_utc(window[1])
     today = dt_util.as_local(now).date()
     flexible = model.flexible_consumers(config)
     profiles, consumption = await async_consumption(history, today, flexible)
@@ -495,8 +503,11 @@ async def async_build_input(
                 home=profiles[workdays[local.date()]][local.hour]
                 * (outlook["scale"] if is_tomorrow else 1.0)
                 * fraction,
-                # A dynamic tariff's window is chosen below.
-                window=not dynamic and window_start <= start < window_end,
+                # A dynamic tariff's window is chosen below (unless it is fixed);
+                # the hour running now counts from now on.
+                window=(not dynamic or window is not None)
+                and window_start <= max(start, now)
+                and start < window_end,
                 fraction=fraction,
                 price=sum(known) / len(known) if known else None,
                 quarters=hourly.get(start, ()),
@@ -505,7 +516,7 @@ async def async_build_input(
 
     rules = config["rules"]
     prices = _prices(tariff, hours if dynamic else [])
-    search = (window_start, window_end) if dynamic else None
+    search = span if dynamic else None
 
     # Night actions: tomorrow's sun decides, running ones take grid power and
     # move their consumer's daytime energy into the night.
@@ -530,7 +541,20 @@ async def async_build_input(
         detected,
     )
     needs = point_needs(config, cars, detected)
-    if dynamic:
+    if dynamic and window is not None:
+        # Tonight's window is fixed: its prices, not the best window again.
+        night = [h.price for h in hours if h.window and h.price is not None]
+        day = [
+            h.price
+            for h in hours
+            if h.start >= window_end and h.price is not None and h.solar < h.home
+        ]
+        prices = replace(
+            prices,
+            night=round(sum(night) / len(night), 5) if night else prices.night,
+            day=round(sum(day) / len(day), 5) if day else prices.day,
+        )
+    elif dynamic:
         # The cheapest window first; running actions need it long enough.
         preview = plan_actions(
             config["actions"],

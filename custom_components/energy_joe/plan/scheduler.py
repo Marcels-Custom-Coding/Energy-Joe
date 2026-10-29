@@ -1,15 +1,28 @@
-"""When Joe plans: a preview every hour, the plan itself shortly before the window."""
+"""When Joe plans: every five minutes and soon after a change, the plan
+itself fixed shortly before the window and worked out again inside it."""
 
 from __future__ import annotations
 
-from collections.abc import Callable
+import asyncio
+from collections.abc import Awaitable, Callable
+from copy import deepcopy
+from dataclasses import replace
 from datetime import datetime, timedelta
 import logging
+import math
 from typing import Any
 
-from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
+from homeassistant.core import (
+    CALLBACK_TYPE,
+    Event,
+    EventStateChangedData,
+    HomeAssistant,
+    callback,
+)
 from homeassistant.helpers.event import (
+    async_call_later,
     async_track_point_in_time,
+    async_track_state_change_event,
     async_track_time_change,
 )
 from homeassistant.util import dt as dt_util
@@ -20,10 +33,19 @@ from .car_calendar import CarCalendarStore
 from .cars import action_by_id, car_by_id, detect_all, need_for, point_of
 from .ev import car_need
 from .inputs import DEFAULT_SEARCH, async_build_input, next_window, point_needs
-from .planner import make_plan
+from .planner import joined_slots, make_plan
 from .trips import PlaceStore, normalize
 
 _LOGGER = logging.getLogger(__name__)
+
+# Joe plans again every this many minutes, and this many seconds after a
+# change (changes within them make one run).
+EVERY_MINUTES = 5
+SETTLE_S = 30
+# A fixed plan's battery target goes up only when it comes out at least this
+# much higher (percentage points), and not in the window's last minutes.
+RAISE_MIN = 3
+RAISE_UNTIL = timedelta(minutes=15)
 
 
 class JoePlanner:
@@ -65,7 +87,18 @@ class JoePlanner:
         self.slow: Callable[[], dict[str, float]] = dict
         # Which car is plugged in at each charge point (set by the runtime).
         self.detected: Callable[[], dict[str, dict[str, Any]]] = self._detect
+        # Tonight's fixed plan was worked out again: the executor runs these
+        # actions anew and charges the raised batteries on (set by the runtime).
+        self.replanned: (
+            Callable[[list[str], list[dict[str, Any]]], Awaitable[None]] | None
+        ) = None
         self.plan: dict[str, Any] | None = None
+        # Watching what the plan depends on (forecast, calendars).
+        self._inputs: list[CALLBACK_TYPE] = []
+        # A change was seen: planning again is due then.
+        self._pending: CALLBACK_TYPE | None = None
+        # One run at a time (the clock, a change, the panel, fixing the plan).
+        self._lock = asyncio.Lock()
 
     def _detect(self) -> dict[str, dict[str, Any]]:
         return detect_all(self._config, self._hass.states.get) if self._config else {}
@@ -79,16 +112,22 @@ class JoePlanner:
         await self.async_stop()
         self._config = config
         self._unsubs.append(
-            async_track_time_change(self._hass, self._on_tick, minute=5, second=0)
+            async_track_time_change(
+                self._hass, self._on_tick, minute=f"/{EVERY_MINUTES}", second=0
+            )
         )
+        self._watch_inputs()
         await self._async_restore()
         await self.async_refresh()
         self._schedule_commit()
 
     async def async_stop(self) -> None:
-        for unsub in self._unsubs:
+        for unsub in [*self._unsubs, *self._inputs]:
             unsub()
-        self._unsubs = []
+        self._unsubs, self._inputs = [], []
+        if self._pending:
+            self._pending()
+            self._pending = None
         if self._commit:
             self._commit()
             self._commit = None
@@ -101,14 +140,63 @@ class JoePlanner:
     async def async_update(self, config: dict[str, Any]) -> None:
         """The rules or the tariff changed: plan again."""
         self._config = config
+        if self.active:
+            # Other calendars may count now.
+            self._watch_inputs()
         await self.async_refresh()
         self._schedule_commit()
 
+    def _watch_inputs(self) -> None:
+        """Plan again soon when the solar forecast changes or a calendar with
+        the cars' trips does (Joe's own car calendars tell him themselves)."""
+        for unsub in self._inputs:
+            unsub()
+        self._inputs = []
+        if entities := watched_entities(self._config):
+            self._inputs.append(
+                async_track_state_change_event(self._hass, entities, self._on_input)
+            )
+        if self.calendars is not None:
+            self._inputs.append(self.calendars.listen(self.request))
+
+    @callback
+    def _on_input(self, event: Event[EventStateChangedData]) -> None:
+        old, new = event.data["old_state"], event.data["new_state"]
+        if new is None:
+            return
+        # A calendar shows its next appointment in its attributes; a forecast
+        # counts only with a new value (some write their attributes often).
+        if new.domain != "calendar" and old is not None and old.state == new.state:
+            return
+        self.request()
+
+    @callback
+    def request(self) -> None:
+        """Something the plan depends on changed: plan again in a moment.
+        Changes within SETTLE_S make one run (the first one starts the wait)."""
+        if not self.active or self._pending is not None:
+            return
+        self._pending = async_call_later(self._hass, SETTLE_S, self._on_request)
+
+    @callback
+    def _on_request(self, now: datetime) -> None:
+        self._pending = None
+        self._hass.async_create_task(self.async_refresh(), eager_start=False)
+
     async def async_refresh(self) -> dict[str, Any] | None:
-        """Plan again now; a fixed plan stays until its window is over."""
+        """Plan again now. A fixed plan keeps its window until it is over:
+        inside it, the night is worked out again (see _async_replan_night)."""
+        async with self._lock:
+            return await self._async_refresh()
+
+    async def _async_refresh(self) -> dict[str, Any] | None:
         now = dt_util.now()
         if self._fixed is not None:
             if datetime.fromisoformat(self._fixed["window"]["end"]) > now:
+                try:
+                    await self._async_replan_night(now)
+                except Exception:
+                    _LOGGER.exception("Planning tonight again failed")
                 self.plan = self._fixed
                 self._changed()
                 return self.plan
@@ -130,8 +218,12 @@ class JoePlanner:
         self._changed()
         return self.plan
 
-    async def _async_plan(self, now: datetime) -> dict[str, Any]:
+    async def _async_plan(
+        self, now: datetime, fixed: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         try:
+            if fixed is not None:
+                return await self._async_compute(now, fixed)
             return await self._async_compute(now)
         except Exception:
             _LOGGER.exception("Planning failed")
@@ -149,8 +241,12 @@ class JoePlanner:
         from when, and the level it stops at; the executor reads them every minute).
         Returns the ids of the actions worked out again.
         """
+        async with self._lock:
+            return await self._async_correct_needs(location)
+
+    async def _async_correct_needs(self, location: str) -> list[str]:
         if self._fixed is None:
-            await self.async_refresh()
+            await self._async_refresh()
             return []
         key = normalize(location)
         place = self.places.places.get(key)
@@ -208,40 +304,78 @@ class JoePlanner:
     async def async_replan_points(self) -> list[str]:
         """Another car was plugged in (or Joe was told which): the charge
         points follow at once. A fixed plan keeps its window; the cars' needs
-        of the evening stay, only who is plugged in where is new."""
-        if self._fixed is None:
-            if self.active:
-                await self.async_refresh()
-            return []
-        fixed = self._fixed
-        changed = self._replan_points(fixed, self.detected())
-        if changed:
-            await self._history.async_update_day(
-                datetime.fromisoformat(fixed["window"]["start"]).date().isoformat(),
-                plan=fixed,
-            )
-            self.plan = fixed
-            self._changed()
+        of the evening stay, only who is plugged in where is new; the whole
+        night follows in a moment (the car's level and trips as they are)."""
+        async with self._lock:
+            if self._fixed is None:
+                if self.active:
+                    await self._async_refresh()
+                return []
+            fixed = self._fixed
+            changed = self._replan_points(fixed, self.detected())
+            if changed:
+                await self._history.async_update_day(
+                    datetime.fromisoformat(fixed["window"]["start"]).date().isoformat(),
+                    plan=fixed,
+                )
+                self.plan = fixed
+                self._changed()
+                if self.replanned is not None:
+                    # Another car at the charge point: its charge counts anew.
+                    await self.replanned(changed, [])
+        self.request()
         return changed
 
     async def async_replan_action(self, action_id: str) -> list[str]:
         """A night action switched by hand ("Heute Nacht") while the plan is
         fixed: it is worked out again inside the fixed window, the rest stays.
         Before the plan is fixed, planning again does it."""
-        if self._fixed is None:
-            if self.active:
-                await self.async_refresh()
-            return []
+        async with self._lock:
+            if self._fixed is None:
+                if self.active:
+                    await self._async_refresh()
+                return []
+            fixed = self._fixed
+            changed = self._replan_points(fixed, self.detected(), only=action_id)
+            if changed:
+                await self._history.async_update_day(
+                    datetime.fromisoformat(fixed["window"]["start"]).date().isoformat(),
+                    plan=fixed,
+                )
+            self.plan = fixed
+            self._changed()
+            return changed
+
+    async def _async_replan_night(self, now: datetime) -> None:
+        """Tonight's fixed plan worked out again from now on, with the levels
+        and the forecast as they are now. The window stays. The night actions
+        are worked out anew in it (a car with its level and trips as they are
+        now: a new appointment counts at once); a running one is never
+        switched off only to start again later. A battery's target only goes
+        up: clearly higher now, it is raised with its charging from now on;
+        lower, the fixed one stays."""
         fixed = self._fixed
-        changed = self._replan_points(fixed, self.detected(), only=action_id)
-        if changed:
+        assert fixed is not None
+        plan = await self._async_plan(now, fixed)
+        if plan.get("kind") == "unavailable" or not _same_window(plan, fixed):
+            return
+        again = deepcopy(fixed)
+        again["checked"] = now.isoformat(timespec="seconds")
+        changed, rearm = _night_actions(again, plan, now)
+        again["cars"] = plan.get("cars") or {}
+        raised: list[dict[str, Any]] = []
+        if datetime.fromisoformat(fixed["window"]["end"]) - now > RAISE_UNTIL:
+            raised = _raise_targets(again, plan, now)
+        self._fixed = again
+        if changed or raised:
+            # The day keeps tonight's plan as it is carried out (with the
+            # target it was fixed with, for the look back).
             await self._history.async_update_day(
-                datetime.fromisoformat(fixed["window"]["start"]).date().isoformat(),
-                plan=fixed,
+                datetime.fromisoformat(again["window"]["start"]).date().isoformat(),
+                plan=again,
             )
-        self.plan = fixed
-        self._changed()
-        return changed
+        if (rearm or raised) and self.replanned is not None:
+            await self.replanned(rearm, raised)
 
     def _replan_points(
         self,
@@ -293,7 +427,17 @@ class JoePlanner:
             changed.append(entry["id"])
         return changed
 
-    async def _async_compute(self, now: datetime) -> dict[str, Any]:
+    async def _async_compute(
+        self, now: datetime, fixed: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        """A plan from now on (`fixed`: in that plan's window, see
+        _async_replan_night)."""
+        window = None
+        if fixed is not None:
+            window = (
+                datetime.fromisoformat(fixed["window"]["start"]),
+                datetime.fromisoformat(fixed["window"]["end"]),
+            )
         inp, notes = await async_build_input(
             self._hass,
             self._config,
@@ -307,6 +451,7 @@ class JoePlanner:
             self.detected(),
             self.grid_peak(),
             self.slow(),
+            window,
         )
         if inp is None:
             return {
@@ -314,6 +459,15 @@ class JoePlanner:
                 "reasons": notes,
                 "created": now.isoformat(timespec="seconds"),
             }
+        if fixed is not None:
+            # A maintenance night is one as fixed (a new day after midnight
+            # does not make one).
+            force = (fixed.get("rules") or {}).get("force_target")
+            inp = replace(
+                inp,
+                force_target=force,
+                max_target=max(self._config["rules"]["max_target_soc"], force or 0.0),
+            )
         # Trying many windows takes a moment: not in the event loop.
         return await self._hass.async_add_executor_job(make_plan, inp)
 
@@ -338,6 +492,9 @@ class JoePlanner:
 
     @callback
     def _on_tick(self, now: datetime) -> None:
+        if self._lock.locked():
+            # Still at it (a slow forecast or calendar): the next tick.
+            return
         self._hass.async_create_task(self.async_refresh(), eager_start=False)
 
     @callback
@@ -375,6 +532,10 @@ class JoePlanner:
 
     async def _async_fix(self) -> None:
         """Fix tonight's plan and keep it for the evaluation."""
+        async with self._lock:
+            await self._async_fix_now()
+
+    async def _async_fix_now(self) -> None:
         self._fixed = None
         plan = await self._async_plan(dt_util.now())
         # Another run may have finished in between: this one is the plan.
@@ -438,6 +599,13 @@ def _cost(plan: dict[str, Any], action: dict[str, Any]) -> float:
     return round(total or action["energy_kwh"] * (prices.get("night") or 0.0), 2)
 
 
+def _same_course(again: dict[str, Any], entry: dict[str, Any]) -> bool:
+    """Whether an action worked out again runs as before (when, to what, for
+    which car; its reasons and what is still missing may move on)."""
+    keys = ("run", "start", "end", "target", "car", "plugged")
+    return all(again.get(k) == entry.get(k) for k in keys)
+
+
 def _same_run(again: dict[str, Any], entry: dict[str, Any]) -> bool:
     """Whether an action worked out again does the same as before."""
     keys = ("run", "start", "end", "target", "car", "plugged", "reasons")
@@ -445,3 +613,218 @@ def _same_run(again: dict[str, Any], entry: dict[str, Any]) -> bool:
         (again.get("need") or {}).get("missing_kwh")
         == (entry.get("need") or {}).get("missing_kwh")
     )
+
+
+def watched_entities(config: dict[str, Any]) -> list[str]:
+    """What the plan depends on and tells when it changes: the solar
+    forecast's sensors and the calendars the cars' trips come from."""
+    forecast = config.get("forecast") or {}
+    found = {
+        *(forecast.get("today") or []),
+        *(forecast.get("tomorrow") or []),
+        *(
+            entity
+            for source in forecast.get("alternatives") or []
+            for entity in source.get("tomorrow") or []
+        ),
+    }
+    cars = [car for car in config.get("cars") or [] if (car.get("need") or {})]
+    if any(car["need"].get("enabled") for car in cars):
+        found.update(c for p in config.get("persons") or [] for c in p["calendars"])
+        found.update(
+            c
+            for car in cars
+            if car["need"].get("enabled")
+            for c in car["need"].get("calendars") or []
+        )
+    return sorted(found)
+
+
+def _same_window(plan: dict[str, Any], fixed: dict[str, Any]) -> bool:
+    """Whether a plan worked out again kept the fixed plan's window."""
+    window, other = plan.get("window") or {}, fixed["window"]
+    return bool(window) and all(
+        datetime.fromisoformat(window[key]) == datetime.fromisoformat(other[key])
+        for key in ("start", "end")
+    )
+
+
+def _running(entry: dict[str, Any], now: datetime) -> bool:
+    return bool(entry.get("run")) and (
+        datetime.fromisoformat(entry["start"])
+        <= now
+        < datetime.fromisoformat(entry["end"])
+    )
+
+
+def _higher(again: float | None, before: float | None) -> bool:
+    return again is not None and (before is None or again > before + 0.05)
+
+
+def _night_actions(
+    fixed: dict[str, Any], plan: dict[str, Any], now: datetime
+) -> tuple[list[str], list[str]]:
+    """The night actions of a plan worked out again, into the fixed plan.
+
+    Returns the ids whose run changed, and those the executor runs anew:
+    switched on now, or with a higher target than before (a new trip).
+    """
+    before = {a["id"]: a for a in fixed.get("actions") or []}
+    actions, changed, rearm = [], [], []
+    for again in plan.get("actions") or []:
+        entry = before.get(again["id"])
+        if (
+            entry is not None
+            and again.get("run")
+            and _running(entry, now)
+            and datetime.fromisoformat(again["start"]) > now
+        ):
+            # Running already: it goes on rather than off now and on again
+            # later (it got on faster than Joe expected).
+            again = {**again, "start": entry["start"]}
+            hours = (
+                datetime.fromisoformat(again["end"])
+                - datetime.fromisoformat(again["start"])
+            ).total_seconds() / 3600
+            again["energy_kwh"] = round((again.get("power_kw") or 0.0) * hours, 2)
+            again["cost"] = _cost(fixed, again)
+        actions.append(again)
+        if entry is None or not _same_course(again, entry):
+            changed.append(again["id"])
+        if again.get("run") and (
+            entry is None
+            or not entry.get("run")
+            or _higher(again.get("target"), entry.get("target"))
+        ):
+            rearm.append(again["id"])
+    fixed["actions"] = actions
+    return changed, rearm
+
+
+def _raise_targets(
+    fixed: dict[str, Any], plan: dict[str, Any], now: datetime
+) -> list[dict[str, Any]]:
+    """A battery whose target came out clearly higher now (RAISE_MIN) gets it,
+    with its charging from now on; a lower one keeps the fixed target. The
+    target the night was fixed with stays as target_fixed (and per battery
+    under "raised"). Returns what was raised."""
+    if plan.get("kind") not in ("charge", "hold"):
+        return []
+    if "no_forecast" in (plan.get("notes") or []) and "no_forecast" not in (
+        fixed.get("notes") or []
+    ):
+        # The forecast missing for a moment makes the night look dark.
+        return []
+    fresh = {b["id"]: b for b in plan.get("batteries") or []}
+    up = {
+        entry["id"]
+        for entry in fixed.get("batteries") or []
+        if entry["id"] in fresh
+        and fresh[entry["id"]].get("controllable", True)
+        and fresh[entry["id"]]["target"] >= entry["target"] + RAISE_MIN
+    }
+    if not up:
+        return []
+    why = _why_raised(fixed, plan)
+    at = now.isoformat(timespec="seconds")
+    eta = math.sqrt((fixed.get("rules") or {}).get("efficiency") or 0.9)
+    # Nothing was to be done tonight: the others as worked out now, too.
+    whole = fixed.get("kind") == "none"
+    raised: list[dict[str, Any]] = []
+    batteries = []
+    added_kwh = 0.0
+    for entry in fixed.get("batteries") or []:
+        again = fresh.get(entry["id"])
+        if again is None or entry["id"] not in up:
+            batteries.append({**again} if whole and again is not None else entry)
+            continue
+        first = (entry.get("raised") or {}).get("from", entry["target"])
+        added = (
+            (entry.get("capacity") or 0.0) * (again["target"] - entry["target"]) / 100
+        )
+        added_kwh += added
+        batteries.append(
+            {
+                **entry,
+                **{
+                    key: again[key]
+                    for key in ("target", "power_kw", "slots", "how", "rank")
+                    if key in again
+                },
+                # What it takes over the whole night: as fixed plus the raise.
+                "charge_kwh": round(
+                    max(
+                        again.get("charge_kwh") or 0.0,
+                        (entry.get("charge_kwh") or 0.0) + added,
+                    ),
+                    2,
+                ),
+                "grid_kwh": round(
+                    max(
+                        again.get("grid_kwh") or 0.0,
+                        (entry.get("grid_kwh") or 0.0) + added / eta,
+                    ),
+                    2,
+                ),
+                "raised": {"from": first, "at": at, "why": why},
+            }
+        )
+        raised.append(
+            {
+                "battery": entry["id"],
+                "name": entry["name"],
+                "from": entry["target"],
+                "to": again["target"],
+                "first": first,
+                "at": at,
+                "why": why,
+                "sun_from": (fixed.get("meta") or {}).get("tomorrow_kwh"),
+                "sun_to": (plan.get("meta") or {}).get("tomorrow_kwh"),
+            }
+        )
+    capacity = fixed.get("capacity_kwh") or sum(
+        b.get("capacity") or 0.0 for b in batteries
+    )
+    target = fixed["target"]
+    fixed.setdefault("target_fixed", target)
+    if capacity:
+        target = max(target, min(100, round(target + 100 * added_kwh / capacity)))
+    if whole:
+        target = max(target, plan["target"])
+        fixed["kind"] = plan["kind"]
+        fixed["reasons"] = plan.get("reasons") or []
+    elif fixed.get("kind") == "hold" and plan["kind"] == "charge":
+        fixed["kind"] = "charge"
+    fixed.update(
+        target=target,
+        target_kwh=round((fixed.get("capacity_kwh") or 0.0) * target / 100, 2),
+        batteries=batteries,
+        grid_charge_kwh=round(sum(b.get("grid_kwh") or 0.0 for b in batteries), 2),
+        # Tomorrow's days as weighed now (the panel's "Warum X %").
+        risk=plan.get("risk") or fixed.get("risk"),
+        raised=[*(fixed.get("raised") or []), *raised],
+    )
+    slots = joined_slots([s for b in batteries for s in b.get("slots") or []])
+    if slots:
+        fixed["charge_slots"] = slots
+        fixed["charge_from"] = datetime.fromisoformat(slots[0]["start"]).isoformat(
+            timespec="minutes"
+        )
+    return raised
+
+
+def _why_raised(fixed: dict[str, Any], plan: dict[str, Any]) -> str:
+    """Why a target came out higher: less sun tomorrow than the plan was
+    fixed with, more use, or the levels and values of now in general."""
+    sun = (fixed.get("meta") or {}).get("tomorrow_kwh")
+    sun_now = (plan.get("meta") or {}).get("tomorrow_kwh")
+    if sun is not None and sun_now is not None and sun_now < sun - max(0.5, sun * 0.05):
+        return "sun"
+    home, home_now = fixed.get("home_kwh"), plan.get("home_kwh")
+    if (
+        home is not None
+        and home_now is not None
+        and home_now > home + max(0.5, home * 0.05)
+    ):
+        return "use"
+    return "again"

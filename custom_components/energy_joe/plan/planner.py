@@ -732,7 +732,7 @@ def _plan(inp: PlanInput) -> dict[str, Any]:
             # up to it (a share cut short by rounding or by the day).
             entry["target"] = highest
         batteries.append(entry)
-    slots = _joined(
+    slots = joined_slots(
         [slot for entry in batteries for slot in entry["slots"]]
         if shared is not None
         else []
@@ -1232,7 +1232,7 @@ def _starts(inp: PlanInput, at_start: float) -> dict[str, float]:
     return result
 
 
-def _joined(slots: list[dict[str, Any]]) -> list[dict[str, str]]:
+def joined_slots(slots: list[dict[str, Any]]) -> list[dict[str, str]]:
     """Every battery's charging times together, as joined spans."""
     spans = sorted(
         (datetime.fromisoformat(s["start"]), datetime.fromisoformat(s["end"]))

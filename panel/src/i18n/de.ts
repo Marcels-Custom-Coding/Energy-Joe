@@ -1514,7 +1514,7 @@ export const de = {
     "Ein Aufschlag, den nur du festlegst: So viel lade ich zusätzlich auf den Teil über der Reserve. Früher habe ich ihn selbst gelernt – das mache ich nicht mehr. Unsichere Tage plane ich jetzt mit einem schlechten, einem üblichen und einem guten Tag ein (siehe „Wie vorsichtig plane ich die Nacht?“). Der Puffer kommt nur noch obendrauf.",
   "tip.r_plan_offset_min.title": "Wann lege ich den Plan fest?",
   "tip.r_plan_offset_min.text":
-    "So viele Minuten vor Beginn der günstigen Zeit rechne ich den Plan für die Nacht aus – mit der neuesten Prognose.",
+    "So viele Minuten vor Beginn der günstigen Zeit lege ich den Plan für die Nacht fest – mit der neuesten Prognose. Bis dahin rechne ich alle 5 Minuten neu. Danach bleibt die Zeit fest, und das Ziel der Speicher hebe ich höchstens noch an.",
   "tip.r_reset_lead_min.title": "Warum vor dem Ende zurückstellen?",
   "tip.r_reset_lead_min.text":
     "So viele Minuten vor Ende der günstigen Zeit stelle ich alles zurück, zum Beispiel die Wallbox von „Jetzt“ auf „PV“. Manche Geräte laufen noch kurz nach – so landet nichts im teureren Tagtarif.",
@@ -1714,6 +1714,14 @@ export const de = {
   "plan.say.small_saving":
     "Heute Nacht lasse ich es: Es würde weniger bringen, als du in den Regeln als Mindestersparnis eingestellt hast.",
   "plan.say.max_price": "Über deinem Höchstpreis lade ich nicht aus dem Netz.",
+  "plan.raised": "Um {time} Uhr habe ich nachgerechnet und das Ziel angehoben: {changes}.",
+  "plan.raised.change": "{name} von {from} auf {to} %",
+  "plan.raised.why.sun": "Die Prognose für morgen ist schlechter geworden.",
+  "plan.raised.why.use": "Ich erwarte morgen mehr Verbrauch als vorhin.",
+  "plan.raised.why.again": "Mit dem Ladestand und den Werten von jetzt reichte das alte Ziel nicht mehr.",
+  "tip.plan_raised.title": "Warum hebe ich das Ziel an?",
+  "tip.plan_raised.text":
+    "Auch wenn der Plan feststeht, rechne ich alle 5 Minuten nach – mit dem Ladestand und der Prognose von jetzt. Kommt ein Ziel dabei mindestens 3 Prozentpunkte höher heraus, hebe ich es an und lade weiter, auch wenn der Speicher das alte Ziel schon erreicht hatte. Kommt es niedriger heraus, bleibt das feste Ziel: Senken tue ich es nie.",
   "plan.say.caution":
     "Das ist etwas mehr, als ein gewöhnlicher Tag bräuchte – für den Fall, dass morgen weniger Sonne kommt oder ihr mehr braucht.",
   "plan.risk": "Warum {target} %",
@@ -1763,7 +1771,7 @@ export const de = {
   "plan.why.prices_pending":
     "Die Preise für die Nacht sind noch nicht da – sie kommen meist gegen 13 Uhr. Dann plane ich.",
   "plan.why.no_battery": "Ohne Speicher, dessen Größe ich kenne, gibt es nachts nichts zu planen.",
-  "plan.why.failed": "Beim Planen ist etwas schiefgegangen. Ich versuche es zur nächsten vollen Stunde wieder.",
+  "plan.why.failed": "Beim Planen ist etwas schiefgegangen. Ich versuche es in fünf Minuten wieder.",
   "plan.note.capacity_unknown": "Ein Speicher fehlt in der Rechnung, weil ich seine Größe nicht kenne.",
   "plan.note.soc_unknown": "Ein Speicher fehlt in der Rechnung, weil sein Ladezustand gerade nichts liefert.",
   "plan.note.not_controllable":
@@ -1828,7 +1836,7 @@ export const de = {
   "tip.plan_target.hint": "In der Simulation schalte ich nichts – ich zeige nur, was ich tun würde.",
   "tip.plan_refresh.title": "Wann rechne ich neu?",
   "tip.plan_refresh.text":
-    "Jede Stunde von allein, mit der neuesten Prognose. Kurz vor der günstigen Zeit lege ich den Plan fest, danach bleibt er bis zum Morgen. Mit **Neu rechnen** rechne ich sofort.",
+    "Alle 5 Minuten von allein und sofort, wenn sich etwas ändert: Ein Auto wird an- oder abgesteckt, ein Termin kommt dazu, die Sonnenprognose ist neu oder du änderst eine Einstellung. Kurz vor der günstigen Zeit lege ich den Plan fest. Danach bleibt die Zeit, aber ich rechne weiter nach: Autos und Geräte plane ich neu, das Ziel der Speicher hebe ich nur an – senken tue ich es nie. Mit **Neu rechnen** rechne ich sofort.",
   "tip.plan_math.title": "Wie entscheide ich?",
   "tip.plan_math.text":
     "Ich spiele die Stunden bis zur nächsten Nacht durch – für jedes mögliche Ziel und für einen schlechten, einen üblichen und einen guten Tag – und nehme das Ziel, bei dem du im Schnitt am wenigsten bezahlst. Einen eigenen Puffer lege ich nur drauf, wenn du einen eingestellt hast. **Ändern →** bringt dich dorthin, wo ein Wert eingestellt wird.",
@@ -3989,6 +3997,9 @@ export const de = {
   "log.charge_slow": "{battery} lädt nur mit {power} statt {planned} kW aus dem Netz – vermutlich lässt der Wechselrichter so nur wenig zu; ich plane ihn ab jetzt damit",
   "log.charge_slow_end": "{battery} lädt wieder schneller ({power} kW) – ich plane ihn wieder mit voller Leistung",
   "log.night_charged": "{battery}: {charged} von {planned} kWh geladen",
+  "log.raised.sun": "Ziel für {battery} angehoben: {before} → {target} % – die Prognose für morgen ist schlechter geworden ({sun_from} → {sun_to} kWh Sonne)",
+  "log.raised.use": "Ziel für {battery} angehoben: {before} → {target} % – ich erwarte morgen mehr Verbrauch als vorhin",
+  "log.raised.again": "Ziel für {battery} angehoben: {before} → {target} % – mit dem Ladestand und den Werten von jetzt reicht das alte Ziel nicht",
   "log.night_none": "Heute Nacht lade ich nicht",
   "log.night_none.small_saving": "Heute Nacht lade ich nicht: Die Ersparnis läge unter deiner Mindestersparnis (gerechnet hatte ich {target} %, {kwh} kWh)",
   "log.night_none.enough": "Heute Nacht lade ich nicht: Die Speicher reichen, bis die Sonne um {sun} Uhr übernimmt",

@@ -5814,11 +5814,35 @@ class JoeExecutor:
         await self._async_save()
         self._changed()
 
-    async def async_replanned(self, action_ids: list[str]) -> None:
-        """Actions worked out again in the fixed plan: their target counts anew."""
-        if not any(d in action_ids for d in self.data["done"]):
+    async def async_replanned(
+        self, action_ids: list[str], raised: list[dict[str, Any]] | None = None
+    ) -> None:
+        """Worked out again in the fixed plan: the actions' targets count anew,
+        and a battery whose target Joe raised charges on, also when it had
+        reached its old one (scheduler._raise_targets)."""
+        rearm = any(d in action_ids for d in self.data["done"])
+        if rearm:
+            self.data["done"] = [d for d in self.data["done"] if d not in action_ids]
+        for item in raised or []:
+            key = item["battery"]
+            self.data["reached"] = [r for r in self.data["reached"] if r != key]
+            # Held at the old target until now: the new one decides.
+            self.data["floors"].pop(key, None)
+            self.data["progress"].pop(key, None)
+            self._log(
+                "raised",
+                battery=key,
+                before=item["from"],
+                target=item["to"],
+                why=item["why"],
+                sun_from=item.get("sun_from"),
+                sun_to=item.get("sun_to"),
+            )
+            self._fire(
+                "target_raised", battery=key, before=item["from"], target=item["to"]
+            )
+        if not rearm and not raised:
             return
-        self.data["done"] = [d for d in self.data["done"] if d not in action_ids]
         await self._async_save()
         self._changed()
 

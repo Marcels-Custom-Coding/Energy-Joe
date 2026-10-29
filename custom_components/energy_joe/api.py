@@ -544,7 +544,8 @@ async def ws_plan_refresh(
     connection: websocket_api.ActiveConnection,
     msg: dict[str, Any],
 ) -> None:
-    """Plan tonight again with the latest values (a fixed plan stays)."""
+    """Plan tonight again with the latest values (a fixed plan keeps its
+    window and only raises a target, see JoePlanner._async_replan_night)."""
     if (runtime := _runtime(hass, connection, msg)) is None:
         return
     plan = await runtime.async_refresh_plan()
