@@ -3,6 +3,11 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.47
+
+- **„Heute Nacht laden“ wirkt auch nach Mitternacht.** Ab Beginn des günstigen Fensters steht der Nachtplan fest. Hast du danach „Heute Nacht laden“ gewählt (etwa bis 100 km), habe ich das zwar gespeichert, den festen Plan aber nicht neu gerechnet – die Wallbox blieb aus. Jetzt rechne ich in dem Fall genau diese Aktion im laufenden Fenster neu, der Rest des Plans bleibt. Wieder ausschalten geht genauso.
+- Nicht geprüft an echter Anlage.
+
 ## 0.9.46
 
 - **Beim Schnellladen: Haus aus dem Speicher, Auto aus dem Netz.** Neuer Schalter unter Einstellungen › Regeln (bei den Speicher-Regeln, auch unter Geräte › Speicher). Lädt das Auto über evcc im Modus „Schnell“, schalte ich die Entladesperre in evcc aus und lasse den Speicher nur so viel geben, wie das Haus ohne Wallbox braucht – etwa 800 W statt 11 800 W, alle paar Sekunden nachgeregelt. Scheint die Sonne mit, gibt er nur, was danach noch fehlt. Beide Speicher wechseln sich wie sonst ab, der andere bleibt gesperrt. Nachts im günstigen Fenster bleibt alles wie bisher, bei „Smart“ und den anderen Modi auch. Ist Schnellladen vorbei, stelle ich die Entladesperre in evcc wieder so ein, wie sie war. Standard: aus.

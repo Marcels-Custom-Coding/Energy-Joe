@@ -224,13 +224,34 @@ class JoePlanner:
             self._changed()
         return changed
 
+    async def async_replan_action(self, action_id: str) -> list[str]:
+        """A night action switched by hand ("Heute Nacht") while the plan is
+        fixed: it is worked out again inside the fixed window, the rest stays.
+        Before the plan is fixed, planning again does it."""
+        if self._fixed is None:
+            if self.active:
+                await self.async_refresh()
+            return []
+        fixed = self._fixed
+        changed = self._replan_points(fixed, self.detected(), only=action_id)
+        if changed:
+            await self._history.async_update_day(
+                datetime.fromisoformat(fixed["window"]["start"]).date().isoformat(),
+                plan=fixed,
+            )
+        self.plan = fixed
+        self._changed()
+        return changed
+
     def _replan_points(
         self,
         fixed: dict[str, Any],
         detected: dict[str, dict[str, Any]],
         cars: list[str] | None = None,
+        only: str | None = None,
     ) -> list[str]:
-        """Work out the charge points of a fixed plan again (all, or where these cars are)."""
+        """Work out the charge points of a fixed plan again (all, or where these
+        cars are), or just this one action (a charge point or not)."""
         config = self._config
         meta = fixed.get("meta") or {}
         sun = (
@@ -247,7 +268,9 @@ class JoePlanner:
         changed: list[str] = []
         for index, entry in enumerate(fixed.get("actions") or []):
             action = actions.get(entry["id"])
-            if action is None or action.get("point") is None:
+            if only is not None and entry["id"] != only:
+                continue
+            if action is None or (only is None and action.get("point") is None):
                 continue
             found = detected.get(entry["id"]) or {}
             if cars is not None and found.get("car") not in cars:
