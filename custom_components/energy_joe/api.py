@@ -109,6 +109,8 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_control_action_tonight)
     websocket_api.async_register_command(hass, ws_automations)
     websocket_api.async_register_command(hass, ws_climate_devices)
+    websocket_api.async_register_command(hass, ws_standby_devices)
+    websocket_api.async_register_command(hass, ws_standby_set)
     websocket_api.async_register_command(hass, ws_week_default)
     websocket_api.async_register_command(hass, ws_week_set)
     websocket_api.async_register_command(hass, ws_week_hold)
@@ -1500,6 +1502,67 @@ def ws_climate_devices(
             },
         },
     )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/standby/devices",
+        # Measure again now instead of the measurement of the last hours.
+        vol.Optional("refresh", default=False): bool,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_standby_devices(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Switches with a power reading, what they draw at night and while
+    nobody is home, and what switching them off would save a year."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    connection.send_result(
+        msg["id"], await runtime.standby.async_devices(msg["refresh"])
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/standby/set",
+        vol.Required("entity_id"): cv.entity_id,
+        vol.Optional("when"): vol.In(model.STANDBY_CHOICES),
+        vol.Optional("power_entity"): vol.Any(None, cv.entity_id),
+        vol.Optional("night_from"): str,
+        vol.Optional("night_until"): str,
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_standby_set(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """When Joe may switch a device off ("never" by default) and its night."""
+    if (runtime := _runtime(hass, connection, msg)) is None:
+        return
+    if not msg["entity_id"].startswith("switch."):
+        connection.send_error(msg["id"], "invalid_config", "Only switches.")
+        return
+    patch = {
+        key: msg[key]
+        for key in ("when", "power_entity", "night_from", "night_until")
+        if key in msg
+    }
+    try:
+        runtime.async_update_config(
+            {"standby": {"devices": {msg["entity_id"]: patch}}}, "user"
+        )
+    except vol.Invalid as err:
+        connection.send_error(msg["id"], "invalid_config", str(err))
+        return
+    connection.send_result(msg["id"])
 
 
 def _week_room(runtime: JoeRuntime, entity_id: str) -> dict[str, Any]:

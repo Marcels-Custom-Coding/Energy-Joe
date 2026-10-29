@@ -1131,6 +1131,56 @@ def _share(
     )
 
 
+def share_targets(
+    inp: PlanInput, targets: dict[str, float]
+) -> tuple[dict[str, dict[str, Any]], float]:
+    """Tonight's charging from now on shared out again for these targets per
+    battery (a fixed night where some went up): what each still needs from
+    its level now, by the same rules as the plan (night.py), so all together
+    keep the grid limit. Returns per battery its slots, power, how and rank,
+    and what found no place (kWh)."""
+    eta = math.sqrt(inp.efficiency)
+    slots = night_slots(inp)
+    takers = []
+    for battery in inp.batteries:
+        target = targets.get(battery.id)
+        if (
+            target is None
+            or not battery.grid
+            or battery.charge_kw <= 0
+            or battery.capacity <= 0
+        ):
+            continue
+        room = max(0.0, target - battery.soc) / 100 * battery.capacity / eta
+        takers.append(
+            sharing.Taker(
+                battery.id,
+                battery.group or battery.id,
+                battery.charge_kw,
+                room,
+                battery.paced,
+            )
+        )
+    takers = sharing.ordered(takers, inp.order)
+    left = sharing.share(slots, takers, sum(t.room for t in takers))
+    result: dict[str, dict[str, Any]] = {}
+    for rank, taker in enumerate(takers):
+        result[taker.id] = {
+            "power_kw": round(max(taker.rates.values(), default=0.0), 2),
+            "slots": [
+                {
+                    "start": _iso(span["start"]),  # type: ignore[arg-type]
+                    "end": _iso(span["end"]),  # type: ignore[arg-type]
+                    "power_kw": span["power"],
+                }
+                for span in sharing.spans(slots, taker)
+            ],
+            "how": sharing.how(slots, taker),
+            "rank": rank,
+        }
+    return result, left
+
+
 def night_slots(inp: PlanInput) -> list[sharing.Slot]:
     """The window's quarter hours from now on, with their price and what all
     batteries together may take in them (the grid limit after the home and

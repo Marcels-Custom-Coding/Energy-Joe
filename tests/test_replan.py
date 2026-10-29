@@ -13,8 +13,14 @@ from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
 from custom_components.energy_joe import model
 from custom_components.energy_joe.observe.store import HistoryStore
+from custom_components.energy_joe.plan import scheduler
+from custom_components.energy_joe.plan.actions import (
+    SUN_HYSTERESIS,
+    SUN_HYSTERESIS_MIN_KWH,
+    plan_actions,
+)
 from custom_components.energy_joe.plan.car_calendar import CarCalendarStore
-from custom_components.energy_joe.plan.planner import make_plan
+from custom_components.energy_joe.plan.planner import Battery, make_plan
 from custom_components.energy_joe.plan.scheduler import (
     RAISE_MIN,
     SETTLE_S,
@@ -23,6 +29,7 @@ from custom_components.energy_joe.plan.scheduler import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
+from tests.test_actions import action as night_action
 from tests.test_control import (
     configured,
     fronius_battery,
@@ -512,3 +519,226 @@ async def test_a_raised_target_charges_on_after_the_old_one_was_reached(
     hass.states.async_set("sensor.byd_soc", "75", {"unit_of_measurement": "%"})
     await executor.async_check()
     assert "byd" in executor.data["reached"]
+
+
+def test_the_sun_word_on_an_action_holds_around_its_threshold(
+    hass: HomeAssistant,
+) -> None:
+    """Threshold 15 kWh: in the fixed night a running action stops only
+    clearly above it, one that stayed off for the sun starts only clearly
+    below; by hand and its conditions it goes as before."""
+    start = at("2026-10-05T00:00:00+02:00")
+    end = start + timedelta(hours=5)
+    hass.states.async_set("binary_sensor.carport_connected", "on")
+    ev = night_action()
+    margin = max(SUN_HYSTERESIS_MIN_KWH, 15.0 * SUN_HYSTERESIS)
+    assert margin == 2.25
+
+    def again(sun: float, entry: dict[str, Any] | None, manual=None) -> Any:
+        before = {"ev": entry} if entry is not None else None
+        return plan_actions(
+            [ev], hass.states.get, start, end, sun, manual or {}, before=before
+        )[0]
+
+    # Fixed with little sun (14 kWh): it runs.
+    ran = again(14.0, None)
+    assert ran["run"] is True and ran["reasons"] == ["little_sun"]
+    # The forecast wavers just above the threshold: it goes on running ...
+    assert again(16.0, ran)["run"] is True
+    assert again(15.0 + margin - 0.1, ran)["reasons"] == ["little_sun"]
+    # ... (before the night was fixed it would have stopped) ...
+    assert again(16.0, None)["reasons"] == ["enough_sun"]
+    # ... and stops once it is clearly above.
+    stopped = again(15.0 + margin, ran)
+    assert stopped["run"] is False and stopped["reasons"] == ["enough_sun"]
+
+    # Fixed with enough sun (16 kWh): it stays off.
+    off = again(16.0, None)
+    assert off["run"] is False
+    # Just below the threshold: still off ...
+    assert again(14.0, off)["run"] is False
+    assert again(15.0 - margin, off)["reasons"] == ["enough_sun"]
+    # ... clearly below: it starts.
+    started = again(15.0 - margin - 0.1, off)
+    assert started["run"] is True and started["reasons"] == ["little_sun"]
+
+    # "Tonight" by hand switched off again: the threshold as it is.
+    by_hand = again(16.0, None, {"ev": start.isoformat()})
+    assert by_hand["run"] is True and by_hand["reasons"] == ["tonight"]
+    assert again(16.0, by_hand)["reasons"] == ["enough_sun"]
+    # Its conditions count as before.
+    hass.states.async_set("binary_sensor.carport_connected", "off")
+    assert again(14.0, ran)["reasons"] == ["conditions"]
+    # Off for its conditions, now they hold: just below the threshold it starts.
+    hass.states.async_set("binary_sensor.carport_connected", "on")
+    held_off = {**ran, "run": False, "reasons": ["conditions"]}
+    assert again(14.0, held_off)["run"] is True
+
+
+async def test_planning_again_in_the_fixed_night_knows_its_actions(
+    hass: HomeAssistant, freezer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The fixed plan's actions go into the night worked out again (for the
+    sun's word on them); a plan before the window has none."""
+    freezer.move_to("2026-10-05T01:00:00+02:00")
+    seen: list[Any] = []
+
+    async def build(*args: Any) -> Any:
+        seen.append(args[-1])
+        return None, ["no_window"]
+
+    monkeypatch.setattr(scheduler, "async_build_input", build)
+    store = HistoryStore(hass)
+    await store.async_load()
+    planner = JoePlanner(hass, store, lambda: None)
+    planner._config = model.default_config()
+    fixed = fixed_plan(at("2026-10-05T00:00:00+02:00"))
+    entry = {"id": "ev", "run": True, "reasons": ["little_sun"]}
+    fixed["actions"] = [entry]
+    await planner._async_compute(dt_util.now(), fixed)
+    await planner._async_compute(dt_util.now())
+    assert seen == [{"ev": entry}, None]
+    await store.async_unload()
+
+
+def two_batteries_fixed(start: datetime) -> dict[str, Any]:
+    """Fixed at midnight: BYD to 55 %, Venus to 60 %, each at 1.5 kW until
+    half past four."""
+    battery = fixed_plan(start)["batteries"][0]
+    slots = [
+        {
+            "start": start.isoformat(timespec="minutes"),
+            "end": (start + timedelta(hours=4, minutes=30)).isoformat(
+                timespec="minutes"
+            ),
+            "power_kw": 1.5,
+        }
+    ]
+    plan = fixed_plan(start)
+    plan.update(
+        capacity_kwh=20.0,
+        target=58,
+        rules={**plan["rules"], "grid_limit_kw": 4.0},
+        batteries=[
+            {**battery, "soc": 20.0, "target": 55, "power_kw": 1.5, "slots": slots},
+            {
+                **battery,
+                "id": "venus",
+                "name": "Venus",
+                "soc": 20.0,
+                "target": 60,
+                "power_kw": 1.5,
+                "slots": slots,
+            },
+        ],
+    )
+    return plan
+
+
+async def test_a_raised_target_shares_the_grid_limit_with_the_others(
+    hass: HomeAssistant, freezer
+) -> None:
+    """At ten past two the BYD goes up to 80 %: its charging and the Venus'
+    (target as fixed, 40 % reached by now) are shared out again together,
+    so with the home they stay below the grid limit (4 kW) in every quarter."""
+    freezer.move_to("2026-10-04T02:10:00+02:00")
+    start = at("2026-10-04T00:00:00+02:00")
+    store = HistoryStore(hass)
+    await store.async_load()
+    planner = JoePlanner(hass, store, lambda: None)
+    planner._config = model.default_config()
+    told: list[tuple[list[str], list[dict[str, Any]]]] = []
+
+    async def replanned(actions: list[str], raised: list[dict[str, Any]]) -> None:
+        told.append((actions, raised))
+
+    planner.replanned = replanned
+    fixed = two_batteries_fixed(start)
+    planner._fixed = fixed
+    now = dt_util.now()
+    inp = plan_input(
+        solar=4,
+        soc=0,
+        now=now,
+        hours=day_hours(4, now="2026-10-04T02:10"),
+        batteries=[
+            Battery("byd", "BYD", 10.0, 30.0, 3.0, 3.0),
+            Battery("venus", "Venus", 10.0, 40.0, 3.0, 3.0),
+        ],
+        grid_limit_kw=4.0,
+    )
+    end = datetime.fromisoformat(fixed["window"]["end"])
+    # Worked out again: the BYD to 80 % at full power from now on (with the
+    # Venus' 1.5 kW as fixed that would be 4.5 kW and the home on top),
+    # the Venus lower (its fixed target stays).
+    fresh = {
+        **fixed,
+        "fixed": False,
+        "target": 65,
+        "meta": {"tomorrow_kwh": 6.0},
+        "batteries": [
+            {
+                **fixed["batteries"][0],
+                "soc": 30.0,
+                "target": 80,
+                "power_kw": 3.0,
+                "slots": [
+                    {
+                        "start": now.isoformat(timespec="minutes"),
+                        "end": (end - timedelta(minutes=30)).isoformat(
+                            timespec="minutes"
+                        ),
+                        "power_kw": 3.0,
+                    }
+                ],
+            },
+            {**fixed["batteries"][1], "soc": 40.0, "target": 50},
+        ],
+    }
+
+    async def compute(now: datetime, fixed: dict[str, Any] | None = None) -> Any:
+        assert fixed is not None
+        planner._night_input = inp
+        return fresh
+
+    planner._async_compute = compute  # type: ignore[method-assign]
+    plan = await planner.async_refresh()
+    byd, venus = plan["batteries"]
+    assert byd["target"] == 80 and byd["raised"]["from"] == 55
+    assert venus["target"] == 60 and "raised" not in venus
+    assert [r["battery"] for r in told[0][1]] == ["byd"]
+    assert plan["unplaced_kwh"] == 0.0
+
+    def energy(battery: dict[str, Any]) -> float:
+        return sum(
+            s["power_kw"]
+            * (
+                datetime.fromisoformat(s["end"]) - datetime.fromisoformat(s["start"])
+            ).total_seconds()
+            / 3600
+            for s in battery["slots"]
+        )
+
+    eta = 0.9**0.5
+    # Each gets what it still needs from its level now (the Venus 40 → 60 %).
+    assert energy(byd) >= 10 * 0.5 / eta - 0.01
+    assert energy(venus) >= 10 * 0.2 / eta - 0.01
+    assert energy(venus) < 10 * 0.4 / eta
+    # Together never above the limit after the home (0.4 kW at night).
+    moment = now.replace(minute=0) + timedelta(minutes=15)
+    while moment < end:
+        total = sum(
+            s["power_kw"]
+            for b in (byd, venus)
+            for s in b["slots"]
+            if datetime.fromisoformat(s["start"])
+            <= moment
+            < datetime.fromisoformat(s["end"])
+        )
+        assert total <= 4.0 - 0.4 + 1e-6, moment
+        moment += timedelta(minutes=15)
+    assert all(
+        s["start"] >= "2026-10-04T02:10" for b in (byd, venus) for s in b["slots"]
+    )
+    assert plan["charge_from"] == "2026-10-04T02:10+02:00"
+    await store.async_unload()

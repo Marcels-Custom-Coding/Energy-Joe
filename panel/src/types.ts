@@ -1236,6 +1236,94 @@ export interface ClimateLogEntry {
   what: string;
 }
 
+// --- Stromfresser: devices off at night or while nobody is home (control/standby.py) ---
+
+/** When Joe may switch a device off; "never" until the owner chooses. */
+export type StandbyWhen = "never" | "night" | "away" | "both";
+export const STANDBY_CHOICES: StandbyWhen[] = ["never", "night", "away", "both"];
+
+export interface StandbyDeviceConfig {
+  when: StandbyWhen;
+  power_entity: string | null;
+  night_from: string;
+  night_until: string;
+}
+
+export interface StandbyConfig {
+  /** By switch entity. */
+  devices: Record<string, StandbyDeviceConfig>;
+}
+
+type StandbyMoney = Record<"night" | "away" | "both", number | null>;
+
+/** A switch with a power reading as energy_joe/standby/devices lists it. */
+export interface StandbyDevice {
+  entity_id: string;
+  power_entity: string | null;
+  name: string;
+  device_id: string | null;
+  device_name: string | null;
+  area: string | null;
+  state: string | null;
+  /** W right now. */
+  watts: number | null;
+  /** A word that sounds like it has to keep running ("kühl", "router" …). */
+  warning: string | null;
+  /** Chosen before, but no longer in Home Assistant. */
+  missing?: boolean;
+  night_w: number | null;
+  nights: number;
+  away_w: number | null;
+  away_hours: number;
+  measured: boolean;
+  kwh: StandbyMoney;
+  eur: StandbyMoney;
+  when: StandbyWhen;
+  night_from: string;
+  night_until: string;
+}
+
+export interface StandbyFound {
+  devices: StandbyDevice[];
+  price: { night: number; day: number; assumed: boolean };
+  /** Joe's helper "someone is home" is set. */
+  presence: boolean;
+  away_hours_per_day: number | null;
+  min_w: number;
+  days: number;
+  measured_at: string | null;
+}
+
+/** One switch in the Stromfresser log. */
+export interface StandbyLogEntry {
+  at: string;
+  entity: string;
+  what: "off" | "on" | "owner" | "failed";
+  why?: "night" | "away" | "morning" | "home" | "stopped";
+  watts?: number;
+}
+
+export interface StandbyDeviceStatus {
+  when: StandbyWhen;
+  /** Why it should be off now (empty: on). */
+  causes: ("night" | "away")[];
+  state: string | null;
+  off_by_joe: boolean;
+  /** The owner switched it on again: his until the next night or absence. */
+  declined: boolean;
+  /** Not live: what Joe would do now. */
+  would: "off" | "on" | null;
+}
+
+export interface StandbyStatus {
+  live: boolean;
+  home: boolean | null;
+  away: boolean;
+  nobody_since: string | null;
+  devices: Record<string, StandbyDeviceStatus>;
+  log: StandbyLogEntry[];
+}
+
 export interface RoutingConfig {
   service: "waze" | "google" | "osm" | null;
   google_entry: string | null;
@@ -1334,6 +1422,8 @@ export interface JoeConfig {
   calendar: CalendarConfig;
   routing: RoutingConfig;
   climate?: ClimateConfig;
+  /** Stromfresser off at night or while nobody is home (older backends: missing). */
+  standby?: StandbyConfig;
   /** The second look by a language model (0.9.44; missing on older backends). */
   sparring?: SparringConfig;
   answers: Answers;
@@ -1369,7 +1459,7 @@ export interface SparringText {
 
 /** A setting the model would change; Joe only shows it, the user decides. */
 export interface SparringProposal {
-  /** "rules.night_caution" */
+  /** "rules.night_caution", "rules.reserve_soc" … (see learn/sparring.py SETTINGS, RANGES) */
   setting: string;
   value: string | number | boolean;
   current: string | number | boolean | null;
@@ -1676,6 +1766,8 @@ export interface JoeState {
   apps?: { microsoft: boolean; google: boolean };
   /** Heating and air conditioning by presence. */
   climate?: ClimateStatus;
+  /** Stromfresser Joe switches (older backends: missing). */
+  standby?: StandbyStatus;
   /** Which car is plugged in where, questions and reminders. */
   cars?: CarsStatus;
   /** Each battery's floor (%), where it comes from, and the device's own setting. */

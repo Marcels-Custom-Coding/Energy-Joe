@@ -10,6 +10,7 @@ import "./days";
 import "./night";
 import "./people";
 import "./presence";
+import "./standby";
 import "./travel";
 
 const TAGS: Record<HouseholdSection, string> = {
@@ -17,6 +18,7 @@ const TAGS: Record<HouseholdSection, string> = {
   presence: "joe-hh-presence",
   days: "joe-hh-days",
   night: "joe-hh-night",
+  standby: "joe-hh-standby",
   travel: "joe-hh-travel",
 };
 
@@ -25,10 +27,11 @@ const ICONS: Record<HouseholdSection, string> = {
   presence: "mdi:home-account",
   days: "mdi:calendar-check-outline",
   night: "mdi:sleep",
+  standby: "mdi:power-plug-off-outline",
   travel: "mdi:map-marker-path",
 };
 
-/** Haushalt: who lives here, who is home, what kind of day it is, bedtime, weather and ways. */
+/** Haushalt: who lives here, who is home, what kind of day it is, bedtime, power hogs, weather and ways. */
 export class JoeHouseholdPage extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) t?: Translate;
@@ -115,6 +118,8 @@ export class JoeHouseholdPage extends LitElement {
           .checks=${checks}
           .climateFound=${climateFound}
         ></joe-hh-night>`;
+      case "standby":
+        return html`<joe-hh-standby .t=${t} .hass=${hass} .state=${state} .prefix=${prefix} .route=${route}></joe-hh-standby>`;
       case "travel":
         return html`<joe-hh-travel
           .t=${t}

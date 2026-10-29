@@ -41,8 +41,21 @@ TIMEOUT = 120
 NIGHTS = 7
 # The steering log looked through for what stood out (days).
 LOG_DAYS = 7
-# What the language model may propose (shown only, never taken over).
-SETTINGS: dict[str, tuple[str, ...]] = {"rules.night_caution": model.NIGHT_CAUTIONS}
+# What the language model may propose (shown only, never taken over): a
+# choice of values, or a number within limits (a bit narrower than the
+# settings allow, where a value outside makes no sense as a proposal).
+SETTINGS: dict[str, tuple[Any, ...]] = {
+    "rules.night_caution": model.NIGHT_CAUTIONS,
+    "rules.day_caution": model.DAY_CAUTIONS,
+    "rules.grid_friendly": (True, False),
+}
+RANGES: dict[str, tuple[float, float]] = {
+    "rules.reserve_soc": (0, 50),
+    "rules.max_target_soc": (50, 100),
+    "rules.evening_min_soc": (0, 80),
+    "rules.morning_buffer_soc": (0, 50),
+    "rules.min_saving": (0, 1),
+}
 AREAS = ("night", "solar", "consumption", "battery", "car", "other")
 # Joe's texts as the panel build writes them (key -> template).
 TEXTS_FILE = Path(__file__).parent.parent / "frontend" / "texts-de.json"
@@ -398,8 +411,15 @@ def read_texts() -> dict[str, str]:
 def prompt(brief: dict[str, Any]) -> str:
     return PROMPT.format(
         settings="; ".join(
-            f"{setting} mit einem der Werte {', '.join(values)}"
-            for setting, values in SETTINGS.items()
+            [
+                f"{setting} mit einem der Werte "
+                + ", ".join(json.dumps(v) for v in values)
+                for setting, values in SETTINGS.items()
+            ]
+            + [
+                f"{setting} als Zahl von {low:g} bis {high:g}"
+                for setting, (low, high) in RANGES.items()
+            ]
         ),
         areas="|".join(AREAS),
         brief=json.dumps(brief, ensure_ascii=False, separators=(",", ":")),
@@ -481,7 +501,8 @@ def validate(
     for item in items("proposals"):
         setting = item.get("setting") if isinstance(item, dict) else None
         value = item.get("value") if isinstance(item, dict) else None
-        if setting not in SETTINGS or value not in SETTINGS[setting]:
+        value = _allowed(setting, value)
+        if value is None:
             dropped += 1
             continue
         current = _setting(config, setting)
@@ -560,6 +581,29 @@ def _numbers(value: Any) -> list[float]:
 def _text(item: Any, name: str) -> str:
     value = item.get(name) if isinstance(item, dict) else None
     return value.strip()[:TEXT_LENGTH] if isinstance(value, str) else ""
+
+
+def _allowed(setting: Any, value: Any) -> Any:
+    """The proposed value as the setting takes it, or None when it may not be proposed."""
+    if setting in SETTINGS:
+        # A choice: exactly one of the values (True is no 1, "true" no True).
+        return next(
+            (v for v in SETTINGS[setting] if v == value and type(v) is type(value)),
+            None,
+        )
+    if (
+        setting in RANGES
+        and isinstance(value, int | float)
+        and not isinstance(value, bool)
+    ):
+        low, high = RANGES[setting]
+        if low <= value <= high:
+            return (
+                round(float(value), 2)
+                if setting == "rules.min_saving"
+                else round(value)
+            )
+    return None
 
 
 def _setting(config: dict[str, Any], path: str) -> Any:

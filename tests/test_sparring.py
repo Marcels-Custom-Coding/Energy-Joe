@@ -63,7 +63,7 @@ ANSWER = {
     ],
     "proposals": [
         {"setting": "rules.night_caution", "value": "careful", "reason": "Rückspiel"},
-        {"setting": "rules.reserve_soc", "value": 30, "reason": "mehr Reserve"},
+        {"setting": "rules.max_price", "value": 0.3, "reason": "nie teurer laden"},
         {"setting": "rules.night_caution", "value": "very", "reason": "?"},
     ],
     "questions": ["Hattest du am 24.10. Gäste?", 42],
@@ -151,6 +151,34 @@ def test_only_known_texts_and_settings_are_kept() -> None:
     alone = {"proposals": ANSWER["proposals"][:1]}
     found = validate(alone, brief(), model.default_config(), None)
     assert found["proposals"][0]["replay"] is None
+
+
+def test_numbers_and_yes_or_no_within_their_limits() -> None:
+    answer = {
+        "proposals": [
+            {"setting": "rules.reserve_soc", "value": 20.4, "reason": "mehr Reserve"},
+            {"setting": "rules.reserve_soc", "value": 80, "reason": "viel zu viel"},
+            {"setting": "rules.min_saving", "value": 0.1, "reason": "kleine Nächte"},
+            {
+                "setting": "rules.grid_friendly",
+                "value": False,
+                "reason": "lieber sparen",
+            },
+            {"setting": "rules.grid_friendly", "value": "false", "reason": "Text"},
+            {"setting": "rules.day_caution", "value": "careful", "reason": "Wolken"},
+            {"setting": "rules.evening_min_soc", "value": True, "reason": "kein Wert"},
+        ]
+    }
+    result = validate(answer, brief(), model.default_config(), None)
+    assert [(p["setting"], p["value"]) for p in result["proposals"]] == [
+        ("rules.reserve_soc", 20),
+        ("rules.min_saving", 0.1),
+        ("rules.grid_friendly", False),
+        ("rules.day_caution", "careful"),
+    ]
+    assert result["proposals"][0]["current"] == 10
+    assert result["dropped"] == 3
+    assert "rules.reserve_soc als Zahl von 0 bis 50" in sparring.prompt(brief())
 
 
 def joe_config() -> dict[str, Any]:

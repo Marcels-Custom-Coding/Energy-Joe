@@ -55,6 +55,7 @@ export const SIGNPOST = [
   { id: "way", to: { tab: "household", section: "presence", id: "way" } },
   { id: "calendar", to: { tab: "household", section: "days" } },
   { id: "night", to: { tab: "household", section: "night" } },
+  { id: "standby", to: { tab: "household", section: "standby" } },
   { id: "travel", to: { tab: "household", section: "travel" } },
   // Joe himself.
   { id: "mode", to: { tab: "settings", section: "operation" } },

@@ -36,9 +36,15 @@ function climateUse(t: Translate, rooms: string[]): Use[] {
   return rooms.length ? [{ label: t("usedby.climate"), to: "/devices/climate", count: rooms.length }] : [];
 }
 
+/** Stromfresser switched at night ("night") or while nobody is home ("away"). */
+function standbyUse(t: Translate, config: JoeConfig, cause: "night" | "away"): Use[] {
+  const count = Object.values(config.standby?.devices ?? {}).filter((d) => d.when === cause || d.when === "both").length;
+  return count ? [{ label: t("usedby.standby"), to: "/household/standby", count }] : [];
+}
+
 /** Wer ist da: the helper "someone is home", the persons and the drive home. */
 export function presenceUses(t: Translate, config: JoeConfig, found?: ClimateFound): Use[] {
-  const uses = climateUse(t, steeredRooms(config, found));
+  const uses = [...climateUse(t, steeredRooms(config, found)), ...standbyUse(t, config, "away")];
   if (config.persons.some((p) => p.person_entity)) {
     uses.push({ label: t("usedby.learn"), to: "/review/learned/presence" });
   }
@@ -62,10 +68,10 @@ export function daysUses(t: Translate, config: JoeConfig, found?: ClimateFound):
   return uses;
 }
 
-/** Nachtruhe: the rooms that switch off at night. */
+/** Nachtruhe: the rooms and the Stromfresser that switch off at night. */
 export function nightUses(t: Translate, config: JoeConfig, found?: ClimateFound): Use[] {
   const rooms = steeredRooms(config, found).filter((id) => config.climate?.rooms[id]?.night_off);
-  return climateUse(t, rooms);
+  return [...climateUse(t, rooms), ...standbyUse(t, config, "night")];
 }
 
 /** Unterwegs & Wetter: the weather entity, the routing service, or both. */

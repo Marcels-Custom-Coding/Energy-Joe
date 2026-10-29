@@ -164,11 +164,11 @@ def battery_scope(hass: HomeAssistant, config: dict[str, Any]) -> Scope:
             if device.via_device_id:
                 device_ids.add(device.via_device_id)
             device_ids |= {
-                d.id for d in devices.devices.values() if d.via_device_id == device.id
+                d.id for d in _devices(devices) if d.via_device_id == device.id
             }
         profile = PROFILES.get(battery.get("adapter") or "")
         if profile and profile.automation_scope == "entry" and device:
-            for entry_id in device.config_entries:
+            for entry_id in _entry_ids(device):
                 for item in er.async_entries_for_config_entry(entities, entry_id):
                     mine.add(item.entity_id)
                     if item.device_id:
@@ -244,3 +244,20 @@ def find(hass: HomeAssistant, config: dict[str, Any]) -> list[dict[str, Any]]:
 def switched_on(found: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Of these, the ones switched on: entity id and name, in the list's order."""
     return [{"entity_id": a["entity_id"], "name": a["name"]} for a in found if a["on"]]
+
+
+def _devices(devices: dr.DeviceRegistry) -> list[dr.DeviceEntry]:
+    """All devices; newer Home Assistant iterates entries, older ones ids."""
+    found = []
+    for item in devices.devices:
+        entry = devices.async_get(item) if isinstance(item, str) else item
+        if entry is not None:
+            found.append(entry)
+    return found
+
+
+def _entry_ids(device: dr.DeviceEntry) -> set[str]:
+    """The device's config entries (one since Home Assistant 2026.x, a set before)."""
+    if hasattr(device, "config_entry_id"):
+        return {device.config_entry_id} if device.config_entry_id else set()
+    return set(device.config_entries)

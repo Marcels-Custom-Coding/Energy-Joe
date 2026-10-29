@@ -24,6 +24,7 @@ from .control.cars import CarWatcher
 from .control.climate import ClimateController
 from .control.executor import JoeExecutor
 from .control.notify import JoeNotifier
+from .control.standby import StandbyController
 from .control.writes import async_line
 from .discovery import (
     adopted_controls,
@@ -214,6 +215,14 @@ class JoeRuntime:
         self.climate = ClimateController(
             hass, lambda: self._config, lambda: self._state["mode"], self._changed
         )
+        # Power hogs off at night or while nobody is home (Haushalt › Stromfresser).
+        self.standby = StandbyController(
+            hass,
+            lambda: self._config,
+            lambda: self._state["mode"],
+            self._changed,
+            lambda: self._state.get("language"),
+        )
         self._started = False
         # A configuration Joe could not read at the start, kept apart: whether
         # one is there, and why taking it back failed (the panel offers it).
@@ -242,6 +251,7 @@ class JoeRuntime:
         await self.inbox.async_load()
         await self.accounts.async_load()
         await self.climate.async_load()
+        await self.standby.async_load()
         await self.cars.async_load()
         await self.sparring.async_load()
 
@@ -317,6 +327,7 @@ class JoeRuntime:
         self.inbox.async_stop()
         self.accounts.async_stop()
         self.climate.async_stop()
+        self.standby.async_stop()
         self.cars.stop()
         self.sparring.cancel()
         await self.executor.async_stop()
@@ -355,6 +366,8 @@ class JoeRuntime:
         await self.inbox.async_remove()
         await self.accounts.async_remove()
         await self.climate.async_remove()
+        # What Joe switched off goes on again (the running Joe did it already).
+        await self.standby.async_remove(give_back=give_back)
         await self.cars.async_remove()
         await self.sparring.async_remove()
         await self.executor.async_forget()
@@ -372,6 +385,10 @@ class JoeRuntime:
         except Exception:  # noqa: BLE001 - the reset goes on without them
             _LOGGER.exception("Putting the values back failed")
             left = {}
+        try:
+            await self.standby.async_give_back()
+        except Exception:  # noqa: BLE001 - the reset goes on without them
+            _LOGGER.exception("Switching the power hogs on again failed")
         entries = self._hass.config_entries
         if self._entry_id and entries.async_get_entry(self._entry_id):
             await entries.async_unload(self._entry_id)
@@ -392,6 +409,7 @@ class JoeRuntime:
         self._update_observer()
         self.inbox.async_apply()
         self.climate.async_start()
+        self.standby.async_start()
         self.cars.start()
         self._hass.async_create_task(self._async_profile_updates(), eager_start=False)
         self._hass.async_create_task(self.async_car_updates(), eager_start=False)
@@ -735,6 +753,7 @@ class JoeRuntime:
                 "mailbox": self.inbox.status,
                 "accounts": self.accounts.status,
                 "climate": self.climate.status,
+                "standby": self.standby.status,
                 "cars": self.cars.status,
                 # Each battery's floor and where it comes from (user, device, unknown).
                 "floors": {
@@ -796,6 +815,11 @@ class JoeRuntime:
             self._changed(state=True)
             self._update_observer()
             self._check_control()
+            if self._started:
+                # Live switches at once, anything else puts back at once.
+                self._hass.async_create_task(
+                    self.standby.async_check(), eager_start=False
+                )
 
     @callback
     def async_set_onboarding(
@@ -828,6 +852,7 @@ class JoeRuntime:
         if self._started:
             self.inbox.async_apply()
             self.climate.async_start()
+            self.standby.async_start()
             self.cars.apply()
             if "batteries" in patch and detail != "profile":
                 # Levers changed: look again whether they differ from the profile.
@@ -847,6 +872,7 @@ class JoeRuntime:
         if self._started:
             self.inbox.async_apply()
             self.climate.async_start()
+            self.standby.async_start()
             self.cars.apply()
 
     @callback

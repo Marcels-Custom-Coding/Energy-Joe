@@ -354,8 +354,20 @@ export class JoeSparringReports extends LitElement {
     const config = this.state?.config;
     const stored = config ? (config.rules as unknown as Record<string, unknown>)[key] : undefined;
     const current = proposal.current ?? (stored as SparringProposal["current"] | undefined) ?? null;
-    const value = (v: SparringProposal["value"] | null) =>
-      v == null ? "–" : t.optional(`rule.${key}.${String(v)}`) ?? String(v);
+    // A choice by its name, a yes/no in words, a level in %, money in €.
+    const value = (v: SparringProposal["value"] | null) => {
+      if (v == null) {
+        return "–";
+      }
+      if (typeof v === "boolean") {
+        return t(v ? "sparring.yes" : "sparring.no");
+      }
+      if (typeof v === "number") {
+        const number = new Intl.NumberFormat(t.lang, { maximumFractionDigits: 2 }).format(v);
+        return key.endsWith("_soc") ? `${number} %` : key === "min_saving" ? `${number} €` : number;
+      }
+      return t.optional(`rule.${key}.${v}`) ?? v;
+    };
     const notes: TemplateResult[] = [];
     if (proposal.reason) {
       notes.push(infoNote(t("sparring.proposal.reason", { reason: proposal.reason })));

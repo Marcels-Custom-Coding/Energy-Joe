@@ -3,6 +3,15 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.49
+
+- **Stromfresser nachts und ohne euch.** Neuer Bereich unter Haushalt › Stromfresser. Ich suche Geräte mit Zwischenstecker (Schalter und Leistungsmessung), messe, was sie nachts und bei Abwesenheit ziehen, und rechne aus, was das im Jahr kostet. Für jedes Gerät entscheidest du: nicht schalten (Standard), nachts aus, aus, wenn niemand zu Hause ist, oder beides. Was ich ausschalte, schalte ich morgens bzw. beim Heimkommen wieder ein; schaltest du zwischendurch selbst, lasse ich es so. Bei Geräten, die nach Dauerläufern klingen (Kühlschrank, Router …), warne ich. Geschaltet wird nur im Modus „Live“.
+- **Mehr Vorschläge vom Zweiten Blick.** Neben der Vorsicht in der Nacht darf das Sprachmodell jetzt auch Vorsicht tagsüber, netzfreundlich, Reserve, höchstes Ziel, abends mindestens, Morgenpuffer und Mindestersparnis vorschlagen – Zahlen nur in sinnvollen Grenzen. Übernommen wird weiter nichts von allein.
+- **Kein Hin und Her bei Sonnen-Schwellen.** Rechne ich nachts neu, schaltet ein Gerät mit Sonnen-Schwelle erst um, wenn die Prognose deutlich über bzw. unter der Schwelle liegt (15 %, mindestens 1 kWh).
+- **Netzlimit beim Anheben.** Hebe ich nachts ein Speicherziel an, lege ich die Ladezeiten aller Speicher gemeinsam neu, damit sie zusammen unter dem Netzlimit bleiben.
+- Funktionen, die Home Assistant 2027 abschaltet, ersetzt.
+- Nicht geprüft an echter Anlage: alles davon.
+
 ## 0.9.48
 
 - **Ich rechne alle 5 Minuten neu – und sofort, wenn sich etwas ändert.** Bisher habe ich einmal pro Stunde geplant und ab Beginn des günstigen Fensters gar nicht mehr. Jetzt rechne ich alle 5 Minuten, und zusätzlich nach spätestens einer halben Minute, wenn eine neue Sonnenprognose kommt, ein Termin in einem Auto-Kalender dazukommt, ein Auto angesteckt wird oder du etwas einstellst.
