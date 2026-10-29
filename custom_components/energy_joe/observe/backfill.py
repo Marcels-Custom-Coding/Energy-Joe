@@ -388,9 +388,12 @@ async def async_backfill(
 def _sun_low_hours(hass: HomeAssistant) -> Callable[[datetime], bool] | None:
     """Whether the sun was low throughout an hour at home (None: unknown)."""
     try:
-        from homeassistant.helpers.sun import get_astral_location  # noqa: PLC0415
+        from astral import Observer  # noqa: PLC0415
+        from astral.sun import elevation  # noqa: PLC0415
 
-        location, elevation = get_astral_location(hass)
+        observer = Observer(
+            hass.config.latitude, hass.config.longitude, hass.config.elevation
+        )
     except Exception:  # noqa: BLE001 - without the sun's position nothing counts as asleep
         _LOGGER.debug("No sun position for the history")
         return None
@@ -398,8 +401,7 @@ def _sun_low_hours(hass: HomeAssistant) -> Callable[[datetime], bool] | None:
     def low(hour: datetime) -> bool:
         start = dt_util.as_utc(hour)
         return all(
-            location.solar_elevation(start + timedelta(minutes=m), elevation)
-            < SUN_LOW_DEGREES
+            elevation(observer, start + timedelta(minutes=m)) < SUN_LOW_DEGREES
             for m in (0, 30, 60)
         )
 

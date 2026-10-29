@@ -556,6 +556,28 @@ CLIMATE = vol.Schema(
     extra=vol.ALLOW_EXTRA,
 )
 
+# A switch Joe may switch off at night or while nobody is home (see
+# control/standby.py); "never" until the owner chooses otherwise.
+STANDBY_CHOICES = ("never", "night", "away", "both")
+STANDBY_DEVICE = vol.Schema(
+    {
+        vol.Optional("when", default="never"): vol.In(STANDBY_CHOICES),
+        # The power reading on the same device (what switching it saves).
+        vol.Optional("power_entity", default=None): _ENTITY,
+        # Night as for the air conditioners: the device's own times, or the
+        # entity of the Nachtruhe (climate.night_by).
+        vol.Optional("night_from", default="23:00"): _CLOCK,
+        vol.Optional("night_until", default="06:30"): _CLOCK,
+    },
+    extra=vol.ALLOW_EXTRA,
+)
+STANDBY = vol.Schema(
+    {
+        vol.Optional("devices", default=dict): _strict({cv.entity_id: STANDBY_DEVICE}),
+    },
+    extra=vol.ALLOW_EXTRA,
+)
+
 ROUTING_SERVICES = ("waze", "google", "osm")
 
 # How Joe works out the distance to an appointment's place (None: not at all).
@@ -871,6 +893,7 @@ CONFIG = vol.Schema(
         vol.Optional("calendar", default=dict): CALENDAR,
         vol.Optional("routing", default=dict): ROUTING,
         vol.Optional("climate", default=dict): CLIMATE,
+        vol.Optional("standby", default=dict): STANDBY,
         vol.Optional("answers", default=dict): ANSWERS,
         vol.Optional("learned", default=dict): LEARNED,
         vol.Optional("sparring", default=dict): SPARRING,

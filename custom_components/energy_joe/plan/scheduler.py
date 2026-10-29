@@ -33,7 +33,7 @@ from .car_calendar import CarCalendarStore
 from .cars import action_by_id, car_by_id, detect_all, need_for, point_of
 from .ev import car_need
 from .inputs import DEFAULT_SEARCH, async_build_input, next_window, point_needs
-from .planner import joined_slots, make_plan
+from .planner import PlanInput, joined_slots, make_plan, share_targets
 from .trips import PlaceStore, normalize
 
 _LOGGER = logging.getLogger(__name__)
@@ -72,6 +72,9 @@ class JoePlanner:
         # Last night's fixed plan while its grid-friendly morning still runs
         # (the window is over, the morning lasts until day.defer_until).
         self._morning: dict[str, Any] | None = None
+        # What tonight's fixed plan was last worked out again from (for
+        # sharing the charging out anew when a target goes up).
+        self._night_input: PlanInput | None = None
         # Distances to the places of appointments (for cars charged by need).
         self.places = PlaceStore(hass)
         # Joe's own car calendars (set by the runtime).
@@ -356,6 +359,7 @@ class JoePlanner:
         lower, the fixed one stays."""
         fixed = self._fixed
         assert fixed is not None
+        self._night_input = None
         plan = await self._async_plan(now, fixed)
         if plan.get("kind") == "unavailable" or not _same_window(plan, fixed):
             return
@@ -365,7 +369,7 @@ class JoePlanner:
         again["cars"] = plan.get("cars") or {}
         raised: list[dict[str, Any]] = []
         if datetime.fromisoformat(fixed["window"]["end"]) - now > RAISE_UNTIL:
-            raised = _raise_targets(again, plan, now)
+            raised = _raise_targets(again, plan, now, self._night_input)
         self._fixed = again
         if changed or raised:
             # The day keeps tonight's plan as it is carried out (with the
@@ -396,6 +400,7 @@ class JoePlanner:
         start = datetime.fromisoformat(fixed["window"]["start"])
         end = datetime.fromisoformat(fixed["window"]["end"])
         actions = {a["id"]: a for a in config["actions"]}
+        before = {a["id"]: a for a in fixed.get("actions") or []}
         needs = point_needs(config, fixed.get("cars") or {}, detected)
         for car_id, need in (fixed.get("cars") or {}).items():
             need["point"] = point_of(detected, car_id)
@@ -419,6 +424,7 @@ class JoePlanner:
                 config["learned"].get("action_models") or {},
                 needs,
                 detected,
+                before,
             )[0]
             again["cost"] = _cost(fixed, again)
             if _same_run(again, entry):
@@ -433,11 +439,13 @@ class JoePlanner:
         """A plan from now on (`fixed`: in that plan's window, see
         _async_replan_night)."""
         window = None
+        before = None
         if fixed is not None:
             window = (
                 datetime.fromisoformat(fixed["window"]["start"]),
                 datetime.fromisoformat(fixed["window"]["end"]),
             )
+            before = {a["id"]: a for a in fixed.get("actions") or []}
         inp, notes = await async_build_input(
             self._hass,
             self._config,
@@ -452,6 +460,7 @@ class JoePlanner:
             self.grid_peak(),
             self.slow(),
             window,
+            before,
         )
         if inp is None:
             return {
@@ -468,6 +477,7 @@ class JoePlanner:
                 force_target=force,
                 max_target=max(self._config["rules"]["max_target_soc"], force or 0.0),
             )
+            self._night_input = inp
         # Trying many windows takes a moment: not in the event loop.
         return await self._hass.async_add_executor_job(make_plan, inp)
 
@@ -702,12 +712,17 @@ def _night_actions(
 
 
 def _raise_targets(
-    fixed: dict[str, Any], plan: dict[str, Any], now: datetime
+    fixed: dict[str, Any],
+    plan: dict[str, Any],
+    now: datetime,
+    inp: PlanInput | None = None,
 ) -> list[dict[str, Any]]:
     """A battery whose target came out clearly higher now (RAISE_MIN) gets it,
     with its charging from now on; a lower one keeps the fixed target. The
     target the night was fixed with stays as target_fixed (and per battery
-    under "raised"). Returns what was raised."""
+    under "raised"). With the input the night was worked out from (`inp`),
+    the charging of all batteries is shared out again from now on, so
+    together they keep the grid limit. Returns what was raised."""
     if plan.get("kind") not in ("charge", "hold"):
         return []
     if "no_forecast" in (plan.get("notes") or []) and "no_forecast" not in (
@@ -782,6 +797,17 @@ def _raise_targets(
                 "sun_to": (plan.get("meta") or {}).get("tomorrow_kwh"),
             }
         )
+    if inp is not None and not whole:
+        # The others keep their target, but their charging times as fixed
+        # would add up with the raised ones' over the grid limit: all shared
+        # out again together, each from its level now (what it has charged
+        # counts). One that charges nothing tonight stays so.
+        targets = {
+            b["id"]: b["target"] for b in batteries if b["id"] in up or b.get("slots")
+        }
+        shares, left = share_targets(inp, targets)
+        batteries = [{**b, **shares.get(b["id"], {})} for b in batteries]
+        fixed["unplaced_kwh"] = round(left, 2)
     capacity = fixed.get("capacity_kwh") or sum(
         b.get("capacity") or 0.0 for b in batteries
     )

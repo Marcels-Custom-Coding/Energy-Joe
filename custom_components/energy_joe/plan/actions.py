@@ -33,6 +33,12 @@ DEFAULT_RATE_K_PER_H = 8.0
 DAY_HOURS = 17
 # Extra time before the end so the target is reached for sure.
 MARGIN = timedelta(minutes=15)
+# Planning again inside the fixed window, the sun's word on an action holds
+# until tomorrow's forecast is clearly on the other side of its threshold
+# (this share of it, at least SUN_HYSTERESIS_MIN_KWH): a forecast that wavers
+# around the threshold would otherwise switch it on and off every few minutes.
+SUN_HYSTERESIS = 0.15
+SUN_HYSTERESIS_MIN_KWH = 1.0
 
 
 def condition_met(state: State | None, op: str, value: Any) -> bool:
@@ -73,6 +79,7 @@ def plan_actions(
     learned: dict[str, Any] | None = None,
     needs: dict[str, dict[str, Any]] | None = None,
     detected: dict[str, dict[str, Any]] | None = None,
+    before: dict[str, dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """Which actions run tonight, from when to when, and how much they draw.
 
@@ -80,10 +87,15 @@ def plan_actions(
     "charging by need" (see ev.py) only when tomorrow's driving needs more
     than it has, and only as long as charging the missing energy takes. A
     guest's car, a car Joe cannot tell, or no car: Joe leaves the wallbox alone.
+
+    `before`: the actions of tonight's fixed plan by id (planning again inside
+    its window); what the sun said about one holds until the forecast is
+    clearly on the other side of its threshold (see SUN_HYSTERESIS).
     """
     learned = learned or {}
     needs = needs or {}
     detected = detected or {}
+    before = before or {}
     # The night by its local start (as the plan's window says it); times in
     # UTC, so a night with a clock change has its real length.
     night = dt_util.as_local(window_start).isoformat()
@@ -109,7 +121,8 @@ def plan_actions(
             sunny = (
                 threshold is not None
                 and tomorrow_kwh is not None
-                and tomorrow_kwh >= threshold
+                and tomorrow_kwh
+                >= threshold + _sun_margin(threshold, before.get(action["id"]))
             )
             failed = [
                 c["entity_id"]
@@ -203,6 +216,24 @@ def plan_actions(
         )
         result.append(entry)
     return result
+
+
+def _sun_margin(threshold: float, entry: dict[str, Any] | None) -> float:
+    """How far the threshold moves for an action the sun decided in the fixed
+    plan: ran with little sun, it stops only clearly above it; stayed off for
+    the sun, it starts only clearly below. Decided otherwise (by hand, its
+    conditions, a car's range): the threshold as it is."""
+    if entry is None or entry.get("manual"):
+        return 0.0
+    reasons = entry.get("reasons") or []
+    margin = max(SUN_HYSTERESIS_MIN_KWH, threshold * SUN_HYSTERESIS)
+    if entry.get("run") and ("little_sun" in reasons or "need" in reasons):
+        return margin
+    if not entry.get("run") and (
+        "enough_sun" in reasons or "sun_before_trip" in reasons
+    ):
+        return -margin
+    return 0.0
 
 
 def reserved_kw(actions: list[dict[str, Any]], start: datetime, end: datetime) -> float:

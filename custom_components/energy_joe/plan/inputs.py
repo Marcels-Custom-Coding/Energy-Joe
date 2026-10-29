@@ -349,6 +349,7 @@ async def async_build_input(
     grid_peak: dict[str, Any] | None = None,
     slow: dict[str, float] | None = None,
     window: tuple[datetime, datetime] | None = None,
+    before: dict[str, dict[str, Any]] | None = None,
 ) -> tuple[PlanInput | None, list[str]]:
     """Gather everything for tonight's plan; None with reasons if there is nothing to plan.
 
@@ -356,7 +357,8 @@ async def async_build_input(
     when it took far less than planned (see executor._async_watch_slow).
     `window`: the window of tonight's fixed plan; it stays (a dynamic tariff's
     best window is not searched again). The night is worked out from now on,
-    with the levels the batteries have now.
+    with the levels the batteries have now. `before`: that plan's night
+    actions by id (the sun's word on them holds, see actions.SUN_HYSTERESIS).
     """
     tariff = config["tariff"]
     dynamic = tariff["kind"] == "dynamic"
@@ -614,6 +616,7 @@ async def async_build_input(
         learned.get("action_models") or {},
         needs,
         detected,
+        before,
     )
     reserved = [
         reserved_kw(actions, h.start, h.start + timedelta(hours=1)) for h in hours
