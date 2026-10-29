@@ -867,6 +867,52 @@ async def test_a_longer_trip_after_fixing_charges_tonight(hass: HomeAssistant) -
     await store.async_unload()
 
 
+async def test_by_hand_after_fixing_charges_tonight(hass: HomeAssistant) -> None:
+    """After midnight the plan is fixed: "Heute Nacht" by hand still charges."""
+    from custom_components.energy_joe.observe.store import HistoryStore
+    from custom_components.energy_joe.plan.scheduler import JoePlanner
+
+    hass.states.async_set("sensor.car_soc", "60", {"unit_of_measurement": "%"})
+    store = HistoryStore(hass)
+    await store.async_load()
+    manual: dict[str, str] = {}
+    planner = JoePlanner(hass, store, lambda: None, manual=lambda: manual)
+    config = config_of(need())
+    planner._config = config
+    found = car_need(need()["need"], hass.states.get, [], None, 10.0, False, True)
+    start = datetime(2026, 10, 5, 0, 0, tzinfo=dt_util.get_default_time_zone())
+    end = start + timedelta(hours=5)
+    fixed = plan_actions(
+        [config["actions"][0]],
+        hass.states.get,
+        start,
+        end,
+        None,
+        {},
+        None,
+        {"ev": {**found, "trips": []}},
+    )
+    assert fixed[0]["run"] is False
+    planner._fixed = {
+        "fixed": True,
+        "window": {"start": start.isoformat(), "end": end.isoformat()},
+        "meta": {"tomorrow": {"workday": True}},
+        "prices": {"night": 0.25, "day": 0.35},
+        "actions": fixed,
+        "cars": {"kona": {**found, "trips": []}},
+    }
+    manual["ev"] = start.isoformat()
+    assert await planner.async_replan_action("ev") == ["ev"]
+    entry = planner.plan["actions"][0]
+    assert entry["run"] is True and entry["reasons"] == ["tonight"]
+    assert planner.plan["window"]["start"] == start.isoformat()
+    # Off again: the action stops, the window stays.
+    manual.clear()
+    assert await planner.async_replan_action("ev") == ["ev"]
+    assert planner.plan["actions"][0]["run"] is False
+    await store.async_unload()
+
+
 async def test_days_from_another_sensor_no_longer_count(
     hass: HomeAssistant, monkeypatch: pytest.MonkeyPatch
 ) -> None:

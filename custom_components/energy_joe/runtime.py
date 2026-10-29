@@ -676,7 +676,11 @@ class JoeRuntime:
         """Run a night action tonight regardless of the forecast (or not), and plan again."""
         await self.executor.async_action_tonight(action_id, on, target, unit)
         if self.planner.active:
-            await self.planner.async_refresh()
+            # After the plan is fixed (the night has begun) only this action is
+            # worked out again; before, the whole night is planned again.
+            changed = await self.planner.async_replan_action(action_id)
+            if changed:
+                await self.executor.async_replanned(changed)
 
     async def async_reset_learning(self, scope: str = "all") -> bool:
         """Forget what Joe learned, everything or one area (the panel's reset buttons)."""
