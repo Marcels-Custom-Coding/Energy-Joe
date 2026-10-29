@@ -6,7 +6,18 @@ import "../components/chart";
 import { batteryTeam, teamText } from "../components/battery-team";
 import { daySurplus, surplusExtra, surplusText } from "../components/day-surplus";
 import type { ChartBand, ChartMarker, ChartSeries } from "../components/chart";
-import { planCostLine, planPose, planSentence, riskBasis, riskCaution, riskSentence, slotsText, timeOf, windowText } from "../components/plan-text";
+import {
+  planCostLine,
+  planPose,
+  planSentence,
+  raisedText,
+  riskBasis,
+  riskCaution,
+  riskSentence,
+  slotsText,
+  timeOf,
+  windowText,
+} from "../components/plan-text";
 import { mirrorRow } from "../components/mirror";
 import "../components/pose";
 import "../components/steer-tonight";
@@ -249,6 +260,7 @@ export class JoePlanPage extends LitElement {
       return this.renderEmpty(t, plan);
     }
     const cost = planCostLine(t, plan, this.hass?.config?.currency);
+    const raised = raisedText(t, plan);
     return html`<div class="wrap">
       <div class="eyebrow"><ha-icon icon="mdi:weather-night"></ha-icon>${t("overview.night")} · ${windowText(t, plan)}</div>
       ${displayTitle(t("plan.page.title"))} ${swoosh}
@@ -259,7 +271,7 @@ export class JoePlanPage extends LitElement {
         <span class="chip ${plan.fixed ? "ok" : ""}">
           ${plan.fixed ? t("plan.fixed_at", { time: plan.created.slice(11, 16) }) : t("plan.preview_at", { time: plan.created.slice(11, 16) })}
         </span>
-        <button type="button" class="mini-btn" ?disabled=${this.refreshing || plan.fixed} @click=${this.refresh}>
+        <button type="button" class="mini-btn" ?disabled=${this.refreshing} @click=${this.refresh}>
           <ha-icon icon="mdi:refresh"></ha-icon>${t("plan.refresh")}
         </button>
         ${tip(t, "plan_refresh")}
@@ -272,6 +284,7 @@ export class JoePlanPage extends LitElement {
             : html`${formatNumber(t.lang, plan.target ?? 0, 0)}<small>%</small>`}
         </div>
         <p class="say">${planSentence(t, plan)} ${tip(t, "plan_target")}</p>
+        ${raised ? html`<p class="say raised">${raised} ${tip(t, "plan_raised")}</p>` : nothing}
         ${cost ? html`<p class="cost">${cost}</p>` : nothing}
       </section>
       ${this.renderRisk(t, plan)}
@@ -857,7 +870,7 @@ export class JoePlanPage extends LitElement {
     try {
       await this.hass?.callWS({ type: "energy_joe/plan/refresh" });
     } catch {
-      // The plan stays as it is; the next hour tries again.
+      // The plan stays as it is; the next run (every 5 minutes) tries again.
     } finally {
       this.refreshing = false;
     }

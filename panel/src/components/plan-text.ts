@@ -1,6 +1,6 @@
 import { formatNumber } from "../entities";
 import type { Translate } from "../i18n";
-import type { Plan } from "../types";
+import type { Plan, PlanRaise } from "../types";
 
 /** "03:20" from an ISO time with Home Assistant's offset (not the browser's zone). */
 export function timeOf(iso: string | null | undefined): string {
@@ -261,4 +261,32 @@ export function riskBasis(t: Translate, plan: Plan): string {
     parts.push(t("plan.risk.days", { solar: formatNumber(t.lang, solar, 0), home: formatNumber(t.lang, home, 0) }));
   }
   return parts.join(" · ");
+}
+
+/**
+ * "Um 23:15 Uhr habe ich nachgerechnet und das Ziel angehoben: BYD von 55 auf
+ * 70 %." – a fixed plan's target only goes up (plan/scheduler.py
+ * _raise_targets); per battery from the target it was fixed with.
+ */
+export function raisedText(t: Translate, plan: Plan): string | null {
+  const raised = plan.raised ?? [];
+  if (!raised.length) {
+    return null;
+  }
+  const last = new Map<string, PlanRaise>();
+  for (const item of raised) {
+    last.set(item.battery, item);
+  }
+  const changes = [...last.values()]
+    .map((item) =>
+      t("plan.raised.change", {
+        name: item.name,
+        from: formatNumber(t.lang, item.first, 0),
+        to: formatNumber(t.lang, item.to, 0),
+      }),
+    )
+    .join(", ");
+  const latest = raised[raised.length - 1];
+  const why = t.optional(`plan.raised.why.${latest.why}`) ?? t("plan.raised.why.again");
+  return `${t("plan.raised", { time: timeOf(latest.at), changes })} ${why}`;
 }
