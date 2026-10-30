@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import date, datetime, timedelta
 import logging
 from typing import Any
@@ -122,6 +123,9 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_mailbox_test)
     websocket_api.async_register_command(hass, ws_mailbox_check)
     websocket_api.async_register_command(hass, ws_account)
+
+
+_DATA_SUBSCRIPTIONS = f"{DOMAIN}_subscriptions"
 
 
 def _runtime(
@@ -326,9 +330,58 @@ def ws_subscribe(
     def forward(state: dict[str, Any]) -> None:
         connection.send_message(websocket_api.event_message(msg["id"], state))
 
-    connection.subscriptions[msg["id"]] = runtime.async_subscribe(forward)
+    # The subscription outlives a reload of the entry: it is moved to the
+    # next runtime instead of staying with the old one, which never sends again.
+    subscriptions: dict[object, _Subscription] = hass.data.setdefault(
+        _DATA_SUBSCRIPTIONS, {}
+    )
+    key = object()
+    subscription = _Subscription(forward)
+    subscription.attach(runtime)
+    subscriptions[key] = subscription
+
+    @callback
+    def unsubscribe() -> None:
+        subscription.detach()
+        subscriptions.pop(key, None)
+
+    connection.subscriptions[msg["id"]] = unsubscribe
     connection.send_result(msg["id"])
     forward(runtime.state)
+
+
+class _Subscription:
+    """One panel or card subscription, bound to the current runtime."""
+
+    def __init__(self, forward: Callable[[dict[str, Any]], None]) -> None:
+        self.forward = forward
+        self._unsub: Callable[[], None] | None = None
+
+    @callback
+    def attach(self, runtime: JoeRuntime) -> None:
+        self.detach()
+        self._unsub = runtime.async_subscribe(self.forward)
+
+    @callback
+    def detach(self) -> None:
+        if self._unsub is not None:
+            self._unsub()
+            self._unsub = None
+
+
+@callback
+def async_detach_subscriptions(hass: HomeAssistant) -> None:
+    """Let go of the runtime that is being unloaded; the clients stay subscribed."""
+    for subscription in hass.data.get(_DATA_SUBSCRIPTIONS, {}).values():
+        subscription.detach()
+
+
+@callback
+def async_attach_subscriptions(hass: HomeAssistant, runtime: JoeRuntime) -> None:
+    """Move open subscriptions to a new runtime and send its state right away."""
+    for subscription in list(hass.data.get(_DATA_SUBSCRIPTIONS, {}).values()):
+        subscription.attach(runtime)
+        subscription.forward(runtime.state)
 
 
 @websocket_api.websocket_command(

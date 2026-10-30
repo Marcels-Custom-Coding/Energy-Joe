@@ -3,6 +3,21 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.51
+
+- **Nach dem Abschalten schreibe ich nichts mehr.** Wartete beim Entladen oder Neuladen noch eine Prüfung, konnte sie danach wieder Grenzwerte auf die Speicher schreiben, die niemand mehr zurückgab. Jetzt kehrt sie ohne Wirkung zurück.
+- **Ein kurz unbekannter Ladestand gibt den Tag nicht mehr frei.** War der Ladestand einen Moment „nicht verfügbar“ (etwa nach einem Neustart), habe ich mit 0 % gerechnet und die netzfreundliche Zurückhaltung für den ganzen Tag beendet. Jetzt warte ich, bis der Stand wieder bekannt ist.
+- **Die laufende Sonnenstunde zählt wieder mit**, wenn ich prüfe, ob der Rest des Tages die Speicher noch füllt. Bisher fiel sie heraus, und die Zurückhaltung endete zu früh.
+- **Nachtruhe über eine Entität:** Bleibt sie morgens länger an, kommt der Raum trotzdem zur eingestellten Morgenzeit zurück, statt die nächste Nacht gleich weiterzulaufen.
+- **Stromfresser nachts:** Den Beginn der Nacht merke ich mir selbst; nach einem Neustart von Home Assistant geht er nicht mehr verloren.
+- **Kein Planen im Sekundentakt**, wenn zum Festschreiben noch kein brauchbarer Plan da ist: neuer Versuch nach 5 Minuten.
+- **Leerer Speicher zu Beginn der Nacht** wird in der Planung jetzt als leer gezählt.
+- **Nachgeholte Stunden aus Zählern** gelten als vollständig; vorher habe ich sie jede Stunde neu gelesen und neu gelernt.
+- **Postfach:** Ein Zeilenumbruch im Titel einer Einladung, ein unbekannter Zeichensatz oder ein ungewöhnlicher SMTP-Fehler blockieren den Abruf nicht mehr.
+- **Kalenderkonten:** Antwortet Microsoft oder Google mit einem Fehler (zu viele Anfragen, Serverfehler), gilt das nicht mehr als „keine Termine“; ich behalte den letzten guten Stand.
+- **Panel friert nach dem Neuladen nicht mehr ein:** Offene Panels und Karten bekommen nach Neuladen oder Werksreset weiter Daten.
+- Nicht geprüft an echter Anlage: alles davon.
+
 ## 0.9.50
 
 - **Die Wallbox bleibt nicht mehr wegen einer alten Notiz aus.** Ich merke mir, welchen Wert ich gesetzt habe, um zu erkennen, wenn jemand anders ihn ändert – dann lasse ich ihn für die Nacht in Ruhe. Eine solche Notiz zum evcc-Modus („Schnell“) blieb aber stehen, nachdem ich längst zurückgestellt hatte. Zu Beginn jeder Nacht sah es dann so aus, als hätte jemand meinen Wert überschrieben, und ich habe die Wallbox die ganze Nacht nicht mehr angefasst – auch bei „Heute Nacht laden“, und tagsüber griff dadurch auch „Jetzt laden“ nicht. Jetzt vergesse ich solche Notizen zu Beginn jeder Nacht und mit diesem Update; „Jetzt laden“ und „Heute Nacht laden“ von Hand räumen sie ebenfalls weg.

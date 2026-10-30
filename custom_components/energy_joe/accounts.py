@@ -100,6 +100,9 @@ async def graph_events(
         ) as response:
             if response.status in (401, 403):
                 raise AccountError("login", str(response.status))
+            if response.status >= 400:
+                # 429/5xx/404 are no empty calendar: keep the last good answer
+                raise AccountError("connect", str(response.status))
             body = await response.json(content_type=None)
     except (ClientError, TimeoutError, ValueError) as err:
         raise AccountError("connect", str(err)) from err
@@ -180,6 +183,9 @@ async def google_events(
         ) as response:
             if response.status in (401, 403):
                 raise AccountError("login", str(response.status))
+            if response.status >= 400:
+                # 429/5xx/404 are no empty calendar: keep the last good answer
+                raise AccountError("connect", str(response.status))
             body = await response.json(content_type=None)
     except (ClientError, TimeoutError, ValueError) as err:
         raise AccountError("connect", str(err)) from err
@@ -713,7 +719,8 @@ class CarAccounts:
         except AccountError as err:
             _LOGGER.debug("Account of %s not readable: %s", car, err)
             self._set(car, state="error", error=err.code)
-            return []
+            # the last good answer beats an empty week
+            return cached[1] if cached else []
         # Unanswered invitations from strangers are no trips of the car.
         rules = self._need(car).get("allowed") or []
         events = [

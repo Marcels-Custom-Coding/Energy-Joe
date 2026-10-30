@@ -57,6 +57,9 @@ DEFAULT_RATE_K_H = 1.5
 DEFAULT_SPEED_KMH = 40.0
 # Some time to spare on top of the heating time.
 MARGIN = timedelta(minutes=10)
+# After the morning time, how long an entity of the Nachtruhe that is still on
+# does not start a new night (people slept in, nobody switched it off).
+MORNING_OVER = timedelta(hours=8)
 # A room counts as there when this close to its target (K).
 REACHED_K = 0.3
 LOG_SIZE = 50
@@ -664,6 +667,11 @@ class ClimateController:
             begin = local
             end = datetime.combine(today, morning, local.tzinfo)
             if end <= local:
+                # The morning time passed today: that night is over, even
+                # while nobody switched the entity off yet (a fresh night
+                # only some hours later, when people may go to bed again).
+                if local < end + MORNING_OVER:
+                    return False
                 end += timedelta(days=1)
         else:
             begin = datetime.combine(today, start, local.tzinfo)

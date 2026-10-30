@@ -356,7 +356,7 @@ def simulate(
         imports,
         exports,
         cost,
-        at_window or stored,
+        stored if at_window is None else at_window,
         grid_charge,
         bought_day,
         bought_night,
