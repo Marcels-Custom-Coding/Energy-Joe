@@ -438,3 +438,50 @@ async def test_tonight_up_to_a_range(hass: HomeAssistant, freezer) -> None:
     await executor.async_check()
     assert hass.states.get("select.carport_mode").state == "smart"
     assert executor.status["actions"]["ev"]["reason"] == "reached"
+
+
+async def test_an_old_note_of_the_mode_does_not_keep_joe_away(
+    hass: HomeAssistant, freezer
+) -> None:
+    """Joe once set "now" and kept that note; evcc is on "smart" since. At the
+    next night (and right after an update) that is no override by someone
+    else: Joe switches the wallbox as asked, by hand and by plan."""
+    freezer.move_to("2026-10-03T22:46:00+02:00")
+    keep_values(hass)
+    hass.states.async_set(
+        "select.carport_mode", "smart", {"options": ["off", "smart", "now"]}
+    )
+    hass.states.async_set("binary_sensor.carport_connected", "on")
+    hass.states.async_set("sensor.car_range", "70", {"unit_of_measurement": "km"})
+    config = with_car(
+        {**EV, "auto": False}, {"range_entity": "sensor.car_range", "reserve_km": 50}
+    )
+    start, end = window(hass)
+    tonight: dict[str, str] = {}
+
+    def plan() -> dict[str, Any]:
+        planned = plan_actions(
+            config["actions"], hass.states.get, start, end, 30.0, tonight
+        )
+        return night_plan(start, planned)
+
+    executor = JoeExecutor(hass, lambda: config, plan, lambda: "live", lambda: None)
+    await executor.async_load()
+    stale = {"value": "now", "at": "2026-09-30T00:10:00+02:00", "confirmed": True}
+    executor.data["written"]["select.carport_mode"] = dict(stale)
+    executor.data["external"] = ["select.carport_mode"]
+    # "Jetzt laden" by hand: the old note does not stop it.
+    await executor.async_boost("ev", 50, "km")
+    assert hass.states.get("select.carport_mode").state == "now"
+    await executor.async_boost("ev", None)
+    assert hass.states.get("select.carport_mode").state == "smart"
+    # The old note again (as it was stored), then "tonight" and the night.
+    executor.data["written"]["select.carport_mode"] = dict(stale)
+    await executor.async_action_tonight("ev", True, 50, "km")
+    tonight.update(executor.data["tonight"])
+    executor.data["written"]["select.carport_mode"] = dict(stale)
+    freezer.move_to("2026-10-04T00:00:30+02:00")
+    await executor.async_check()
+    assert "select.carport_mode" not in executor.data["external"]
+    assert hass.states.get("select.carport_mode").state == "now"
+    assert executor.status["actions"]["ev"]["on"] is True

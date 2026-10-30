@@ -3,6 +3,11 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.50
+
+- **Die Wallbox bleibt nicht mehr wegen einer alten Notiz aus.** Ich merke mir, welchen Wert ich gesetzt habe, um zu erkennen, wenn jemand anders ihn ändert – dann lasse ich ihn für die Nacht in Ruhe. Eine solche Notiz zum evcc-Modus („Schnell“) blieb aber stehen, nachdem ich längst zurückgestellt hatte. Zu Beginn jeder Nacht sah es dann so aus, als hätte jemand meinen Wert überschrieben, und ich habe die Wallbox die ganze Nacht nicht mehr angefasst – auch bei „Heute Nacht laden“, und tagsüber griff dadurch auch „Jetzt laden“ nicht. Jetzt vergesse ich solche Notizen zu Beginn jeder Nacht und mit diesem Update; „Jetzt laden“ und „Heute Nacht laden“ von Hand räumen sie ebenfalls weg.
+- Nicht geprüft an echter Anlage.
+
 ## 0.9.49
 
 - **Stromfresser nachts und ohne euch.** Neuer Bereich unter Haushalt › Stromfresser. Ich suche Geräte mit Zwischenstecker (Schalter und Leistungsmessung), messe, was sie nachts und bei Abwesenheit ziehen, und rechne aus, was das im Jahr kostet. Für jedes Gerät entscheidest du: nicht schalten (Standard), nachts aus, aus, wenn niemand zu Hause ist, oder beides. Was ich ausschalte, schalte ich morgens bzw. beim Heimkommen wieder ein; schaltest du zwischendurch selbst, lasse ich es so. Bei Geräten, die nach Dauerläufern klingen (Kühlschrank, Router …), warne ich. Geschaltet wird nur im Modus „Live“.
