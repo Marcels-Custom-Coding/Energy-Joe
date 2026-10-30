@@ -46,6 +46,8 @@ SETTLE_S = 30
 # much higher (percentage points), and not in the window's last minutes.
 RAISE_MIN = 3
 RAISE_UNTIL = timedelta(minutes=15)
+# Without a usable plan at the commit: try again after this pause, not every second.
+COMMIT_RETRY = timedelta(minutes=5)
 
 
 class JoePlanner:
@@ -69,6 +71,8 @@ class JoePlanner:
         self._fixed: dict[str, Any] | None = None
         # The start of the window (or search span) the last fixed plan was for.
         self._fixed_span: str | None = None
+        # No usable plan at the commit (prices pending, a failed run): when to try again.
+        self._retry_at: datetime | None = None
         # Last night's fixed plan while its grid-friendly morning still runs
         # (the window is over, the morning lasts until day.defer_until).
         self._morning: dict[str, Any] | None = None
@@ -528,8 +532,11 @@ class JoePlanner:
                 and self._fixed is None
                 and self._fixed_span != start.isoformat()
             ):
-                # Started just before the window: fix tonight's plan right away.
+                # Started just before the window: fix tonight's plan right away
+                # (after a failed try only once the pause is over).
                 moment = now + timedelta(seconds=1)
+                if self._retry_at is not None and self._retry_at > moment:
+                    moment = self._retry_at
             else:
                 # This window is fixed already (or running): the next one.
                 moment += timedelta(days=1)
@@ -550,7 +557,10 @@ class JoePlanner:
         plan = await self._async_plan(dt_util.now())
         # Another run may have finished in between: this one is the plan.
         self.plan = plan
-        if plan.get("kind") != "unavailable":
+        if plan.get("kind") == "unavailable":
+            self._retry_at = dt_util.now() + COMMIT_RETRY
+        else:
+            self._retry_at = None
             plan["fixed"] = True
             self._fixed = plan
             self._fixed_span = (plan.get("search") or plan["window"])["start"]

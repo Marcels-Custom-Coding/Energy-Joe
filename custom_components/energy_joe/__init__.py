@@ -63,6 +63,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     runtime = JoeRuntime(hass, entry.entry_id)
     await runtime.async_load()
     hass.data[DATA_RUNTIME] = runtime
+    api.async_attach_subscriptions(hass, runtime)
 
     frontend_path = Path(__file__).parent / FRONTEND_DIR
     if not hass.data.get(_DATA_STATIC_REGISTERED):
@@ -124,6 +125,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if cards_url := hass.data.pop(_DATA_CARDS_URL, None):
         frontend.remove_extra_js_url(hass, cards_url)
     if runtime := hass.data.pop(DATA_RUNTIME, None):
+        api.async_detach_subscriptions(hass)
         await runtime.async_unload()
     return True
 

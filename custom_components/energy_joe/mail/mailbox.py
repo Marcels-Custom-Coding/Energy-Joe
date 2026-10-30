@@ -122,7 +122,11 @@ def _calendars(message: Message) -> list[str]:
             payload = part.get_payload(decode=True)
             if payload:
                 charset = part.get_content_charset() or "utf-8"
-                found.append(payload.decode(charset, errors="replace"))
+                try:
+                    found.append(payload.decode(charset, errors="replace"))
+                except LookupError:
+                    # an unknown charset must not block the whole mailbox
+                    found.append(payload.decode("utf-8", errors="replace"))
     return found
 
 
@@ -208,7 +212,7 @@ def _login_smtp(settings: dict[str, Any], password: str) -> smtplib.SMTP:
         else:
             client = smtplib.SMTP(where["smtp_host"], port, timeout=TIMEOUT)
             client.starttls(context=context)
-    except OSError as err:
+    except (OSError, smtplib.SMTPException) as err:
         raise MailError("connect", str(err)) from err
     user = settings.get("username") or settings.get("address") or ""
     try:
@@ -247,7 +251,7 @@ def send_reply(
     client = _login_smtp(settings, password)
     try:
         client.send_message(message)
-    except smtplib.SMTPException as err:
+    except (smtplib.SMTPException, OSError) as err:
         raise MailError("send", str(err)) from err
     finally:
         _close_smtp(client)

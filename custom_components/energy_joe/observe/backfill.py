@@ -408,13 +408,27 @@ def _sun_low_hours(hass: HomeAssistant) -> Callable[[datetime], bool] | None:
     return low
 
 
+def _complete(record: dict[str, Any]) -> bool:
+    """Whether a stored hour needs no new reading.
+
+    Coverage only comes from power readings; an hour read back from counters
+    alone has none (cov 0), but its energies are as good as they get: reading
+    it again would only bring the same numbers (and a new round of learning).
+    """
+    if record.get("cov", 0) >= 0.9:
+        return True
+    return (
+        record.get("src") != "live"
+        and record.get("home") is not None
+        and record.get("grid_in") is not None
+    )
+
+
 def missing_hours(
     known: Iterable[dict[str, Any]], start: datetime, end: datetime
 ) -> list[datetime]:
     """Local hours from start to end without a complete record."""
-    complete = {
-        datetime.fromisoformat(r["start"]) for r in known if r.get("cov", 0) >= 0.9
-    }
+    complete = {datetime.fromisoformat(r["start"]) for r in known if _complete(r)}
     return [h for h in hour_starts(start, end) if h not in complete]
 
 

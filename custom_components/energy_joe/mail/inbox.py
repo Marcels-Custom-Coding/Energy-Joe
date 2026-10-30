@@ -341,7 +341,7 @@ class CarInboxes:
                     settings,
                     self._data[car]["password"],
                     invitation.organizer,
-                    f"Zugesagt: {invitation.summary}".strip(),
+                    f"Zugesagt: {' '.join(invitation.summary.split())}".strip(),
                     reply(invitation, attendee),
                 )
                 self._calendars.update(car, event["uid"], {"accepted": True})

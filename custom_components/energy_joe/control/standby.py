@@ -328,6 +328,9 @@ class StandbyController:
             "declined": {},
             # Since when nobody is home (ISO).
             "nobody_since": None,
+            # Since when the entity of the Nachtruhe is on (ISO): HA sets
+            # last_changed anew on a restart, so Joe keeps it himself.
+            "night_since": None,
             # entity -> what Joe measured before he switched it (see async_devices).
             "measured": {},
             "log": [],
@@ -426,8 +429,13 @@ class StandbyController:
         if entity := self._night_entity():
             state = self._hass.states.get(entity)
             if state is None or state.state not in NIGHT_STATES:
+                self.data["night_since"] = None
                 return None
-            since = dt_util.as_local(state.last_changed)
+            if not self.data["night_since"]:
+                self.data["night_since"] = state.last_changed.isoformat(
+                    timespec="seconds"
+                )
+            since = dt_util.as_local(datetime.fromisoformat(self.data["night_since"]))
             end = datetime.combine(since.date(), morning, since.tzinfo)
             if end <= since:
                 end += timedelta(days=1)

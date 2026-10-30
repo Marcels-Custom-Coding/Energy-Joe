@@ -472,6 +472,9 @@ class JoeExecutor:
         self.data: dict[str, Any] = _fresh()
         self._lock = asyncio.Lock()
         self._unsubs: list[CALLBACK_TYPE] = []
+        # Set by async_stop: a check or a look of the watchdog still waiting
+        # for the lock writes nothing after that.
+        self._stopped = False
         self._soc_unsub: CALLBACK_TYPE | None = None
         self._ask_unsub: CALLBACK_TYPE | None = None
         self._ask_time: str | None = None
@@ -588,6 +591,7 @@ class JoeExecutor:
     async def async_start(self) -> None:
         """Start checking (also releases what a crash left behind)."""
         await self.async_stop(release=False)
+        self._stopped = False
         # What the watchdog switched before a restart goes back first.
         async with self._lock:
             await self._async_guard_restore("start")
@@ -612,6 +616,7 @@ class JoeExecutor:
             await self.notifier.async_clear("not_restored")
 
     async def async_stop(self, release: bool = True) -> None:
+        self._stopped = True
         for unsub in self._unsubs:
             unsub()
         self._unsubs = []
@@ -633,9 +638,10 @@ class JoeExecutor:
         """Joe stops (unloaded, removed): every value he noted goes back, with a
         few tries (no later check would try again). What stays is logged and
         told to the owner; returns it (entity -> the value to put back)."""
-        if not (self._dirty or self.data["guard"]["held"]):
-            return {}
+        # Looked at under the lock: a check holding it may still note values.
         async with self._lock:
+            if not (self._dirty or self.data["guard"]["held"]):
+                return {}
             left = await self._async_give_all_back(reason)
         if left:
             _LOGGER.warning(
@@ -727,7 +733,7 @@ class JoeExecutor:
         if self._lock.locked() and (self.testing or self.probe_running):
             return
         async with self._lock:
-            if self.testing or self.probe_running:
+            if self._stopped or self.testing or self.probe_running:
                 return
             try:
                 await self._async_check(dt_util.now())
@@ -1472,16 +1478,21 @@ class JoeExecutor:
         sizes = {b["id"]: b.get("capacity") for b in plan.get("batteries") or []}
         headroom = sum(
             (sizes.get(battery["id"]) or battery.get("capacity_kwh") or 0.0)
-            * (100 - (soc or 0.0))
+            * (100 - soc)
             / 100
             for battery, _, soc in items
+            if soc is not None
         )
         remaining = sum(
             max(0.0, hour["solar"] - hour["home"]) * DAY_CAUTION
             for hour in plan.get("hours") or []
-            if datetime.fromisoformat(hour["start"]) >= now.replace(minute=0, second=0)
+            if datetime.fromisoformat(hour["start"])
+            >= now.replace(minute=0, second=0, microsecond=0)
         )
-        if remaining < headroom:
+        # A level not known (an entity unavailable for a moment) must not
+        # free the whole night: those batteries hold back (see _day_buffer).
+        unknown = any(soc is None for _, _, soc in items)
+        if remaining < headroom and not unknown:
             self.data["day_released"] = night
             self._log(
                 "day_released",
@@ -4064,7 +4075,7 @@ class JoeExecutor:
 
     def _house_watch(self, on: bool) -> None:
         """The look every few seconds, only while it runs."""
-        if on and self._house_unsub is None:
+        if on and self._house_unsub is None and not self._stopped:
             self._house_unsub = async_track_time_interval(
                 self._hass, self._on_house_tick, house_rules.EVERY
             )
@@ -4124,7 +4135,7 @@ class JoeExecutor:
 
     async def async_guard(self) -> None:
         """One look of the watchdog (every few seconds, see control/guard.py)."""
-        if self.testing or self.probe_running:
+        if self._stopped or self.testing or self.probe_running:
             return
         try:
             await self._async_guard(dt_util.now())
@@ -4193,6 +4204,8 @@ class JoeExecutor:
             await self._async_guard_fixed(store, since, stage, now)
         elif due is not None and due != "ended":
             async with self._lock:
+                if self._stopped:
+                    return
                 await self._async_guard_stage(
                     config, store, int(due[-1]), charging, discharging, dry, now
                 )
@@ -6170,6 +6183,9 @@ class JoeExecutor:
     def _watch(self, entity_ids: list[str]) -> None:
         """React to charge level changes right away while steering."""
         wanted = tuple(sorted(entity_ids))
+        if self._stopped:
+            # Stopped: no new listeners nobody would take away again.
+            wanted = ()
         if wanted == self._watched:
             return
         if self._soc_unsub:
