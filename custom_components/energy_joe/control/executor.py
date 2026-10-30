@@ -577,6 +577,9 @@ class JoeExecutor:
                 **house_rules.fresh(),
                 **(stored.get("house") or {}),
             }
+            # A stale note of an evcc mode Joe once set kept him off the
+            # wallbox night after night (0.9.50): gone with the update.
+            self._forget_actions()
 
     @property
     def active(self) -> bool:
@@ -984,6 +987,9 @@ class JoeExecutor:
             else:
                 on = True
             writes = adapter.on() if on else adapter.release(self.data["saved"])
+            if not on and adapter.entity_id not in self.data["saved"]:
+                # Off and nothing of Joe's to give back: no note of his either.
+                self.data["written"].pop(adapter.entity_id, None)
             problem = None
             if writes:
                 problem = await self._async_write(
@@ -4797,6 +4803,9 @@ class JoeExecutor:
         reserve = need.get("reserve_km", 50.0) if unit == "km" else 0.0
         now = dt_util.now()
         async with self._lock:
+            # Asked for by hand: whatever was noted about the mode before
+            # does not keep Joe from switching it now.
+            self._forget_actions({action["entity_id"]})
             self.data["boost"][action_id] = {
                 "target": round(float(target) + reserve, 1),
                 "chosen": float(target),
@@ -5729,9 +5738,27 @@ class JoeExecutor:
             slow_watch={},
             night_energy={},
         )
+        self._forget_actions()
         self._log("start", night=night)
         if self.notifier:
             self.notifier.clear_ask()
+
+    def _forget_actions(self, entity_ids: set[str] | None = None) -> None:
+        """Night actions Joe holds nothing of (no original to give back): no
+        value of his to watch either. A stale note of what he once wrote
+        (an evcc mode set days ago) would otherwise make the owner's own
+        value look like someone overriding Joe, and he would leave the
+        wallbox alone for the night."""
+        if entity_ids is None:
+            entity_ids = {a["entity_id"] for a in self._config()["actions"]}
+        saved: dict[str, Any] = self.data["saved"]
+        for entity_id in entity_ids:
+            if entity_id not in saved:
+                self.data["written"].pop(entity_id, None)
+        if entity_ids:
+            self.data["external"] = [
+                e for e in self.data["external"] if e not in entity_ids
+            ]
 
     def _end_night(self) -> None:
         night = self.data["night"]
@@ -5791,6 +5818,11 @@ class JoeExecutor:
                 "sensor": sensor,
             }
         if on and night:
+            action = next(
+                (a for a in self._config()["actions"] if a["id"] == action_id), None
+            )
+            if action is not None:
+                self._forget_actions({action["entity_id"]})
             self.data["tonight"][action_id] = night
             # By hand: also when Joe's own charge reached its target before.
             self.data["done"] = [d for d in self.data["done"] if d != action_id]
