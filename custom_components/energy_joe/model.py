@@ -466,6 +466,8 @@ CAR = vol.Schema(
         # In the evening: tell when tomorrow needs charging but the car is not plugged in.
         vol.Optional("remind", default=True): bool,
         vol.Optional("remind_time", default="20:00"): _time,
+        # While it charges: ask the car for a fresh report (its integration's button).
+        vol.Optional("refresh", default=True): bool,
     },
     extra=vol.ALLOW_EXTRA,
 )

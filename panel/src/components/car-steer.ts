@@ -189,6 +189,22 @@ export class JoeCarSteer extends LitElement implements NeedHost {
     return html`${needFields(this)}
       ${field(
         t,
+        t("car.f.refresh"),
+        "car_refresh",
+        html`<div class="row">
+          <button
+            type="button"
+            class="switch"
+            role="switch"
+            aria-checked=${String(draft.refresh !== false)}
+            aria-label=${t("car.f.refresh")}
+            @click=${() => this.setDraft({ refresh: this.draft!.refresh === false })}
+          ></button>
+          <span>${t(draft.refresh !== false ? "car.f.refresh.on" : "car.f.refresh.off")}</span>
+        </div>`,
+      )}
+      ${field(
+        t,
         t("car.f.remind"),
         "car_remind",
         html`<div class="row">
@@ -269,7 +285,7 @@ export class JoeCarSteer extends LitElement implements NeedHost {
 
 /** A fresh car (the assistant "+ Hinzufügen › Auto"). */
 export function newCar(name: string): Omit<CarConfig, "id"> {
-  return { name, sources: [], tracker_entity: null, need: { ...DEFAULT_NEED }, remind: true, remind_time: "20:00" };
+  return { name, sources: [], tracker_entity: null, need: { ...DEFAULT_NEED }, remind: true, remind_time: "20:00", refresh: true };
 }
 
 define("joe-car-steer", JoeCarSteer);

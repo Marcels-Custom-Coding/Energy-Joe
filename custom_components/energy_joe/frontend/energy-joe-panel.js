@@ -1,4 +1,4 @@
-import { $ as e, A as t, B as n, C as r, D as i, E as a, F as o, G as s, H as c, I as l, J as u, K as d, L as f, M as p, N as m, O as h, P as g, Q as _, R as ee, S as te, T as ne, U as v, V as y, W as re, X as ie, Y as ae, Z as b, _ as oe, _t as x, a as se, at as S, b as ce, c as le, ct as ue, d as C, dt as w, et as de, f as T, ft as E, g as fe, gt as pe, h as me, ht as he, i as ge, it as _e, j as ve, k as ye, l as D, lt as O, m as be, mt as k, n as xe, nt as A, o as Se, ot as j, p as Ce, pt as we, q as Te, r as M, rt as Ee, s as De, st as Oe, t as ke, tt as Ae, u as je, ut as N, v as Me, w as Ne, x as Pe, y as Fe, z as Ie } from "./tokens-B-iCDjKQ.js";
+import { $ as e, A as t, B as n, C as r, D as i, E as a, F as o, G as s, H as c, I as l, J as u, K as d, L as f, M as p, N as m, O as h, P as g, Q as _, R as ee, S as te, T as ne, U as v, V as y, W as re, X as ie, Y as ae, Z as b, _ as oe, _t as x, a as se, at as S, b as ce, c as le, ct as ue, d as C, dt as w, et as de, f as T, ft as E, g as fe, gt as pe, h as me, ht as he, i as ge, it as _e, j as ve, k as ye, l as D, lt as O, m as be, mt as k, n as xe, nt as A, o as Se, ot as j, p as Ce, pt as we, q as Te, r as M, rt as Ee, s as De, st as Oe, t as ke, tt as Ae, u as je, ut as N, v as Me, w as Ne, x as Pe, y as Fe, z as Ie } from "./tokens-D1uEkXEv.js";
 //#region src/assets.ts
 var Le = import.meta.url.replace(/[^/]*$/, ""), Re = (e) => `${Le}${e}`, ze = /* @__PURE__ */ new Set(["welcome"]), Be = /* @__PURE__ */ new Set([
 	"night-charge",
@@ -6383,6 +6383,17 @@ var mi = /^([01]\d|2[0-3]):[0-5]\d$/, hi = class extends w {
 	fields(e, t) {
 		return this.section === "calendars" ? hn(this) : this.section === "manual" ? k`${mn(this)}
       ${B(e, e("car.f.tracker"), "car_tracker", Xt(this, t.tracker_entity ?? "", () => this.pickTracker()))}` : k`${pn(this)}
+      ${B(e, e("car.f.refresh"), "car_refresh", k`<div class="row">
+          <button
+            type="button"
+            class="switch"
+            role="switch"
+            aria-checked=${String(t.refresh !== !1)}
+            aria-label=${e("car.f.refresh")}
+            @click=${() => this.setDraft({ refresh: this.draft.refresh === !1 })}
+          ></button>
+          <span>${e(t.refresh === !1 ? "car.f.refresh.off" : "car.f.refresh.on")}</span>
+        </div>`)}
       ${B(e, e("car.f.remind"), "car_remind", k`<div class="row">
           <button
             type="button"
@@ -6451,7 +6462,8 @@ function gi(e) {
 		tracker_entity: null,
 		need: { ...Ht },
 		remind: !0,
-		remind_time: "20:00"
+		remind_time: "20:00",
+		refresh: !0
 	};
 }
 e("joe-car-steer", hi);
@@ -6948,7 +6960,10 @@ function ua(e, t) {
 			device: i.id
 		};
 	}
-	return {
+	return n.startsWith("car:") ? {
+		group: "car",
+		device: n
+	} : {
 		group: "battery",
 		device: n
 	};
@@ -6956,11 +6971,12 @@ function ua(e, t) {
 function da(e, t, n, r, i) {
 	if (r === "climate") return n[i] ?? (t ? v(t, i) : i);
 	if (r === "battery") return e?.batteries.find((e) => e.id === i)?.name ?? i;
+	if (i.startsWith("car:")) return e?.cars?.find((e) => `car:${e.id}` === i)?.name ?? i.slice(4);
 	let a = i.startsWith("action-") ? i.slice(7) : i.startsWith("point:") ? i.slice(6) : i;
 	return e?.actions.find((e) => e.id === a)?.name ?? e?.consumers.find((e) => e.id === i)?.name ?? i;
 }
 function fa(e, t, n, r) {
-	let i = t?.batteries.find((e) => e.id === n.battery)?.name ?? t?.actions.find((e) => `action:${e.id}` === n.battery)?.name ?? n.battery ?? "", a = {
+	let i = t?.batteries.find((e) => e.id === n.battery)?.name ?? t?.actions.find((e) => `action:${e.id}` === n.battery)?.name ?? t?.cars?.find((e) => `car:${e.id}` === n.battery)?.name ?? n.battery ?? "", a = {
 		battery: i,
 		entity: n.entity ? r ? v(r, n.entity) : n.entity : "",
 		value: n.value == null ? "–" : String(n.value),
@@ -7047,6 +7063,18 @@ function fa(e, t, n, r) {
 	}
 	if (n.kind === "surplus_end") return e.optional(`log.surplus_end.${String(n.reason)}`, a) ?? e("log.surplus_end", a);
 	if (n.kind === "limit_ref_failed") return e.optional(`log.limit_ref_failed.${String(n.reason)}`, a) ?? e("log.limit_ref_failed", a);
+	if (n.kind === "car_capacity") {
+		let t = (t, n) => typeof t == "number" ? d(e.lang, t, n) : "–", r = {
+			...a,
+			value: t(n.value, 1),
+			learned: t(n.learned, 1),
+			kwh: t(n.kwh, 1),
+			rise: t(n.rise, 0),
+			count: typeof n.recorder == "number" ? n.recorder : 0
+		};
+		return e(typeof n.recorder == "number" ? "log.car_capacity.recorder" : "log.car_capacity", r);
+	}
+	if (n.kind === "car_refresh") return e(n.why === "end" ? "log.car_refresh.end" : "log.car_refresh.start", a);
 	if (n.kind === "boost_end") return e.optional(`log.boost_end.${String(n.reason)}`, a) ?? e("log.boost_end.stopped", a);
 	if (n.kind === "stuck") {
 		let t = String(n.reason ?? ""), i = t === "reserve" && typeof n.value == "number" ? d(e.lang, n.value, 1) : Ei(e, r, n.value, String(n.entity ?? ""));
@@ -12344,7 +12372,7 @@ var Us = class extends w {
 			value: r(n.consumption, 1),
 			temp: n.temp == null ? "–" : r(n.temp)
 		})}${n.rain ? ` ${e("need.rain")}` : ""}
-      </p>`), n.target_unit === "%" ? i.push(k`<p>${e("need.has_soc", {
+      </p>`), n.capacity_source === "learned" && n.capacity_kwh && i.push(k`<p>${e("need.capacity_learned", { kwh: r(n.capacity_kwh, 1) })}</p>`), n.target_unit === "%" ? i.push(k`<p>${e("need.has_soc", {
 			soc: r(n.soc),
 			km: r(n.have_km),
 			target: r(n.target)

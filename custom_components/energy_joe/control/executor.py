@@ -1028,7 +1028,24 @@ class JoeExecutor:
         else:
             value = number(state)
         target = entry.get("target")
-        return value is not None and target is not None and value >= target
+        if target is None:
+            return False
+        if value is not None and value >= target:
+            return True
+        # The car reports only now and then: what the wallbox counted since.
+        unit = need.get("target_unit") or ("%" if action.get("point") else None)
+        counted = self._counted(action["id"], unit)
+        return counted is not None and counted >= target
+
+    def _counted(self, action_id: str, unit: str | None) -> float | None:
+        """Level (%) or range (km) of the car charging here, worked out from
+        its last report and the energy counted since (None: not known)."""
+        if self.cars is None or unit not in ("%", "km"):
+            return None
+        found = self.cars.estimate(action_id)
+        if not found:
+            return None
+        return found["range"] if unit == "km" else found["soc"]
 
     def _why(
         self,
@@ -4844,6 +4861,9 @@ class JoeExecutor:
             action = by_id.get(action_id)
             state = self._hass.states.get(boost["sensor"])
             value = distance_km(state) if boost["unit"] == "km" else number(state)
+            counted = self._counted(action_id, boost["unit"])
+            if counted is not None and (value is None or counted > value):
+                value = counted
             end = None
             if action is None or mode == "off":
                 end = "stopped"
@@ -6233,6 +6253,11 @@ class JoeExecutor:
         log: list[dict[str, Any]] = self.data["log"]
         log.append(entry)
         del log[:-LOG_SIZE]
+
+    def log(self, kind: str, **detail: Any) -> None:
+        """A line in Joe's log from elsewhere (e.g. a car's charge)."""
+        self._log(kind, **detail)
+        self._changed()
 
     def _fire(self, kind: str, **data: Any) -> None:
         self._hass.bus.async_fire(f"{DOMAIN}_{kind}", data)

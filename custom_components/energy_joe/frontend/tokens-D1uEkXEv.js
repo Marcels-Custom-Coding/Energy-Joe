@@ -2727,7 +2727,8 @@ var Ne = {
 	"settings.routing.router_url": "Routenplaner",
 	"settings.routing.router_url.hint": "OSRM-Dienst für die Strecke mit dem Auto.",
 	"need.unknown": "Ladestand und Reichweite des Autos kenne ich nicht – ich entscheide nach der Sonne. Wähle die Sensoren unter Bearbeiten.",
-	"need.unknown_capacity": "Den Ladestand kenne ich, aber nicht die Akkugröße – ich entscheide nach der Sonne. Trag unter Bearbeiten die nutzbare Akkugröße ein (oder wähle einen Sensor dafür).",
+	"need.unknown_capacity": "Den Ladestand kenne ich, aber nicht die Akkugröße – ich entscheide nach der Sonne. Nach der nächsten Ladung an der Wallbox kenne ich sie; du kannst sie auch unter Bearbeiten eintragen.",
+	"need.capacity_learned": "Akku {kwh} kWh – gelernt aus den Ladungen an der Wallbox.",
 	"need.too_far": "Eine volle Ladung reicht für morgen nicht – plant unterwegs einen Ladestopp ein.",
 	"devices.action.reached_need": "Ziel erreicht ({target} {unit}) – für heute fertig.",
 	"devices.action.why.need_capacity": "Die Akkugröße des Autos kenne ich nicht – ich entscheide nach der Sonne.",
@@ -2976,6 +2977,11 @@ var Ne = {
 	"car.f.name": "Name",
 	"tip.car_name.title": "Welcher Name?",
 	"tip.car_name.text": "So nenne ich das Auto überall – in Fragen, Erinnerungen und im Plan.",
+	"car.f.refresh": "Beim Laden frische Werte holen",
+	"car.f.refresh.on": "Ja, während es lädt",
+	"car.f.refresh.off": "Nein, nur lesen",
+	"tip.car_refresh.title": "Warum frage ich das Auto?",
+	"tip.car_refresh.text": "Viele Autos melden Ladestand und Reichweite nur alle paar Stunden. Während es lädt, rechne ich selbst mit, was an der Wallbox ankommt, und höre beim Ziel auf. Zusätzlich drücke ich beim Laden den Aktualisieren-Knopf der Auto-Integration: einmal zu Beginn, wenn der letzte Wert alt ist, und einmal nach dem Laden. Dann lädt das Auto ja ohnehin, aufgeweckt wird es dadurch nicht extra. Im Stand frage ich nie.",
 	"car.f.remind": "Erinnern, wenn es nicht steckt",
 	"car.f.remind_at": "abends um",
 	"car.f.remind_time": "Uhrzeit der Erinnerung",
@@ -4321,6 +4327,10 @@ var Ne = {
 	"log.action_on": "{battery}: eingeschaltet ({value})",
 	"log.action_off": "{battery}: zurückgestellt ({value})",
 	"log.action_done": "{battery}: Ziel erreicht",
+	"log.car_capacity": "{battery}: Die Ladung zeigt {value} kWh Akku ({kwh} kWh an der Wallbox für {rise} %) – ich rechne jetzt mit {learned} kWh",
+	"log.car_capacity.recorder": "{battery}: Aus {count} Ladung(en) der letzten Tage gelernt – ich rechne mit {learned} kWh Akku",
+	"log.car_refresh.start": "{battery}: Frische Werte beim Auto angefordert, der letzte war alt",
+	"log.car_refresh.end": "{battery}: Laden beendet – frische Werte beim Auto angefordert",
 	"log.call": "{battery}: {entity}",
 	"log.tonight": "„Heute Nacht“ umgeschaltet",
 	"log.grid_guard": "Hauptsicherung: {power} kW aus dem Netz – Laden kurz pausiert",
@@ -6702,7 +6712,8 @@ var Ne = {
 	"settings.routing.router_url": "Route planner",
 	"settings.routing.router_url.hint": "OSRM service for the route by car.",
 	"need.unknown": "I don't know the car's charge level or range – I decide by the sun. Pick the sensors under Edit.",
-	"need.unknown_capacity": "I know the charge level but not the battery size – I decide by the sun. Enter the usable battery size under Edit (or pick a sensor for it).",
+	"need.unknown_capacity": "I know the charge level but not the battery size – I decide by the sun. After the next charge at the wallbox I know it; you can also enter it under Edit.",
+	"need.capacity_learned": "Battery {kwh} kWh – learned from the charges at the wallbox.",
 	"need.too_far": "One full charge is not enough for tomorrow – plan a charging stop on the way.",
 	"devices.action.reached_need": "Target reached ({target} {unit}) – done for today.",
 	"devices.action.why.need_capacity": "I don't know the car's battery size – I decide by the sun.",
@@ -6951,6 +6962,11 @@ var Ne = {
 	"car.f.name": "Name",
 	"tip.car_name.title": "Which name?",
 	"tip.car_name.text": "This is what I call the car everywhere – in questions, reminders and the plan.",
+	"car.f.refresh": "Fetch fresh values while charging",
+	"car.f.refresh.on": "Yes, while it charges",
+	"car.f.refresh.off": "No, only read",
+	"tip.car_refresh.title": "Why do I ask the car?",
+	"tip.car_refresh.text": "Many cars report their level and range only every few hours. While it charges I count what arrives at the wallbox myself and stop at the target. On top I press the refresh button of the car's integration while it charges: once at the start when its last value is old, and once after the charge. It is charging anyway then, so this does not wake it up. While it stands I never ask.",
 	"car.f.remind": "Remind me when it is not plugged in",
 	"car.f.remind_at": "in the evening at",
 	"car.f.remind_time": "Time of the reminder",
@@ -8296,6 +8312,10 @@ var Ne = {
 	"log.action_on": "{battery}: switched on ({value})",
 	"log.action_off": "{battery}: put back ({value})",
 	"log.action_done": "{battery}: target reached",
+	"log.car_capacity": "{battery}: The charge shows a {value} kWh battery ({kwh} kWh at the wallbox for {rise} %) – I now reckon with {learned} kWh",
+	"log.car_capacity.recorder": "{battery}: Learned from {count} charge(s) of the last days – I reckon with a {learned} kWh battery",
+	"log.car_refresh.start": "{battery}: Asked the car for fresh values, its last one was old",
+	"log.car_refresh.end": "{battery}: Charge ended – asked the car for fresh values",
 	"log.call": "{battery}: {entity}",
 	"log.tonight": "“Tonight” switched",
 	"log.grid_guard": "Main fuse: {power} kW from the grid – charging paused briefly",
@@ -8624,14 +8644,14 @@ function Ke(e, t, n) {
 }
 //#endregion
 //#region src/define.ts
-var qe = "0.9.51";
+var qe = "0.9.52";
 function Je(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = qe, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.51" && Xe();
+	n.joeVersion !== "0.9.52" && Xe();
 }
 var Ye = !1;
 function Xe() {
