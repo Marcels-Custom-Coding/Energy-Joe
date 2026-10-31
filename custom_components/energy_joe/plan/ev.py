@@ -124,6 +124,12 @@ def car_need(
     capacity = need.get("capacity_kwh") or energy_kwh(
         _state(get, need.get("capacity_entity"))
     )
+    capacity_source = (
+        "user" if need.get("capacity_kwh") else "car" if capacity else None
+    )
+    if not capacity and learned.get("capacity"):
+        # What the charges at the wallbox told (control/charging.py).
+        capacity, capacity_source = learned["capacity"], "learned"
     sensor = consumption_kwh(_state(get, need.get("consumption_entity")))
     per_100km, source = consumption(need, learned, sensor, temp, rain)
     # The day's round: each leg (from home or the place before) and the way
@@ -148,6 +154,7 @@ def car_need(
         "soc": soc,
         "range_km": range_km,
         "capacity_kwh": capacity,
+        "capacity_source": capacity_source,
         "departure": _departure(trips),
         "unknown_trips": sum(1 for t in trips if t.get("km") is None),
     }

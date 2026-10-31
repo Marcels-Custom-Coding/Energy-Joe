@@ -11,7 +11,9 @@ tomorrow but is not plugged in.
 When a car is known some other way while evcc shows an id at the loadpoint
 that no car has yet, Joe learns that this id is that car.
 
-Joe only reads the cars: he never asks one to update (that would wake it).
+While a car charges Joe counts the wallbox's energy, works out its level and
+range from its last report, and learns its battery size (control/charging.py).
+He asks a car for a fresh report only while it charges (it is awake then).
 """
 
 from __future__ import annotations
@@ -30,8 +32,11 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from ..const import DOMAIN
+from ..learn.context import async_sensor_series
+from ..observe.readings import to_km, to_kw
 from ..plan import cars as model_cars
 from ..plan.actions import MIN_KWH
+from . import charging
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -70,7 +75,17 @@ class CarWatcher:
         self._plan = plan
         self._changed = changed
         self._store: Store[dict[str, Any]] = Store(hass, STORE_VERSION, STORE_KEY)
-        self.data: dict[str, Any] = {"answers": {}, "asked": {}, "reminded": {}}
+        self.data: dict[str, Any] = {
+            "answers": {},
+            "asked": {},
+            "reminded": {},
+            # Per car: the energy counted since its last report, the battery
+            # sizes its charges told, when Joe asked it for a report.
+            "charges": {},
+            "capacity": {},
+            "refreshed": {},
+            "backfilled": {},
+        }
         self._unsubs: list[CALLBACK_TYPE] = []
         self._watch: CALLBACK_TYPE | None = None
         self._watched: frozenset[str] = frozenset()
@@ -79,6 +94,8 @@ class CarWatcher:
         self.notifier: Any = None
         self.replan: Callable[[], Awaitable[Any]] | None = None
         self.learn: Callable[[dict[str, Any]], None] | None = None
+        self.learn_capacity: Callable[[dict[str, Any]], None] | None = None
+        self.log: Callable[..., None] | None = None
 
     async def async_load(self) -> None:
         if stored := await self._store.async_load():
@@ -140,6 +157,9 @@ class CarWatcher:
                     found.add(value["entity"])
             if car.get("tracker_entity"):
                 found.add(car["tracker_entity"])
+            # A fresh report of the car: count from there on.
+            if entity := model_cars.stable_entity(car, "soc"):
+                found.add(entity)
         return found
 
     @callback
@@ -189,6 +209,7 @@ class CarWatcher:
         self._last = signature
         await self._async_ask(config, detected)
         await self._async_remind(config, detected, now)
+        await self._async_charges(config, detected, now)
         if moved:
             if self.replan is not None:
                 try:
@@ -270,6 +291,231 @@ class CarWatcher:
             ]
             _LOGGER.info("evcc's vehicle %s is %s", vehicle, car["name"])
             self.learn({"cars": {car["id"]: {"sources": sources}}})
+
+    # --- while a car charges ------------------------------------------------------
+
+    def _own_entities(self, car: dict[str, Any]) -> dict[str, str | None]:
+        """The car's own level, range and odometer (not evcc's estimates)."""
+        return {
+            role: model_cars.stable_entity(car, role)
+            for role in ("soc", "range", "odometer")
+        }
+
+    def capacity(self, car: dict[str, Any]) -> tuple[float | None, str | None]:
+        """The car's battery size and where it comes from."""
+        need = car.get("need") or {}
+        if need.get("capacity_kwh"):
+            return float(need["capacity_kwh"]), "user"
+        found = model_cars.value_of(self._hass.states.get, car, "capacity")
+        if found:
+            from ..observe.readings import energy_kwh  # noqa: PLC0415
+
+            value = energy_kwh(self._hass.states.get(found["entity"]))
+            if value:
+                return value, "car"
+        learned = charging.learned_capacity(self.data["capacity"].get(car["id"]) or [])
+        return (learned, "learned") if learned else (None, None)
+
+    def estimate(self, action_id: str) -> dict[str, Any] | None:
+        """Level and range of the car charging at this charge point, counted
+        from its last report (None: no count running)."""
+        config = self._config()
+        found = self.detect().get(action_id) or {}
+        car = model_cars.car_by_id(config, found.get("car"))
+        if car is None or found.get("state") != "car":
+            return None
+        record = self.data["charges"].get(car["id"])
+        if not record or record.get("point") != action_id:
+            return None
+        capacity, _source = self.capacity(car)
+        # Without a battery size the range grows by what the plan reckons per km.
+        planned = ((self._plan() or {}).get("cars") or {}).get(car["id"]) or {}
+        result = charging.estimate(record, capacity, planned.get("consumption"))
+        if result is not None:
+            result["reported"] = record["base"]["at"]
+        return result
+
+    async def _async_charges(
+        self, config: dict[str, Any], detected: dict[str, dict[str, Any]], now: datetime
+    ) -> None:
+        """Count the energy of each plugged-in car, learn its battery size from
+        its next report, and ask it for one while it charges."""
+        get = self._hass.states.get
+        changed = False
+        plugged = {}
+        for action in model_cars.charge_points(config):
+            entry = detected.get(action["id"]) or {}
+            if entry.get("state") == "car" and entry.get("car"):
+                plugged[entry["car"]] = action
+        for car_id, samples in self.data["capacity"].items():
+            # The learner writes the car models anew each day: the size stays there.
+            if car := model_cars.car_by_id(config, car_id):
+                self._publish_capacity(
+                    car, charging.learned_capacity(samples), len(samples)
+                )
+        for car_id in list(self.data["charges"]):
+            if car_id not in plugged:
+                # Unplugged (or another car): the count is over, it tells nothing.
+                del self.data["charges"][car_id]
+                changed = True
+        for car_id, action in plugged.items():
+            car = model_cars.car_by_id(config, car_id)
+            if car is None:
+                continue
+            entities = self._own_entities(car)
+            if not self.data["backfilled"].get(car_id):
+                self.data["backfilled"][car_id] = True
+                changed = True
+                await self._async_backfill(car, action, entities)
+            fresh = charging.reading(get, entities)
+            if fresh is None:
+                continue
+            record = self.data["charges"].get(car_id)
+            if record is None or record.get("point") != action["id"]:
+                record = self.data["charges"][car_id] = {"point": action["id"]}
+                charging.begin(record, fresh, now)
+                changed = True
+            elif fresh["at"] != record["base"]["at"]:
+                # A new report: what the charge since the last one tells.
+                value = charging.capacity_sample(record, fresh)
+                if value is not None:
+                    self._add_capacity(
+                        car,
+                        {
+                            "at": now.isoformat(timespec="seconds"),
+                            "value": value,
+                            "kwh": round(record["kwh"], 2),
+                            "rise": round(fresh["soc"] - record["base"]["soc"], 1),
+                        },
+                    )
+                charging.begin(record, fresh, now)
+                changed = True
+            else:
+                # The same report: its range and odometer may come a moment later.
+                for key in ("range", "odometer"):
+                    if fresh[key] is not None:
+                        record["base"][key] = fresh[key]
+            power = action.get("power_entity")
+            kw = charging.power_kw(get(power)) if power else None
+            charging.add_power(record, kw, now)
+            why = charging.ask_now(
+                record, kw, now, self.data["refreshed"].get(car_id) or []
+            )
+            if why is not None and await self._async_refresh(car, entities, why):
+                changed = True
+        if changed:
+            await self._async_save()
+
+    def _add_capacity(self, car: dict[str, Any], sample: dict[str, Any]) -> None:
+        samples = self.data["capacity"].setdefault(car["id"], [])
+        samples.append(sample)
+        del samples[: -charging.KEEP]
+        learned = charging.learned_capacity(samples)
+        if self.log is not None:
+            self.log(
+                "car_capacity",
+                battery=f"car:{car['id']}",
+                value=sample["value"],
+                learned=learned,
+                kwh=sample["kwh"],
+                rise=sample["rise"],
+            )
+        self._publish_capacity(car, learned, len(samples))
+
+    def _publish_capacity(
+        self, car: dict[str, Any], learned: float | None, count: int
+    ) -> None:
+        """The learned battery size into the configuration (the plan reads it there)."""
+        if learned is None or self.learn_capacity is None:
+            return
+        models = self._config()["learned"].get("car_models") or {}
+        before = (models.get(car["id"]) or {}).get("capacity")
+        if before is not None and abs(before - learned) < 0.5:
+            return
+        self.learn_capacity(
+            {
+                "learned": {
+                    "car_models": {
+                        car["id"]: {"capacity": learned, "capacity_charges": count}
+                    }
+                }
+            }
+        )
+
+    async def _async_backfill(
+        self, car: dict[str, Any], action: dict[str, Any], entities: dict[str, Any]
+    ) -> None:
+        """The first time: the battery sizes the recorder's last days tell."""
+        if self.data["capacity"].get(car["id"]) or not entities.get("soc"):
+            return
+        power = action.get("power_entity")
+        if not power:
+            return
+        get = self._hass.states.get
+        try:
+            soc = await async_sensor_series(self._hass, entities["soc"], 10)
+            state = get(power)
+            unit = state.attributes.get("unit_of_measurement") if state else None
+            watts = [
+                (when, to_kw(value, unit))
+                for when, value in await async_sensor_series(self._hass, power, 10)
+            ]
+            odometer: list[tuple[datetime, float]] = []
+            if entities.get("odometer"):
+                state = get(entities["odometer"])
+                unit = state.attributes.get("unit_of_measurement") if state else None
+                odometer = [
+                    (when, to_km(value, unit))
+                    for when, value in await async_sensor_series(
+                        self._hass, entities["odometer"], 10
+                    )
+                ]
+        except Exception:
+            _LOGGER.exception(
+                "Reading the recorder for %s's battery failed", car["name"]
+            )
+            return
+        samples = charging.samples_from_history(soc, watts, odometer)
+        if not samples:
+            return
+        self.data["capacity"][car["id"]] = samples[-charging.KEEP :]
+        learned = charging.learned_capacity(self.data["capacity"][car["id"]])
+        if self.log is not None:
+            self.log(
+                "car_capacity",
+                battery=f"car:{car['id']}",
+                value=samples[-1]["value"],
+                learned=learned,
+                kwh=samples[-1]["kwh"],
+                rise=samples[-1]["rise"],
+                recorder=len(samples),
+            )
+        self._publish_capacity(car, learned, len(samples))
+
+    async def _async_refresh(
+        self, car: dict[str, Any], entities: dict[str, Any], why: str
+    ) -> bool:
+        """Ask the car for a fresh report (it charges, so it is awake)."""
+        if self._mode() not in ("live", "advisory") or car.get("refresh") is False:
+            return False
+        button = charging.refresh_button(
+            self._hass, [e for e in entities.values() if e]
+        )
+        if button is None:
+            return False
+        try:
+            await self._hass.services.async_call(
+                "button", "press", {"entity_id": button}, blocking=False
+            )
+        except Exception:  # noqa: BLE001 - the car's integration may refuse
+            _LOGGER.warning("Asking %s for a fresh report failed", car["name"])
+            return False
+        asked = self.data["refreshed"].setdefault(car["id"], [])
+        asked.append(dt_util.now().isoformat(timespec="seconds"))
+        del asked[: -charging.PER_DAY * 2]
+        if self.log is not None:
+            self.log("car_refresh", battery=f"car:{car['id']}", entity=button, why=why)
+        return True
 
     # --- asking -----------------------------------------------------------------
 

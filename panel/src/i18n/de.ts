@@ -2402,7 +2402,8 @@ export const de = {
   "need.unknown":
     "Ladestand und Reichweite des Autos kenne ich nicht – ich entscheide nach der Sonne. Wähle die Sensoren unter Bearbeiten.",
   "need.unknown_capacity":
-    "Den Ladestand kenne ich, aber nicht die Akkugröße – ich entscheide nach der Sonne. Trag unter Bearbeiten die nutzbare Akkugröße ein (oder wähle einen Sensor dafür).",
+    "Den Ladestand kenne ich, aber nicht die Akkugröße – ich entscheide nach der Sonne. Nach der nächsten Ladung an der Wallbox kenne ich sie; du kannst sie auch unter Bearbeiten eintragen.",
+  "need.capacity_learned": "Akku {kwh} kWh – gelernt aus den Ladungen an der Wallbox.",
   "need.too_far": "Eine volle Ladung reicht für morgen nicht – plant unterwegs einen Ladestopp ein.",
   "devices.action.reached_need": "Ziel erreicht ({target} {unit}) – für heute fertig.",
   "devices.action.why.need_capacity": "Die Akkugröße des Autos kenne ich nicht – ich entscheide nach der Sonne.",
@@ -2703,6 +2704,12 @@ export const de = {
   "car.f.name": "Name",
   "tip.car_name.title": "Welcher Name?",
   "tip.car_name.text": "So nenne ich das Auto überall – in Fragen, Erinnerungen und im Plan.",
+  "car.f.refresh": "Beim Laden frische Werte holen",
+  "car.f.refresh.on": "Ja, während es lädt",
+  "car.f.refresh.off": "Nein, nur lesen",
+  "tip.car_refresh.title": "Warum frage ich das Auto?",
+  "tip.car_refresh.text":
+    "Viele Autos melden Ladestand und Reichweite nur alle paar Stunden. Während es lädt, rechne ich selbst mit, was an der Wallbox ankommt, und höre beim Ziel auf. Zusätzlich drücke ich beim Laden den Aktualisieren-Knopf der Auto-Integration: einmal zu Beginn, wenn der letzte Wert alt ist, und einmal nach dem Laden. Dann lädt das Auto ja ohnehin, aufgeweckt wird es dadurch nicht extra. Im Stand frage ich nie.",
   "car.f.remind": "Erinnern, wenn es nicht steckt",
   "car.f.remind_at": "abends um",
   "car.f.remind_time": "Uhrzeit der Erinnerung",
@@ -4063,6 +4070,10 @@ export const de = {
   "log.action_on": "{battery}: eingeschaltet ({value})",
   "log.action_off": "{battery}: zurückgestellt ({value})",
   "log.action_done": "{battery}: Ziel erreicht",
+  "log.car_capacity": "{battery}: Die Ladung zeigt {value} kWh Akku ({kwh} kWh an der Wallbox für {rise} %) – ich rechne jetzt mit {learned} kWh",
+  "log.car_capacity.recorder": "{battery}: Aus {count} Ladung(en) der letzten Tage gelernt – ich rechne mit {learned} kWh Akku",
+  "log.car_refresh.start": "{battery}: Frische Werte beim Auto angefordert, der letzte war alt",
+  "log.car_refresh.end": "{battery}: Laden beendet – frische Werte beim Auto angefordert",
   "log.call": "{battery}: {entity}",
   "log.tonight": "„Heute Nacht“ umgeschaltet",
   "log.grid_guard": "Hauptsicherung: {power} kW aus dem Netz – Laden kurz pausiert",

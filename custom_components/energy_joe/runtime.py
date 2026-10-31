@@ -208,6 +208,10 @@ class JoeRuntime:
         self.cars.learn = lambda patch: self.async_update_config(
             patch, "learned", "evcc_vehicle"
         )
+        self.cars.learn_capacity = lambda patch: self.async_update_config(
+            patch, "learned", "car_capacity"
+        )
+        self.cars.log = self.executor.log
         self.notifier.on_car = self.async_answer_car
         self.planner.detected = self.cars.detect
         self.executor.cars = self.cars

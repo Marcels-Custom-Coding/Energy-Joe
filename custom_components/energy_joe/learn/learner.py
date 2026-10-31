@@ -495,7 +495,16 @@ class JoeLearner:
                 },
             }
             odometer_id = need.get("odometer_entity")
+            # The battery size the charges told (control/charging.py) is not
+            # Joe's to forget here: it stays whatever this run finds.
+            kept = {
+                k: v
+                for k, v in (previous.get(car["id"]) or {}).items()
+                if k in ("capacity", "capacity_charges")
+            }
             if not need.get("enabled") or not odometer_id or not span:
+                if kept:
+                    result[car["id"]] = {**(previous.get(car["id"]) or {}), **kept}
                 continue
             state = self._hass.states.get(odometer_id)
             unit = state.attributes.get("unit_of_measurement") if state else None
@@ -513,6 +522,9 @@ class JoeLearner:
             capacity = need.get("capacity_kwh") or energy_kwh(
                 self._hass.states.get(need.get("capacity_entity") or "")
             )
+            fixed = bool(capacity)
+            if not capacity:
+                capacity = kept.get("capacity")
             # The recorder keeps only about ten days of states, so each finished
             # day goes into Joe's own day records and learning uses those. The
             # first day the recorder returns may start mid-day: it is left out.
@@ -522,7 +534,8 @@ class JoeLearner:
             source = [
                 odometer_id,
                 need.get("soc_entity"),
-                round(capacity, 1) if capacity else None,
+                # A learned size moves a little with each charge: the days stay.
+                (round(capacity, 1) if fixed else "learned") if capacity else None,
             ]
             for entry in car_days(odometer, soc, capacity)[1:]:
                 if entry["date"] < today.isoformat():
@@ -545,7 +558,7 @@ class JoeLearner:
             before = previous.get(key) or {}
             if before.get("source") != source:
                 before = {}
-            merged = {**before, **found}
+            merged = {**before, **found, **kept}
             if merged:
                 result[key] = {**merged, "source": source}
         return result

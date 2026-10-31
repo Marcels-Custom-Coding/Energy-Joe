@@ -58,6 +58,9 @@ export function logGroup(config: JoeConfig | undefined, entry: LogEntry): { grou
     const place = actionPlace(config, action);
     return { group: place.group, device: place.id };
   }
+  if (key.startsWith("car:")) {
+    return { group: "car", device: key };
+  }
   return { group: "battery", device: key };
 }
 
@@ -75,6 +78,9 @@ export function logDeviceName(
   if (group === "battery") {
     return config?.batteries.find((b) => b.id === device)?.name ?? device;
   }
+  if (device.startsWith("car:")) {
+    return config?.cars?.find((c) => `car:${c.id}` === device)?.name ?? device.slice(4);
+  }
   const actionId = device.startsWith("action-") ? device.slice(7) : device.startsWith("point:") ? device.slice(6) : device;
   return (
     config?.actions.find((a) => a.id === actionId)?.name ??
@@ -88,6 +94,7 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
   const battery =
     config?.batteries.find((b) => b.id === entry.battery)?.name ??
     config?.actions.find((a) => `action:${a.id}` === entry.battery)?.name ??
+    config?.cars?.find((c) => `car:${c.id}` === entry.battery)?.name ??
     entry.battery ??
     "";
   const entity = entry.entity ? (hass ? entityName(hass, entry.entity) : entry.entity) : "";
@@ -227,6 +234,22 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
   }
   if (entry.kind === "limit_ref_failed") {
     return t.optional(`log.limit_ref_failed.${String(entry.reason)}`, vars) ?? t("log.limit_ref_failed", vars);
+  }
+  if (entry.kind === "car_capacity") {
+    // A charge between two reports of the car: its battery size (control/charging.py).
+    const num = (value: unknown, digits: number) => (typeof value === "number" ? formatNumber(t.lang, value, digits) : "–");
+    const capacity = {
+      ...vars,
+      value: num(entry.value, 1),
+      learned: num(entry.learned, 1),
+      kwh: num(entry.kwh, 1),
+      rise: num(entry.rise, 0),
+      count: typeof entry.recorder === "number" ? entry.recorder : 0,
+    };
+    return t(typeof entry.recorder === "number" ? "log.car_capacity.recorder" : "log.car_capacity", capacity);
+  }
+  if (entry.kind === "car_refresh") {
+    return t(entry.why === "end" ? "log.car_refresh.end" : "log.car_refresh.start", vars);
   }
   if (entry.kind === "boost_end") {
     return t.optional(`log.boost_end.${String(entry.reason)}`, vars) ?? t("log.boost_end.stopped", vars);

@@ -3,6 +3,14 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.52
+
+- **Beim Laden rechne ich selbst mit.** Viele Autos melden Ladestand und Reichweite nur alle paar Stunden; in der Nacht zum 31.10. kam vom Kona von 21 Uhr bis 8:45 kein neuer Wert. Ich habe deshalb das Ziel nie erreicht gesehen und bis zum Ende des Zeitfensters geladen (128 statt 100 km). Jetzt zähle ich, was an der Wallbox ankommt, rechne Ladestand und Reichweite ab der letzten Meldung des Autos hoch und höre beim Ziel auf – nachts, bei „Heute Nacht laden“ und bei „Jetzt laden“.
+- **Die Akkugröße lerne ich aus den Ladungen.** Zwischen zwei Meldungen des Autos zeigt jede Ladung, wie viel kWh ein Prozent braucht. Den Mittelwert der letzten Ladungen nehme ich als Akkugröße, beim ersten Mal auch aus den Ladungen der letzten Tage. Damit plant die Nacht in Prozent statt nur in Kilometern, und das Lernen des echten Verbrauchs aus Kilometerstand, Ladestand und Außentemperatur läuft auch bei Autos, die ihre Akkugröße nicht melden.
+- **Frische Werte vom Auto, während es lädt.** Hat die Auto-Integration einen Aktualisieren-Knopf, drücke ich ihn beim Laden: einmal zu Beginn, wenn der letzte Wert alt ist, und einmal nach dem Laden. Im Stand frage ich nie. Abschaltbar am Auto unter „Beim Laden frische Werte holen“.
+
+**Nicht geprüft:** am echten Auto, ob der Aktualisieren-Knopf wirklich einen neuen Wert bringt, und ob die gelernte Akkugröße des Kona (aus der Nacht zum 31.10. etwa 57 kWh) passt.
+
 ## 0.9.51
 
 - **Nach dem Abschalten schreibe ich nichts mehr.** Wartete beim Entladen oder Neuladen noch eine Prüfung, konnte sie danach wieder Grenzwerte auf die Speicher schreiben, die niemand mehr zurückgab. Jetzt kehrt sie ohne Wirkung zurück.

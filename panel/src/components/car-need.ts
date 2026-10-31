@@ -130,6 +130,9 @@ export class JoeCarNeed extends LitElement {
         })}${need.rain ? ` ${t("need.rain")}` : ""}
       </p>`,
     );
+    if (need.capacity_source === "learned" && need.capacity_kwh) {
+      lines.push(html`<p>${t("need.capacity_learned", { kwh: n(need.capacity_kwh, 1) })}</p>`);
+    }
     if (need.target_unit === "%") {
       lines.push(html`<p>${t("need.has_soc", { soc: n(need.soc), km: n(need.have_km), target: n(need.target) })}</p>`);
     } else {

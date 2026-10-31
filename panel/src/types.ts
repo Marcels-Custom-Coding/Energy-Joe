@@ -949,6 +949,8 @@ export interface CarConfig {
   /** The evening reminder when tomorrow needs charging but the car is not plugged in. */
   remind: boolean;
   remind_time: string;
+  /** While it charges: ask the car for a fresh report (its integration's button). */
+  refresh?: boolean;
 }
 
 /** A wallbox Joe switches: which car is plugged in decides (see model.py CHARGE_POINT). */
@@ -1361,6 +1363,8 @@ export interface CarNeed {
   soc: number | null;
   range_km: number | null;
   capacity_kwh: number | null;
+  /** Where the battery size comes from ("learned": from the charges at the wallbox). */
+  capacity_source?: "user" | "car" | "learned" | null;
   have_km?: number;
   target?: number;
   target_unit?: "%" | "km";
