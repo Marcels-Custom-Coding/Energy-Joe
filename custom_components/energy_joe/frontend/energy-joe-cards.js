@@ -1,6 +1,6 @@
-import { $ as e, E as t, F as n, M as r, N as i, P as a, Q as o, Z as s, _ as c, _t as l, b as u, dt as d, ft as f, h as p, l as m, lt as h, mt as g, q as _, r as v, rt as y, st as b, t as x, ut as S, v as C } from "./tokens-kyjWFSSE.js";
+import { At as e, H as t, J as n, Mt as r, Nt as i, Sn as a, Tn as o, _n as s, an as c, at as l, bn as u, dn as d, dt as f, et as p, hn as m, i as h, jt as g, n as _, nt as v, on as y, r as b, rt as x, sn as S, t as C, tn as w, vn as T, yn as E } from "./tokens-Ba5wjkhb.js";
 //#region src/energy-joe-cards.ts
-var w = {
+var D = {
 	state: void 0,
 	listeners: /* @__PURE__ */ new Set(),
 	unsubscribe: void 0,
@@ -19,15 +19,15 @@ var w = {
 			this.listeners.delete(t), !this.listeners.size && this.unsubscribe && (this.unsubscribe.then((e) => e()).catch(() => void 0), this.unsubscribe = void 0, this.state = void 0);
 		};
 	}
-}, T = class extends d {
+}, O = class extends E {
 	constructor(...e) {
 		super(...e), this.config = {};
 	}
 	static {
 		this.styles = [
-			x,
-			o,
-			l`
+			C,
+			y,
+			o`
       :host {
         display: block;
       }
@@ -119,51 +119,51 @@ var w = {
 		super.disconnectedCallback(), this.stop?.(), this.stop = void 0;
 	}
 	start() {
-		this.stop = w.listen(this._hass, (e) => this.joe = e);
+		this.stop = D.listen(this._hass, (e) => this.joe = e);
 	}
 	get t() {
-		return b(this._hass?.language);
+		return m(this._hass?.language);
 	}
 	render() {
 		let e = this.t;
-		return this._hass ? this.joe ? g`<ha-card>${this.renderCard(e, this.joe)}</ha-card>` : g`<ha-card><p class="muted">${e(w.failed ? "cards.no_access" : "cards.loading")}</p></ha-card>` : f;
+		return this._hass ? this.joe ? a`<ha-card>${this.renderCard(e, this.joe)}</ha-card>` : a`<ha-card><p class="muted">${e(D.failed ? "cards.no_access" : "cards.loading")}</p></ha-card>` : u;
 	}
 };
-s([h()], T.prototype, "joe", void 0), s([h()], T.prototype, "config", void 0), s([S({ attribute: !1 })], T.prototype, "hass", null);
-var E = class extends T {
+c([s()], O.prototype, "joe", void 0), c([s()], O.prototype, "config", void 0), c([T({ attribute: !1 })], O.prototype, "hass", null);
+var k = class extends O {
 	static getStubConfig() {
 		return {};
 	}
-	renderCard(e, n) {
-		let r = n.plan, i = n.control, a = r?.window?.start, o = !!a && i?.skip === a, s = i?.reason, l = s === "waiting" && r?.window ? e("devices.status.waiting", { time: t(r.window.start) }) : s === "day" ? p(e, r) : s ? e.optional(`devices.status.${s}`) ?? "" : "", d = m(v, { tab: "plan" });
-		return g`<a
+	renderCard(e, r) {
+		let i = r.plan, o = r.control, s = i?.window?.start, c = !!s && o?.skip === s, m = o?.reason, h = m === "waiting" && i?.window ? e("devices.status.waiting", { time: f(i.window.start) }) : m === "day" ? p(e, i) : m ? e.optional(`devices.status.${m}`) ?? "" : "", g = n(t, { tab: "plan" });
+		return a`<a
         class="head"
-        href=${d}
+        href=${g}
         @click=${(e) => {
-			e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0 || (e.preventDefault(), y(d));
+			e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0 || (e.preventDefault(), d(g));
 		}}
       >
         <div class="eyebrow"><ha-icon icon="energy-joe:joe"></ha-icon>${e("cards.night.title")}</div>
-        <span class="chip ${n.mode === "live" ? "ok" : n.mode === "advisory" ? "learned" : ""}">${e(`mode.${n.mode}`)}</span>
+        <span class="chip ${r.mode === "live" ? "ok" : r.mode === "advisory" ? "learned" : ""}">${e(`mode.${r.mode}`)}</span>
         <ha-icon class="chev" icon="mdi:chevron-right"></ha-icon>
       </a>
-      ${r ? g`<p class="big">${u(e, r)}</p>
+      ${i ? a`<p class="big">${l(e, i)}</p>
             <ul class="lines">
-              ${C(e, r).map((e) => g`<li>${e}</li>`)}
-              ${c(e, r) ? g`<li>${c(e, r)}</li>` : f}
-            </ul>` : g`<p class="big">${e("devices.status.no_plan")}</p>`}
-      ${l ? g`<p class="muted">${l}</p>` : f}
-      ${a && n.mode !== "simulation" && n.mode !== "off" ? g`<div class="row">
+              ${x(e, i).map((e) => a`<li>${e}</li>`)}
+              ${v(e, i) ? a`<li>${v(e, i)}</li>` : u}
+            </ul>` : a`<p class="big">${e("devices.status.no_plan")}</p>`}
+      ${h ? a`<p class="muted">${h}</p>` : u}
+      ${s && r.mode !== "simulation" && r.mode !== "off" ? a`<div class="row">
             <span>${e("cards.night.skip")}</span>
             <button
               type="button"
               class="switch"
               role="switch"
-              aria-checked=${String(o)}
+              aria-checked=${String(c)}
               aria-label=${e("cards.night.skip")}
-              @click=${() => this.skip(!o)}
+              @click=${() => this.skip(!c)}
             ></button>
-          </div>` : f}`;
+          </div>` : u}`;
 	}
 	async skip(e) {
 		try {
@@ -173,7 +173,7 @@ var E = class extends T {
 			});
 		} catch {}
 	}
-}, D = class extends T {
+}, A = class extends O {
 	static getStubConfig() {
 		return {};
 	}
@@ -186,39 +186,89 @@ var E = class extends T {
 	}
 	renderCard(e, t) {
 		let n = this.cars(t);
-		return n.length ? g`${n.map((n, r) => this.renderCar(e, t, n, r > 0))}` : g`<p class="muted">${e("cards.car.none")}</p>`;
+		return n.length ? a`${n.map((n, r) => this.renderCar(e, t, n, r > 0))}` : a`<p class="muted">${e("cards.car.none")}</p>`;
 	}
-	renderCar(e, t, o, s) {
-		let c = this.hass, l = i(t, o.id), u = l ? t.control?.actions?.[l.id] : void 0, d = ["soc", "range"].map((e) => n(t, o.id, e)?.entity).map((t) => t ? _(c, t, e.lang) : null).filter(Boolean), p = m(v, a(o.id));
-		return g`<div class=${s ? "next-car" : ""}>
+	renderCar(o, s, c, l) {
+		let f = this.hass, p = g(s, c.id), m = p ? s.control?.actions?.[p.id] : void 0, h = ["soc", "range"].map((e) => i(s, c.id, e)?.entity).map((e) => e ? w(f, e, o.lang) : null).filter(Boolean), _ = n(t, r(c.id));
+		return a`<div class=${l ? "next-car" : ""}>
       <a
         class="head"
-        href=${p}
+        href=${_}
         @click=${(e) => {
-			e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0 || (e.preventDefault(), y(p));
+			e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0 || (e.preventDefault(), d(_));
 		}}
       >
-        <div class="eyebrow"><ha-icon icon="mdi:car-electric"></ha-icon>${o.name}</div>
-        ${u?.on ? g`<span class="chip ok">${e("cards.car.charging")}</span>` : f}
+        <div class="eyebrow"><ha-icon icon="mdi:car-electric"></ha-icon>${c.name}</div>
+        ${m?.on ? a`<span class="chip ok">${o("cards.car.charging")}</span>` : u}
         <ha-icon class="chev" icon="mdi:chevron-right"></ha-icon>
       </a>
-      ${d.length ? g`<p class="big">${d.join(" · ")}</p>` : f}
-      <p class="muted where">${r(e, t, o)}</p>
-      <joe-car-charge .hass=${c} .t=${e} .state=${t} .car=${o}></joe-car-charge>
+      ${h.length ? a`<p class="big">${h.join(" · ")}</p>` : u}
+      <p class="muted where">${e(o, s, c)}</p>
+      <joe-car-charge .hass=${f} .t=${o} .state=${s} .car=${c}></joe-car-charge>
     </div>`;
 	}
+}, j = class extends O {
+	static getStubConfig() {
+		return { limit: 8 };
+	}
+	getCardSize() {
+		return 6;
+	}
+	willUpdate(e) {
+		super.willUpdate(e);
+		let t = this.joe ? b(this.joe) : void 0;
+		t !== void 0 && t !== this.marker && (this.marker = t, _(this.hass).then((e) => {
+			this.full = e;
+		}));
+	}
+	renderCard(e, r) {
+		let i = Math.max(1, Math.min(50, Number(this.config.limit) || 8)), o = n(t, {
+			tab: "review",
+			section: "steer"
+		});
+		return a`<a
+        class="head"
+        href=${o}
+        @click=${(e) => {
+			e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0 || (e.preventDefault(), d(o));
+		}}
+      >
+        <div class="eyebrow"><ha-icon icon="mdi:robot-outline"></ha-icon>${e("steer.card.title")}</div>
+        <ha-icon class="chev" icon="mdi:chevron-right"></ha-icon>
+      </a>
+      <joe-steer-now .t=${e} .state=${r}></joe-steer-now>
+      <div class="next-car">
+        <div class="eyebrow">${e("steer.history")}</div>
+        <joe-steer-list
+          compact
+          .t=${e}
+          .hass=${this.hass}
+          .config=${r.config}
+          .entries=${this.full ?? h(r)}
+          .limit=${i}
+        ></joe-steer-list>
+      </div>`;
+	}
 };
-e("energy-joe-night-card", E), e("energy-joe-car-card", D);
-var O = window.customCards ??= [];
-for (let e of [{
-	type: "energy-joe-night-card",
-	name: "Energy Joe – heute Nacht",
-	description: "Was Joe heute Nacht vorhat, was es kostet, und Aussetzen."
-}, {
-	type: "energy-joe-car-card",
-	name: "Energy Joe – Auto laden",
-	description: "Ladestand und Reichweite, jetzt oder heute Nacht laden."
-}]) O.some((t) => t.type === e.type) || O.push({
+c([s()], j.prototype, "full", void 0), S("energy-joe-night-card", k), S("energy-joe-car-card", A), S("energy-joe-steuerung-card", j);
+var M = window.customCards ??= [];
+for (let e of [
+	{
+		type: "energy-joe-night-card",
+		name: "Energy Joe – heute Nacht",
+		description: "Was Joe heute Nacht vorhat, was es kostet, und Aussetzen."
+	},
+	{
+		type: "energy-joe-car-card",
+		name: "Energy Joe – Auto laden",
+		description: "Ladestand und Reichweite, jetzt oder heute Nacht laden."
+	},
+	{
+		type: "energy-joe-steuerung-card",
+		name: "Energy Joe – Steuerung",
+		description: "Was Joe gerade hält oder abwartet und was er zuletzt gesteuert hat – jeweils mit dem Grund."
+	}
+]) M.some((t) => t.type === e.type) || M.push({
 	...e,
 	preview: !0
 });

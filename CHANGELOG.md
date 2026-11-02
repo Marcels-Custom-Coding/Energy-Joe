@@ -3,6 +3,16 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.54
+
+Was Joe steuert und warum: eine Liste im Panel und als Dashboardkarte, eine Woche Verlauf
+
+- **Neue Seite „Steuerung“ unter Rückblick** (auch über „Alles, was Joe steuert, mit Grund“ auf der Übersicht). Oben steht „Jetzt“: was Joe gerade hält oder wartet und warum (zum Beispiel „Venus wartet, weil der BYD dran ist“), aus den Gründen, die Joe für jeden Speicher schon hat. Darunter der Verlauf, nach Tagen gruppiert: Uhrzeit, Gerät, **was** Joe getan hat und **warum**. Schreibzugriffe, die zu einem Eingriff gehören (höchstens eine Minute auseinander), stehen in einer Zeile. Filter wie im Protokoll, mit Erklärung an jedem.
+- **Neue Dashboardkarte „Energy Joe – Steuerung“** (`energy-joe-steuerung-card`, Option `limit`, Standard 8): oben „Jetzt“, darunter die letzten Eingriffe mit Grund.
+- **Eine Woche Verlauf statt 100 Zeilen.** Joe führt ein Journal über sieben Tage (höchstens 4000 Zeilen); das Protokoll und die Liste lesen daraus. Beim Update füllt sich das Journal zunächst mit den letzten 100 Zeilen und wächst dann.
+- **Jede geänderte Einstellung steht im Protokoll**, nicht mehr nur die erste einer Nacht. Schreibt Joe einen neuen Wert (zum Beispiel eine andere Laderate), steht er mit altem Grund da; wiederholt er denselben Wert, nicht. Jede Zeile trägt den Grund-Satz („Nachtplan: Laden“, „Nacheinander: … ist dran“).
+- Nicht geprüft an echter Anlage: alles davon, besonders wie die Seite und die Karte im Browser aussehen (Handy, Dunkelmodus), ob die Gruppierung bei einer echten Nacht gut lesbar ist und ob „Jetzt“ auch die Zustände einzelner Speicher in der Nacht zeigt (das tut es bisher nur beim Nacheinander).
+
 ## 0.9.53
 
 Beim Laden nachschreiben, wenn der Wechselrichter den Befehl zurücksetzt, und die Reserve nach der Nacht zurückstellen

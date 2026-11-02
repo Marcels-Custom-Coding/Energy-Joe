@@ -10,9 +10,11 @@ import "./days";
 import "./learned";
 import "./log";
 import "./result";
+import "./steer";
 
 const TAGS: Record<ReviewSection, string> = {
   result: "joe-lookback-result",
+  steer: "joe-lookback-steer",
   days: "joe-lookback-days",
   learned: "joe-lookback-learned",
   log: "joe-lookback-log",
@@ -20,6 +22,7 @@ const TAGS: Record<ReviewSection, string> = {
 
 const ICONS: Record<ReviewSection, string> = {
   result: "mdi:piggy-bank-outline",
+  steer: "mdi:robot-outline",
   days: "mdi:calendar-month-outline",
   learned: "mdi:school-outline",
   log: "mdi:format-list-bulleted",
@@ -69,6 +72,17 @@ export class JoeLookbackPage extends LitElement {
           .route=${route}
           .climateFound=${climateFound}
         ></joe-lookback-result>`;
+      case "steer":
+        return html`<joe-lookback-steer
+          .t=${t}
+          .hass=${hass}
+          .state=${state}
+          .prefix=${prefix}
+          .route=${route}
+          .climateFound=${climateFound}
+          .group=${route?.id}
+          .device=${route?.sub}
+        ></joe-lookback-steer>`;
       case "days":
         return html`<joe-lookback-days
           .t=${t}

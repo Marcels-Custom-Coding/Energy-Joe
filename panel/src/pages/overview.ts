@@ -40,6 +40,7 @@ import "./overview/quick";
 import { quickShown } from "./overview/quick";
 
 const PLAN: Route = { tab: "plan" };
+const STEER: Route = { tab: "review", section: "steer" };
 const DAYS: Route = { tab: "review", section: "days" };
 const RESULT: Route = { tab: "review", section: "result" };
 const PRESENCE: Route = { tab: "household", section: "presence" };
@@ -262,6 +263,12 @@ export class JoeOverview extends LitElement {
       .doing-text {
         margin: 6px 0 0;
         font-size: 16px;
+        font-weight: 600;
+      }
+      .doing-more {
+        display: inline-block;
+        margin-top: 8px;
+        font-size: 14px;
         font-weight: 600;
       }
       .doing ul {
@@ -576,6 +583,7 @@ export class JoeOverview extends LitElement {
       ${control ? html`<p class="doing-text">${controlText(t, joe)}</p>` : nothing}
       ${details.length ? html`<ul>${details.map((line) => html`<li>${line}</li>`)}</ul>` : nothing}
       <joe-control-status compact .t=${t} .hass=${this.hass} .state=${joe}></joe-control-status>
+      <a class="doing-more" href=${href(this.prefix, STEER)} @click=${onLink(STEER)}>${t("overview.doing.more")}</a>
     </div>`;
   }
 

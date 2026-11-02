@@ -294,17 +294,20 @@ async def test_review_reads_answers_rates_and_the_whole_log(
     assert not msg["success"]
 
     # Both logs in full, newest first, each entry with its area.
-    runtime.executor.data["log"][:] = [
+    week = [
         {"at": f"2026-10-01T{hour:02d}:00:00+02:00", "kind": "charge"}
         for hour in range(0, 24, 2)
     ] * 9
+    # The journal (a week) is what the list shows, not the short log.
+    runtime.executor.data["log"][:] = week[-100:]
+    runtime.executor.data["journal"][:] = week
     runtime.climate.data["log"][:] = [
         {"at": "2026-10-01T05:00:00+02:00", "entity": "climate.wz", "what": "away"},
         {"at": "2026-10-01T03:30:00+00:00", "entity": "climate.wz", "what": "back"},
     ]
     msg = await send(type=f"{DOMAIN}/log")
     entries = msg["result"]["entries"]
-    assert len(entries) == 102
+    assert len(entries) == 110
     assert entries[0] == {
         "at": "2026-10-01T22:00:00+02:00",
         "kind": "charge",
