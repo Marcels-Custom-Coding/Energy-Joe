@@ -65,6 +65,15 @@ SETTLE = timedelta(seconds=90)
 # How often Joe writes the same value again when the device does not take it;
 # a value that ends up in flash (Profile.flash) less often.
 RETRY = timedelta(minutes=5)
+# A value Joe wrote for a charge that something else sets back soon after
+# (a device falling back, another system writing to the inverter) is written
+# again, at most RESET_MAX times per RESET_PER; then it counts as the owner's.
+RESET_WITHIN = timedelta(minutes=15)
+RESET_MAX = 3
+RESET_PER = timedelta(minutes=10)
+# The reserve a battery had as Joe's night began is put back when the night
+# is over and a reserve raised meanwhile holds the battery back, for this long.
+RESERVE_BACK_FOR = timedelta(hours=12)
 FLASH_RETRY = timedelta(minutes=30)
 # Several batteries: a block that did not arrive keeps Joe out this long, the
 # second time that day until the next one.
@@ -132,6 +141,10 @@ NOTES = {
         "Battery watchdog: {name} against the other again – {direction} stays blocked until it is needed",
     ),
     "release": ("Zurückgestellt", "Put back"),
+    "reserve_back": (
+        "Reserve zurück wie vor der Nacht (die Nachtladung ist zu Ende)",
+        "Reserve back as before the night (the night's charge is over)",
+    ),
     "test": ("Testlauf: {step}", "Test run: {step}"),
     "probe": ("Probe: {step}", "Probe: {step}"),
     "boost": ("Laden von Hand", "Charging by hand"),
@@ -317,6 +330,8 @@ DEFAULT_DATA: dict[str, Any] = {
     # and the watch before it counts.
     "stuck": {},
     "stuck_watch": {},
+    # Per battery: its reserve as Joe's night began (entity, value, night, at).
+    "night_reserve": {},
     # "Just charge to …" by hand: action id -> target, unit, sensor, since, until.
     "boost": {},
     # The night whose grid-friendly morning runs, or was let go early.
@@ -1247,6 +1262,8 @@ class JoeExecutor:
     ) -> str | None:
         """Write what differs; note originals first. Returns a problem, if any
         (also when no lever does what is wanted: "cannot_hold", "cannot_block")."""
+        if want.charge_to is not None:
+            self._remember_reserve(adapter)
         floored = self._floored(adapter, want)
         writes = adapter.writes(self._hass, floored, soc, self.data["saved"])
         unheld = adapter.steer_problem(self._hass, floored, soc, self.data["saved"])
@@ -1353,6 +1370,9 @@ class JoeExecutor:
                 "at": now.isoformat(timespec="seconds"),
                 "confirmed": False,
                 "battery": adapter.battery["id"],
+                **(
+                    {"resets": entry["resets"]} if entry and entry.get("resets") else {}
+                ),
             }
             if first or label in ("action_on", "action_off"):
                 self._log(
@@ -4895,6 +4915,120 @@ class JoeExecutor:
             }
         return result, keep, ended
 
+    def _charge_reset(
+        self, adapter: Adapter, entity_id: str, entry: dict[str, Any], now: datetime
+    ) -> bool:
+        """A value Joe wrote for a charge, set back soon after: written again
+        (True) – a few times, then it counts as someone else's (False)."""
+        key = adapter.battery["id"]
+        if self.status["batteries"].get(key, {}).get("action") != "charge":
+            return False
+        since = now - datetime.fromisoformat(entry["at"])
+        if since > RESET_WITHIN:
+            return False
+        tries = [
+            t
+            for t in entry.get("resets", [])
+            if now - datetime.fromisoformat(t) < RESET_PER
+        ]
+        value = read(self._hass, entity_id)
+        if len(tries) >= RESET_MAX:
+            self._log(
+                "charge_reset_gave_up",
+                battery=key,
+                entity=entity_id,
+                value=value,
+                times=len(tries),
+            )
+            return False
+        entry["resets"] = [*tries, now.isoformat(timespec="seconds")]
+        entry["confirmed"] = False
+        entry["at"] = (now - RETRY).isoformat(timespec="seconds")
+        control = None
+        if isinstance(adapter, RoleAdapter):
+            control = {
+                role: read(self._hass, entity)
+                for role, entity in adapter.controls.items()
+                if role in ("min_soc", "charge_limit", "discharge_limit")
+                or role.endswith("_enabled")
+            }
+        self._log(
+            "charge_reset",
+            battery=key,
+            entity=entity_id,
+            value=value,
+            want=entry["value"],
+            seconds=int(since.total_seconds()),
+            levers=control,
+        )
+        return True
+
+    def _remember_reserve(self, adapter: Adapter) -> None:
+        """The reserve as Joe's night begins (for putting it back after)."""
+        night = self.data["night"]
+        entity_id = (
+            adapter.controls.get("min_soc")
+            if isinstance(adapter, RoleAdapter)
+            else None
+        )
+        key = adapter.battery["id"]
+        store: dict[str, Any] = self.data["night_reserve"]
+        if not entity_id or not night or (store.get(key) or {}).get("night") == night:
+            return
+        value = read(self._hass, entity_id)
+        if isinstance(value, int | float):
+            store[key] = {
+                "night": night,
+                "entity": entity_id,
+                "value": value,
+                "at": dt_util.now().isoformat(timespec="seconds"),
+            }
+
+    async def _async_reserve_back(
+        self, battery: dict[str, Any], found: dict[str, Any] | None, now: datetime
+    ) -> bool:
+        """A reserve raised while Joe's night ran (his charge or the owner's
+        hand) that now holds the battery back: set to what it was when the
+        night began, once the charge is over. True when written."""
+        key = battery["id"]
+        store: dict[str, Any] = self.data["night_reserve"]
+        mem = store.get(key)
+        if not mem:
+            return False
+        if now - _at(mem["at"]) > RESERVE_BACK_FOR:
+            store.pop(key)
+            return False
+        if (
+            found is None
+            or found["reason"] != "reserve"
+            or found.get("entity_id") != mem["entity"]
+            or self.status["batteries"].get(key, {}).get("action") == "charge"
+        ):
+            return False
+        current = read(self._hass, mem["entity"])
+        if not isinstance(current, int | float) or current <= mem["value"]:
+            return False
+        try:
+            await async_apply(
+                self._hass,
+                Write(mem["entity"], mem["value"]),
+                self._note("reserve_back"),
+                self.language(),
+            )
+        except WriteError as err:
+            self._log("failed", battery=key, entity=err.entity_id, code=err.code)
+            return False
+        self._log(
+            "reserve_back",
+            battery=key,
+            entity=mem["entity"],
+            was=current,
+            value=mem["value"],
+        )
+        store.pop(key)
+        self._changed()
+        return True
+
     def _notice_external(self, adapter: Adapter, now: datetime) -> None:
         """Values Joe set that someone else changed: leave them alone tonight."""
         written: dict[str, Any] = self.data["written"]
@@ -4906,6 +5040,8 @@ class JoeExecutor:
                 entry["confirmed"] = True
                 continue
             if entry.get("confirmed"):
+                if self._charge_reset(adapter, entity_id, entry, now):
+                    continue
                 self.data["external"].append(entity_id)
                 value = read(self._hass, entity_id)
                 self._log(
@@ -5467,6 +5603,8 @@ class JoeExecutor:
                 if isinstance(adapter, RoleAdapter) and soc is not None
                 else None
             )
+            if await self._async_reserve_back(battery, found, now):
+                continue
             if found is not None and found["direction"] == "discharge" and held:
                 found = {**found, "reason": "evcc"}
             if found is not None and found["reason"] == "reserve":

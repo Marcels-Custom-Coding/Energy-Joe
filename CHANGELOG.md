@@ -3,6 +3,14 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.53
+
+Beim Laden nachschreiben, wenn der Wechselrichter den Befehl zurücksetzt, und die Reserve nach der Nacht zurückstellen
+
+- **Joe schreibt den Ladebefehl neu, wenn er zurückgesetzt wird.** Heute Nacht stand die Entladerate des GEN24 nach genau fünf Minuten wieder auf 0, und Joe hatte das als „fremde Hand“ gewertet und die Nacht dem Besitzer überlassen. Jetzt gilt: Setzt etwas einen Wert, den Joe für die Ladung geschrieben hat, innerhalb von 15 Minuten zurück, während er lädt, schreibt er ihn sofort neu, höchstens dreimal in zehn Minuten. Im Protokoll steht, welcher Wert, nach wie vielen Sekunden, was gelesen wurde und welche Hebel (Reserve, Raten, „aktiv“) danach standen. Hält das Zurücksetzen an, steht „wird immer wieder zurückgesetzt“, und Joe lässt es dabei.
+- **Die Reserve geht nach der Nacht zurück.** Joe merkt sich, wie die Mindestreserve stand, als seine Nacht begann. War sie danach erhöht (auch von Hand) und hält sie den Speicher zurück, setzt Joe sie auf den alten Wert zurück, sobald die Ladung vorbei ist, höchstens zwölf Stunden lang. Bisher blieb ein „99 %“ aus der Nacht bis zum Morgen stehen, und der Speicher durfte nicht entladen. Im Protokoll und Logbuch steht „Reserve zurück wie vor der Nacht“.
+- Nicht geprüft an echter Anlage: alles davon, besonders ob das Zurücksetzen nach fünf Minuten mit ioBroker aus nicht mehr vorkommt und was Joe bei einem echten Zurücksetzen im Protokoll findet.
+
 ## 0.9.52
 
 - **Beim Laden rechne ich selbst mit.** Viele Autos melden Ladestand und Reichweite nur alle paar Stunden; in der Nacht zum 31.10. kam vom Kona von 21 Uhr bis 8:45 kein neuer Wert. Ich habe deshalb das Ziel nie erreicht gesehen und bis zum Ende des Zeitfensters geladen (128 statt 100 km). Jetzt zähle ich, was an der Wallbox ankommt, rechne Ladestand und Reichweite ab der letzten Meldung des Autos hoch und höre beim Ziel auf – nachts, bei „Heute Nacht laden“ und bei „Jetzt laden“.
