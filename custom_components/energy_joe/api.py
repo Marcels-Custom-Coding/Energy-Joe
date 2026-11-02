@@ -31,7 +31,6 @@ from .const import DOMAIN
 from .control import operations, week
 from .control.adapters import RoleAdapter, make_adapter
 from .control.climate import LOG_SIZE as CLIMATE_LOG_SIZE, arrivals as climate_arrivals
-from .control.executor import LOG_SIZE as CONTROL_LOG_SIZE
 from .control.meters import meter_options, suggest as suggest_meter
 from .control.profiles import OPERATIONS, PROFILES
 from .discovery import (
@@ -824,14 +823,17 @@ def ws_log(
 ) -> None:
     """Everything Joe did, steering and heating together, newest first.
 
-    The state only carries the latest entries; this is the whole kept log.
+    The state only carries the latest entries; this is the whole kept journal
+    (a week of what Joe steered, with his reasons).
     """
     if (runtime := _runtime(hass, connection, msg)) is None:
         return
     # Each log is oldest first; reversed, entries of the same second stay newest first.
     entries = [
         {**entry, "area": "control"}
-        for entry in reversed(runtime.executor.data["log"][-CONTROL_LOG_SIZE:])
+        for entry in reversed(
+            runtime.executor.data.get("journal") or runtime.executor.data["log"]
+        )
     ] + [
         {**entry, "area": "climate"}
         for entry in reversed(runtime.climate.data["log"][-CLIMATE_LOG_SIZE:])

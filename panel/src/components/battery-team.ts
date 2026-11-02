@@ -194,6 +194,22 @@ export function teamSuggest(t: Translate, config: JoeConfig, team: BatteryTeam |
   };
 }
 
+/** Per group what it does right now and whether it works or waits ("Steuerung": Jetzt). */
+export function teamRows(t: Translate, team: BatteryTeam | undefined): { id: string; name: string; text: string; works: boolean }[] {
+  if (!team || team.state !== "on" || !team.active) {
+    return [];
+  }
+  const groups = liveGroups(team);
+  const first = activeIds(team)[0];
+  const order = [...groups.filter((g) => g.includes(first)), ...groups.filter((g) => !g.includes(first))];
+  return order.map((ids) => ({
+    id: ids[0],
+    name: groupName(t, team, ids),
+    text: part(t, team, ids),
+    works: ids.some((id) => ["active", "parallel", "along", "helps", "base", "house"].includes(team.batteries[id].why ?? "")),
+  }));
+}
+
 /** The line under "Mehrere Speicher": who works now and why the others wait, or why Joe does nothing. */
 export function teamText(t: Translate, team: BatteryTeam): string {
   if (team.state === "on") {

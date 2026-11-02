@@ -93,6 +93,10 @@ RELEASE_ALARM = 3
 STOP_TRIES = 3
 STOP_PAUSE_S = 4
 LOG_SIZE = 100
+# The journal keeps everything Joe steered for a week (the panel's list of what
+# he did and why); the log above is the short view in the state.
+JOURNAL_KEEP = timedelta(days=7)
+JOURNAL_MAX = 4000
 # What Joe writes into Home Assistant's logbook next to every lever he sets
 # (German, English): the reason, in the owner's words.
 NOTES = {
@@ -332,6 +336,8 @@ DEFAULT_DATA: dict[str, Any] = {
     "stuck_watch": {},
     # Per battery: its reserve as Joe's night began (entity, value, night, at).
     "night_reserve": {},
+    # Every log line of the last JOURNAL_KEEP, oldest first (see _log).
+    "journal": [],
     # "Just charge to …" by hand: action id -> target, unit, sensor, since, until.
     "boost": {},
     # The night whose grid-friendly morning runs, or was let go early.
@@ -572,6 +578,9 @@ class JoeExecutor:
     async def async_load(self) -> None:
         if stored := await self._store.async_load():
             self.data = {**_fresh(), **stored}
+            # Older data had no journal: start it with the short log.
+            if not self.data.get("journal"):
+                self.data["journal"] = list(self.data.get("log") or [])
             # Older data: the daytime surplus' keys filled in.
             self.data["surplus"] = {
                 **deepcopy(DEFAULT_DATA["surplus"]),
@@ -1323,7 +1332,13 @@ class JoeExecutor:
                     calls_ok = False
                     continue
                 self._mark_active(key)
-                self._log("call", battery=key, entity=write.entity_id, action=label)
+                self._log(
+                    "call",
+                    battery=key,
+                    entity=write.entity_id,
+                    action=label,
+                    **({"why": note} if note else {}),
+                )
                 continue
             if write.entity_id in external:
                 continue
@@ -1374,13 +1389,20 @@ class JoeExecutor:
                     {"resets": entry["resets"]} if entry and entry.get("resets") else {}
                 ),
             }
-            if first or label in ("action_on", "action_off"):
+            # Every value Joe changes is told (the first one of a night, and
+            # each new value after it), not the repeats of the same one.
+            if (
+                first
+                or entry["value"] != write.value
+                or label in ("action_on", "action_off")
+            ):
                 self._log(
                     label if label in ("action_on", "action_off") else "set",
                     battery=key,
                     entity=write.entity_id,
                     value=write.value,
                     action=label,
+                    **({"why": note} if note else {}),
                 )
                 if label in ("action_on", "action_off"):
                     self._fire(
@@ -6391,6 +6413,13 @@ class JoeExecutor:
         log: list[dict[str, Any]] = self.data["log"]
         log.append(entry)
         del log[:-LOG_SIZE]
+        journal: list[dict[str, Any]] = self.data.setdefault("journal", [])
+        journal.append(entry)
+        del journal[:-JOURNAL_MAX]
+        # Older than a week goes (the entries are in time order).
+        cut = (dt_util.now() - JOURNAL_KEEP).isoformat(timespec="seconds")
+        while journal and journal[0]["at"] < cut:
+            journal.pop(0)
 
     def log(self, kind: str, **detail: Any) -> None:
         """A line in Joe's log from elsewhere (e.g. a car's charge)."""

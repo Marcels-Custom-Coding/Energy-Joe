@@ -31,6 +31,7 @@ const STATEFUL: EntityGroup[] = ["control", "value", "other"];
 const CARDS = [
   { id: "night", type: "energy-joe-night-card", icon: "mdi:weather-night" },
   { id: "car", type: "energy-joe-car-card", icon: "mdi:car-electric-outline" },
+  { id: "steer", type: "energy-joe-steuerung-card", icon: "mdi:robot-outline" },
 ] as const;
 
 /** An entity id that may wrap only after "." and "_" (never inside a word). */
@@ -193,7 +194,7 @@ export class JoeSettingsAbout extends SettingsSection {
     </section>`;
   }
 
-  /** The two dashboard cards and how to add them. */
+  /** The dashboard cards and how to add them. */
   private renderCards(t: Translate): TemplateResult {
     return html`<section class="group" data-anchor="cards">
       <h2>${t("settings.about.cards")}</h2>

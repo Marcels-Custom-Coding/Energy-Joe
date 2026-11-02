@@ -1,7 +1,10 @@
-import { LitElement, css, html, nothing, type TemplateResult } from "lit";
+import { LitElement, css, html, nothing, type PropertyValues, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
 import { openInHa } from "./components/bits";
 import "./components/car-charge";
+import { loadLog, logMarker, stateLog } from "./components/steer-list";
+import "./components/steer-list";
+import type { LogEntry } from "./components/log";
 import { dayText, planCostLine, planLines, planSentence, timeOf } from "./components/plan-text";
 import { define } from "./define";
 import { formatState } from "./entities";
@@ -12,7 +15,7 @@ import { tokens } from "./styles/tokens";
 import { carPlugText, carPoint, carRoute, carValue } from "./cars";
 import type { CarConfig, HomeAssistant, JoeState } from "./types";
 
-// Dashboard cards Energy Joe brings along: "Joe heute Nacht" and "Auto laden".
+// Dashboard cards Energy Joe brings along: "Joe heute Nacht", "Auto laden" and "Steuerung".
 // Loaded on every page as an extra module (like the icons), so they show up in
 // the card picker without adding a resource by hand.
 
@@ -318,13 +321,70 @@ class EnergyJoeCarCard extends JoeCard {
   }
 }
 
+/** "Steuerung": what Joe holds or waits for now and his last interventions with the reason. */
+class EnergyJoeSteuerungCard extends JoeCard {
+  @state() private full?: LogEntry[];
+  private marker?: string;
+
+  static getStubConfig(): Record<string, unknown> {
+    return { limit: 8 };
+  }
+
+  getCardSize(): number {
+    return 6;
+  }
+
+  protected willUpdate(changed: PropertyValues<this>): void {
+    super.willUpdate(changed);
+    // A new entry in either log: fetch the log of the last days again.
+    const marker = this.joe ? logMarker(this.joe) : undefined;
+    if (marker !== undefined && marker !== this.marker) {
+      this.marker = marker;
+      void loadLog(this.hass).then((entries) => {
+        this.full = entries;
+      });
+    }
+  }
+
+  protected renderCard(t: Translate, state: JoeState): TemplateResult {
+    const limit = Math.max(1, Math.min(50, Number(this.config.limit) || 8));
+    const steerPath = href(PANEL, { tab: "review", section: "steer" });
+    return html`<a
+        class="head"
+        href=${steerPath}
+        @click=${(ev: MouseEvent) => {
+          if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey || ev.button !== 0) return;
+          ev.preventDefault();
+          openInHa(steerPath);
+        }}
+      >
+        <div class="eyebrow"><ha-icon icon="mdi:robot-outline"></ha-icon>${t("steer.card.title")}</div>
+        <ha-icon class="chev" icon="mdi:chevron-right"></ha-icon>
+      </a>
+      <joe-steer-now .t=${t} .state=${state}></joe-steer-now>
+      <div class="next-car">
+        <div class="eyebrow">${t("steer.history")}</div>
+        <joe-steer-list
+          compact
+          .t=${t}
+          .hass=${this.hass}
+          .config=${state.config}
+          .entries=${this.full ?? stateLog(state)}
+          .limit=${limit}
+        ></joe-steer-list>
+      </div>`;
+  }
+}
+
 define("energy-joe-night-card", EnergyJoeNightCard);
 define("energy-joe-car-card", EnergyJoeCarCard);
+define("energy-joe-steuerung-card", EnergyJoeSteuerungCard);
 
 const cards = ((window as unknown as { customCards?: unknown[] }).customCards ??= []);
 for (const card of [
   { type: "energy-joe-night-card", name: "Energy Joe – heute Nacht", description: "Was Joe heute Nacht vorhat, was es kostet, und Aussetzen." },
   { type: "energy-joe-car-card", name: "Energy Joe – Auto laden", description: "Ladestand und Reichweite, jetzt oder heute Nacht laden." },
+  { type: "energy-joe-steuerung-card", name: "Energy Joe – Steuerung", description: "Was Joe gerade hält oder abwartet und was er zuletzt gesteuert hat – jeweils mit dem Grund." },
 ]) {
   if (!cards.some((c) => (c as { type?: string }).type === card.type)) {
     cards.push({ ...card, preview: true });
