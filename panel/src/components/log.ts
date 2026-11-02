@@ -114,6 +114,10 @@ export function logText(t: Translate, config: JoeConfig | undefined, entry: Cont
     level: typeof entry.level === "number" ? formatNumber(t.lang, entry.level, 0) : "–",
     planned: typeof entry.planned === "number" ? formatNumber(t.lang, entry.planned, 1) : "–",
     charged: typeof entry.charged === "number" ? formatNumber(t.lang, entry.charged, 1) : "–",
+    seconds: typeof entry.seconds === "number" ? entry.seconds : "–",
+    times: typeof entry.times === "number" ? entry.times : "–",
+    was: entry.was == null ? "–" : String(entry.was),
+    want: entry.want == null ? "–" : String(entry.want),
   };
   const nameOf = (id: unknown) => config?.batteries.find((b) => b.id === id)?.name ?? String(id ?? "");
   const names = (ids: unknown) => (Array.isArray(ids) ? ids.map(nameOf).join(", ") : "");

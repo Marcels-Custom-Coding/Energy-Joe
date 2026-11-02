@@ -4336,6 +4336,9 @@ var Ne = {
 	"log.grid_guard": "Hauptsicherung: {power} kW aus dem Netz – Laden kurz pausiert",
 	"log.no_progress": "{battery} lädt nicht (bei {soc} %)",
 	"log.charge_slow": "{battery} lädt nur mit {power} statt {planned} kW aus dem Netz – vermutlich lässt der Wechselrichter so nur wenig zu; ich plane ihn ab jetzt damit",
+	"log.charge_reset": "{battery}: {entity} stand nach {seconds} s wieder auf {value} statt {want} – etwas anderes hat es zurückgesetzt, ich schreibe den Ladebefehl neu",
+	"log.charge_reset_gave_up": "{battery}: {entity} wird immer wieder zurückgesetzt ({times}×) – etwas anderes schreibt in den Wechselrichter dazwischen; ich lasse es jetzt dabei",
+	"log.reserve_back": "{battery}: Reserve von {was} auf {value} % zurückgestellt – sie war seit der Nacht erhöht und hielt den Speicher zurück",
 	"log.charge_slow_end": "{battery} lädt wieder schneller ({power} kW) – ich plane ihn wieder mit voller Leistung",
 	"log.night_charged": "{battery}: {charged} von {planned} kWh geladen",
 	"log.raised.sun": "Ziel für {battery} angehoben: {before} → {target} % – die Prognose für morgen ist schlechter geworden ({sun_from} → {sun_to} kWh Sonne)",
@@ -8321,6 +8324,9 @@ var Ne = {
 	"log.grid_guard": "Main fuse: {power} kW from the grid – charging paused briefly",
 	"log.no_progress": "{battery} does not charge (at {soc} %)",
 	"log.charge_slow": "{battery} charges from the grid at only {power} instead of {planned} kW – the inverter probably allows little this way; from now on I plan it with that",
+	"log.charge_reset": "{battery}: {entity} was back at {value} instead of {want} after {seconds} s – something else set it back, I write the charge command again",
+	"log.charge_reset_gave_up": "{battery}: {entity} keeps being set back ({times}×) – something else writes to the inverter in between; I leave it now",
+	"log.reserve_back": "{battery}: reserve set from {was} back to {value} % – it had been raised since the night and held the battery back",
 	"log.charge_slow_end": "{battery} charges faster again ({power} kW) – I plan it at full power again",
 	"log.night_charged": "{battery}: {charged} of {planned} kWh charged",
 	"log.raised.sun": "Target for {battery} raised: {before} → {target} % – the forecast for tomorrow got worse ({sun_from} → {sun_to} kWh of sun)",
@@ -8644,14 +8650,14 @@ function Ke(e, t, n) {
 }
 //#endregion
 //#region src/define.ts
-var qe = "0.9.52";
+var qe = "0.9.53";
 function Je(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = qe, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.52" && Xe();
+	n.joeVersion !== "0.9.53" && Xe();
 }
 var Ye = !1;
 function Xe() {
