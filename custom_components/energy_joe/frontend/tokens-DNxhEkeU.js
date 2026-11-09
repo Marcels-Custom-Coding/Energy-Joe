@@ -2936,10 +2936,10 @@ var He = {
 	"mode.to_batteries": "Zu den Speichern →",
 	"settings.notify": "Benachrichtigungen",
 	"settings.notify.intro": "Probleme zeige ich immer in den Benachrichtigungen von Home Assistant. Aufs Handy schicke ich nur, was du hier einschaltest.",
-	"settings.notify.service": "Handy oder Dienst",
-	"settings.notify.service.hint": "Wohin ich schreibe, z. B. die Home-Assistant-App auf deinem Handy.",
-	"settings.notify.none": "Nirgendwohin",
-	"settings.notify.gone": "{name} – gibt es nicht mehr, bitte neu wählen",
+	"settings.notify.service": "Handys oder Dienste",
+	"settings.notify.service.hint": "Wohin ich schreibe, z. B. die Home-Assistant-App auf euren Handys. Hake alle an, die Bescheid bekommen sollen.",
+	"settings.notify.none": "Kein Handy gefunden – installiere die Home-Assistant-App und melde dich darin an.",
+	"settings.notify.gone": "{name} – gibt es nicht mehr, bitte abhaken",
 	"settings.notify.ask": "Abends fragen",
 	"settings.notify.ask.hint": "Im Modus Vorschlagen, mit „Ja“ und „Heute nicht“ direkt in der Nachricht.",
 	"settings.notify.problems": "Probleme melden",
@@ -4185,7 +4185,7 @@ var He = {
 	"tip.plan_steer.title": "Was heißt das?",
 	"tip.plan_steer.text": "In der Simulation schalte ich nichts. Bei **Vorschlagen** steuere ich nur, wenn du für diese Nacht Ja sagst. Bei **Live** steuere ich jede Nacht – aber nur Speicher, deren Testlauf geklappt hat. Mit **Heute aussetzen** lasse ich eine Nacht aus.",
 	"tip.notify_service.title": "Wohin schreibe ich?",
-	"tip.notify_service.text": "An einen Benachrichtigungsdienst von Home Assistant, meist die App auf deinem Handy. Probleme stehen sowieso immer in den Benachrichtigungen von Home Assistant.",
+	"tip.notify_service.text": "An jeden angehakten Benachrichtigungsdienst von Home Assistant, meist die App auf euren Handys. Fragt Joe abends nach, reicht die Antwort von einem Handy. Probleme stehen sowieso immer in den Benachrichtigungen von Home Assistant.",
 	"tip.notify_ask.title": "Was frage ich?",
 	"tip.notify_ask.text": "Im Modus Vorschlagen frage ich jeden Abend, ob ich die Nacht steuern darf – mit den Knöpfen „Ja“ und „Heute nicht“ direkt in der Nachricht.",
 	"tip.notify_problems.title": "Welche Probleme?",
@@ -6944,10 +6944,10 @@ var He = {
 	"mode.to_batteries": "To the batteries →",
 	"settings.notify": "Notifications",
 	"settings.notify.intro": "Problems always show up in Home Assistant's notifications. I only send to your phone what you switch on here.",
-	"settings.notify.service": "Phone or service",
-	"settings.notify.service.hint": "Where I write to, e.g. the Home Assistant app on your phone.",
-	"settings.notify.none": "Nowhere",
-	"settings.notify.gone": "{name} – no longer exists, please choose again",
+	"settings.notify.service": "Phones or services",
+	"settings.notify.service.hint": "Where I write to, e.g. the Home Assistant app on your phones. Tick everyone who should hear from me.",
+	"settings.notify.none": "No phone found – install the Home Assistant app and sign in there.",
+	"settings.notify.gone": "{name} – no longer exists, please untick",
 	"settings.notify.ask": "Ask in the evening",
 	"settings.notify.ask.hint": "In the suggest mode, with “Yes” and “Not tonight” right in the message.",
 	"settings.notify.problems": "Report problems",
@@ -8193,7 +8193,7 @@ var He = {
 	"tip.plan_steer.title": "What does that mean?",
 	"tip.plan_steer.text": "In the simulation I switch nothing. In **Suggest** I only steer when you say yes for that night. In **Live** I steer every night – but only batteries whose test run passed. With **Skip tonight** I leave one night out.",
 	"tip.notify_service.title": "Where do I write to?",
-	"tip.notify_service.text": "To a notification service of Home Assistant, usually the app on your phone. Problems always show up in Home Assistant's notifications anyway.",
+	"tip.notify_service.text": "To every ticked notification service of Home Assistant, usually the app on your phones. When Joe asks in the evening, an answer from one phone is enough. Problems always show up in Home Assistant's notifications anyway.",
 	"tip.notify_ask.title": "What do I ask?",
 	"tip.notify_ask.text": "In the suggest mode I ask every evening whether I may steer the night – with the buttons “Yes” and “Not tonight” right in the message.",
 	"tip.notify_problems.title": "Which problems?",
@@ -8690,14 +8690,14 @@ function tt(e, t, n) {
 }
 //#endregion
 //#region src/define.ts
-var nt = "0.9.54";
+var nt = "0.9.55";
 function N(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = nt, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.54" && it();
+	n.joeVersion !== "0.9.55" && it();
 }
 var rt = !1;
 function it() {

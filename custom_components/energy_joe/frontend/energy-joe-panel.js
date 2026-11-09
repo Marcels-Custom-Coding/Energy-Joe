@@ -1,4 +1,4 @@
-import { $ as e, $t as t, A as n, At as r, B as i, Bt as a, C as o, Cn as s, Ct as c, D as l, Dt as u, E as d, Et as f, F as p, Ft as m, G as ee, Gt as h, H as g, Ht as _, I as v, It as te, J as y, Jt as ne, K as re, Kt as ie, L as b, Lt as ae, M as oe, Mt as se, N as x, Nt as ce, O as le, Ot as ue, P as de, Pt as fe, Q as pe, Qt as me, R as he, Rt as ge, S as _e, Sn as S, St as ve, T as ye, Tn as C, Tt as be, U as xe, Ut as Se, V as Ce, Vt as w, W as we, Wt as Te, X as T, Xt as Ee, Y as De, Yt as E, Z as D, Zt as O, _ as Oe, _n as k, _t as ke, a as Ae, an as A, at as je, b as Me, bn as j, bt as M, c as Ne, cn as Pe, ct as Fe, d as Ie, dn as Le, dt as N, en as P, et as Re, f as ze, fn as Be, ft as Ve, g as He, gn as Ue, gt as We, h as Ge, hn as Ke, ht as qe, i as Je, in as Ye, it as Xe, j as Ze, jt as Qe, k as $e, kt as et, l as tt, ln as nt, lt as rt, m as it, mn as F, mt as at, n as ot, nn as st, nt as ct, o as lt, on as I, ot as ut, p as dt, pn as L, pt as ft, q as pt, qt as mt, r as ht, rn as gt, rt as _t, s as vt, sn as R, st as yt, t as bt, tn as xt, tt as St, u as Ct, un as z, ut as wt, v as Tt, vn as B, vt as Et, w as Dt, wn as Ot, wt as kt, x as At, xn as jt, xt as Mt, y as Nt, yn as V, yt as Pt, z as Ft, zt as It } from "./tokens-Ba5wjkhb.js";
+import { $ as e, $t as t, A as n, At as r, B as i, Bt as a, C as o, Cn as s, Ct as c, D as l, Dt as u, E as d, Et as f, F as p, Ft as m, G as ee, Gt as h, H as g, Ht as _, I as v, It as te, J as y, Jt as ne, K as re, Kt as ie, L as b, Lt as ae, M as oe, Mt as se, N as x, Nt as ce, O as le, Ot as ue, P as de, Pt as fe, Q as pe, Qt as me, R as he, Rt as ge, S as _e, Sn as S, St as ve, T as ye, Tn as C, Tt as be, U as xe, Ut as Se, V as Ce, Vt as w, W as we, Wt as Te, X as T, Xt as Ee, Y as De, Yt as E, Z as D, Zt as O, _ as Oe, _n as k, _t as ke, a as Ae, an as A, at as je, b as Me, bn as j, bt as M, c as Ne, cn as Pe, ct as Fe, d as Ie, dn as Le, dt as N, en as P, et as Re, f as ze, fn as Be, ft as Ve, g as He, gn as Ue, gt as We, h as Ge, hn as Ke, ht as qe, i as Je, in as Ye, it as Xe, j as Ze, jt as Qe, k as $e, kt as et, l as tt, ln as nt, lt as rt, m as it, mn as F, mt as at, n as ot, nn as st, nt as ct, o as lt, on as I, ot as ut, p as dt, pn as L, pt as ft, q as pt, qt as mt, r as ht, rn as gt, rt as _t, s as vt, sn as R, st as yt, t as bt, tn as xt, tt as St, u as Ct, un as z, ut as wt, v as Tt, vn as B, vt as Et, w as Dt, wn as Ot, wt as kt, x as At, xn as jt, xt as Mt, y as Nt, yn as V, yt as Pt, z as Ft, zt as It } from "./tokens-DNxhEkeU.js";
 //#region src/assets.ts
 var Lt = import.meta.url.replace(/[^/]*$/, ""), Rt = (e) => `${Lt}${e}`, zt = /* @__PURE__ */ new Set(["welcome"]), Bt = /* @__PURE__ */ new Set([
 	"night-charge",
@@ -24687,7 +24687,24 @@ var fd = class extends td {
 		super(...e), this.loading = !1;
 	}
 	static {
-		this.styles = [I, nd];
+		this.styles = [
+			I,
+			nd,
+			C`
+      .phones {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        align-items: flex-start;
+      }
+      .phone {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        cursor: pointer;
+      }
+    `
+		];
 	}
 	connectedCallback() {
 		super.connectedCallback(), this.loadTargets();
@@ -24708,28 +24725,36 @@ var fd = class extends td {
 		].includes(e)).sort().map((e) => ({
 			service: e,
 			name: e.replace(/_/g, " ")
-		})), a = r.service?.replace(/^notify\./, ""), o = !!a && this.notifyTargets !== void 0 && !i.some((e) => e.service === a);
+		})), a = (r.services?.length ? r.services : r.service ? [r.service] : []).map((e) => e.replace(/^notify\./, "")), o = this.notifyTargets === void 0 ? [] : a.filter((e) => !i.some((t) => t.service === e)), s = (e) => {
+			let t = e.map((e) => `notify.${e}`);
+			w(this, { notify: {
+				services: t,
+				service: t[0] ?? null
+			} });
+		}, c = (e, t, n) => S`<label class="phone"
+        ><input
+          type="checkbox"
+          .checked=${n}
+          @change=${(t) => {
+			let n = t.target.checked;
+			s(n ? [...a, e] : a.filter((t) => t !== e));
+		}}
+        />${t}</label
+      >`;
 		return S`<div class="list">
       <section class="group" data-anchor="notify">
         <h2>${e("settings.notify")}</h2>
         <p class="intro">${e("settings.notify.intro")}</p>
         <div class="row" data-tipped data-anchor="service">
           <div>
-            <div class="name"><label for="notify-service"><b>${e("settings.notify.service")}</b></label>${E(e, "notify_service")}</div>
+            <div class="name"><b id="notify-service">${e("settings.notify.service")}</b>${E(e, "notify_service")}</div>
             <small>${e("settings.notify.service.hint")}</small>
           </div>
-          <select
-            id="notify-service"
-            class="input"
-            @change=${(e) => {
-			let t = e.target.value;
-			w(this, { notify: { service: t ? `notify.${t}` : null } });
-		}}
-          >
-            <option value="" ?selected=${!r.service}>${e("settings.notify.none")}</option>
-            ${i.map((e) => S`<option value=${e.service} ?selected=${a === e.service}>${e.name}</option>`)}
-            ${o ? S`<option value=${a} selected>${e("settings.notify.gone", { name: a ?? "" })}</option>` : j}
-          </select>
+          <div class="phones" role="group" aria-labelledby="notify-service">
+            ${i.length || o.length ? j : S`<small>${e("settings.notify.none")}</small>`}
+            ${i.map((e) => c(e.service, e.name, a.includes(e.service)))}
+            ${o.map((t) => c(t, e("settings.notify.gone", { name: t }), !0))}
+          </div>
         </div>
         ${this.toggle(e, n, "ask")} ${this.toggle(e, n, "problems")} ${this.toggle(e, n, "stuck")}
         ${this.toggle(e, n, "morning")}
@@ -24751,7 +24776,7 @@ var fd = class extends td {
         role="switch"
         aria-checked=${String(r[n] ?? !0)}
         aria-labelledby="notify-${n}"
-        ?disabled=${!r.service}
+        ?disabled=${!(r.services?.length || r.service)}
         @click=${() => w(this, { notify: { [n]: !(r[n] ?? !0) } })}
       ></button>
     </div>`;
