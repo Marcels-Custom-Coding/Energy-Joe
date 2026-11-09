@@ -761,7 +761,10 @@ export interface DaySurplus {
 }
 
 export interface NotifyConfig {
+  /** The first phone (older backends only know this one). */
   service: string | null;
+  /** Every phone Joe writes to (0.9.55; missing on older backends). */
+  services?: string[];
   ask: boolean;
   problems: boolean;
   morning: boolean;

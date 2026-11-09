@@ -3,6 +3,11 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.55
+
+- **Mehrere Handys.** Unter Einstellungen › Benachrichtigungen hakst du jetzt alle Handys an, die Bescheid bekommen sollen, statt nur eines zu wählen. Dein bisher gewähltes Handy bleibt angehakt. Fragt Joe abends nach, reicht die Antwort von einem Handy; auf den anderen verschwindet die Frage dann.
+- Nicht geprüft an echter Anlage: alles davon.
+
 ## 0.9.54
 
 Was Joe steuert und warum: eine Liste im Panel und als Dashboardkarte, eine Woche Verlauf

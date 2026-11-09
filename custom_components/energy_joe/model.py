@@ -772,6 +772,9 @@ NOTIFY = vol.Schema(
         vol.Optional("service", default=None): vol.Any(
             None, vol.Match(r"^notify\.[a-z0-9_]+$")
         ),
+        # Every phone Joe writes to (0.9.55); service stays the first of them,
+        # older configurations only know service.
+        vol.Optional("services", default=list): [vol.Match(r"^notify\.[a-z0-9_]+$")],
         vol.Optional("ask", default=True): bool,
         vol.Optional("problems", default=True): bool,
         vol.Optional("morning", default=False): bool,

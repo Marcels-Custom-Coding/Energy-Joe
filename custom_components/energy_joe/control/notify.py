@@ -143,7 +143,7 @@ class JoeNotifier:
             self._text("ask.title"),
             f"{DOMAIN}_ask",
         )
-        if notify["service"] and notify["ask"]:
+        if self._phones() and notify["ask"]:
             await self._push(
                 self._text("ask.title"),
                 message,
@@ -189,7 +189,7 @@ class JoeNotifier:
             if kind.startswith("stuck_")
             else notify["problems"]
         )
-        if notify["service"] and wanted:
+        if self._phones() and wanted:
             await self._push(
                 self._text("problem.title"), message, {"tag": f"{DOMAIN}_{tag}"}
             )
@@ -217,7 +217,7 @@ class JoeNotifier:
 
     async def async_morning(self, batteries: str) -> None:
         notify = self._config()["notify"]
-        if notify["service"] and notify["morning"]:
+        if self._phones() and notify["morning"]:
             await self._push(
                 self._text("morning.title"),
                 self._text("morning.text", batteries=batteries),
@@ -237,7 +237,7 @@ class JoeNotifier:
             tag,
         )
         notify = self._config()["notify"]
-        if not notify["service"] or not notify.get("cars", True):
+        if not self._phones() or not notify.get("cars", True):
             return
         choices = [*cars, ("guest", self._text("car.guest"))]
         data: dict[str, Any] = {"tag": tag}
@@ -260,7 +260,7 @@ class JoeNotifier:
             self._hass, message, self._text("car.not_plugged.title"), tag
         )
         notify = self._config()["notify"]
-        if notify["service"] and notify.get("cars", True):
+        if self._phones() and notify.get("cars", True):
             await self._push(self._text("car.not_plugged.title"), message, {"tag": tag})
 
     @callback
@@ -269,26 +269,37 @@ class JoeNotifier:
             self._hass, f"{DOMAIN}_unplugged_{car_id}"
         )
 
+    def _phones(self) -> list[str]:
+        """The notify services Joe writes to (without "notify.")."""
+        notify = self._config()["notify"]
+        chosen = notify.get("services") or (
+            [notify["service"]] if notify.get("service") else []
+        )
+        return list(dict.fromkeys(s.split(".", 1)[-1] for s in chosen if s))
+
     async def _push(self, title: str, message: str, data: dict[str, Any]) -> None:
-        service = (self._config()["notify"]["service"] or "").split(".", 1)[-1]
-        if not service or not self._hass.services.has_service("notify", service):
-            return
-        try:
-            await self._hass.services.async_call(
-                "notify",
-                service,
-                {"title": title, "message": message, "data": data},
-                blocking=True,
-            )
-        except Exception:  # noqa: BLE001 - a failed push must not stop Joe
-            _LOGGER.warning(
-                "Notification through notify.%s failed", service, exc_info=True
-            )
+        for service in self._phones():
+            if not self._hass.services.has_service("notify", service):
+                continue
+            try:
+                await self._hass.services.async_call(
+                    "notify",
+                    service,
+                    {"title": title, "message": message, "data": data},
+                    blocking=True,
+                )
+            except Exception:  # noqa: BLE001 - a failed push must not stop Joe
+                _LOGGER.warning(
+                    "Notification through notify.%s failed", service, exc_info=True
+                )
 
     async def _on_action(self, event: Event) -> None:
         action = event.data.get("action")
         if action in (ACCEPT, DECLINE):
             await self._answer(action == ACCEPT)
+            if len(self._phones()) > 1:
+                # Answered on one phone: the question goes from the others.
+                await self._push("", "clear_notification", {"tag": f"{DOMAIN}_ask"})
         elif isinstance(action, str) and action.startswith(f"{CAR_ANSWER}::"):
             parts = action.split("::")
             if len(parts) == 3 and self.on_car is not None:
