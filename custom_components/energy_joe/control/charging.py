@@ -5,11 +5,12 @@ few hours). While it charges Joe counts the energy at the wallbox himself
 and works out the level and range from the car's last report: that is how
 he stops at the target even when the car says nothing all night.
 
-Each charge between two reports of the car also tells its battery size: the
-energy at the wallbox (less the charging loss) for the levels it rose. Joe
-keeps these and takes the median, so the plan can work in kWh and the
-odometer, the level and the outside temperature tell what the car really
-uses (see learn/models.py car_model).
+Each whole charge also tells its battery size: the energy at the wallbox
+(less the charging loss) for the levels it rose from the report before it
+began to the first one after it ended (the car's reports lag, so partial
+steps in between would mislead). Joe keeps these and takes the median, so
+the plan can work in kWh and the odometer, the level and the outside
+temperature tell what the car really uses (see learn/models.py car_model).
 
 While it charges (the car is awake then) Joe may ask the car for a fresh
 report: when its last one is old as the charge begins, and once after the
@@ -32,10 +33,18 @@ from ..plan.ev import CHARGING_LOSS
 # Above this the wallbox charges; below it the charge ended (kW).
 CHARGING_KW = 1.0
 ENDED_KW = 0.2
-# Levels the car must rise between two reports for its battery size (%).
-MIN_RISE = 5.0
-# Energy the wallbox must count for it (kWh).
+# Levels the car must rise over a whole charge for its battery size (%): the
+# car's reports lag a few minutes, which counts less the more it rises.
+MIN_RISE = 8.0
+# Energy the wallbox must have counted for it (kWh).
+MIN_SAMPLE_KWH = 4.0
+# A charge counts as one when its energy is at least this (kWh; the ask
+# after it ended, see ask_now).
 MIN_KWH = 2.0
+# The report that ends a charge must come this long after it ended (the cloud's
+# value lags) and at most LOOK later (else the car has done something else).
+SETTLE = timedelta(minutes=10)
+LOOK = timedelta(hours=3)
 # Battery sizes that can be real (kWh).
 CAPACITY_RANGE = (10.0, 200.0)
 # The car moved between the reports: it may have driven and charged elsewhere (km).
@@ -104,17 +113,22 @@ def add_power(record: dict[str, Any], kw: float | None, now: datetime) -> None:
         before = datetime.fromisoformat(last["at"])
         gap = now - before
         if timedelta(0) < gap <= MAX_GAP:
-            record["kwh"] = round(
-                record["kwh"] + (last["kw"] + kw) / 2 * gap.total_seconds() / 3600, 4
-            )
+            step = (last["kw"] + kw) / 2 * gap.total_seconds() / 3600
+            record["kwh"] = round(record["kwh"] + step, 4)
+            session = record.get("session")
+            if session is not None:
+                session["kwh"] = round(session["kwh"] + step, 4)
     record["last"] = {"at": now.isoformat(), "kw": kw}
+    session = record.get("session")
+    if session is not None and kw >= CHARGING_KW:
+        session["last_on"] = now.isoformat()
 
 
 def capacity_sample(record: dict[str, Any], fresh: dict[str, Any]) -> float | None:
     """The battery size a charge between two reports tells (None: it tells none)."""
     base = record["base"]
     rise = fresh["soc"] - base["soc"]
-    if rise < MIN_RISE or record["kwh"] < MIN_KWH:
+    if rise < MIN_RISE or record["kwh"] < MIN_SAMPLE_KWH:
         return None
     if (
         base.get("odometer") is not None
@@ -166,26 +180,67 @@ def samples_from_history(
     power: list[tuple[datetime, float]],
     odometer: list[tuple[datetime, float]] | None = None,
 ) -> list[dict[str, Any]]:
-    """Battery sizes from the recorder: each rise between two reports of the
-    car, with the wallbox's energy in between (power in kW)."""
+    """Battery sizes from the recorder: each whole charge at the wallbox (power
+    in kW) against the car's level before it began and the first report that
+    came SETTLE after it ended."""
     odometer = odometer or []
     found = []
-    for (start, before), (end, after) in zip(soc, soc[1:], strict=False):
+    for start, end, kwh in _charges(power):
+        before = _before(soc, start)
+        after = next(
+            (
+                (when, value)
+                for when, value in soc
+                if end + SETTLE <= when <= end + LOOK
+            ),
+            None,
+        )
+        if before is None or after is None:
+            continue
         record = {
-            "base": {"soc": before, "odometer": _at(odometer, start)},
-            "kwh": _energy(power, start, end),
+            "base": {"soc": before[1], "odometer": _at(odometer, start)},
+            "kwh": kwh,
         }
-        value = capacity_sample(record, {"soc": after, "odometer": _at(odometer, end)})
+        value = capacity_sample(
+            record, {"soc": after[1], "odometer": _at(odometer, after[0])}
+        )
         if value is not None:
             found.append(
                 {
-                    "at": end.isoformat(),
+                    "at": after[0].isoformat(),
                     "value": value,
-                    "kwh": round(record["kwh"], 2),
-                    "rise": round(after - before, 1),
+                    "kwh": round(kwh, 2),
+                    "rise": round(after[1] - before[1], 1),
                 }
             )
     return found
+
+
+def _before(
+    series: list[tuple[datetime, float]], moment: datetime
+) -> tuple[datetime, float] | None:
+    found = None
+    for when, value in series:
+        if when > moment:
+            break
+        found = (when, value)
+    return found
+
+
+def _charges(
+    power: list[tuple[datetime, float]],
+) -> list[tuple[datetime, datetime, float]]:
+    """The charges of a power series: start, end and kWh (a pause shorter than
+    MAX_GAP is the same charge)."""
+    spans: list[list[datetime]] = []
+    for (when, kw), (after, _next) in zip(power, power[1:], strict=False):
+        if kw < CHARGING_KW:
+            continue
+        if spans and when - spans[-1][1] <= MAX_GAP:
+            spans[-1][1] = after
+        else:
+            spans.append([when, after])
+    return [(start, end, _energy(power, start, end)) for start, end in spans]
 
 
 def _at(series: list[tuple[datetime, float]], moment: datetime) -> float | None:

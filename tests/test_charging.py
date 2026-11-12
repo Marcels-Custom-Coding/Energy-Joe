@@ -99,7 +99,7 @@ def test_a_charge_between_two_reports_tells_the_battery_size() -> None:
 def test_battery_sizes_from_the_recorder() -> None:
     soc = [
         (at("2026-10-30T21:00:00+01:00"), 17.0),
-        (at("2026-10-31T08:45:00+01:00"), 30.0),
+        (at("2026-10-31T05:30:00+01:00"), 30.0),
     ]
     power = [
         (at("2026-10-30T20:00:00+01:00"), 0.0),
@@ -110,6 +110,41 @@ def test_battery_sizes_from_the_recorder() -> None:
     assert len(found) == 1
     assert found[0]["kwh"] == pytest.approx(8.3, abs=0.01)
     assert found[0]["value"] == pytest.approx(8.3 * 0.9 / 13 * 100, abs=0.2)
+
+
+def test_reports_in_the_middle_of_a_charge_do_not_count() -> None:
+    """The car's cloud lags: its 19 % at 04:21 was an old value (the night of
+    12.11.). Measured between the two reports the battery looked like 42 kWh;
+    the whole charge says what it is."""
+    soc = [
+        (at("2026-11-11T13:08:00+01:00"), 16.0),
+        (at("2026-11-12T04:21:00+01:00"), 19.0),
+        (at("2026-11-12T04:51:00+01:00"), 30.0),
+        (at("2026-11-12T05:21:00+01:00"), 31.0),
+    ]
+    power = [
+        (at("2026-11-11T20:00:00+01:00"), 0.0),
+        (at("2026-11-12T03:50:00+01:00"), 10.5),
+        (at("2026-11-12T04:50:00+01:00"), 0.0),
+    ]
+    found = charging.samples_from_history(soc, power, [])
+    assert len(found) == 1
+    # 10.5 kWh at the wall, 16 → 31 %: about 63 kWh, not 42.
+    assert found[0]["rise"] == 15.0
+    assert 60 <= found[0]["value"] <= 66
+
+
+def test_a_short_charge_or_a_small_rise_tells_nothing() -> None:
+    soc = [
+        (at("2026-11-01T20:00:00+01:00"), 50.0),
+        (at("2026-11-01T22:00:00+01:00"), 55.0),
+    ]
+    power = [
+        (at("2026-11-01T20:30:00+01:00"), 10.0),
+        (at("2026-11-01T21:00:00+01:00"), 0.0),
+    ]
+    # 5 kWh but only 5 %: below the rise the lag would swamp.
+    assert charging.samples_from_history(soc, power, []) == []
 
 
 def test_a_learned_battery_size_lets_the_plan_work_in_levels(
@@ -207,7 +242,13 @@ async def test_joe_learns_the_battery_and_asks_the_car_while_it_charges(
         freezer.tick(timedelta(minutes=1))
     await hass.async_block_till_done()
     assert pressed == ["button.kona_force_refresh"] * 2
-    # The car's report: what the charge tells about its battery.
+    # The car's report right after the charge ended is not yet what it holds
+    # (the cloud lags): it tells nothing yet.
+    hass.states.async_set("sensor.car_soc", "29", {"unit_of_measurement": "%"})
+    await watcher.async_check()
+    assert watcher.data["capacity"] == {}
+    # The one that comes after it settled: what the charge tells about its battery.
+    freezer.tick(timedelta(minutes=12))
     hass.states.async_set("sensor.car_soc", "30", {"unit_of_measurement": "%"})
     hass.states.async_set("sensor.car_range", "128", {"unit_of_measurement": "km"})
     await watcher.async_check()
@@ -224,6 +265,114 @@ async def test_joe_learns_the_battery_and_asks_the_car_while_it_charges(
     )
     await watcher.async_check()
     assert watcher.data["charges"] == {}
+
+
+async def test_a_charge_is_measured_by_the_report_after_the_car_was_unplugged(
+    hass: HomeAssistant, freezer
+) -> None:
+    """The cable comes off before the car's next report: the charge waits for it."""
+    freezer.move_to("2026-10-30T21:00:00+01:00")
+    car_entities(hass)
+    hass.services.async_register("button", "press", lambda call: None)
+    hass.states.async_set("sensor.car_soc", "17", {"unit_of_measurement": "%"})
+    hass.states.async_set("sensor.carport_power", "0", {"unit_of_measurement": "W"})
+    config = config_with({"enabled": True, "soc_entity": "sensor.car_soc"})
+    lines: list[tuple[str, dict[str, Any]]] = []
+    watcher = CarWatcher(
+        hass, lambda: config, lambda: "live", lambda: None, lambda: None
+    )
+    watcher.learn_capacity = lambda patch: None
+    watcher.log = lambda kind, **detail: lines.append((kind, detail))
+    await watcher.async_check()
+    freezer.move_to("2026-10-31T04:10:00+01:00")
+    hass.states.async_set("sensor.carport_power", "10600", {"unit_of_measurement": "W"})
+    for _ in range(47):
+        await watcher.async_check()
+        freezer.tick(timedelta(minutes=1))
+    hass.states.async_set("sensor.carport_power", "0", {"unit_of_measurement": "W"})
+    await watcher.async_check()
+    # Unplugged at once.
+    hass.states.async_set("binary_sensor.carport_connected", "off")
+    config["actions"][0]["point"]["connected_entity"] = (
+        "binary_sensor.carport_connected"
+    )
+    await watcher.async_check()
+    assert watcher.data["charges"] == {}
+    assert "kona" in watcher.data["sessions"]
+    assert watcher.data["capacity"] == {}
+    # The car reports, but too soon after the end: nothing yet.
+    hass.states.async_set("sensor.car_soc", "29", {"unit_of_measurement": "%"})
+    await watcher.async_check()
+    assert watcher.data["capacity"] == {}
+    # Later it has settled.
+    freezer.tick(timedelta(minutes=12))
+    hass.states.async_set("sensor.car_soc", "30", {"unit_of_measurement": "%"})
+    await watcher.async_check()
+    sample = watcher.data["capacity"]["kona"][0]
+    assert 56 <= sample["value"] <= 58 and sample["rise"] == 13
+    assert watcher.data["sessions"] == {}
+    # A day later a report tells nothing any more.
+    watcher.data["sessions"]["kona"] = {
+        "base": {"soc": 30.0, "odometer": None, "at": "2026-10-31T05:00:00+01:00"},
+        "kwh": 6.0,
+        "last_on": "2026-10-31T05:00:00+01:00",
+    }
+    freezer.tick(timedelta(hours=5))
+    await watcher.async_check()
+    assert watcher.data["sessions"] == {}
+    assert len(watcher.data["capacity"]["kona"]) == 1
+
+
+async def test_publishing_the_size_keeps_the_rest_of_what_was_learned(
+    hass: HomeAssistant,
+) -> None:
+    """The configuration takes the car models as a whole: a patch with only the
+    size would wipe the usual distance and consumption until the next run."""
+    config = config_with({"enabled": True})
+    config["learned"]["car_models"] = {
+        "kona": {"workday_km": 49, "consumption": 19.7, "capacity": 53.0},
+        "other": {"workday_km": 20},
+    }
+    patches: list[dict[str, Any]] = []
+    watcher = CarWatcher(
+        hass, lambda: config, lambda: "live", lambda: None, lambda: None
+    )
+    watcher.learn_capacity = patches.append
+    watcher._publish_capacity(config["cars"][0], 64.4, 3)
+    models = patches[-1]["learned"]["car_models"]
+    assert models["kona"] == {
+        "workday_km": 49,
+        "consumption": 19.7,
+        "capacity": 64.4,
+        "capacity_charges": 3,
+    }
+    assert models["other"] == {"workday_km": 20}
+
+
+async def test_sizes_learned_the_old_way_are_forgotten_once(
+    hass: HomeAssistant, freezer
+) -> None:
+    freezer.move_to("2026-11-12T20:00:00+01:00")
+    car_entities(hass)
+    hass.states.async_set("sensor.car_soc", "30", {"unit_of_measurement": "%"})
+    config = config_with({"enabled": True, "soc_entity": "sensor.car_soc"})
+    config["learned"]["car_models"] = {
+        "kona": {"workday_km": 49, "capacity": 53.0, "capacity_charges": 10}
+    }
+    patches: list[dict[str, Any]] = []
+    watcher = CarWatcher(
+        hass, lambda: config, lambda: "live", lambda: None, lambda: None
+    )
+    watcher.learn_capacity = patches.append
+    watcher.data["measured"] = {"method": 2, "reset": True}
+    await watcher.async_check()
+    kona = patches[0]["learned"]["car_models"]["kona"]
+    assert kona == {"workday_km": 49, "capacity": None, "capacity_charges": 0}
+    assert "reset" not in watcher.data["measured"]
+    # Only once.
+    patches.clear()
+    await watcher.async_check()
+    assert patches == []
 
 
 async def test_no_question_to_the_car_when_turned_off_or_in_the_simulation(
