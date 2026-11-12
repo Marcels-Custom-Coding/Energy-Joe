@@ -3,6 +3,15 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.56
+
+Akkugröße des Autos aus ganzen Ladungen lernen, und das Lernen löscht nichts anderes mehr
+
+- **Joe hielt den Kona für einen 53-kWh-Akku statt für einen von 64 kWh und lud deshalb zu viel nach.** Er maß die Größe zwischen zwei Meldungen des Autos. Die Meldungen der Kia-Cloud hinken aber ein paar Minuten hinterher, und bei einer Ladung von 11 % hat das die Rechnung stark verfälscht (in der Nacht zum 12.11. kam 42 kWh heraus; der Mittelwert fiel von 64,4 auf 53). Mit 53 kWh sah Joe bei 30 % nur noch 82 statt 100 km Reichweite und wollte 3,6 kWh nachladen, obwohl nichts fehlte. Jetzt zählt nur noch eine **ganze Ladung**: der Ladestand vor der Ladung gegen die erste Meldung, die nach dem Ende der Ladung (zehn Minuten Abstand) kam, mit mindestens 8 % Anstieg und 4 kWh an der Wallbox. Beim Abstecken vor der nächsten Meldung wartet die Ladung darauf.
+- **Alte Werte werden einmal vergessen**, weil sie nach dem alten Verfahren gemessen wurden. Joe lernt die Größe beim nächsten Anstecken aus den letzten zehn Tagen der Aufzeichnung neu und danach mit jeder Ladung.
+- **Fehler aus 0.9.52 behoben:** Wenn Joe die gelernte Größe in die Konfiguration schrieb, nahm er dabei die übrigen gelernten Werte des Autos mit weg (übliche Tageskilometer, Verbrauch) – bis zum nächsten Lernlauf um 15 Uhr, also tagsüber. Jetzt bleibt alles andere erhalten.
+- Nicht geprüft an echter Anlage: ob nach dem Anstecken wieder etwa 64 kWh herauskommen und ob es mit der Kia-Cloud bei jeder Ladung klappt, einen Wert nach dem Ende zu bekommen.
+
 ## 0.9.55
 
 - **Mehrere Handys.** Unter Einstellungen › Benachrichtigungen hakst du jetzt alle Handys an, die Bescheid bekommen sollen, statt nur eines zu wählen. Dein bisher gewähltes Handy bleibt angehakt. Fragt Joe abends nach, reicht die Antwort von einem Handy; auf den anderen verschwindet die Frage dann.

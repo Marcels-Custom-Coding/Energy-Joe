@@ -43,6 +43,8 @@ _LOGGER = logging.getLogger(__name__)
 STORE_KEY = f"{DOMAIN}.cars"
 STORE_VERSION = 1
 CHECK = timedelta(minutes=1)
+# How the battery sizes are measured; another number starts them afresh.
+CAPACITY_METHOD = 2
 # Roles shown on the car's page (where each value comes from).
 SHOWN = (
     "soc",
@@ -85,6 +87,10 @@ class CarWatcher:
             "capacity": {},
             "refreshed": {},
             "backfilled": {},
+            # Charges that ended (the car unplugged) and wait for the car's
+            # next report; the way the sizes are measured ("method").
+            "sessions": {},
+            "measured": {},
         }
         self._unsubs: list[CALLBACK_TYPE] = []
         self._watch: CALLBACK_TYPE | None = None
@@ -101,6 +107,12 @@ class CarWatcher:
         if stored := await self._store.async_load():
             for key in self.data:
                 self.data[key] = stored.get(key) or {}
+            if self.data["measured"].get("method") != CAPACITY_METHOD:
+                # Sizes measured between two reports lagged with the car's
+                # cloud: start again, from whole charges.
+                for key in ("charges", "capacity", "backfilled", "sessions"):
+                    self.data[key] = {}
+                self.data["measured"] = {"method": CAPACITY_METHOD, "reset": True}
 
     async def async_remove(self) -> None:
         await self._store.async_remove()
@@ -347,6 +359,15 @@ class CarWatcher:
             entry = detected.get(action["id"]) or {}
             if entry.get("state") == "car" and entry.get("car"):
                 plugged[entry["car"]] = action
+        if self.data["measured"].get("reset") and self.learn_capacity is not None:
+            # The sizes learned the old way are wrong: forgotten until a whole
+            # charge tells a new one.
+            models = self._config()["learned"].get("car_models") or {}
+            for car_id, model in models.items():
+                if (model or {}).get("capacity") is not None:
+                    self._patch_model(car_id, {"capacity": None, "capacity_charges": 0})
+            self.data["measured"].pop("reset")
+            changed = True
         for car_id, samples in self.data["capacity"].items():
             # The learner writes the car models anew each day: the size stays there.
             if car := model_cars.car_by_id(config, car_id):
@@ -355,8 +376,15 @@ class CarWatcher:
                 )
         for car_id in list(self.data["charges"]):
             if car_id not in plugged:
-                # Unplugged (or another car): the count is over, it tells nothing.
-                del self.data["charges"][car_id]
+                # Unplugged (or another car): the count is over; a charge that
+                # took energy waits for the car's next report.
+                record = self.data["charges"].pop(car_id)
+                session = record.get("session") or {}
+                if session.get("last_on") and session["kwh"] >= charging.MIN_SAMPLE_KWH:
+                    self.data["sessions"][car_id] = session
+                changed = True
+        for car_id in list(self.data["sessions"]):
+            if await self._async_finish(config, car_id, now):
                 changed = True
         for car_id, action in plugged.items():
             car = model_cars.car_by_id(config, car_id)
@@ -374,20 +402,13 @@ class CarWatcher:
             if record is None or record.get("point") != action["id"]:
                 record = self.data["charges"][car_id] = {"point": action["id"]}
                 charging.begin(record, fresh, now)
+                record["session"] = {"base": dict(fresh), "kwh": 0.0}
                 changed = True
             elif fresh["at"] != record["base"]["at"]:
-                # A new report: what the charge since the last one tells.
-                value = charging.capacity_sample(record, fresh)
-                if value is not None:
-                    self._add_capacity(
-                        car,
-                        {
-                            "at": now.isoformat(timespec="seconds"),
-                            "value": value,
-                            "kwh": round(record["kwh"], 2),
-                            "rise": round(fresh["soc"] - record["base"]["soc"], 1),
-                        },
-                    )
+                # A new report: the count of the estimate starts again from it.
+                # The charge as a whole is measured when it is over.
+                if self._session_over(car, record, fresh, now):
+                    record["session"] = {"base": dict(fresh), "kwh": 0.0}
                 charging.begin(record, fresh, now)
                 changed = True
             else:
@@ -405,6 +426,65 @@ class CarWatcher:
                 changed = True
         if changed:
             await self._async_save()
+
+    def _session_over(
+        self,
+        car: dict[str, Any],
+        record: dict[str, Any],
+        fresh: dict[str, Any],
+        now: datetime,
+    ) -> bool:
+        """The charge is over and this report came after it settled: the size
+        it tells is kept, and the next charge starts (True)."""
+        session = record.get("session") or {}
+        last_on = session.get("last_on")
+        if not last_on:
+            return False
+        if (
+            datetime.fromisoformat(fresh["at"])
+            < datetime.fromisoformat(last_on) + charging.SETTLE
+        ):
+            return False
+        self._measure(car, session, fresh)
+        return True
+
+    def _measure(
+        self, car: dict[str, Any], session: dict[str, Any], fresh: dict[str, Any]
+    ) -> None:
+        value = charging.capacity_sample(
+            {"base": session["base"], "kwh": session["kwh"]}, fresh
+        )
+        if value is not None:
+            self._add_capacity(
+                car,
+                {
+                    "at": fresh["at"],
+                    "value": value,
+                    "kwh": round(session["kwh"], 2),
+                    "rise": round(fresh["soc"] - session["base"]["soc"], 1),
+                },
+            )
+
+    async def _async_finish(
+        self, config: dict[str, Any], car_id: str, now: datetime
+    ) -> bool:
+        """A charge that ended with the car unplugged: the car's first report
+        after it settled tells the size (a day later it tells nothing)."""
+        session = self.data["sessions"][car_id]
+        car = model_cars.car_by_id(config, car_id)
+        ended = datetime.fromisoformat(session["last_on"])
+        if car is None or now - ended > charging.LOOK:
+            del self.data["sessions"][car_id]
+            return True
+        fresh = charging.reading(self._hass.states.get, self._own_entities(car))
+        if (
+            fresh is None
+            or datetime.fromisoformat(fresh["at"]) < ended + charging.SETTLE
+        ):
+            return False
+        self._measure(car, session, fresh)
+        del self.data["sessions"][car_id]
+        return True
 
     def _add_capacity(self, car: dict[str, Any], sample: dict[str, Any]) -> None:
         samples = self.data["capacity"].setdefault(car["id"], [])
@@ -432,11 +512,20 @@ class CarWatcher:
         before = (models.get(car["id"]) or {}).get("capacity")
         if before is not None and abs(before - learned) < 0.5:
             return
+        self._patch_model(car["id"], {"capacity": learned, "capacity_charges": count})
+
+    def _patch_model(self, car_id: str, values: dict[str, Any]) -> None:
+        """Values into one car's learned model. The configuration takes the
+        car models as a whole, so everything else in them goes along."""
+        if self.learn_capacity is None:
+            return
+        models = self._config()["learned"].get("car_models") or {}
         self.learn_capacity(
             {
                 "learned": {
                     "car_models": {
-                        car["id"]: {"capacity": learned, "capacity_charges": count}
+                        **models,
+                        car_id: {**(models.get(car_id) or {}), **values},
                     }
                 }
             }
