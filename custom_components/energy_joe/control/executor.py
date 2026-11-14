@@ -5061,6 +5061,9 @@ class JoeExecutor:
             if matches(self._hass, Write(entity_id, entry["value"])):
                 entry["confirmed"] = True
                 continue
+            if read(self._hass, entity_id) is None:
+                # Unavailable or unknown is no change by anyone.
+                continue
             if entry.get("confirmed"):
                 if self._charge_reset(adapter, entity_id, entry, now):
                     continue
@@ -5198,6 +5201,16 @@ class JoeExecutor:
                     errors.append(err.entity_id)
                 continue
             entry = written.get(write.entity_id)
+            if (
+                entry
+                and entry.get("confirmed")
+                and read(self._hass, write.entity_id) is None
+            ):
+                # Not readable now (the Modbus connection restarts for half a
+                # minute every night): no sign of anyone's change, Joe puts it
+                # back at the next try.
+                errors.append(write.entity_id)
+                continue
             if (
                 entry
                 and entry.get("confirmed")
