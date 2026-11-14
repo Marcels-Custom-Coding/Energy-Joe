@@ -98,3 +98,45 @@ async def test_every_changed_value_is_told_with_its_reason(
     )
     sets = [e for e in executor.data["journal"] if e["kind"] == "set"]
     assert [e["value"] for e in sets] == [-24.6, -30]
+
+
+async def test_a_line_that_repeats_counts_up_instead_of_filling_the_log(
+    hass: HomeAssistant, freezer
+) -> None:
+    executor, _ = await make(hass, freezer)
+    executor.data["log"].clear()
+    executor.data["journal"].clear()
+    for minute in range(30):
+        executor._log(
+            "team_stuck", battery="byd", batteries=["byd"], soc=98.5 - minute / 100
+        )
+        freezer.tick(timedelta(minutes=1))
+    assert len(executor.data["log"]) == 1 and len(executor.data["journal"]) == 1
+    line = executor.data["journal"][0]
+    assert line["count"] == 30 and line["until"] > line["at"]
+    assert line["soc"] == pytest.approx(98.21)
+    # Another battery, or another kind, is another line.
+    executor._log("team_stuck", battery="venus", batteries=["venus"], soc=40)
+    executor._log("team_full", battery="byd", batteries=["byd"], soc=100)
+    assert len(executor.data["journal"]) == 3
+
+
+async def test_the_same_line_after_a_long_while_is_a_new_one(
+    hass: HomeAssistant, freezer
+) -> None:
+    executor, _ = await make(hass, freezer)
+    executor.data["log"].clear()
+    executor.data["journal"].clear()
+    executor._log("team_stuck", battery="byd", batteries=["byd"], soc=98)
+    freezer.tick(timedelta(hours=2))
+    executor._log("team_stuck", battery="byd", batteries=["byd"], soc=98)
+    assert len(executor.data["journal"]) == 2
+    assert "count" not in executor.data["journal"][0]
+
+
+async def test_what_changed_is_never_collapsed(hass: HomeAssistant, freezer) -> None:
+    executor, _ = await make(hass, freezer)
+    executor.data["journal"].clear()
+    for value in (-24.6, -24.6, -30):
+        executor._log("set", battery="byd", entity="number.x", value=value)
+    assert [e["value"] for e in executor.data["journal"]] == [-24.6, -24.6, -30]

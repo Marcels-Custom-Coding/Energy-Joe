@@ -3,6 +3,13 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.58
+
+Wiederholte Zeilen im Protokoll werden eine Zeile mit Zähler
+
+- **Das Protokoll füllte sich im Minutentakt mit derselben Zeile** („BYD: hält nichts, obwohl der Ladestand hoch ist“, 100 Zeilen in anderthalb Stunden) und verdrängte damit alles andere. Jetzt zählt dieselbe Zeile, die innerhalb einer halben Stunde noch einmal kommt, hoch: Im Panel steht „… – 42× bis 09:12 Uhr“, im Protokoll und in der Liste unter „Steuerung“ nur noch eine Zeile statt vieler. Das gilt für Zeilen, die einen Zustand melden (das Warten auf einen Speicher, voll, leer, zu langsam geladen). Alles, was Joe schaltet (neue Werte, Ladebefehle), steht weiter einzeln drin.
+- Nicht geprüft an echter Anlage: wie es nach ein paar Tagen im Panel aussieht. Warum Joe dieselbe Meldung im Minutentakt wiederholt, schaue ich mir noch an – die Zeilen zeigen, dass er den gesperrten BYD jede Minute neu als „hält nichts“ einstuft.
+
 ## 0.9.57
 
 Entladesperre nach der Nacht wieder zurücknehmen, auch wenn der Wechselrichter gerade nicht lesbar ist

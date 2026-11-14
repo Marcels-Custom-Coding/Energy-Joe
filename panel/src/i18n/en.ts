@@ -4064,6 +4064,7 @@ export const en: Record<Key, string> = {
   "log.grid_guard": "Main fuse: {power} kW from the grid – charging paused briefly",
   "log.no_progress": "{battery} does not charge (at {soc} %)",
   "log.charge_slow": "{battery} charges from the grid at only {power} instead of {planned} kW – the inverter probably allows little this way; from now on I plan it with that",
+  "log.repeated": "{text} – {count}× until {until}",
   "log.charge_reset": "{battery}: {entity} was back at {value} instead of {want} after {seconds} s – something else set it back, I write the charge command again",
   "log.charge_reset_gave_up": "{battery}: {entity} keeps being set back ({times}×) – something else writes to the inverter in between; I leave it now",
   "log.reserve_back": "{battery}: reserve set from {was} back to {value} % – it had been raised since the night and held the battery back",

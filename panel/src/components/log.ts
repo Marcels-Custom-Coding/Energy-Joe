@@ -91,6 +91,16 @@ export function logDeviceName(
 
 /** One steering entry in words. */
 export function logText(t: Translate, config: JoeConfig | undefined, entry: ControlLogEntry, hass?: HomeAssistant): string {
+  const text = logLine(t, config, entry, hass);
+  // A line that repeated while it lasted says how often and until when.
+  const count = typeof entry.count === "number" ? entry.count : 1;
+  if (count < 2 || typeof entry.until !== "string") {
+    return text;
+  }
+  return t("log.repeated", { text, count, until: entry.until.slice(11, 16) });
+}
+
+function logLine(t: Translate, config: JoeConfig | undefined, entry: ControlLogEntry, hass?: HomeAssistant): string {
   const battery =
     config?.batteries.find((b) => b.id === entry.battery)?.name ??
     config?.actions.find((a) => `action:${a.id}` === entry.battery)?.name ??
