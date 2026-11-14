@@ -390,6 +390,30 @@ async def test_one_works_the_other_is_blocked_ahead_of_time(
     assert calls == []
 
 
+async def test_a_held_back_battery_is_told_once_not_every_minute(
+    hass: HomeAssistant, freezer
+) -> None:
+    """The BYD is far from empty but gives nothing (held back by a setting of
+    its own), the Venus is empty: nobody can take over. The BYD stays marked
+    as held back – the mark is not cleared again by the level the next
+    minute, so there is one line, not one per minute."""
+    freezer.move_to("2026-10-10T19:00:00+02:00")
+    install_team(hass, byd_soc=98, venus_soc=5)
+    flows(hass, grid=700, byd=0)
+    config = team_config(team_byd(cutoff_soc=10.5), team_venus())
+    executor, _ = await make_executor(hass, config, day_plan(dt_util.now()))
+    for _ in range(12):
+        await executor.async_check()
+        freezer.tick(timedelta(seconds=20))
+    for _ in range(10):
+        await executor.async_check()
+        freezer.tick(timedelta(minutes=1))
+    lines = [e for e in executor.data["journal"] if e["kind"] == "team_stuck"]
+    assert sum(e.get("count", 1) for e in lines) == 1
+    assert "byd" in executor.data["team"]["stuck"]
+    assert "byd" in executor.data["team"]["empty"]
+
+
 async def test_the_hand_over_both_ways(hass: HomeAssistant, freezer) -> None:
     freezer.move_to("2026-10-10T19:00:00+02:00")
     calls = install_team(hass, byd_soc=20, venus_soc=60)

@@ -2628,6 +2628,12 @@ class JoeExecutor:
             empty, full = team_rules.mark(
                 member, store["empty"].get(member.id), store["full"].get(member.id)
             )
+            if battery["id"] in stuck:
+                # Held back, not empty: far above its own level the mark
+                # would be cleared again every minute (and told again, and
+                # the retry time restarted). It stays until the retry or
+                # until it discharged after all (see above).
+                empty = True
             if empty and not member.empty:
                 store["empty"][member.id] = entry["soc"]
             elif not empty:
