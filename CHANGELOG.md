@@ -3,6 +3,14 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.57
+
+Entladesperre nach der Nacht wieder zurücknehmen, auch wenn der Wechselrichter gerade nicht lesbar ist
+
+- **Heute Morgen blieb der BYD gesperrt, und es war Joes eigene Sperre.** Joe hatte um 00:00 „Entladerate aktiv“ für die Nachtladung eingeschaltet und um 03:34 die Rate für das Warten auf 0 gesetzt. Beim Nachtende um 04:57 war die Modbus-Verbindung gerade für eine halbe Minute weg (das passiert jede Nacht um diese Zeit), die Werte waren „nicht verfügbar“. Joe hat das als „jemand anderes hat es verstellt“ gewertet und die beiden Werte aus seiner Liste gestrichen. Dadurch ließ er sie stehen und meldete später sogar, die Sperre sei nicht von ihm. Jetzt gilt: Ein Wert, der nicht lesbar ist, ist keine fremde Änderung. Beim Zurückstellen versucht Joe es im nächsten Durchgang wieder, und beim Beobachten zählt er es nicht als Eingriff von außen.
+- Das war auch die Ursache, warum Joe in früheren Nächten (31.10./1.11.) manchmal etwas stehen ließ, weil damals ebenfalls „external … leer“ im Protokoll stand.
+- Nicht geprüft an echter Anlage: ob der Entladestopp nach der Nacht jetzt immer verschwindet, auch wenn die Verbindung gerade getrennt ist.
+
 ## 0.9.56
 
 Akkugröße des Autos aus ganzen Ladungen lernen, und das Lernen löscht nichts anderes mehr

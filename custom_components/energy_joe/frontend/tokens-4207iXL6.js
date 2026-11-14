@@ -8690,14 +8690,14 @@ function tt(e, t, n) {
 }
 //#endregion
 //#region src/define.ts
-var nt = "0.9.56";
+var nt = "0.9.57";
 function N(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = nt, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.56" && it();
+	n.joeVersion !== "0.9.57" && it();
 }
 var rt = !1;
 function it() {
