@@ -4099,6 +4099,7 @@ export const de = {
   "log.grid_guard": "Hauptsicherung: {power} kW aus dem Netz – Laden kurz pausiert",
   "log.no_progress": "{battery} lädt nicht (bei {soc} %)",
   "log.charge_slow": "{battery} lädt nur mit {power} statt {planned} kW aus dem Netz – vermutlich lässt der Wechselrichter so nur wenig zu; ich plane ihn ab jetzt damit",
+  "log.repeated": "{text} – {count}× bis {until} Uhr",
   "log.charge_reset": "{battery}: {entity} stand nach {seconds} s wieder auf {value} statt {want} – etwas anderes hat es zurückgesetzt, ich schreibe den Ladebefehl neu",
   "log.charge_reset_gave_up": "{battery}: {entity} wird immer wieder zurückgesetzt ({times}×) – etwas anderes schreibt in den Wechselrichter dazwischen; ich lasse es jetzt dabei",
   "log.reserve_back": "{battery}: Reserve von {was} auf {value} % zurückgestellt – sie war seit der Nacht erhöht und hielt den Speicher zurück",

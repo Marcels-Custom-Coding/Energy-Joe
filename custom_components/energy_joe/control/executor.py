@@ -97,6 +97,24 @@ LOG_SIZE = 100
 # he did and why); the log above is the short view in the state.
 JOURNAL_KEEP = timedelta(days=7)
 JOURNAL_MAX = 4000
+# Lines that repeat while a state lasts (every minute "held back") are one line
+# with a count: the same line again within COLLAPSE_FOR of the last one only
+# counts up (`count`, `until`).
+COLLAPSE_KINDS = frozenset(
+    {
+        "team_stuck",
+        "team_empty",
+        "team_full",
+        "team_cutoff",
+        "team_review",
+        "charge_slow",
+        "no_progress",
+    }
+)
+COLLAPSE_FOR = timedelta(minutes=30)
+COLLAPSE_LOOK = 40
+# What may differ between two lines that still are the same.
+COLLAPSE_IGNORE = frozenset({"at", "until", "count", "soc", "level", "value", "power"})
 # What Joe writes into Home Assistant's logbook next to every lever he sets
 # (German, English): the reason, in the owner's words.
 NOTES = {
@@ -6424,11 +6442,14 @@ class JoeExecutor:
             **detail,
         }
         log: list[dict[str, Any]] = self.data["log"]
-        log.append(entry)
-        del log[:-LOG_SIZE]
+        if not _count_up(log, entry):
+            log.append(entry)
+            del log[:-LOG_SIZE]
         journal: list[dict[str, Any]] = self.data.setdefault("journal", [])
-        journal.append(entry)
-        del journal[:-JOURNAL_MAX]
+        if not _count_up(journal, entry):
+            # A copy: the log and the journal count up on their own.
+            journal.append(dict(entry))
+            del journal[:-JOURNAL_MAX]
         # Older than a week goes (the entries are in time order).
         cut = (dt_util.now() - JOURNAL_KEEP).isoformat(timespec="seconds")
         while journal and journal[0]["at"] < cut:
@@ -6618,3 +6639,24 @@ def _with_room(store: day_surplus.Store, room: float) -> day_surplus.Store:
     capacity = store.capacity + room
     soc = 100 - (store.room + room) / capacity * 100
     return day_surplus.Store(store.id, capacity, soc, store.max_kw, store.capped)
+
+
+def _count_up(lines: list[dict[str, Any]], entry: dict[str, Any]) -> bool:
+    """The same line again soon after the last one: that one counts up instead
+    of a new line (True)."""
+    if entry["kind"] not in COLLAPSE_KINDS:
+        return False
+    now = _at(entry["at"])
+    same = {k: v for k, v in entry.items() if k not in COLLAPSE_IGNORE}
+    for line in reversed(lines[-COLLAPSE_LOOK:]):
+        if {k: v for k, v in line.items() if k not in COLLAPSE_IGNORE} != same:
+            continue
+        if now - _at(line.get("until") or line["at"]) > COLLAPSE_FOR:
+            return False
+        line["count"] = line.get("count", 1) + 1
+        line["until"] = entry["at"]
+        for key in ("soc", "level", "value", "power"):
+            if key in entry:
+                line[key] = entry[key]
+        return True
+    return False
