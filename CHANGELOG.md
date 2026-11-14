@@ -3,6 +3,13 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.59
+
+Ein festgehaltener Speicher bleibt festgehalten, statt jede Minute neu bewertet zu werden
+
+- **Ursache der Minutenzeilen gefunden:** Joe merkte sich, dass der BYD nichts liefert (festgehalten, nicht leer), nahm die Markierung aber in der nächsten Minute wieder zurück, weil der Ladestand weit über dem Leerstand liegt. Dann meldete er dasselbe neu, und die Wartezeit von einer Stunde bis zum nächsten Versuch fing jedes Mal von vorn an, sie lief also nie ab. Jetzt bleibt die Markierung, bis die Stunde um ist oder der Speicher doch entladen hat: eine Meldung statt einer pro Minute, und ein anderer Speicher mit Inhalt übernimmt, statt dass der BYD seinen Zug behält.
+- Nicht geprüft an echter Anlage: ob nach einer Stunde der erneute Versuch beim BYD einsetzt, wenn evcc ihn weiter hält.
+
 ## 0.9.58
 
 Wiederholte Zeilen im Protokoll werden eine Zeile mit Zähler
