@@ -3,6 +3,14 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.60
+
+Fürs Auto zählen nur Termine plus Reserve, kein „wie üblich“ mehr
+
+- **Der „übliche Tag“ ist weg.** Bisher nahm Joe für den nächsten Tag das Größere aus den Kalenderterminen und einem gelernten Werktag und überstimmte damit einen bekannten Termin (Beispiel: Termin 48,7 km, „wie üblich“ 88 km, gebraucht 138 km). Jetzt zählt nur noch: Strecke der Termine plus Reserve (Standard 50 km). Ohne Termin sind das nur die 50 km Reserve.
+- Wer eine Mindeststrecke am Tag selbst einträgt (Fahrzeug bearbeiten), behält sie. Leer heißt jetzt „nur Termine“. Texte und Hilfe sind angepasst, die Karte schreibt „deine Eingabe“ statt „wie üblich“.
+- Nicht geprüft an echter Anlage: ob der Kona morgen Abend mit dem Termin auf den erwarteten Wert kommt (48,7 + 50 km, etwa 31 %).
+
 ## 0.9.59
 
 Ein festgehaltener Speicher bleibt festgehalten, statt jede Minute neu bewertet zu werden

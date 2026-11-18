@@ -2183,8 +2183,8 @@ export const de = {
   "action.need.from_sensor": "vom Sensor",
   "action.need.reserve": "Reserve",
   "action.need.consumption": "Verbrauch",
-  "action.need.learned": "lerne ich",
-  "action.need.daily": "Übliche Strecke am Tag",
+  "action.need.learned": "leer: nur Termine",
+  "action.need.daily": "Mindeststrecke am Tag",
   "action.need.odometer": "Kilometerstand",
   "action.need.persons": "Wessen Termine zählen",
   "action.need.no_calendars": "Noch hat niemand einen Kalender. Unter Haushalt › Wer wohnt hier ordnest du Kalender zu.",
@@ -2429,7 +2429,7 @@ export const de = {
   "devices.action.why.need_capacity": "Die Akkugröße des Autos kenne ich nicht – ich entscheide nach der Sonne.",
   "need.trips": "Morgen {km} km hin und zurück ({count} Termine) + {reserve} km Reserve = {total} km.",
   "need.unknown_trips": "Bei {count} Termin(en) kenne ich die Entfernung noch nicht – trag sie unten ein.",
-  "need.usual": "Morgen etwa {km} km wie üblich + {reserve} km Reserve = {total} km.",
+  "need.usual": "Morgen {km} km (deine Eingabe) + {reserve} km Reserve = {total} km.",
   "need.reserve_only": "Morgen keine Fahrt bekannt – es bleibt bei {reserve} km Reserve.",
   "need.consumption.user": "Verbrauch {value} kWh/100 km bei {temp} °C (dein Wert).",
   "need.consumption.learned": "Verbrauch {value} kWh/100 km bei {temp} °C (gelernt).",
@@ -2572,9 +2572,9 @@ export const de = {
   "tip.a_need_consumption.title": "Woher kommt der Verbrauch?",
   "tip.a_need_consumption.text":
     "Am besten gelernt: Aus Kilometerstand und Ladestand sehe ich, wie viel dein Auto wirklich braucht – auch, wie viel mehr bei Kälte. Bis dahin nehme ich den Durchschnitt, den das Auto selbst anzeigt, sonst 18 kWh/100 km (typischer Wert laut ADAC-Messungen). Kälte und Regen rechne ich dazu.\nTrägst du einen Wert ein, gilt er bei mildem Wetter; Kälte rechne ich trotzdem dazu.",
-  "tip.a_need_daily.title": "Welche übliche Strecke?",
+  "tip.a_need_daily.title": "Welche Mindeststrecke?",
   "tip.a_need_daily.text":
-    "Was das Auto an einem normalen Tag fährt – auch ohne Termin im Kalender, zum Beispiel zur Arbeit. Leer lasse ich es aus dem Kilometerstand lernen, getrennt für Werktage und freie Tage.",
+    "Nur ausfüllen, wenn das Auto jeden Tag mindestens so weit fahren soll, auch ohne Termin im Kalender. Leer rechne ich nur mit den Terminen im Kalender plus Reserve.",
   "tip.a_need_odometer.title": "Wozu der Kilometerstand?",
   "tip.a_need_odometer.text":
     "Damit lerne ich den echten Verbrauch und die übliche Strecke. Bei manchen Integrationen (z. B. Tesla) ist der Sensor erst ausgeschaltet – schalte ihn in Home Assistant ein.",

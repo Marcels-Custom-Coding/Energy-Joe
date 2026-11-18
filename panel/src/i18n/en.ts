@@ -2157,8 +2157,8 @@ export const en: Record<Key, string> = {
   "action.need.from_sensor": "from the sensor",
   "action.need.reserve": "Reserve",
   "action.need.consumption": "Consumption",
-  "action.need.learned": "I learn it",
-  "action.need.daily": "Usual distance a day",
+  "action.need.learned": "empty: dates only",
+  "action.need.daily": "Minimum distance a day",
   "action.need.odometer": "Odometer",
   "action.need.persons": "Whose appointments count",
   "action.need.no_calendars": "Nobody has a calendar yet. You assign calendars under Household › Who lives here.",
@@ -2398,7 +2398,7 @@ export const en: Record<Key, string> = {
   "devices.action.why.need_capacity": "I don't know the car's battery size – I decide by the sun.",
   "need.trips": "Tomorrow {km} km there and back ({count} appointments) + {reserve} km reserve = {total} km.",
   "need.unknown_trips": "For {count} appointment(s) I don't know the distance yet – enter it below.",
-  "need.usual": "Tomorrow about {km} km as usual + {reserve} km reserve = {total} km.",
+  "need.usual": "Tomorrow {km} km (your entry) + {reserve} km reserve = {total} km.",
   "need.reserve_only": "No trip known for tomorrow – the {reserve} km reserve stays.",
   "need.consumption.user": "Consumption {value} kWh/100 km at {temp} °C (your value).",
   "need.consumption.learned": "Consumption {value} kWh/100 km at {temp} °C (learned).",
@@ -2540,9 +2540,9 @@ export const en: Record<Key, string> = {
   "tip.a_need_consumption.title": "Where does the consumption come from?",
   "tip.a_need_consumption.text":
     "Best learned: from odometer and charge level I see how much your car really needs – also how much more in the cold. Until then I use the average the car shows itself, otherwise 18 kWh/100 km (a typical value from ADAC measurements). I add cold and rain.\nIf you enter a value, it applies in mild weather; I still add the cold.",
-  "tip.a_need_daily.title": "Which usual distance?",
+  "tip.a_need_daily.title": "Which minimum distance?",
   "tip.a_need_daily.text":
-    "What the car drives on a normal day – also without an appointment, e.g. to work. Empty, I learn it from the odometer, separately for working days and days off.",
+    "Only fill in if the car should drive at least this far every day, even without a date in the calendar. Empty, I count only the dates in the calendar plus the reserve.",
   "tip.a_need_odometer.title": "Why the odometer?",
   "tip.a_need_odometer.text":
     "With it I learn the real consumption and the usual distance. Some integrations (e.g. Tesla) ship the sensor disabled – enable it in Home Assistant.",

@@ -137,9 +137,10 @@ def car_need(
     trips_km = round(
         sum((t.get("km") or 0.0) + (t.get("back_km") or 0.0) for t in trips), 1
     )
+    # Only the day's dates and the reserve count. A usual day learned from
+    # the past does not (it overruled a known date with a longer "as usual").
+    # What the owner entered as the daily distance is their own word.
     usual = need.get("daily_km")
-    if usual is None:
-        usual = learned.get("workday_km" if workday else "day_off_km")
     day_km = max(trips_km, usual or 0.0)
     needed_km = round(day_km + need.get("reserve_km", 50.0), 1)
     result: dict[str, Any] = {

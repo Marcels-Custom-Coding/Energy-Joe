@@ -2532,8 +2532,8 @@ var Ue = {
 	"action.need.from_sensor": "vom Sensor",
 	"action.need.reserve": "Reserve",
 	"action.need.consumption": "Verbrauch",
-	"action.need.learned": "lerne ich",
-	"action.need.daily": "Übliche Strecke am Tag",
+	"action.need.learned": "leer: nur Termine",
+	"action.need.daily": "Mindeststrecke am Tag",
 	"action.need.odometer": "Kilometerstand",
 	"action.need.persons": "Wessen Termine zählen",
 	"action.need.no_calendars": "Noch hat niemand einen Kalender. Unter Haushalt › Wer wohnt hier ordnest du Kalender zu.",
@@ -2754,7 +2754,7 @@ var Ue = {
 	"devices.action.why.need_capacity": "Die Akkugröße des Autos kenne ich nicht – ich entscheide nach der Sonne.",
 	"need.trips": "Morgen {km} km hin und zurück ({count} Termine) + {reserve} km Reserve = {total} km.",
 	"need.unknown_trips": "Bei {count} Termin(en) kenne ich die Entfernung noch nicht – trag sie unten ein.",
-	"need.usual": "Morgen etwa {km} km wie üblich + {reserve} km Reserve = {total} km.",
+	"need.usual": "Morgen {km} km (deine Eingabe) + {reserve} km Reserve = {total} km.",
 	"need.reserve_only": "Morgen keine Fahrt bekannt – es bleibt bei {reserve} km Reserve.",
 	"need.consumption.user": "Verbrauch {value} kWh/100 km bei {temp} °C (dein Wert).",
 	"need.consumption.learned": "Verbrauch {value} kWh/100 km bei {temp} °C (gelernt).",
@@ -2868,8 +2868,8 @@ var Ue = {
 	"tip.a_need_reserve.text": "Keiner will mit leerem Akku ankommen. So viele Kilometer bleiben immer übrig – auch für Unerwartetes. Bei Kälte rechne ich die Reserve mit dem höheren Verbrauch.",
 	"tip.a_need_consumption.title": "Woher kommt der Verbrauch?",
 	"tip.a_need_consumption.text": "Am besten gelernt: Aus Kilometerstand und Ladestand sehe ich, wie viel dein Auto wirklich braucht – auch, wie viel mehr bei Kälte. Bis dahin nehme ich den Durchschnitt, den das Auto selbst anzeigt, sonst 18 kWh/100 km (typischer Wert laut ADAC-Messungen). Kälte und Regen rechne ich dazu.\nTrägst du einen Wert ein, gilt er bei mildem Wetter; Kälte rechne ich trotzdem dazu.",
-	"tip.a_need_daily.title": "Welche übliche Strecke?",
-	"tip.a_need_daily.text": "Was das Auto an einem normalen Tag fährt – auch ohne Termin im Kalender, zum Beispiel zur Arbeit. Leer lasse ich es aus dem Kilometerstand lernen, getrennt für Werktage und freie Tage.",
+	"tip.a_need_daily.title": "Welche Mindeststrecke?",
+	"tip.a_need_daily.text": "Nur ausfüllen, wenn das Auto jeden Tag mindestens so weit fahren soll, auch ohne Termin im Kalender. Leer rechne ich nur mit den Terminen im Kalender plus Reserve.",
 	"tip.a_need_odometer.title": "Wozu der Kilometerstand?",
 	"tip.a_need_odometer.text": "Damit lerne ich den echten Verbrauch und die übliche Strecke. Bei manchen Integrationen (z. B. Tesla) ist der Sensor erst ausgeschaltet – schalte ihn in Home Assistant ein.",
 	"tip.a_need_persons.title": "Wessen Termine?",
@@ -6541,8 +6541,8 @@ var Ue = {
 	"action.need.from_sensor": "from the sensor",
 	"action.need.reserve": "Reserve",
 	"action.need.consumption": "Consumption",
-	"action.need.learned": "I learn it",
-	"action.need.daily": "Usual distance a day",
+	"action.need.learned": "empty: dates only",
+	"action.need.daily": "Minimum distance a day",
 	"action.need.odometer": "Odometer",
 	"action.need.persons": "Whose appointments count",
 	"action.need.no_calendars": "Nobody has a calendar yet. You assign calendars under Household › Who lives here.",
@@ -6763,7 +6763,7 @@ var Ue = {
 	"devices.action.why.need_capacity": "I don't know the car's battery size – I decide by the sun.",
 	"need.trips": "Tomorrow {km} km there and back ({count} appointments) + {reserve} km reserve = {total} km.",
 	"need.unknown_trips": "For {count} appointment(s) I don't know the distance yet – enter it below.",
-	"need.usual": "Tomorrow about {km} km as usual + {reserve} km reserve = {total} km.",
+	"need.usual": "Tomorrow {km} km (your entry) + {reserve} km reserve = {total} km.",
 	"need.reserve_only": "No trip known for tomorrow – the {reserve} km reserve stays.",
 	"need.consumption.user": "Consumption {value} kWh/100 km at {temp} °C (your value).",
 	"need.consumption.learned": "Consumption {value} kWh/100 km at {temp} °C (learned).",
@@ -6877,8 +6877,8 @@ var Ue = {
 	"tip.a_need_reserve.text": "Nobody wants to arrive with an empty battery. This many kilometres always remain – also for the unexpected. In the cold I count the reserve at the higher consumption.",
 	"tip.a_need_consumption.title": "Where does the consumption come from?",
 	"tip.a_need_consumption.text": "Best learned: from odometer and charge level I see how much your car really needs – also how much more in the cold. Until then I use the average the car shows itself, otherwise 18 kWh/100 km (a typical value from ADAC measurements). I add cold and rain.\nIf you enter a value, it applies in mild weather; I still add the cold.",
-	"tip.a_need_daily.title": "Which usual distance?",
-	"tip.a_need_daily.text": "What the car drives on a normal day – also without an appointment, e.g. to work. Empty, I learn it from the odometer, separately for working days and days off.",
+	"tip.a_need_daily.title": "Which minimum distance?",
+	"tip.a_need_daily.text": "Only fill in if the car should drive at least this far every day, even without a date in the calendar. Empty, I count only the dates in the calendar plus the reserve.",
 	"tip.a_need_odometer.title": "Why the odometer?",
 	"tip.a_need_odometer.text": "With it I learn the real consumption and the usual distance. Some integrations (e.g. Tesla) ship the sensor disabled – enable it in Home Assistant.",
 	"tip.a_need_persons.title": "Whose appointments?",
@@ -8692,14 +8692,14 @@ function nt(e, t, n) {
 }
 //#endregion
 //#region src/define.ts
-var rt = "0.9.59";
+var rt = "0.9.60";
 function M(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = rt, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.59" && at();
+	n.joeVersion !== "0.9.60" && at();
 }
 var it = !1;
 function at() {
