@@ -125,7 +125,8 @@ def test_what_tomorrow_needs(hass: HomeAssistant) -> None:
         True,
     )
     assert unknown["known"] is False
-    # The usual distance counts when there are no trips (learned per day type).
+    # The usual day learned from the past does not count: no dates, only the
+    # reserve (50 km).
     usual = car_need(
         need()["need"],
         hass.states.get,
@@ -135,7 +136,29 @@ def test_what_tomorrow_needs(hass: HomeAssistant) -> None:
         False,
         True,
     )
-    assert usual["needed_km"] == 90.0
+    assert usual["needed_km"] == 50.0 and usual["usual_km"] is None
+    # A known date decides the day, however long the learned usual day is.
+    dated = car_need(
+        need()["need"],
+        hass.states.get,
+        [{"km": 24.8, "back_km": 23.9}],
+        {"workday_km": 88},
+        9.0,
+        True,
+        True,
+    )
+    assert dated["trips_km"] == 48.7 and dated["needed_km"] == 98.7
+    # The owner's own daily distance stays their word.
+    own = car_need(
+        {**need()["need"], "daily_km": 70},
+        hass.states.get,
+        [{"km": 24.8, "back_km": 23.9}],
+        {"workday_km": 88},
+        9.0,
+        False,
+        True,
+    )
+    assert own["needed_km"] == 120.0
 
 
 def test_the_car_charges_only_what_it_needs(hass: HomeAssistant) -> None:

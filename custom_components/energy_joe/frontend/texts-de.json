@@ -381,7 +381,7 @@
  "need.too_far": "Eine volle Ladung reicht für morgen nicht – plant unterwegs einen Ladestopp ein.",
  "need.trips": "Morgen {km} km hin und zurück ({count} Termine) + {reserve} km Reserve = {total} km.",
  "need.unknown_trips": "Bei {count} Termin(en) kenne ich die Entfernung noch nicht – trag sie unten ein.",
- "need.usual": "Morgen etwa {km} km wie üblich + {reserve} km Reserve = {total} km.",
+ "need.usual": "Morgen {km} km (deine Eingabe) + {reserve} km Reserve = {total} km.",
  "need.reserve_only": "Morgen keine Fahrt bekannt – es bleibt bei {reserve} km Reserve.",
  "need.consumption.user": "Verbrauch {value} kWh/100 km bei {temp} °C (dein Wert).",
  "need.consumption.learned": "Verbrauch {value} kWh/100 km bei {temp} °C (gelernt).",
