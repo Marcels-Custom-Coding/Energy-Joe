@@ -742,3 +742,63 @@ async def test_a_raised_target_shares_the_grid_limit_with_the_others(
     )
     assert plan["charge_from"] == "2026-10-04T02:10+02:00"
     await store.async_unload()
+
+
+async def test_a_battery_left_out_of_the_fixed_night_joins_when_it_is_back(
+    hass: HomeAssistant, freezer
+) -> None:
+    """The BYD's level could not be read when the night was fixed (the sensor
+    flickered), so the plan has only the Venus. Once the level is back the
+    worked out night has the BYD: it joins with its charging from now on."""
+    freezer.move_to("2026-10-04T00:45:00+02:00")
+    start = at("2026-10-04T00:00:00+02:00")
+    store = HistoryStore(hass)
+    await store.async_load()
+    planner = JoePlanner(hass, store, lambda: None)
+    planner._config = model.default_config()
+    told: list[tuple[list[str], list[dict[str, Any]]]] = []
+
+    async def replanned(actions: list[str], raised: list[dict[str, Any]]) -> None:
+        told.append((actions, raised))
+
+    planner.replanned = replanned
+    fixed = two_batteries_fixed(start)
+    fixed["batteries"] = [b for b in fixed["batteries"] if b["id"] == "venus"]
+    fixed["capacity_kwh"] = 10.0
+    planner._fixed = fixed
+    now = dt_util.now()
+    end = datetime.fromisoformat(fixed["window"]["end"])
+    byd = {
+        **two_batteries_fixed(start)["batteries"][0],
+        "soc": 7.0,
+        "target": 100,
+        "capacity": 10.0,
+        "charge_kwh": 9.3,
+        "grid_kwh": 10.1,
+        "power_kw": 3.0,
+        "slots": [
+            {
+                "start": now.isoformat(timespec="minutes"),
+                "end": (end - timedelta(minutes=30)).isoformat(timespec="minutes"),
+                "power_kw": 3.0,
+            }
+        ],
+    }
+    fresh = {
+        **fixed,
+        "fixed": False,
+        "batteries": [byd, fixed["batteries"][0]],
+    }
+
+    async def compute(now: datetime, fixed: dict[str, Any] | None = None) -> Any:
+        assert fixed is not None
+        planner._night_input = None
+        return fresh
+
+    planner._async_compute = compute  # type: ignore[method-assign]
+    plan = await planner.async_refresh()
+    assert {b["id"] for b in plan["batteries"]} == {"byd", "venus"}
+    joined = next(b for b in plan["batteries"] if b["id"] == "byd")
+    assert joined["target"] == 100 and joined["slots"]
+    assert plan["capacity_kwh"] == 20.0
+    assert [r["battery"] for r in told[0][1]] == ["byd"]
