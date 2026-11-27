@@ -85,7 +85,7 @@ async def test_it_gives_up_after_three_resets_and_leaves_it_alone(
     assert executor.data["log"][-1]["times"] == 3
 
 
-async def test_a_change_long_after_or_without_a_charge_is_the_owners(
+async def test_a_change_without_a_charge_is_the_owners(
     hass: HomeAssistant, freezer
 ) -> None:
     executor, adapter = await make(hass, freezer)
@@ -94,11 +94,25 @@ async def test_a_change_long_after_or_without_a_charge_is_the_owners(
     # Not charging: the owner's.
     entry = written(now, 120)
     assert not executor._charge_reset(adapter, "number.discharge_limit", entry, now)
-    # Charging, but the write is half an hour old: the owner's.
-    executor.status["batteries"]["byd"] = {"action": "charge"}
-    entry = written(now, 30 * 60)
-    assert not executor._charge_reset(adapter, "number.discharge_limit", entry, now)
     assert not any(e["kind"] == "charge_reset" for e in executor.data["log"])
+
+
+async def test_a_charge_set_back_hours_later_is_written_again(
+    hass: HomeAssistant, freezer
+) -> None:
+    """evcc put the battery back to normal at 02:59, three hours after Joe's
+    command at 00:00 while it was still charging: written again, not the
+    owner's."""
+    executor, adapter = await make(hass, freezer)
+    now = dt_util.now()
+    hass.states.async_set("number.discharge_limit", "100.0")
+    executor.status["batteries"]["byd"] = {"action": "charge"}
+    entry = written(now, 3 * 3600)
+    executor.data["written"]["number.discharge_limit"] = entry
+    executor._notice_external(adapter, now)
+    assert "number.discharge_limit" not in executor.data["external"]
+    assert executor.data["log"][-1]["kind"] == "charge_reset"
+    assert entry["confirmed"] is False
 
 
 async def test_a_reset_is_written_again_in_the_same_check(

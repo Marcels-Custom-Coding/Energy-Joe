@@ -3,6 +3,14 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.61
+
+Eine Ladung, die evcc nach Stunden zurücksetzt, schreibt Joe wieder hin
+
+- **Ursache der Nacht auf den 27.11.:** Joe lud den BYD ab 00:00 Uhr mit dem Ladebefehl am GEN24. evcc sperrt das Entladen der Hausbatterie, solange ein Ladepunkt (zum Beispiel das Auto oder eine Fußbodenheizung) aus dem Netz zieht, und stellt den Speicher danach wieder auf „normal“. Das passierte um 02:59:34 Uhr, als der letzte Ladepunkt aufhörte, fast drei Stunden nach Joes Befehl. evcc schrieb dabei die Standardwerte (Entladerate 100, aus) in den GEN24 und damit Joes Ladebefehl weg. Joe hat die Rücknahme nur als „Eingriff von dir“ gewertet (Joe schrieb zurück nur innerhalb von 15 Minuten nach seinem Befehl) und die Ladung dem Besitzer überlassen. Der BYD stand bei 85 % und hat bis zum Morgen nichts mehr geladen, die Nachtladung war nach 3 von 5 Stunden vorbei.
+- **Jetzt:** Joe schreibt den Ladebefehl auch Stunden später wieder hin, solange die Ladung läuft, wie schon in den ersten 15 Minuten. Höchstens dreimal in zehn Minuten, danach gilt es wie bisher als dein Eingriff und Joe lässt es in Ruhe. Die Meldung heißt weiter „Ladebefehl zurückgesetzt“.
+- Nicht geprüft an echter Anlage: ob evcc in der nächsten Nacht ohne Streit hinnimmt, dass Joe nach dem Zurücksetzen wieder lädt (der Ladebefehl am Anfang der Nacht hat das schon überstanden).
+
 ## 0.9.60
 
 Fürs Auto zählen nur Termine plus Reserve, kein „wie üblich“ mehr

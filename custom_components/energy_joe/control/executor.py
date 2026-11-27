@@ -65,10 +65,11 @@ SETTLE = timedelta(seconds=90)
 # How often Joe writes the same value again when the device does not take it;
 # a value that ends up in flash (Profile.flash) less often.
 RETRY = timedelta(minutes=5)
-# A value Joe wrote for a charge that something else sets back soon after
-# (a device falling back, another system writing to the inverter) is written
-# again, at most RESET_MAX times per RESET_PER; then it counts as the owner's.
-RESET_WITHIN = timedelta(minutes=15)
+# A value Joe wrote for a charge that something else sets back while the
+# charge runs (a device falling back, another system writing to the inverter:
+# evcc puts the battery back to normal once its cars stop, hours after Joe's
+# command) is written again, at most RESET_MAX times per RESET_PER; then it
+# counts as the owner's.
 RESET_MAX = 3
 RESET_PER = timedelta(minutes=10)
 # The reserve a battery had as Joe's night began is put back when the night
@@ -4970,8 +4971,6 @@ class JoeExecutor:
         if self.status["batteries"].get(key, {}).get("action") != "charge":
             return False
         since = now - datetime.fromisoformat(entry["at"])
-        if since > RESET_WITHIN:
-            return False
         tries = [
             t
             for t in entry.get("resets", [])
