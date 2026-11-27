@@ -3,6 +3,14 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.62
+
+Ein Speicher, dessen Ladestand beim Festlegen der Nacht nicht lesbar war, fehlt nicht mehr die ganze Nacht
+
+- **Ursache der Nacht auf den 28.11.:** Der Ladestand des BYD (`sensor.byd_battery_box_premium_hv_ladezustand`) fiel am Abend immer wieder für ein bis drei Minuten auf „nicht verfügbar“, insgesamt rund 87 Minuten zwischen 20:30 und 00:05 Uhr. Genau in so einer Lücke legte Joe um 23:45 Uhr die Nacht fest. Ohne lesbaren Ladestand ließ er den BYD aus dem Plan weg (Hinweis „soc_unknown“). Die Nacht blieb danach festgelegt, und beim Neuberechnen alle fünf Minuten konnte Joe nur das Ziel eines Speichers anheben, der schon im Plan stand. Der BYD stand um 00:48 Uhr bei 6,8 % und wurde die ganze Nacht nicht geladen, obwohl sein Sensor längst wieder Werte lieferte.
+- **Jetzt:** Taucht beim Neuberechnen in der festgelegten Nacht ein steuerbarer Speicher auf, der im festgelegten Plan fehlt und Netzstrom laden soll, nimmt Joe ihn auf. Er bekommt sein Ziel und seine Ladezeiten ab jetzt, die Netzladung aller Speicher wird dabei neu verteilt, damit das Netzlimit hält. Im Protokoll steht das wie eine Anhebung des Ziels („Ziel angehoben“, von seinem Ladestand auf sein Ziel).
+- Nicht geprüft an echter Anlage: ob der BYD nach dem Update mitten in der Nacht anfängt zu laden und wie schnell. Der flackernde Sensor selbst ist nicht behoben, Joe fängt ihn nur ab.
+
 ## 0.9.61
 
 Eine Ladung, die evcc nach Stunden zurücksetzt, schreibt Joe wieder hin

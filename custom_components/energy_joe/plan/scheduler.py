@@ -741,6 +741,30 @@ def _raise_targets(
         # The forecast missing for a moment makes the night look dark.
         return []
     fresh = {b["id"]: b for b in plan.get("batteries") or []}
+    # A battery whose level could not be read when the night was fixed (the
+    # sensor flickered) was left out of it. Now it is back: it joins as if its
+    # target had been its level, so the raise below gives it its charging.
+    known = {entry["id"] for entry in fixed.get("batteries") or []}
+    late = [
+        {
+            **b,
+            "target": round(b.get("soc") or 0.0),
+            "charge_kwh": 0.0,
+            "grid_kwh": 0.0,
+            "slots": [],
+        }
+        for key, b in fresh.items()
+        if key not in known
+        and b.get("controllable", True)
+        and (b.get("grid_kwh") or 0.0) > 0
+    ]
+    if late:
+        fixed["batteries"] = [*(fixed.get("batteries") or []), *late]
+        fixed["capacity_kwh"] = round(
+            (fixed.get("capacity_kwh") or 0.0)
+            + sum(b.get("capacity") or 0.0 for b in late),
+            2,
+        )
     up = {
         entry["id"]
         for entry in fixed.get("batteries") or []
