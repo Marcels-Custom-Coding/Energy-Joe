@@ -4347,6 +4347,11 @@ var Ue = {
 	"log.action_on": "{battery}: eingeschaltet ({value})",
 	"log.action_off": "{battery}: zurückgestellt ({value})",
 	"log.action_done": "{battery}: Ziel erreicht",
+	"log.action_end": "{battery}: ausgeschaltet",
+	"log.action_end.not_tonight": "{battery}: ausgeschaltet – heute Nacht doch nicht nötig",
+	"log.action_end.conditions": "{battery}: ausgeschaltet – eine Bedingung ist nicht mehr erfüllt",
+	"log.action_end.over": "{battery}: ausgeschaltet – das Zeitfenster ist zu Ende",
+	"log.action_end.reached": "{battery}: ausgeschaltet – Ziel erreicht",
 	"log.car_capacity": "{battery}: Die Ladung zeigt {value} kWh Akku ({kwh} kWh an der Wallbox für {rise} %) – ich rechne jetzt mit {learned} kWh",
 	"log.car_capacity.recorder": "{battery}: Aus {count} Ladung(en) der letzten Tage gelernt – ich rechne mit {learned} kWh Akku",
 	"log.car_refresh.start": "{battery}: Frische Werte beim Auto angefordert, der letzte war alt",
@@ -8356,6 +8361,11 @@ var Ue = {
 	"log.action_on": "{battery}: switched on ({value})",
 	"log.action_off": "{battery}: put back ({value})",
 	"log.action_done": "{battery}: target reached",
+	"log.action_end": "{battery}: switched off",
+	"log.action_end.not_tonight": "{battery}: switched off – not needed tonight after all",
+	"log.action_end.conditions": "{battery}: switched off – a condition is no longer met",
+	"log.action_end.over": "{battery}: switched off – the window is over",
+	"log.action_end.reached": "{battery}: switched off – target reached",
 	"log.car_capacity": "{battery}: The charge shows a {value} kWh battery ({kwh} kWh at the wallbox for {rise} %) – I now reckon with {learned} kWh",
 	"log.car_capacity.recorder": "{battery}: Learned from {count} charge(s) of the last days – I reckon with a {learned} kWh battery",
 	"log.car_refresh.start": "{battery}: Asked the car for fresh values, its last one was old",
@@ -8692,14 +8702,14 @@ function nt(e, t, n) {
 }
 //#endregion
 //#region src/define.ts
-var rt = "0.9.62";
+var rt = "0.9.63";
 function M(e, t) {
 	let n = customElements.get(e);
 	if (!n) {
 		t.joeVersion = rt, customElements.define(e, t);
 		return;
 	}
-	n.joeVersion !== "0.9.62" && at();
+	n.joeVersion !== "0.9.63" && at();
 }
 var it = !1;
 function at() {
@@ -11224,7 +11234,7 @@ function Lr(e, t, n, r) {
 			lead: typeof n.value == "number" ? R(e.lang, n.value, 0) : "–",
 			watts: typeof n.power == "number" ? R(e.lang, n.power, 0) : "–"
 		};
-		return n.kind === "team_along" || n.kind === "team_along_end" ? e.optional(`log.${n.kind}.${String(n.reason)}`, t) ?? e(`log.${n.kind}`, t) : n.kind === "team_review" ? e(typeof n.batteries == "object" && n.batteries ? "log.team_review.short" : "log.team_review", t) : n.kind === "team_handover" ? e.optional(`log.team_handover.${String(n.reason)}`, t) ?? e("log.team_handover", t) : n.kind === "team_end" ? e.optional(`log.team_end.${String(n.reason)}`, t) ?? e("log.team_end", t) : n.kind === "team_block" ? e(`log.team_block.${n.charge ? n.discharge ? "both" : "charge" : n.discharge ? "discharge" : "free"}`, t) : n.kind === "team_transfer" ? e(n.blocked ? "log.team_transfer.blocked" : "log.team_transfer", t) : e.optional(`log.${n.kind}`, t) ?? n.kind;
+		return n.kind === "team_along" || n.kind === "team_along_end" ? e.optional(`log.${n.kind}.${String(n.reason)}`, t) ?? e(`log.${n.kind}`, t) : n.kind === "team_review" ? e(typeof n.batteries == "object" && n.batteries ? "log.team_review.short" : "log.team_review", t) : n.kind === "team_handover" ? e.optional(`log.team_handover.${String(n.reason)}`, t) ?? e("log.team_handover", t) : n.kind === "team_end" ? e.optional(`log.team_end.${String(n.reason)}`, t) ?? e("log.team_end", t) : n.kind === "action_end" ? e.optional(`log.action_end.${String(n.reason)}`, t) ?? e("log.action_end", t) : n.kind === "team_block" ? e(`log.team_block.${n.charge ? n.discharge ? "both" : "charge" : n.discharge ? "discharge" : "free"}`, t) : n.kind === "team_transfer" ? e(n.blocked ? "log.team_transfer.blocked" : "log.team_transfer", t) : e.optional(`log.${n.kind}`, t) ?? n.kind;
 	}
 	if (n.kind.startsWith("guard_")) {
 		let t = typeof n.seconds == "number" ? n.seconds : 0, i = {

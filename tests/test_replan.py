@@ -802,3 +802,39 @@ async def test_a_battery_left_out_of_the_fixed_night_joins_when_it_is_back(
     assert joined["target"] == 100 and joined["slots"]
     assert plan["capacity_kwh"] == 20.0
     assert [r["battery"] for r in told[0][1]] == ["byd"]
+
+
+def test_a_running_action_is_not_stopped_by_a_better_forecast() -> None:
+    """Hot water started for little sun; the forecast then jumps over the
+    threshold (19.8 to 24.3 kWh at 20): it goes on, short of its target."""
+    from datetime import datetime
+
+    from custom_components.energy_joe.plan.scheduler import _night_actions
+
+    start = datetime.fromisoformat("2026-11-28T00:00:00+01:00")
+    entry = {
+        "id": "hw",
+        "run": True,
+        "reasons": ["little_sun"],
+        "start": "2026-11-28T00:00+01:00",
+        "end": "2026-11-28T05:00+01:00",
+        "target": 63.0,
+    }
+    fixed = {"actions": [dict(entry)]}
+    sunny = {
+        **entry,
+        "run": False,
+        "reasons": ["enough_sun"],
+        "energy_kwh": 0.0,
+    }
+    now = start.replace(hour=1, minute=5)
+    changed, rearm = _night_actions(fixed, {"actions": [sunny]}, now)
+    assert fixed["actions"][0]["run"] is True
+    assert fixed["actions"][0]["reasons"] == ["little_sun"]
+    assert changed == [] and rearm == []
+    # Not running yet (it would only start at 03:00): the forecast still decides.
+    later = {**entry, "start": "2026-11-28T03:00+01:00"}
+    fixed = {"actions": [later]}
+    changed, _ = _night_actions(fixed, {"actions": [sunny]}, now)
+    assert fixed["actions"][0]["run"] is False
+    assert changed == ["hw"]

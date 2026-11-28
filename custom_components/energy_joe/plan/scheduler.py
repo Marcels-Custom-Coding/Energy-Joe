@@ -708,6 +708,18 @@ def _night_actions(
             ).total_seconds() / 3600
             again["energy_kwh"] = round((again.get("power_kw") or 0.0) * hours, 2)
             again["cost"] = _cost(fixed, again)
+        if (
+            entry is not None
+            and entry.get("run")
+            and _running(entry, now)
+            and not again.get("run")
+            and "enough_sun" in (again.get("reasons") or [])
+        ):
+            # Started for little sun and running: a better forecast later in
+            # the night does not stop it (the forecast wavers by several kWh;
+            # hot water stopped at 45 degrees, short of its target). Only its
+            # target, its conditions or the end of the window stop it.
+            again = dict(entry)
         actions.append(again)
         if entry is None or not _same_course(again, entry):
             changed.append(again["id"])

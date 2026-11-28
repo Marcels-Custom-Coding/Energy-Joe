@@ -485,3 +485,37 @@ async def test_an_old_note_of_the_mode_does_not_keep_joe_away(
     assert "select.carport_mode" not in executor.data["external"]
     assert hass.states.get("select.carport_mode").state == "now"
     assert executor.status["actions"]["ev"]["on"] is True
+
+
+async def test_hot_water_comes_back_when_the_plan_is_missing_for_a_moment(
+    hass: HomeAssistant, freezer
+) -> None:
+    """A reload or a restart leaves the plan out for a moment: what ran in the
+    night is given back, and must go on when the plan is there again."""
+    freezer.move_to("2026-10-04T03:00:00+02:00")
+    keep_values(hass)
+    hass.states.async_set("input_boolean.hot_water_boost", "off")
+    hass.states.async_set("sensor.hot_water_temperature", "42")
+    config = model.validate({"version": model.CONFIG_VERSION, "actions": [HOT_WATER]})
+    start, end = window(hass)
+    planned = plan_actions(config["actions"], hass.states.get, start, end, 10.0, {})
+    holder: dict[str, Any] = {"plan": night_plan(start, planned)}
+    executor = JoeExecutor(
+        hass,
+        lambda: config,
+        lambda: holder["plan"],
+        lambda: "live",
+        lambda: None,
+    )
+    await executor.async_load()
+    await executor.async_check()
+    assert hass.states.get("input_boolean.hot_water_boost").state == "on"
+    holder["plan"] = None
+    freezer.move_to("2026-10-04T03:04:00+02:00")
+    await executor.async_check()
+    assert hass.states.get("input_boolean.hot_water_boost").state == "off"
+    holder["plan"] = night_plan(start, planned)
+    freezer.move_to("2026-10-04T03:04:30+02:00")
+    await executor.async_check()
+    assert executor.status["actions"]["hw"]["on"] is True, executor.status["actions"]
+    assert hass.states.get("input_boolean.hot_water_boost").state == "on"
