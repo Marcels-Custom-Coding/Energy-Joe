@@ -1050,6 +1050,11 @@ class JoeExecutor:
                     # Back as it should be: nothing left to restore for this action.
                     self.data["saved"].pop(adapter.entity_id, None)
                     self.data["written"].pop(adapter.entity_id, None)
+            if not on and (self.status.get("actions") or {}).get(action["id"], {}).get(
+                "on"
+            ):
+                # What it ran for and why it stops, in the journal.
+                self._log("action_end", battery=adapter.battery["id"], reason=reason)
             result[action["id"]] = {
                 "on": on,
                 "reason": reason,

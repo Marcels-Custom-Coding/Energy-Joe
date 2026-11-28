@@ -161,6 +161,9 @@ function logLine(t: Translate, config: JoeConfig | undefined, entry: ControlLogE
     if (entry.kind === "team_end") {
       return t.optional(`log.team_end.${String(entry.reason)}`, team) ?? t("log.team_end", team);
     }
+    if (entry.kind === "action_end") {
+      return t.optional(`log.action_end.${String(entry.reason)}`, team) ?? t("log.action_end", team);
+    }
     if (entry.kind === "team_block") {
       const how = entry.charge ? (entry.discharge ? "both" : "charge") : entry.discharge ? "discharge" : "free";
       return t(`log.team_block.${how}`, team);

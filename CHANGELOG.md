@@ -3,6 +3,19 @@
 Jede Version, die HACS anbietet, steht hier. Kleine Schritte zählen hinten
 hoch (0.1.0, 0.1.1, 0.1.2 …), größere vorne (0.2.0).
 
+## 0.9.63
+
+- 
+
+## 0.9.63
+
+Warmwasser, das für wenig Sonne angelaufen ist, geht nicht mehr mitten in der Nacht aus, nur weil die Prognose steigt
+
+- **Ursache der Nacht auf den 28.11.:** Die Warmwasser-Wärmepumpe lief ab 00:00 Uhr, weil die Sonnenprognose für den Tag (19,8 kWh) unter ihrer Schwelle von 20 kWh lag. Um 01:04 Uhr stieg die Prognose beim Neuberechnen auf 24,3 kWh, klar über der Schwelle (mit der Toleranz von 3 kWh ab 23 kWh). Joe wertete das als „genug Sonne“, schaltete die Wärmepumpe aus und ließ sie bis 05:00 Uhr aus. Das Wasser war bei 45,8 °C, ihr Ziel 63 °C. Die Prognose schwankt im Lauf des Tages um mehrere kWh (am Morgen stand sie wieder bei 20,8).
+- **Jetzt:** Eine Aktion, die wegen wenig Sonne angelaufen ist und gerade läuft, bleibt an, auch wenn die Prognose später steigt. Nur ihr Ziel, ihre Bedingungen oder das Ende des Zeitfensters beenden sie. Eine Aktion, die noch nicht gestartet ist, richtet sich weiter nach der Prognose.
+- Neu im Protokoll: Wenn Joe eine laufende Aktion ausschaltet, steht dort „ausgeschaltet“ mit dem Grund (heute Nacht doch nicht nötig, Bedingung nicht mehr erfüllt, Zeitfenster zu Ende, Ziel erreicht). Bisher stand der Grund nirgends.
+- Nicht geprüft an echter Anlage: dass es um 01:04 Uhr wirklich die Prognose war. Der Grund wurde damals nicht festgehalten, er folgt aus den Zahlen im Protokoll (Prognose 19,77 → 24,3 beim Neuberechnen). Ob das Warmwasser nach dem Update in der nächsten Nacht durchläuft, zeigt sich erst dann.
+
 ## 0.9.62
 
 Ein Speicher, dessen Ladestand beim Festlegen der Nacht nicht lesbar war, fehlt nicht mehr die ganze Nacht
